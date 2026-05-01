@@ -1,0 +1,17 @@
+{
+  "name": "zombie-ants-demo",
+  "version": "0.1.0",
+  "description": "Zombie Ants — Demo Level (HTML5/Phaser, studio evaluation build)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "phaser": "^3.80.1"
+  },
+  "devDependencies": {
+    "vite": "^5.2.0"
+  }
+}
