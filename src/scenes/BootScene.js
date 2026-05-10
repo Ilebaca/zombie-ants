@@ -1,7 +1,5 @@
 import Phaser from 'phaser';
-import { CANVAS_W, CANVAS_H, COL } from '../constants.js';
-
-const HEX = (n) => '#' + n.toString(16).padStart(6, '0');
+import { CANVAS_W, CANVAS_H, SPECIES } from '../constants.js';
 
 export class BootScene extends Phaser.Scene {
   constructor() { super({ key: 'BootScene' }); }
@@ -9,100 +7,79 @@ export class BootScene extends Phaser.Scene {
   create() {
     const cx = CANVAS_W / 2;
 
-    // ── Subtle grid bg ────────────────────────────────────────────────────────
+    // Grid background
     const g = this.add.graphics();
-    g.lineStyle(1, 0x1a2a1a, 0.5);
-    for (let x = 0; x < CANVAS_W; x += 48) g.lineBetween(x, 0, x, CANVAS_H);
-    for (let y = 0; y < CANVAS_H; y += 48) g.lineBetween(0, y, CANVAS_W, y);
+    g.lineStyle(1, 0x1a2a1a, 0.4);
+    for (let x = 0; x < CANVAS_W; x += 44) g.lineBetween(x, 0, x, CANVAS_H);
+    for (let y = 0; y < CANVAS_H; y += 44) g.lineBetween(0, y, CANVAS_W, y);
 
-    // ── Title ─────────────────────────────────────────────────────────────────
-    this.add.text(cx, 100, 'ZOMBIE ANTS', {
-      fontSize: '56px', fontFamily: 'monospace', fontStyle: 'bold',
-      color: '#c4571f',
-      stroke: '#000000', strokeThickness: 6,
+    this.add.text(cx, 90, 'ZOMBIE ANTS', {
+      fontSize: '54px', fontFamily: 'monospace', fontStyle: 'bold',
+      color: '#c4571f', stroke: '#000', strokeThickness: 6,
     }).setOrigin(0.5);
 
-    this.add.text(cx, 158, 'Two colonies. One Hive. Spread, surround, consume.', {
-      fontSize: '16px', fontFamily: 'monospace', color: '#6aaa6a', fontStyle: 'italic',
+    this.add.text(cx, 152, 'Two colonies. One Hive. Spread, surround, consume.', {
+      fontSize: '15px', fontFamily: 'monospace', color: '#6aaa6a', fontStyle: 'italic',
     }).setOrigin(0.5);
 
-    // ── Divider ───────────────────────────────────────────────────────────────
+    this.add.text(cx, 178, 'GDD v1.4 · AI vs AI demo · Crossroads 13×13', {
+      fontSize: '12px', fontFamily: 'monospace', color: '#555555',
+    }).setOrigin(0.5);
+
+    // Divider
     const div = this.add.graphics();
-    div.lineStyle(1, 0x3a5a3a, 1);
-    div.lineBetween(cx - 300, 185, cx + 300, 185);
+    div.lineStyle(1, 0x3a5a3a); div.lineBetween(cx - 320, 198, cx + 320, 198);
 
-    // ── How to play ───────────────────────────────────────────────────────────
-    this.add.text(cx, 210, 'HOW TO PLAY', {
-      fontSize: '13px', fontFamily: 'monospace', color: '#888888',
-      letterSpacing: 4,
+    this.add.text(cx, 215, 'GAME RULES  (v1.4 turn-based)', {
+      fontSize: '12px', fontFamily: 'monospace', color: '#888', letterSpacing: 4,
     }).setOrigin(0.5);
 
-    const instructions = [
-      ['SELECT',  'Click one of your tiles (outlined in yellow)'],
-      ['MOVE',    'Click an adjacent friendly tile to move all-but-one soldiers'],
-      ['ATTACK',  'Click an adjacent neutral or enemy tile to assault it'],
-      ['HIVE',    'The queen awakens at 1m 30s — race to capture her for double output'],
-      ['          ', 'Clear all 4 Hive guards before attacking the queen'],
-      ['WIN',     'Capture the enemy NEST tile to eliminate their colony'],
+    const rules = [
+      'Players alternate turns. One action per turn. Stable tiles produce soldiers each turn; veins produce nothing.',
+      '4 actions: EXPAND (adjacent capture) · LONG-RANGE (vein path + remote stable) · ATTACK VEIN · PROMOTE VEIN→STABLE',
+      'Combat is fully deterministic. A>D → attacker wins with proportional losses. A≤D → defender wins, attacker wiped.',
+      'Veins have HP = floor((endpoint A + endpoint B) ÷ 2). Break a vein → tiles beyond it become LOOSE (stranded).',
+      'The HIVE awakens at turn 20. Clear 4 guards → capture queen → 10-turn output doubling buff. Respawns stronger.',
+      'Win condition: capture the enemy NEST tile.',
     ];
 
     let y = 248;
-    for (const [label, desc] of instructions) {
-      if (label.trim()) {
-        this.add.text(cx - 260, y, label, {
-          fontSize: '13px', fontFamily: 'monospace', color: '#c4571f', fontStyle: 'bold',
-        });
-      }
-      this.add.text(cx - 180, y, desc, {
-        fontSize: '13px', fontFamily: 'monospace', color: '#aaaaaa',
-      });
-      y += 28;
+    for (const r of rules) {
+      this.add.text(cx - 330, y, '·', { fontSize: '13px', fontFamily: 'monospace', color: '#c4571f' });
+      this.add.text(cx - 310, y, r, { fontSize: '12px', fontFamily: 'monospace', color: '#aaaaaa', wordWrap: { width: 820 } });
+      y += 30;
     }
 
-    // ── Legend ────────────────────────────────────────────────────────────────
-    const legendY = y + 20;
-    this.add.text(cx, legendY, 'MAP LEGEND', {
-      fontSize: '13px', fontFamily: 'monospace', color: '#888888', letterSpacing: 4,
-    }).setOrigin(0.5);
-
-    const legend = [
-      [COL.PLAYER,           '★  YOUR colony'],
-      [COL.AI,               '★  ENEMY colony'],
-      [COL.NEUTRAL_RESOURCE, '◈  Resource tile (3× income)'],
-      [COL.HIVE_ACTIVE,      '♛  The Hive (dormant until 1m 30s)'],
+    // Species cards
+    const cardY = y + 14;
+    const cardData = [
+      { owner: 'P1', x: cx - 240, sp: SPECIES.P1, desc: 'Generalist. Swarm Response: adjacent tiles gain +2 when attacked.' },
+      { owner: 'P2', x: cx + 40,  sp: SPECIES.P2, desc: 'Nomadic raider. Bivouac: free 2nd action every 4 turns.' },
     ];
-
-    let lx = cx - 300;
-    for (const [color, text] of legend) {
-      const box = this.add.rectangle(lx + 8, legendY + 30, 16, 16, color);
-      this.add.text(lx + 22, legendY + 22, text, {
-        fontSize: '12px', fontFamily: 'monospace', color: '#aaaaaa',
+    for (const { x, sp, desc } of cardData) {
+      this.add.rectangle(x + 190, cardY + 24, 380, 48, 0x111111).setOrigin(0.5);
+      this.add.rectangle(x + 190, cardY + 24, 378, 46, sp.color, 0.15).setOrigin(0.5);
+      this.add.text(x + 10, cardY + 8, sp.name.toUpperCase(), {
+        fontSize: '13px', fontFamily: 'monospace', fontStyle: 'bold',
+        color: '#' + sp.color.toString(16).padStart(6, '0'),
       });
-      lx += 300;
-      if (lx > cx + 100) { lx = cx - 300; }
+      this.add.text(x + 10, cardY + 28, `ATK ×${sp.atk}  DEF ×${sp.def}  ·  ${desc}`, {
+        fontSize: '10px', fontFamily: 'monospace', color: '#888888', wordWrap: { width: 360 },
+      });
     }
 
-    // ── Click to play ─────────────────────────────────────────────────────────
-    const playText = this.add.text(cx, CANVAS_H - 80, '▶  CLICK ANYWHERE TO BEGIN THE DEMO', {
-      fontSize: '18px', fontFamily: 'monospace', fontStyle: 'bold',
-      color: '#ffee44',
-      stroke: '#000000', strokeThickness: 3,
+    const playText = this.add.text(cx, CANVAS_H - 72, '▶  CLICK ANYWHERE TO START THE AI vs AI DEMO', {
+      fontSize: '17px', fontFamily: 'monospace', fontStyle: 'bold',
+      color: '#ffee44', stroke: '#000', strokeThickness: 3,
     }).setOrigin(0.5);
 
-    this.tweens.add({
-      targets:  playText,
-      alpha:    0.3,
-      duration: 900,
-      yoyo:     true,
-      repeat:   -1,
-      ease:     'Sine.easeInOut',
-    });
+    this.tweens.add({ targets: playText, alpha: 0.3, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-    this.add.text(cx, CANVAS_H - 45, 'Game Design Document v1.0 · Milan Kujundzic', {
-      fontSize: '11px', fontFamily: 'monospace', color: '#444444',
+    this.add.text(cx, CANVAS_H - 38, 'GDD v1.4 · Milan Kujundzic', {
+      fontSize: '11px', fontFamily: 'monospace', color: '#333',
     }).setOrigin(0.5);
 
-    this.input.once('pointerdown', () => this.scene.start('DemoScene'));
-    this.input.keyboard.once('keydown', () => this.scene.start('DemoScene'));
+    this.input.once('pointerdown', () => this.scene.start('SpectatorScene'));
+    this.input.keyboard.once('keydown', () => this.scene.start('SpectatorScene'));
   }
 }

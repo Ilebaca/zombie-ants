@@ -1,31 +1,34 @@
 /**
- * Deterministic combat with ±10% RNG variance.
- * Both sides lose soldiers proportional to the opponent's power share.
- * Returns { attackerRemaining, defenderRemaining, attackerWins }.
+ * v1.4 deterministic combat — no RNG.
+ *
+ * Stable-tile combat:
+ *   A = sentSoldiers × atkMod
+ *   D = garrisonedSoldiers × defMod + tileDefBonus
+ *   A > D → attacker wins; defenders wiped; attacker losses = floor(sent × D/A)
+ *   A ≤ D → defender wins; attackers wiped; defender losses = floor(garrisoned × A/D)
+ *
+ * Vein combat (raid):
+ *   damage = floor(sentSoldiers × atkMod); attacker returns with 0 losses.
  */
-export function resolveCombat(
-  attackSoldiers,
-  defendSoldiers,
-  atkMod        = 1.0,
-  defMod        = 1.0,
-  tileDefBonus  = 0,
-) {
-  const atkPower = attackSoldiers * atkMod;
-  const defPower = defendSoldiers * defMod + tileDefBonus;
-  const total    = atkPower + defPower;
-  if (total === 0) return { attackerRemaining: 0, defenderRemaining: 0, attackerWins: true };
 
-  const variance = 0.9 + Math.random() * 0.2;  // 0.90 – 1.10
+export function stableCombat(sentSoldiers, garrisoned, atkMod, defMod, tileDefBonus = 0) {
+  const A = sentSoldiers * atkMod;
+  const D = garrisoned  * defMod + tileDefBonus;
 
-  const defLost = Math.round(defendSoldiers * (atkPower / total) * variance);
-  const atkLost = Math.round(attackSoldiers * (defPower / total) * variance);
-
-  const defLeft = Math.max(0, defendSoldiers - defLost);
-  const atkLeft = Math.max(0, attackSoldiers - atkLost);
-
+  if (A > D) {
+    return {
+      attackerWins:      true,
+      attackerSurvivors: sentSoldiers - Math.floor(sentSoldiers * D / A),
+      defenderSurvivors: 0,
+    };
+  }
   return {
-    attackerRemaining: atkLeft,
-    defenderRemaining: defLeft,
-    attackerWins: atkLeft > 0 && defLeft === 0,
+    attackerWins:      false,
+    attackerSurvivors: 0,
+    defenderSurvivors: garrisoned - Math.floor(garrisoned * A / D),
   };
+}
+
+export function veinDamage(sentSoldiers, atkMod) {
+  return Math.floor(sentSoldiers * atkMod);
 }

@@ -1,14 +1,14 @@
 import Phaser from 'phaser';
-import { BootScene }  from './scenes/BootScene.js';
-import { DemoScene }  from './scenes/DemoScene.js';
-import { CANVAS_W, CANVAS_H, COL } from './constants.js';
+import { BootScene }      from './scenes/BootScene.js';
+import { SpectatorScene } from './scenes/SpectatorScene.js';
+import { CANVAS_W, CANVAS_H } from './constants.js';
 
 new Phaser.Game({
   type:            Phaser.AUTO,
   width:           CANVAS_W,
   height:          CANVAS_H,
-  backgroundColor: '#' + COL.BG.toString(16).padStart(6, '0'),
-  scene:           [BootScene, DemoScene],
+  backgroundColor: '#080f08',
+  scene:           [BootScene, SpectatorScene],
   parent:          document.body,
   scale: {
     mode:       Phaser.Scale.FIT,
