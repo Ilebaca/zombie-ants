@@ -1,38 +1,33 @@
 /**
  * App entry point.
  *
- * The renderer and meta UI are not built yet — this boots the engine and prints a
- * self-check so `npm run dev` proves the port works end to end.
+ * Boots straight into a match for now — the meta screens (home, setup, shop) are the next
+ * slice of the port, and will own species/map/formation selection before this point.
  */
-import {
-  createGame, endTurn, incomeOf, ownedCount, armyOf, NEUTRAL_MODS, defaultContext,
-} from "./engine";
-import { aiTurn } from "./ai/search";
-import type { Player, PlayerMods } from "./engine";
+import { createGame, defaultContext, NEUTRAL_MODS } from "./engine";
+import type { MapId, Player, PlayerMods, SpeciesId } from "./engine";
+import { MatchScreen } from "./ui/match";
+import "./ui/theme.css";
 
-const mods: Record<Player, PlayerMods> = { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } };
-const ctx = defaultContext();
+const MAP: MapId = "small";
+const SPECIES: Record<Player, SpeciesId> = { you: "fire", ai: "leafcutter" };
 
-const state = createGame({ map: "small", species: { you: "leafcutter", ai: "fire" } });
+const mods: Record<Player, PlayerMods> = {
+  you: { ...NEUTRAL_MODS },
+  ai: { ...NEUTRAL_MODS },   // the AI never gets upgrades (CLAUDE.md §4.8)
+};
 
-// Play a short AI-vs-AI demo to prove the engine + search are wired up.
-let guard = 0;
-while (!state.over && guard++ < 60) {
-  state.current = "ai"; aiTurn(state, "ai", "normal", ctx);
-  if (state.over) break;
-  state.current = "you"; aiTurn(state, "you", "easy", ctx);
-  if (state.over) break;
-  endTurn(state, mods);
-}
+const host = document.getElementById("app");
+if (!host) throw new Error("#app host element is missing");
+host.replaceChildren();
 
-const el = document.querySelector<HTMLDivElement>(".boot");
-if (el) {
-  el.innerHTML = `
-    <strong>Zombie Ants — engine online</strong><br>
-    <small>
-      turn ${state.turn} · ${state.over ? `winner: ${state.winner}` : "in progress"}<br>
-      you: ${ownedCount(state, "you")} tiles, ${armyOf(state, "you")} army, +${incomeOf(state, "you", mods.you)}<br>
-      ai: ${ownedCount(state, "ai")} tiles, ${armyOf(state, "ai")} army, +${incomeOf(state, "ai", mods.ai)}<br>
-      <em>renderer &amp; UI next</em>
-    </small>`;
-}
+const state = createGame({ map: MAP, species: SPECIES });
+
+const match = new MatchScreen(host, {
+  state,
+  mods,
+  ctx: defaultContext(),
+  difficulty: "normal",
+  map: MAP,
+});
+match.start();

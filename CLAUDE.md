@@ -110,6 +110,14 @@ Each of these cost a debugging round. Do not repeat them.
 - **Starting position is always exactly 5 tiles.** If it isn't, something is applying a
   legacy bonus.
 - **Search must not mutate the profile.** Simulation writes no stats, currencies or storage.
+- **Never measure the canvas against a zero-sized container.** `Layout.measure` writes the
+  result to `canvas.style`, and an inline `width: 0px` outranks the stylesheet's `100%`. One
+  early measurement (before first layout, or while the tab isn't compositing) pinned the board
+  at 0×0 permanently — the container never resized again, so the ResizeObserver never re-fired.
+  The renderer now skips zero measurements and retries on the next frame.
+- **Reveal progress must never live on a tile.** The legacy build stored `t.rv`/`t.rvDir` on
+  the tile, which put view state inside the engine where snapshot/restore would copy it. It
+  lives in `RevealTracker`, keyed by coordinate.
 
 ## 6. Testing
 
@@ -144,12 +152,35 @@ provisional and say so if asked.
 
 ## 9. Roadmap
 
-1. Finish the engine port + tests (in progress)
-2. Canvas renderer driven by engine events
-3. Meta UI screens ported from the legacy build
+1. Finish the engine port + tests (abilities still missing — see below)
+2. Canvas renderer driven by engine events ✅
+3. Meta UI screens ported from the legacy build (in progress)
 4. Capacitor wrap → Android build
 5. RevenueCat in-app purchases (the legacy `buyPass()`/shop grants are the integration points)
 6. Play Console release
 
 Later, server-backed: async PvP, ranked ladder, seasons, replays. Determinism makes
 server-side verification and replays nearly free — keep it that way.
+
+**Known gap: species abilities are not in the new engine.** There is no `activateAbility`;
+the nine `Species.ability` entries are data with no implementation. The match screen shows the
+Ability button (so the layout matches the legacy look) but it is inert and labelled `soon`.
+Porting them from the legacy `activateAbility()` (line ~1747) is the next engine job, and it
+needs tests for the gotchas in §5 — Feeding Swarm's snapshot, permanent leaf totals, Flee's
+no-prune rule.
+
+## 10. Verifying visual work
+
+You cannot see the screen, so "it renders" is not something to assert from reading code.
+Two things that do work:
+
+- **Recording-context tests** (`src/render/__tests__/`). A fake `CanvasRenderingContext2D`
+  records draw calls, so the *structure* of a frame is testable: veins draw bars not filled
+  cells, cut-off tiles grey out, counts hide during the win flood. Mutation-check new
+  assertions — a recorder test that passes against broken code is worse than none.
+- **Driving the dev server** via the browser tools: dispatch synthetic `pointerdown`s at
+  computed cell centres and read the HUD back. That verified input → engine → HUD → AI turn.
+  Note the preview pane may be hidden, in which case `requestAnimationFrame` never fires and
+  the canvas stays blank — that is not a rendering bug, so check `document.hidden` first.
+
+Neither proves it *looks* right. Say plainly that Milan needs to check anything visual.

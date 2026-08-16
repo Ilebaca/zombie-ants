@@ -1,0 +1,112 @@
+/**
+ * The "territory flows in" reveal.
+ *
+ * A growth — a single move, or a whole long-send path — is ONE group revealed by a single
+ * front sweeping along the tiles in order, so it reads as one body extending rather than
+ * each tile filling separately.
+ *
+ * The legacy build stored this progress on the tile itself (`t.rv`, `t.rvDir`, `t.rvPrev`).
+ * That put view state inside the engine, where the AI's snapshot/restore would copy it
+ * around. Here it lives in a map keyed by coordinate, and the engine stays pure.
+ */
+import { key } from "../engine";
+import type { Coord, Direction, Player } from "../engine";
+
+export const REVEAL_MS = 500;
+
+/** Which edge of the cell the fill grows FROM. */
+export type RevealEdge = "L" | "R" | "U" | "D";
+
+/**
+ * Engine directions describe where the troops moved TO. The fill has to grow from the
+ * opposite edge — troops arriving from the west fill the cell starting at its west side.
+ */
+export function edgeFor(movement: Direction): RevealEdge {
+  switch (movement) {
+    case "R": return "L";
+    case "L": return "R";
+    case "D": return "U";
+    default:  return "D";
+  }
+}
+
+export interface RevealState {
+  /** 0..1 fill progress; 1 = settled. */
+  rv: number;
+  edge: RevealEdge;
+  /** Who held the tile before, so it can fade out underneath. */
+  prev: Player | null;
+}
+
+interface Group {
+  keys: string[];
+  start: number;
+  dur: number;
+  n: number;
+}
+
+const easeOut = (x: number): number => 1 - Math.pow(1 - x, 3);   // fast start, slow settle
+
+export class RevealTracker {
+  private states = new Map<string, RevealState>();
+  private groups: Group[] = [];
+
+  /** Honour the OS reduced-motion setting: reveals snap to finished. */
+  reduced = typeof matchMedia === "function"
+    ? matchMedia("(prefers-reduced-motion: reduce)").matches
+    : false;
+
+  begin(tiles: ReadonlyArray<{ at: Coord; edge: RevealEdge; prev: Player | null }>): void {
+    if (!tiles.length) return;
+    if (this.reduced) return;                       // nothing to animate; tiles draw settled
+
+    const keys: string[] = [];
+    for (const t of tiles) {
+      const k = key(t.at.c, t.at.r);
+      keys.push(k);
+      this.states.set(k, { rv: 0, edge: t.edge, prev: t.prev });
+    }
+    const n = keys.length;
+    this.groups.push({ keys, start: performance.now(), dur: REVEAL_MS * (1 + (n - 1) * 0.4), n });
+  }
+
+  step(now: number): void {
+    if (!this.groups.length) return;
+    for (let i = this.groups.length - 1; i >= 0; i--) {
+      const g = this.groups[i] as Group;
+      const raw = (now - g.start) / g.dur;
+      const p = raw <= 0 ? 0 : (raw >= 1 ? 1 : raw);
+      const front = easeOut(p) * g.n;               // one eased front advancing along the path
+
+      for (let j = 0; j < g.n; j++) {
+        const st = this.states.get(g.keys[j] as string);
+        if (!st) continue;
+        const d = front - j;
+        st.rv = d <= 0 ? 0 : (d >= 1 ? 1 : d);
+      }
+      if (p >= 1) {
+        for (const k of g.keys) this.states.delete(k);   // settled tiles need no entry
+        this.groups.splice(i, 1);
+      }
+    }
+  }
+
+  /** Reveal state for a tile, or undefined when it is settled (draw at full opacity). */
+  get(c: number, r: number): RevealState | undefined {
+    return this.states.get(key(c, r));
+  }
+
+  /** Progress 0..1 for a tile; 1 when settled. */
+  progress(c: number, r: number): number {
+    return this.states.get(key(c, r))?.rv ?? 1;
+  }
+
+  get animating(): boolean {
+    return this.groups.length > 0;
+  }
+
+  clear(): void {
+    this.states.clear();
+    this.groups.length = 0;
+  }
+}

@@ -91,7 +91,7 @@ export function moveOrAttack(
   if (!dst.owner && dst.guard > 0 && !isHiveTerrain(dst)) {
     const res = fight(commit, attackMultiplier(state, attacker, ctx.mods[attacker]), dst.guard, 1.0, guardDefence());
     src.soldiers = keep;
-    events.push({ type: "combat", at: to, attacker, won: res.winner === "atk", survivors: res.survivors });
+    events.push({ type: "combat", at: to, attacker, from: dir, won: res.winner === "atk", survivors: res.survivors });
     if (res.winner === "atk") {
       dst.owner = attacker; dst.soldiers = res.survivors; dst.guard = 0;
       promote(dst);
@@ -119,7 +119,7 @@ export function moveOrAttack(
 
   const res = fight(commit, attackMultiplier(state, attacker, ctx.mods[attacker]), dst.soldiers, defMod, flat);
   src.soldiers = keep;
-  events.push({ type: "combat", at: to, attacker, won: res.winner === "atk", survivors: res.survivors });
+  events.push({ type: "combat", at: to, attacker, from: dir, won: res.winner === "atk", survivors: res.survivors });
 
   if (res.winner !== "atk") {
     dst.soldiers = res.survivors;   // defender holds; no regeneration
@@ -148,6 +148,34 @@ export function moveOrAttack(
     endIfNestFell(state, previous, attacker, events);
   }
   return finish(state, events);
+}
+
+/**
+ * Neighbours a selected tile may move into or attack.
+ * Rocks and enemy leaf walls are excluded; hive guards and the queen are always valid.
+ */
+export function moveTargets(state: GameState, src: Tile): Coord[] {
+  const owner = src.owner;
+  if (!owner) return [];
+  return neighbours(state, src)
+    .filter((t) => t.terrain !== "blocked" && !blockedByEnemyLeaf(state, t, owner))
+    .map((t) => ({ c: t.c, r: t.r }));
+}
+
+/**
+ * Every legal destination in the combined Move/Travel mode: neighbours to move or attack,
+ * plus far tiles reachable by a long send. Deduplicated, since the two can overlap.
+ */
+export function actionTargets(state: GameState, src: Tile): Coord[] {
+  const seen = new Set<string>();
+  const out: Coord[] = [];
+  for (const v of [...moveTargets(state, src), ...travelTargets(state, src)]) {
+    const k = key(v.c, v.r);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(v);
+  }
+  return out;
 }
 
 /* ------------------------------------------------------------------------- RALLY */

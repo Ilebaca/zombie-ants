@@ -5,7 +5,7 @@ import {
   snapshot, restore, PROD,
 } from "../engine";
 import type {
-  ActionContext, Coord, GameState, Player, PlayerMods, Tile,
+  ActionContext, Coord, EngineEvent, GameState, Player, PlayerMods, Tile,
 } from "../engine";
 
 /**
@@ -182,8 +182,8 @@ export function chooseMove(
  */
 export function aiTurn(
   state: GameState, me: Player, difficulty: Difficulty, ctx: ActionContext,
-): boolean {
-  if (state.over) return false;
+): EngineEvent[] {
+  if (state.over) return [];
   const opp = otherPlayer(me);
   const myNest = nestTile(state, me);
 
@@ -199,8 +199,7 @@ export function aiTurn(
         .sort((a, b) => b.soldiers - a.soldiers)[0];
       if (feeder) {
         state.current = me;
-        moveOrAttack(state, { c: feeder.c, r: feeder.r }, { c: myNest.c, r: myNest.r }, ctx);
-        return true;
+        return moveOrAttack(state, { c: feeder.c, r: feeder.r }, { c: myNest.c, r: myNest.r }, ctx);
       }
     }
   }
@@ -215,16 +214,14 @@ export function aiTurn(
       .sort((a, b) => b.soldiers - a.soldiers)[0];
     if (feeder) {
       state.current = me;
-      moveOrAttack(state, { c: feeder.c, r: feeder.r }, { c: v.c, r: v.r }, ctx);
-      return true;
+      return moveOrAttack(state, { c: feeder.c, r: feeder.r }, { c: v.c, r: v.r }, ctx);
     }
   }
 
   const decision = chooseMove(state, me, difficulty, ctx);
-  if (!decision.move) return false;
+  if (!decision.move) return [];
   state.current = me;
-  moveOrAttack(state, decision.move.from, decision.move.to, ctx);
-  return true;
+  return moveOrAttack(state, decision.move.from, decision.move.to, ctx);
 }
 
 /** Would losing this vein disconnect more than just the vein itself? */

@@ -145,7 +145,8 @@ export type EngineEvent =
   | { type: "move"; from: Coord; to: Coord; owner: Player; count: number }
   | { type: "travel"; path: Coord[]; owner: Player; count: number }
   | { type: "capture"; at: Coord; owner: Player; from: Direction; previous: Player | null }
-  | { type: "combat"; at: Coord; attacker: Player; won: boolean; survivors: number }
+  /** `from` is the direction the attack travelled, so the view can find the attacker's tile. */
+  | { type: "combat"; at: Coord; attacker: Player; from: Direction; won: boolean; survivors: number }
   | { type: "veinLaid"; at: Coord; owner: Player }
   | { type: "veinPruned"; at: Coord; owner: Player }
   | { type: "rally"; to: Coord; owner: Player; sources: Coord[]; count: number }

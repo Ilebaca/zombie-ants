@@ -1,0 +1,36 @@
+/*
+ * Global palette and reset.
+ *
+ * The faction colours are CSS custom properties on purpose: the canvas renderer reads them
+ * back with getComputedStyle, so a species swap recolours HUD, buttons and board in one write.
+ * Changing a `--you`/`--ai` value here changes the board too — they are not decoration.
+ */
+:root {
+  --bg0: #080c14; --bg1: #0e1626; --bg2: #16223a;
+  --ink: #eaf1fb; --muted: #8395ad; --line: #26344c;
+  --you: #ff7a45; --you-glow: #ff8f43; --you-dark: #b8431d;
+  --ai: #27d3bd;  --ai-glow: #73f0df;  --ai-dark: #0c8576;
+  --gold: #ffd23f; --gold-glow: #ffe48a;
+  --hive: #b14de0; --hive-glow: #dd9bff; --hive-dim: #4b3a6e;
+  --panel: #131d33;
+  --hud: #131d33; --hud-line: #26344c;
+  --font: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* 4pt spacing system — every gap, pad and size is a multiple of 4 */
+  --sp1: 4px; --sp2: 8px; --sp3: 12px; --sp4: 16px; --sp5: 20px; --sp6: 24px; --sp8: 32px; --sp10: 40px;
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 20px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg0);
+  color: var(--ink);
+  overflow: hidden;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+#app { position: fixed; inset: 0; display: flex; flex-direction: column; }
