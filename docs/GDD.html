@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zombie Ants · GDD v1.0</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Georgia, serif; background: #faf9f7; color: #1a1a1a; font-size: 15px; line-height: 1.7; padding: 0 0 80px; }
+
+.tab-bar { position: sticky; top: 0; background: #faf9f7; border-bottom: 1px solid #e8e4de; display: flex; flex-wrap: wrap; z-index: 10; padding: 0 32px; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 14px 14px; cursor: pointer; font-family: Georgia, serif; font-size: 13px; color: #666; transition: all 0.15s; }
+.tab-btn:hover { color: #1a1a1a; }
+.tab-btn.active { color: #1a1a1a; border-bottom-color: #4a7c59; font-weight: 700; }
+
+.tab-select-wrap { display: none; position: sticky; top: 0; z-index: 11; background: #faf9f7; border-bottom: 2px solid #e8e4de; padding: 12px 16px; }
+.tab-select { width: 100%; font-family: Georgia, serif; font-size: 18px; padding: 14px 16px; border: 2px solid #c8c0b4; border-radius: 8px; background: #faf9f7; color: #1a1a1a; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath d='M1 1l7 7 7-7' stroke='%23666' stroke-width='2' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; min-height: 52px; }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.page { max-width: 780px; margin: 0 auto; padding: 48px 32px 80px; }
+
+.eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #999; margin-bottom: 16px; }
+h1 { font-size: 26px; font-weight: 700; margin-bottom: 24px; letter-spacing: -0.5px; color: #1a1a1a; }
+h2 { font-size: 19px; font-weight: 700; margin: 36px 0 14px; color: #1a1a1a; letter-spacing: -0.3px; }
+h3 { font-size: 16px; font-weight: 700; margin: 24px 0 10px; color: #1a1a1a; }
+p { margin-bottom: 14px; }
+ul, ol { margin: 12px 0 16px 24px; }
+li { margin-bottom: 6px; }
+hr { border: none; border-top: 1px solid #e8e4de; margin: 36px 0; }
+em { color: #4a7c59; font-style: italic; }
+strong { font-weight: 700; }
+
+.callout { background: #f5f1ea; border-left: 3px solid #c8b08a; padding: 16px 20px; margin: 18px 0; border-radius: 2px; font-size: 14px; }
+.callout p { margin-bottom: 10px; }
+.callout p:last-child { margin-bottom: 0; }
+.callout.green { border-left-color: #4a7c59; background: #f0f7f2; }
+.callout.amber { border-left-color: #d4a04a; background: #fffbea; }
+
+.flag { font-size: 12px; color: #7a5500; background: #fffbea; border: 1px solid #f0d060; border-radius: 2px; padding: 8px 12px; margin: 10px 0; }
+.flag::before { content: "Design note · "; font-weight: bold; }
+
+.tw { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 14px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+table thead th { text-align: left; padding: 10px 12px; background: #efebe3; border-bottom: 2px solid #c8c0b4; font-weight: 700; }
+table tbody td { padding: 10px 12px; border-bottom: 1px solid #e8e4de; vertical-align: top; }
+table tbody tr:hover { background: #f5f1ea; }
+
+.hero { background: linear-gradient(180deg, #efebe3 0%, #faf9f7 100%); padding: 56px 32px; text-align: center; margin-bottom: 0; }
+.hero .tagline { font-size: 19px; font-style: italic; color: #4a7c59; margin-bottom: 20px; line-height: 1.4; max-width: 600px; margin-left: auto; margin-right: auto; }
+.hero h1 { font-size: 36px; margin-bottom: 12px; }
+.hero p { color: #666; font-size: 14px; }
+
+.badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 2px; margin-left: 6px; font-weight: 600; vertical-align: middle; }
+.badge.ok { background: #e0f0e3; color: #2d6a3f; }
+.badge.tbd { background: #fff3d4; color: #7a5500; }
+.badge.new { background: #ffe3d6; color: #8a3f1a; }
+
+.species-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+.species-card { border: 1px solid #e8e4de; padding: 14px; background: #fff; border-radius: 4px; }
+.species-card .name { font-weight: 700; font-size: 15px; color: #1a1a1a; }
+.species-card .desc { font-size: 13px; color: #666; margin-top: 6px; }
+.species-card .stats { font-size: 12px; color: #4a7c59; margin-top: 8px; }
+
+.act { background: #f5f1ea; padding: 16px; margin: 12px 0; border-left: 3px solid #c8b08a; border-radius: 2px; }
+.act-l { font-weight: 700; color: #1a1a1a; margin-bottom: 6px; }
+.act.finale { border-left-color: #8a3f1a; background: #faf0e8; }
+
+@media (max-width: 768px) {
+  body { font-size: 14px; }
+  .tab-bar { display: none; }
+  .tab-select-wrap { display: block; }
+  .page { padding: 24px 16px 80px; max-width: 100%; }
+  h1 { font-size: 22px; }
+  h2 { font-size: 17px; }
+  h3 { font-size: 15px; }
+  table { font-size: 12px; min-width: 480px; }
+  .species-grid { grid-template-columns: 1fr; }
+  .hero { padding: 40px 16px; }
+  .hero h1 { font-size: 28px; }
+  .hero .tagline { font-size: 16px; }
+  .callout { font-size: 13px; }
+  .flag { font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="tab-bar" id="tabBar">
+  <button class="tab-btn active" onclick="S('concept',this)">Concept</button>
+  <button class="tab-btn" onclick="S('core',this)">Core loop</button>
+  <button class="tab-btn" onclick="S('tiles',this)">Tiles & supply</button>
+  <button class="tab-btn" onclick="S('combat',this)">Combat</button>
+  <button class="tab-btn" onclick="S('abilities',this)">Abilities</button>
+  <button class="tab-btn" onclick="S('hive',this)">The Hive</button>
+  <button class="tab-btn" onclick="S('species',this)">Species</button>
+  <button class="tab-btn" onclick="S('match',this)">Match flow</button>
+  <button class="tab-btn" onclick="S('maps',this)">Maps</button>
+  <button class="tab-btn" onclick="S('ai',this)">Enemy AI</button>
+  <button class="tab-btn" onclick="S('meta',this)">Meta & economy</button>
+  <button class="tab-btn" onclick="S('trophy',this)">Trophy Road</button>
+  <button class="tab-btn" onclick="S('challenges',this)">Challenges</button>
+  <button class="tab-btn" onclick="S('ui',this)">UI / UX</button>
+  <button class="tab-btn" onclick="S('tech',this)">Tech</button>
+  <button class="tab-btn" onclick="S('future',this)">Roadmap</button>
+</div>
+<div class="tab-select-wrap">
+  <select class="tab-select" onchange="SM(this.value)">
+    <option value="concept">Concept</option>
+    <option value="core">Core loop</option>
+    <option value="tiles">Tiles & supply</option>
+    <option value="combat">Combat</option>
+    <option value="abilities">Abilities</option>
+    <option value="hive">The Hive</option>
+    <option value="species">Species</option>
+    <option value="match">Match flow</option>
+    <option value="maps">Maps</option>
+    <option value="ai">Enemy AI</option>
+    <option value="meta">Meta & economy</option>
+    <option value="trophy">Trophy Road</option>
+    <option value="challenges">Challenges</option>
+    <option value="ui">UI / UX</option>
+    <option value="tech">Tech</option>
+    <option value="future">Roadmap</option>
+  </select>
+</div>
+
+<!-- CONCEPT -->
+<div id="concept" class="tab-panel active">
+  <div class="hero">
+    <div class="tagline">Two colonies. One Hive. Spread, surround, consume.</div>
+    <h1>Zombie Ants</h1>
+    <p>Game Design Document v2.0 · Milan Kujundzic · <span id="ts"></span></p>
+  </div>
+  <div class="page">
+    <div class="eyebrow">Concept</div>
+
+    <p><strong>Zombie Ants</strong> is a mobile-first, <strong>turn-based</strong> territory duel. Two colonies grow across a square grid, feeding on the tiles they hold and pushing soldiers toward the front. At the centre of the map sleeps <strong>the Hive</strong> — a wild queen infected with <em>Ophiocordyceps</em>, the real parasitic fungus that hijacks ants. Take her and her growth surge floods your colony. Lose your own queen and the match is over, no matter how much ground you still hold.</p>
+
+    <div class="callout green">
+      <p><strong>One-line pitch.</strong> A deterministic, chess-clean strategy duel wearing the skin of real ant biology: no dice, no fog of luck — every fight resolves to the same number every time.</p>
+    </div>
+
+    <h2>Design pillars</h2>
+    <ul>
+      <li><strong>Deterministic by law.</strong> Combat has zero RNG. The same attack against the same defence always gives the same result. Losses are the player's, never the dice's.</li>
+      <li><strong>Territory is economy.</strong> Every connected tile produces soldiers every turn. Land is not score — it is income.</li>
+      <li><strong>Supply lines matter.</strong> A tile only lives while a chain of your tiles links it back to your queen. Cut the chain and everything behind it goes dark.</li>
+      <li><strong>Readable on a phone.</strong> One thumb, big tap targets, a whole match in 3–10 minutes.</li>
+      <li><strong>Biology as mechanic.</strong> Nine real ant species whose real behaviours become their abilities — leafcutters farm fungus, army ants devour, ghost ants tunnel unseen.</li>
+    </ul>
+
+    <h2>Player fantasy</h2>
+    <p>You are the colony, not a commander standing above it. You do not build units — you <em>grow</em>. Numbers swell on tiles you hold, veins creep across open ground, and the map slowly turns your colour. The fungus is the win condition and the theme at once: you spread, you surround, you consume.</p>
+
+    <h2>Session shape</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Format</th><th>Map</th><th>Typical length</th></tr></thead>
+      <tbody>
+        <tr><td>Skirmish</td><td>7×7</td><td>~3 minutes</td></tr>
+        <tr><td>Corridor</td><td>9×9</td><td>~5 minutes</td></tr>
+        <tr><td>Gauntlet</td><td>13×13</td><td>~8–10 minutes</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>Current build status</h2>
+    <p>Single-file HTML5 build, playable end-to-end: full match loop, 9 species with abilities, 3 maps, the Hive, wild garrisons, the anthill meta, per-species research, Trophy Road with a pass track, daily quests, challenges, shop and lucky hatch, plus a lookahead AI opponent.</p>
+    <div class="flag">This document describes the game <strong>as built</strong>. Every number below is taken from the live build, not from intent.</div>
+  </div>
+</div>
+
+<!-- CORE LOOP -->
+<div id="core" class="tab-panel">
+  <div class="page">
+    <div class="eyebrow">Core loop</div>
+    <h1>The turn</h1>
+
+    <p>Players alternate turns. A full <strong>round</strong> is both players moving; the turn counter advances when control returns to the human player. On your turn you take <strong>one action</strong> — plus a free ability cast if it is off cooldown.</p>
+
+    <h2>Turn sequence</h2>
+    <ol>
+      <li><strong>Effects tick.</strong> Fire, venom and leaf walls age and deal their damage. Connectivity is recalculated immediately afterwards, so anything severed by an effect goes inactive at once.</li>
+      <li><strong>Cooldowns tick.</strong> Ability cooldown, Fortify shield, and Ghost cloak all count down.</li>
+      <li><strong>The Hive ticks.</strong> It wakes on schedule, spreads its wall, or counts down a capture surge.</li>
+      <li><strong>Production.</strong> Every connected producing tile adds soldiers.</li>
+      <li><strong>Your action.</strong> Move/Attack, Rally, or Travel — plus an optional ability.</li>
+    </ol>
+
+    <h2>The three actions</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Action</th><th>What it does</th><th>Rules</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Move / Attack</strong></td><td>Send a tile's garrison to an <em>adjacent</em> tile</td><td>Always leaves 1 soldier behind (5 on a tunnel mouth). Moving onto your own tile reinforces it; onto anything else, resolves as a capture or a fight.</td></tr>
+        <tr><td><strong>Rally</strong></td><td>Pull every spare soldier in the colony onto one chosen tile</td><td>Only connected tiles you own, and only <strong>captured</strong> tiles (stables/nest) — never a bare vein. Each source keeps its 1 (or 5) soldier floor.</td></tr>
+        <tr><td><strong>Travel</strong></td><td>Long-range send up to <strong>4 tiles</strong> through your own or empty ground</td><td>Lays a <strong>vein</strong> trail along the path, destination promotes to a stable. Blocked by enemy leaf walls, cloaked enemy tiles, wild garrisons and enemy territory.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>Production</h2>
+    <p>At the start of your turn every <strong>connected</strong> tile you own produces. Fractions accumulate on the tile and convert to whole soldiers as they cross 1.0, so slow economies still tick forward.</p>
+    <div class="tw"><table>
+      <thead><tr><th>Tile</th><th>Base output / turn</th></tr></thead>
+      <tbody>
+        <tr><td>Nest (your queen)</td><td>2</td></tr>
+        <tr><td>Stable (captured tile)</td><td>1</td></tr>
+        <tr><td>Resource stable</td><td>3 (+1 per Fungal Cultivation level, up to 6)</td></tr>
+        <tr><td>Vein (uncaptured trail)</td><td>0 — infrastructure only</td></tr>
+        <tr><td>Detached tile</td><td>0 — cut off from the queen</td></tr>
+      </tbody>
+    </table></div>
+    <p>Output is then multiplied by the species production rate, by any research, and — if you hold the Hive queen — by the Hive growth multiplier. The <strong>Brood Nursery</strong> anthill chamber adds a flat hatch of soldiers onto your nest each turn.</p>
+
+    <h2>Win conditions</h2>
+    <ul>
+      <li><strong>Queen fall (primary).</strong> Capture the enemy nest tile and you win immediately — no matter how many tiles they still hold. Losing your own nest loses you the match the same way.</li>
+      <li><strong>Wipe.</strong> A colony reduced to zero tiles is eliminated.</li>
+      <li><strong>Turn limit.</strong> If the limit is reached (32 / 45 / 80 by map), the larger colony is declared the winner — the fungus blooms and consumes the smaller one.</li>
+      <li><strong>Surrender.</strong> Available from the match HUD.</li>
+    </ul>
+
+    <div class="callout">
+      <p><strong>Victory presentation.</strong> On any result the winner's colony floods the <em>entire</em> board with the normal expansion animation — including rocks and the Hive, purely visually — all tile numbers are hidden, and then a <strong>Victory</strong> / <strong>Defeat</strong> modal pops over the board with the match recap.</p>
+    </div>
+  </div>
+</div>
+
+<!-- TILES & SUPPLY -->
+<div id="tiles" class="tab-panel">
+  <div class="page">
+    <div class="eyebrow">Tiles &amp; supply</div>
+    <h1>The board</h1>
+
+    <h2>Terrain</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Terrain</th><th>Behaviour</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Ground</strong></td><td>Standard, capturable, produces 1 when held.</td></tr>
+        <tr><td><strong>Resource</strong> ◆</td><td>Produces 3 when held (up to 6 with research). High-value objective; often defended by a wild garrison.</td></tr>
+        <tr><td><strong>Rock / blocked</strong></td><td>Impassable. Shapes lanes and chokepoints.</td></tr>
+        <tr><td><strong>Hive queen / guards</strong></td><td>The central objective. Never counts as "cut off" and cannot be pushed by abilities.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>Structures</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Structure</th><th>Produces</th><th>Defends</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Nest</strong></td><td>2/turn</td><td>+6 flat defence bonus</td><td>Your queen. One per colony. Losing it loses the match.</td></tr>
+        <tr><td><strong>Stable</strong></td><td>1/turn (3 on resource)</td><td>+1 (+2 on resource)</td><td>A properly captured tile. Holds troops, can be selected and moved from.</td></tr>
+        <tr><td><strong>Vein</strong></td><td>0</td><td><strong>None</strong></td><td>An uncaptured supply trail laid by Travel. Conducts connectivity but cannot fight.</td></tr>
+        <tr><td><strong>Tunnel mouth</strong></td><td>as its tile</td><td>as its tile</td><td>Ghost Ant gallery. Always connected, must always hold 5 workers.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>Veins — the supply rules</h2>
+    <p>Veins are the game's structural counterweight to expansion: they let you project far, but they are fragile.</p>
+    <ul>
+      <li><strong>Veins have no defence.</strong> Attacking an enemy vein captures it <em>instantly</em> — no combat roll, no losses, the attacker simply moves in and the tile becomes a stable.</li>
+      <li><strong>Dangling veins collapse.</strong> A vein needs at least two colony neighbours to survive. When it loses an anchor, the trail is destroyed back to the nearest captured tile. Junctions are preserved: only the genuinely dead branch prunes.</li>
+      <li><strong>Veins cannot receive troops</strong> from Rally or Fortify — they are not valid targets. Troops that <em>do</em> land on a vein (by Travel, or a Rally onto it) promote it to a stable.</li>
+      <li>Pruning runs after every action and after Flee, so trails never linger in an impossible state.</li>
+    </ul>
+    <div class="flag">Because veins are free to capture, cutting an enemy's supply line is a deliberate, cheap and powerful tactic — one soldier can collapse an entire overextended arm.</div>
+
+    <h2>Connectivity — anchored to the queen</h2>
+    <p>A tile is <strong>active</strong> only if a chain of your own tiles — captured tiles <em>or</em> veins — links it back to your nest. Anything detached from the queen goes inactive: <strong>it produces nothing and generates no income</strong>.</p>
+    <ul>
+      <li>Connectivity is recomputed after every action, after every ability, and immediately after effects tick — so venom or fire that destroys a connector deactivates everything behind it on the spot.</li>
+      <li><strong>Tunnel galleries are their own roots</strong> — they link back underground and can never be cut off.</li>
+      <li>Hive tiles are never considered cut off.</li>
+    </ul>
+
+    <h2>Wild garrisons</h2>
+    <p>Neutral defenders sit on valuable ground — especially resources. They must be defeated before the tile is taken, they gain a flat defence bonus, and they never regenerate: a failed attack leaves them weakened for the next attempt.</p>
+  </div>
+</div>
+
+<!-- COMBAT -->
+<div id="combat" class="tab-panel">
+  <div class="page">
+    <div class="eyebrow">Combat</div>
+    <h1>Deterministic resolution</h1>
+
+    <p>There is no randomness anywhere in combat. Both sides are reduced to a single power number and compared.</p>
+
+    <div class="callout green">
+      <p><strong>Attack power</strong> = committed soldiers × species attack × surge × research</p>
+      <p><strong>Defence power</strong> = defending soldiers × species defence × surge × research + <strong>flat defence bonus</strong></p>
+      <p>If attack &gt; defence, the attacker takes the tile. Otherwise the defender holds.</p>
+    </div>
+
+    <h2>Survivors</h2>
+    <ul>
+      <li><strong>Attacker wins:</strong> survivors = committed × (1 − defence/attack), minimum 1. A crushing attack keeps nearly everything; a narrow win arrives almost spent.</li>
+      <li><strong>Defender wins:</strong> survivors = defenders × (1 − attack/defence), minimum 1. The attacking force is destroyed entirely.</li>
+    </ul>
+    <p>The attacking tile always keeps its floor of 1 soldier (5 on a tunnel mouth) — you can never fully empty a tile.</p>
+
+    <h2>Flat defence bonuses</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Defender</th><th>Bonus</th></tr></thead>
+      <tbody>
+        <tr><td>Nest</td><td>+6</td></tr>
+        <tr><td>Stable</td><td>+1</td></tr>
+        <tr><td>Stable on a resource</td><td>+2</td></tr>
+        <tr><td>Wild garrison</td><td>+1</td></tr>
+        <tr><td>Vein</td><td><strong>0 — no defence at all</strong></td></tr>
+        <tr><td>Hive queen / guards</td><td>0 — they defend purely with their garrison</td></tr>
+      </tbody>
+    </table></div>
+    <p>The bonus is then multiplied by: <strong>Soldier Caste</strong> (+5% per level, nest only), <strong>Fortify</strong> (×1.7 while the shield is up), and <strong>leaf after-armour</strong> (×1.4 on a tile where a leaf wall has withered).</p>
+
+    <h2>Special resolutions</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Target</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Enemy vein</strong></td><td>Instant capture. No fight, no losses. Becomes your stable, and the enemy's now-dangling trail prunes.</td></tr>
+        <tr><td><strong>Empty ground / resource</strong></td><td>Claimed directly, promotes to a stable.</td></tr>
+        <tr><td><strong>Wild garrison</strong></td><td>Normal fight vs. the garrison. Win → tile taken with your survivors. Lose → garrison keeps its survivors (no regen).</td></tr>
+        <tr><td><strong>Enemy stable</strong></td><td>Normal fight. Win → tile becomes your stable with your survivors.</td></tr>
+        <tr><td><strong>Enemy nest</strong></td><td>Normal fight. Win → <strong>match ends immediately</strong>.</td></tr>
+        <tr><td><strong>Hive guard</strong></td><td>Fight vs. its garrison. Win → you hold it as a stable during the surge.</td></tr>
+        <tr><td><strong>Hive queen</strong></td><td>Fight vs. her garrison. Win → <strong>Queen capture</strong>: all 5 hive tiles become your held stables and the surge begins.</td></tr>
+        <tr><td><strong>Tunnel mouth (overrun)</strong></td><td>The gallery collapses; the tile becomes a normal stable.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>Worked example</h2>
+    <p>A Fire Ant stable holding 21 soldiers attacks an adjacent Leafcutter stable holding 8.</p>
+    <ul>
+      <li>Committed: 21 − 1 = <strong>20</strong>. Attack power = 20 × 0.86 = <strong>17.2</strong></li>
+      <li>Defence power = 8 × 1.25 + 1 = <strong>11.0</strong></li>
+      <li>17.2 &gt; 11.0 → attacker wins with round(20 × (1 − 11.0/17.2)) = <strong>7 survivors</strong></li>
+    </ul>
+    <p>The same attack will always produce exactly 7. Players can — and do — count it out before committing.</p>
+  </div>
+</div>
+
+<!-- ABILITIES -->
+<div id="abilities" class="tab-panel">
+  <div class="page">
+    <div class="eyebrow">Abilities</div>
+    <h1>One free cast, on cooldown</h1>
+    <p>Each species has exactly one ability. Casting is <strong>free</strong> — it does not consume your action, so a turn with an ability ready is a turn with two plays in it. Cooldowns run 5–6 turns and are reduced by 1 at max Exocrine reservoir research.</p>
+
+    <div class="tw"><table>
+      <thead><tr><th>Species</th><th>Ability</th><th>CD</th><th>Effect (as built)</th></tr></thead>
+      <tbody>
+        <tr><td>Ghost Ant</td><td><strong>Tunnelling</strong></td><td>5</td><td>Digs a gallery to a chosen empty tile anywhere on the field. The mouth is yours instantly with 5 workers, is <em>always connected</em> even if surrounded, and can be rallied to or expanded from. Costs the whole turn. Starts on cooldown.</td></tr>
+        <tr><td>Pharaoh Ant</td><td><strong>Bud</strong></td><td>6</td><td>Every tile holding 40+ troops buds a new colony onto an adjacent empty tile, free.</td></tr>
+        <tr><td>Leafcutter</td><td><strong>Fungal Garden</strong></td><td>6</td><td>Grows leaf walls on your borders — impassable to the enemy for 4 turns, then leave +40% defence on the tile. Research Lv 2–4 makes <strong>one wall per cast permanent</strong>, accumulating to a total of 1/2/3.</td></tr>
+        <tr><td>Fire Ant</td><td><strong>Wildfire</strong></td><td>6</td><td>Your borders ignite for 3 turns. Enemy tiles burning lose 30% per turn; garrisons of 5 or fewer are wiped out entirely. Your own fire also burns wild garrisons and the Hive. Detached tiles don't ignite.</td></tr>
+        <tr><td>Army Ant</td><td><strong>Feeding Swarm</strong></td><td>6</td><td>Enemy tiles bordering your colony <em>at cast time</em> lose <strong>15%</strong> of their troops, devoured into your adjacent tile. Snapshot-based: newly captured tiles do not chain into new targets. Bases immune.</td></tr>
+        <tr><td>Weaver Ant</td><td><strong>Spread</strong></td><td>5</td><td>Claims every empty tile you border on the enemy's half of the map.</td></tr>
+        <tr><td>Carpenter</td><td><strong>Fortify</strong></td><td>6</td><td>Every frontline <em>active</em> tile gains +12% garrison (veins excluded), and the whole colony defends at +70% for 3 turns.</td></tr>
+        <tr><td>Bullet Ant</td><td><strong>Venom Rain</strong></td><td>6</td><td>Venom scatters across the board. Enemy tiles caught lose troops each turn for 3 turns. Your tiles and both nests are immune.</td></tr>
+        <tr><td>Demon Ant</td><td><strong>Flee</strong></td><td>6</td><td>Every mobile enemy garrison within <strong>3 tiles</strong> flees directly away until beyond that reach; colliding tiles merge. <strong>Cannot push:</strong> veins, tunnels, resources, the Hive queen/guards, or blocked tiles — and it never breaks a vein.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>Tile effects</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Effect</th><th>Duration</th><th>Behaviour</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Fire</strong></td><td>3 turns</td><td>30% of the garrison per turn; ≤5 soldiers are executed outright and the tile goes neutral.</td></tr>
+        <tr><td><strong>Venom</strong></td><td>3 turns</td><td>Flat troop loss per turn; a tile drained to zero goes neutral. Can sever a colony — connectivity updates immediately.</td></tr>
+        <tr><td><strong>Leaf wall</strong></td><td>4 turns (or permanent)</td><td>Impassable to the enemy, blocks Travel pathing. On withering, leaves +40% defence armour on the tile.</td></tr>
+        <tr><td><strong>Cloak</strong> (Ghost trait)</td><td>while active</td><td>Your soldier counts are hidden from the enemy until contact.</td></tr>
+      </tbody>
+    </table></div>
+    <p>The <strong>Metapleural Gland</strong> anthill chamber reduces incoming fire, venom and Hive damage by 5% per level.</p>
+  </div>
+</div>
+
+<!-- HIVE -->
+<div id="hive" class="tab-panel">
+  <div class="page">
+    <div class="eyebrow">The Hive</div>
+    <h1>The infected queen</h1>
+    <p>A five-tile plus-shape at the centre of every map: a <strong>Queen</strong> and four <strong>guards</strong>. She is the map's shared objective and its clock.</p>
+
+    <h2>Phases</h2>
+    <ol>
+      <li><strong>Dormant.</strong> From turn 1 until the map's awaken turn. Defended <strong>1.5×</strong> harder than when awake — tough, but never impossible for an early all-in.</li>
+      <li><strong>Awake.</strong> The queen becomes the obvious prize. The hive <em>spreads a dividing wall</em> across the board, reshaping lanes as the match goes long.</li>
+      <li><strong>Captured (surge).</strong> The capturing colony holds all 5 tiles as stables and gains the surge for the buff duration.</li>
+      <li><strong>Respawn.</strong> When the surge ends the hive resets to neutral, clears its walls, and returns <strong>one level stronger</strong>.</li>
+    </ol>
+
+    <h2>Garrison strength</h2>
+    <p>Queen = 16 + 9 per hive level + 6 per growth step. Guards = 9 + 5 per hive level + 3 per growth step. A growth step occurs every 4 turns since waking, so <strong>the longer she is left alone, the harder she gets</strong> — and dormant multiplies it by 1.5.</p>
+
+    <h2>The surge reward</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Effect</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Production multiplier</td><td>× (hive level + 1) — ×2 on the first capture, ×3 on the second, and so on</td></tr>
+        <tr><td>Combat surge</td><td>+50% attack <em>and</em> defence for the whole colony</td></tr>
+        <tr><td>Duration</td><td>3 / 4 / 5 turns by map size</td></tr>
+        <tr><td>Territory</td><td>All 5 hive tiles held as your stables during the surge</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="callout amber">
+      <p><strong>Why it works.</strong> The Hive is a timed swing that both players can see coming. It punishes turtling (she only gets stronger), rewards timing (strike right after a growth step, not before), and each capture raises the stakes for the next — the escalating level makes late captures game-deciding.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SPECIES -->
+<div id="species" class="tab-panel">
+  <div class="page">
+    <div class="eyebrow">Species</div>
+    <h1>Nine colonies</h1>
+    <p>Every species is a stat triangle plus one ability. Values are exact multipliers applied in combat and production.</p>
+
+    <div class="tw"><table>
+      <thead><tr><th>Species</th><th>Atk</th><th>Def</th><th>Prod</th><th>Identity</th><th>Ability</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Ghost Ant</strong></td><td>1.21</td><td>1.09</td><td>1.00</td><td>Stealth over strength — soldier counts hidden until contact</td><td>Tunnelling</td></tr>
+        <tr><td><strong>Pharaoh Ant</strong></td><td>0.99</td><td>1.12</td><td><strong>1.25</strong></td><td>The supercolony — budding, costless expansion</td><td>Bud</td></tr>
+        <tr><td><strong>Leafcutter</strong></td><td>1.13</td><td><strong>1.25</strong></td><td>1.15</td><td>Economic powerhouse that terraforms the field</td><td>Fungal Garden</td></tr>
+        <tr><td><strong>Fire Ant</strong></td><td>0.86</td><td>0.87</td><td>1.05</td><td>Balanced territorial scorched-earth defender</td><td>Wildfire</td></tr>
+        <tr><td><strong>Army Ant</strong></td><td>1.10</td><td>0.79</td><td>0.95</td><td>Nomadic raider — a devouring column</td><td>Feeding Swarm</td></tr>
+        <tr><td><strong>Weaver Ant</strong></td><td>1.07</td><td>1.04</td><td>1.00</td><td>The expansionist — many fronts at once</td><td>Spread</td></tr>
+        <tr><td><strong>Carpenter</strong></td><td>0.91</td><td>1.06</td><td>1.05</td><td>The fortress — a nightmare to dislodge</td><td>Fortify</td></tr>
+        <tr><td><strong>Bullet Ant</strong></td><td><strong>1.22</strong></td><td>0.84</td><td><strong>0.70</strong></td><td>Glass cannon — devastating per unit, starving economy</td><td>Venom Rain</td></tr>
+        <tr><td><strong>Demon Ant</strong> <span class="badge new">premium</span></td><td>1.09</td><td>1.00</td><td>0.95</td><td>Sacrifices her own for power — terror pheromone</td><td>Flee</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="flag">The spread is intentionally narrow (0.70–1.25). Species change <em>how</em> you win, not how much you win — a 20% edge is a real advantage but never an auto-win against good play.</div>
+
+    <h2>Per-species research</h2>
+    <p>Each species levels three independent tracks, paid with Pheromone dust. Research applies only to that species, so investment is a commitment.</p>
+    <div class="tw"><table>
+      <thead><tr><th>Track</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td>⚗️ <strong>Exocrine reservoir</strong></td><td>Ability potency (+6% per level); −1 turn cooldown at max. <strong>Leafcutter only:</strong> Lv 2–4 grant one permanent leaf wall per cast, totalling 1/2/3.</td></tr>
+        <tr><td>⚔️ <strong>Mandible muscle</strong></td><td>+5% attack per level</td></tr>
+        <tr><td>🛡️ <strong>Sclerotised cuticle</strong></td><td>+5% defence per level</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>Cosmetics</h2>
+    <p>Each species has skins (and in some cases themed anthills) unlocked through the Antarium, the shop, or the Lucky Hatch. Cosmetics never affect stats.</p>
+  </div>
+</div>
+
+<!-- MATCH FLOW -->
+<div id="match" class="tab-panel">
+  <div class="page">
+    <div class="eyebrow">Match flow</div>
+    <h1>From tap to victory</h1>
+
+    <h2>Pre-match</h2>
+    <ol>
+      <li><strong>PLAY</strong> from the home screen.</li>
+      <li><strong>Map select</strong> — Skirmish 7×7, Corridor 9×9, or Gauntlet 13×13.</li>
+      <li><strong>Species select</strong> — any unlocked colony; the picker always opens on your first species.</li>
+      <li><strong>Starting formation</strong> — choose from 12 five-tile shapes (Wedge, Line, Hook, Arrow, Zigzag, Column, Corner, Tower, Fan, Step, Claw, Spire).</li>
+    </ol>
+
+    <h2>Starting position</h2>
+    <p>Both colonies start with <strong>exactly 5 tiles</strong>: a nest holding 10 soldiers (+1 per Royal Chamber level) and four stables holding 3 each, arranged in the chosen shape and mirrored for the opponent. Maps also seed resources, wild garrisons and rock blockers symmetrically.</p>
+
+    <h2>In-match HUD</h2>
+    <ul>
+      <li><strong>Top bar:</strong> your army &amp; income, enemy army &amp; income, Hive countdown/state.</li>
+      <li><strong>Turn banner:</strong> whose turn, and the turn number.</li>
+      <li><strong>Action bar:</strong> Move/Attack · Rally · Ability (shows ready state and cooldown) · End turn.</li>
+      <li><strong>Surrender</strong> below the action bar.</li>
+      <li>Tile numbers show garrison size; selecting a tile highlights every legal target.</li>
+    </ul>
+
+    <h2>End of match</h2>
+    <p>The winner's colony floods the entire board using the expansion animation (~1.3 s), tile numbers are suppressed, then the <strong>Victory / Defeat</strong> modal appears with a recap: turns played, final armies, species used, and XP earned. From there: Play again, change species, or return home.</p>
+
+    <h2>Rewards on completion</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Result</th><th>Mycel</th><th>Larva</th><th>Trophies</th><th>XP</th></tr></thead>
+      <tbody>
+        <tr><td>Win</td><td>+25</td><td>+1</td><td><strong>+30</strong></td><td>90 + up to 30 for length</td></tr>
+        <tr><td>Loss</td><td>+8</td><td>—</td><td><strong>−15</strong> (floored at 0)</td><td>35 + up to 30 for length</td></tr>
+      </tbody>
+    </table></div>
+    <p>Matches also advance daily quests, win streaks, and lifetime stats (tiles conquered, abilities used, tunnels dug, best streak).</p>
+  </div>
+</div>
+
+<!-- MAPS -->
+<div id="maps" class="tab-panel">
+  <div class="page">
+    <div class="eyebrow">Maps</div>
+    <h1>Three boards</h1>
+
+    <div class="tw"><table>
+      <thead><tr><th>Map</th><th>Grid</th><th>Hive wakes</th><th>Turn limit</th><th>Surge length</th><th>Feel</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Skirmish</strong></td><td>7×7</td><td>Turn 10</td><td>32</td><td>3 turns</td><td>Knife fight. Contact almost immediately, the Hive is always relevant.</td></tr>
+        <tr><td><strong>Corridor</strong></td><td>9×9</td><td>Turn 14</td><td>45</td><td>4 turns</td><td>The default duel — room for one economic decision before the fighting.</td></tr>
+        <tr><td><strong>Gauntlet</strong></td><td>13×13</td><td>Turn 18</td><td>80</td><td>5 turns</td><td>Full strategic game: real economy, long supply lines, multiple fronts.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>Layout rules</h2>
+    <ul>
+      <li>The Hive plus-shape always occupies the exact centre.</li>
+      <li>Resources are placed symmetrically, most of them behind a wild garrison.</li>
+      <li>Rock blockers create lanes and chokepoints, and are laid down mirror-symmetrically.</li>
+      <li>Starting positions are opposite and mirrored, so neither colony has a geometric edge.</li>
+    </ul>
+
+    <h2>Long-range reach</h2>
+    <p>Travel reach is <strong>4 tiles</strong> on every map, so relative distance — and therefore the value of a vein network — grows with the board.</p>
+  </div>
+</div>
+
+<!-- AI -->
+<div id="ai" class="tab-panel">
+  <div class="page">
+    <div class="eyebrow">Enemy AI</div>
+    <h1>A searching opponent</h1>
+    <p>The AI is not a scripted bot. Because combat is fully deterministic, it can <strong>simulate the future exactly</strong> — so it plays by lookahead search on a cloned board.</p>
+
+    <h2>Decision order each turn</h2>
+    <ol>
+      <li><strong>Ability</strong> — casts when its situational heuristic says it pays (e.g. Wildfire when it can execute weak tiles, Feeding Swarm when there is enough adjacent food).</li>
+      <li><strong>Nest defence (highest priority).</strong> Losing the nest is instant defeat, so if a threatening stack is within 2 tiles it counter-kills, reinforces from a neighbour, or rallies home before doing anything offensive.</li>
+      <li><strong>Critical vein defence.</strong> If the player is adjacent to a vein whose loss would disconnect the colony, it garrisons that vein (promoting it to a defended stable).</li>
+      <li><strong>Lookahead search</strong> for the main move (see below).</li>
+      <li><strong>Massing</strong> — if no move gains ground, it concentrates a strike force to break through next turn.</li>
+    </ol>
+
+    <h2>The search</h2>
+    <ul>
+      <li><strong>Negamax</strong> over a snapshot/restore of the full board state — grid, connectivity, effects, hive, cooldowns.</li>
+      <li>Expands the <strong>top ~6 candidate moves</strong> per side per ply, keeping it fast.</li>
+      <li><strong>Evaluation</strong> weighs: connected territory, total army, income, resource count, pressure on the enemy nest, threats against its own nest, and how close its army has pushed toward the enemy queen.</li>
+      <li>Simulation is silent — no animations, no toasts, no profile writes.</li>
+    </ul>
+
+    <h2>Difficulty = search depth</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Difficulty</th><th>Depth</th><th>Behaviour</th></tr></thead>
+      <tbody>
+        <tr><td>Easy</td><td>1 ply</td><td>Greedy heuristic with jitter and occasional blunders.</td></tr>
+        <tr><td><strong>Normal</strong> (default)</td><td>2 ply</td><td>Sees your reply — stops walking into punished trades.</td></tr>
+        <tr><td>Hard</td><td>3 ply</td><td>Sees its own follow-up: sets up breakthroughs and combines forces.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>Measured behaviour</h2>
+    <ul>
+      <li>Against an identical greedy opponent: 1-ply won 3/5 with 2 stalls; <strong>2-ply and 3-ply won 5/5 with no stalls</strong>.</li>
+      <li>Takes lethal nest captures immediately; declines bait it cannot hold.</li>
+      <li>Values a defended resource highly (3× income pays the attack back in ~2 turns) and takes them reliably.</li>
+      <li>Slices undefended enemy veins to collapse supply lines, and tunnels toward the player's nest for a beachhead.</li>
+      <li><strong>Performance:</strong> ~18–37 ms per turn even at Hard on the 13×13 board.</li>
+    </ul>
+    <div class="flag">The AI has no anthill upgrades and no research — it competes purely on decision quality, so player progression is never invalidated by the opponent scaling with it.</div>
+  </div>
+</div>
+
+<!-- META & ECONOMY -->
+<div id="meta" class="tab-panel">
+  <div class="page">
+    <div class="eyebrow">Meta &amp; economy</div>
+    <h1>Between matches</h1>
+
+    <h2>Currencies</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Currency</th><th>Earned from</th><th>Spent on</th></tr></thead>
+      <tbody>
+        <tr><td>🏆 <strong>Trophies</strong></td><td>+30 win / −15 loss</td><td>Not spent — they are the ladder and drive the Trophy Road</td></tr>
+        <tr><td>🍄 <strong>Mycel</strong></td><td>Matches, quests, road rewards, shop</td><td>Anthill chambers, unlocks</td></tr>
+        <tr><td>🧪 <strong>Pheromone dust</strong></td><td>Quests, road rewards, shop</td><td>Per-species research tracks</td></tr>
+        <tr><td>🥚 <strong>Larva</strong></td><td>Wins, quests, road rewards</td><td>Lucky Hatch pulls, cosmetics</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>The Anthill — colony-wide upgrades</h2>
+    <p>Bought with Mycel. Cost scales as <strong>60 + 55 × current level</strong>. These apply to the player only.</p>
+    <div class="tw"><table>
+      <thead><tr><th>Chamber</th><th>Max</th><th>Effect per level</th></tr></thead>
+      <tbody>
+        <tr><td>👑 <strong>Royal Chamber</strong></td><td>5</td><td>+1 soldier in your nest at match start</td></tr>
+        <tr><td>🥚 <strong>Brood Nursery</strong></td><td>5</td><td>Your nest hatches +1 soldier per turn</td></tr>
+        <tr><td>⚔️ <strong>Soldier Caste</strong></td><td>5</td><td>+5% defence on your nest tile</td></tr>
+        <tr><td>🧪 <strong>Metapleural Gland</strong></td><td>5</td><td>−5% damage from venom, fire and the Hive</td></tr>
+        <tr><td>🌱 <strong>Fungal Cultivation</strong></td><td><strong>3</strong></td><td>+1 production on <em>every</em> resource tile you hold (3 → 6 at max)</td></tr>
+      </tbody>
+    </table></div>
+    <div class="flag">Deliberately modest. The strongest chamber is the economic one, and even that caps at doubling resource output — no upgrade converts into a direct combat win.</div>
+
+    <h2>Player level &amp; XP</h2>
+    <p>XP comes from every match (90 win / 35 loss, plus up to 30 for length) and from quests. Level requirement grows as <em>80 + 45×(L−1) + 8×(L−1)^1.6</em>. Levels award milestone rewards; the level itself is displayed on the profile screen.</p>
+
+    <h2>Daily quests</h2>
+    <p>A rotating daily set drawn from a pool — play N matches, win N matches, conquer N tiles, use N abilities — each paying XP plus a currency reward, with a daily streak tracked on the profile.</p>
+
+    <h2>Antarium &amp; Lucky Hatch</h2>
+    <ul>
+      <li><strong>Antarium</strong> — the collection screen: browse every species, view stats and lore, manage skins, and enter each species' research and customisation.</li>
+      <li><strong>Lucky Hatch</strong> — spend Larva to pull from a rarity-tiered cosmetic pool (skins, trails, crests) across common/rare/epic tiers.</li>
+      <li><strong>Shop</strong> — currency bundles, a daily free gift and a daily spin, plus species unlocks.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- TROPHY ROAD -->
+<div id="trophy" class="tab-panel">
+  <div class="page">
+    <div class="eyebrow">Trophy Road</div>
+    <h1>The long progression spine</h1>
+    <p>Trophies are the single ladder metric: <strong>+30 per win, −15 per loss</strong>, floored at zero. They feed a 50-chapter reward road presented as a battle pass.</p>
+
+    <h2>Structure</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Element</th><th>Cadence</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Chapter</strong></td><td>Every 500 trophies — 50 chapters total (25,000 trophies)</td></tr>
+        <tr><td><strong>Free reward</strong></td><td>Every 500 trophies (right side of the track)</td></tr>
+        <tr><td><strong>Pass reward</strong></td><td>Every 250 trophies (left side, requires the Pass)</td></tr>
+        <tr><td><strong>Progress node</strong></td><td>Every 250 trophies along the centre line</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>Presentation</h2>
+    <ul>
+      <li>A continuous <strong>central progress line</strong> runs the length of the road, filling orange through everything you have reached and passing straight through the chapter headers so it reads as one unbroken track.</li>
+      <li><strong>Pass rewards left, free rewards right</strong>, with claim buttons that light up on reached tiers.</li>
+      <li>Every chapter has its own <strong>themed background colour</strong>, with the bands butted together seamlessly.</li>
+      <li>Chapter 1 sits at the <strong>bottom</strong> and the road climbs upward; the screen opens scrolled to the bottom, where the trophy count and <strong>Get Pass</strong> CTA sit.</li>
+      <li>A full-width <strong>progress bar under the top bar on Home</strong> shows trophies toward the next reward with the reward's icon, and taps through to the road.</li>
+    </ul>
+
+    <h2>Rewards</h2>
+    <p>Free tiers alternate between large Mycel grants and Larva bundles. Pass tiers are richer and twice as frequent, mixing Larva, Mycel and combined jackpots at every fourth tier.</p>
+    <div class="callout amber">
+      <p><strong>Implementation note.</strong> "Get Pass" is currently a demo unlock — it grants the pass instantly. It is the single integration point for a real IAP, alongside the shop's purchase stubs.</p>
+    </div>
+  </div>
+</div>
+
+<!-- CHALLENGES -->
+<div id="challenges" class="tab-panel">
+  <div class="page">
+    <div class="eyebrow">Challenges</div>
+    <h1>Curated positions</h1>
+    <p>A ladder of fixed scenarios — set map, set species, set starting shape, set objective — that teach the game's tactics by forcing them.</p>
+
+    <div class="tw"><table>
+      <thead><tr><th>#</th><th>Challenge</th><th>Setup</th><th>Objective</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><strong>First Blood</strong></td><td>Corridor · Fire Ant · Wedge</td><td>Strike the enemy before they strike you</td></tr>
+        <tr><td>2</td><td><strong>Hold the Line</strong></td><td>Corridor · Weaver Ant · Line</td><td>Survive the early swarm, then wipe them out</td></tr>
+        <tr><td>3</td><td><strong>Hive Siege</strong></td><td>Gauntlet · Army Ant · Arrow</td><td>Break the wall and destroy the enemy colony</td></tr>
+        <tr><td>4</td><td><strong>Outnumbered</strong></td><td>Gauntlet · Bullet Ant · Column</td><td>Claw back a win from the corner</td></tr>
+        <tr><td>5</td><td><strong>Ghost Protocol</strong></td><td>Ghost Ant</td><td>Win using tunnels and stealth</td></tr>
+      </tbody>
+    </table></div>
+
+    <p>Each challenge tracks completion and pays a one-time reward. They double as the game's tutorial layer: rather than a scripted walkthrough, each position makes one mechanic — aggression, defence, siege, comeback, stealth — the only viable path.</p>
+  </div>
+</div>
+
+<!-- UI/UX -->
+<div id="ui" class="tab-panel">
+  <div class="page">
+    <div class="eyebrow">UI / UX</div>
+    <h1>Built for one thumb</h1>
+
+    <h2>Navigation</h2>
+    <ul>
+      <li><strong>Five main tabs</strong> in a fixed bottom bar: Shop · Anthill · <strong>Home</strong> · Antarium · Challenges.</li>
+      <li>The bar is a <strong>single static element</strong> outside the sliding screens — it never moves during transitions and always sits above the content.</li>
+      <li><strong>Carousel swipe</strong> between tabs: screens track your finger, the neighbouring screen slides in alongside, and it snaps to the nearest on release. Vertical drags are ignored so scrolling still works; the ends rubber-band without wrapping.</li>
+    </ul>
+
+    <h2>Top bar</h2>
+    <p>Profile avatar on the left, then the three currencies filling the width — 🏆 trophies, 🍄 mycel, 🧪 pheromone. Each pill places its icon flush left, the value centred, and a <strong>+</strong> shortcut to the shop flush right. Directly beneath sits the full-width Trophy Road progress bar.</p>
+
+    <h2>Home</h2>
+    <p>Deliberately sparse: the PLAY button anchored low, with floating <strong>Menu</strong> and <strong>Daily</strong> buttons stacked at the right edge just under the top bar (identical box sizes, dark blue and gold respectively).</p>
+
+    <h2>Board rendering</h2>
+    <ul>
+      <li>A <strong>static straight-line grid</strong> defines the playing field — no rounded cells, no per-tile decoration on empty ground.</li>
+      <li><strong>Captured tiles</strong> fill their cell completely at full opacity, edge to edge with no gaps, and <strong>fuse with captured neighbours</strong> — only outer corners round, so a colony reads as one continuous mass.</li>
+      <li><strong>Veins</strong> draw as thin (20% cell) sharp-cornered bars with a half-bar toward each connected neighbour, so they render correctly as straight runs, L-corners (50% in from where the colony came, 50% out toward where it goes), T-branches and crosses.</li>
+      <li>Captures animate as a directional fill wipe; long Travels flow along the whole path as a single front.</li>
+    </ul>
+
+    <h2>Accessibility &amp; feel</h2>
+    <ul>
+      <li>Reduced-motion support skips animations without changing outcomes.</li>
+      <li>Tile numbers are always legible over faction colour; selection highlights every legal target before you commit.</li>
+      <li>All destructive or irreversible actions (surrender, end turn with an unused ability) are explicit taps, never gestures.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- TECH -->
+<div id="tech" class="tab-panel">
+  <div class="page">
+    <div class="eyebrow">Tech</div>
+    <h1>Architecture</h1>
+
+    <h2>Shape of the build</h2>
+    <ul>
+      <li><strong>Single-file HTML5</strong> — markup, CSS and all game logic in one document. No build step, no dependencies, no install.</li>
+      <li>Rendering via <strong>Canvas 2D</strong> for the board; the entire meta-game is DOM and CSS.</li>
+      <li>Persistence in <strong>localStorage</strong> under one profile object (currencies, unlocks, research, anthill, quests, trophies, claimed rewards, stats).</li>
+      <li>Hosted as a static page (GitHub Pages); installable to the home screen as a PWA-style app.</li>
+    </ul>
+
+    <h2>Core model</h2>
+    <p>The board is a 2D grid of tile objects — owner, structure, terrain, soldiers, guard, tunnel flag, effect markers. All rules are pure functions over that grid: <em>fight</em>, <em>connFrom</em>, <em>incomeOf</em>, <em>pruneVeins</em>, <em>actImpl</em>. Because they are deterministic and side-effect-light, the same functions power both the live game and the AI's simulated futures.</p>
+
+    <h2>Why determinism matters technically</h2>
+    <div class="callout green">
+      <p>No RNG in combat means the AI's snapshot → simulate → restore loop reproduces the real game exactly. It also means matches are fully reproducible from a seed and a move list — which is what makes server-authoritative multiplayer straightforward later: the server can replay and verify any client's match.</p>
+    </div>
+
+    <h2>Performance</h2>
+    <p>AI turns resolve in ~18–37 ms at maximum depth on the largest board. Rendering is a single canvas pass with animation state held outside the game model, so the simulation never touches the view layer.</p>
+  </div>
+</div>
+
+<!-- ROADMAP -->
+<div id="future" class="tab-panel">
+  <div class="page">
+    <div class="eyebrow">Roadmap</div>
+    <h1>What is built, and what is next</h1>
+
+    <h2>Built and playable</h2>
+    <ul>
+      <li>Complete match loop across three maps with all win conditions</li>
+      <li>Nine species with distinct stats, traits and abilities</li>
+      <li>The Hive: dormant/awake/surge/respawn with escalating levels</li>
+      <li>Vein supply network with pruning and queen-anchored connectivity</li>
+      <li>Lookahead AI with three difficulty depths</li>
+      <li>Anthill chambers, per-species research, Antarium, Lucky Hatch, shop</li>
+      <li>Trophy Road (50 chapters, free + pass tracks), daily quests, challenges</li>
+      <li>Full mobile UI: fixed bottom nav, carousel navigation, victory flood and recap</li>
+    </ul>
+
+    <h2>Next</h2>
+    <ol>
+      <li><strong>Human playtesting &amp; balance.</strong> Current tuning is AI-vs-AI verified; species win rates need real players before any number is considered final.</li>
+      <li><strong>Real IAP.</strong> Replace the demo Get Pass and shop grants with a single purchase pipeline.</li>
+      <li><strong>Campaign.</strong> A longer authored ladder of positions and boss encounters against tuned AI.</li>
+      <li><strong>Alpha-beta pruning</strong> to push the AI to 4-ply at the same speed.</li>
+    </ol>
+
+    <h2>Later — server-backed features</h2>
+    <ul>
+      <li><strong>Asynchronous PvP</strong> — turn-based by nature, so matches can be played over hours without holding a connection.</li>
+      <li><strong>Ranked ladder and leagues</strong> built on the existing trophy metric.</li>
+      <li><strong>Seasons</strong> — the Trophy Road already has the shape of a seasonal pass; add reset and rotating rewards.</li>
+      <li><strong>Leaderboards, friends and replays</strong> — replays come cheaply thanks to determinism.</li>
+    </ul>
+
+    <div class="flag">Everything so far is intentionally server-optional: the game is complete and satisfying offline, and every online feature is additive rather than load-bearing.</div>
+  </div>
+</div>
+<script>
+function SM(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  var target = document.getElementById(id);
+  if (target) { target.classList.add('active'); }
+  var sel = document.querySelector('.tab-select');
+  if (sel) { sel.value = id; }
+}
+function S(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (btn) { btn.classList.add('active'); }
+  var sel = document.querySelector('.tab-select');
+  if (sel) { sel.value = id; }
+}
+(function(){
+  var d = new Date();
+  var now = d.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+  if (document.getElementById('ts')) document.getElementById('ts').textContent = now;
+  if (document.getElementById('ts2')) document.getElementById('ts2').textContent = now;
+})();
+</script>
+
+</body>
+</html>
