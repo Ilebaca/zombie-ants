@@ -3,6 +3,8 @@ export { BoardRenderer } from "./renderer";
 export type { RendererOptions } from "./renderer";
 export { Layout } from "./layout";
 export { animate, sourceOf } from "./animate";
-export { antGlyph, antSkinOverlay, nestArt, basicLook, looksFor, RACE_SKINS } from "./art";
+export {
+  antGlyph, antSkinOverlay, antHead, antHeadSkin, nestArt, basicLook, looksFor, RACE_SKINS,
+} from "./art";
 export type { Look, HillStyle, SkinStyle } from "./art";
 export { COL, MAP, SPECIES_COL, hexA, loadColors, ownerCol, setFactionColor } from "./palette";

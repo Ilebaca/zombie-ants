@@ -166,6 +166,168 @@ export function antSkinOverlay(
   g.restore();
 }
 
+/**
+ * Front-view ant head, drawn on a 100-unit grid and scaled to `S`.
+ *
+ * Anatomically keyed: shield-shaped capsule, compound eyes, three ocelli, geniculate
+ * (elbowed) antennae — the feature that actually distinguishes ants — and toothed mandibles.
+ * Scales cleanly from 40px chips to 160px hero art.
+ *
+ * `pal` is a species triple: [line, body, dark].
+ */
+export function antHead(
+  g: CanvasRenderingContext2D,
+  X: number, Y: number, S: number,
+  pal: readonly [string, string, string],
+  look?: Look,
+): void {
+  const style = look?.style ?? null;
+  const body = style === "lava" ? "#6d1608" : pal[1];
+  const dark = pal[2] || "#12202e";
+  const line = pal[0];
+
+  g.save();
+  g.translate(X, Y);
+  g.scale(S / 100, S / 100);
+
+  // antennae: scape angles up-out, funiculus elbows down to a clubbed tip
+  g.strokeStyle = line; g.lineWidth = 8; g.lineCap = "round"; g.lineJoin = "round";
+  for (const d of [-1, 1]) {
+    g.beginPath(); g.moveTo(d * 20, -30); g.lineTo(d * 54, -62); g.lineTo(d * 78, -24); g.stroke();
+    g.fillStyle = line;
+    g.beginPath(); g.ellipse(d * 79, -16, 8, 11, d * 0.35, 0, TAU); g.fill();
+  }
+
+  // mandibles: curved, toothed blades crossing below the clypeus
+  g.fillStyle = dark; g.strokeStyle = dark; g.lineWidth = 3; g.lineJoin = "round";
+  for (const d of [-1, 1]) {
+    g.beginPath();
+    g.moveTo(d * 40, 26);
+    g.quadraticCurveTo(d * 52, 58, d * 8, 72);
+    g.lineTo(d * 14, 60); g.lineTo(d * 26, 56); g.lineTo(d * 30, 44);
+    g.quadraticCurveTo(d * 34, 36, d * 28, 26);
+    g.closePath(); g.fill(); g.stroke();
+  }
+
+  // head capsule
+  g.fillStyle = body;
+  g.beginPath();
+  g.moveTo(0, -56);
+  g.bezierCurveTo(34, -58, 56, -40, 57, -8);
+  g.bezierCurveTo(58, 22, 38, 40, 0, 42);
+  g.bezierCurveTo(-38, 40, -58, 22, -57, -8);
+  g.bezierCurveTo(-56, -40, -34, -58, 0, -56);
+  g.closePath(); g.fill();
+  g.strokeStyle = dark; g.lineWidth = 5; g.stroke();
+
+  g.save(); g.clip();                                  // top highlight, for volume
+  g.fillStyle = "rgba(255,255,255,0.16)";
+  g.beginPath(); g.ellipse(0, -42, 42, 20, 0, 0, TAU); g.fill();
+  g.restore();
+
+  g.fillStyle = dark; g.globalAlpha = 0.35;            // clypeus plate above the mandibles
+  g.beginPath(); g.ellipse(0, 26, 24, 11, 0, 0, TAU); g.fill();
+  g.globalAlpha = 1;
+
+  for (const d of [-1, 1]) {                           // compound eyes + specular dot
+    g.fillStyle = dark;
+    g.beginPath(); g.ellipse(d * 33, -12, 15, 20, d * 0.30, 0, TAU); g.fill();
+    g.fillStyle = "rgba(255,255,255,0.92)";
+    g.beginPath(); g.ellipse(d * 29, -20, 4.5, 6, d * 0.30, 0, TAU); g.fill();
+  }
+
+  g.fillStyle = "rgba(255,255,255,0.55)";              // three ocelli on the vertex
+  for (const [px, py] of [[0, -48], [-11, -42], [11, -42]] as const) {
+    g.beginPath(); g.arc(px, py, 3.4, 0, TAU); g.fill();
+  }
+
+  if (style) antHeadSkin(g, style, dark);
+  g.restore();
+}
+
+/** Cosmetic overlay for the head art. Drawn inside antHead's 100-unit transform. */
+export function antHeadSkin(g: CanvasRenderingContext2D, style: SkinStyle, dark: string): void {
+  if (!style) return;
+  g.save();
+
+  if (style === "lava") {
+    g.strokeStyle = "#ff7a2a"; g.lineWidth = 5; g.lineCap = "round";
+    g.shadowColor = "#ff5a10"; g.shadowBlur = 14;
+    g.beginPath();
+    g.moveTo(-30, -34); g.lineTo(-12, -16); g.lineTo(-20, 6);
+    g.moveTo(16, -40); g.lineTo(8, -14); g.lineTo(24, 4);
+    g.moveTo(-6, 10); g.lineTo(6, 24);
+    g.stroke(); g.shadowBlur = 0;
+    g.fillStyle = "#ffcf5a"; g.beginPath(); g.arc(-12, -16, 4, 0, TAU); g.fill();
+
+  } else if (style === "leaves") {                     // a cut leaf gripped in the mandibles
+    g.save(); g.translate(0, 70); g.rotate(-0.20);
+    g.fillStyle = "#4fbf5a"; g.beginPath(); g.ellipse(0, 0, 52, 22, 0, 0, TAU); g.fill();
+    g.strokeStyle = "#2f7c37"; g.lineWidth = 5;
+    g.beginPath(); g.moveTo(-52, 0); g.lineTo(52, 0); g.stroke();
+    g.lineWidth = 3;
+    for (let i = -3; i <= 3; i++) {
+      g.beginPath();
+      g.moveTo(i * 13, 0); g.lineTo(i * 13 + 7, -13);
+      g.moveTo(i * 13, 0); g.lineTo(i * 13 + 7, 13);
+      g.stroke();
+    }
+    g.restore();
+
+  } else if (style === "ghost") {                      // sheet draped over the head
+    g.fillStyle = "rgba(238,246,255,0.95)";
+    g.beginPath();
+    g.moveTo(-62, 44); g.lineTo(-62, -16);
+    g.quadraticCurveTo(0, -96, 62, -16);
+    g.lineTo(62, 44);
+    for (let i = 0; i < 4; i++) {
+      const x0 = 62 - i * 31, x1 = x0 - 15.5, x2 = x0 - 31;
+      g.quadraticCurveTo(x1, i % 2 ? 66 : 26, x2, 44);
+    }
+    g.closePath(); g.fill();
+    g.fillStyle = "rgba(10,16,26,0.92)";
+    g.beginPath(); g.ellipse(-20, -8, 11, 15, 0, 0, TAU); g.fill();
+    g.beginPath(); g.ellipse(20, -8, 11, 15, 0, 0, TAU); g.fill();
+
+  } else if (style === "glyph") {                      // carved marks across the head plate
+    g.strokeStyle = "rgba(20,14,4,0.9)"; g.fillStyle = "rgba(20,14,4,0.9)";
+    g.lineWidth = 4; g.lineCap = "round";
+    g.beginPath(); g.arc(0, -6, 8, 0, TAU); g.stroke();
+    g.beginPath(); g.moveTo(-14, -6); g.lineTo(-4, -6); g.moveTo(4, -6); g.lineTo(14, -6); g.stroke();
+    g.fillRect(-3, 6, 6, 20);
+    g.beginPath(); g.moveTo(-12, 30); g.lineTo(12, 30); g.stroke();
+    g.beginPath(); g.moveTo(-16, -30); g.lineTo(-6, -38); g.moveTo(16, -30); g.lineTo(6, -38); g.stroke();
+
+  } else if (style === "camo") {
+    const P = ["rgba(72,88,46,0.92)", "rgba(122,132,74,0.9)", "rgba(46,56,34,0.92)"];
+    const blobs: ReadonlyArray<readonly [number, number, number]> = [
+      [-22, -30, 17], [14, -36, 14], [-8, 4, 15], [26, 10, 12], [-30, 14, 11],
+    ];
+    blobs.forEach((b, i) => {
+      g.fillStyle = P[i % 3] as string;
+      g.beginPath(); g.ellipse(b[0], b[1], b[2], b[2] * 0.76, i * 0.9, 0, TAU); g.fill();
+    });
+
+  } else if (style === "devil") {                      // horns from the vertex + a hard brow
+    g.fillStyle = "#c8332a"; g.strokeStyle = "#7e1a16"; g.lineWidth = 3;
+    for (const d of [-1, 1]) {
+      g.beginPath();
+      g.moveTo(d * 26, -48);
+      g.quadraticCurveTo(d * 62, -78, d * 44, -102);
+      g.quadraticCurveTo(d * 54, -72, d * 12, -52);
+      g.closePath(); g.fill(); g.stroke();
+    }
+    g.strokeStyle = "#8e1d16"; g.lineWidth = 7; g.lineCap = "round";
+    g.beginPath();
+    g.moveTo(-44, -30); g.lineTo(-16, -20);
+    g.moveTo(44, -30); g.lineTo(16, -20);
+    g.stroke();
+  }
+
+  void dark;
+  g.restore();
+}
+
 /** The nest illustration. Only a colony's base carries one. */
 export function nestArt(
   g: CanvasRenderingContext2D, x: number, y: number, s: number, hill: HillStyle, colour: string,
