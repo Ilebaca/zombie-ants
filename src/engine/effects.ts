@@ -1,4 +1,4 @@
-import { otherPlayer, tileAt } from "./board";
+import { isHiveTerrain, otherPlayer, tileAt } from "./board";
 import { recomputeConnectivity } from "./connectivity";
 import { PERMANENT } from "./types";
 import type { EngineEvent, GameState, Player, PlayerMods, TileEffect } from "./types";
@@ -46,6 +46,21 @@ export function tickEffects(
       }
     }
 
+    // Your OWN fire still burns what isn't yours: wild garrisons and the hive. Without this,
+    // Wildfire would be purely anti-player and could never soften the hive for a run at it.
+    if (e.kind === "fire" && e.owner === p) {
+      if (isHiveTerrain(t) && t.soldiers > 0) {
+        const lost = Math.max(2, Math.round(t.soldiers * 0.30));
+        const before = t.soldiers;
+        t.soldiers = Math.max(0, t.soldiers - lost);
+        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "fire", lost: before - t.soldiers, wiped: false });
+      } else if (t.owner === null && t.guard > 0) {
+        const before = t.guard;
+        t.guard = Math.max(0, Math.round(t.guard * 0.70));
+        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "fire", lost: before - t.guard, wiped: false });
+      }
+    }
+
     if (e.kind === "venom" && e.owner !== p && t.owner === p && t.soldiers > 0) {
       const loss = Math.round(7 * glandCut(mods));
       const before = t.soldiers;
@@ -62,7 +77,7 @@ export function tickEffects(
     e.left--;
     if (e.left <= 0) {
       // A withered leaf wall leaves defensive armour behind on the tile.
-      if (e.kind === "leaf") addEffect(state, e.c, e.r, "armor", e.owner, 3);
+      if (e.kind === "leaf") addEffect(state, e.c, e.r, "armor", e.owner, 4);
       state.effects = state.effects.filter((x) => x !== e);
       events.push({ type: "effectExpired", at: { c: e.c, r: e.r }, kind: e.kind });
     }

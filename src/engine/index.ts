@@ -7,6 +7,8 @@ export * from "./combat";
 export * from "./connectivity";
 export * from "./production";
 export * from "./effects";
+export * from "./random";
+export * from "./abilities";
 export * from "./hive";
 export * from "./actions";
 export * from "./state";

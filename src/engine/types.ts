@@ -78,6 +78,11 @@ export interface GameState {
   /** Cached nest-anchored connectivity, keyed "c,r". Rebuilt by recomputeConnectivity. */
   conn: Record<Player, Set<string>>;
   limits: MapLimits;
+  /**
+   * Seeded PRNG state. Only ability scatter reads it — never combat (CLAUDE.md §4.1).
+   * Snapshot/restored with the board so AI search cannot advance the real stream.
+   */
+  rng: number;
 }
 
 export interface MapLimits {
@@ -154,6 +159,12 @@ export type EngineEvent =
   | { type: "effectApplied"; at: Coord; kind: EffectKind; owner: Player; turns: number }
   | { type: "effectExpired"; at: Coord; kind: EffectKind }
   | { type: "effectDamage"; at: Coord; kind: EffectKind; lost: number; wiped: boolean }
+  | { type: "abilityCast"; owner: Player; kind: AbilityKind; name: string }
+  | { type: "budded"; at: Coord; owner: Player; count: number }
+  | { type: "devoured"; at: Coord; into: Coord; owner: Player; count: number }
+  | { type: "fled"; from: Coord; to: Coord | null; owner: Player; count: number }
+  | { type: "fortified"; at: Coord; owner: Player; gained: number }
+  | { type: "tunnelDug"; at: Coord; owner: Player }
   | { type: "hiveAwake" }
   | { type: "hiveCaptured"; owner: Player; level: number }
   | { type: "hiveRespawn"; level: number }

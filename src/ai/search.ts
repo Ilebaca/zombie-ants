@@ -3,6 +3,7 @@ import {
   attackMultiplier, defenceMultiplier, fight, flatDefence, guardDefence,
   isConnected, moveOrAttack, keepOn, blockedByEnemyLeaf,
   snapshot, restore, PROD,
+  abilityOf, abilityReady, activateAbility, frontline, onEnemyHalf,
 } from "../engine";
 import type {
   ActionContext, Coord, EngineEvent, GameState, Player, PlayerMods, Tile,
@@ -186,6 +187,15 @@ export function aiTurn(
   if (state.over) return [];
   const opp = otherPlayer(me);
   const myNest = nestTile(state, me);
+  const events: EngineEvent[] = [];
+
+  // An ability is a free extra action, so fire it first and still take a move afterwards.
+  // The AI runs on NEUTRAL_MODS — it never gets research scaling (CLAUDE.md §4.8).
+  if (abilityReady(state, me) && abilityWorthCasting(state, me, ctx)) {
+    state.current = me;
+    events.push(...activateAbility(state, me, ctx.mods[me]));
+    if (state.over) return events;
+  }
 
   // Reflex 1 — the nest is life. Reinforce it before considering offence.
   if (myNest) {
@@ -199,7 +209,8 @@ export function aiTurn(
         .sort((a, b) => b.soldiers - a.soldiers)[0];
       if (feeder) {
         state.current = me;
-        return moveOrAttack(state, { c: feeder.c, r: feeder.r }, { c: myNest.c, r: myNest.r }, ctx);
+        events.push(...moveOrAttack(state, { c: feeder.c, r: feeder.r }, { c: myNest.c, r: myNest.r }, ctx));
+        return events;
       }
     }
   }
@@ -214,14 +225,74 @@ export function aiTurn(
       .sort((a, b) => b.soldiers - a.soldiers)[0];
     if (feeder) {
       state.current = me;
-      return moveOrAttack(state, { c: feeder.c, r: feeder.r }, { c: v.c, r: v.r }, ctx);
+      events.push(...moveOrAttack(state, { c: feeder.c, r: feeder.r }, { c: v.c, r: v.r }, ctx));
+      return events;
     }
   }
 
   const decision = chooseMove(state, me, difficulty, ctx);
-  if (!decision.move) return [];
+  if (!decision.move) return events;
   state.current = me;
-  return moveOrAttack(state, decision.move.from, decision.move.to, ctx);
+  events.push(...moveOrAttack(state, decision.move.from, decision.move.to, ctx));
+  return events;
+}
+
+/**
+ * Is casting worth it this turn?
+ *
+ * Ported from the legacy heuristics: each ability has a cheap, specific trigger rather than
+ * being searched, because search would have to model multi-tile board mutation to see the
+ * value and would spend most of its budget on it.
+ */
+function abilityWorthCasting(state: GameState, me: Player, ctx: ActionContext): boolean {
+  const opp = otherPlayer(me);
+  const front = frontline(state, me);
+  const oppTiles = allTiles(state).filter((t) => t.owner === opp).length;
+
+  switch (abilityOf(state, me).kind) {
+    case "fire": {
+      let touching = 0, weak = 0;
+      for (const t of front) {
+        for (const n of neighbours(state, t)) {
+          if (n.owner === opp) { touching++; if (n.soldiers <= 5) weak++; }
+          if (isHiveTerrain(n)) touching++;
+        }
+      }
+      return weak >= 1 || touching >= 2;
+    }
+    case "venom": return oppTiles >= 3;
+    case "swarm": {
+      let food = 0;
+      for (const t of front) for (const n of neighbours(state, t)) if (n.owner === opp) food += n.soldiers;
+      return food >= 20;
+    }
+    case "bud":
+      return allTiles(state).some((t) => t.owner === me && t.soldiers >= 40
+        && neighbours(state, t).some((n) => n.owner === null && n.terrain === "ground"));
+    case "spread":
+      return allTiles(state).some((t) => t.owner === me
+        && neighbours(state, t).some((n) => n.owner === null && n.terrain === "ground" && onEnemyHalf(n.c, n.r, me)));
+    case "fortify":
+    case "leaf": {
+      // Defensive: brace when the border is genuinely under pressure, or about to break.
+      let pressure = 0;
+      for (const t of front) {
+        for (const n of neighbours(state, t)) {
+          if (n.owner !== opp || n.soldiers <= 1) continue;
+          pressure += n.soldiers;
+          const res = fight(
+            n.soldiers - 1, attackMultiplier(state, opp, ctx.mods[opp]),
+            t.soldiers, defenceMultiplier(state, me, ctx.mods[me]), flatDefence(state, t, ctx.mods[me]),
+          );
+          if (res.winner === "atk") return true;      // a tile is about to fall — always cast
+        }
+      }
+      return pressure >= 30;
+    }
+    case "flee": return front.length > 0 && oppTiles >= 2;
+    case "tunnel": return true;                        // a beachhead is always worth digging
+    default: return front.length > 0;
+  }
 }
 
 /** Would losing this vein disconnect more than just the vein itself? */

@@ -103,14 +103,16 @@ describe("difficulty", () => {
     for (const level of ["easy", "normal", "hard"] as const) {
       const s = createGame({ map: "small", species: { you: "fire", ai: "fire" } });
       let guard = 0;
-      while (!s.over && guard++ < 200) {
-        s.current = "ai"; aiTurn(s, "ai", level, ctx);
-        if (s.over) break;
-        s.current = "you"; aiTurn(s, "you", "easy", ctx);
+      // Drive it exactly as the match screen does: whoever is `current` acts, then the turn
+      // is handed over. Setting `current` by hand instead means endTurn never increments the
+      // turn counter, so the turn limit can never resolve a stalemate.
+      while (!s.over && guard++ < 400) {
+        aiTurn(s, s.current, s.current === "ai" ? level : "easy", ctx);
         if (s.over) break;
         endTurn(s, mods);
       }
-      expect(guard).toBeLessThan(200);   // games actually resolve
+      expect(s.over, `${level} never resolved`).toBe(true);
+      expect(s.winner).not.toBeNull();
     }
   });
 

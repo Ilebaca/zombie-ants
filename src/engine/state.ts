@@ -17,6 +17,8 @@ export interface NewGameOptions {
   /** Five-tile starting shape, as offsets from the corner anchor. */
   shape?: ReadonlyArray<readonly [number, number]>;
   mods?: Record<Player, PlayerMods>;
+  /** Seeds ability scatter. The same seed and moves replay identically. */
+  seed?: number;
 }
 
 /** The 12 starting formations. Every one is exactly five tiles (CLAUDE.md §5). */
@@ -59,6 +61,7 @@ export function createGame(opts: NewGameOptions): GameState {
     cloak: { you: 0, ai: 0 },
     conn: { you: new Set(), ai: new Set() },
     limits: { awakenTurn: def.awakenTurn, turnLimit: def.turnLimit, buffTurns: def.buffTurns },
+    rng: (opts.seed ?? 0x9e3779b9) | 0,
   };
 
   const shape = opts.shape ?? START_SHAPES.wedge;
@@ -208,6 +211,8 @@ export interface Snapshot {
   shield: GameState["shield"];
   cloak: GameState["cloak"];
   conn: { you: Set<string>; ai: Set<string> };
+  /** Without this, a simulated ability would advance the real match's scatter stream. */
+  rng: number;
 }
 
 /**
@@ -227,6 +232,7 @@ export function snapshot(state: GameState): Snapshot {
     shield: { ...state.shield },
     cloak: { ...state.cloak },
     conn: { you: new Set(state.conn.you), ai: new Set(state.conn.ai) },
+    rng: state.rng,
   };
 }
 
@@ -248,6 +254,7 @@ export function restore(state: GameState, snap: Snapshot): void {
   state.shield = { ...snap.shield };
   state.cloak = { ...snap.cloak };
   state.conn = { you: new Set(snap.conn.you), ai: new Set(snap.conn.ai) };
+  state.rng = snap.rng;
 }
 
 export { nestTile };

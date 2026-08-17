@@ -79,6 +79,30 @@
 .toast.hive { border-color: var(--hive); }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
+/* Ability card: slides in from the left, holds centred, slides out right.
+   Transform and opacity only, so it never triggers layout mid-match. */
+.spellcard {
+  position: absolute; left: 50%; top: 42%; z-index: 7;
+  width: min(320px, 82%); pointer-events: none; opacity: 0;
+  transform: translate(-150%, -50%);
+  background: var(--panel); border: 1px solid var(--hive);
+  border-radius: 18px; padding: 14px 16px; text-align: center;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .55), 0 0 26px rgba(177, 77, 224, .30);
+}
+.spellcard.show { animation: spellsweep 2.6s cubic-bezier(.2, .8, .2, 1) both; }
+.spellcard .sc-title { font-weight: 900; font-size: 18px; color: var(--hive-glow); }
+.spellcard .sc-desc { font-weight: 700; font-size: 12px; color: #cdd8e8; margin-top: 6px; line-height: 1.4; }
+@keyframes spellsweep {
+  0%   { opacity: 0; transform: translate(-150%, -50%); }
+  18%  { opacity: 1; transform: translate(-50%, -50%); }
+  78%  { opacity: 1; transform: translate(-50%, -50%); }
+  100% { opacity: 0; transform: translate(50%, -50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spellcard.show { animation: spellfade 2.2s ease both; transform: translate(-50%, -50%); }
+  @keyframes spellfade { 0%, 100% { opacity: 0; } 15%, 80% { opacity: 1; } }
+}
+
 /* ---------- ACTION BAR ---------- */
 .match footer {
   display: flex; flex-direction: column; gap: 8px;

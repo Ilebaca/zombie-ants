@@ -32,6 +32,9 @@ export const MAPS: Record<MapId, MapDef> = {
   mid:   { id: "mid",   name: "Gauntlet (13×13)",  size: 13, awakenTurn: 18, turnLimit: 80, buffTurns: 5 },
 };
 
+/** Per-species research cap. At max, an ability's cooldown drops by exactly one turn. */
+export const RESEARCH_MAX = 5;
+
 /** Anthill caps. Fungal Cultivation is deliberately shorter than the rest. */
 export const CHAMBER_MAX = { royal: 5, brood: 5, soldierCaste: 5, gland: 5, cultivate: 3 } as const;
 

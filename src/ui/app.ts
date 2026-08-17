@@ -6,10 +6,11 @@
  * through `onExit`.
  */
 import {
-  MAPS, NEUTRAL_MODS, SPECIES, START_SHAPES, armyOf, createGame, defaultContext, ownedCount,
+  MAPS, SPECIES, START_SHAPES, armyOf, createGame, ownedCount,
 } from "../engine";
-import type { MapId, Player, PlayerMods, SpeciesId } from "../engine";
+import type { MapId, Player, SpeciesId } from "../engine";
 import type { ShapeId } from "../engine";
+import { ProfileStore } from "../platform";
 import { SPECIES_COL, antHead, basicLook, hexA, setFactionColor } from "../render";
 import { MatchScreen } from "./match";
 import "./theme.css";
@@ -32,10 +33,19 @@ export class App {
   private match: MatchScreen | null = null;
   private overlay: HTMLElement | null = null;
 
-  private choices: Choices = { map: "small", species: "fire", shape: "wedge" };
+  private choices: Choices;
+  private profile: ProfileStore;
 
-  constructor(private host: HTMLElement) {
+  constructor(private host: HTMLElement, profile = new ProfileStore()) {
     this.host.replaceChildren();
+    this.profile = profile;
+    // Reopen on the player's last setup, so a rematch is two taps.
+    const saved = profile.get();
+    this.choices = {
+      map: saved.lastMap,
+      species: saved.lastSpecies,
+      shape: (saved.lastShape in START_SHAPES ? saved.lastShape : "wedge") as ShapeId,
+    };
     setFactionColor("you", this.choices.species);
   }
 
@@ -309,26 +319,39 @@ export class App {
     setFactionColor("you", this.choices.species);
     setFactionColor("ai", aiSpecies);
 
+    // Anthill and research come from the profile; the AI always gets the neutral set.
+    const mods = this.profile.modsFor(this.choices.species);
+
     const state = createGame({
       map: this.choices.map,
       species: { you: this.choices.species, ai: aiSpecies },
       shape: START_SHAPES[this.choices.shape],
+      mods,
+      seed: (Date.now() ^ (Math.random() * 0xffffffff)) | 0,
     });
 
-    const mods: Record<Player, PlayerMods> = {
-      you: { ...NEUTRAL_MODS },
-      ai: { ...NEUTRAL_MODS },        // the AI never gets upgrades (CLAUDE.md §4.8)
-    };
+    this.profile.update((p) => {
+      p.lastMap = this.choices.map;
+      p.lastSpecies = this.choices.species;
+      p.lastShape = this.choices.shape;
+    });
 
     for (const el of this.screens.values()) el.classList.add("hidden");
 
     this.match = new MatchScreen(this.host, {
       state,
       mods,
-      ctx: defaultContext(),
+      // The same mods must drive combat, or Mandible/Cuticle research would show up in the
+      // income readout but do nothing in a fight.
+      ctx: { mods },
       difficulty: "normal",
       map: this.choices.map,
+      onAbilityCast: (kind) => this.profile.update((p) => {
+        p.stats.abilities++;
+        if (kind === "tunnel") p.stats.tunnels++;
+      }),
       onExit: (winner) => {
+        this.profile.recordResult(winner === "you", this.choices.species);
         this.showResult(winner, {
           turns: state.turn,
           youArmy: armyOf(state, "you"),

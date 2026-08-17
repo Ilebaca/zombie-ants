@@ -37,7 +37,8 @@ works, and when a change is visual, say plainly that he needs to check it.
 ## 3. Architecture — the one rule that matters
 
 ```
-src/engine/    PURE game rules. No DOM, no canvas, no animation, no randomness, no I/O.
+src/engine/    PURE game rules. No DOM, no canvas, no animation, no I/O, and no randomness
+               beyond the seeded generator on GameState (§4.1) — never Math.random().
 src/ai/        Search + evaluation. Consumes the engine only.
 src/render/    Canvas board. Consumes engine EVENTS and draws them.
 src/ui/        Meta screens (home, trophy road, anthill, shop...).
@@ -58,9 +59,15 @@ Dependency direction is one-way: `ui → render → ai → engine`. The engine i
 
 These were each decided deliberately, several after bugs. Changing one silently breaks the game.
 
-1. **Combat is fully deterministic. There is no RNG anywhere in the engine.**
+1. **Combat is fully deterministic. `fight()` contains no randomness and never may.**
    Same attack vs. same defence always gives the identical result. Players count it out
    before committing. Never add randomness to combat resolution.
+
+   Two abilities *are* scatter effects by design: where Venom Rain's barrage lands, and
+   which fresh leaf Fungal Garden makes permanent. They draw from a **seeded generator on
+   `GameState.rng`** — never `Math.random()` — and it is snapshot/restored with the board.
+   So the engine stays reproducible: same seed + same moves replays identically, AI search
+   cannot leak scatter into the real match, and server-side replay stays free.
 
 2. **Connectivity is nest-anchored.** A tile is active only if a chain of same-owner tiles
    (captured tiles *or* veins) links it back to that player's nest. Anything detached from
@@ -115,6 +122,14 @@ Each of these cost a debugging round. Do not repeat them.
   early measurement (before first layout, or while the tab isn't compositing) pinned the board
   at 0×0 permanently — the container never resized again, so the ResizeObserver never re-fired.
   The renderer now skips zero measurements and retries on the next frame.
+- **An ability that returns `[]` did not fire.** `activateAbility` returns no events when it
+  had no legal target, and the cooldown must stay unspent — otherwise a mistimed tap burns
+  six turns for nothing.
+- **A leaf cast only walls ground that has no leaf on it yet.** Casting twice in a row does
+  nothing the second time; the walls have to wither first. A test that ignores this looks
+  like a broken permanent-leaf cap.
+- **`checkWipe` runs after an ability too.** A test board with no enemy tiles ends the match
+  on the first cast, and every later assertion silently tests nothing.
 - **Reveal progress must never live on a tile.** The legacy build stored `t.rv`/`t.rvDir` on
   the tile, which put view state inside the engine where snapshot/restore would copy it. It
   lives in `RevealTracker`, keyed by coordinate.
@@ -152,9 +167,10 @@ provisional and say so if asked.
 
 ## 9. Roadmap
 
-1. Finish the engine port + tests (abilities still missing — see below)
+1. Engine port + tests ✅ (all nine abilities implemented)
 2. Canvas renderer driven by engine events ✅
-3. Meta UI screens ported from the legacy build (in progress)
+3. Meta UI: home + map/species/formation setup + result ✅; Antarium, shop, quests and
+   trophy road still to do — the storage layer they need now exists (§11)
 4. Capacitor wrap → Android build
 5. RevenueCat in-app purchases (the legacy `buyPass()`/shop grants are the integration points)
 6. Play Console release
@@ -162,12 +178,12 @@ provisional and say so if asked.
 Later, server-backed: async PvP, ranked ladder, seasons, replays. Determinism makes
 server-side verification and replays nearly free — keep it that way.
 
-**Known gap: species abilities are not in the new engine.** There is no `activateAbility`;
-the nine `Species.ability` entries are data with no implementation. The match screen shows the
-Ability button (so the layout matches the legacy look) but it is inert and labelled `soon`.
-Porting them from the legacy `activateAbility()` (line ~1747) is the next engine job, and it
-needs tests for the gotchas in §5 — Feeding Swarm's snapshot, permanent leaf totals, Flee's
-no-prune rule.
+**Remaining gaps.** The Antarium (species unlocks + research), Anthill (chamber upgrades),
+shop, quests and trophy road are not built. The data model behind all of them is in place —
+`ProfileStore` already holds currencies, unlocks, research and chamber levels, and feeds
+`PlayerMods` — so those screens are UI work, not new systems. Until the Antarium exists the
+species picker deliberately offers all nine rather than enforcing `profile.unlocked`, or six
+of them would be permanently unreachable.
 
 ## 10. Verifying visual work
 
@@ -184,3 +200,21 @@ Two things that do work:
   the canvas stays blank — that is not a rendering bug, so check `document.hidden` first.
 
 Neither proves it *looks* right. Say plainly that Milan needs to check anything visual.
+
+## 11. Progression & storage
+
+`src/platform/` owns everything persistent. The engine never imports it — that separation is
+what keeps AI search from writing stats or currencies (§5).
+
+- `KeyValueStore` is an interface. Web uses `localStorage`; the Capacitor build can swap in
+  Preferences without touching profile code. Every write is wrapped — private browsing and
+  quota errors must never crash a match.
+- `ProfileStore.get()` returns a normalised profile. **`normalise()` is the trust boundary:**
+  saves outlive code, so anything malformed degrades to a default rather than producing a
+  `NaN` chamber level that would silently distort combat maths. Levels are clamped to their
+  caps, and a save stripped of every species is repopulated — the player must always have
+  something to field.
+- `ProfileStore.modsFor(species)` is the only source of `PlayerMods`. It returns the player's
+  chambers + that species' research, and **always hands the AI the neutral set** (§4.8).
+  Pass the same mods object to the match's `ActionContext`, or research shows up in the
+  income readout while doing nothing in a fight.

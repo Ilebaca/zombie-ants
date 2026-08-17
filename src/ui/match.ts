@@ -8,9 +8,10 @@
 import {
   MAPS, actionTargets, canActFrom, endTurn, incomeOf, armyOf, moveOrAttack,
   rally, speciesOf, surrender, tileAt, travel, distance, isConnected,
+  abilityReady, activateAbility, sparePool, tunnelTargets,
 } from "../engine";
 import type {
-  ActionContext, Coord, EngineEvent, GameState, MapId, Player, PlayerMods, SpeciesId,
+  AbilityKind, ActionContext, Coord, EngineEvent, GameState, MapId, Player, PlayerMods, SpeciesId,
 } from "../engine";
 import { aiTurn } from "../ai/search";
 import type { Difficulty } from "../ai/search";
@@ -22,7 +23,7 @@ const MOVE_SECONDS = 15;
 /** Pause before the AI moves, so its turn reads as deliberate rather than instant. */
 const AI_THINK_MS = 1500;
 
-type Mode = "go" | "rally";
+type Mode = "go" | "rally" | "tunnel";
 type ToastKind = "good" | "bad" | "warn" | "hive";
 
 export interface MatchOptions {
@@ -32,6 +33,8 @@ export interface MatchOptions {
   difficulty: Difficulty;
   map: MapId;
   onExit?: (winner: Player | null) => void;
+  /** Fired when the player casts, so the shell can record the stat. */
+  onAbilityCast?: (kind: AbilityKind) => void;
 }
 
 export class MatchScreen {
@@ -113,11 +116,60 @@ export class MatchScreen {
     };
     this.el.bSurr.onclick = () => this.onSurrender();
 
-    // Species abilities are not ported to the engine yet; the button stays visible but inert
-    // rather than silently doing nothing when tapped.
-    this.el.bAbility.onclick = () => {
-      this.toast("Abilities are not wired up yet.", "bad");
-    };
+    this.el.bAbility.onclick = () => this.onAbility();
+  }
+
+  /**
+   * Cast the species ability. It is a FREE extra action — the turn continues afterwards,
+   * so the player can still move. Tunnelling is the exception: it needs a target tap and
+   * deliberately ends the turn.
+   */
+  private onAbility(): void {
+    const s = this.state;
+    if (s.over || s.current !== "you") return;
+    const ability = speciesOf(s.species.you).ability;
+
+    if (!abilityReady(s, "you")) {
+      const left = s.cooldown.you;
+      this.toast(`${ability.name} recharging — ${left} turn${left > 1 ? "s" : ""}`, "bad");
+      return;
+    }
+
+    if (ability.kind === "tunnel") {
+      if (sparePool(s, "you") < 5) {
+        this.toast("You need 5 spare workers to dig a gallery.", "bad");
+        return;
+      }
+      this.setMode("tunnel");
+      this.toast("Choose an empty tile to dig to — costs 5 workers and ends your turn.", "good");
+      return;
+    }
+
+    const events = activateAbility(s, "you", this.opts.mods.you);
+    if (!events.length) {
+      this.toast(`${ability.name} had no valid target this turn.`, "bad");
+      return;
+    }
+    this.opts.onAbilityCast?.(ability.kind);
+    this.renderer.consume(events);
+    this.showSpellCard(ability.name, ability.desc);
+    this.toast(`${ability.name}! You can still move.`, "good");
+    this.clearSelection();
+    this.refreshHUD();
+    if (s.over) this.finish();
+  }
+
+  /** The ability card: slides in, holds, slides out. Purely decorative. */
+  private showSpellCard(name: string, desc: string): void {
+    const card = this.root.querySelector<HTMLElement>("#spellCard");
+    if (!card) return;
+    const title = card.querySelector(".sc-title");
+    const body = card.querySelector(".sc-desc");
+    if (title) title.textContent = name;
+    if (body) body.textContent = desc;
+    card.classList.remove("show");
+    void card.offsetWidth;                  // restart the CSS animation
+    card.classList.add("show");
   }
 
   private get state(): GameState { return this.opts.state; }
@@ -181,6 +233,25 @@ export class MatchScreen {
   private tap(at: Coord): void {
     const t = tileAt(this.state, at.c, at.r);
     if (!t) return;
+
+    if (this.mode === "tunnel") {
+      if (!this.valid.some((v) => v.c === at.c && v.r === at.r)) {
+        this.toast("Tap an empty, unguarded tile to dig to.", "bad");
+        return;
+      }
+      const events = activateAbility(this.state, "you", this.opts.mods.you, { target: at });
+      this.setMode("go");
+      if (!events.length) {
+        this.toast("Not enough spare workers — a gallery needs 5.", "bad");
+        return;
+      }
+      this.opts.onAbilityCast?.("tunnel");
+      this.renderer.consume(events);
+      this.toast("Gallery dug — your turn ends.", "good");
+      this.refreshHUD();
+      this.handOver();                       // tunnelling deliberately costs the turn
+      return;
+    }
 
     if (this.mode === "rally") {
       if (t.owner === "you" && isConnected(this.state, t)) {
@@ -250,12 +321,18 @@ export class MatchScreen {
   private setMode(m: Mode): void {
     this.mode = m;
     this.clearSelection();
+    if (m === "tunnel") {
+      // highlight every diggable tile, since there is no source to select first
+      this.valid = tunnelTargets(this.state);
+      this.renderer.setSelection(null, this.valid);
+    }
     this.syncModeButtons();
   }
 
   private syncModeButtons(): void {
     this.el.bMove.classList.toggle("on", this.mode === "go");
     this.el.bRally.classList.toggle("on", this.mode === "rally");
+    this.el.bAbility.classList.toggle("armed", this.mode === "tunnel");
   }
 
   /* ------------------------------------------------------------------- SURRENDER */
@@ -362,9 +439,14 @@ export class MatchScreen {
     }
 
     const ability = speciesOf(s.species.you).ability;
-    this.el.bAbility.classList.add("cool");
+    const ready = abilityReady(s, "you") && s.current === "you";
     const lb = this.el.bAbility.querySelector(".lb");
-    if (lb) lb.innerHTML = `${escapeHtml(ability.name)}<b>soon</b>`;
+    if (lb) {
+      const status = s.cooldown.you > 0 ? `⏳ ${s.cooldown.you}` : "ready";
+      lb.innerHTML = `${escapeHtml(ability.name)}<b>${status}</b>`;
+    }
+    this.el.bAbility.classList.toggle("armed", ready || this.mode === "tunnel");
+    this.el.bAbility.classList.toggle("cool", s.cooldown.you > 0);
   }
 
   /* ---------------------------------------------------------------------- TOASTS */
@@ -410,6 +492,10 @@ const MARKUP = `
   <main>
     <canvas id="cv"></canvas>
     <div id="toast"></div>
+    <div class="spellcard" id="spellCard" aria-hidden="true">
+      <div class="sc-title"></div>
+      <div class="sc-desc"></div>
+    </div>
   </main>
   <footer>
     <div class="brow brow4">
