@@ -8,8 +8,12 @@
  * The engine does not import this module. Search runs on engine state alone, which is what
  * keeps simulation from writing stats or currencies (CLAUDE.md §5).
  */
-import { CHAMBER_MAX, RESEARCH_MAX, SPECIES, TROPHY_LOSS, TROPHY_WIN, chamberCost } from "../engine";
+import {
+  CHAMBER_MAX, RESEARCH_MAX, SPECIES, TROPHY_LOSS, TROPHY_WIN, chamberCost, researchCost,
+} from "../engine";
 import type { MapId, Player, PlayerMods, SpeciesId } from "../engine";
+import { SPECIES_UNLOCK, type ResearchTrack } from "./catalogue";
+import { isPassKey, rewardFor, roadTrophies } from "./road";
 import { defaultStore, readJson, writeJson, type KeyValueStore } from "./storage";
 
 const KEY = "zombie-ants.profile";
@@ -50,6 +54,9 @@ export interface Profile {
   research: Partial<Record<SpeciesId, Research>>;
   hill: Partial<Record<ChamberId, number>>;
   equip: Partial<Record<SpeciesId, Equipped>>;
+  /** Trophy Road: the reward keys already paid out, and whether the pass is owned. */
+  roadClaimed: string[];
+  pass: boolean;
   /** Last setup choices, so the pickers open where the player left off. */
   lastSpecies: SpeciesId;
   lastMap: MapId;
@@ -72,6 +79,8 @@ export function defaultProfile(): Profile {
     research: {},
     hill: {},
     equip: {},
+    roadClaimed: [],
+    pass: false,
     lastSpecies: "fire",
     lastMap: "small",
     lastShape: "wedge",
@@ -87,8 +96,11 @@ export function defaultProfile(): Profile {
  */
 export function normalise(raw: unknown): Profile {
   const base = defaultProfile();
-  if (!raw || typeof raw !== "object") return base;
-  const p = raw as Partial<Profile>;
+  // Junk falls through as an empty object rather than returning early, so EVERY profile
+  // leaves this function with research, chambers and equipment fully populated. An early
+  // return left those maps empty, and callers then had to guess whether a missing key meant
+  // level 0 or a species that had never been seen.
+  const p = (raw && typeof raw === "object" ? raw : {}) as Partial<Profile>;
 
   const int = (v: unknown, min: number, max: number, fallback: number): number => {
     const n = typeof v === "number" && Number.isFinite(v) ? Math.floor(v) : fallback;
@@ -113,6 +125,12 @@ export function normalise(raw: unknown): Profile {
     research: {},
     hill: {},
     equip: {},
+    // Unknown keys are dropped rather than kept: a claim key that no longer pays anything
+    // would sit on the road forever showing "claimed" against an empty cell.
+    roadClaimed: Array.isArray(p.roadClaimed)
+      ? [...new Set(p.roadClaimed.filter((k): k is string => typeof k === "string" && !!rewardFor(k)))]
+      : [],
+    pass: p.pass === true,
     lastSpecies: isSpecies(p.lastSpecies) ? p.lastSpecies : base.lastSpecies,
     lastMap: p.lastMap === "tiny" || p.lastMap === "small" || p.lastMap === "mid" ? p.lastMap : base.lastMap,
     lastShape: typeof p.lastShape === "string" ? p.lastShape : base.lastShape,
@@ -184,11 +202,19 @@ export class ProfileStore {
       p.stats.games++;
       if (won) p.stats.wins++;
       p.trophies = Math.max(0, p.trophies + (won ? TROPHY_WIN : TROPHY_LOSS));
-      p.mycel += won ? 40 : 15;
-      p.pheromone += won ? 12 : 5;
+      p.mycel += won ? MATCH_MYCEL.win : MATCH_MYCEL.loss;
+      p.pheromone += won ? MATCH_PHEROMONE.win : MATCH_PHEROMONE.loss;
       p.lastSpecies = species;
     });
   }
+
+  /* ------------------------------------------------------------- SPENDING */
+
+  /**
+   * Every purchase in the game goes through one of the four methods below, and each returns
+   * false rather than throwing when the player cannot afford it. The screens are therefore
+   * free to call optimistically and re-render on the result — nothing can go half-spent.
+   */
 
   /** Buy the next level of a chamber. Returns false if capped or unaffordable. */
   buyChamber(id: ChamberId): boolean {
@@ -202,7 +228,87 @@ export class ProfileStore {
     });
     return true;
   }
+
+  /** Level up one research track of one species. Paid in pheromone, not mycel. */
+  buyResearch(species: SpeciesId, track: ResearchTrack): boolean {
+    const level = this.profile.research[species]?.[track] ?? 0;
+    if (level >= RESEARCH_MAX) return false;
+    const cost = researchCost(level);
+    if (this.profile.pheromone < cost) return false;
+    this.update((p) => {
+      p.pheromone -= cost;
+      const r = p.research[species] ?? { reservoir: 0, mandible: 0, cuticle: 0 };
+      r[track] = (r[track] ?? 0) + 1;
+      p.research[species] = r;
+    });
+    return true;
+  }
+
+  /**
+   * Unlock a species with mycelium. Premium species are NOT sold here — they come from the
+   * shop (roadmap step 5), so no amount of soft currency can quietly bypass the purchase.
+   */
+  canUnlock(id: SpeciesId): boolean {
+    return !this.isUnlocked(id) && !SPECIES[id].premium && SPECIES_UNLOCK[id] > 0;
+  }
+
+  unlockSpecies(id: SpeciesId): boolean {
+    if (!this.canUnlock(id)) return false;
+    const cost = SPECIES_UNLOCK[id];
+    if (this.profile.mycel < cost) return false;
+    this.update((p) => {
+      p.mycel -= cost;
+      p.unlocked.push(id);
+    });
+    return true;
+  }
+
+  /** Grant a species outright — the hook a shop purchase or a reward calls. */
+  grantSpecies(id: SpeciesId): void {
+    if (this.isUnlocked(id)) return;
+    this.update((p) => { p.unlocked.push(id); });
+  }
+
+  /* --------------------------------------------------------- TROPHY ROAD */
+
+  /** True when this reward is earned, unclaimed, and (for pass rewards) actually owned. */
+  canClaimRoad(key: string): boolean {
+    if (this.profile.roadClaimed.includes(key)) return false;
+    if (!rewardFor(key)) return false;
+    if (isPassKey(key) && !this.profile.pass) return false;
+    return this.profile.trophies >= roadTrophies(key);
+  }
+
+  /**
+   * Pay out one Trophy Road reward. Claims are keyed and recorded, so trophies lost to a
+   * later defeat never claw back a reward the player already banked.
+   */
+  claimRoad(key: string): boolean {
+    if (!this.canClaimRoad(key)) return false;
+    const reward = rewardFor(key);
+    if (!reward) return false;
+    this.update((p) => {
+      p.mycel += reward.mycel ?? 0;
+      p.pheromone += reward.pheromone ?? 0;
+      p.roadClaimed.push(key);
+    });
+    return true;
+  }
+
+  /** The Trophy Pass. This is the RevenueCat integration point (roadmap step 5). */
+  grantPass(): void {
+    if (this.profile.pass) return;
+    this.update((p) => { p.pass = true; });
+  }
 }
+
+/**
+ * Match payouts. Mycelium builds the colony (chambers, unlocks); pheromone funds research.
+ * Provisional like the rest of the balance (CLAUDE.md §8): tuned so a full research track
+ * is roughly ten wins away, not a hundred.
+ */
+export const MATCH_MYCEL = { win: 60, loss: 25 } as const;
+export const MATCH_PHEROMONE = { win: 60, loss: 25 } as const;
 
 function neutralMods(): PlayerMods {
   return {
