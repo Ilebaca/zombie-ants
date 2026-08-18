@@ -10,14 +10,19 @@ import {
 } from "../engine";
 import type { MapId, Player, SpeciesId } from "../engine";
 import type { ShapeId } from "../engine";
-import { ProfileStore } from "../platform";
+import { ProfileStore, SPECIES_ORDER } from "../platform";
 import { SPECIES_COL, antHead, basicLook, hexA, setFactionColor } from "../render";
+import { buildAnthill } from "./anthill";
+import { buildAntarium } from "./antarium";
+import { currencyBar, el, toast } from "./chrome";
 import { MatchScreen } from "./match";
+import { buildTrophyRoad } from "./road";
 import "./theme.css";
 import "./screens.css";
 import "./home-bg.css";
+import "./meta.css";
 
-type ScreenId = "home" | "map" | "species" | "formation";
+type ScreenId = "home" | "map" | "species" | "formation" | "anthill" | "antarium" | "road";
 
 const MAP_ORDER: readonly MapId[] = ["tiny", "small", "mid"];
 
@@ -76,7 +81,20 @@ export class App {
     if (id === "home") return this.buildHome();
     if (id === "map") return this.buildMapSelect();
     if (id === "species") return this.buildSpeciesSelect();
-    return this.buildFormationSelect();
+    if (id === "formation") return this.buildFormationSelect();
+    if (id === "anthill") return buildAnthill(this.profile, () => this.show("home"));
+    if (id === "road") return buildTrophyRoad(this.profile, () => this.show("home"));
+    return buildAntarium(this.profile, {
+      onBack: () => this.show("home"),
+      // "Field this colony" is the shortcut out of the collection: it sets the choice the
+      // setup flow will open on, rather than starting a match from a progression screen.
+      onField: (species) => {
+        this.choices.species = species;
+        setFactionColor("you", species);
+        this.profile.update((p) => { p.lastSpecies = species; });
+        this.show("map");
+      },
+    });
   }
 
   private screen(className: string): HTMLDivElement {
@@ -112,27 +130,41 @@ export class App {
   /* ----------------------------------------------------------------------- HOME */
 
   private buildHome(): HTMLElement {
-    const el = this.screen("screen--home");
-    const play = document.createElement("div");
-    play.className = "homeplay";
+    const root = this.screen("screen--home");
 
-    const tag = document.createElement("div");
-    tag.className = "hometag";
-    tag.textContent = "Spread · Surround · Consume";
+    // Currency and trophies sit at the top: the home screen is where the player sees what a
+    // match paid out, and every meta screen is reached from here.
+    const top = el("div", "hometop");
+    top.appendChild(currencyBar(this.profile.get()));
+    root.appendChild(top);
 
-    const btn = document.createElement("button");
-    btn.className = "playbtn";
-    btn.textContent = "PLAY";
+    const play = el("div", "homeplay");
+    play.appendChild(el("div", "hometag", "Spread · Surround · Consume"));
+
+    const btn = el("button", "playbtn", "PLAY");
     btn.onclick = () => this.show("map");
+    play.appendChild(btn);
 
-    const how = document.createElement("button");
-    how.className = "howtolink";
-    how.textContent = "📖 How to play";
+    const nav = el("div", "homenav");
+    const dest: ReadonlyArray<readonly [ScreenId, string, string]> = [
+      ["anthill", "🕳️", "Anthill"],
+      ["antarium", "🪴", "Antarium"],
+      ["road", "🏆", "Trophy Road"],
+    ];
+    for (const [id, icon, label] of dest) {
+      const b = el("button", "navitem");
+      b.append(el("span", "ni", icon), el("span", undefined, label));
+      b.onclick = () => this.show(id);
+      nav.appendChild(b);
+    }
+    play.appendChild(nav);
+
+    const how = el("button", "howtolink", "📖 How to play");
     how.onclick = () => this.showRules();
+    play.appendChild(how);
 
-    play.append(tag, btn, how);
-    el.appendChild(play);
-    return el;
+    root.appendChild(play);
+    return root;
   }
 
   /* ----------------------------------------------------------------- MAP SELECT */
@@ -179,8 +211,8 @@ export class App {
   /* ------------------------------------------------------------- SPECIES SELECT */
 
   private buildSpeciesSelect(): HTMLElement {
-    const el = this.screen("setup-species");
-    this.header(el, "Choose your species", undefined, () => this.show("map"));
+    const root = this.screen("setup-species");
+    this.header(root, "Choose your species", undefined, () => this.show("map"));
 
     const body = document.createElement("div");
     body.className = "screenbody";
@@ -191,12 +223,15 @@ export class App {
 
     let selectedCard: HTMLElement | null = null;
 
-    for (const id of Object.keys(SPECIES) as SpeciesId[]) {
+    for (const id of SPECIES_ORDER) {
       const s = SPECIES[id];
       const pal = SPECIES_COL[id];
+      // Locked colonies stay on the slider so the player can read what they are working
+      // toward — they just cannot be fielded until the Antarium sells them.
+      const owned = this.profile.isUnlocked(id);
       const card = document.createElement("div");
       const chosen = id === this.choices.species;
-      card.className = "sp" + (chosen ? " on" : "");
+      card.className = "sp" + (chosen ? " on" : "") + (owned ? "" : " locked");
 
       const face = document.createElement("div");
       face.className = "face";
@@ -231,6 +266,12 @@ export class App {
       tr.textContent = s.trait;
 
       card.append(face, nm, mods, ds, tr);
+      if (!owned) {
+        const lock = document.createElement("div");
+        lock.className = "splock";
+        lock.textContent = SPECIES[id].premium ? "🔒 Premium — from the shop" : "🔒 Unlock in the Antarium";
+        card.appendChild(lock);
+      }
 
       const highlight = (on: boolean): void => {
         card.classList.toggle("on", on);
@@ -240,6 +281,10 @@ export class App {
       if (chosen) { highlight(true); selectedCard = card; }
 
       card.onclick = () => {
+        if (!owned) {
+          toast(root, `${s.name} is locked — unlock it in the Antarium.`, "bad");
+          return;
+        }
         slider.querySelectorAll(".sp").forEach((x) => {
           x.classList.remove("on");
           (x as HTMLElement).style.borderColor = "";
@@ -260,11 +305,11 @@ export class App {
 
     box.append(slider, next);
     body.appendChild(box);
-    el.appendChild(body);
+    root.appendChild(body);
 
     // open on the species already fielded
     requestAnimationFrame(() => selectedCard?.scrollIntoView({ inline: "center", block: "nearest" }));
-    return el;
+    return root;
   }
 
   /* ----------------------------------------------------------- FORMATION SELECT */
@@ -351,13 +396,19 @@ export class App {
         if (kind === "tunnel") p.stats.tunnels++;
       }),
       onExit: (winner) => {
-        this.profile.recordResult(winner === "you", this.choices.species);
+        // Snapshot before recording, so the result card can show what this match actually
+        // paid — the numbers, not just the win.
+        const before = { ...this.profile.get() };
+        const after = this.profile.recordResult(winner === "you", this.choices.species);
         this.showResult(winner, {
           turns: state.turn,
           youArmy: armyOf(state, "you"),
           aiArmy: armyOf(state, "ai"),
           youTiles: ownedCount(state, "you"),
           aiTiles: ownedCount(state, "ai"),
+          trophies: after.trophies - before.trophies,
+          mycel: after.mycel - before.mycel,
+          pheromone: after.pheromone - before.pheromone,
         });
       },
     });
@@ -373,6 +424,7 @@ export class App {
 
   private showResult(winner: Player | null, recap: {
     turns: number; youArmy: number; aiArmy: number; youTiles: number; aiTiles: number;
+    trophies: number; mycel: number; pheromone: number;
   }): void {
     const won = winner === "you";
     const ov = document.createElement("div");
@@ -407,6 +459,16 @@ export class App {
       stat("Enemy tiles", recap.aiTiles),
     );
 
+    // What the match paid. Trophies can go down; a signed number is honest about that.
+    const earned = document.createElement("div");
+    earned.className = "earned";
+    const signed = (n: number): string => (n > 0 ? `+${n}` : String(n));
+    earned.append(
+      el("span", "ern", `🏆 ${signed(recap.trophies)}`),
+      el("span", "ern", `🍄 ${signed(recap.mycel)}`),
+      el("span", "ern", `🧪 ${signed(recap.pheromone)}`),
+    );
+
     const again = document.createElement("button");
     again.className = "cta";
     again.textContent = "Play again";
@@ -417,7 +479,7 @@ export class App {
     home.textContent = "Back to home";
     home.onclick = () => { this.clearOverlay(); this.show("home"); };
 
-    card.append(h1, tag, rows, again, home);
+    card.append(h1, tag, rows, earned, again, home);
     ov.appendChild(card);
     this.host.appendChild(ov);
     this.overlay = ov;

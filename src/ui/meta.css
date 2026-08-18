@@ -1,0 +1,208 @@
+/* Anthill, Antarium and Trophy Road — the progression screens.
+   Mobile-first: everything is a single scrolling column at phone width, and only the
+   collection grid and chamber grid go multi-column when there is room. */
+
+.screen--meta { padding-bottom: calc(var(--sp2) + env(safe-area-inset-bottom)); }
+
+.metabody {
+  justify-content: flex-start; align-items: stretch;
+  gap: var(--sp3); padding: var(--sp3) var(--sp1) var(--sp8);
+  width: min(560px, 100%); margin: 0 auto;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+
+/* ---------- currency strip ---------- */
+/* Three chips have to fit one row on a 390px phone — a second row would push the back
+   button off the title line and squeeze the body. */
+.curbar { display: flex; gap: 6px; justify-content: center; margin-top: var(--sp2); }
+.curchip {
+  display: flex; align-items: baseline; gap: 4px; min-width: 0;
+  /* The home screen puts these over bright artwork, so the fill is opaque enough to read
+     against it rather than tinting whatever is behind. */
+  background: rgba(8, 12, 20, .62); border: 1px solid var(--line); border-radius: 999px;
+  padding: 4px 9px; font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .35);
+}
+.curchip .ci { font-size: 12px; }
+.curchip .cv { font-size: 13px; font-weight: 900; }
+.curchip .cl {
+  font-size: 9px; color: var(--muted); font-weight: 800; text-transform: uppercase;
+  letter-spacing: .2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Below tablet width the three chips only fit as icon + number. The icons are taught by
+   the buy buttons on every shop card ("🍄 60"), so dropping the word costs nothing. */
+@media (max-width: 419px) { .curchip .cl { display: none; } }
+
+/* With a currency strip below it the header is two lines tall, so the back button sits on
+   the title line rather than floating to the middle of the block. */
+.screen--meta .backbtn, .screen--home .backbtn { top: 0; transform: none; }
+.screen--meta .backbtn:active { transform: scale(.95); }
+
+/* ---------- cards ---------- */
+.metacard {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: var(--sp3) var(--sp4) var(--sp4);
+}
+.mch {
+  display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp2);
+  font-weight: 900; font-size: 14px; margin-bottom: var(--sp3);
+  padding-bottom: var(--sp2); border-bottom: 1px solid var(--line);
+}
+.mch .mcaside { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; }
+.mcb { display: flex; flex-direction: column; gap: var(--sp3); }
+.mcnote { font-size: 12.5px; font-weight: 700; color: #c3d0e2; line-height: 1.5; }
+.mcsub { font-size: 11px; font-weight: 900; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+
+/* ---------- pips & buy buttons ---------- */
+.pips { display: flex; gap: 4px; }
+.pip { width: 14px; height: 5px; border-radius: 3px; background: var(--line); }
+.pip.on { background: var(--you); box-shadow: 0 0 8px rgba(255, 122, 69, .5); }
+
+.buybtn {
+  border: none; border-radius: 12px; padding: 9px 14px; cursor: pointer;
+  font-family: var(--font); font-weight: 900; font-size: 13px; color: #0b0f17; white-space: nowrap;
+  background: linear-gradient(180deg, var(--gold-glow), var(--gold));
+}
+.buybtn:active { transform: translateY(1px); }
+.buybtn.off { background: var(--hud); color: var(--muted); border: 1px solid var(--line); cursor: default; opacity: .75; }
+.buybtn.max { background: none; border: 1px solid var(--line); color: var(--muted); cursor: default; }
+
+/* ---------- anthill ---------- */
+.effrow { display: flex; align-items: center; gap: var(--sp2); font-size: 12px; font-weight: 800; }
+.effrow.dim { opacity: .42; }
+.effrow .effi { font-size: 14px; width: 20px; text-align: center; }
+.effrow .effn { flex: 0 0 auto; color: var(--ink); }
+.effrow .effe { flex: 1; text-align: right; color: var(--you-glow); font-weight: 800; }
+
+.chgrid { display: grid; grid-template-columns: 1fr; gap: var(--sp3); }
+@media (min-width: 520px) { .chgrid { grid-template-columns: 1fr 1fr; } }
+.chcard {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: var(--sp3) var(--sp4); display: flex; flex-direction: column; gap: var(--sp2);
+}
+.chtop { display: flex; align-items: center; gap: var(--sp2); }
+.chtop .chic { font-size: 18px; }
+.chtop .chnm { font-weight: 900; font-size: 14px; flex: 1; }
+.chtop .chlv { font-size: 11px; font-weight: 900; color: var(--muted); font-variant-numeric: tabular-nums; }
+.chdesc { font-size: 12px; font-weight: 700; color: var(--muted); line-height: 1.45; }
+.cheff { font-size: 12px; font-weight: 800; color: var(--you-glow); line-height: 1.4; }
+.chfoot { display: flex; align-items: center; justify-content: space-between; gap: var(--sp3); margin-top: 2px; }
+
+/* ---------- antarium ---------- */
+.antgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp2); }
+.antcell {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: var(--sp2) var(--sp1) var(--sp3); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center;
+}
+.antcell:active { transform: translateY(1px); }
+.antcell.locked { background: rgba(255, 255, 255, .02); }
+.antface { display: flex; align-items: center; justify-content: center; }
+.antface canvas { max-width: 100%; height: auto; }
+.antnm { font-weight: 900; font-size: 12px; color: var(--muted); }
+.anttag { font-size: 10.5px; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+.anttag.prem { color: var(--hive-glow); }
+
+.anthero {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-xl);
+  padding: var(--sp4); display: flex; flex-direction: column; align-items: center; gap: var(--sp1);
+  border-color: var(--tc, var(--line));
+}
+.anthero canvas { max-width: 60%; height: auto; }
+.herotag { font-size: 12.5px; font-weight: 700; color: var(--muted); text-align: center; }
+.herolvl { font-size: 11px; font-weight: 900; letter-spacing: .6px; margin-top: 4px; }
+
+/* stat bars: base value ghosted behind the researched one */
+.srow { display: flex; align-items: center; gap: var(--sp2); font-size: 12px; font-weight: 800; }
+.srow .sk { flex: 0 0 74px; color: var(--muted); }
+.srow .sb { flex: 1; height: 8px; border-radius: 4px; background: rgba(0, 0, 0, .35); position: relative; overflow: hidden; }
+.srow .sf { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; }
+.srow .sf.base { background: var(--line); }
+.srow .sv { flex: 0 0 58px; text-align: right; font-variant-numeric: tabular-nums; }
+.srow .sv.up { color: #8df06d; }
+
+/* research tracks */
+.rtrack { display: flex; align-items: flex-start; gap: var(--sp3); }
+.rtrack .ri { font-size: 18px; width: 22px; text-align: center; flex: 0 0 auto; }
+.rtrack .rb { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rtrack .rn { font-weight: 900; font-size: 13px; }
+.rtrack .rd { font-size: 11.5px; font-weight: 700; color: var(--muted); line-height: 1.4; }
+.rtrack .re { font-size: 11.5px; font-weight: 800; color: var(--you-glow); line-height: 1.4; }
+.rtrack .pips { margin-top: 4px; }
+.rtrack .buybtn { flex: 0 0 auto; align-self: center; }
+
+/* ---------- trophy road ---------- */
+.roadbody { padding-left: 0; padding-right: 0; }
+.roadhead {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp3);
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: var(--sp3) var(--sp4); margin: 0 var(--sp1); position: sticky; top: 0; z-index: 2;
+}
+.roadt { font-weight: 900; font-size: 16px; }
+.roadsub { font-size: 11px; font-weight: 800; color: var(--muted); margin-top: 2px; }
+.passon { font-weight: 900; font-size: 12px; color: var(--gold); letter-spacing: .5px; }
+.passbuy {
+  border: none; border-radius: 12px; padding: 8px 14px; font-family: var(--font);
+  font-weight: 900; font-size: 12px; color: #0b0f17;
+  background: linear-gradient(180deg, var(--gold-glow), var(--gold)); cursor: pointer;
+}
+.passbuy { white-space: nowrap; }
+.passbuy.off { background: var(--hud); color: var(--muted); border: 1px solid var(--line); cursor: default; }
+
+.road { display: flex; flex-direction: column; }
+.roadchap { background: var(--chapbg); border-radius: var(--r-lg); padding: var(--sp2) var(--sp1) var(--sp3); margin: var(--sp1) var(--sp1) 0; }
+.roadchapter {
+  text-align: center; font-weight: 900; font-size: 11px; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--muted); padding: var(--sp2) 0;
+}
+.roadchapter.reached { color: var(--gold); }
+
+.roadrow { display: grid; grid-template-columns: 1fr 46px 1fr; align-items: stretch; gap: var(--sp1); }
+.rcolL, .rcolR { display: flex; }
+.rcolC { display: flex; align-items: center; justify-content: center; position: relative; }
+/* the spine of the road, drawn behind the node */
+.rcolC::before { content: ""; position: absolute; top: 0; bottom: 0; width: 3px; background: var(--line); }
+.rcolC.reached::before { background: var(--gold); box-shadow: 0 0 10px rgba(255, 210, 63, .5); }
+.rnode {
+  position: relative; z-index: 1; width: 40px; height: 40px; border-radius: 50%;
+  background: var(--bg1); border: 2px solid var(--line); color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10.5px; font-weight: 900; font-variant-numeric: tabular-nums;
+}
+.rnode.done { border-color: var(--gold); color: var(--gold); }
+.rnode.here { border-color: var(--you); color: var(--you-glow); box-shadow: 0 0 0 4px rgba(255, 122, 69, .18); }
+
+.roadcell {
+  flex: 1; min-height: 56px; border-radius: var(--r-md); border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .25); color: var(--ink); font-family: var(--font); cursor: default;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  padding: var(--sp2) 6px; margin: 3px 0;
+}
+.roadcell.empty { background: none; border: 1px dashed rgba(255, 255, 255, .06); }
+.roadcell .rc-rew { font-weight: 900; font-size: 12px; font-variant-numeric: tabular-nums; }
+.roadcell .rc-btn { font-weight: 800; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+.roadcell.ready { border-color: var(--you); background: rgba(255, 122, 69, .14); cursor: pointer; }
+.roadcell.ready .rc-btn { color: var(--you-glow); }
+.roadcell.ready:active { transform: translateY(1px); }
+.roadcell.got { opacity: .5; }
+.roadcell.got .rc-btn { color: var(--gold); }
+.roadcell.pass { border-style: dashed; }
+.roadcell.pass.ready { border-style: solid; }
+.roadcell.passlock { opacity: .45; }
+
+/* ---------- toast ---------- */
+.metatoast {
+  position: absolute; left: 50%; top: calc(12px + env(safe-area-inset-top)); transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 6px; align-items: center;
+  z-index: 40; pointer-events: none; width: 92%;
+}
+/* Self-contained so a meta screen never depends on match.css being loaded. */
+.metatoast .toast {
+  background: var(--hud); border: 1px solid var(--hud-line); border-radius: 12px;
+  padding: 8px 14px; font-weight: 800; font-size: 13px; max-width: 100%; text-align: center;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .4);
+}
+.metatoast .toast.good { border-color: var(--you-dark); }
+.metatoast .toast.bad { border-color: #c0392b; }
+.metatoast .toast.warn { border-color: var(--ai-glow); color: var(--ai-glow); }
+.metatoast .toast.hive { border-color: var(--hive); }

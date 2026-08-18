@@ -143,3 +143,26 @@
 .rules b { color: var(--you-glow); }
 .rules .ai { color: var(--ai-glow); }
 .rules .hv { color: var(--hive-glow); }
+
+/* ---------- HOME HUB ---------- */
+.hometop { padding-top: 2px; }
+.homenav { display: flex; gap: var(--sp2); justify-content: center; width: min(300px, 72vw); margin-top: 4px; }
+.navitem {
+  flex: 1; background: rgba(0, 0, 0, .32); border: 1px solid var(--line); border-radius: var(--r-md);
+  color: var(--ink); font-family: var(--font); font-weight: 800; font-size: 10.5px; cursor: pointer;
+  padding: var(--sp2) 4px; display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.navitem:active { transform: translateY(1px); }
+.navitem .ni { font-size: 17px; line-height: 1; }
+
+/* locked species on the picker */
+.sp.locked { opacity: .55; }
+.sp.locked .face { filter: grayscale(.7); }
+.splock { margin-top: 8px; font-size: 11px; font-weight: 900; color: var(--gold); }
+
+/* what a match paid out */
+.earned { display: flex; gap: var(--sp2); justify-content: center; margin: var(--sp3) 0 var(--sp1); flex-wrap: wrap; }
+.earned .ern {
+  background: rgba(0, 0, 0, .3); border: 1px solid var(--line); border-radius: 999px;
+  padding: 5px 12px; font-weight: 900; font-size: 12.5px; font-variant-numeric: tabular-nums;
+}
