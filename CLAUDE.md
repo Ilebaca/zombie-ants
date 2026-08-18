@@ -138,6 +138,11 @@ Each of these cost a debugging round. Do not repeat them.
 
 `npm test` runs Vitest. **Run it before saying a change works.**
 
+Tests run in Node by default; anything under `src/ui/` gets jsdom (`environmentMatchGlobs`
+in `vite.config.ts`), so a meta screen can be built, clicked and asserted on. jsdom has no
+canvas — `getContext` is stubbed to return null in those tests, which doubles as proof the
+screens survive a context they cannot draw into.
+
 The engine is pure, so tests are cheap: build a board, apply an action, assert the result.
 Every rule in §4 and every gotcha in §5 should have a test. When you fix a bug, add the test
 that would have caught it — that is how this list stops growing.
@@ -169,8 +174,10 @@ provisional and say so if asked.
 
 1. Engine port + tests ✅ (all nine abilities implemented)
 2. Canvas renderer driven by engine events ✅
-3. Meta UI: home + map/species/formation setup + result ✅; Antarium, shop, quests and
-   trophy road still to do — the storage layer they need now exists (§11)
+3. Meta UI: home hub + map/species/formation setup + result ✅; Anthill, Antarium, Trophy
+   Road and daily quests ✅. Only the **shop** is left, and it is really step 5 wearing a
+   different hat — everything it would sell (premium species, the Trophy Pass) already has
+   its grant hook (`grantSpecies`, `grantPass`).
 4. Capacitor wrap → Android build
 5. RevenueCat in-app purchases (the legacy `buyPass()`/shop grants are the integration points)
 6. Play Console release
@@ -178,12 +185,20 @@ provisional and say so if asked.
 Later, server-backed: async PvP, ranked ladder, seasons, replays. Determinism makes
 server-side verification and replays nearly free — keep it that way.
 
-**Remaining gaps.** The Antarium (species unlocks + research), Anthill (chamber upgrades),
-shop, quests and trophy road are not built. The data model behind all of them is in place —
-`ProfileStore` already holds currencies, unlocks, research and chamber levels, and feeds
-`PlayerMods` — so those screens are UI work, not new systems. Until the Antarium exists the
-species picker deliberately offers all nine rather than enforcing `profile.unlocked`, or six
-of them would be permanently unreachable.
+**Remaining gap: the shop.** Everything else in the meta layer is built. The species picker
+now enforces `profile.unlocked` (locked colonies stay visible so the player can see the
+goal), because the Antarium can sell them.
+
+The progression layer sits in three files, and none of them is reachable from the engine:
+- `platform/catalogue.ts` — prices and player-facing copy. The engine still owns what a
+  chamber or research level *does*; this owns what it costs and what it says.
+- `platform/road.ts` — Trophy Road reward table, pure functions of a trophy count.
+- `platform/quests.ts` — the daily pool and a day-seeded roll.
+
+Currencies have separate jobs: **mycelium** buys chambers and species, **pheromone** buys
+research. Every purchase goes through a `ProfileStore` method that returns `false` rather
+than throwing when the player cannot afford it, so a screen can tap optimistically and
+nothing ever goes half-spent.
 
 ## 10. Verifying visual work
 
@@ -194,8 +209,14 @@ Two things that do work:
   records draw calls, so the *structure* of a frame is testable: veins draw bars not filled
   cells, cut-off tiles grey out, counts hide during the win flood. Mutation-check new
   assertions — a recorder test that passes against broken code is worse than none.
+- **jsdom screen tests** (`src/ui/__tests__/meta.test.ts`). The progression screens are
+  driven the way a player drives them: tap a buy button, assert the profile changed and the
+  card re-rendered. Mutation-check these the same way — break the code on purpose and make
+  sure the test notices.
 - **Driving the dev server** via the browser tools: dispatch synthetic `pointerdown`s at
   computed cell centres and read the HUD back. That verified input → engine → HUD → AI turn.
+  Playwright is not a project dependency; install it in a scratch directory and point it at
+  the preinstalled Chromium rather than adding tooling Milan would have to run.
   Note the preview pane may be hidden, in which case `requestAnimationFrame` never fires and
   the canvas stays blank — that is not a rendering bug, so check `document.hidden` first.
 
@@ -214,6 +235,10 @@ what keeps AI search from writing stats or currencies (§5).
   `NaN` chamber level that would silently distort combat maths. Levels are clamped to their
   caps, and a save stripped of every species is repopulated — the player must always have
   something to field.
+- Daily quests roll from the **day number**, not from stored randomness, so a reload mid-day
+  returns the same three. Progress is written by the app shell from engine events it
+  receives through `MatchScreen`'s `onEvents` — the engine knows nothing about quests, and
+  opening the quest screen can never award anything by itself.
 - `ProfileStore.modsFor(species)` is the only source of `PlayerMods`. It returns the player's
   chambers + that species' research, and **always hands the AI the neutral set** (§4.8).
   Pass the same mods object to the match's `ActionContext`, or research shows up in the
