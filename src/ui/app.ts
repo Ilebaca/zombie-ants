@@ -8,7 +8,7 @@
 import {
   MAPS, SPECIES, START_SHAPES, armyOf, createGame, ownedCount,
 } from "../engine";
-import type { MapId, Player, SpeciesId } from "../engine";
+import type { EngineEvent, MapId, Player, SpeciesId } from "../engine";
 import type { ShapeId } from "../engine";
 import { ProfileStore, SPECIES_ORDER } from "../platform";
 import { SPECIES_COL, antHead, basicLook, hexA, setFactionColor } from "../render";
@@ -16,13 +16,14 @@ import { buildAnthill } from "./anthill";
 import { buildAntarium } from "./antarium";
 import { currencyBar, el, toast } from "./chrome";
 import { MatchScreen } from "./match";
+import { buildQuests } from "./quests";
 import { buildTrophyRoad } from "./road";
 import "./theme.css";
 import "./screens.css";
 import "./home-bg.css";
 import "./meta.css";
 
-type ScreenId = "home" | "map" | "species" | "formation" | "anthill" | "antarium" | "road";
+type ScreenId = "home" | "map" | "species" | "formation" | "anthill" | "antarium" | "road" | "quests";
 
 const MAP_ORDER: readonly MapId[] = ["tiny", "small", "mid"];
 
@@ -84,6 +85,7 @@ export class App {
     if (id === "formation") return this.buildFormationSelect();
     if (id === "anthill") return buildAnthill(this.profile, () => this.show("home"));
     if (id === "road") return buildTrophyRoad(this.profile, () => this.show("home"));
+    if (id === "quests") return buildQuests(this.profile, () => this.show("home"));
     return buildAntarium(this.profile, {
       onBack: () => this.show("home"),
       // "Field this colony" is the shortcut out of the collection: it sets the choice the
@@ -149,6 +151,7 @@ export class App {
     const dest: ReadonlyArray<readonly [ScreenId, string, string]> = [
       ["anthill", "🕳️", "Anthill"],
       ["antarium", "🪴", "Antarium"],
+      ["quests", "📜", "Quests"],
       ["road", "🏆", "Trophy Road"],
     ];
     for (const [id, icon, label] of dest) {
@@ -391,15 +394,22 @@ export class App {
       ctx: { mods },
       difficulty: "normal",
       map: this.choices.map,
-      onAbilityCast: (kind) => this.profile.update((p) => {
-        p.stats.abilities++;
-        if (kind === "tunnel") p.stats.tunnels++;
-      }),
+      onAbilityCast: (kind) => {
+        this.profile.update((p) => {
+          p.stats.abilities++;
+          if (kind === "tunnel") p.stats.tunnels++;
+        });
+        this.profile.questProgress("ability");
+        if (kind === "tunnel") this.profile.questProgress("tunnel");
+      },
+      onEvents: (events) => scoreQuestEvents(this.profile, events),
       onExit: (winner) => {
         // Snapshot before recording, so the result card can show what this match actually
         // paid — the numbers, not just the win.
         const before = { ...this.profile.get() };
         const after = this.profile.recordResult(winner === "you", this.choices.species);
+        this.profile.questProgress("play");
+        if (winner === "you") this.profile.questProgress("win");
         this.showResult(winner, {
           turns: state.turn,
           youArmy: armyOf(state, "you"),
@@ -574,6 +584,24 @@ function shapeThumb(cells: ReadonlyArray<readonly [number, number]>): HTMLCanvas
     g.globalAlpha = 1;
   });
   return cv;
+}
+
+/**
+ * Turn a batch of engine events into quest progress.
+ *
+ * Only the player's own captures count — the AI taking a tile is not progress — and the
+ * whole batch is folded into one call per kind so a Spread that claims six tiles does not
+ * write six times. Exported so the translation is testable without a running match.
+ */
+export function scoreQuestEvents(profile: ProfileStore, events: readonly EngineEvent[]): void {
+  let captured = 0;
+  let hive = 0;
+  for (const e of events) {
+    if (e.type === "capture" && e.owner === "you") captured++;
+    else if (e.type === "hiveCaptured" && e.owner === "you") hive++;
+  }
+  if (captured) profile.questProgress("capture", captured);
+  if (hive) profile.questProgress("hive", hive);
 }
 
 /**

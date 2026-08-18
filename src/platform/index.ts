@@ -14,3 +14,8 @@ export {
   rewardFor, rewardText, roadKey, roadStops, roadTrophies,
 } from "./road";
 export type { RoadReward, RoadStop, RoadTrack } from "./road";
+export {
+  QUESTS_PER_DAY, QUEST_POOL, QUEST_SWEEP_BONUS, dayIndex, isClaimable, isComplete,
+  msUntilRollover, questDef, rollQuests,
+} from "./quests";
+export type { QuestDef, QuestKind, QuestState } from "./quests";

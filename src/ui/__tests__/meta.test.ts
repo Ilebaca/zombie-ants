@@ -10,6 +10,10 @@ import { CHAMBER_MAX, RESEARCH_MAX, SPECIES, chamberCost, researchCost } from ".
 import { MemoryStore, ProfileStore, SPECIES_UNLOCK, roadKey } from "../../platform";
 import { buildAnthill } from "../anthill";
 import { buildAntarium } from "../antarium";
+import type { EngineEvent } from "../../engine";
+import { dayIndex, questDef } from "../../platform";
+import { scoreQuestEvents } from "../app";
+import { buildQuests } from "../quests";
 import { buildTrophyRoad } from "../road";
 
 const store = (mycel = 0, pheromone = 0, trophies = 0): ProfileStore => {
@@ -209,5 +213,96 @@ describe("trophy road screen", () => {
   it("marks reached stops as done", () => {
     const root = buildTrophyRoad(store(0, 0, 1000), () => {});
     expect(root.querySelectorAll(".rnode.done").length).toBe(4);      // 250, 500, 750, 1000
+  });
+});
+
+describe("quests screen", () => {
+  it("lists today's three quests with their progress", () => {
+    const s = store();
+    const root = buildQuests(s, () => {});
+    expect(root.querySelectorAll(".qrow").length).toBe(s.dailyQuests().length);
+    expect(root.textContent).toContain("Streak: 0 days");
+    // Nothing is claimable on a fresh profile.
+    expect(root.querySelectorAll(".qrow .buybtn:not(.off)").length).toBe(0);
+  });
+
+  it("claims a finished quest and pays out", () => {
+    const s = store();
+    const first = s.dailyQuests()[0]!;
+    const def = questDef(first.id)!;
+    s.questProgress(def.kind, def.goal);
+
+    const root = buildQuests(s, () => {});
+    const claim = root.querySelector<HTMLButtonElement>(".qrow .buybtn:not(.off)");
+    expect(claim?.textContent).toBe("Claim");
+    click(claim);
+    expect(s.get().mycel).toBe(def.mycel);
+    expect(root.querySelectorAll(".qdone").length).toBe(1);
+  });
+
+  /** Opening the screen must never be worth anything on its own. */
+  it("never advances progress by being opened", () => {
+    const s = store();
+    buildQuests(s, () => {});
+    buildQuests(s, () => {});
+    expect(s.dailyQuests().every((q) => q.progress === 0)).toBe(true);
+    expect(s.get().mycel).toBe(0);
+  });
+});
+
+describe("scoring quests from engine events", () => {
+  /** A profile whose day has a capture quest, whatever today happens to roll. */
+  const withCapture = (): { store: ProfileStore; goal: number } => {
+    const s = store();
+    s.update((p) => {
+      // Pin today's set, or the store rerolls it the moment progress is recorded.
+      p.questDay = dayIndex();
+      p.quests = [{ id: "cap10", progress: 0, claimed: false }];
+    });
+    return { store: s, goal: questDef("cap10")!.goal };
+  };
+
+  const at = { c: 1, r: 1 };
+
+  it("counts the player's captures, once per event", () => {
+    const { store: s } = withCapture();
+    const events: EngineEvent[] = [
+      { type: "capture", at, owner: "you", from: "L", previous: null },
+      { type: "capture", at, owner: "you", from: "L", previous: "ai" },
+      { type: "veinLaid", at, owner: "you" },
+    ];
+    scoreQuestEvents(s, events);
+    expect(s.get().quests.find((q) => q.id === "cap10")?.progress).toBe(2);
+  });
+
+  it("ignores captures made by the AI", () => {
+    const { store: s } = withCapture();
+    scoreQuestEvents(s, [
+      { type: "capture", at, owner: "ai", from: "L", previous: "you" },
+      { type: "capture", at, owner: "ai", from: "R", previous: null },
+    ]);
+    expect(s.get().quests.find((q) => q.id === "cap10")?.progress).toBe(0);
+  });
+
+  it("scores taking the Hive queen, but only for the player", () => {
+    const s = store();
+    s.update((p) => {
+      p.questDay = dayIndex();
+      p.quests = [{ id: "hive1", progress: 0, claimed: false }];
+    });
+    scoreQuestEvents(s, [{ type: "hiveCaptured", owner: "ai", level: 1 }]);
+    expect(s.get().quests[0]?.progress).toBe(0);
+    scoreQuestEvents(s, [{ type: "hiveCaptured", owner: "you", level: 1 }]);
+    expect(s.get().quests[0]?.progress).toBe(1);
+  });
+
+  it("does nothing for a batch with no player captures in it", () => {
+    const { store: s } = withCapture();
+    const before = JSON.stringify(s.get());
+    scoreQuestEvents(s, [
+      { type: "production", owner: "you", gained: 4 },
+      { type: "hiveAwake" },
+    ]);
+    expect(JSON.stringify(s.get())).toBe(before);
   });
 });

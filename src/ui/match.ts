@@ -35,6 +35,12 @@ export interface MatchOptions {
   onExit?: (winner: Player | null) => void;
   /** Fired when the player casts, so the shell can record the stat. */
   onAbilityCast?: (kind: AbilityKind) => void;
+  /**
+   * Every batch of engine events, after the renderer has taken them. The shell uses this to
+   * score quests. It is a read-only pass-through: the match does not care what happens to
+   * them, and the engine stays unaware that anything is listening.
+   */
+  onEvents?: (events: readonly EngineEvent[]) => void;
 }
 
 export class MatchScreen {
@@ -151,7 +157,7 @@ export class MatchScreen {
       return;
     }
     this.opts.onAbilityCast?.(ability.kind);
-    this.renderer.consume(events);
+    this.consume(events);
     this.showSpellCard(ability.name, ability.desc);
     this.toast(`${ability.name}! You can still move.`, "good");
     this.clearSelection();
@@ -197,7 +203,7 @@ export class MatchScreen {
     if (this.state.over) { this.finish(); return; }
     this.clearTimers();
     const events = endTurn(this.state, this.opts.mods);
-    this.renderer.consume(events);
+    this.consume(events);
     this.beginTurn();
   }
 
@@ -205,7 +211,7 @@ export class MatchScreen {
     this.aiTimer = null;
     if (this.state.over) { this.finish(); return; }
     const events = aiTurn(this.state, "ai", this.opts.difficulty, this.opts.ctx);
-    this.renderer.consume(events);
+    this.consume(events);
     this.refreshHUD();
     // Let the reveal finish before the turn flips, or the animation is cut off mid-sweep.
     window.setTimeout(() => this.handOver(), events.length ? 700 : 200);
@@ -246,7 +252,7 @@ export class MatchScreen {
         return;
       }
       this.opts.onAbilityCast?.("tunnel");
-      this.renderer.consume(events);
+      this.consume(events);
       this.toast("Gallery dug — your turn ends.", "good");
       this.refreshHUD();
       this.handOver();                       // tunnelling deliberately costs the turn
@@ -257,7 +263,7 @@ export class MatchScreen {
       if (t.owner === "you" && isConnected(this.state, t)) {
         const events = rally(this.state, at);
         if (events.length) {
-          this.renderer.consume(events);
+          this.consume(events);
           this.toast("Troops rallied to one tile.", "good");
           this.handOver();
         } else {
@@ -292,7 +298,7 @@ export class MatchScreen {
 
       this.clearSelection();
       if (events.length) {
-        this.renderer.consume(events);
+        this.consume(events);
         this.refreshHUD();
         this.handOver();
       }
@@ -447,6 +453,17 @@ export class MatchScreen {
     }
     this.el.bAbility.classList.toggle("armed", ready || this.mode === "tunnel");
     this.el.bAbility.classList.toggle("cool", s.cooldown.you > 0);
+  }
+
+  /**
+   * Hand a batch of events to the renderer, then to whoever else is listening.
+   *
+   * The renderer goes first: it owns the dramatisation, and a listener must never be able to
+   * delay or reorder what the player sees.
+   */
+  private consume(events: readonly EngineEvent[]): void {
+    this.renderer.consume(events as EngineEvent[]);
+    this.opts.onEvents?.(events);
   }
 
   /* ---------------------------------------------------------------------- TOASTS */

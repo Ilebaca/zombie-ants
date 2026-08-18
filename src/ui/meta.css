@@ -206,3 +206,18 @@
 .metatoast .toast.bad { border-color: #c0392b; }
 .metatoast .toast.warn { border-color: var(--ai-glow); color: var(--ai-glow); }
 .metatoast .toast.hive { border-color: var(--hive); }
+
+/* ---------- quests ---------- */
+.queststreak { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp3); padding: 0 var(--sp2); }
+.qstreak { font-weight: 900; font-size: 14px; }
+.qreset { font-size: 11px; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+.qrow { display: flex; align-items: center; gap: var(--sp3); }
+.qrow .qb { flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.qrow .qn { font-weight: 900; font-size: 13px; }
+.qbar { height: 7px; border-radius: 4px; background: rgba(0, 0, 0, .35); overflow: hidden; }
+.qfill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--you), var(--you-glow)); }
+.qmeta { font-size: 11px; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* The pending state is a placeholder, not a call to action — it should not out-weigh the
+   quest it belongs to. */
+.qrow .buybtn.off { font-size: 10.5px; padding: 7px 10px; }
+.qdone { font-size: 18px; font-weight: 900; color: var(--gold); width: 44px; text-align: center; }

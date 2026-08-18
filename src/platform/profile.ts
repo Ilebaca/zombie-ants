@@ -13,6 +13,9 @@ import {
 } from "../engine";
 import type { MapId, Player, PlayerMods, SpeciesId } from "../engine";
 import { SPECIES_UNLOCK, type ResearchTrack } from "./catalogue";
+import {
+  QUEST_SWEEP_BONUS, dayIndex, isClaimable, questDef, rollQuests, type QuestKind, type QuestState,
+} from "./quests";
 import { isPassKey, rewardFor, roadTrophies } from "./road";
 import { defaultStore, readJson, writeJson, type KeyValueStore } from "./storage";
 
@@ -57,6 +60,10 @@ export interface Profile {
   /** Trophy Road: the reward keys already paid out, and whether the pass is owned. */
   roadClaimed: string[];
   pass: boolean;
+  /** Daily quests: today's three, the day they were rolled for, and the sweep streak. */
+  quests: QuestState[];
+  questDay: number;
+  questStreak: number;
   /** Last setup choices, so the pickers open where the player left off. */
   lastSpecies: SpeciesId;
   lastMap: MapId;
@@ -81,6 +88,9 @@ export function defaultProfile(): Profile {
     equip: {},
     roadClaimed: [],
     pass: false,
+    quests: [],
+    questDay: 0,
+    questStreak: 0,
     lastSpecies: "fire",
     lastMap: "small",
     lastShape: "wedge",
@@ -131,6 +141,19 @@ export function normalise(raw: unknown): Profile {
       ? [...new Set(p.roadClaimed.filter((k): k is string => typeof k === "string" && !!rewardFor(k)))]
       : [],
     pass: p.pass === true,
+    // A quest id that no longer exists in the pool is dropped rather than kept at zero
+    // progress, where it would be permanently unclaimable and block the daily sweep.
+    quests: Array.isArray(p.quests)
+      ? p.quests
+          .filter((q): q is QuestState => !!q && typeof q === "object" && !!questDef((q as QuestState).id))
+          .map((q) => ({
+            id: q.id,
+            progress: int(q.progress, 0, 1e6, 0),
+            claimed: q.claimed === true,
+          }))
+      : [],
+    questDay: int(p.questDay, 0, 1e9, 0),
+    questStreak: int(p.questStreak, 0, 1e9, 0),
     lastSpecies: isSpecies(p.lastSpecies) ? p.lastSpecies : base.lastSpecies,
     lastMap: p.lastMap === "tiny" || p.lastMap === "small" || p.lastMap === "mid" ? p.lastMap : base.lastMap,
     lastShape: typeof p.lastShape === "string" ? p.lastShape : base.lastShape,
@@ -299,6 +322,63 @@ export class ProfileStore {
   grantPass(): void {
     if (this.profile.pass) return;
     this.update((p) => { p.pass = true; });
+  }
+
+  /* -------------------------------------------------------- DAILY QUESTS */
+
+  /**
+   * Today's three quests, rolling a fresh set the first time this is called on a new day.
+   *
+   * The streak survives only if the player swept the *previous* day: miss one, and the run
+   * is over. Rolling here rather than on a timer means a session left open overnight picks
+   * up the new day the next time anything touches quests.
+   */
+  dailyQuests(now: number = Date.now()): readonly QuestState[] {
+    const today = dayIndex(now);
+    if (this.profile.questDay === today && this.profile.quests.length) return this.profile.quests;
+
+    const swept = this.profile.quests.length > 0 && this.profile.quests.every((q) => q.claimed);
+    const consecutive = this.profile.questDay === today - 1;
+    this.update((p) => {
+      p.questStreak = swept && consecutive ? p.questStreak + 1 : 0;
+      p.questDay = today;
+      p.quests = rollQuests(today);
+    });
+    return this.profile.quests;
+  }
+
+  /** Advance every unclaimed quest of this kind. Called by the shell, never by the engine. */
+  questProgress(kind: QuestKind, amount = 1, now: number = Date.now()): void {
+    if (amount <= 0) return;
+    this.dailyQuests(now);
+    if (!this.profile.quests.some((q) => !q.claimed && questDef(q.id)?.kind === kind)) return;
+    this.update((p) => {
+      for (const q of p.quests) {
+        const def = questDef(q.id);
+        if (!def || def.kind !== kind || q.claimed) continue;
+        q.progress = Math.min(def.goal, q.progress + amount);
+      }
+    });
+  }
+
+  /** Claim a finished quest. Sweeping all three pays a bonus on the last one. */
+  claimQuest(id: string, now: number = Date.now()): boolean {
+    this.dailyQuests(now);
+    const state = this.profile.quests.find((q) => q.id === id);
+    const def = questDef(id);
+    if (!state || !def || !isClaimable(state)) return false;
+    this.update((p) => {
+      const q = p.quests.find((x) => x.id === id);
+      if (!q) return;
+      q.claimed = true;
+      p.mycel += def.mycel;
+      p.pheromone += def.pheromone;
+      if (p.quests.every((x) => x.claimed)) {
+        p.mycel += QUEST_SWEEP_BONUS.mycel;
+        p.pheromone += QUEST_SWEEP_BONUS.pheromone;
+      }
+    });
+    return true;
   }
 }
 
