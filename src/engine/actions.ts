@@ -89,7 +89,7 @@ export function moveOrAttack(
 
   // Unowned tile held by a neutral wild garrison — beat it first.
   if (!dst.owner && dst.guard > 0 && !isHiveTerrain(dst)) {
-    const res = fight(commit, attackMultiplier(state, attacker, ctx.mods[attacker]), dst.guard, 1.0, guardDefence());
+    const res = fight(commit, attackMultiplier(state, attacker, ctx.mods[attacker]), dst.guard, 1.0, guardDefence(dst));
     src.soldiers = keep;
     events.push({ type: "combat", at: to, attacker, from: dir, won: res.winner === "atk", survivors: res.survivors });
     if (res.winner === "atk") {

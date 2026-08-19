@@ -104,7 +104,7 @@ export function generateMoves(
             + (n.terrain === "resource" ? 30 : 0) + forward * 6;
         }
       } else if (!apparentOwner && n.guard > 0 && !isHiveTerrain(n)) {
-        const res = fight(commit, attackMultiplier(state, p, ctx.mods[p]), n.guard, 1.0, guardDefence());
+        const res = fight(commit, attackMultiplier(state, p, ctx.mods[p]), n.guard, 1.0, guardDefence(n));
         // A defended resource pays its cost back in about two turns.
         if (res.winner === "atk") score = (n.terrain === "resource" ? 55 : 8) + forward * 5;
       } else if (!apparentOwner && !isHiveTerrain(n)) {

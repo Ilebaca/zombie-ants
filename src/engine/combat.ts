@@ -54,9 +54,15 @@ function hasArmour(state: GameState, t: Tile): boolean {
   return state.effects.some((e) => e.c === t.c && e.r === t.r && e.kind === "armor" && e.owner === t.owner);
 }
 
-/** Flat bonus a neutral wild garrison defends with. */
-export function guardDefence(): number {
-  return DEF.guard;
+/**
+ * Flat bonus a neutral wild garrison defends with.
+ *
+ * A garrison squatting on a RESOURCE digs in far harder than one on open ground — that is
+ * what makes a defended resource a real objective rather than a free pickup, and why the
+ * map design bothers to guard some and leave others open.
+ */
+export function guardDefence(t: Tile): number {
+  return (t.terrain === "resource" ? DEF.guardResource : DEF.guardGround) + DEF.guard;
 }
 
 /** Queen surge: +50% attack and defence while a player holds the Hive. */

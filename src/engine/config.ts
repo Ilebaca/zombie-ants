@@ -3,8 +3,17 @@ import type { MapLimits } from "./types";
 /** Production per turn, by tile role. Resource output is boosted by Fungal Cultivation. */
 export const PROD = { nest: 2, stable: 1, resourceStable: 3 } as const;
 
-/** Flat defence bonuses added to defence power. Veins and hive tiles get NOTHING. */
-export const DEF = { nest: 6, stable: 1, resourceOwned: 2, guard: 1 } as const;
+/**
+ * Flat defence bonuses added to defence power. Veins and hive tiles get NOTHING.
+ *
+ * `guard` is the flat bonus every neutral defender gets; `guardGround`/`guardResource` are
+ * added on top of it, so a wild garrison holding a resource defends at 5 and one on open
+ * ground at 2.
+ */
+export const DEF = {
+  nest: 6, stable: 1, resourceOwned: 2,
+  guard: 1, guardGround: 1, guardResource: 4,
+} as const;
 
 export const START_SOLDIERS = { nest: 10, stable: 3 } as const;
 
