@@ -22,9 +22,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Node 22, not 20: jsdom (the UI tests' DOM) ships an undici that calls
+      # webidl.util.markAsUncloneable, which does not exist on Node 20 — the UI suite
+      # crashed on the runner while passing locally. Actions is retiring Node 20 anyway.
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
