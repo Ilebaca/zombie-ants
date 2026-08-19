@@ -11,7 +11,7 @@ import {
   abilityReady, activateAbility, sparePool, tunnelTargets,
 } from "../engine";
 import type {
-  AbilityKind, ActionContext, Coord, EngineEvent, GameState, MapId, Player, PlayerMods, SpeciesId,
+  AbilityKind, ActionContext, Coord, EngineEvent, GameOverReason, GameState, MapId, Player, PlayerMods, SpeciesId,
 } from "../engine";
 import { aiTurn } from "../ai/search";
 import type { Difficulty } from "../ai/search";
@@ -31,7 +31,7 @@ export interface MatchOptions {
   ctx: ActionContext;
   difficulty: Difficulty;
   map: MapId;
-  onExit?: (winner: Player | null) => void;
+  onExit?: (winner: Player | null, reason: GameOverReason | null) => void;
   /** Fired when the player casts, so the shell can record the stat. */
   onAbilityCast?: (kind: AbilityKind) => void;
   /**
@@ -65,6 +65,8 @@ export class MatchScreen {
   private aiTimer: number | null = null;
   private surrenderArmed = false;
   private surrenderTimer: number | null = null;
+  /** Why the match ended. Only the engine's gameOver event carries it. */
+  private endReason: GameOverReason | null = null;
 
   constructor(host: HTMLElement, private opts: MatchOptions) {
     this.root = document.createElement("div");
@@ -226,7 +228,7 @@ export class MatchScreen {
     this.toast(winner === "you" ? "The colony consumes them. Victory." : "Your colony falls.",
       winner === "you" ? "good" : "bad");
     this.updateTimerUI();
-    this.opts.onExit?.(winner);
+    this.opts.onExit?.(winner, this.endReason);
   }
 
   /* ----------------------------------------------------------------------- INPUT */
@@ -464,6 +466,7 @@ export class MatchScreen {
    * delay or reorder what the player sees.
    */
   private consume(events: readonly EngineEvent[]): void {
+    for (const e of events) if (e.type === "gameOver") this.endReason = e.reason;
     this.renderer.consume(events as EngineEvent[]);
     this.opts.onEvents?.(events);
   }

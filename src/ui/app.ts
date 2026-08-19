@@ -6,9 +6,10 @@
  * through `onExit`.
  */
 import {
-  MAPS, SPECIES, START_SHAPES, armyOf, createGame, ownedCount,
+  MAPS, SPECIES, START_SHAPES, armyOf, createGame,
 } from "../engine";
-import type { EngineEvent, MapId, Player, SpeciesId } from "../engine";
+import type { EngineEvent, GameOverReason, MapId, Player, SpeciesId } from "../engine";
+import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
 import { DEFAULT_SPECIES, ProfileStore, SPECIES_ORDER } from "../platform";
 import { SPECIES_COL, antHead, basicLook, hexA, setFactionColor } from "../render";
@@ -17,7 +18,11 @@ import { buildAntarium, buildSpeciesPage } from "./antarium";
 import { NAV_SCREENS, bottomNav, el, toast, topBar } from "./chrome";
 import type { NavId } from "./chrome";
 import { MatchScreen } from "./match";
+import {
+  CHALLENGES, CHALLENGE_REWARD, DAILY_BONUS_PHEROMONE, buildChallenges, buildDaily,
+} from "./challenges";
 import { buildQuests } from "./quests";
+import { buildComingSoon, buildMenu, buildRules, buildSettings } from "./screens-simple";
 import { buildTrophyRoad } from "./road";
 import "./game.css";
 
@@ -27,9 +32,14 @@ import "./game.css";
  */
 type ScreenId =
   | "home" | "mapsel" | "start" | "formation"
-  | "anthill" | "antarium" | "antup" | "achievements" | "quests";
+  | "anthill" | "antarium" | "antup" | "achievements" | "quests"
+  | "challenges" | "daily" | "rules" | "settings" | "news" | "friends" | "support";
 
 const MAP_ORDER: readonly MapId[] = ["tiny", "small", "mid"];
+
+/** Short names for the settings screen, as the legacy build labels them. */
+const MAP_LABEL: Record<MapId, string> = { tiny: "Skirmish", small: "Corridor", mid: "Gauntlet" };
+const DIFFICULTY_LABEL: Record<Difficulty, string> = { easy: "Easy", normal: "Normal", hard: "Hard" };
 
 /** Setup choices that survive between matches. */
 interface Choices {
@@ -46,6 +56,10 @@ export class App {
   private current: ScreenId = "home";
   /** Which colony the #antup page is showing. */
   private speciesPage: SpeciesId = "leafcutter";
+  private menu: HTMLElement | null = null;
+  private difficulty: Difficulty = "normal";
+  /** The challenge being played, if this match is one. */
+  private challenge: { index: number; done: boolean; daily: boolean } | null = null;
 
   private choices: Choices;
   private profile: ProfileStore;
@@ -74,6 +88,7 @@ export class App {
   private show(id: ScreenId): void {
     this.clearMatch();
     this.clearOverlay();
+    this.closeMenu();
     this.syncNav(id);
     this.current = id;
     for (const [key, el] of this.screens) el.classList.toggle("hidden", key !== id);
@@ -107,12 +122,39 @@ export class App {
     }
   }
 
+  /** The slide-in drawer behind the hamburger. One element, reused. */
+  private openMenu(): void {
+    if (!this.menu) {
+      this.menu = buildMenu(
+        (id) => { this.closeMenu(); this.show(id as ScreenId); },
+        () => this.closeMenu(),
+      );
+      this.host.appendChild(this.menu);
+    }
+    this.menu.classList.remove("hidden");
+  }
+
+  private closeMenu(): void {
+    this.menu?.classList.add("hidden");
+  }
+
+  /** Start a challenge: a preset match, plus the objective to judge it by. */
+  private startChallenge(index: number, daily = false): void {
+    const c = CHALLENGES[index];
+    if (!c) return;
+    this.choices.map = c.map;
+    this.choices.species = c.species;
+    this.choices.shape = c.shape;
+    this.challenge = { index, done: false, daily };
+    this.startMatch();
+  }
+
   private onNav(tab: NavId): void {
-    if (tab === "home" || tab === "anthill" || tab === "antarium") { this.show(tab); return; }
-    // Shop and Challenges are the two tabs still to be built; say so rather than
+    if (tab !== "shop") { this.show(tab); return; }
+    // The shop is the one tab still to be built (roadmap step 5); say so rather than
     // dead-ending on a tap that looks broken.
     const screen = this.screens.get(this.current);
-    if (screen) toast(screen, tab === "shop" ? "The shop opens soon." : "Challenges open soon.", "warn");
+    if (screen) toast(screen, "The shop opens soon.", "warn");
   }
 
   private build(id: ScreenId): HTMLElement {
@@ -129,6 +171,34 @@ export class App {
     if (id === "anthill") return buildAnthill(this.profile);
     if (id === "achievements") return buildTrophyRoad(this.profile, () => this.show("home"));
     if (id === "quests") return buildQuests(this.profile, () => this.show("home"));
+    if (id === "rules") return buildRules();
+    if (id === "challenges") return buildChallenges((i) => this.startChallenge(i));
+    if (id === "daily") return buildDaily((i) => this.startChallenge(i, true), () => this.show("home"));
+    if (id === "news") return buildComingSoon("news", "News", "Latest updates", "📰", () => this.show("home"));
+    if (id === "friends") {
+      return buildComingSoon("friends", "Friends", "Your colony allies", "👥", () => this.show("home"));
+    }
+    if (id === "support") {
+      return buildComingSoon("support", "Support", "Help & contact", "🛟", () => this.show("home"));
+    }
+    if (id === "settings") {
+      return buildSettings({
+        onBack: () => this.show("home"),
+        board: MAP_LABEL[this.choices.map],
+        difficulty: DIFFICULTY_LABEL[this.difficulty],
+        onCycleBoard: () => {
+          const next = MAP_ORDER[(MAP_ORDER.indexOf(this.choices.map) + 1) % MAP_ORDER.length];
+          this.choices.map = next as MapId;
+          this.profile.update((p) => { p.lastMap = this.choices.map; });
+          this.show("settings");
+        },
+        onCycleDifficulty: () => {
+          const order: Difficulty[] = ["easy", "normal", "hard"];
+          this.difficulty = order[(order.indexOf(this.difficulty) + 1) % order.length] as Difficulty;
+          this.show("settings");
+        },
+      });
+    }
     if (id === "antup") {
       return buildSpeciesPage(this.profile, {
         species: this.speciesPage,
@@ -209,12 +279,12 @@ export class App {
       '<rect width="18" height="2.8" rx="1.4" fill="#fff"/>' +
       '<rect y="5.6" width="18" height="2.8" rx="1.4" fill="#fff"/>' +
       '<rect y="11.2" width="18" height="2.8" rx="1.4" fill="#fff"/></svg>';
-    settings.onclick = () => toast(root, "Settings open soon.", "warn");
+    settings.onclick = () => this.openMenu();
 
     const daily = el("button", "dailyfab", "🗓️");
     daily.title = "Daily challenges";
     daily.appendChild(el("small", undefined, "Daily"));
-    daily.onclick = () => toast(root, "Daily challenges open soon.", "warn");
+    daily.onclick = () => this.show("daily");
     root.append(settings, daily);
 
     const play = el("div", "homeplay");
@@ -227,7 +297,7 @@ export class App {
 
     const how = el("button", "howtolink", "📖 How to play");
     how.id = "howToBtn";
-    how.onclick = () => this.showRules();
+    how.onclick = () => this.show("rules");
     play.appendChild(how);
 
     root.appendChild(play);
@@ -437,6 +507,7 @@ export class App {
     // "Play again" comes straight back here, so tear the old match down first — otherwise
     // its render loop and timers keep running behind the new one.
     this.clearMatch();
+    this.syncNav(null);          // the nav is hidden during a match
     const aiSpecies = rollAISpecies(this.choices.species);
     setFactionColor("you", this.choices.species);
     setFactionColor("ai", aiSpecies);
@@ -466,7 +537,7 @@ export class App {
       // The same mods must drive combat, or Mandible/Cuticle research would show up in the
       // income readout but do nothing in a fight.
       ctx: { mods },
-      difficulty: "normal",
+      difficulty: this.difficulty,
       map: this.choices.map,
       onAbilityCast: (kind) => {
         this.profile.update((p) => {
@@ -476,22 +547,34 @@ export class App {
         this.profile.questProgress("ability");
       },
       onEvents: (events) => scoreQuestEvents(this.profile, events),
-      onExit: (winner) => {
-        // Snapshot before recording, so the result card can show what this match actually
-        // paid — the numbers, not just the win.
-        const before = { ...this.profile.get() };
-        const after = this.profile.recordResult(winner === "you", this.choices.species);
+      onExit: (winner, reason) => {
+        // Snapshot before recording, so the card can report what this match actually paid.
+        const beforeXp = this.profile.get().xp;
+        const beforeLevel = this.profile.level().level;
+        this.profile.recordResult(winner === "you", this.choices.species, state.turn);
         this.profile.questProgress("play");
         if (winner === "you") this.profile.questProgress("win");
+        // A challenge pays on top of the usual match reward, once.
+        if (this.challenge && !this.challenge.done) {
+          this.challenge.done = true;
+          const daily = this.challenge.daily;
+          if (winner === "you") {
+            this.profile.update((p) => {
+              p.mycel += CHALLENGE_REWARD;
+              if (daily) p.pheromone += DAILY_BONUS_PHEROMONE;
+            });
+          }
+        }
+        const after = this.profile.get();
+        const level = this.profile.level().level;
         this.showResult(winner, {
           turns: state.turn,
           youArmy: armyOf(state, "you"),
           aiArmy: armyOf(state, "ai"),
-          youTiles: ownedCount(state, "you"),
-          aiTiles: ownedCount(state, "ai"),
-          trophies: after.trophies - before.trophies,
-          mycel: after.mycel - before.mycel,
-          pheromone: after.pheromone - before.pheromone,
+          species: this.choices.species,
+          xpGained: after.xp - beforeXp,
+          leveledTo: level > beforeLevel ? level : null,
+          reason,
         });
       },
     });
@@ -505,65 +588,72 @@ export class App {
 
   /* --------------------------------------------------------------------- RESULT */
 
+  /**
+   * The result card, in the legacy build's shape: title, one line of flavour that depends
+   * on how the match ended, a five-item recap, and three ways out.
+   */
   private showResult(winner: Player | null, recap: {
-    turns: number; youArmy: number; aiArmy: number; youTiles: number; aiTiles: number;
-    trophies: number; mycel: number; pheromone: number;
+    turns: number; youArmy: number; aiArmy: number; species: SpeciesId;
+    xpGained: number; leveledTo: number | null; reason: GameOverReason | null;
   }): void {
     const won = winner === "you";
-    const ov = document.createElement("div");
-    ov.className = "overlay";
+    const ov = el("div", "overlay");
+    ov.id = "over";
+    const wrap = el("div", "overModalWrap");
 
-    const card = document.createElement("div");
-    card.className = "card " + (won ? "win" : "lose");
+    const card = el("div", "card " + (won ? "win" : "lose"));
+    card.id = "overCard";
 
-    const h1 = document.createElement("h1");
-    h1.textContent = won ? "Victory" : "Consumed";
-    const tag = document.createElement("div");
-    tag.className = "tag";
-    tag.textContent = won
-      ? "The colony spreads. Their queen is yours."
-      : "Your queen has fallen. The fungus takes the rest.";
+    const h1 = el("h1", undefined, won ? "Victory" : "Defeat");
+    h1.id = "overTitle";
+    const tag = el("div", "tag", resultFlavour(won, recap.reason, recap.turns));
+    tag.id = "overSub";
 
-    const rows = document.createElement("div");
-    rows.className = "recap";
+    const rows = el("div", "recap");
+    rows.id = "overRecap";
     const stat = (k: string, v: string | number): HTMLElement => {
-      const d = document.createElement("div");
-      d.className = "rc";
-      const kk = document.createElement("span"); kk.className = "rk"; kk.textContent = k;
-      const vv = document.createElement("span"); vv.className = "rv"; vv.textContent = String(v);
-      d.append(kk, vv);
+      const d = el("div", "rc");
+      d.append(el("span", "rk", k), el("span", "rv", String(v)));
       return d;
     };
     rows.append(
       stat("Turns", recap.turns),
       stat("Your army", recap.youArmy),
       stat("Enemy army", recap.aiArmy),
-      stat("Your tiles", recap.youTiles),
-      stat("Enemy tiles", recap.aiTiles),
+      stat("Species", SPECIES[recap.species].name.split(" ")[0] ?? ""),
+      stat("XP gained", `+${recap.xpGained}`),
     );
+    card.append(h1, tag, rows);
 
-    // What the match paid. Trophies can go down; a signed number is honest about that.
-    const earned = document.createElement("div");
-    earned.className = "earned";
-    const signed = (n: number): string => (n > 0 ? `+${n}` : String(n));
-    earned.append(
-      el("span", "ern", `🏆 ${signed(recap.trophies)}`),
-      el("span", "ern", `🍄 ${signed(recap.mycel)}`),
-      el("span", "ern", `🧪 ${signed(recap.pheromone)}`),
-    );
+    // A level-up is the one thing worth its own banner — it is why the XP line matters.
+    if (recap.leveledTo !== null) {
+      const banner = el("div", "recap");
+      const cell = el("div", "rc");
+      cell.style.cssText = "min-width:100%;background:linear-gradient(180deg,#ffd23f,#f5a623);color:#3a2a00";
+      const k = el("span", "rk", "LEVEL UP");
+      k.style.color = "#3a2a00";
+      const v = el("span", "rv", `Colony level ${recap.leveledTo}!`);
+      v.style.color = "#3a2a00";
+      cell.append(k, v);
+      banner.appendChild(cell);
+      card.appendChild(banner);
+    }
 
-    const again = document.createElement("button");
-    again.className = "cta";
-    again.textContent = "Play again";
+    const again = el("button", "cta", "Play again");
+    again.id = "again";
     again.onclick = () => { this.clearOverlay(); this.startMatch(); };
 
-    const home = document.createElement("button");
-    home.className = "ghostbtn";
-    home.textContent = "Back to home";
+    const reSpecies = el("button", "ghostbtn", "Change colony");
+    reSpecies.id = "reSpecies";
+    reSpecies.onclick = () => { this.clearOverlay(); this.show("start"); };
+
+    const home = el("button", "ghostbtn", "← Home");
+    home.id = "overHome";
     home.onclick = () => { this.clearOverlay(); this.show("home"); };
 
-    card.append(h1, tag, rows, earned, again, home);
-    ov.appendChild(card);
+    card.append(again, reSpecies, home);
+    wrap.appendChild(card);
+    ov.appendChild(wrap);
     this.host.appendChild(ov);
     this.overlay = ov;
   }
@@ -573,35 +663,6 @@ export class App {
     this.overlay = null;
   }
 
-  private showRules(): void {
-    const ov = document.createElement("div");
-    ov.className = "overlay";
-    const card = document.createElement("div");
-    card.className = "card";
-    const h1 = document.createElement("h1");
-    h1.textContent = "How to play";
-    const rules = document.createElement("div");
-    rules.className = "rules";
-    rules.innerHTML = `
-      <b>Goal:</b> capture the enemy <b>nest</b>. One action per turn, <b>15s</b> per move.<br><br>
-      <b>Move / Attack</b> a neighbour — the tile you take becomes a producing <b>stable</b>.
-      Wild grey garrisons must be beaten to pass.<br><br>
-      <b>Travel</b> to a far tile to send troops across open ground. The trail behind them is a
-      <b>vein</b>: it carries supply but produces nothing, and has no defence.<br><br>
-      <b>Rally</b> gathers every spare soldier in the colony onto one tile.<br><br>
-      A tile only produces while a chain of your tiles links it back to your nest — cut off, it
-      goes dark. <span class="hv">The Hive</span> wakes mid-match: taking its queen grants a
-      growth surge, but the guards hit hard.<br><br>
-      Combat is fully deterministic. Count it out before you commit.`;
-    const close = document.createElement("button");
-    close.className = "cta";
-    close.textContent = "Got it";
-    close.onclick = () => this.clearOverlay();
-    card.append(h1, rules, close);
-    ov.appendChild(card);
-    this.host.appendChild(ov);
-    this.overlay = ov;
-  }
 }
 
 /**
@@ -626,6 +687,22 @@ function syncFabs(home: HTMLElement): void {
   const y = head ? head.getBoundingClientRect().bottom - top + 10 : 84;
   settings.style.top = `${y}px`;
   daily.style.top = `${y + box.height + 10}px`;
+}
+
+/**
+ * The line under the result title. The legacy build words each ending differently, and the
+ * wording is the only place the *reason* a match ended is ever stated.
+ */
+function resultFlavour(won: boolean, reason: GameOverReason | null, turns: number): string {
+  if (reason === "turnLimit") {
+    return `The fungus blooms at turn ${turns}. The larger colony consumes the smaller.`;
+  }
+  if (reason === "surrender") {
+    return `You surrendered on turn ${turns}. The hollow falls silent.`;
+  }
+  return won
+    ? `Enemy nest captured on turn ${turns}. The fungus spreads.`
+    : `The enemy reached your queen on turn ${turns}.`;
 }
 
 /* ----------------------------------------------------------------------- THUMBS */

@@ -2,7 +2,7 @@
 export { MemoryStore, defaultStore, readJson, writeJson } from "./storage";
 export type { KeyValueStore } from "./storage";
 export {
-  ProfileStore, defaultProfile, normalise, modsFrom, MATCH_MYCEL,
+  ProfileStore, defaultProfile, normalise, modsFrom, matchXp, MATCH_MYCEL,
 } from "./profile";
 export type { ChamberId, Equipped, Profile, Research, Stats } from "./profile";
 export {

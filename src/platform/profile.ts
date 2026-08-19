@@ -44,6 +44,9 @@ export interface Stats {
   conquered: number;
   abilities: number;
   tunnels: number;
+  /** Current and best run of wins, for the profile card. */
+  winStreak: number;
+  bestStreak: number;
 }
 
 export interface Profile {
@@ -58,6 +61,8 @@ export interface Profile {
   research: Partial<Record<SpeciesId, Research>>;
   hill: Partial<Record<ChamberId, number>>;
   equip: Partial<Record<SpeciesId, Equipped>>;
+  /** How often each colony has been fielded, for the "favourite species" readout. */
+  fav: Partial<Record<SpeciesId, number>>;
   /** Trophy Road: the reward keys already paid out, and whether the pass is owned. */
   roadClaimed: string[];
   pass: boolean;
@@ -86,13 +91,16 @@ export function defaultProfile(): Profile {
     v: VERSION,
     name: "Commander",
     trophies: 0,
-    mycel: 0,
+    // A new colony opens with a little mycelium, as the legacy build hands out: enough to
+    // buy the first chamber and see what the Anthill is for.
+    mycel: 120,
     pheromone: 0,
-    stats: { games: 0, wins: 0, conquered: 0, abilities: 0, tunnels: 0 },
+    stats: { games: 0, wins: 0, conquered: 0, abilities: 0, tunnels: 0, winStreak: 0, bestStreak: 0 },
     unlocked: [...STARTER_SPECIES],
     research: {},
     hill: {},
     equip: {},
+    fav: {},
     roadClaimed: [],
     pass: false,
     quests: [],
@@ -142,11 +150,14 @@ export function normalise(raw: unknown): Profile {
       conquered: int(p.stats?.conquered, 0, 1e9, 0),
       abilities: int(p.stats?.abilities, 0, 1e9, 0),
       tunnels: int(p.stats?.tunnels, 0, 1e9, 0),
+      winStreak: int(p.stats?.winStreak, 0, 1e9, 0),
+      bestStreak: int(p.stats?.bestStreak, 0, 1e9, 0),
     },
     unlocked: Array.isArray(p.unlocked) ? p.unlocked.filter(isSpecies) : [...STARTER_SPECIES],
     research: {},
     hill: {},
     equip: {},
+    fav: {},
     // Unknown keys are dropped rather than kept: a claim key that no longer pays anything
     // would sit on the road forever showing "claimed" against an empty cell.
     roadClaimed: Array.isArray(p.roadClaimed)
@@ -195,6 +206,11 @@ export function normalise(raw: unknown): Profile {
     };
   }
 
+  for (const id of Object.keys(SPECIES) as SpeciesId[]) {
+    const n = p.fav?.[id];
+    if (typeof n === "number" && Number.isFinite(n) && n > 0) out.fav[id] = Math.floor(n);
+  }
+
   for (const key of Object.keys(CHAMBER_MAX) as ChamberId[]) {
     out.hill[key] = int(p.hill?.[key], 0, CHAMBER_MAX[key], 0);
   }
@@ -236,13 +252,27 @@ export class ProfileStore {
 
   isUnlocked(id: SpeciesId): boolean { return this.profile.unlocked.includes(id); }
 
-  /** Record a finished match. Trophies floor at zero (CLAUDE.md §8). */
-  recordResult(won: boolean, species: SpeciesId): Readonly<Profile> {
+  /**
+   * Record a finished match: trophies (floored at zero, CLAUDE.md §8), mycelium, the
+   * favourite-species tally, the win streak, and XP toward the colony level.
+   *
+   * XP is a base for playing, a bonus for winning and a little for a longer game — the
+   * legacy formula, so both builds level at the same rate.
+   */
+  recordResult(won: boolean, species: SpeciesId, turns = 0): Readonly<Profile> {
     return this.update((p) => {
       p.stats.games++;
-      if (won) p.stats.wins++;
+      if (won) {
+        p.stats.wins++;
+        p.stats.winStreak++;
+        p.stats.bestStreak = Math.max(p.stats.bestStreak, p.stats.winStreak);
+      } else {
+        p.stats.winStreak = 0;
+      }
       p.trophies = Math.max(0, p.trophies + (won ? TROPHY_WIN : TROPHY_LOSS));
       p.mycel += won ? MATCH_MYCEL.win : MATCH_MYCEL.loss;
+      p.fav[species] = (p.fav[species] ?? 0) + 1;
+      p.xp += matchXp(won, turns);
       p.lastSpecies = species;
     });
   }
@@ -434,6 +464,10 @@ export class ProfileStore {
  * which is why a match pays none of it.
  */
 export const MATCH_MYCEL = { win: 25, loss: 8 } as const;
+
+/** XP a finished match pays. Long games are worth a little more, capped at +30. */
+export const matchXp = (won: boolean, turns: number): number =>
+  (won ? 90 : 35) + Math.min(30, Math.max(0, Math.floor(turns)));
 
 function neutralMods(): PlayerMods {
   return {
