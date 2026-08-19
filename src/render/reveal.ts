@@ -12,7 +12,14 @@
 import { key } from "../engine";
 import type { Coord, Direction, Player } from "../engine";
 
-export const REVEAL_MS = 500;
+/**
+ * How long the fill front takes to cross ONE tile.
+ *
+ * The front moves at this speed whatever the length of the group, so a single capture and
+ * the tenth step of a long Travel extend at exactly the same rate — that constant speed is
+ * what makes the growth read as one body moving rather than tiles popping.
+ */
+export const REVEAL_MS_PER_TILE = 260;
 
 /** Which edge of the cell the fill grows FROM. */
 export type RevealEdge = "L" | "R" | "U" | "D";
@@ -45,8 +52,6 @@ interface Group {
   n: number;
 }
 
-const easeOut = (x: number): number => 1 - Math.pow(1 - x, 3);   // fast start, slow settle
-
 export class RevealTracker {
   private states = new Map<string, RevealState>();
   private groups: Group[] = [];
@@ -67,7 +72,7 @@ export class RevealTracker {
       this.states.set(k, { rv: 0, edge: t.edge, prev: t.prev });
     }
     const n = keys.length;
-    this.groups.push({ keys, start: performance.now(), dur: REVEAL_MS * (1 + (n - 1) * 0.4), n });
+    this.groups.push({ keys, start: performance.now(), dur: REVEAL_MS_PER_TILE * n, n });
   }
 
   step(now: number): void {
@@ -76,7 +81,8 @@ export class RevealTracker {
       const g = this.groups[i] as Group;
       const raw = (now - g.start) / g.dur;
       const p = raw <= 0 ? 0 : (raw >= 1 ? 1 : raw);
-      const front = easeOut(p) * g.n;               // one eased front advancing along the path
+      // Linear: one front advancing along the path at a constant tile-per-second rate.
+      const front = p * g.n;
 
       for (let j = 0; j < g.n; j++) {
         const st = this.states.get(g.keys[j] as string);

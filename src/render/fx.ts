@@ -15,6 +15,9 @@ type Fx =
 
 const TAU = 6.283;
 
+/** Milliseconds the streak takes to cross one tile. Matches REVEAL_MS_PER_TILE. */
+const FLOW_MS_PER_STEP = 260;
+
 export class FxLayer {
   private items: Fx[] = [];
 
@@ -24,7 +27,13 @@ export class FxLayer {
 
   flow(path: Coord[], owner: Player): void {
     if (this.reduced || path.length < 2) return;
-    this.items.push({ type: "flow", path: path.slice(), owner, t: performance.now(), dur: 420 });
+    // The streak keeps pace with the fill front (reveal.ts): same tiles-per-second, so the
+    // comet arrives exactly as the ground it crossed finishes filling.
+    const steps = Math.max(1, path.length - 1);
+    this.items.push({
+      type: "flow", path: path.slice(), owner, t: performance.now(),
+      dur: this.reduced ? 1 : FLOW_MS_PER_STEP * steps,
+    });
   }
 
   clash(at: Coord): void {

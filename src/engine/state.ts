@@ -82,16 +82,39 @@ export function createGame(opts: NewGameOptions): GameState {
 function reservedCells(size: number, shape: ReadonlyArray<readonly [number, number]>): Set<string> {
   const out = new Set<string>();
   for (const [dc, dr] of shape) {
-    out.add(`${dc},${dr}`);                                  // "you" corner
-    out.add(`${size - 1 - dc},${size - 1 - dr}`);            // mirrored "ai" corner
+    const you = startCell(size, "you", dc, dr);
+    const ai = startCell(size, "ai", dc, dr);
+    out.add(`${you.c},${you.r}`);
+    out.add(`${ai.c},${ai.r}`);
   }
   return out;
 }
 
-/** Hive plus-shape at the exact centre, plus symmetric resources, guards and rocks. */
+/**
+ * Where a formation cell lands for each colony.
+ *
+ * YOU hold the BOTTOM-LEFT corner and the enemy the TOP-RIGHT — the two ends of the
+ * board's leading diagonal. Every map is symmetric under a 180° rotation about the centre
+ * ((c,r) → (N-1-c, N-1-r)), which maps one corner exactly onto the other, so neither side
+ * gets better ground. `onEnemyHalf` splits the board along that same diagonal.
+ */
+function startCell(
+  size: number, p: Player, dc: number, dr: number,
+): { c: number; r: number } {
+  return p === "you"
+    ? { c: dc, r: size - 1 - dr }
+    : { c: size - 1 - dc, r: dr };
+}
+
+/**
+ * The three maps, laid out cell by cell exactly as the legacy build authors them.
+ *
+ * They are hand-placed rather than generated: each one is a specific piece of level design
+ * — where the lanes are, which resource is worth fighting for, where the wild garrisons sit
+ * — and a generator produced bland, samey boards instead.
+ */
 function buildMap(state: GameState, reserved: Set<string>): void {
   const n = state.size;
-  const mid = Math.floor(n / 2);
 
   const set = (c: number, r: number, fn: (t: Tile) => void): void => {
     const t = tileAt(state, c, r);
@@ -101,33 +124,63 @@ function buildMap(state: GameState, reserved: Set<string>): void {
     if (reserved.has(`${c},${r}`)) return;    // never overwrite a starting cell
     set(c, r, fn);
   };
+  const hive = (c: number, r: number): void => {
+    set(c, r, (t) => { t.terrain = "hiveQ"; });
+    for (const [dc, dr] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as const) {
+      set(c + dc, r + dr, (t) => { t.terrain = "hiveG"; });
+    }
+  };
+  const resource = (c: number, r: number, guard: number): void => {
+    setFree(c, r, (t) => { t.terrain = "resource"; t.guard = guard; });
+  };
+  const wild = (c: number, r: number, guard: number): void => {
+    setFree(c, r, (t) => { t.guard = guard; });
+  };
+  const rock = (c: number, r: number): void => {
+    setFree(c, r, (t) => { t.terrain = "blocked"; });
+  };
 
-  set(mid, mid, (t) => { t.terrain = "hiveQ"; });
-  set(mid - 1, mid, (t) => { t.terrain = "hiveG"; });
-  set(mid + 1, mid, (t) => { t.terrain = "hiveG"; });
-  set(mid, mid - 1, (t) => { t.terrain = "hiveG"; });
-  set(mid, mid + 1, (t) => { t.terrain = "hiveG"; });
-
-  // Resources placed mirror-symmetrically, most behind a wild garrison.
-  const inset = Math.max(1, Math.floor(n / 4));
-  const spots: Array<[number, number]> = [
-    [inset, mid], [n - 1 - inset, mid],
-    [mid, inset], [mid, n - 1 - inset],
-  ];
-  for (const [c, r] of spots) {
-    setFree(c, r, (t) => { if (t.terrain === "ground") { t.terrain = "resource"; t.guard = 4 + Math.floor(n / 3); } });
+  if (n === 7) {
+    // Skirmish — a tight duel: everyone meets in the middle within a few turns.
+    hive(3, 3);
+    resource(1, 3, 5); resource(5, 3, 5);          // one contested resource each side
+    wild(3, 1, 4); wild(3, 5, 4);                  // a wild garrison on each flank
+    rock(1, 1); rock(5, 5);                        // lanes instead of an open square
+    return;
   }
 
-  // Rock blockers create lanes. Mirrored so neither side gets a geometric edge.
-  const rocks: Array<[number, number]> = n >= 9
-    ? [[inset, inset], [n - 1 - inset, n - 1 - inset], [n - 1 - inset, inset], [inset, n - 1 - inset]]
-    : [];
-  for (const [c, r] of rocks) setFree(c, r, (t) => { if (t.terrain === "ground") t.terrain = "blocked"; });
+  if (n === 13) {
+    // Gauntlet — two side lakes funnel everyone through the Queen's channel.
+    hive(6, 6);
+    resource(3, 2, 5); resource(9, 10, 5);         // corner resources
+    resource(6, 2, 4); resource(6, 10, 4);         // top and bottom lanes
+    resource(4, 6, 6); resource(8, 6, 6);          // flanking the Queen's channel
+    // Lakes last, and only over open ground: a semicircle bulging in from each side wall.
+    const R = 3, cr = 6;
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        const t = tileAt(state, c, r);
+        if (!t || t.terrain !== "ground") continue;
+        const left = c * c + (r - cr) * (r - cr);
+        const right = (c - (n - 1)) * (c - (n - 1)) + (r - cr) * (r - cr);
+        if (left <= R * R || right <= R * R) rock(c, r);
+      }
+    }
+    return;
+  }
+
+  // Corridor (9×9) — the original board.
+  hive(4, 4);
+  rock(2, 3); rock(6, 5); rock(6, 3); rock(2, 5);
+  resource(1, 3, 6); resource(7, 5, 6);            // the defended pair
+  resource(5, 1, 0); resource(3, 7, 0);            // and two open ones
+  wild(5, 3, 4); wild(3, 5, 4);                    // wild ant colonies
 }
 
 /**
  * Place a colony's five starting tiles: a nest plus four stables.
- * ALWAYS exactly five — no upgrade may add more (CLAUDE.md §5).
+ * ALWAYS exactly five — no upgrade may add more (CLAUDE.md §5), so the cells are forced to
+ * open ground rather than skipped when terrain got there first.
  */
 function placeStart(
   state: GameState, p: Player,
@@ -135,15 +188,15 @@ function placeStart(
   mods: PlayerMods,
 ): void {
   const n = state.size;
-  const topLeft = p === "you";
   let placed = 0;
 
   shape.forEach(([dc, dr], i) => {
-    const c = topLeft ? dc : n - 1 - dc;
-    const r = topLeft ? dr : n - 1 - dr;
+    const { c, r } = startCell(n, p, dc, dr);
     const t = tileAt(state, c, r);
-    if (!t || t.terrain === "blocked" || t.terrain === "hiveQ" || t.terrain === "hiveG") return;
+    if (!t) return;
+    t.terrain = "ground";
     t.owner = p;
+    t.guard = 0;
     if (i === 0) {
       t.struct = "nest";
       t.soldiers = START_SOLDIERS.nest + mods.royal;   // Royal Chamber: +1 per level
@@ -151,7 +204,6 @@ function placeStart(
       t.struct = "stable";
       t.soldiers = START_SOLDIERS.stable;
     }
-    t.guard = 0;
     placed++;
   });
 

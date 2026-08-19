@@ -91,6 +91,48 @@ export function drawBackground(
 }
 
 /** Clip to the revealed portion of a cell — a directional "progress bar" wipe. */
+interface BadgeOptions {
+  text: string;
+  /** Centre of the badge. */
+  cx: number;
+  cy: number;
+  stroke: string;
+  ink: string;
+  /** Shrinks the whole badge; the wild-garrison one sits slightly smaller. */
+  scale?: number;
+}
+
+/**
+ * The troop count.
+ *
+ * A single digit draws as a CIRCLE, and the badge only grows sideways once the number needs
+ * the room — the corner radius stays at half the height, so 7, 42 and 128 read as the same
+ * shape stretched, not as three different badges. Sizes are in tile units so it holds up on
+ * a 7×7 board and a 13×13 one alike.
+ */
+function countBadge(scene: Scene, o: BadgeOptions): void {
+  const { ctx, layout } = scene;
+  const ts = layout.ts;
+  const scale = o.scale ?? 1;
+  const ph = ts * 0.42 * scale;
+
+  ctx.font = `900 ${Math.max(13, ts * 0.34 * scale)}px var(--font),sans-serif`;
+  const pw = Math.max(ph, ctx.measureText(o.text).width + ts * 0.24 * scale);
+  const px = o.cx - pw / 2;
+  const py = o.cy - ph / 2;
+
+  ctx.fillStyle = "rgba(8,12,20,0.82)";
+  rrect(ctx, px, py, pw, ph, ph / 2); ctx.fill();
+  ctx.lineWidth = Math.max(1.2, ts * 0.022);
+  ctx.strokeStyle = o.stroke;
+  rrect(ctx, px, py, pw, ph, ph / 2); ctx.stroke();
+
+  ctx.fillStyle = o.ink;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(o.text, o.cx, o.cy + 1);
+}
+
 function clipReveal(ctx: CanvasRenderingContext2D, layout: Layout, t: Tile, rv: number, edge: RevealEdge): void {
   const x = layout.x0(t.c), y = layout.y0(t.r), s = layout.ts;
   let cx0 = x, cy0 = y, cw = s, ch = s;
@@ -190,15 +232,14 @@ export function drawTile(scene: Scene, t: Tile): void {
 
   // wild neutral garrison — a defended tile you must fight through
   if (!t.owner && t.guard > 0) {
-    const txt = "🛡" + t.guard;
-    ctx.font = `900 ${Math.max(13, ts * 0.30)}px var(--font),sans-serif`;
-    const pw = ctx.measureText(txt).width + ts * 0.22, ph = ts * 0.38;
-    const px = layout.cx(t.c) - pw / 2, py = layout.cy(t.r) - ph / 2;
-    ctx.fillStyle = "rgba(8,12,20,0.82)"; rrect(ctx, px, py, pw, ph, ph / 2); ctx.fill();
-    ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(190,205,225,0.7)";
-    rrect(ctx, px, py, pw, ph, ph / 2); ctx.stroke();
-    ctx.fillStyle = "#eef3fb"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText(txt, layout.cx(t.c), py + ph / 2 + 1);
+    countBadge(scene, {
+      text: "🛡" + t.guard,
+      cx: layout.cx(t.c),
+      cy: layout.cy(t.r),
+      stroke: "rgba(190,205,225,0.7)",
+      ink: "#eef3fb",
+      scale: 0.9,
+    });
   }
 
   if (t.owner && (t.struct === "stable" || t.struct === "nest")) {
@@ -230,18 +271,13 @@ export function drawTile(scene: Scene, t: Tile): void {
   if (t.owner && t.soldiers > 0 && !scene.hideCounts) {
     ctx.save();
     ctx.globalAlpha = rev;
-    const txt = String(t.soldiers);
-    ctx.font = `900 ${Math.max(14, ts * 0.36)}px var(--font),sans-serif`;
-    const pw = ctx.measureText(txt).width + ts * 0.26, ph = ts * 0.42;
-    const px = layout.cx(t.c) - pw / 2;
-    const py = t.struct === "nest" ? layout.cy(t.r) + h * 0.14 : layout.cy(t.r) - ph / 2;
-    ctx.fillStyle = "rgba(8,12,20,0.82)"; rrect(ctx, px, py, pw, ph, ph / 2); ctx.fill();
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = detached ? "rgba(150,165,190,0.7)" : ownerCol(t.owner, "glow");
-    rrect(ctx, px, py, pw, ph, ph / 2); ctx.stroke();
-    ctx.fillStyle = detached ? "#c7d0de" : "#fff";
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText(txt, layout.cx(t.c), py + ph / 2 + 1);
+    countBadge(scene, {
+      text: String(t.soldiers),
+      cx: layout.cx(t.c),
+      cy: t.struct === "nest" ? layout.cy(t.r) + h * 0.14 + ts * 0.21 : layout.cy(t.r),
+      stroke: detached ? "rgba(150,165,190,0.7)" : ownerCol(t.owner, "glow"),
+      ink: detached ? "#c7d0de" : "#fff",
+    });
     ctx.restore();
   }
 

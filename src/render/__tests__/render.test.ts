@@ -3,12 +3,12 @@ import { blankGame, put } from "../../engine/__tests__/helpers";
 import { recomputeConnectivity, tile } from "../../engine";
 import type { Coord, EngineEvent, GameState, Tile } from "../../engine";
 import { Layout } from "../layout";
-import { RevealTracker, edgeFor } from "../reveal";
+import { REVEAL_MS_PER_TILE, RevealTracker, edgeFor } from "../reveal";
 import { FxLayer } from "../fx";
 import { animate, sourceOf } from "../animate";
 import { basicLook } from "../art";
 import { drawTile, type Scene } from "../board";
-import { makeRecorder, type Recorder } from "./recorder";
+import { makeRecorder, type Call, type Recorder } from "./recorder";
 
 function scene(state: GameState, over: Partial<Scene> = {}): { s: Scene; rec: Recorder } {
   const rec = makeRecorder();
@@ -202,5 +202,127 @@ describe("drawTile", () => {
     // the mound is drawn with quadratic curves; a plain stable has none
     expect(draw(state, nest).has("quadraticCurveTo")).toBe(true);
     expect(draw(state, stable).has("quadraticCurveTo")).toBe(false);
+  });
+});
+
+describe("the troop-count badge", () => {
+  /**
+   * Milan asked for a circle that stretches sideways as the number grows. The badge is
+   * drawn with arcTo corners, so its shape is only checkable by the geometry recorded —
+   * width against height, and a corner radius of exactly half the height.
+   */
+  /**
+   * The badge is the last rounded rect in the frame — the tile body draws one too, so the
+   * corners are collected backwards from the number being stamped.
+   */
+  const badgeCorners = (rec: Recorder): Call[] => {
+    const end = rec.calls.map((c) => c.fn).lastIndexOf("fillText");
+    if (end < 0) return [];
+    const out: Call[] = [];
+    for (let i = end; i >= 0 && out.length < 8; i--) {
+      const call = rec.calls[i] as Call;
+      if (call.fn === "arcTo") out.push(call);
+    }
+    return out;
+  };
+
+  const badgeBox = (rec: Recorder): { w: number; h: number } | null => {
+    // rrect lays down moveTo + four arcTo; the box is the extent of those corner points.
+    const pts = badgeCorners(rec).flatMap((c) => [
+      { x: c.args[0] as number, y: c.args[1] as number },
+      { x: c.args[2] as number, y: c.args[3] as number },
+    ]);
+    if (!pts.length) return null;
+    const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+    return { w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+  };
+
+  const badgeFor = (count: number): { w: number; h: number } => {
+    const s = blankGame("tiny");
+    const t = put(s, 2, 2, { owner: "you", struct: "stable", soldiers: count });
+    recomputeConnectivity(s);
+    const box = badgeBox(draw(s, t));
+    expect(box, `no badge drawn for ${count}`).toBeTruthy();
+    return box as { w: number; h: number };
+  };
+
+  it("draws a single digit as a circle", () => {
+    const { w, h } = badgeFor(7);
+    expect(w).toBeCloseTo(h, 1);
+  });
+
+  it("stretches horizontally as the number grows, and never taller", () => {
+    const one = badgeFor(7);
+    const two = badgeFor(42);
+    const three = badgeFor(128);
+    expect(two.w).toBeGreaterThan(one.w);
+    expect(three.w).toBeGreaterThan(two.w);
+    expect(two.h).toBeCloseTo(one.h, 1);
+    expect(three.h).toBeCloseTo(one.h, 1);
+  });
+
+  it("keeps the corner radius at half the height, so it stays a pill", () => {
+    const s = blankGame("tiny");
+    const t = put(s, 2, 2, { owner: "you", struct: "stable", soldiers: 128 });
+    recomputeConnectivity(s);
+    const rec = draw(s, t);
+    const radii = badgeCorners(rec).map((c) => c.args[4] as number);
+    const box = badgeBox(rec) as { w: number; h: number };
+    for (const r of radii) expect(r).toBeCloseTo(box.h / 2, 1);
+  });
+
+  it("still shows the wild garrison's strength on an unowned tile", () => {
+    const s = blankGame("tiny");
+    const t = put(s, 2, 2, { owner: null, guard: 4 });
+    const rec = draw(s, t);
+    expect(rec.texts().join(" ")).toContain("4");
+  });
+});
+
+describe("the reveal front", () => {
+  /**
+   * "Smooth and linear, extending from the point of attack": the front must cover equal
+   * ground in equal time, and the first tile of a long push must not sprint ahead of the
+   * last. An eased front fails both.
+   */
+  it("advances at a constant rate", () => {
+    const reveal = new RevealTracker();
+    reveal.reduced = false;
+    reveal.begin([{ at: { c: 0, r: 0 }, edge: "L", prev: null }]);
+    const start = performance.now();
+
+    const at = (fraction: number): number => {
+      reveal.step(start + REVEAL_MS_PER_TILE * fraction);
+      return reveal.progress(0, 0);
+    };
+    // Quarter of the time, quarter of the tile — within a hair of exact.
+    expect(at(0.25)).toBeCloseTo(0.25, 2);
+    expect(at(0.5)).toBeCloseTo(0.5, 2);
+    expect(at(0.75)).toBeCloseTo(0.75, 2);
+  });
+
+  it("crosses every tile of a long push at the same speed as a single one", () => {
+    const one = new RevealTracker(); one.reduced = false;
+    one.begin([{ at: { c: 0, r: 0 }, edge: "L", prev: null }]);
+
+    const many = new RevealTracker(); many.reduced = false;
+    many.begin([0, 1, 2, 3].map((c) => ({ at: { c, r: 0 }, edge: "L" as const, prev: null })));
+
+    const t0 = performance.now();
+    one.step(t0 + REVEAL_MS_PER_TILE * 0.5);
+    many.step(t0 + REVEAL_MS_PER_TILE * 0.5);
+    // Half a tile-time in, both have filled half of their first tile.
+    expect(many.progress(0, 0)).toBeCloseTo(one.progress(0, 0), 2);
+    // ...and nothing beyond it has started.
+    expect(many.progress(1, 0)).toBe(0);
+  });
+
+  it("fills from the edge the attack came from", () => {
+    const reveal = new RevealTracker();
+    reveal.reduced = false;
+    // Troops moving right into (3,0) must fill it from its left edge.
+    reveal.begin([{ at: { c: 3, r: 0 }, edge: edgeFor("R"), prev: "ai" }]);
+    expect(reveal.get(3, 0)?.edge).toBe("L");
+    expect(reveal.get(3, 0)?.prev).toBe("ai");
   });
 });
