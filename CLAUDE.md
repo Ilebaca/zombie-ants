@@ -16,7 +16,9 @@ Grounded in real ant biology: nine real species whose real behaviours are their 
 - Repo: `ilebaca/zombie-ants`
 - Design spec: `docs/GDD.html` — accurate to the shipped rules, use it as the reference
 - Legacy build: `legacy/zombie-ants-pro.html` — the original single-file game, still playable.
-  It is the behavioural source of truth for anything this codebase has not ported yet.
+  It is the behavioural **and visual** source of truth: `src/ui/game.css` is a VERBATIM copy
+  of its `<style>` block, and the screens emit its DOM (same ids, same class names) so those
+  rules apply unchanged. A test compares the two files line by line — see §12.
 
 ## 2. Who you are working with
 
@@ -174,10 +176,15 @@ provisional and say so if asked.
 
 1. Engine port + tests ✅ (all nine abilities implemented)
 2. Canvas renderer driven by engine events ✅
-3. Meta UI: home hub + map/species/formation setup + result ✅; Anthill, Antarium, Trophy
-   Road and daily quests ✅. Only the **shop** is left, and it is really step 5 wearing a
-   different hat — everything it would sell (premium species, the Trophy Pass) already has
-   its grant hook (`grantSpecies`, `grantPass`).
+3. Meta UI ✅ — every legacy screen is ported except three: **shop**, **lucky hatch** and
+   the (unreachable in legacy) profile card. Built: home with its top bar and five-tab
+   bottom nav, the three setup steps, Anthill, Antarium + per-species page, Colony/quests
+   with the XP spine, Trophy Road, Challenges, daily challenge, Leaderboard, Settings, the
+   slide-in menu, How to play, and the result card.
+   The shop is really step 5 wearing a different hat — everything it would sell (premium
+   species, the Trophy Pass) already has its grant hook (`grantSpecies`, `grantPass`).
+   The lucky hatch needs the larva currency and a cosmetics pool, neither of which exists
+   yet, which is why larva rewards are paid in pheromone (§10).
 4. Capacitor wrap → Android build
 5. RevenueCat in-app purchases (the legacy `buyPass()`/shop grants are the integration points)
 6. Play Console release
@@ -200,7 +207,47 @@ research. Every purchase goes through a `ProfileStore` method that returns `fals
 than throwing when the player cannot afford it, so a screen can tap optimistically and
 nothing ever goes half-spent.
 
-## 10. Verifying visual work
+## 10. Staying identical to the legacy build
+
+The ported UI drifted badly once already: 442 of the legacy stylesheet's rules were missing
+and 156 more differed, and every meta screen had invented markup. The fix was to stop
+hand-porting. **`src/ui/game.css` is a straight copy of the legacy `<style>` block** and
+`src/ui/__tests__/css-parity.test.ts` fails the suite if the two files diverge by a single
+line. Change a rule in one, change it in the other.
+
+Because the stylesheet selects by id (`#home`'s artwork, the bottom-nav padding shared by
+`#antarium`/`#anthill`/…) and by class, **those strings are styling, not labels.** Renaming
+`.hillwrap` does not rename anything; it unstyles the screen.
+
+How to check a screen really matches, without being able to see it:
+
+1. Serve both (`npm run dev`; the legacy file is at `/legacy/zombie-ants-pro.html`).
+2. Walk each build to the same screen **through its own UI** — jumping straight to a screen
+   skips side effects, e.g. the species picker is what recolours `--you`.
+3. Dump a normalised DOM shape (tag + id + sorted classes + leaf text) for both and diff.
+   That names the exact element that differs, which a screenshot cannot.
+4. Then pixel-diff the screenshots (pixelmatch) to catch spacing the DOM cannot show. Most
+   remaining differences turn out to be one inline style: the legacy build sets a few
+   margins inline (`secthead`), and those do not live in the stylesheet.
+
+### Deliberate deviations
+
+These differ from the legacy build **on purpose**. Anything else that differs is a bug.
+
+- **Larva.** The lucky-hatch currency is not ported, so rewards paid in larva pay pheromone
+  instead (50 each). Affects the Trophy Road tables, two quests and the trophy-strip icon.
+- **Daily quest roll.** Legacy rolls with `Math.random` and stores the result; this build
+  derives the day's three from the day number (§11), so a reload cannot reroll.
+- **Formation thumbnails.** Legacy draws them once at boot and never redraws, so they keep
+  the default orange after the species picker recolours the palette. This build redraws
+  them, so they match the rest of the screen.
+- **`RESEARCH LV NaN`.** The legacy species page reads a field that does not exist. Ours
+  counts the levels properly.
+- **Leaderboard "You".** Legacy shows a hardcoded 999 points; ours shows real trophies.
+- **Venom Rain's description** says "10 troops/turn" in the legacy build, but both engines
+  do 7. The text was copied verbatim, so the number is wrong in both — worth deciding.
+
+## 11. Verifying visual work
 
 You cannot see the screen, so "it renders" is not something to assert from reading code.
 Two things that do work:
@@ -222,7 +269,7 @@ Two things that do work:
 
 Neither proves it *looks* right. Say plainly that Milan needs to check anything visual.
 
-## 11. Progression & storage
+## 12. Progression & storage
 
 `src/platform/` owns everything persistent. The engine never imports it — that separation is
 what keeps AI search from writing stats or currencies (§5).
@@ -235,6 +282,8 @@ what keeps AI search from writing stats or currencies (§5).
   `NaN` chamber level that would silently distort combat maths. Levels are clamped to their
   caps, and a save stripped of every species is repopulated — the player must always have
   something to field.
+- **`normalise()` fallbacks are the default profile's values, never bare zeros.** A new save
+  has no `mycel` field at all, and falling back to 0 silently cancelled the starting grant.
 - Daily quests roll from the **day number**, not from stored randomness, so a reload mid-day
   returns the same three. Progress is written by the app shell from engine events it
   receives through `MatchScreen`'s `onEvents` — the engine knows nothing about quests, and
