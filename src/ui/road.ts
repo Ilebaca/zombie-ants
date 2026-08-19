@@ -1,52 +1,32 @@
 /**
- * The Trophy Road: a vertical ladder of rewards, free track on one side, pass track on the
- * other, a chapter every 500 trophies.
+ * The Trophy Road: a vertical ladder of rewards, pass track on the left, free track on the
+ * right, a chapter every 500 trophies.
+ *
+ * Markup and running order are the legacy build's (road2 → roadchap → roadrow), including
+ * where the header strip sits: after the ladder, so the screen opens on it when scrolled to
+ * the bottom.
  *
  * The whole table comes from platform/road.ts, so this file decides nothing about what a
- * reward is worth — it renders stops and asks the store to pay out. The road runs to 20,000
- * trophies, so it builds every row once and scrolls to where the player actually is rather
- * than re-rendering on scroll.
+ * reward is worth — it renders stops and asks the store to pay out.
  */
 import { ROAD_CHAPTER, ROAD_STEP, rewardText, roadKey, roadStops } from "../platform";
 import type { ProfileStore, RoadReward, RoadStop } from "../platform";
 import { el, screenEl, screenHeader, toast } from "./chrome";
 
 export function buildTrophyRoad(store: ProfileStore, onBack: () => void): HTMLElement {
-  const root = screenEl("screen--meta");
+  const root = screenEl("achievements");
   /** Kept across renders so claiming a reward does not throw the player back to the top. */
   let scrollTop: number | null = null;
 
   const render = (): void => {
     const profile = store.get();
     root.replaceChildren();
-    screenHeader(root, {
-      title: "Trophy Road",
-      sub: "Earn trophies · claim rewards",
-      onBack,
-      profile,
-    });
+    screenHeader(root, { title: "Trophy Road", sub: "Earn trophies · claim rewards", onBack });
 
-    const body = el("div", "screenbody metabody roadbody");
+    const body = el("div", "screenbody achbody");
+    body.id = "achBody";
 
-    /* Header strip: where the player stands, and the pass. */
-    const head = el("div", "roadhead");
-    const left = el("div", "roadhl");
-    left.append(
-      el("div", "roadt", `🏆 ${profile.trophies} trophies`),
-      el("div", "roadsub", `Free reward every ${ROAD_CHAPTER} · Pass reward every ${ROAD_STEP}`),
-    );
-    head.appendChild(left);
-    if (profile.pass) {
-      head.appendChild(el("span", "passon", "PASS ✓"));
-    } else {
-      // The pass is not purchasable yet — the shop arrives with RevenueCat (roadmap step 5).
-      const soon = el("button", "passbuy off", "Pass · soon");
-      soon.disabled = true;
-      head.appendChild(soon);
-    }
-    body.appendChild(head);
-
-    const ladder = el("div", "road");
+    const ladder = el("div", "road2");
     let chapter = 0;
     let section: HTMLElement | null = null;
 
@@ -54,26 +34,45 @@ export function buildTrophyRoad(store: ProfileStore, onBack: () => void): HTMLEl
       if (stop.chapter !== chapter) {
         chapter = stop.chapter;
         section = el("section", "roadchap");
-        section.style.setProperty("--chapbg", chapterTint(chapter));
-        const label = el("div", "roadchapter" + (profile.trophies >= (chapter - 1) * ROAD_CHAPTER ? " reached" : ""));
+        const label = el("div",
+          "roadchapter" + (profile.trophies >= (chapter - 1) * ROAD_CHAPTER ? " reached" : ""));
         label.appendChild(el("span", undefined, `Chapter ${chapter}`));
         section.appendChild(label);
         ladder.appendChild(section);
       }
       section?.appendChild(roadRow(stop, profile.trophies));
     }
-
     body.appendChild(ladder);
+    body.appendChild(head());
     root.appendChild(body);
 
-    // Open on the player's current position rather than at trophy 250 — after a hundred
-    // chapters the top of the list is the least useful place to land.
+    // Legacy opens this screen scrolled to the bottom, where the header strip sits.
     requestAnimationFrame(() => {
-      if (scrollTop !== null) { body.scrollTop = scrollTop; return; }
-      const here = body.querySelector<HTMLElement>(".rnode.here");
-      if (here) body.scrollTop = Math.max(0, here.offsetTop - body.clientHeight / 2);
+      body.scrollTop = scrollTop ?? body.scrollHeight;
     });
     body.addEventListener("scroll", () => { scrollTop = body.scrollTop; }, { passive: true });
+  };
+
+  /** Where the player stands, and the pass. Rendered last, as in the legacy build. */
+  const head = (): HTMLElement => {
+    const profile = store.get();
+    const box = el("div", "roadhead");
+    const left = el("div", "roadhl");
+    left.append(
+      el("div", "roadt", `🏆 ${profile.trophies} trophies`),
+      el("div", "roadsub",
+        `Free reward every ${ROAD_CHAPTER} · Pass reward every ${ROAD_STEP} · New chapter every ${ROAD_CHAPTER}`),
+    );
+    box.appendChild(left);
+    if (profile.pass) {
+      box.appendChild(el("span", "passon", "PASS ✓"));
+    } else {
+      // The pass is not purchasable yet — the shop arrives with RevenueCat (roadmap 5).
+      const soon = el("button", "passbuy", "Get Pass");
+      soon.onclick = () => toast(root, "The Trophy Pass arrives with the shop.", "warn");
+      box.appendChild(soon);
+    }
+    return box;
   };
 
   const roadRow = (stop: RoadStop, trophies: number): HTMLElement => {
@@ -84,9 +83,8 @@ export function buildTrophyRoad(store: ProfileStore, onBack: () => void): HTMLEl
 
     const centre = el("div", "rcolC" + (reached ? " reached" : ""));
     const node = el("div", "rnode" + (reached ? " done" : ""));
-    // "here" is the first stop the player has NOT reached — where the screen should open.
-    if (!reached && trophies + ROAD_STEP >= stop.trophies) node.classList.add("here");
-    node.appendChild(el("b", undefined, reached ? "✓" : String(stop.trophies)));
+    if (reached) node.textContent = "✓";
+    else node.appendChild(el("b", undefined, String(stop.trophies)));
     centre.appendChild(node);
     row.appendChild(centre);
 
@@ -116,7 +114,7 @@ export function buildTrophyRoad(store: ProfileStore, onBack: () => void): HTMLEl
       cell.onclick = () => {
         if (store.claimRoad(key)) {
           render();
-          toast(root, `Claimed ${rewardText(reward)}`, "good");
+          toast(root, "Reward claimed!", "good");
         }
       };
     }
@@ -130,9 +128,3 @@ export function buildTrophyRoad(store: ProfileStore, onBack: () => void): HTMLEl
 
 const cellState = (claimed: boolean, claimable: boolean, passLocked: boolean): string =>
   claimed ? "got" : passLocked ? "passlock" : claimable ? "ready" : "locked";
-
-/** Each chapter gets its own hue so scrolling reads as progress, not one long list. */
-const chapterTint = (chapter: number): string => {
-  const hue = (chapter * 47) % 360;
-  return `linear-gradient(180deg, hsl(${hue} 42% 15%), hsl(${hue} 42% 10%))`;
-};

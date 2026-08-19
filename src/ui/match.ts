@@ -16,7 +16,6 @@ import type {
 import { aiTurn } from "../ai/search";
 import type { Difficulty } from "../ai/search";
 import { BoardRenderer } from "../render";
-import "./match.css";
 
 /** Seconds a player gets per move before the turn passes automatically. */
 const MOVE_SECONDS = 15;
@@ -70,7 +69,10 @@ export class MatchScreen {
   constructor(host: HTMLElement, private opts: MatchOptions) {
     this.root = document.createElement("div");
     this.root.className = "match";
-    this.root.style.cssText = "position:fixed;inset:0;display:flex;flex-direction:column";
+    // display:contents so header/timeband/main/footer are laid out by #app itself, exactly
+    // as they are in the legacy build — this wrapper exists only to tear them all down at
+    // the end of a match.
+    this.root.style.cssText = "display:contents";
     this.root.innerHTML = MARKUP;
     host.appendChild(this.root);
     this.bind();
@@ -509,10 +511,7 @@ const MARKUP = `
   <main>
     <canvas id="cv"></canvas>
     <div id="toast"></div>
-    <div class="spellcard" id="spellCard" aria-hidden="true">
-      <div class="sc-title"></div>
-      <div class="sc-desc"></div>
-    </div>
+    <div class="hint" id="hint">Tap one of your cells, then tap where to act.</div>
   </main>
   <footer>
     <div class="brow brow4">
@@ -525,6 +524,12 @@ const MARKUP = `
       <button class="btn surr" id="bSurr"><span class="ic">🏳️</span><span class="lb">Surrender</span></button>
     </div>
   </footer>
+  <div class="spellcard" id="spellCard" aria-hidden="true">
+    <div class="sc-img" id="scImg"></div>
+    <div class="sc-title" id="scTitle"></div>
+    <div class="sc-desc" id="scDesc"></div>
+    <div class="sc-cast" id="scCast"></div>
+  </div>
 `;
 
 export type { SpeciesId };

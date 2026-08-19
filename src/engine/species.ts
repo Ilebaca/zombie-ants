@@ -10,7 +10,7 @@ export const SPECIES: Record<SpeciesId, Species> = {
     blurb: "Stealth over strength. Strikes unseen.",
     trait: "Pheromone mask — soldier counts hidden until contact.",
     ability: { name: "Tunnelling", kind: "tunnel", cooldown: 5, startSpent: true,
-      desc: "Dig a gallery to an empty tile anywhere on the field. The mouth is yours instantly with 5 workers, stays linked to the colony even when surrounded, and must always hold 5 workers." },
+      desc: "Dig a hidden gallery to an empty tile deep in the field. The tunnel mouth is yours instantly with 5 workers, stays linked to the colony even when surrounded, and you can Rally to it or expand from it like any tile. It must always hold 5 workers." },
   },
   pharaoh: {
     id: "pharaoh", name: "Pharaoh Ant", atk: 0.99, def: 1.12, prod: 1.25,
@@ -24,21 +24,21 @@ export const SPECIES: Record<SpeciesId, Species> = {
     blurb: "Economic powerhouse. Avoids the fight.",
     trait: "Fungal cultivation — terraforms the field.",
     ability: { name: "Fungal Garden", kind: "leaf", cooldown: 6,
-      desc: "Grows leaf walls on your borders — impassable for 4 turns, +40% defence after they wither. Exocrine research Lv 2–4 makes one wall per cast permanent, up to 1/2/3 total." },
+      desc: "Grows a leaf wall on your borders — impassable to the enemy for 4 turns; +40% defense after it withers. Exocrine reservoir research (Lv 2–4) makes one wall permanent per cast, up to 1/2/3 total." },
   },
   fire: {
     id: "fire", name: "Fire Ant", atk: 0.86, def: 0.87, prod: 1.05,
     blurb: "Balanced & territorial. The honest fighter.",
     trait: "Swarm response — scorched-earth defender.",
     ability: { name: "Wildfire", kind: "fire", cooldown: 6,
-      desc: "Your borders ignite for 3 turns; enemies burning lose 30% each turn and garrisons of 5 or fewer are wiped out." },
+      desc: "Your colony's borders ignite for 3 turns; enemies on fire lose 30% each turn. Detached tiles don't ignite." },
   },
   army: {
     id: "army", name: "Army Ant", atk: 1.10, def: 0.79, prod: 0.95,
     blurb: "Nomadic raider. Lives to attack.",
     trait: "Bivouac — a devouring column.",
     ability: { name: "Feeding Swarm", kind: "swarm", cooldown: 6,
-      desc: "Enemy tiles bordering your colony at cast time lose 15% of their troops, devoured into your colony. No cascade; bases immune." },
+      desc: "Bordering enemy tiles lose 15% of their troops — devoured and added to your colony. Only tiles touching your colony at cast time are eaten." },
   },
   weaver: {
     id: "weaver", name: "Weaver Ant", atk: 1.07, def: 1.04, prod: 1.0,
@@ -52,21 +52,21 @@ export const SPECIES: Record<SpeciesId, Species> = {
     blurb: "The fortress. Nightmare to dislodge.",
     trait: "Reinforced veins — digs in hard.",
     ability: { name: "Fortify", kind: "fortify", cooldown: 6,
-      desc: "Every frontline active tile gains +12% garrison (veins excluded) and the colony defends at +70% for 3 turns." },
+      desc: "Majors muster on the border: every frontline tile gains +12% garrison, and the whole colony defends at +70% for 3 turns." },
   },
   bullet: {
     id: "bullet", name: "Bullet Ant", atk: 1.22, def: 0.84, prod: 0.70,
     blurb: "Glass cannon. Devastating per unit.",
     trait: "Pain gland — chemical barrage.",
     ability: { name: "Venom Rain", kind: "venom", cooldown: 6,
-      desc: "Venom scatters across the board. Enemy tiles caught lose troops each turn for 3 turns; your tiles and both nests are immune." },
+      desc: "Venom rains across the whole board at random. Enemy tiles caught in it lose 10 troops/turn for 3 turns — your tiles and both main bases are immune." },
   },
   demon: {
     id: "demon", name: "Demon Ant", atk: 1.09, def: 1.0, prod: 0.95, premium: true,
     blurb: "Premium. Sacrifices her own for power.",
     trait: "Terror pheromone — panics nearby colonies into flight.",
     ability: { name: "Flee", kind: "flee", cooldown: 6,
-      desc: "Every mobile enemy garrison within 3 tiles flees directly away until beyond that reach. Veins, tunnels, resources and the Hive cannot be pushed." },
+      desc: "Fear ripples out: every mobile enemy garrison within 3 tiles of your colony flees directly away until it is beyond that reach. Veins, tunnels, resources and the Hive cannot be pushed. Tiles that collide while fleeing merge into one." },
   },
 };
 

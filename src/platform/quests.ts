@@ -1,25 +1,31 @@
 /**
- * Daily quests: three tasks a day, rerolled at midnight local time.
+ * Daily quests and the colony level, ported from the legacy build.
  *
- * The roll is a pure function of the day number, so the same day always produces the same
- * three quests — no stored randomness, no drift between a reload and a rollover, and a test
- * can ask for any day it likes. (This is the same discipline as the engine's seeded RNG,
- * CLAUDE.md §4.1, for the same reason: reproducibility.)
+ * The pool, the goals, the XP and the rewards are that build's QUEST_POOL verbatim, and the
+ * level curve is its xpForLevel. What differs deliberately is *how the day's three are
+ * chosen*: the legacy build rolls with Math.random and stores the result, this one derives
+ * them from the day number (CLAUDE.md §11). The player sees the same three all day either
+ * way; deriving them means a reload cannot reroll, and a test can ask for any day it likes.
  *
  * Progress is recorded by the app shell from what a match reports. Nothing here watches the
  * engine, and the engine knows nothing about quests.
  */
 
-export type QuestKind = "play" | "win" | "capture" | "ability" | "tunnel" | "hive";
+export type QuestKind = "play" | "win" | "conquered" | "ability";
+
+export interface QuestReward {
+  mycel?: number;
+  pheromone?: number;
+}
 
 export interface QuestDef {
   id: string;
+  icon: string;
+  text: string;
   kind: QuestKind;
   goal: number;
-  text: string;
-  /** Payout on claim. */
-  mycel: number;
-  pheromone: number;
+  xp: number;
+  reward: QuestReward;
 }
 
 export interface QuestState {
@@ -28,23 +34,22 @@ export interface QuestState {
   claimed: boolean;
 }
 
-/** Every quest must be completable in one or two matches — a daily the player cannot finish
- *  today is just a dead slot. */
+/**
+ * The legacy pool. Larva rewards (the lucky-hatch currency) are not ported yet, so the two
+ * quests that paid larva pay their mycelium equivalent instead — noted here rather than
+ * silently dropped.
+ */
 export const QUEST_POOL: readonly QuestDef[] = [
-  { id: "play1", kind: "play", goal: 1, text: "Fight a battle", mycel: 25, pheromone: 25 },
-  { id: "play3", kind: "play", goal: 3, text: "Fight three battles", mycel: 60, pheromone: 60 },
-  { id: "win1", kind: "win", goal: 1, text: "Win a battle", mycel: 45, pheromone: 45 },
-  { id: "win2", kind: "win", goal: 2, text: "Win two battles", mycel: 90, pheromone: 80 },
-  { id: "cap10", kind: "capture", goal: 10, text: "Capture 10 tiles", mycel: 35, pheromone: 35 },
-  { id: "cap25", kind: "capture", goal: 25, text: "Capture 25 tiles", mycel: 70, pheromone: 60 },
-  { id: "ab3", kind: "ability", goal: 3, text: "Cast your ability 3 times", mycel: 40, pheromone: 40 },
-  { id: "ab6", kind: "ability", goal: 6, text: "Cast your ability 6 times", mycel: 75, pheromone: 70 },
-  { id: "dig2", kind: "tunnel", goal: 2, text: "Dig two galleries", mycel: 45, pheromone: 45 },
-  { id: "hive1", kind: "hive", goal: 1, text: "Take the Hive queen", mycel: 80, pheromone: 70 },
+  { id: "play3", icon: "⚔️", text: "Play 3 matches", kind: "play", goal: 3, xp: 60, reward: { mycel: 40 } },
+  { id: "win2", icon: "🏆", text: "Win 2 matches", kind: "win", goal: 2, xp: 90, reward: { mycel: 60 } },
+  { id: "conq30", icon: "🐜", text: "Conquer 30 enemy tiles", kind: "conquered", goal: 30, xp: 70, reward: { pheromone: 300 } },
+  { id: "abil5", icon: "✨", text: "Use 5 abilities", kind: "ability", goal: 5, xp: 60, reward: { mycel: 40 } },
+  { id: "win1fast", icon: "⚡", text: "Win a match", kind: "win", goal: 1, xp: 50, reward: { mycel: 30 } },
+  { id: "play5", icon: "🔥", text: "Play 5 matches", kind: "play", goal: 5, xp: 100, reward: { pheromone: 500 } },
 ];
 
-/** Paid on top when all of today's quests are claimed. */
-export const QUEST_SWEEP_BONUS = { mycel: 100, pheromone: 100 } as const;
+/** Paid on top when all of a day's quests are claimed, as in the legacy build. */
+export const QUEST_SWEEP_BONUS = { mycel: 100 } as const;
 
 export const QUESTS_PER_DAY = 3;
 
@@ -54,34 +59,24 @@ export const questDef = (id: string): QuestDef | undefined =>
 /** Local-day index. Local, not UTC: the player's midnight is the one they experience. */
 export function dayIndex(now: number = Date.now()): number {
   const d = new Date(now);
-  return Math.floor(
-    Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86_400_000,
-  );
+  return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86_400_000);
 }
 
 /** Milliseconds until the next local midnight — the countdown the screen shows. */
 export function msUntilRollover(now: number = Date.now()): number {
   const d = new Date(now);
-  const next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime();
-  return next - now;
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime() - now;
 }
 
-/**
- * Three distinct quests for a day, and never two of the same kind — a day of "win 1 / win 2"
- * would be one task wearing two hats.
- */
+/** Three distinct quests for a day. Same shape as the legacy roll, derived from the day. */
 export function rollQuests(day: number): QuestState[] {
   const rng = mulberry32(hash(day));
   const pool = [...QUEST_POOL];
   const picked: QuestDef[] = [];
-  const usedKinds = new Set<QuestKind>();
-
   while (pool.length && picked.length < QUESTS_PER_DAY) {
     const idx = Math.floor(rng() * pool.length);
     const [q] = pool.splice(idx, 1);
-    if (!q || usedKinds.has(q.kind)) continue;
-    usedKinds.add(q.kind);
-    picked.push(q);
+    if (q) picked.push(q);
   }
   return picked.map((q) => ({ id: q.id, progress: 0, claimed: false }));
 }
@@ -92,6 +87,47 @@ export const isComplete = (state: QuestState): boolean => {
 };
 
 export const isClaimable = (state: QuestState): boolean => !state.claimed && isComplete(state);
+
+/* ------------------------------------------------------------- COLONY LEVEL */
+
+/** XP to go from level L to L+1. Gentle early, steepens — the legacy curve exactly. */
+export const xpForLevel = (level: number): number =>
+  Math.round(80 + (level - 1) * 45 + Math.pow(level - 1, 1.6) * 8);
+
+export interface LevelProgress {
+  level: number;
+  /** XP banked inside the current level, and what the level costs. */
+  into: number;
+  need: number;
+  pct: number;
+}
+
+export function levelProgress(totalXp: number): LevelProgress {
+  let level = 1;
+  let xp = Math.max(0, Math.floor(totalXp));
+  while (xp >= xpForLevel(level)) {
+    xp -= xpForLevel(level);
+    level++;
+  }
+  const need = xpForLevel(level);
+  return { level, into: xp, need, pct: xp / need };
+}
+
+/** Every few levels pays something the player must tap to claim. */
+export function levelReward(level: number): QuestReward & { label: string } {
+  if (level % 10 === 0) return { mycel: 200, pheromone: 400, label: "200 🍄 + 400 🧪" };
+  if (level % 5 === 0) return { mycel: 150, label: "150 🍄" };
+  if (level % 2 === 0) return { pheromone: 400, label: "400 🧪" };
+  return { mycel: 60, label: "60 🍄" };
+}
+
+/** Levels reached but not yet claimed. Level 1 is free, so claims start once level 2 lands. */
+export function unclaimedLevels(totalXp: number, claimed: readonly number[]): number[] {
+  const current = levelProgress(totalXp).level;
+  const out: number[] = [];
+  for (let l = 1; l < current; l++) if (!claimed.includes(l)) out.push(l);
+  return out;
+}
 
 /* ------------------------------------------------------------------ RANDOM */
 

@@ -14,7 +14,8 @@ import {
 import type { MapId, Player, PlayerMods, SpeciesId } from "../engine";
 import { SPECIES_UNLOCK, type ResearchTrack } from "./catalogue";
 import {
-  QUEST_SWEEP_BONUS, dayIndex, isClaimable, questDef, rollQuests, type QuestKind, type QuestState,
+  QUEST_SWEEP_BONUS, dayIndex, isClaimable, levelProgress, levelReward, questDef, rollQuests,
+  unclaimedLevels, type QuestKind, type QuestState,
 } from "./quests";
 import { isPassKey, rewardFor, roadTrophies } from "./road";
 import { defaultStore, readJson, writeJson, type KeyValueStore } from "./storage";
@@ -64,6 +65,9 @@ export interface Profile {
   quests: QuestState[];
   questDay: number;
   questStreak: number;
+  /** Colony level: total XP earned, and which level rewards have been taken. */
+  xp: number;
+  claimedLevels: number[];
   /** Last setup choices, so the pickers open where the player left off. */
   lastSpecies: SpeciesId;
   lastMap: MapId;
@@ -71,8 +75,11 @@ export interface Profile {
   tutorialDone: boolean;
 }
 
-/** Species available from the very first launch. The rest are unlocked in the Antarium. */
-const STARTER_SPECIES: SpeciesId[] = ["fire", "leafcutter", "ghost"];
+/**
+ * Species available from the very first launch — the founding castes, the three the
+ * catalogue prices at zero. The rest are unlocked in the Antarium.
+ */
+const STARTER_SPECIES: SpeciesId[] = ["leafcutter", "fire", "carpenter"];
 
 export function defaultProfile(): Profile {
   return {
@@ -91,6 +98,11 @@ export function defaultProfile(): Profile {
     quests: [],
     questDay: 0,
     questStreak: 0,
+    xp: 0,
+    claimedLevels: [],
+    // The colony the Antarium opens on before the player has fielded anything. The picker
+    // itself always opens on the first colony by rarity (DEFAULT_SPECIES); this is the
+    // "currently fielded" slot, and the legacy build starts it on Fire.
     lastSpecies: "fire",
     lastMap: "small",
     lastShape: "wedge",
@@ -154,6 +166,11 @@ export function normalise(raw: unknown): Profile {
       : [],
     questDay: int(p.questDay, 0, 1e9, 0),
     questStreak: int(p.questStreak, 0, 1e9, 0),
+    xp: int(p.xp, 0, 1e9, 0),
+    claimedLevels: Array.isArray(p.claimedLevels)
+      ? [...new Set(p.claimedLevels.filter((l): l is number => typeof l === "number" && Number.isFinite(l) && l > 0)
+          .map((l) => Math.floor(l)))]
+      : [],
     lastSpecies: isSpecies(p.lastSpecies) ? p.lastSpecies : base.lastSpecies,
     lastMap: p.lastMap === "tiny" || p.lastMap === "small" || p.lastMap === "mid" ? p.lastMap : base.lastMap,
     lastShape: typeof p.lastShape === "string" ? p.lastShape : base.lastShape,
@@ -226,7 +243,6 @@ export class ProfileStore {
       if (won) p.stats.wins++;
       p.trophies = Math.max(0, p.trophies + (won ? TROPHY_WIN : TROPHY_LOSS));
       p.mycel += won ? MATCH_MYCEL.win : MATCH_MYCEL.loss;
-      p.pheromone += won ? MATCH_PHEROMONE.win : MATCH_PHEROMONE.loss;
       p.lastSpecies = species;
     });
   }
@@ -252,14 +268,17 @@ export class ProfileStore {
     return true;
   }
 
-  /** Level up one research track of one species. Paid in pheromone, not mycel. */
+  /**
+   * Level up one research track of one species. Paid in mycelium, as the legacy build
+   * charges for it — mycelium is the one currency the whole colony screen spends.
+   */
   buyResearch(species: SpeciesId, track: ResearchTrack): boolean {
     const level = this.profile.research[species]?.[track] ?? 0;
     if (level >= RESEARCH_MAX) return false;
     const cost = researchCost(level);
-    if (this.profile.pheromone < cost) return false;
+    if (this.profile.mycel < cost) return false;
     this.update((p) => {
-      p.pheromone -= cost;
+      p.mycel -= cost;
       const r = p.research[species] ?? { reservoir: 0, mandible: 0, cuticle: 0 };
       r[track] = (r[track] ?? 0) + 1;
       p.research[species] = r;
@@ -337,10 +356,12 @@ export class ProfileStore {
     const today = dayIndex(now);
     if (this.profile.questDay === today && this.profile.quests.length) return this.profile.quests;
 
+    // The streak is incremented by the sweep itself (claimQuest); a new day only has to
+    // decide whether the run survives — it does when yesterday was swept and was yesterday.
     const swept = this.profile.quests.length > 0 && this.profile.quests.every((q) => q.claimed);
     const consecutive = this.profile.questDay === today - 1;
     this.update((p) => {
-      p.questStreak = swept && consecutive ? p.questStreak + 1 : 0;
+      if (!swept || !consecutive) p.questStreak = 0;
       p.questDay = today;
       p.quests = rollQuests(today);
     });
@@ -361,7 +382,7 @@ export class ProfileStore {
     });
   }
 
-  /** Claim a finished quest. Sweeping all three pays a bonus on the last one. */
+  /** Claim a finished quest: its reward, its XP, and the sweep bonus on the last one. */
   claimQuest(id: string, now: number = Date.now()): boolean {
     this.dailyQuests(now);
     const state = this.profile.quests.find((q) => q.id === id);
@@ -371,24 +392,48 @@ export class ProfileStore {
       const q = p.quests.find((x) => x.id === id);
       if (!q) return;
       q.claimed = true;
-      p.mycel += def.mycel;
-      p.pheromone += def.pheromone;
+      p.mycel += def.reward.mycel ?? 0;
+      p.pheromone += def.reward.pheromone ?? 0;
+      p.xp += def.xp;
       if (p.quests.every((x) => x.claimed)) {
+        p.questStreak += 1;
         p.mycel += QUEST_SWEEP_BONUS.mycel;
-        p.pheromone += QUEST_SWEEP_BONUS.pheromone;
       }
+    });
+    return true;
+  }
+
+  /* --------------------------------------------------------- COLONY LEVEL */
+
+  /** Where the colony stands: level, XP into it, and what the next one costs. */
+  level(): ReturnType<typeof levelProgress> {
+    return levelProgress(this.profile.xp);
+  }
+
+  /** Levels reached whose reward is still sitting there unclaimed. */
+  unclaimedLevels(): number[] {
+    return unclaimedLevels(this.profile.xp, this.profile.claimedLevels);
+  }
+
+  /** Take one level's reward. Returns false if it is not reached, or already taken. */
+  claimLevel(level: number): boolean {
+    if (!this.unclaimedLevels().includes(level)) return false;
+    const reward = levelReward(level);
+    this.update((p) => {
+      p.mycel += reward.mycel ?? 0;
+      p.pheromone += reward.pheromone ?? 0;
+      p.claimedLevels.push(level);
     });
     return true;
   }
 }
 
 /**
- * Match payouts. Mycelium builds the colony (chambers, unlocks); pheromone funds research.
- * Provisional like the rest of the balance (CLAUDE.md §8): tuned so a full research track
- * is roughly ten wins away, not a hundred.
+ * Match payout, the legacy build's numbers. Mycelium buys everything on the colony screens
+ * — chambers, research and species. Pheromone comes from quests and the Trophy Road only,
+ * which is why a match pays none of it.
  */
-export const MATCH_MYCEL = { win: 60, loss: 25 } as const;
-export const MATCH_PHEROMONE = { win: 60, loss: 25 } as const;
+export const MATCH_MYCEL = { win: 25, loss: 8 } as const;
 
 function neutralMods(): PlayerMods {
   return {

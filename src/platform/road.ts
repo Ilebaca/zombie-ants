@@ -13,7 +13,7 @@
 export const ROAD_STEP = 250;
 /** A chapter is two steps wide, so every chapter holds one free reward and two pass rewards. */
 export const ROAD_CHAPTER = 500;
-export const ROAD_CHAPTERS = 40;
+export const ROAD_CHAPTERS = 50;   // as the legacy build: 50 chapters × 500 trophies
 export const ROAD_MAX = ROAD_CHAPTERS * ROAD_CHAPTER;
 
 export type RoadTrack = "free" | "pass";
@@ -35,12 +35,21 @@ export interface RoadStop {
 export const roadKey = (track: RoadTrack, trophies: number): string =>
   `${track === "pass" ? "p" : "f"}${trophies}`;
 
-/** Free track: one reward per chapter, alternating currency so both stay useful. */
+/**
+ * Reward tables, ported from the legacy build's roadFree/roadPass.
+ *
+ * Legacy pays some stops in larva — the lucky-hatch currency, which is not ported — so
+ * those stops pay pheromone at LARVA_IN_PHEROMONE each instead. Every other number is the
+ * legacy number, so a stop that pays mycelium there pays the same mycelium here.
+ */
+const LARVA_IN_PHEROMONE = 50;
+
+/** Free track: one reward per chapter, alternating currency. */
 export function freeReward(trophies: number): RoadReward | null {
   if (trophies % ROAD_CHAPTER !== 0) return null;
   const tier = trophies / ROAD_CHAPTER;
   return tier % 2 === 0
-    ? { pheromone: 120 + tier * 10 }
+    ? { pheromone: 10 * LARVA_IN_PHEROMONE }
     : { mycel: 200 + tier * 15 };
 }
 
@@ -48,8 +57,8 @@ export function freeReward(trophies: number): RoadReward | null {
 export function passReward(trophies: number): RoadReward | null {
   if (trophies % ROAD_STEP !== 0) return null;
   const tier = trophies / ROAD_STEP;
-  if (tier % 4 === 0) return { mycel: 300, pheromone: 200 };
-  return tier % 2 === 0 ? { pheromone: 150 } : { mycel: 180 };
+  if (tier % 4 === 0) return { mycel: 300, pheromone: 10 * LARVA_IN_PHEROMONE };
+  return tier % 2 === 0 ? { pheromone: 4 * LARVA_IN_PHEROMONE } : { mycel: 180 };
 }
 
 export function roadStops(): RoadStop[] {

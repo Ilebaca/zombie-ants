@@ -1,96 +1,128 @@
 /**
- * Daily quests: today's three tasks, their progress, and the streak.
+ * The Colony screen: colony level, daily quests and the streak.
+ *
+ * Markup mirrors the legacy build (qhero → qstreak → qcard list) because the stylesheet
+ * driving it is that build's, verbatim.
  *
  * The screen reads state and claims; it never advances progress. Progress comes from what a
  * match actually did (app.ts), so opening this screen can never award anything by itself.
  */
-import { QUEST_SWEEP_BONUS, isClaimable, isComplete, msUntilRollover, questDef } from "../platform";
+import { isClaimable, isComplete, levelReward, questDef } from "../platform";
 import type { ProfileStore, QuestState } from "../platform";
-import { card, el, screenEl, screenHeader, toast } from "./chrome";
+import { el, screenEl, screenHeader, toast } from "./chrome";
 
 export function buildQuests(store: ProfileStore, onBack: () => void): HTMLElement {
-  const root = screenEl("screen--meta");
+  const root = screenEl("quests");
 
   const render = (): void => {
     const quests = store.dailyQuests();
     const profile = store.get();
     root.replaceChildren();
-    screenHeader(root, {
-      title: "Quests",
-      sub: "Daily tasks · resets at midnight",
-      onBack,
-      profile,
-    });
+    screenHeader(root, { title: "Colony", sub: "Level & daily quests", onBack });
 
-    const body = el("div", "screenbody metabody");
+    const body = el("div", "screenbody sb-top");
+    const list = el("div", "antscroll");
+    list.id = "questBody";
 
-    const head = el("div", "queststreak");
-    head.append(
-      el("div", "qstreak", `🔥 Streak: ${profile.questStreak} day${profile.questStreak === 1 ? "" : "s"}`),
-      el("div", "qreset", `Resets in ${countdown(msUntilRollover())}`),
-    );
-    body.appendChild(head);
+    const head = el("div", "secthead", "Today's quests");
+    head.style.marginBottom = "var(--sp3)";  // as the legacy build sets it inline
+    list.append(hero(), streakLine(profile.questStreak), head);
+    for (const q of quests) list.appendChild(questCard(q));
 
-    const claimedCount = quests.filter((q) => q.claimed).length;
-    const list = card("Today's quests", `${claimedCount}/${quests.length} claimed`);
-    for (const q of quests) list.body.appendChild(questRow(q));
-    body.appendChild(list.root);
-
-    // The sweep bonus is the reason to finish the third one, so it is stated, not hidden.
-    const bonus = card("Sweep bonus", claimedCount === quests.length ? "claimed" : "unclaimed");
-    bonus.body.appendChild(el("div", "mcnote",
-      `Claim all ${quests.length} in a day for +${QUEST_SWEEP_BONUS.mycel} 🍄 and ` +
-      `+${QUEST_SWEEP_BONUS.pheromone} 🧪, and keep the streak alive.`));
-    body.appendChild(bonus.root);
-
+    body.appendChild(list);
     root.appendChild(body);
   };
 
-  const questRow = (state: QuestState): HTMLElement => {
+  /** Level badge, name, and the XP bar toward the next level. */
+  const hero = (): HTMLElement => {
+    const profile = store.get();
+    const progress = store.level();
+
+    const box = el("div", "qhero");
+    const top = el("div", "qtop");
+    const badge = el("div", "qbadge");
+    badge.append(el("b", undefined, String(progress.level)), el("small", undefined, "LEVEL"));
+    const title = el("div", "qti");
+    title.append(
+      el("div", "n", profile.name),
+      el("div", "s", `Colony level ${progress.level}`),
+    );
+    top.append(badge, title);
+
+    const bar = el("div", "qbar");
+    const fill = el("i");
+    fill.style.width = `${Math.round(progress.pct * 100)}%`;
+    bar.appendChild(fill);
+
+    box.append(top, bar,
+      el("div", "qxp", `${progress.into} / ${progress.need} XP to level ${progress.level + 1}`));
+
+    // Level rewards are tapped, not auto-paid: reaching a level should feel like collecting.
+    const unclaimed = store.unclaimedLevels();
+    if (unclaimed.length) {
+      const row = el("div", "claimrow");
+      for (const level of unclaimed) {
+        const chip = el("button", "claimchip", `Lvl ${level} · ${levelReward(level).label}`);
+        chip.onclick = () => {
+          if (store.claimLevel(level)) {
+            render();
+            toast(root, "Reward claimed!", "good");
+          }
+        };
+        row.appendChild(chip);
+      }
+      box.appendChild(row);
+    }
+    return box;
+  };
+
+  const streakLine = (streak: number): HTMLElement =>
+    el("div", "qstreak", `🔥 Daily streak: ${streak} day${streak === 1 ? "" : "s"}`);
+
+  const questCard = (state: QuestState): HTMLElement => {
     const def = questDef(state.id);
-    const row = el("div", "qrow");
-    if (!def) return row;
+    const card = el("div", "qcard");
+    if (!def) return card;
+
+    card.appendChild(el("span", "qic", def.icon));
 
     const info = el("div", "qb");
     info.appendChild(el("div", "qn", def.text));
 
-    const bar = el("div", "qbar");
-    const fill = el("div", "qfill");
-    fill.style.width = `${Math.min(100, (state.progress / def.goal) * 100)}%`;
+    const bar = el("div", "qp");
+    const fill = el("i");
+    fill.style.width = `${Math.round(Math.min(1, state.progress / def.goal) * 100)}%`;
     bar.appendChild(fill);
     info.appendChild(bar);
 
-    info.appendChild(el("div", "qmeta",
-      `${Math.min(state.progress, def.goal)}/${def.goal} · +${def.mycel} 🍄  +${def.pheromone} 🧪`));
-    row.appendChild(info);
+    const rewards = [
+      def.reward.mycel ? `+${def.reward.mycel} 🍄` : "",
+      def.reward.pheromone ? `+${def.reward.pheromone} 🧪` : "",
+    ].filter(Boolean).join("  ");
+    info.appendChild(el("div", "qmeta", `+${def.xp} XP · ${rewards}`));
+    card.appendChild(info);
 
+    const act = el("div", "qact");
     if (state.claimed) {
-      row.appendChild(el("div", "qdone", "✓"));
+      act.appendChild(el("button", "qbtn claimed", "Claimed"));
     } else if (isClaimable(state)) {
-      const claim = el("button", "buybtn", "Claim");
+      const claim = el("button", "qbtn ready", "Claim");
       claim.onclick = () => {
         if (store.claimQuest(state.id)) {
           render();
           toast(root, `Claimed: ${def.text}`, "good");
         }
       };
-      row.appendChild(claim);
+      act.appendChild(claim);
     } else {
-      const pending = el("button", "buybtn off", isComplete(state) ? "Claim" : "In progress");
-      pending.disabled = true;
-      row.appendChild(pending);
+      // Progress doubles as the button label while a quest is unfinished, exactly as legacy.
+      act.appendChild(el("button", "qbtn wip",
+        isComplete(state) ? "Claim" : `${Math.min(state.progress, def.goal)}/${def.goal}`));
     }
-    return row;
+    card.appendChild(act);
+    return card;
   };
 
   render();
   return root;
-}
-
-/** "3h 04m" — minutes only; a ticking seconds counter would need a timer per screen. */
-function countdown(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 60000));
-  const h = Math.floor(total / 60);
-  const m = total % 60;
-  return `${h}h ${String(m).padStart(2, "0")}m`;
 }

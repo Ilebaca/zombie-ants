@@ -10,20 +10,24 @@ import {
 } from "../engine";
 import type { EngineEvent, MapId, Player, SpeciesId } from "../engine";
 import type { ShapeId } from "../engine";
-import { ProfileStore, SPECIES_ORDER } from "../platform";
+import { DEFAULT_SPECIES, ProfileStore, SPECIES_ORDER } from "../platform";
 import { SPECIES_COL, antHead, basicLook, hexA, setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
-import { buildAntarium } from "./antarium";
-import { currencyBar, el, toast } from "./chrome";
+import { buildAntarium, buildSpeciesPage } from "./antarium";
+import { NAV_SCREENS, bottomNav, el, toast, topBar } from "./chrome";
+import type { NavId } from "./chrome";
 import { MatchScreen } from "./match";
 import { buildQuests } from "./quests";
 import { buildTrophyRoad } from "./road";
-import "./theme.css";
-import "./screens.css";
-import "./home-bg.css";
-import "./meta.css";
+import "./game.css";
 
-type ScreenId = "home" | "map" | "species" | "formation" | "anthill" | "antarium" | "road" | "quests";
+/**
+ * Route ids are the legacy build's screen ids. The stylesheet is that build's, and some of
+ * its rules select by id, so these names are load-bearing.
+ */
+type ScreenId =
+  | "home" | "mapsel" | "start" | "formation"
+  | "anthill" | "antarium" | "antup" | "achievements" | "quests";
 
 const MAP_ORDER: readonly MapId[] = ["tiny", "small", "mid"];
 
@@ -38,6 +42,10 @@ export class App {
   private screens = new Map<ScreenId, HTMLElement>();
   private match: MatchScreen | null = null;
   private overlay: HTMLElement | null = null;
+  private nav: HTMLElement | null = null;
+  private current: ScreenId = "home";
+  /** Which colony the #antup page is showing. */
+  private speciesPage: SpeciesId = "leafcutter";
 
   private choices: Choices;
   private profile: ProfileStore;
@@ -52,7 +60,9 @@ export class App {
       species: saved.lastSpecies,
       shape: (saved.lastShape in START_SHAPES ? saved.lastShape : "wedge") as ShapeId,
     };
-    setFactionColor("you", this.choices.species);
+    // The faction colour is deliberately NOT set here. Like the legacy build, the home and
+    // map screens paint in the stylesheet's default palette; the species picker is what
+    // recolours the UI, and it does so on entry.
   }
 
   start(): void {
@@ -64,6 +74,8 @@ export class App {
   private show(id: ScreenId): void {
     this.clearMatch();
     this.clearOverlay();
+    this.syncNav(id);
+    this.current = id;
     for (const [key, el] of this.screens) el.classList.toggle("hidden", key !== id);
     if (!this.screens.has(id)) {
       const el = this.build(id);
@@ -78,34 +90,80 @@ export class App {
     for (const [key, el] of this.screens) el.classList.toggle("hidden", key !== id);
   }
 
+  /**
+   * The bottom nav is one element that outlives every screen, exactly as in the legacy
+   * build: it is fixed to the viewport, hidden on the setup flow and during a match, and
+   * marks the tab the player is on.
+   */
+  private syncNav(id: ScreenId | null): void {
+    if (!this.nav) {
+      this.nav = bottomNav((tab) => this.onNav(tab));
+      this.host.appendChild(this.nav);
+    }
+    const visible = id !== null && NAV_SCREENS.includes(id);
+    this.nav.classList.toggle("hidden", !visible);
+    for (const b of Array.from(this.nav.querySelectorAll<HTMLElement>(".navitem"))) {
+      b.classList.toggle("active", b.dataset.nav === id);
+    }
+  }
+
+  private onNav(tab: NavId): void {
+    if (tab === "home" || tab === "anthill" || tab === "antarium") { this.show(tab); return; }
+    // Shop and Challenges are the two tabs still to be built; say so rather than
+    // dead-ending on a tap that looks broken.
+    const screen = this.screens.get(this.current);
+    if (screen) toast(screen, tab === "shop" ? "The shop opens soon." : "Challenges open soon.", "warn");
+  }
+
   private build(id: ScreenId): HTMLElement {
     if (id === "home") return this.buildHome();
-    if (id === "map") return this.buildMapSelect();
-    if (id === "species") return this.buildSpeciesSelect();
+    if (id === "mapsel") return this.buildMapSelect();
+    if (id === "start") {
+      // Every new play opens on the first colony by rarity, exactly as the legacy build
+      // does — the picker is a fresh choice each time, not a memory of the last match.
+      this.choices.species = DEFAULT_SPECIES;
+      setFactionColor("you", this.choices.species);
+      return this.buildSpeciesSelect();
+    }
     if (id === "formation") return this.buildFormationSelect();
-    if (id === "anthill") return buildAnthill(this.profile, () => this.show("home"));
-    if (id === "road") return buildTrophyRoad(this.profile, () => this.show("home"));
+    if (id === "anthill") return buildAnthill(this.profile);
+    if (id === "achievements") return buildTrophyRoad(this.profile, () => this.show("home"));
     if (id === "quests") return buildQuests(this.profile, () => this.show("home"));
+    if (id === "antup") {
+      return buildSpeciesPage(this.profile, {
+        species: this.speciesPage,
+        onBack: () => this.show("antarium"),
+      });
+    }
     return buildAntarium(this.profile, {
-      onBack: () => this.show("home"),
-      // "Field this colony" is the shortcut out of the collection: it sets the choice the
-      // setup flow will open on, rather than starting a match from a progression screen.
-      onField: (species) => {
+      // Opening a colony's page also makes it the one the setup flow will offer first,
+      // which is what the legacy build does when you tap into a species.
+      onOpenSpecies: (species) => {
+        this.speciesPage = species;
         this.choices.species = species;
         setFactionColor("you", species);
         this.profile.update((p) => { p.lastSpecies = species; });
-        this.show("map");
+        this.show("antup");
       },
     });
   }
 
-  private screen(className: string): HTMLDivElement {
+  /**
+   * A full-screen panel carrying the legacy build's id. The stylesheet is that build's,
+   * verbatim, and several of its rules are keyed by id (#home's artwork, the bottom-nav
+   * padding shared by #antarium/#anthill/...), so the id is styling, not a label.
+   */
+  private screen(id: string): HTMLDivElement {
     const el = document.createElement("div");
-    el.className = "screen " + className;
+    el.className = "screen";
+    el.id = id;
     return el;
   }
 
-  private header(parent: HTMLElement, title: string, sub?: string, back?: () => void): void {
+  private header(
+    parent: HTMLElement, title: string, sub?: string,
+    back?: () => void, backId?: string,
+  ): void {
     const top = document.createElement("div");
     top.className = "screentop";
     if (back) {
@@ -113,6 +171,7 @@ export class App {
       b.className = "backbtn";
       b.setAttribute("aria-label", "Back");
       b.textContent = "←";
+      if (backId) b.id = backId;
       b.onclick = back;
       top.appendChild(b);
     }
@@ -132,49 +191,55 @@ export class App {
   /* ----------------------------------------------------------------------- HOME */
 
   private buildHome(): HTMLElement {
-    const root = this.screen("screen--home");
+    const root = this.screen("home");
 
-    // Currency and trophies sit at the top: the home screen is where the player sees what a
-    // match paid out, and every meta screen is reached from here.
-    const top = el("div", "hometop");
-    top.appendChild(currencyBar(this.profile.get()));
-    root.appendChild(top);
+    root.appendChild(topBar(this.profile.get(), {
+      onProfile: () => this.show("quests"),
+      onTrophyRoad: () => this.show("achievements"),
+      onShop: () => toast(root, "The shop opens soon.", "warn"),
+    }));
+
+    // Two floating buttons down the right edge. The legacy build sizes and stacks them
+    // against the top bar at runtime; syncFabs does the same measurement.
+    const settings = el("button", "settingsfab");
+    settings.title = "Menu";
+    settings.setAttribute("aria-label", "Menu");
+    settings.innerHTML =
+      '<svg viewBox="0 0 18 14" width="20" height="16" aria-hidden="true">' +
+      '<rect width="18" height="2.8" rx="1.4" fill="#fff"/>' +
+      '<rect y="5.6" width="18" height="2.8" rx="1.4" fill="#fff"/>' +
+      '<rect y="11.2" width="18" height="2.8" rx="1.4" fill="#fff"/></svg>';
+    settings.onclick = () => toast(root, "Settings open soon.", "warn");
+
+    const daily = el("button", "dailyfab", "🗓️");
+    daily.title = "Daily challenges";
+    daily.appendChild(el("small", undefined, "Daily"));
+    daily.onclick = () => toast(root, "Daily challenges open soon.", "warn");
+    root.append(settings, daily);
 
     const play = el("div", "homeplay");
     play.appendChild(el("div", "hometag", "Spread · Surround · Consume"));
 
     const btn = el("button", "playbtn", "PLAY");
-    btn.onclick = () => this.show("map");
+    btn.id = "goPlay";
+    btn.onclick = () => this.show("mapsel");
     play.appendChild(btn);
 
-    const nav = el("div", "homenav");
-    const dest: ReadonlyArray<readonly [ScreenId, string, string]> = [
-      ["anthill", "🕳️", "Anthill"],
-      ["antarium", "🪴", "Antarium"],
-      ["quests", "📜", "Quests"],
-      ["road", "🏆", "Trophy Road"],
-    ];
-    for (const [id, icon, label] of dest) {
-      const b = el("button", "navitem");
-      b.append(el("span", "ni", icon), el("span", undefined, label));
-      b.onclick = () => this.show(id);
-      nav.appendChild(b);
-    }
-    play.appendChild(nav);
-
     const how = el("button", "howtolink", "📖 How to play");
+    how.id = "howToBtn";
     how.onclick = () => this.showRules();
     play.appendChild(how);
 
     root.appendChild(play);
+    requestAnimationFrame(() => syncFabs(root));
     return root;
   }
 
   /* ----------------------------------------------------------------- MAP SELECT */
 
   private buildMapSelect(): HTMLElement {
-    const el = this.screen("setup-map");
-    this.header(el, "Choose your map", undefined, () => this.show("home"));
+    const el = this.screen("mapsel");
+    this.header(el, "Choose your map", undefined, () => this.show("home"), "mapBack");
 
     const body = document.createElement("div");
     body.className = "screenbody";
@@ -182,6 +247,7 @@ export class App {
     box.className = "setupbox";
     const grid = document.createElement("div");
     grid.className = "mappick";
+    grid.id = "mapPick";
 
     for (const id of MAP_ORDER) {
       const def = MAPS[id];
@@ -201,9 +267,10 @@ export class App {
     }
 
     const next = document.createElement("button");
-    next.className = "cta neutral";
+    next.className = "cta";
+    next.id = "mapNext";
     next.textContent = "Next →";
-    next.onclick = () => this.show("species");
+    next.onclick = () => this.show("start");
 
     box.append(grid, next);
     body.appendChild(box);
@@ -214,8 +281,8 @@ export class App {
   /* ------------------------------------------------------------- SPECIES SELECT */
 
   private buildSpeciesSelect(): HTMLElement {
-    const root = this.screen("setup-species");
-    this.header(root, "Choose your species", undefined, () => this.show("map"));
+    const root = this.screen("start");
+    this.header(root, "Choose your species", undefined, () => this.show("mapsel"), "specBack");
 
     const body = document.createElement("div");
     body.className = "screenbody";
@@ -223,6 +290,7 @@ export class App {
     box.className = "setupbox";
     const slider = document.createElement("div");
     slider.className = "pickslider";
+    slider.id = "pick";
 
     let selectedCard: HTMLElement | null = null;
 
@@ -234,7 +302,7 @@ export class App {
       const owned = this.profile.isUnlocked(id);
       const card = document.createElement("div");
       const chosen = id === this.choices.species;
-      card.className = "sp" + (chosen ? " on" : "") + (owned ? "" : " locked");
+      card.className = "sp" + (chosen ? " on" : "") + (owned ? "" : " splock");
 
       const face = document.createElement("div");
       face.className = "face";
@@ -257,7 +325,7 @@ export class App {
 
       const mods = document.createElement("div");
       mods.className = "mods";
-      mods.textContent = `⚔ ${s.atk.toFixed(2)} · 🛡 ${s.def.toFixed(2)} · 🍄 ${s.prod.toFixed(2)}`;
+      mods.textContent = `⚔ ${s.atk.toFixed(1)} · 🛡 ${s.def.toFixed(1)}`;
 
       const ds = document.createElement("div");
       ds.className = "ds";
@@ -271,8 +339,8 @@ export class App {
       card.append(face, nm, mods, ds, tr);
       if (!owned) {
         const lock = document.createElement("div");
-        lock.className = "splock";
-        lock.textContent = SPECIES[id].premium ? "🔒 Premium — from the shop" : "🔒 Unlock in the Antarium";
+        lock.className = "splockmsg";
+        lock.textContent = "🔒 Unlock in the Antarium";
         card.appendChild(lock);
       }
 
@@ -302,7 +370,8 @@ export class App {
     }
 
     const next = document.createElement("button");
-    next.className = "cta neutral";
+    next.className = "cta";
+    next.id = "toFormation";
     next.textContent = "Next →";
     next.onclick = () => this.show("formation");
 
@@ -318,8 +387,8 @@ export class App {
   /* ----------------------------------------------------------- FORMATION SELECT */
 
   private buildFormationSelect(): HTMLElement {
-    const el = this.screen("setup-formation");
-    this.header(el, "Choose your formation", undefined, () => this.show("species"));
+    const el = this.screen("formation");
+    this.header(el, "Choose your formation", undefined, () => this.show("start"), "formBack");
 
     const body = document.createElement("div");
     body.className = "screenbody";
@@ -327,12 +396,16 @@ export class App {
     box.className = "setupbox";
     const grid = document.createElement("div");
     grid.className = "shapepick";
+    grid.id = "shapePick";
 
+    // The legacy picker always opens on the first formation rather than the saved one.
+    const first = (Object.keys(START_SHAPES) as ShapeId[])[0] as ShapeId;
+    this.choices.shape = first;
     for (const id of Object.keys(START_SHAPES) as ShapeId[]) {
       const cellWrap = document.createElement("div");
       cellWrap.className = "shpcell";
       const card = document.createElement("div");
-      card.className = "shp" + (id === this.choices.shape ? " on" : "");
+      card.className = "shp" + (id === first ? " on" : "");
       card.appendChild(shapeThumb(START_SHAPES[id]));
       const nm = document.createElement("div");
       nm.className = "snm";
@@ -347,7 +420,8 @@ export class App {
     }
 
     const begin = document.createElement("button");
-    begin.className = "cta begin";
+    begin.className = "cta";
+    begin.id = "begin";
     begin.textContent = "Begin the spread →";
     begin.onclick = () => this.startMatch();
 
@@ -400,7 +474,6 @@ export class App {
           if (kind === "tunnel") p.stats.tunnels++;
         });
         this.profile.questProgress("ability");
-        if (kind === "tunnel") this.profile.questProgress("tunnel");
       },
       onEvents: (events) => scoreQuestEvents(this.profile, events),
       onExit: (winner) => {
@@ -531,6 +604,30 @@ export class App {
   }
 }
 
+/**
+ * Size the two floating buttons and stack them under the top bar.
+ *
+ * They are `position:absolute` with a percentage top in the stylesheet; the legacy build
+ * measures the daily button and pins both to the bar's bottom edge so they never collide
+ * with it on a short screen. A zero-sized measurement means the screen is not laid out
+ * yet — skip rather than pin them to 0 (CLAUDE.md §5).
+ */
+function syncFabs(home: HTMLElement): void {
+  const daily = home.querySelector<HTMLElement>(".dailyfab");
+  const settings = home.querySelector<HTMLElement>(".settingsfab");
+  const head = home.querySelector<HTMLElement>(".tophead");
+  if (!daily || !settings) return;
+  const box = daily.getBoundingClientRect();
+  if (!box.width || !box.height) return;
+
+  settings.style.width = `${box.width}px`;
+  settings.style.height = `${box.height}px`;
+  const top = home.getBoundingClientRect().top;
+  const y = head ? head.getBoundingClientRect().bottom - top + 10 : 84;
+  settings.style.top = `${y}px`;
+  daily.style.top = `${y + box.height + 10}px`;
+}
+
 /* ----------------------------------------------------------------------- THUMBS */
 
 const cssVar = (n: string): string =>
@@ -554,6 +651,18 @@ function mapThumb(n: number): HTMLCanvasElement {
     }
   }
   g.globalAlpha = 1;
+
+  // Gauntlet's two water bites, so the thumbnail shows why that map plays differently.
+  if (n === 13) {
+    g.fillStyle = "#2f6fb0";
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        const left = c * c + (r - 6) * (r - 6);
+        const right = (c - (n - 1)) * (c - (n - 1)) + (r - 6) * (r - 6);
+        if (left <= 9 || right <= 9) g.fillRect(c * cell, r * cell, cell, cell);
+      }
+    }
+  }
 
   const b = Math.max(cell * 2, 8);
   g.fillStyle = cssVar("--you-glow"); g.fillRect(0, SZ - b, b, b);        // your corner
@@ -587,21 +696,16 @@ function shapeThumb(cells: ReadonlyArray<readonly [number, number]>): HTMLCanvas
 }
 
 /**
- * Turn a batch of engine events into quest progress.
+ * Turn a batch of engine events into quest progress ("Conquer N enemy tiles").
  *
  * Only the player's own captures count — the AI taking a tile is not progress — and the
- * whole batch is folded into one call per kind so a Spread that claims six tiles does not
- * write six times. Exported so the translation is testable without a running match.
+ * whole batch is folded into one call so a Spread that claims six tiles does not write six
+ * times. Exported so the translation is testable without a running match.
  */
 export function scoreQuestEvents(profile: ProfileStore, events: readonly EngineEvent[]): void {
   let captured = 0;
-  let hive = 0;
-  for (const e of events) {
-    if (e.type === "capture" && e.owner === "you") captured++;
-    else if (e.type === "hiveCaptured" && e.owner === "you") hive++;
-  }
-  if (captured) profile.questProgress("capture", captured);
-  if (hive) profile.questProgress("hive", hive);
+  for (const e of events) if (e.type === "capture" && e.owner === "you") captured++;
+  if (captured) profile.questProgress("conquered", captured);
 }
 
 /**

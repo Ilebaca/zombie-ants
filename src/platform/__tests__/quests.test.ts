@@ -23,12 +23,10 @@ describe("quest rolling", () => {
     }
   });
 
-  it("does not repeat a quest or a kind within a day", () => {
+  it("does not repeat a quest within a day", () => {
     for (let day = 19_000; day < 19_120; day++) {
       const ids = rollQuests(day).map((q) => q.id);
       expect(new Set(ids).size).toBe(ids.length);
-      const kinds = ids.map((id) => questDef(id)?.kind);
-      expect(new Set(kinds).size).toBe(kinds.length);
     }
   });
 
@@ -47,8 +45,10 @@ describe("quest rolling", () => {
   it("prices every quest in the pool", () => {
     for (const q of QUEST_POOL) {
       expect(q.goal).toBeGreaterThan(0);
-      expect(q.mycel + q.pheromone).toBeGreaterThan(0);
+      expect((q.reward.mycel ?? 0) + (q.reward.pheromone ?? 0)).toBeGreaterThan(0);
+      expect(q.xp).toBeGreaterThan(0);
       expect(q.text.length).toBeGreaterThan(0);
+      expect(q.icon.length).toBeGreaterThan(0);
     }
   });
 
@@ -111,10 +111,11 @@ describe("claiming quests", () => {
     const def = questDef(q.id)!;
     finish(s, day, q.id);
     expect(s.claimQuest(q.id, day)).toBe(true);
-    expect(s.get().mycel).toBe(def.mycel);
-    expect(s.get().pheromone).toBe(def.pheromone);
+    expect(s.get().mycel).toBe(def.reward.mycel ?? 0);
+    expect(s.get().pheromone).toBe(def.reward.pheromone ?? 0);
+    expect(s.get().xp).toBe(def.xp);
     expect(s.claimQuest(q.id, day)).toBe(false);
-    expect(s.get().mycel).toBe(def.mycel);
+    expect(s.get().mycel).toBe(def.reward.mycel ?? 0);
   });
 
   it("refuses an unfinished quest", () => {
@@ -134,7 +135,7 @@ describe("claiming quests", () => {
     quests.forEach((q, i) => {
       finish(s, day, q.id);
       expect(s.claimQuest(q.id, day)).toBe(true);
-      expected += questDef(q.id)!.mycel;
+      expected += questDef(q.id)!.reward.mycel ?? 0;
       if (i === quests.length - 1) expected += QUEST_SWEEP_BONUS.mycel;
       expect(s.get().mycel).toBe(expected);
     });
@@ -196,14 +197,14 @@ describe("daily rollover", () => {
 
   it("drops quest ids that no longer exist in the pool", () => {
     const p = normalise({
-      quests: [{ id: "play1", progress: 2, claimed: false }, { id: "gone", progress: 9, claimed: true }, null],
+      quests: [{ id: "play3", progress: 2, claimed: false }, { id: "gone", progress: 9, claimed: true }, null],
     });
-    expect(p.quests.map((q) => q.id)).toEqual(["play1"]);
+    expect(p.quests.map((q) => q.id)).toEqual(["play3"]);
     expect(p.quests[0]?.progress).toBe(2);
   });
 
   it("survives junk progress values", () => {
-    const p = normalise({ quests: [{ id: "play1", progress: NaN, claimed: "yes" }] });
+    const p = normalise({ quests: [{ id: "play3", progress: NaN, claimed: "yes" }] });
     expect(p.quests[0]?.progress).toBe(0);
     expect(p.quests[0]?.claimed).toBe(false);
   });

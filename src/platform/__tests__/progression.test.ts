@@ -63,7 +63,7 @@ describe("buying chambers and research", () => {
 
     expect(s.buyResearch("fire", "mandible")).toBe(false);
     expect(s.get().research.fire?.mandible).toBe(0);
-    expect(s.get().pheromone).toBe(0);
+    expect(s.get().mycel).toBe(0);
   });
 
   it("stops at the cap instead of charging for a level that does nothing", () => {
@@ -77,12 +77,12 @@ describe("buying chambers and research", () => {
     }
   });
 
-  it("pays for research in pheromone, never in mycel", () => {
+  it("pays for research in mycelium, as the colony screens do throughout", () => {
     const s = rich();
-    const mycel = s.get().mycel;
+    const pheromone = s.get().pheromone;
     expect(s.buyResearch("fire", "cuticle")).toBe(true);
-    expect(s.get().mycel).toBe(mycel);
-    expect(s.get().pheromone).toBe(100000 - researchCost(0));
+    expect(s.get().mycel).toBe(100000 - researchCost(0));
+    expect(s.get().pheromone).toBe(pheromone);
   });
 
   it("keeps research per species — levelling Fire leaves Ghost untouched", () => {

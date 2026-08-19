@@ -24,32 +24,35 @@ export interface ChamberDef {
   effect: (level: number) => string;
 }
 
-/** Anthill chambers. Order is the order they appear on screen. */
+/**
+ * Anthill chambers. Order, wording and effect phrasing are the legacy build's CHAMBERS
+ * table verbatim — the player reads these strings, so they are part of the design.
+ */
 export const CHAMBERS: readonly ChamberDef[] = [
   {
     id: "royal", icon: "👑", name: "Royal Chamber", max: CHAMBER_MAX.royal,
-    desc: "A deeper chamber lets the queen lay a larger brood before the war begins.",
-    effect: (l) => `+${l} soldier${l === 1 ? "" : "s"} in your nest at match start`,
+    desc: "A deeper chamber lets the queen lay a slightly larger brood before the war begins.",
+    effect: (l) => `+${l} soldier${l === 1 ? "" : "s"} in your base at match start`,
   },
   {
     id: "brood", icon: "🥚", name: "Brood Nursery", max: CHAMBER_MAX.brood,
-    desc: "Nurse workers tend the eggs around the clock, hatching replacements.",
-    effect: (l) => `Your nest hatches +${l} soldier${l === 1 ? "" : "s"} per turn`,
+    desc: "Nurse workers tend eggs around the clock, hatching replacements.",
+    effect: (l) => `Base hatches +${l} soldier${l === 1 ? "" : "s"} per turn`,
   },
   {
     id: "soldierCaste", icon: "⚔️", name: "Soldier Caste", max: CHAMBER_MAX.soldierCaste,
     desc: "Major workers with oversized heads plug the nest entrance.",
-    effect: (l) => `+${l * 5}% defence on your nest tile`,
+    effect: (l) => `+${l * 5}% defense on your base tile`,
   },
   {
     id: "gland", icon: "🧪", name: "Metapleural Gland", max: CHAMBER_MAX.gland,
     desc: "Secretes antibiotics that suppress fungal and chemical attack.",
-    effect: (l) => `−${l * 5}% damage from venom, fire and the Hive`,
+    effect: (l) => `−${l * 5}% damage from venom, fire & the Hive`,
   },
   {
     id: "cultivate", icon: "🌱", name: "Fungal Cultivation", max: CHAMBER_MAX.cultivate,
-    desc: "The colony farms its captured resource tiles, and each one yields more.",
-    effect: (l) => `+${l} production on every resource tile you hold`,
+    desc: "Research lets the colony cultivate captured resource tiles — each upgrade makes every resource yield more.",
+    effect: (l) => `+${l} production on each resource tile`,
   },
 ];
 
@@ -70,67 +73,96 @@ export interface ResearchDef {
 export const RESEARCH_TRACKS: readonly ResearchDef[] = [
   {
     id: "reservoir", icon: "⚗️", name: "Exocrine reservoir",
-    desc: "Larger gland reserves refill faster and dose harder.",
-    effect: `−1 turn cooldown at Lv ${RESEARCH_MAX} · Leafcutter keeps 1/2/3 permanent leaf walls at Lv 2/3/4`,
+    desc: "Larger gland reserves refill faster and dose harder. Leafcutter: one barrier wall stays permanent per cast, up to 1/2/3 total (Lv 2/3/4).",
+    effect: "−1 turn cooldown at max (Leafcutter: +1 permanent leaf per cast, Lv 2–4)",
   },
   {
     id: "mandible", icon: "⚔️", name: "Mandible muscle",
-    desc: "A thicker adductor muscle drives a harder bite.",
+    desc: "Thicker adductor muscle, harder bite.",
     effect: "+5% attack per level",
   },
   {
     id: "cuticle", icon: "🛡️", name: "Sclerotised cuticle",
     desc: "Cross-linked chitin hardens the exoskeleton.",
-    effect: "+5% defence per level",
+    effect: "+5% defense per level",
   },
 ];
 
 /**
- * Mycelium price of each species. Zero means it is a starter colony — the three the player
- * already has (profile.ts STARTER_SPECIES). Demon is premium: it is priced here so the
- * Antarium can show a number, but `premium` species are gated by the shop, not by mycel.
+ * Mycelium price of each species, exactly as the legacy build prices them (SPEC_UNLOCK).
+ * Zero means a starter colony — the three the player already has (profile.ts
+ * STARTER_SPECIES). Demon is premium: it is priced here so the Antarium can show a number,
+ * but `premium` species are gated by the shop, not by mycel.
  */
 export const SPECIES_UNLOCK: Record<SpeciesId, number> = {
-  fire: 0, leafcutter: 0, ghost: 0,
-  pharaoh: 260, weaver: 280, army: 300, carpenter: 260, bullet: 320,
-  demon: 700,
+  ghost: 260, pharaoh: 260, leafcutter: 0, fire: 0, army: 300,
+  weaver: 280, carpenter: 0, bullet: 320, demon: 700,
 };
+
+/**
+ * Rarity tiers. These are what the Antarium colours a colony by, and what orders the
+ * species picker — a player reads the collection as founding castes first, mythic last.
+ */
+export interface Tier {
+  k: "starter" | "rare" | "epic" | "myth";
+  name: string;
+  col: string;
+  glow: string;
+}
+
+export const TIERS: readonly Tier[] = [
+  { k: "starter", name: "Founding castes", col: "#4ec97a", glow: "rgba(78,201,122,.30)" },
+  { k: "rare", name: "Rare colonies", col: "#4fa8ff", glow: "rgba(79,168,255,.30)" },
+  { k: "epic", name: "Elite castes", col: "#b06bff", glow: "rgba(176,107,255,.32)" },
+  { k: "myth", name: "Mythic", col: "#ffce4a", glow: "rgba(255,206,74,.34)" },
+];
+
+/** Tier is derived from price, never stored — one number decides colour, name and order. */
+export function tierOf(id: SpeciesId): Tier {
+  if (SPECIES[id].premium) return TIERS[3] as Tier;
+  const cost = SPECIES_UNLOCK[id];
+  if (cost === 0) return TIERS[0] as Tier;
+  if (cost <= 280) return TIERS[1] as Tier;
+  return TIERS[2] as Tier;
+}
+
+const tierRank = (id: SpeciesId): number => TIERS.findIndex((t) => t.k === tierOf(id).k);
 
 /** Total research levels a single species can hold, across all tracks. */
 export const RESEARCH_TOTAL_MAX = RESEARCH_TRACKS.length * RESEARCH_MAX;
 
-/** Field notes shown on a species' Antarium page — the real biology behind the abilities. */
+/**
+ * Field notes shown on a species' Antarium page — the real biology behind the abilities.
+ * Copied from the legacy build's ANT_BIO so both builds read identically.
+ */
 export const SPECIES_NOTES: Record<SpeciesId, string> = {
   ghost:
-    "Tapinoma melanocephalum. Tiny, pale and translucent enough to vanish against a wall; " +
-    "nests are shallow, temporary and moved on a whim, which is why a gallery can open anywhere.",
+    "Tapinoma-like tramp ants run tiny, fast-moving colonies. Their cuticle is so thin light passes through it, and they navigate almost entirely by trail pheromone rather than sight.",
   pharaoh:
-    "Monomorium pharaonis. An indoor supercolony with many queens: cut a nest in half and you " +
-    "get two nests. Budding, not flight, is how it spreads — slow, relentless, unkillable by halves.",
+    "Monomorium pharaonis reproduces by budding: a queen simply walks away with workers and brood and starts again. That is why an infestation is nearly impossible to eradicate.",
   leafcutter:
-    "Atta cephalotes. Does not eat leaves — it farms a fungus on them, in the largest agricultural " +
-    "system any animal runs. The garden is the colony; the leaves are just the feedstock.",
+    "Atta cut leaves not to eat, but to compost. Underground gardens of Leucoagaricus fungus feed the colony — the oldest agriculture on Earth, roughly 50 million years old.",
   fire:
-    "Solenopsis invicta. Answers a disturbance with mass: hundreds boil out at once and sting in " +
-    "unison. Floods are survived by linking legs into a living raft.",
+    "Solenopsis invicta swarms any disturbance within seconds and stings in unison on a chemical cue. Flooded colonies link legs and mandibles into a living raft.",
   army:
-    "Eciton burchellii. No permanent nest at all — the colony bivouacs from its own bodies and " +
-    "marches, stripping everything in the swarm front's path.",
+    "Eciton burchellii never builds a nest. The colony forms a living bivouac from its own bodies and moves in raiding columns that strip the forest floor.",
   weaver:
-    "Oecophylla smaragdina. Builds nests by pulling living leaves together and stitching them with " +
-    "silk squeezed from its own larvae — the larva is the tool.",
+    "Oecophylla stitch living leaves into nests, workers pulling edges together while larvae are used as silk guns — one of the few known cases of tool use in insects.",
   carpenter:
-    "Camponotus. Excavates galleries in dead wood rather than eating it, and posts major workers " +
-    "with plug-shaped heads in the entrances as living doors.",
+    "Camponotus excavate galleries in dead wood rather than eating it. Majors have armoured heads shaped to plug the nest entrance like a living door.",
   bullet:
-    "Paraponera clavata. The most painful sting recorded on the Schmidt index — waves of burning " +
-    "for a full day. Small colonies; every individual is a weapon.",
+    "Paraponera clavata delivers the most painful recorded insect sting — poneratoxin, a paralysing neurotoxin. Small colonies, enormous individual threat.",
   demon:
-    "Not a described species. A colony of the story, kept for what it does rather than what it is: " +
-    "a terror pheromone that empties ground without a fight.",
+    "Ophiocordyceps rewrites the host's behaviour, not its body: infected ants abandon the colony, climb, and lock their mandibles onto a leaf vein before the fruiting body erupts.",
 };
 
-/** Species in display order — starters first, then by price. */
+/**
+ * Display order: by rarity tier, stable within a tier so the declaration order in
+ * species.ts breaks ties. Same list the legacy build shows (speciesByRarity).
+ */
 export const SPECIES_ORDER: readonly SpeciesId[] = (Object.keys(SPECIES) as SpeciesId[])
   .slice()
-  .sort((a, b) => SPECIES_UNLOCK[a] - SPECIES_UNLOCK[b] || a.localeCompare(b));
+  .sort((a, b) => tierRank(a) - tierRank(b));
+
+/** The colony a brand-new profile opens on: the first of the founding castes. */
+export const DEFAULT_SPECIES: SpeciesId = SPECIES_ORDER[0] as SpeciesId;
