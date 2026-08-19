@@ -34,8 +34,9 @@ jobs:
 
       - run: npm run build
 
-      # The renderer is not ported yet, so the Vite build is still a boot screen.
-      # Ship the legacy single-file game alongside it so the URL has something playable.
+      # The TypeScript build is the game now. The legacy single-file build ships beside it
+      # at /legacy.html because it is still the behavioural reference for anything not
+      # ported (CLAUDE.md §1) — and it costs one file to keep it playable.
       - run: cp legacy/zombie-ants-pro.html dist/legacy.html
 
       - uses: actions/configure-pages@v5
