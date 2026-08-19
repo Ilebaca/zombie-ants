@@ -7,7 +7,9 @@
  * that splits the board for Weaver's Spread ran the wrong way).
  */
 import { describe, expect, it } from "vitest";
-import { MAPS, START_SHAPES, allTiles, armyOf, createGame, incomeOf, nestTile, tileAt } from "../index";
+import {
+  MAPS, START_SHAPES, allTiles, armyOf, createGame, incomeOf, nestTile, ownedCount, tileAt,
+} from "../index";
 import { NEUTRAL_MODS } from "../index";
 import type { GameState, MapId, Tile } from "../index";
 
@@ -37,7 +39,7 @@ describe("colony corners", () => {
     }
   });
 
-  it("mirrors the two colonies through the centre, whatever the formation", () => {
+  it("mirrors the two colonies through the centre when both field the same formation", () => {
     for (const map of MAP_IDS) {
       for (const [name, shape] of Object.entries(START_SHAPES)) {
         const s = createGame({ map, species: { you: "fire", ai: "fire" }, shape });
@@ -48,6 +50,25 @@ describe("colony corners", () => {
           expect(partner?.struct).toBe(t.struct);
           expect(partner?.soldiers).toBe(t.soldiers);
         }
+      }
+    }
+  });
+
+  /**
+   * The enemy usually fields a DIFFERENT formation (app.ts rolls one), which must change
+   * the silhouette of its corner without changing what it is worth.
+   */
+  it("keeps a different enemy formation worth exactly the same", () => {
+    for (const map of MAP_IDS) {
+      const shapes = Object.values(START_SHAPES);
+      for (const aiShape of shapes) {
+        const s = createGame({
+          map, species: { you: "fire", ai: "fire" }, shape: START_SHAPES.wedge, aiShape,
+        });
+        expect(ownedCount(s, "you")).toBe(5);
+        expect(ownedCount(s, "ai")).toBe(5);
+        expect(armyOf(s, "you")).toBe(armyOf(s, "ai"));
+        expect(allTiles(s).filter((t) => t.owner === "ai" && t.struct === "nest")).toHaveLength(1);
       }
     }
   });

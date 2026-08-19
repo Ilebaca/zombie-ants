@@ -525,6 +525,9 @@ export class App {
       map: this.choices.map,
       species: { you: this.choices.species, ai: aiSpecies },
       shape: START_SHAPES[this.choices.shape],
+      // The enemy picks its own formation, so the board never opens as a perfect mirror of
+      // your own corner. Both sides still get exactly five tiles and identical income.
+      aiShape: START_SHAPES[rollShape()],
       mods,
       seed: (Date.now() ^ (Math.random() * 0xffffffff)) | 0,
     });
@@ -544,6 +547,9 @@ export class App {
       // income readout but do nothing in a fight.
       ctx: { mods },
       difficulty: this.difficulty,
+      // The coaching toasts run once, on the very first match a profile ever plays.
+      tutorial: !this.profile.get().tutorialDone,
+      onTutorialShown: () => this.profile.update((p) => { p.tutorialDone = true; }),
       map: this.choices.map,
       onAbilityCast: (kind) => {
         this.profile.update((p) => {
@@ -802,6 +808,12 @@ export function scoreQuestEvents(profile: ProfileStore, events: readonly EngineE
   let captured = 0;
   for (const e of events) if (e.type === "capture" && e.owner === "you") captured++;
   if (captured) profile.questProgress("conquered", captured);
+}
+
+/** The enemy's formation, chosen at setup time — the engine itself stays free of randomness. */
+export function rollShape(rng: () => number = Math.random): ShapeId {
+  const keys = Object.keys(START_SHAPES) as ShapeId[];
+  return keys[Math.floor(rng() * keys.length)] ?? "wedge";
 }
 
 /**

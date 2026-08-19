@@ -45,6 +45,10 @@ export interface MatchOptions {
    * play on. The match asks; it does not know what the objective is.
    */
   judge?: (events: readonly EngineEvent[]) => Player | null;
+  /** Show the first-match coaching toasts. The shell owns whether they are still due. */
+  tutorial?: boolean;
+  /** Called once the coaching toasts have run, so they are never shown twice. */
+  onTutorialShown?: () => void;
 }
 
 export class MatchScreen {
@@ -72,6 +76,8 @@ export class MatchScreen {
   private surrenderTimer: number | null = null;
   /** Why the match ended. Only the engine's gameOver event carries it. */
   private endReason: GameOverReason | null = null;
+  /** Coaching toasts still pending; cleared with the rest when the match is torn down. */
+  private tutorialTimers: number[] = [];
 
   constructor(host: HTMLElement, private opts: MatchOptions) {
     this.root = document.createElement("div");
@@ -94,6 +100,27 @@ export class MatchScreen {
     this.renderer.start();
     this.canvas.addEventListener("pointerdown", this.onPointerDown);
     this.beginTurn();
+
+    // Who you are, and where you are. Shown every match, as the legacy build does.
+    const you = speciesOf(this.state.species.you);
+    this.toast(`You are the ${you.name}. Expand from your corner.`, "good");
+    if (this.opts.tutorial) this.runTutorial();
+  }
+
+  /**
+   * Three coaching lines, spaced out over the opening turns so they land while the player
+   * is looking at the thing each one describes. First match only.
+   */
+  private runTutorial(): void {
+    this.opts.onTutorialShown?.();
+    const lines: Array<[number, string, ToastKind]> = [
+      [900, "Tap a glowing tile, then a neighbour to move or attack.", "hive"],
+      [4200, "Resources 🍄 boost growth — grab them early.", "hive"],
+      [7600, "The Hive wakes mid-game. Its Queen is power — or doom.", "warn"],
+    ];
+    for (const [delay, text, kind] of lines) {
+      this.tutorialTimers.push(window.setTimeout(() => this.toast(text, kind), delay));
+    }
   }
 
   destroy(): void {
@@ -408,6 +435,8 @@ export class MatchScreen {
     this.stopTimer();
     if (this.aiTimer) { clearTimeout(this.aiTimer); this.aiTimer = null; }
     if (this.surrenderTimer) { clearTimeout(this.surrenderTimer); this.surrenderTimer = null; }
+    for (const id of this.tutorialTimers) clearTimeout(id);
+    this.tutorialTimers.length = 0;
   }
 
   private updateTimerUI(): void {

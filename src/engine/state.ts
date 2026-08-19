@@ -16,6 +16,8 @@ export interface NewGameOptions {
   species: Record<Player, SpeciesId>;
   /** Five-tile starting shape, as offsets from the corner anchor. */
   shape?: ReadonlyArray<readonly [number, number]>;
+  /** The enemy's formation. Defaults to yours, so a mirrored start stays available. */
+  aiShape?: ReadonlyArray<readonly [number, number]>;
   mods?: Record<Player, PlayerMods>;
   /** Seeds ability scatter. The same seed and moves replay identically. */
   seed?: number;
@@ -65,10 +67,11 @@ export function createGame(opts: NewGameOptions): GameState {
   };
 
   const shape = opts.shape ?? START_SHAPES.wedge;
-  buildMap(state, reservedCells(state.size, shape));
+  const aiShape = opts.aiShape ?? shape;
+  buildMap(state, reservedCells(state.size, shape, aiShape));
   const mods = opts.mods ?? { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } };
   placeStart(state, "you", shape, mods.you);
-  placeStart(state, "ai", shape, mods.ai);
+  placeStart(state, "ai", aiShape, mods.ai);
 
   setHiveDefence(state);
   recomputeConnectivity(state);
@@ -79,12 +82,18 @@ export function createGame(opts: NewGameOptions): GameState {
  * Cells both colonies will start on. Terrain generation must leave these alone, or a
  * rock can swallow a starting tile and a colony begins a tile short (CLAUDE.md §5).
  */
-function reservedCells(size: number, shape: ReadonlyArray<readonly [number, number]>): Set<string> {
+function reservedCells(
+  size: number,
+  shape: ReadonlyArray<readonly [number, number]>,
+  aiShape: ReadonlyArray<readonly [number, number]>,
+): Set<string> {
   const out = new Set<string>();
   for (const [dc, dr] of shape) {
     const you = startCell(size, "you", dc, dr);
-    const ai = startCell(size, "ai", dc, dr);
     out.add(`${you.c},${you.r}`);
+  }
+  for (const [dc, dr] of aiShape) {
+    const ai = startCell(size, "ai", dc, dr);
     out.add(`${ai.c},${ai.r}`);
   }
   return out;
