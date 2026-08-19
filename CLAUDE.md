@@ -176,17 +176,21 @@ provisional and say so if asked.
 
 1. Engine port + tests ✅ (all nine abilities implemented)
 2. Canvas renderer driven by engine events ✅
-3. Meta UI ✅ — every legacy screen is ported except three: **shop**, **lucky hatch** and
-   the (unreachable in legacy) profile card. Built: home with its top bar and five-tab
+3. Meta UI ✅ — every legacy screen is ported except two: **lucky hatch** and the
+   (unreachable in legacy) profile card. Built: home with its top bar and five-tab
    bottom nav, the three setup steps, Anthill, Antarium + per-species page, Colony/quests
    with the XP spine, Trophy Road, Challenges, daily challenge, Leaderboard, Settings, the
    slide-in menu, How to play, and the result card.
-   The shop is really step 5 wearing a different hat — everything it would sell (premium
-   species, the Trophy Pass) already has its grant hook (`grantSpecies`, `grantPass`).
-   The lucky hatch needs the larva currency and a cosmetics pool, neither of which exists
-   yet, which is why larva rewards are paid in pheromone (§10).
+   The shop is built and sells through `platform/purchases.ts`: a `PurchaseGateway`
+   interface with a `DemoGateway` that grants without charging. Swapping in RevenueCat is
+   one new implementation of that interface — the screen and the grant code do not change.
+   It deliberately sells only what the game can spend (mycelium, pheromone, the Trophy Pass,
+   the premium colony); the lucky hatch needs the larva currency and a cosmetics pool,
+   neither of which exists yet, which is why larva rewards are paid in pheromone (§10).
 4. Capacitor wrap → Android build
-5. RevenueCat in-app purchases (the legacy `buyPass()`/shop grants are the integration points)
+5. RevenueCat in-app purchases — implement `PurchaseGateway` against it and hand it to
+   `App`; nothing else moves. Needs, from Milan: a Play Console account, the products
+   created there with these ids (`platform/purchases.ts`), and a RevenueCat key.
 6. Play Console release
 
 Later, server-backed: async PvP, ranked ladder, seasons, replays. Determinism makes

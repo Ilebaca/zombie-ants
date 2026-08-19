@@ -11,7 +11,8 @@ import {
 import type { EngineEvent, GameOverReason, MapId, Player, SpeciesId } from "../engine";
 import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
-import { DEFAULT_SPECIES, ProfileStore, SPECIES_ORDER } from "../platform";
+import { DEFAULT_SPECIES, DemoGateway, ProfileStore, SPECIES_ORDER } from "../platform";
+import type { PurchaseGateway } from "../platform";
 import { SPECIES_COL, antHead, basicLook, hexA, setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
 import { buildAntarium, buildSpeciesPage } from "./antarium";
@@ -23,6 +24,7 @@ import {
 } from "./challenges";
 import type { Challenge } from "./challenges";
 import { buildLeaderboard } from "./leaderboard";
+import { buildShop } from "./shop";
 import { buildQuests } from "./quests";
 import { buildComingSoon, buildMenu, buildRules, buildSettings } from "./screens-simple";
 import { buildTrophyRoad } from "./road";
@@ -36,7 +38,7 @@ type ScreenId =
   | "home" | "mapsel" | "start" | "formation"
   | "anthill" | "antarium" | "antup" | "achievements" | "quests"
   | "challenges" | "daily" | "rules" | "settings" | "news" | "friends" | "support"
-  | "leaderboard";
+  | "leaderboard" | "shop";
 
 const MAP_ORDER: readonly MapId[] = ["tiny", "small", "mid"];
 
@@ -56,11 +58,15 @@ export class App {
   private match: MatchScreen | null = null;
   private overlay: HTMLElement | null = null;
   private nav: HTMLElement | null = null;
-  private current: ScreenId = "home";
   /** Which colony the #antup page is showing. */
   private speciesPage: SpeciesId = "leafcutter";
   private menu: HTMLElement | null = null;
   private difficulty: Difficulty = "normal";
+  /**
+   * Where purchases go. The demo gateway grants without charging, which is all the web
+   * build can do; the Capacitor build swaps in RevenueCat behind the same interface.
+   */
+  private purchases: PurchaseGateway = new DemoGateway();
   /** The challenge being played, if this match is one. */
   private challenge: { index: number; done: boolean; daily: boolean } | null = null;
 
@@ -93,7 +99,6 @@ export class App {
     this.clearOverlay();
     this.closeMenu();
     this.syncNav(id);
-    this.current = id;
     for (const [key, el] of this.screens) el.classList.toggle("hidden", key !== id);
     if (!this.screens.has(id)) {
       const el = this.build(id);
@@ -153,11 +158,7 @@ export class App {
   }
 
   private onNav(tab: NavId): void {
-    if (tab !== "shop") { this.show(tab); return; }
-    // The shop is the one tab still to be built (roadmap step 5); say so rather than
-    // dead-ending on a tap that looks broken.
-    const screen = this.screens.get(this.current);
-    if (screen) toast(screen, "The shop opens soon.", "warn");
+    this.show(tab);
   }
 
   private build(id: ScreenId): HTMLElement {
@@ -175,6 +176,7 @@ export class App {
     if (id === "achievements") return buildTrophyRoad(this.profile, () => this.show("home"));
     if (id === "quests") return buildQuests(this.profile, () => this.show("home"));
     if (id === "rules") return buildRules();
+    if (id === "shop") return buildShop(this.profile, this.purchases, () => this.show("home"));
     if (id === "leaderboard") {
       return buildLeaderboard(this.profile.get().trophies, () => this.show("home"));
     }
@@ -272,7 +274,7 @@ export class App {
     root.appendChild(topBar(this.profile.get(), {
       onProfile: () => this.show("quests"),
       onTrophyRoad: () => this.show("achievements"),
-      onShop: () => toast(root, "The shop opens soon.", "warn"),
+      onShop: () => this.show("shop"),
     }));
 
     // Two floating buttons down the right edge. The legacy build sizes and stacks them

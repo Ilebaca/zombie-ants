@@ -18,6 +18,7 @@ import {
   unclaimedLevels, type QuestKind, type QuestState,
 } from "./quests";
 import { isPassKey, rewardFor, roadTrophies } from "./road";
+import type { Grant } from "./purchases";
 import { defaultStore, readJson, writeJson, type KeyValueStore } from "./storage";
 
 const KEY = "zombie-ants.profile";
@@ -66,6 +67,8 @@ export interface Profile {
   /** Trophy Road: the reward keys already paid out, and whether the pass is owned. */
   roadClaimed: string[];
   pass: boolean;
+  /** When the shop's daily gift was last taken. */
+  freeAt: number;
   /** Daily quests: today's three, the day they were rolled for, and the sweep streak. */
   quests: QuestState[];
   questDay: number;
@@ -103,6 +106,7 @@ export function defaultProfile(): Profile {
     fav: {},
     roadClaimed: [],
     pass: false,
+    freeAt: 0,
     quests: [],
     questDay: 0,
     questStreak: 0,
@@ -166,6 +170,7 @@ export function normalise(raw: unknown): Profile {
       ? [...new Set(p.roadClaimed.filter((k): k is string => typeof k === "string" && !!rewardFor(k)))]
       : [],
     pass: p.pass === true,
+    freeAt: int(p.freeAt, 0, 1e15, 0),
     // A quest id that no longer exists in the pool is dropped rather than kept at zero
     // progress, where it would be permanently unclaimable and block the daily sweep.
     quests: Array.isArray(p.quests)
@@ -369,10 +374,40 @@ export class ProfileStore {
     return true;
   }
 
-  /** The Trophy Pass. This is the RevenueCat integration point (roadmap step 5). */
+  /** The Trophy Pass. Bought in the shop, or granted by a bundle. */
   grantPass(): void {
     if (this.profile.pass) return;
     this.update((p) => { p.pass = true; });
+  }
+
+  /**
+   * Apply everything a purchase handed over.
+   *
+   * One method so a bundle lands as a single write — a player who closes the app mid-grant
+   * never ends up with the mycelium but not the pass.
+   */
+  applyGrant(grant: Grant): void {
+    this.update((p) => {
+      p.mycel += grant.mycel ?? 0;
+      p.pheromone += grant.pheromone ?? 0;
+      if (grant.pass) p.pass = true;
+      if (grant.species && !p.unlocked.includes(grant.species)) p.unlocked.push(grant.species);
+    });
+  }
+
+  /** Timestamp of the last daily gift claim, so the shop can offer it once a day. */
+  claimDailyGift(now: number = Date.now()): boolean {
+    if (!this.dailyGiftReady(now)) return false;
+    this.update((p) => {
+      p.freeAt = now;
+      p.mycel += DAILY_GIFT.mycel;
+      p.pheromone += DAILY_GIFT.pheromone;
+    });
+    return true;
+  }
+
+  dailyGiftReady(now: number = Date.now()): boolean {
+    return now - this.profile.freeAt >= 864e5;
   }
 
   /* -------------------------------------------------------- DAILY QUESTS */
@@ -470,6 +505,9 @@ export const MATCH_MYCEL = { win: 25, loss: 8 } as const;
 /** XP a finished match pays. Long games are worth a little more, capped at +30. */
 export const matchXp = (won: boolean, turns: number): number =>
   (won ? 90 : 35) + Math.min(30, Math.max(0, Math.floor(turns)));
+
+/** The shop's once-a-day free handout. */
+export const DAILY_GIFT = { mycel: 60, pheromone: 100 } as const;
 
 function neutralMods(): PlayerMods {
   return {
