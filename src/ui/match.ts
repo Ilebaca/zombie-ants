@@ -8,7 +8,7 @@
 import {
   MAPS, actionTargets, canActFrom, endTurn, incomeOf, armyOf, moveOrAttack,
   rally, speciesOf, surrender, tileAt, travel, distance, isConnected,
-  abilityReady, activateAbility, sparePool, tunnelTargets,
+  abilityReady, activateAbility, sparePool, tunnelTargets, endByObjective,
 } from "../engine";
 import type {
   AbilityKind, ActionContext, Coord, EngineEvent, GameOverReason, GameState, MapId, Player, PlayerMods, SpeciesId,
@@ -40,6 +40,11 @@ export interface MatchOptions {
    * them, and the engine stays unaware that anything is listening.
    */
   onEvents?: (events: readonly EngineEvent[]) => void;
+  /**
+   * Scenario objective. Returns the winner when a batch of events settles it, or null to
+   * play on. The match asks; it does not know what the objective is.
+   */
+  judge?: (events: readonly EngineEvent[]) => Player | null;
 }
 
 export class MatchScreen {
@@ -469,6 +474,16 @@ export class MatchScreen {
     for (const e of events) if (e.type === "gameOver") this.endReason = e.reason;
     this.renderer.consume(events as EngineEvent[]);
     this.opts.onEvents?.(events);
+
+    // A scenario objective can settle mid-turn — a challenge that asks you to strike first
+    // is decided by the first attack, not by whose nest falls.
+    if (!this.state.over) {
+      const decided = this.opts.judge?.(events) ?? null;
+      if (decided) {
+        this.consume(endByObjective(this.state, decided));
+        this.finish();
+      }
+    }
   }
 
   /* ---------------------------------------------------------------------- TOASTS */

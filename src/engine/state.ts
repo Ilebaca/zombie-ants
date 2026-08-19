@@ -197,6 +197,20 @@ export function surrender(state: GameState, p: Player): EngineEvent[] {
   return [{ type: "gameOver", winner: state.winner, reason: "surrender" }];
 }
 
+/**
+ * Stop the match because a scenario objective was met or missed.
+ *
+ * The engine does not know what the objective was — that is the shell's business — but
+ * ending a match is a state change, so it belongs here rather than in the view, where a
+ * half-ended match could keep taking input.
+ */
+export function endByObjective(state: GameState, winner: Player): EngineEvent[] {
+  if (state.over) return [];
+  state.over = true;
+  state.winner = winner;
+  return [{ type: "gameOver", winner, reason: "objective" }];
+}
+
 /* ----------------------------------------------------- SNAPSHOT / RESTORE (for AI) */
 
 export interface Snapshot {

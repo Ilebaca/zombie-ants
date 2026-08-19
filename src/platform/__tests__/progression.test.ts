@@ -8,7 +8,12 @@ import {
   ROAD_CHAPTER, ROAD_MAX, ROAD_STEP, freeReward, passReward, rewardFor, roadKey, roadStops,
 } from "../road";
 
-const store = (): ProfileStore => new ProfileStore(new MemoryStore());
+/** A profile with nothing banked — the starting grant would mask "cannot afford" cases. */
+const store = (): ProfileStore => {
+  const s = new ProfileStore(new MemoryStore());
+  s.update((p) => { p.mycel = 0; p.pheromone = 0; });
+  return s;
+};
 const rich = (mycel = 100000, pheromone = 100000): ProfileStore => {
   const s = store();
   s.update((p) => { p.mycel = mycel; p.pheromone = pheromone; });

@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { createGame, ownedCount, nestTile, START_SHAPES, allTiles, NEUTRAL_MODS } from "../index";
+import {
+  createGame, ownedCount, nestTile, START_SHAPES, allTiles, NEUTRAL_MODS, endByObjective,
+} from "../index";
 
 describe("starting position", () => {
   it("gives each side exactly 5 tiles on every shape and map", () => {
@@ -38,5 +40,23 @@ describe("starting position", () => {
     const mid = Math.floor(s.size / 2);
     expect(s.grid[mid]![mid]!.terrain).toBe("hiveQ");
     expect(allTiles(s).filter(t => t.terrain === "hiveG")).toHaveLength(4);
+  });
+});
+
+describe("ending a match on a scenario objective", () => {
+  it("hands the match to the named winner and says why", () => {
+    const state = createGame({ map: "tiny", species: { you: "fire", ai: "ghost" }, seed: 5 });
+    const events = endByObjective(state, "you");
+    expect(state.over).toBe(true);
+    expect(state.winner).toBe("you");
+    expect(events).toEqual([{ type: "gameOver", winner: "you", reason: "objective" }]);
+  });
+
+  /** A finished match must not be re-decided, or a late event could steal the result. */
+  it("does nothing once the match is already over", () => {
+    const state = createGame({ map: "tiny", species: { you: "fire", ai: "ghost" }, seed: 5 });
+    endByObjective(state, "ai");
+    expect(endByObjective(state, "you")).toEqual([]);
+    expect(state.winner).toBe("ai");
   });
 });

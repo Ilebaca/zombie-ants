@@ -170,7 +170,12 @@ export type EngineEvent =
   | { type: "hiveRespawn"; level: number }
   | { type: "gameOver"; winner: Player; reason: GameOverReason };
 
-export type GameOverReason = "nest" | "wipe" | "turnLimit" | "surrender";
+/**
+ * Why a match ended. "objective" is for scenario play (challenges): the shell decides the
+ * objective was met or missed and tells the engine to stop — the engine has no notion of
+ * what the objective was, only that the match is over.
+ */
+export type GameOverReason = "nest" | "wipe" | "turnLimit" | "surrender" | "objective";
 
 export interface Coord { c: number; r: number }
 

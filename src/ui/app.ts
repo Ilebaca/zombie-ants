@@ -19,8 +19,10 @@ import { NAV_SCREENS, bottomNav, el, toast, topBar } from "./chrome";
 import type { NavId } from "./chrome";
 import { MatchScreen } from "./match";
 import {
-  CHALLENGES, CHALLENGE_REWARD, DAILY_BONUS_PHEROMONE, buildChallenges, buildDaily,
+  CHALLENGES, CHALLENGE_REWARD, DAILY_BONUS_PHEROMONE, GOAL_TEXT, buildChallenges, buildDaily,
 } from "./challenges";
+import type { Challenge } from "./challenges";
+import { buildLeaderboard } from "./leaderboard";
 import { buildQuests } from "./quests";
 import { buildComingSoon, buildMenu, buildRules, buildSettings } from "./screens-simple";
 import { buildTrophyRoad } from "./road";
@@ -33,7 +35,8 @@ import "./game.css";
 type ScreenId =
   | "home" | "mapsel" | "start" | "formation"
   | "anthill" | "antarium" | "antup" | "achievements" | "quests"
-  | "challenges" | "daily" | "rules" | "settings" | "news" | "friends" | "support";
+  | "challenges" | "daily" | "rules" | "settings" | "news" | "friends" | "support"
+  | "leaderboard";
 
 const MAP_ORDER: readonly MapId[] = ["tiny", "small", "mid"];
 
@@ -172,6 +175,9 @@ export class App {
     if (id === "achievements") return buildTrophyRoad(this.profile, () => this.show("home"));
     if (id === "quests") return buildQuests(this.profile, () => this.show("home"));
     if (id === "rules") return buildRules();
+    if (id === "leaderboard") {
+      return buildLeaderboard(this.profile.get().trophies, () => this.show("home"));
+    }
     if (id === "challenges") return buildChallenges((i) => this.startChallenge(i));
     if (id === "daily") return buildDaily((i) => this.startChallenge(i, true), () => this.show("home"));
     if (id === "news") return buildComingSoon("news", "News", "Latest updates", "📰", () => this.show("home"));
@@ -493,7 +499,7 @@ export class App {
     begin.className = "cta";
     begin.id = "begin";
     begin.textContent = "Begin the spread →";
-    begin.onclick = () => this.startMatch();
+    begin.onclick = () => { this.challenge = null; this.startMatch(); };
 
     box.append(grid, begin);
     body.appendChild(box);
@@ -547,6 +553,14 @@ export class App {
         this.profile.questProgress("ability");
       },
       onEvents: (events) => scoreQuestEvents(this.profile, events),
+      // "Strike the enemy before they strike you" is settled by the first attack of the
+      // match, whoever lands it. Every other objective is decided the ordinary way.
+      judge: (events) => {
+        const goal = this.challenge ? CHALLENGES[this.challenge.index]?.goal : undefined;
+        if (goal !== "attackFirst") return null;
+        const attack = events.find((e) => e.type === "combat");
+        return attack && attack.type === "combat" ? attack.attacker : null;
+      },
       onExit: (winner, reason) => {
         // Snapshot before recording, so the card can report what this match actually paid.
         const beforeXp = this.profile.get().xp;
@@ -568,6 +582,7 @@ export class App {
         const after = this.profile.get();
         const level = this.profile.level().level;
         this.showResult(winner, {
+          challenge: this.challenge ? CHALLENGES[this.challenge.index] ?? null : null,
           turns: state.turn,
           youArmy: armyOf(state, "you"),
           aiArmy: armyOf(state, "ai"),
@@ -595,6 +610,7 @@ export class App {
   private showResult(winner: Player | null, recap: {
     turns: number; youArmy: number; aiArmy: number; species: SpeciesId;
     xpGained: number; leveledTo: number | null; reason: GameOverReason | null;
+    challenge: Challenge | null;
   }): void {
     const won = winner === "you";
     const ov = el("div", "overlay");
@@ -604,9 +620,12 @@ export class App {
     const card = el("div", "card " + (won ? "win" : "lose"));
     card.id = "overCard";
 
-    const h1 = el("h1", undefined, won ? "Victory" : "Defeat");
+    const h1 = el("h1", undefined,
+      recap.challenge ? (won ? "Challenge complete!" : "Challenge failed.") : (won ? "Victory" : "Defeat"));
     h1.id = "overTitle";
-    const tag = el("div", "tag", resultFlavour(won, recap.reason, recap.turns));
+    const tag = el("div", "tag", recap.challenge
+      ? `${recap.challenge.name} — ${GOAL_TEXT[recap.challenge.goal]}  ${won ? "✓" : "✗"}`
+      : resultFlavour(won, recap.reason, recap.turns));
     tag.id = "overSub";
 
     const rows = el("div", "recap");

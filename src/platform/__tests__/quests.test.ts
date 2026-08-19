@@ -6,7 +6,12 @@ import {
   questDef, rollQuests,
 } from "../quests";
 
-const store = (): ProfileStore => new ProfileStore(new MemoryStore());
+/** A profile with nothing banked, so reward assertions start from zero. */
+const store = (): ProfileStore => {
+  const s = new ProfileStore(new MemoryStore());
+  s.update((p) => { p.mycel = 0; p.pheromone = 0; });
+  return s;
+};
 /** Local noon on a given day index, so a test never straddles a rollover. */
 const at = (day: number): number => {
   const utcMidnight = new Date(day * 86_400_000);

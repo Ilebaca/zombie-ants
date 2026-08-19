@@ -87,6 +87,7 @@ describe("progression", () => {
 
   it("buys a chamber only when affordable and uncapped", () => {
     const s = store();
+    s.update((p) => { p.mycel = 0; });                // a new profile starts with a grant
     expect(s.buyChamber("royal")).toBe(false);        // broke
 
     s.update((p) => { p.mycel = chamberCost(0); });
@@ -105,5 +106,26 @@ describe("progression", () => {
     s.update((p) => { p.mycel = 10; });
     expect(s.buyChamber("royal")).toBe(false);
     expect(s.get().mycel).toBe(10);
+  });
+});
+
+describe("a brand-new profile", () => {
+  /**
+   * normalise() runs over every profile including the default one, so a fallback of zero
+   * there silently cancels anything the default profile grants.
+   */
+  it("keeps the starting mycelium the default profile grants", () => {
+    const granted = defaultProfile().mycel;
+    expect(granted).toBeGreaterThan(0);
+    expect(store().get().mycel).toBe(granted);
+    expect(normalise({}).mycel).toBe(granted);
+    expect(normalise(null).mycel).toBe(granted);
+  });
+
+  it("still takes a saved balance over the default", () => {
+    expect(normalise({ mycel: 7 }).mycel).toBe(7);
+    expect(normalise({ mycel: 0 }).mycel).toBe(0);
+    expect(normalise({ mycel: -5 }).mycel).toBe(0);
+    expect(normalise({ mycel: "lots" }).mycel).toBe(defaultProfile().mycel);
   });
 });

@@ -17,6 +17,10 @@ import { scoreQuestEvents } from "../app";
 import { buildQuests } from "../quests";
 import { buildTrophyRoad } from "../road";
 
+/**
+ * A profile with exactly the balances a test asks for. Set explicitly rather than topped
+ * up, because a new profile arrives with a starting grant of mycelium.
+ */
 const store = (mycel = 0, pheromone = 0, trophies = 0): ProfileStore => {
   const s = new ProfileStore(new MemoryStore());
   s.update((p) => { p.mycel = mycel; p.pheromone = pheromone; p.trophies = trophies; });

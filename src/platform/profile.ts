@@ -141,9 +141,11 @@ export function normalise(raw: unknown): Profile {
   const out: Profile = {
     ...base,
     name: typeof p.name === "string" && p.name.trim() ? p.name.slice(0, 18) : base.name,
-    trophies: int(p.trophies, 0, 1e9, 0),
-    mycel: int(p.mycel, 0, 1e9, 0),
-    pheromone: int(p.pheromone, 0, 1e9, 0),
+    // Fallbacks are the DEFAULT profile's values, not zero: a brand-new save has no mycel
+    // field at all, and falling back to 0 quietly cancelled the starting grant.
+    trophies: int(p.trophies, 0, 1e9, base.trophies),
+    mycel: int(p.mycel, 0, 1e9, base.mycel),
+    pheromone: int(p.pheromone, 0, 1e9, base.pheromone),
     stats: {
       games: int(p.stats?.games, 0, 1e9, 0),
       wins: int(p.stats?.wins, 0, 1e9, 0),
