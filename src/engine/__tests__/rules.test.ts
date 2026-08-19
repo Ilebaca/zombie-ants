@@ -117,8 +117,8 @@ describe("long sends", () => {
     s.current = "you";
     const far = { c: 1 + TRAVEL_RANGE, r: 1 };
     const tooFar = { c: 1 + TRAVEL_RANGE + 1, r: 1 };
-    expect(travel(s, { c: 1, r: 1 }, tooFar, ctx)).toEqual([]);
-    expect(travel(s, { c: 1, r: 1 }, far, ctx).length).toBeGreaterThan(0);
+    expect(travel(s, { c: 1, r: 1 }, tooFar)).toEqual([]);
+    expect(travel(s, { c: 1, r: 1 }, far).length).toBeGreaterThan(0);
     expect(tile(s, far.c, far.r)!.owner).toBe("you");
   });
 
@@ -127,7 +127,7 @@ describe("long sends", () => {
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 30 });
     recomputeConnectivity(s);
     s.current = "you";
-    travel(s, { c: 1, r: 1 }, { c: 4, r: 1 }, ctx);
+    travel(s, { c: 1, r: 1 }, { c: 4, r: 1 });
     expect(tile(s, 2, 1)!.struct).toBe("vein");
     expect(tile(s, 3, 1)!.struct).toBe("vein");
     expect(tile(s, 4, 1)!.struct).toBe("stable");     // only the destination is territory
