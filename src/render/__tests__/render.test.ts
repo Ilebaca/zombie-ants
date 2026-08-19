@@ -326,3 +326,63 @@ describe("the reveal front", () => {
     expect(reveal.get(3, 0)?.prev).toBe("ai");
   });
 });
+
+describe("a batch of captures", () => {
+  /**
+   * An ability that claims several tiles at once (Weaver's Spread, Pharaoh's Bud) used to
+   * start a separate reveal for each one, all on the same frame — so the tiles filled
+   * together instead of one after another. They must run as a single ordered front.
+   */
+  const spread = (n: number): EngineEvent[] =>
+    Array.from({ length: n }, (_, i): EngineEvent => ({
+      type: "capture", at: { c: i, r: 3 }, owner: "you", from: "R", previous: null,
+    }));
+
+  it("fills the tiles one at a time, in the order they were claimed", () => {
+    const reveal = new RevealTracker();
+    reveal.reduced = false;
+    const fx = new FxLayer();
+    animate(spread(4), { reveal, fx });
+
+    const start = performance.now();
+    const step = reveal.stepMs(4);
+
+    // A third of the way into the first tile's slot: it is filling, the rest have not begun.
+    reveal.step(start + step * 0.33);
+    expect(reveal.progress(0, 3)).toBeGreaterThan(0);
+    expect(reveal.progress(0, 3)).toBeLessThan(1);
+    expect(reveal.progress(1, 3)).toBe(0);
+    expect(reveal.progress(2, 3)).toBe(0);
+    expect(reveal.progress(3, 3)).toBe(0);
+
+    // Into the third slot: the first two are done, the third is filling, the fourth waits.
+    reveal.step(start + step * 2.5);
+    expect(reveal.progress(0, 3)).toBe(1);
+    expect(reveal.progress(1, 3)).toBe(1);
+    expect(reveal.progress(2, 3)).toBeGreaterThan(0);
+    expect(reveal.progress(2, 3)).toBeLessThan(1);
+    expect(reveal.progress(3, 3)).toBe(0);
+  });
+
+  it("keeps a long run under a second and a half, still one tile at a time", () => {
+    const reveal = new RevealTracker();
+    reveal.reduced = false;
+    animate(spread(12), { reveal, fx: new FxLayer() });
+
+    const step = reveal.stepMs(12);
+    expect(step * 12).toBeLessThanOrEqual(1600);
+
+    const start = performance.now();
+    reveal.step(start + step * 0.5);
+    expect(reveal.progress(0, 3)).toBeGreaterThan(0);
+    expect(reveal.progress(1, 3)).toBe(0);       // never two at once
+  });
+
+  it("leaves a single capture animating immediately", () => {
+    const reveal = new RevealTracker();
+    reveal.reduced = false;
+    animate(spread(1), { reveal, fx: new FxLayer() });
+    reveal.step(performance.now() + reveal.stepMs(1) * 0.5);
+    expect(reveal.progress(0, 3)).toBeCloseTo(0.5, 1);
+  });
+});

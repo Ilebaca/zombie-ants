@@ -35,14 +35,20 @@ export interface AnimationSinks {
 /**
  * Translate one action's events into reveals and flourishes.
  *
- * A `travel` is deliberately handled as a single reveal group covering the whole path, so
- * the trail reads as one body extending rather than each tile popping in separately.
+ * Tiles fill ONE AT A TIME. A `travel` is one reveal group covering its whole path, and
+ * every other capture in the same batch joins a single ordered group too — so an ability
+ * that claims six tiles fills them one after another rather than all at once. Each tile's
+ * streak and pop are delayed to meet its own fill.
  */
 export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): void {
   const { reveal, fx } = sinks;
 
   // Tiles laid by the travel currently being processed, in path order.
   let pendingTravelPath: Coord[] | null = null;
+  // Captures outside a travel, gathered so they can be revealed as one ordered run.
+  const captures: Array<{
+    at: Coord; edge: RevealEdge; prev: Player | null; src: Coord; owner: Player;
+  }> = [];
 
   for (const e of events) {
     switch (e.type) {
@@ -79,14 +85,13 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
         break;
 
       case "capture": {
-        const src = sourceOf(e.at, e.from);
-        // A capture that is part of a travel is already inside the group's sweep.
+        // A capture that is part of a travel is already inside that group's sweep.
         const inTravel = pendingTravelPath?.some((p) => p.c === e.at.c && p.r === e.at.r);
-        if (!inTravel) {
-          reveal.begin([{ at: e.at, edge: edgeFor(e.from), prev: e.previous }]);
-          fx.flow([src, e.at], e.owner);
-        }
-        fx.pop(e.at, e.owner);
+        if (inTravel) { fx.pop(e.at, e.owner); break; }
+        captures.push({
+          at: e.at, edge: edgeFor(e.from), prev: e.previous,
+          src: sourceOf(e.at, e.from), owner: e.owner,
+        });
         break;
       }
 
@@ -114,6 +119,17 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
         sinks.onNotice?.(e);
         break;
     }
+  }
+
+  if (captures.length) {
+    reveal.begin(captures.map(({ at, edge, prev }) => ({ at, edge, prev })));
+    // Each streak leaves as its tile's turn comes round, so the flourishes stay in step
+    // with the fill rather than all firing on the first frame.
+    const step = reveal.stepMs(captures.length);
+    captures.forEach(({ src, at, owner }, i) => {
+      fx.flow([src, at], owner, i * step);
+      fx.pop(at, owner, i * step + step);
+    });
   }
 }
 

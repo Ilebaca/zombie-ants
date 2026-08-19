@@ -21,6 +21,18 @@ import type { Coord, Direction, Player } from "../engine";
  */
 export const REVEAL_MS_PER_TILE = 260;
 
+/**
+ * A long run would otherwise hold the player up: ten tiles at full speed is two and a half
+ * seconds of watching. Past six tiles the per-tile time shortens so the whole run lands
+ * within about a second and a half, still strictly one tile after another.
+ */
+export const REVEAL_MAX_MS = 1560;
+
+export function revealStepMs(tiles: number): number {
+  if (tiles <= 6) return REVEAL_MS_PER_TILE;
+  return Math.max(110, REVEAL_MAX_MS / tiles);
+}
+
 /** Which edge of the cell the fill grows FROM. */
 export type RevealEdge = "L" | "R" | "U" | "D";
 
@@ -72,7 +84,7 @@ export class RevealTracker {
       this.states.set(k, { rv: 0, edge: t.edge, prev: t.prev });
     }
     const n = keys.length;
-    this.groups.push({ keys, start: performance.now(), dur: REVEAL_MS_PER_TILE * n, n });
+    this.groups.push({ keys, start: performance.now(), dur: revealStepMs(n) * n, n });
   }
 
   step(now: number): void {
@@ -96,6 +108,9 @@ export class RevealTracker {
       }
     }
   }
+
+  /** How long one tile of a run of `n` takes to fill — the caller's cue for its flourishes. */
+  stepMs(tiles: number): number { return revealStepMs(tiles); }
 
   /** Reveal state for a tile, or undefined when it is settled (draw at full opacity). */
   get(c: number, r: number): RevealState | undefined {

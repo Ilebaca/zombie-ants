@@ -25,23 +25,25 @@ export class FxLayer {
     ? matchMedia("(prefers-reduced-motion: reduce)").matches
     : false;
 
-  flow(path: Coord[], owner: Player): void {
+  flow(path: Coord[], owner: Player, delay = 0): void {
     if (this.reduced || path.length < 2) return;
     // The streak keeps pace with the fill front (reveal.ts): same tiles-per-second, so the
     // comet arrives exactly as the ground it crossed finishes filling.
     const steps = Math.max(1, path.length - 1);
     this.items.push({
-      type: "flow", path: path.slice(), owner, t: performance.now(),
+      type: "flow", path: path.slice(), owner, t: performance.now() + delay,
       dur: this.reduced ? 1 : FLOW_MS_PER_STEP * steps,
     });
   }
 
-  clash(at: Coord): void {
-    this.items.push({ type: "clash", at, t: performance.now(), dur: this.reduced ? 1 : 520 });
+  clash(at: Coord, delay = 0): void {
+    this.items.push({ type: "clash", at, t: performance.now() + delay, dur: this.reduced ? 1 : 520 });
   }
 
-  pop(at: Coord, owner: Player): void {
-    this.items.push({ type: "pop", at, owner, t: performance.now(), dur: this.reduced ? 1 : 380 });
+  pop(at: Coord, owner: Player, delay = 0): void {
+    this.items.push({
+      type: "pop", at, owner, t: performance.now() + delay, dur: this.reduced ? 1 : 380,
+    });
   }
 
   clear(): void { this.items.length = 0; }
@@ -53,6 +55,7 @@ export class FxLayer {
 
     for (const f of this.items) {
       const k = (now - f.t) / f.dur;
+      if (k < 0) continue;                  // still waiting for its turn in the run
 
       if (f.type === "flow") {
         const pts = f.path.map((p) => ({ x: layout.cx(p.c), y: layout.cy(p.r) }));
