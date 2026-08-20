@@ -174,14 +174,16 @@ Measured ladder (24 games each, sides and species swapped, node-budgeted): hard 
 normal **79%**, hard beats easy **79%**, normal beats easy **100%**. Before this work, hard
 scored **35%** against normal — the ladder was inverted at the top.
 
-**In AI play, nobody ever takes a nest.** Sixteen hard-vs-easy games on the small board all
-ended on the turn limit, decided on tile count; not one ended by capturing a queen or by a
-wipe. The AI *can* do it (there is a test), it just never gets there — a nest carries +6
-flat defence and both sides now reinforce theirs competently. Two things follow. Matches
-always run their full length, which is a pacing fact worth knowing before tuning anything;
-and because everything is decided on territory, a greedy land-grab is a respectable
-strategy, which is how `easy` steals games off `hard`. Whether the nest should be more
-crackable is a design decision (§4.6 is deliberate) — do not tune it away silently.
+**Almost every AI match is decided on tile count, not by a kill.** Of sixteen hard-vs-easy
+games none ended by capturing a queen; of sixteen hard-vs-normal, two did. So a nest capture
+is rare rather than impossible — roughly one game in eight between evenly-matched sides, and
+none at all against an opponent that sprawls. A nest carries +6 flat defence and both sides
+reinforce theirs competently, so cracking one needs a fist the AI usually has better uses
+for. Two things follow. Matches nearly always run their full length, which is a pacing fact
+worth knowing before tuning anything; and because the result comes down to territory, a
+greedy land-grab is a respectable strategy — which is how `easy` steals games off `hard`.
+Whether the nest should be more crackable is a design decision (§4.6 is deliberate) — do not
+tune it away silently.
 
 ## 5. Gotchas — bugs already paid for once
 
