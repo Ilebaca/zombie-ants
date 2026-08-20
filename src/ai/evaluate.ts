@@ -182,6 +182,10 @@ export function evaluate(
   }
 
   const mine = side[me], theirs = side[opp];
+  // Tried and rejected: scaling this term up as the turn limit approaches, on the theory
+  // that the limit is decided on tile count so late tiles are worth more. It cost hard
+  // fifteen points against easy — the AI over-extends grabbing ground it cannot hold, and
+  // arrives at the count behind rather than ahead.
   let score =
       (mine.tiles - theirs.tiles) * w.tile
     + (mine.income - theirs.income) * w.income

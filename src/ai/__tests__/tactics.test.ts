@@ -193,11 +193,13 @@ describe("the ladder", () => {
     const { playGame } = await import("../../../tools/arena");
     const { PROFILES } = await import("../search");
     const budgets = Object.values(PROFILES).map((p) => [p.timeBudgetMs, p.nodeBudget] as const);
-    // Thinking time is cut so the suite stays quick. Every level is slowed by the same
-    // factor, so the ORDER this checks is the order the shipped budgets produce — but cut
-    // it too far and the levels converge, because they all bottom out at one ply.
+    // Budgeted by NODES, not by the clock. The shipped budgets are wall-clock so a slow
+    // phone thinks less — which also means a loaded CI box thinks less, and a test that
+    // plays whole games off a clock is a coin flip. Nodes make the same search happen
+    // every run. Cut, so the suite stays quick, but not so far that the levels converge
+    // on one ply and stop being distinguishable at all.
     for (const p of Object.values(PROFILES)) {
-      p.timeBudgetMs = Math.max(20, Math.round(p.timeBudgetMs / 6));
+      p.timeBudgetMs = 60_000;
       p.nodeBudget = Math.max(300, Math.round(p.nodeBudget / 6));
     }
     try {

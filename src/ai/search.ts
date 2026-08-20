@@ -397,21 +397,52 @@ function shouldCast(
   state: GameState, me: Player, ctx: ActionContext, profile: Profile,
 ): boolean {
   if (!profile.searchAbility) return abilityWorthCasting(state, me, ctx);
+  // The cheap trigger still gates it: no point searching a cast that has no legal target.
   if (!abilityWorthCasting(state, me, ctx)) return false;
 
-  const before = chooseMove(state, me, "normal", ctx).value;
+  const before = probe(state, me, ctx);
   const snap = snapshot(state);
   const prev = state.current;
   state.current = me;
   const cast = activateAbility(state, me, ctx.mods[me]);
   // An ability that returned no events did not fire and must not spend its cooldown
   // (CLAUDE.md §5) — restoring puts the cooldown back too.
-  const after = cast.length && !state.over
-    ? chooseMove(state, me, "normal", ctx).value
-    : (state.over ? WIN : -Infinity);
+  const after = cast.length && !state.over ? probe(state, me, ctx) : (state.over ? WIN : -Infinity);
   state.current = prev;
   restore(state, snap);
   return after > before;
+}
+
+/**
+ * A short search used only to compare "cast" against "do not cast".
+ *
+ * It runs on its own small budget rather than borrowing Normal's, because this happens
+ * twice before Hard's real search and the three together have to fit inside one turn.
+ */
+const PROBE: Profile = {
+  ...PROFILES.normal, depth: 2, branching: 6, nodeBudget: 1200, timeBudgetMs: 45,
+};
+
+function probe(state: GameState, me: Player, ctx: ActionContext): number {
+  const s: Ctx = {
+    ctx, me, profile: PROBE, nodes: 0, killers: [],
+    deadline: Date.now() + PROBE.timeBudgetMs, checkAt: 512, out: false,
+  };
+  const candidates = genRoot(state, me, s);
+  if (!candidates.length) return evaluateWith(state, me, ctx.mods, PROBE.weights);
+  const opp = otherPlayer(me);
+  let best = -Infinity;
+  let alpha = -Infinity;
+  for (const m of candidates) {
+    s.nodes++;
+    const value = withAction(state, me, m.action, s, () =>
+      state.over
+        ? evaluateWith(state, me, ctx.mods, PROBE.weights)
+        : -negamax(state, opp, PROBE.depth - 1, -Infinity, -alpha, s));
+    if (value > best) { best = value; alpha = value; }
+    if (spent(s)) break;
+  }
+  return best;
 }
 
 /**

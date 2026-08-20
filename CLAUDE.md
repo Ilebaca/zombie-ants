@@ -110,8 +110,14 @@ action set, and its ability chosen by search.
 
 **Strength is measured, never assumed.** `npm run ladder [games] [map] [speed]` plays the
 levels against each other; `npm run arena <a> <b> [games]` plays two; `tools/eval-ab.ts`
-sweeps one evaluation weight. `speed` divides every level's thinking budget by the same
-factor so a ladder runs in minutes — it changes how deep everyone gets, not who should win.
+sweeps one evaluation weight. `speed` divides every level's node budget by the same factor
+so a ladder runs in minutes — it changes how deep everyone gets, not who should win.
+
+**The tools budget by nodes, the game budgets by the clock.** That difference is deliberate
+and matters. Shipped, a wall-clock budget is right: a slow phone thinks less rather than
+stuttering. Measuring, it is useless — a busy machine also thinks less, so a ladder run off
+a clock measures the load on the box as much as the AI, and two runs are not comparable.
+Several early readings in this file's history were contaminated exactly that way.
 
 Things self-play has already settled. Do not undo them without re-running the ladder:
 
@@ -135,6 +141,16 @@ Things self-play has already settled. Do not undo them without re-running the la
 - **Budgets are wall-clock as well as node count**, so a slow phone thinks less rather than
   stuttering. The clock is read on a counter every 512 nodes, not on a bitmask — a bitmask
   only lands on the sample point by luck and the search sails past its deadline.
+- **A colony graph's articulation points are not a good fragility signal**, and scaling the
+  tile term up as the turn limit nears is not a good urgency signal. Both were tried, both
+  cost double-digit win rate, and both are commented at the point where they were removed.
+- **Veins are priced at a quarter of a tile**, because they produce nothing and prune when
+  they lose an anchor. Counting one as a whole tile taught the AI to prefer a four-tile
+  travel — four veins — over an adjacent resource.
+
+Measured ladder at the shipped budgets (20 games each, sides and species swapped):
+hard beats normal ~75%, normal beats easy ~70%, hard beats easy ~85%. Before this work,
+hard scored **35%** against normal.
 
 ## 5. Gotchas — bugs already paid for once
 

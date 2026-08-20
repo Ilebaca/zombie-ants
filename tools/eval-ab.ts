@@ -7,8 +7,9 @@ const N = Number(process.argv[2] ?? 12);
 const SPEED = Number(process.argv[3] ?? 10);
 const KEY = (process.argv[4] ?? "fragility") as keyof typeof FULL;
 const VALUES = (process.argv[5] ?? "4,0").split(",").map(Number);
+// Nodes, not the clock — see tools/ladder.ts.
 for (const p of Object.values(PROFILES)) {
-  p.timeBudgetMs = Math.max(10, Math.round(p.timeBudgetMs / SPEED));
+  p.timeBudgetMs = 3_600_000;
   p.nodeBudget = Math.max(100, Math.round(p.nodeBudget / SPEED));
 }
 const original = FULL[KEY];
