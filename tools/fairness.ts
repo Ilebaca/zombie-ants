@@ -25,11 +25,17 @@ const species: SpeciesId[] = ["fire", "leafcutter", "carpenter", "weaver", "army
 for (const map of maps) {
   // Same difficulty AND the same species on both sides: anything left is the board.
   let you = 0, ai = 0, none = 0;
-  for (let i = 0; i < games; i++) {
-    const sp = species[i % species.length] as SpeciesId;
-    const r = playGame(level, level, 300 + i, map, { you: sp, ai: sp });
-    if (r.winner === "you") you++; else if (r.winner === "ai") ai++; else none++;
+  const bySpecies: string[] = [];
+  for (const sp of species) {
+    let sYou = 0, sAi = 0;
+    for (let i = 0; i < games; i++) {
+      const r = playGame(level, level, 300 + i * 17, map, { you: sp, ai: sp });
+      if (r.winner === "you") { you++; sYou++; } else if (r.winner === "ai") { ai++; sAi++; } else none++;
+    }
+    bySpecies.push(`${sp}:${sYou}-${sAi}`);
   }
-  const pct = (you / games * 100).toFixed(0);
-  console.log(`${map.padEnd(6)} same species both sides: bottom-left ${String(you).padStart(2)}, top-right ${String(ai).padStart(2)}, unresolved ${none}   (bottom-left ${pct}%)`);
+  const total = you + ai + none;
+  const pct = (you / total * 100).toFixed(0);
+  console.log(`${map.padEnd(6)} bottom-left ${String(you).padStart(3)}, top-right ${String(ai).padStart(3)}, unresolved ${none}  (bottom-left ${pct}%)`);
+  console.log(`       ${bySpecies.join("  ")}`);
 }
