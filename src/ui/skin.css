@@ -459,6 +459,19 @@ footer { background: linear-gradient(0deg, #22132c, rgba(34, 19, 44, 0)); }
 }
 .rnode.done { background: linear-gradient(180deg, var(--gold-glow), var(--gold)); color: #3a2600; box-shadow: 0 3px 0 var(--gold-edge); }
 
+/* WHERE YOU ARE HEADED.
+   Every stop looked identical, so the road was a wall of dim cards with no way to read
+   your own position off it. The first unreached stop is now the lit one. */
+.roadrow.next .rnode {
+  background: var(--panel-hi);
+  color: var(--gold-glow);
+  box-shadow: 0 0 0 3px var(--gold), 0 3px 0 var(--panel-edge);
+}
+.roadrow.next .roadcell:not(.empty) {
+  background: var(--panel-hi);
+  box-shadow: 0 4px 0 var(--panel-edge), inset 0 0 0 2px var(--gold);
+}
+
 /* ======================================================================
    SETUP PICKERS
    ====================================================================== */
@@ -472,3 +485,160 @@ footer { background: linear-gradient(0deg, #22132c, rgba(34, 19, 44, 0)); }
   box-shadow: 0 4px 0 var(--panel-edge), inset 0 0 0 3px var(--you);
 }
 .sp.splock { opacity: .62; }
+
+/* ======================================================================
+   LAYOUT PASS
+   ----------------------------------------------------------------------
+   The skin above changed how things look. This section changes how they
+   sit — density, hierarchy and reach. Everything here is CSS only: the
+   screens still emit the legacy DOM (CLAUDE.md §10), so the shape the
+   parity work established is untouched.
+   ====================================================================== */
+
+/* ---------------------------------------------------------- LEGIBILITY
+   A floor of 11px on anything a player has to read. Two labels sat at 8
+   and 9px, which is decoration, not text. */
+.ribbon {
+  /* Not a diagonal corner ribbon any more. On a 110px-wide tile there is no size at
+     which "MOST POPULAR" both fits the diagonal and stays readable — at 8px it was
+     decoration, and bigger it either wrapped into a triangle over the artwork or ran
+     off the card. A flat strip across the top says the same thing and can be read. */
+  top: 0;
+  left: 0;
+  right: 0;
+  transform: none;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  text-align: center;
+  padding: 3px 4px;
+  font-size: 10px;
+  line-height: 13px;
+  letter-spacing: .4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: none;
+}
+/* The strip covers the top of the art, so the art starts below it. */
+.stile:has(.ribbon) .art { padding-top: 26px; }
+/* Long product names were set at the currency tiles' size and wrapped to three lines. */
+.stile .amt { font-size: 15px; line-height: 19px; }
+.tilerow .stile:has(.sub) .amt { font-size: 14px; line-height: 18px; }
+.coscell .cn { font-size: 10.5px; }
+.coscell .eq { font-size: 10.5px; }
+.ccard .cstat { font-size: 11px; }
+
+/* ------------------------------------------------------------ CHALLENGES
+   Five stacked full-width buttons filled the screen and let barely two
+   cards show at once. The action is one line of the card now, sitting on
+   the right of the description, so the list reads as a list. */
+.challcard { padding: 13px 14px; }
+.challtop { align-items: baseline; }
+.challdesc { margin: 6px 0 0; }
+.challcard {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "top top" "desc play";
+  align-items: end;
+  column-gap: 12px;
+}
+.challtop { grid-area: top; }
+.challdesc { grid-area: desc; }
+.challplay {
+  grid-area: play;
+  width: auto;
+  min-height: 44px;
+  align-self: end;
+  padding: 0 18px;
+  margin: 0;
+  white-space: nowrap;
+  font-size: 14px;
+}
+/* Green = go. `.challplay` also carries `.cta`, and the gold `.cta` rule comes later in
+   this file, so it needs the extra class to win. */
+.cta.challplay {
+  background: linear-gradient(180deg, var(--grass-glow), var(--grass));
+  color: #06280c;
+  box-shadow: 0 4px 0 var(--grass-edge);
+}
+/* Breathing room between the star row and the button under it. */
+.challcard { row-gap: 10px; }
+
+/* ----------------------------------------------------------- SPECIES PAGE
+   The hero repeated the name already in the header and cost 480px of
+   scroll to do it. Portrait down, padding in, and the whole card earns
+   its place instead of filling the first screenful. */
+.dhero { padding: 12px 12px 12px; margin-bottom: 10px; }
+.dhero canvas { width: 96px; height: 96px; }
+.dhero .dname { font-size: 19px; }
+
+/* Segmented control: the selected tab is a raised pill, not just a colour. */
+.auptabs { background: rgba(0, 0, 0, .28); box-shadow: none; border: none; }
+.auptab.on {
+  background: var(--panel-hi);
+  color: var(--ink);
+  box-shadow: var(--bevel-sm);
+}
+
+/* Research rows: the description had ~230px to wrap into, between a 32px
+   icon and a wide buy button, so every row ran five lines deep. The row
+   aligns to the top and gives the text back the width. */
+.rtrack { align-items: flex-start; gap: 8px; }
+.rtrack .ri { width: 26px; height: 26px; font-size: 14px; margin-top: 1px; }
+.rtrack .buybtn { min-width: 58px; padding: 8px 10px; }
+
+/* ------------------------------------------------------------------ SHOP
+   Titles wrap to one, two or three lines, so the buy bars used to land at
+   three different heights in one row. The art flexes and the copy is
+   reserved two lines, which puts every buy bar on the same line. */
+.tilerow { align-items: stretch; }
+.stile .sub { min-height: 32px; display: flex; align-items: center; justify-content: center; }
+.stile .art { min-height: 92px; }
+
+/* ------------------------------------------------------------------ MATCH
+   The tutorial toasts are 98px of card sitting on top of the board. They
+   are a hint, not a headline: one tight line of type, and out of the way. */
+.toast { padding: 7px 13px; font-size: 12.5px; line-height: 1.3; }
+#toast { top: 8px; gap: 5px; width: 96%; }
+
+/* --------------------------------------------------------------- SETUP
+   Dead-centring left a void above and below the picker while the header
+   floated alone at the top. The content sits under its header now, with
+   the remaining space below it where it reads as room rather than a gap. */
+.screenbody:not(.sb-top):not(.achbody):not(.lbbody):not(.shopbody) {
+  justify-content: flex-start;
+  padding-top: 4px;
+}
+
+/* Three maps in a two-column grid left a hole where a fourth would go, which reads as
+   something failing to load. One column of wide rows: thumbnail, then name. */
+.mappick { grid-template-columns: 1fr; gap: 10px; }
+.mp {
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  padding: 10px 14px;
+}
+.mp canvas { width: 76px; height: 76px; flex: 0 0 auto; }
+.mp .snm { font-size: 15px; }
+.mp, .shp, .sp { border-color: transparent; }
+
+/* The step's action belongs at the bottom of the step, not floating under the last card.
+   Content anchors to the top, the button to the bottom, and the slack sits between them
+   where it reads as breathing room instead of an unfinished screen. */
+.setupbox { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.setupbox > .cta { margin-top: auto; }
+/* ...and the picker floats in the middle of what is left, rather than clinging to the
+   header with a void beneath it. */
+.setupbox > .mappick,
+.setupbox > .shapepick { margin-block: auto; }
+
+/* Picking a colony is the moment the match is decided; a 270px card floating in a screen
+   of empty plum did not say so. The carousel takes the height that was going spare, and
+   the portrait grows into it. */
+.pickslider { flex: 1; min-height: 0; align-items: center; }
+.sp { padding: 20px 14px 22px; }
+.sp .face canvas { width: 132px; height: 132px; }
+.sp .nm { font-size: 20px; }
+.sp .ds, .sp .tr { font-size: 13px; }
+.sp .mods { font-size: 15px; }

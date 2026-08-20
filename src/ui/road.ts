@@ -13,7 +13,7 @@ import { ROAD_CHAPTER, ROAD_STEP, rewardText, roadKey, roadStops } from "../plat
 import type { ProfileStore, RoadReward, RoadStop } from "../platform";
 import { el, screenEl, screenHeader, toast } from "./chrome";
 
-export function buildTrophyRoad(store: ProfileStore, onBack: () => void): HTMLElement {
+export function buildTrophyRoad(store: ProfileStore, onBack: () => void, onShop: () => void): HTMLElement {
   const root = screenEl("achievements");
   /** Kept across renders so claiming a reward does not throw the player back to the top. */
   let scrollTop: number | null = null;
@@ -30,7 +30,13 @@ export function buildTrophyRoad(store: ProfileStore, onBack: () => void): HTMLEl
     let chapter = 0;
     let section: HTMLElement | null = null;
 
-    for (const stop of roadStops()) {
+    // The first stop the player has not reached is where they are headed. Marking it is
+    // the difference between a ladder you can read at a glance and a wall of identical
+    // dim cards.
+    const stops = roadStops();
+    const nextStop = stops.find((x) => profile.trophies < x.trophies)?.trophies ?? -1;
+
+    for (const stop of stops) {
       if (stop.chapter !== chapter) {
         chapter = stop.chapter;
         section = el("section", "roadchap");
@@ -40,7 +46,7 @@ export function buildTrophyRoad(store: ProfileStore, onBack: () => void): HTMLEl
         section.appendChild(label);
         ladder.appendChild(section);
       }
-      section?.appendChild(roadRow(stop, profile.trophies));
+      section?.appendChild(roadRow(stop, profile.trophies, stop.trophies === nextStop));
     }
     body.appendChild(ladder);
     body.appendChild(head());
@@ -67,17 +73,17 @@ export function buildTrophyRoad(store: ProfileStore, onBack: () => void): HTMLEl
     if (profile.pass) {
       box.appendChild(el("span", "passon", "PASS ✓"));
     } else {
-      // The pass is not purchasable yet — the shop arrives with RevenueCat (roadmap 5).
-      const soon = el("button", "passbuy", "Get Pass");
-      soon.onclick = () => toast(root, "The Trophy Pass arrives with the shop.", "warn");
-      box.appendChild(soon);
+      // The shop sells the pass now, so send the player there rather than explaining.
+      const buy = el("button", "passbuy", "Get Pass");
+      buy.onclick = onShop;
+      box.appendChild(buy);
     }
     return box;
   };
 
-  const roadRow = (stop: RoadStop, trophies: number): HTMLElement => {
+  const roadRow = (stop: RoadStop, trophies: number, isNext: boolean): HTMLElement => {
     const reached = trophies >= stop.trophies;
-    const row = el("div", "roadrow");
+    const row = el("div", "roadrow" + (isNext ? " next" : ""));
 
     row.appendChild(sideCell(stop.pass, roadKey("pass", stop.trophies), "pass"));
 

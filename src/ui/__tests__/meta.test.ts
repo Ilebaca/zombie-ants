@@ -221,7 +221,7 @@ describe("species page", () => {
 describe("trophy road screen", () => {
   it("claims a reached free reward once and banks the currency", () => {
     const s = store(0, 0, 600);
-    const root = buildTrophyRoad(s, () => {});
+    const root = buildTrophyRoad(s, () => {}, () => {});
     const ready = root.querySelectorAll<HTMLButtonElement>(".roadcell.ready");
     expect(ready.length).toBeGreaterThan(0);
     click(ready[0]);
@@ -232,7 +232,7 @@ describe("trophy road screen", () => {
 
   it("locks the pass track until the pass is owned", () => {
     const s = store(0, 0, 600);
-    const root = buildTrophyRoad(s, () => {});
+    const root = buildTrophyRoad(s, () => {}, () => {});
     expect(root.querySelectorAll(".roadcell.passlock").length).toBeGreaterThan(0);
     for (const cell of Array.from(root.querySelectorAll<HTMLButtonElement>(".roadcell.passlock"))) {
       click(cell);
@@ -240,20 +240,44 @@ describe("trophy road screen", () => {
     expect(s.get().roadClaimed.length).toBe(0);
 
     s.grantPass();
-    const withPass = buildTrophyRoad(s, () => {});
+    const withPass = buildTrophyRoad(s, () => {}, () => {});
     expect(withPass.querySelectorAll(".roadcell.passlock").length).toBe(0);
     expect(withPass.textContent).toContain("PASS ✓");
   });
 
   it("offers nothing to a player with no trophies", () => {
-    const root = buildTrophyRoad(store(), () => {});
+    const root = buildTrophyRoad(store(), () => {}, () => {});
     expect(root.querySelectorAll(".roadcell.ready").length).toBe(0);
     expect(root.querySelectorAll(".rnode.done").length).toBe(0);
   });
 
   it("marks reached stops as done", () => {
-    const root = buildTrophyRoad(store(0, 0, 1000), () => {});
+    const root = buildTrophyRoad(store(0, 0, 1000), () => {}, () => {});
     expect(root.querySelectorAll(".rnode.done").length).toBe(4);      // 250, 500, 750, 1000
+  });
+
+  /**
+   * Every stop rendered identically, so the ladder gave the player no way to read their
+   * own position off it. Exactly one stop — the first one out of reach — is the target.
+   */
+  it("marks the stop the player is working towards, and only that one", () => {
+    const fresh = buildTrophyRoad(store(), () => {}, () => {});
+    const next = fresh.querySelectorAll(".roadrow.next");
+    expect(next.length).toBe(1);
+    expect(next[0]?.textContent).toContain("250");
+
+    // The marker moves along with the player rather than staying on the first stop.
+    const later = buildTrophyRoad(store(0, 0, 600), () => {}, () => {});
+    const moved = later.querySelectorAll(".roadrow.next");
+    expect(moved.length).toBe(1);
+    expect(moved[0]?.textContent).toContain("750");
+  });
+
+  it("sends Get Pass to the shop, which is what sells it", () => {
+    let wentToShop = false;
+    const root = buildTrophyRoad(store(), () => {}, () => { wentToShop = true; });
+    click(root.querySelector(".passbuy"));
+    expect(wentToShop).toBe(true);
   });
 });
 
@@ -425,7 +449,7 @@ describe("legacy markup parity", () => {
   });
 
   it("keeps the Trophy Road's road2 → roadchap → roadrow skeleton", () => {
-    const root = buildTrophyRoad(store(), () => {});
+    const root = buildTrophyRoad(store(), () => {}, () => {});
     expect(root.id).toBe("achievements");
     expect(root.querySelector(".screenbody")?.id).toBe("achBody");
     for (const cls of ["road2", "roadchap", "roadchapter", "roadrow", "rcolL", "rcolC",

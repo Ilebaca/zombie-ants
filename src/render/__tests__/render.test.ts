@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { blankGame, put } from "../../engine/__tests__/helpers";
-import { recomputeConnectivity, tile } from "../../engine";
+import { recomputeConnectivity, tile, travel } from "../../engine";
 import type { Coord, EngineEvent, GameState, Tile } from "../../engine";
 import { Layout } from "../layout";
 import { REVEAL_MS_PER_TILE, RevealTracker, edgeFor } from "../reveal";
@@ -409,5 +409,77 @@ describe("a batch of captures", () => {
     animate(spread(1), { reveal, fx: new FxLayer() });
     reveal.step(performance.now() + reveal.stepMs(1) * 0.5);
     expect(reveal.progress(0, 3)).toBeCloseTo(0.5, 1);
+  });
+});
+
+describe("sending troops down a row", () => {
+  /**
+   * Milan's report, exactly: send troops from tile 1 to tile 6 and the fill must reach
+   * tile 2, then 3, then 4, then 5, then 6 — never all at once.
+   *
+   * The bug was event ORDER, not the reveal. `travel()` emits one `veinLaid` per step and
+   * only then the `travel` itself, so the animator met each vein before it knew a travel
+   * was coming and opened a separate one-tile reveal for each. All of those start on the
+   * same frame, so the whole trail flashed in together. The path has to be known before
+   * the events are walked.
+   */
+  const sendAlongRow = (): { events: EngineEvent[]; reveal: RevealTracker } => {
+    const s = blankGame("small");                        // 9x9; the hive sits mid-board
+    put(s, 0, 0, { owner: "you", struct: "nest", soldiers: 20 });
+    recomputeConnectivity(s);
+    const events = travel(s, { c: 0, r: 0 }, { c: 4, r: 0 }) as EngineEvent[];
+    const reveal = new RevealTracker();
+    reveal.reduced = false;
+    animate(events, { reveal, fx: new FxLayer() });
+    return { events, reveal };
+  };
+
+  it("still emits its trail before the travel itself", () => {
+    // If the engine ever emits `travel` first this test fails loudly rather than the
+    // animation quietly regressing — the fix above exists because of this ordering.
+    const { events } = sendAlongRow();
+    const kinds = events.map((e) => e.type);
+    expect(kinds.filter((k) => k === "veinLaid").length).toBe(4);   // the far end too
+    expect(kinds.indexOf("travel")).toBeGreaterThan(kinds.lastIndexOf("veinLaid"));
+  });
+
+  it("fills the trail one tile at a time, in path order", () => {
+    const { reveal } = sendAlongRow();
+    const start = performance.now();
+    const step = reveal.stepMs(4);
+
+    // Mid-way through the first step: tile 2 is filling and NOTHING else has started.
+    reveal.step(start + step * 0.5);
+    expect(reveal.progress(1, 0)).toBeGreaterThan(0);
+    expect(reveal.progress(1, 0)).toBeLessThan(1);
+    expect(reveal.progress(2, 0)).toBe(0);
+    expect(reveal.progress(3, 0)).toBe(0);
+    expect(reveal.progress(4, 0)).toBe(0);
+
+    // Mid-way through the third step: two are settled, the third is filling, the last waits.
+    reveal.step(start + step * 2.5);
+    expect(reveal.progress(1, 0)).toBe(1);
+    expect(reveal.progress(2, 0)).toBe(1);
+    expect(reveal.progress(3, 0)).toBeGreaterThan(0);
+    expect(reveal.progress(3, 0)).toBeLessThan(1);
+    expect(reveal.progress(4, 0)).toBe(0);
+
+    // The far end only lands at the very end of the run.
+    reveal.step(start + step * 3.5);
+    expect(reveal.progress(4, 0)).toBeGreaterThan(0);
+    expect(reveal.progress(4, 0)).toBeLessThan(1);
+  });
+
+  it("opens exactly one reveal for the whole path", () => {
+    // Each extra group is a second front racing the first — that was the visible symptom.
+    const { reveal } = sendAlongRow();
+    const step = reveal.stepMs(4);
+    const start = performance.now();
+    // Just past the end of the FIRST tile's slot. With per-vein groups every trail tile
+    // would already be settled here; with one front only tile 2 is.
+    reveal.step(start + step * 1.1);
+    expect(reveal.progress(1, 0)).toBe(1);
+    expect(reveal.progress(2, 0)).toBeLessThan(1);
+    expect(reveal.progress(3, 0)).toBe(0);
   });
 });

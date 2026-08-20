@@ -174,7 +174,7 @@ export class App {
     }
     if (id === "formation") return this.buildFormationSelect();
     if (id === "anthill") return buildAnthill(this.profile);
-    if (id === "achievements") return buildTrophyRoad(this.profile, () => this.show("home"));
+    if (id === "achievements") return buildTrophyRoad(this.profile, () => this.show("home"), () => this.show("shop"));
     if (id === "quests") return buildQuests(this.profile, () => this.show("home"));
     if (id === "rules") return buildRules();
     if (id === "shop") return buildShop(this.profile, this.purchases, () => this.show("home"));

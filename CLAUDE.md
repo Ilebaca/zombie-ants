@@ -132,6 +132,12 @@ Each of these cost a debugging round. Do not repeat them.
   like a broken permanent-leaf cap.
 - **`checkWipe` runs after an ability too.** A test board with no enemy tiles ends the match
   on the first cast, and every later assertion silently tests nothing.
+- **A travel's trail is emitted BEFORE the travel event.** `travel()` pushes one `veinLaid`
+  per step and only then the `travel` itself. The animator used to react to the travel when
+  it arrived, which was too late: every vein had already opened its own one-tile reveal, all
+  starting on the same frame, so a four-tile send flashed its whole trail in at once instead
+  of filling tile by tile. `animate()` now pre-scans the batch for travel paths before
+  walking it. Any new event that participates in a group has the same hazard — scan first.
 - **Reveal progress must never live on a tile.** The legacy build stored `t.rv`/`t.rvDir` on
   the tile, which put view state inside the engine where snapshot/restore would copy it. It
   lives in `RevealTracker`, keyed by coordinate.

@@ -7,6 +7,7 @@
  * rules emit a description and this module decides how to dramatise it, so search is silent
  * for free and animation work can never reach the rules (CLAUDE.md §3).
  */
+import { key } from "../engine";
 import type { Coord, Direction, EngineEvent, Player } from "../engine";
 import type { FxLayer } from "./fx";
 import type { RevealTracker, RevealEdge } from "./reveal";
@@ -25,6 +26,9 @@ export function sourceOf(at: Coord, movement: Direction): Coord {
 /** How many rally source lines to draw before it becomes visual noise. */
 const MAX_RALLY_FLOWS = 14;
 
+/** One streak step, matching FLOW_MS_PER_STEP in fx.ts. */
+const FLOW_MS_PER_STEP = 260;
+
 export interface AnimationSinks {
   reveal: RevealTracker;
   fx: FxLayer;
@@ -35,20 +39,33 @@ export interface AnimationSinks {
 /**
  * Translate one action's events into reveals and flourishes.
  *
- * Tiles fill ONE AT A TIME. A `travel` is one reveal group covering its whole path, and
- * every other capture in the same batch joins a single ordered group too — so an ability
- * that claims six tiles fills them one after another rather than all at once. Each tile's
- * streak and pop are delayed to meet its own fill.
+ * Tiles fill ONE AT A TIME, always. A `travel` is one reveal group covering its whole
+ * path, and every other capture in the same batch joins a single ordered group too — so
+ * sending troops four tiles down a row fills tile 2, then 3, then 4, then 5, and an
+ * ability that claims six tiles fills them one after another. Every flourish (streak,
+ * clash, pop) is delayed to meet its own tile's fill instead of firing on frame one.
  */
 export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): void {
   const { reveal, fx } = sinks;
 
-  // Tiles laid by the travel currently being processed, in path order.
-  let pendingTravelPath: Coord[] | null = null;
-  // Captures outside a travel, gathered so they can be revealed as one ordered run.
+  // A travel's trail is laid BEFORE its own event: `travel()` pushes one `veinLaid` per
+  // step and only then the `travel` itself. So the path has to be known before the loop
+  // starts — reacting to it when it arrives is too late, and every vein would already have
+  // opened its own one-tile reveal. Those all start on the same frame, so the whole trail
+  // flashed in at once instead of one tile after another.
+  const onTravelPath = new Set<string>();
+  for (const e of events) {
+    if (e.type === "travel") for (const p of e.path) onTravelPath.add(key(p.c, p.r));
+  }
+  const covered = (at: Coord): boolean => onTravelPath.has(key(at.c, at.r));
+
+  // Captures outside a travel are gathered so they can be revealed as one ordered run.
   const captures: Array<{
     at: Coord; edge: RevealEdge; prev: Player | null; src: Coord; owner: Player;
   }> = [];
+  // A won fight emits `combat` then `capture` for the same tile. The clash has to wait for
+  // that tile's turn in the run, so it is held here and released with the capture.
+  const clashes = new Map<string, { at: Coord; src: Coord; attacker: Player }>();
 
   for (const e of events) {
     switch (e.type) {
@@ -66,28 +83,26 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
           prev: null,
         })));
         fx.flow(e.path, e.owner);
-        fx.pop(e.path[e.path.length - 1] as Coord, e.owner);
-        pendingTravelPath = steps;
+        // The troops land when the front reaches the far end, not when the send is ordered.
+        fx.pop(e.path[e.path.length - 1] as Coord, e.owner, reveal.stepMs(steps.length) * steps.length);
         break;
       }
 
       case "veinLaid":
-        // Covered by the travel reveal group above; a lone vein would break the single front.
-        if (!pendingTravelPath) {
-          reveal.begin([{ at: e.at, edge: "L", prev: null }]);
-        }
+        // Part of a travel's trail: already inside that group's single sweep.
+        if (!covered(e.at)) reveal.begin([{ at: e.at, edge: "L", prev: null }]);
         break;
 
       case "combat":
-        // Flow in, then clash. A won fight also emits `capture`, which adds the reveal.
-        fx.flow([sourceOf(e.at, e.from), e.at], e.attacker);
-        fx.clash(e.at);
+        // Held until the capture that follows gives it a place in the run. A fight that
+        // did not take the tile has no capture, so it is released at the end.
+        clashes.set(key(e.at.c, e.at.r), {
+          at: e.at, src: sourceOf(e.at, e.from), attacker: e.attacker,
+        });
         break;
 
       case "capture": {
-        // A capture that is part of a travel is already inside that group's sweep.
-        const inTravel = pendingTravelPath?.some((p) => p.c === e.at.c && p.r === e.at.r);
-        if (inTravel) { fx.pop(e.at, e.owner); break; }
+        if (covered(e.at)) { fx.pop(e.at, e.owner); break; }
         captures.push({
           at: e.at, edge: edgeFor(e.from), prev: e.previous,
           src: sourceOf(e.at, e.from), owner: e.owner,
@@ -123,13 +138,27 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
 
   if (captures.length) {
     reveal.begin(captures.map(({ at, edge, prev }) => ({ at, edge, prev })));
-    // Each streak leaves as its tile's turn comes round, so the flourishes stay in step
-    // with the fill rather than all firing on the first frame.
+    // Each flourish leaves as its tile's turn comes round, so they stay in step with the
+    // fill rather than all firing on the first frame.
     const step = reveal.stepMs(captures.length);
     captures.forEach(({ src, at, owner }, i) => {
-      fx.flow([src, at], owner, i * step);
+      const k = key(at.c, at.r);
+      const fight = clashes.get(k);
+      if (fight) {
+        clashes.delete(k);
+        fx.flow([fight.src, fight.at], fight.attacker, i * step);
+        fx.clash(fight.at, i * step + step);
+      } else {
+        fx.flow([src, at], owner, i * step);
+      }
       fx.pop(at, owner, i * step + step);
     });
+  }
+
+  // Fights that took no ground still have to be seen.
+  for (const fight of clashes.values()) {
+    fx.flow([fight.src, fight.at], fight.attacker);
+    fx.clash(fight.at, FLOW_MS_PER_STEP);
   }
 }
 
