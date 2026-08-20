@@ -10,7 +10,7 @@ import {
   createGame, defaultContext, endTurn, allTiles, NEUTRAL_MODS,
 } from "../src/engine";
 import type { GameState, Player, SpeciesId, MapId } from "../src/engine";
-import { aiTurn } from "../src/ai/search";
+import { aiTurn, PROFILES } from "../src/ai/search";
 import type { Difficulty } from "../src/ai/search";
 
 const mods = { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } };
@@ -62,6 +62,10 @@ export function match(a: Difficulty, b: Difficulty, games: number, map: MapId = 
 }
 
 if (process.argv[1]?.endsWith("arena.ts")) {
+  // Pin to the node budget, never the clock. The shipped budgets are wall-clock so a slow
+  // phone thinks less rather than stuttering; a busy machine also thinks less, which would
+  // make this measure the load on the box instead of the AI (see tools/ladder.ts).
+  for (const p of Object.values(PROFILES)) p.timeBudgetMs = 3_600_000;
   const a = (process.argv[2] ?? "hard") as Difficulty;
   const b = (process.argv[3] ?? "easy") as Difficulty;
   const n = Number(process.argv[4] ?? 20);

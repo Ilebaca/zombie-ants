@@ -32,7 +32,17 @@ export interface EvalWeights {
   nestThreat: number;
   nestPressure: number;
   advance: number;
+  /** Hive tiles held. */
   hive: number;
+  /**
+   * Holding the Hive queen, per turn of surge left.
+   *
+   * Capturing her multiplies BOTH attack and defence by 1.5 for the whole surge
+   * (`surgeMultiplier`). Nothing else on the board is worth anything like it, and the
+   * evaluation used to price the whole thing as five ordinary tiles — so the AI would
+   * wander past the centre of the map rather than fight for it.
+   */
+  surge: number;
 }
 
 /**
@@ -58,6 +68,7 @@ export const FULL: EvalWeights = {
   nestPressure: 3,
   advance: 1.5,
   hive: 6,
+  surge: 14,
 };
 
 /**
@@ -72,6 +83,7 @@ export const NAIVE: EvalWeights = {
   hanging: 0,
   nestThreat: 1,
   hive: 0,
+  surge: 0,
 };
 
 /**
@@ -195,6 +207,10 @@ export function evaluate(
     + (mine.hiveTiles - theirs.hiveTiles) * w.hive
     // What THEY are about to lose is as good as what we are about to lose is bad.
     + (theirs.hanging - mine.hanging) * w.hanging;
+
+  if (w.surge > 0 && state.hive.phase === "buff" && state.hive.owner) {
+    score += (state.hive.owner === me ? 1 : -1) * w.surge * Math.max(0, state.hive.buffLeft);
+  }
 
   // Nest safety dominates: losing the queen ends the match outright.
   const threat = biggestNeighbour(state, myNest, opp);

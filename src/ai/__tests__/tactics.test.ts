@@ -14,7 +14,7 @@ import {
 } from "../../engine";
 import { blankGame, put } from "../../engine/__tests__/helpers";
 import { aiTurn, chooseMove } from "../search";
-import { FULL, evaluate } from "../evaluate";
+import { FULL, NAIVE, evaluate } from "../evaluate";
 
 const ctx = defaultContext();
 const mods = { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } };
@@ -177,6 +177,46 @@ describe("finishing", () => {
       aiTurn(s, "ai", level, ctx);
       expect(s.winner, `${level} missed a mate in one`).toBe("ai");
     }
+  });
+});
+
+describe("the Hive", () => {
+  /**
+   * Capturing the Hive queen multiplies BOTH attack and defence by 1.5 for the whole
+   * surge — the biggest swing on the board by a wide margin. The evaluation used to score
+   * the whole thing as five ordinary tiles, so the AI would wander past the centre of the
+   * map rather than fight for it.
+   */
+  const holdingTheHive = (owner: "ai" | "you" | null, left: number) => {
+    const s = blankGame("small");
+    put(s, 0, 0, { owner: "ai", struct: "nest", soldiers: 20 });
+    put(s, 8, 8, { owner: "you", struct: "nest", soldiers: 20 });
+    recomputeConnectivity(s);
+    s.hive.phase = owner ? "buff" : "awake";
+    s.hive.owner = owner;
+    s.hive.buffLeft = left;
+    return s;
+  };
+
+  it("prices the surge, and prices it down as it runs out", () => {
+    const none = evaluate(holdingTheHive(null, 0), "ai", mods, FULL);
+    const fresh = evaluate(holdingTheHive("ai", 6), "ai", mods, FULL);
+    const fading = evaluate(holdingTheHive("ai", 1), "ai", mods, FULL);
+    expect(fresh).toBeGreaterThan(fading);
+    expect(fading).toBeGreaterThan(none);
+  });
+
+  it("counts the enemy holding it as exactly as bad", () => {
+    const mine = evaluate(holdingTheHive("ai", 6), "ai", mods, FULL);
+    const theirs = evaluate(holdingTheHive("you", 6), "ai", mods, FULL);
+    const none = evaluate(holdingTheHive(null, 0), "ai", mods, FULL);
+    expect(mine - none).toBeCloseTo(none - theirs, 5);
+  });
+
+  it("means nothing to Easy, which counts material and no more", () => {
+    // The levels differ in what they UNDERSTAND, not only in how far they look ahead.
+    expect(evaluate(holdingTheHive("ai", 6), "ai", mods, NAIVE))
+      .toBeCloseTo(evaluate(holdingTheHive(null, 0), "ai", mods, NAIVE), 5);
   });
 });
 
