@@ -23,50 +23,56 @@ export const SPECIES_COL: Record<SpeciesId, readonly [string, string, string]> =
 /**
  * The board's palette.
  *
- * The playfield is a DIORAMA: a rounded tray with a pale rim, sitting on the same deep
- * plum the rest of the app uses. That surround is what makes the warm ground and the
- * colony colours read — on a mid-green field they all fight each other.
+ * The playfield is a DIORAMA: a rounded tray with a pale rim, sitting on the same warm
+ * cream the rest of the app uses. Daylight, not a dungeon — the surround matches the page
+ * so the board reads as a sunlit patch of ground someone set down on the table.
  *
- * The ground is a warm earth in two shades. Warm and mid-toned rather than dark, because
- * a near-black field made the whole board read as a hole; two shades, because the
- * checkerboard gives the eye a grid without a single drawn line. The upper bound is set
- * by the colony colours — the ground has to stay darker than every species base so the
- * owned tiles keep reading as raised blocks on top of it.
+ * The ground is a warm sand in two shades: two, because the checkerboard gives the eye a
+ * grid without a single drawn line. Its value is set by what has to sit ON it — every
+ * species colour and every neutral object — so it stays mid-toned. Darker and the whole
+ * board reads as a hole punched in a bright page; lighter and the pale colonies (Ghost,
+ * Carpenter) stop reading as colonies at all, which is the harder failure of the two.
  */
 export const MAP = {
   /** Behind the tray — matches the page so the canvas has no visible seam. */
-  surround: "#1b1024",
+  surround: "#f8e8ce",
   /** The tray: a pale rim with a solid darker band beneath it, never a blurred shadow. */
-  trayRim: "#f3e3c8",
-  trayEdge: "#b9a184",
-  trayShade: "rgba(12,6,18,0.45)",
+  trayRim: "#fffaf0",
+  trayEdge: "#dcbe93",
+  trayShade: "rgba(150,110,60,0.22)",
 
   /** The two checker shades, and the shadow objects cast onto them. */
-  groundA: "#7d5f42",
-  groundB: "#6e5239",
-  groundShade: "rgba(38,20,10,0.30)",
+  groundA: "#e0b98a",
+  groundB: "#d3a974",
+  groundShade: "rgba(140,95,45,0.24)",
 
-  motes: "rgba(255,240,206,0.20)",
+  motes: "rgba(255,255,255,0.40)",
 
-  rock: "#6d5b74",
-  rockTop: "#8a7591",
-  rockEdge: "#43354b",
+  /** Stone: a cool grey-brown, the one desaturated thing on the board. */
+  rock: "#9c8a78",
+  rockTop: "#b8a795",
+  rockEdge: "#6f5e4d",
 
-  resCell: "rgba(255,197,61,0.10)",
-  resEdge: "rgba(255,197,61,0.5)",
-  gem: "#ffc53d",
-  gemTop: "#ffe08a",
-  gemEdge: "#c8901a",
+  /**
+   * Resources are a turquoise crystal, not a gold one. Gold on sand is barely a step in
+   * value, and it collided with the gold the interface uses for "spend"; turquoise is the
+   * one hue that stays clear of both colony colours AND the ground.
+   */
+  resCell: "rgba(34,193,214,0.12)",
+  resEdge: "rgba(13,142,163,0.55)",
+  gem: "#22c1d6",
+  gemTop: "#7fe6f2",
+  gemEdge: "#0d8ea3",
 
-  water: "#56d9c0",
-  waterEdge: "#2c9c88",
+  water: "#35a7e8",
+  waterEdge: "#1b7cb5",
 } as const;
 
 const VAR_NAMES = [
   "you", "you-glow", "you-dark",
   "ai", "ai-glow", "ai-dark",
   "gold", "gold-glow",
-  "hive", "hive-glow", "hive-dim",
+  "hive", "hive-glow", "hive-soft", "hive-dim",
   "ink", "muted", "line", "bg1", "bg2",
 ] as const;
 

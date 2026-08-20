@@ -178,7 +178,7 @@ function countBadge(scene: Scene, o: BadgeOptions): void {
   const px = o.cx - pw / 2;
   const py = o.cy - ph / 2;
 
-  ctx.fillStyle = "rgba(8,12,20,0.82)";
+  ctx.fillStyle = "rgba(48,32,18,0.84)";      // warm dark, so it belongs on a sunlit board
   rrect(ctx, px, py, pw, ph, ph / 2); ctx.fill();
   ctx.lineWidth = Math.max(1.2, ts * 0.022);
   ctx.strokeStyle = o.stroke;
@@ -446,18 +446,19 @@ export function drawHiveTile(scene: Scene, t: Tile): void {
   const x = layout.cx(t.c), y = layout.cy(t.r), R = ts * 0.30;
   const awake = state.hive.phase !== "dormant";
   const col = awake ? (COL.hive ?? "#b14de0") : (COL["hive-dim"] ?? "#4b3a6e");
-  const glow = awake ? (COL["hive-glow"] ?? "#dd9bff") : "rgba(120,90,170,0.4)";
+  const glow = awake ? (COL["hive-soft"] ?? "#d9c2ff") : "rgba(255,255,255,0.55)";
   const pulse = awake ? (0.6 + 0.4 * Math.sin(performance.now() / 300)) : 0.3;
 
-  // The hive sits on its own dark slab, so the fungus reads against any ground colour and
-  // the five tiles group into one object rather than five loose circles.
+  // The hive sits on its own violet slab, so the fungus reads against any ground colour
+  // and the five tiles group into one object rather than five loose circles. Violet is the
+  // one hue no species uses, which is what makes the shared objective read as neutral.
   const px = layout.x0(t.c), py = layout.y0(t.r);
   const drop = Math.max(3, ts * 0.11);
   ctx.fillStyle = MAP.groundShade;
   rrect(ctx, px + ts * 0.05, py + ts * 0.05 + drop, ts * 0.9, ts * 0.9, ts * 0.26); ctx.fill();
-  ctx.fillStyle = awake ? "#3a1f57" : "#2c1c3c";
+  ctx.fillStyle = awake ? "#7c4fd0" : "#a99ab8";
   rrect(ctx, px + ts * 0.05, py + ts * 0.05, ts * 0.9, ts * 0.9, ts * 0.26); ctx.fill();
-  ctx.fillStyle = awake ? "#4d2a70" : "#35234a";
+  ctx.fillStyle = awake ? "#9166e0" : "#bbaec8";
   rrect(ctx, px + ts * 0.11, py + ts * 0.10, ts * 0.78, ts * 0.42, ts * 0.20); ctx.fill();
 
   ctx.save();

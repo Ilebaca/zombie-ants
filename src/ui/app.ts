@@ -286,11 +286,13 @@ export class App {
     const settings = el("button", "settingsfab");
     settings.title = "Menu";
     settings.setAttribute("aria-label", "Menu");
+    // `currentColor`, not a fixed white: the button's face is a light one now, and a
+    // hardcoded white icon on it is an invisible button.
     settings.innerHTML =
       '<svg viewBox="0 0 18 14" width="20" height="16" aria-hidden="true">' +
-      '<rect width="18" height="2.8" rx="1.4" fill="#fff"/>' +
-      '<rect y="5.6" width="18" height="2.8" rx="1.4" fill="#fff"/>' +
-      '<rect y="11.2" width="18" height="2.8" rx="1.4" fill="#fff"/></svg>';
+      '<rect width="18" height="2.8" rx="1.4" fill="currentColor"/>' +
+      '<rect y="5.6" width="18" height="2.8" rx="1.4" fill="currentColor"/>' +
+      '<rect y="11.2" width="18" height="2.8" rx="1.4" fill="currentColor"/></svg>';
     settings.onclick = () => this.openMenu();
 
     const daily = el("button", "dailyfab", "🗓️");

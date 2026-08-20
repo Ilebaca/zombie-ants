@@ -15,55 +15,69 @@
  *     rocks, crates and buttons alike. Blur is reserved for glow.
  *  2. No hairline borders. Shapes are told apart by value, not by 1px strokes.
  *  3. Radii are generous and proportional — roughly a quarter of the shape.
- *  4. Warm mid-tones on a deep, desaturated ground. The aubergine surround is
- *     what makes the sand and gold sing; on navy they go muddy.
+ *  4. DAYLIGHT, not a cave. The palette is warm cream and sunlit sand with
+ *     saturated toy colours on top. An earlier version of this file ran a deep
+ *     aubergine, which suited the word "zombie" and nothing else about the
+ *     game: the artwork is a sunny one, and dark chrome fought it.
  *  5. One dominant hue family per surface, one cool accent against it.
  *  6. Texture stays quiet: scattered low-opacity squares, nothing louder.
+ *
+ * ON A LIGHT GROUND, "GLOW" CHANGES SIDES. The species colours arrive as a
+ * base, a vivid `-glow` and a dark `-dark` (palette.ts). On the old dark
+ * chrome the vivid one was the readable one; on cream it is the dark one, so
+ * everywhere a species colour is used as TEXT it has to be `-dark`. Get that
+ * wrong and the HUD is pale green on white.
  */
 
 :root {
-  /* ---------------------------------------------------------------- INK */
-  --ink: #fff4e6;                 /* warm white — never pure #fff */
-  --ink-soft: #e8d5e0;
-  --muted: #b49ab0;               /* readable on plum, unlike the old blue-grey */
+  /* ---------------------------------------------------------------- INK
+     Warm dark brown rather than black: on cream, black reads as a hole. */
+  --ink: #3a2b1f;
+  --ink-soft: #6b5544;
+  --muted: #97806c;
 
   /* ------------------------------------------------------------ SURFACES
-     A plum/aubergine family. Each step is a real value jump so panels read
+     A cream/sand family. Each step is a real value jump so panels read
      without borders. `-edge` colours are the solid band under a raised face. */
-  --bg0: #150c1b;
-  --bg1: #1e1128;
-  --bg2: #2a1836;
-  --panel: #33203f;
-  --panel-hi: #402a4e;
-  --panel-edge: #1a0f22;
-  --line: #4a3157;                /* only for dividers that must stay hairline */
-  --hud: #2a1836;
-  --hud-line: #47305a;
+  --bg0: #fdf4e5;
+  --bg1: #f8e8ce;
+  --bg2: #f2dcb8;
+  --panel: #fffaf0;
+  --panel-hi: #fff1d9;
+  --panel-edge: #e0c69f;
+  --line: #ecd8b8;                /* only for dividers that must stay hairline */
+  --hud: #fffaf0;
+  --hud-line: #ecd8b8;
 
   /* ------------------------------------------------------------- WARMTH
-     The playfield family, straight off the reference floor tiles. */
-  --sand: #efa95a;
-  --sand-alt: #e79e4e;
-  --sand-deep: #c87c33;
-  --cream: #f6e7cf;
+     The playfield family: sunlit ground, not a dungeon floor. */
+  --sand: #e9c894;
+  --sand-alt: #ddb87f;
+  --sand-deep: #c2955c;
+  --cream: #fffaf0;
 
-  /* ------------------------------------------------------------ ACCENTS */
-  --gold: #ffc53d;
-  --gold-glow: #ffe08a;
-  --gold-edge: #d18f14;
-  --mint: #56d9c0;
-  --mint-edge: #2c9c88;
-  --plum: #8e3d6b;
-  --plum-edge: #6b2b50;
-  --danger: #f0563e;
-  --danger-edge: #b8351f;
-  --grass: #63b93f;
-  --grass-glow: #92da5f;
-  --grass-edge: #3f8a26;
+  /* ------------------------------------------------------------ ACCENTS
+     Saturated and cheerful, and each one dark enough to carry white or
+     near-black text without a second thought. */
+  --gold: #ffb52e;
+  --gold-glow: #ffd571;
+  --gold-edge: #d78a00;
+  --mint: #17b8a6;
+  --mint-edge: #0e8578;
+  --sky: #35a7e8;
+  --sky-edge: #1b7cb5;
+  --plum: #d4568f;
+  --plum-edge: #a63368;
+  --danger: #f2593f;
+  --danger-edge: #c23a22;
+  --grass: #43c05a;
+  --grass-glow: #74dd84;
+  --grass-edge: #2b8f3d;
 
-  --hive: #a855f7;
-  --hive-glow: #e9b8ff;
-  --hive-dim: #5b3a78;
+  --hive: #9b5cf6;
+  --hive-glow: #7c3aed;           /* the READABLE one on cream, see the note above */
+  --hive-soft: #d9c2ff;
+  --hive-dim: #b79aeb;
 
   /* --------------------------------------------------------------- FORM */
   --r-sm: 10px;
@@ -75,7 +89,7 @@
      shade far enough down that it never reads as a blur around the edge. */
   --bevel: 0 4px 0 var(--panel-edge);
   --bevel-sm: 0 3px 0 var(--panel-edge);
-  --lift: 0 10px 24px rgba(10, 4, 16, .45);
+  --lift: 0 10px 22px rgba(150, 110, 60, .22);
 }
 
 /* ======================================================================
@@ -84,15 +98,16 @@
    to read as texture rather than pattern.
    ====================================================================== */
 body {
+  /* Light falling from the top of the page, the way it falls on the artwork. */
   background:
-    radial-gradient(120% 80% at 50% 0%, #33203f 0%, #1e1128 45%, #150c1b 100%);
+    radial-gradient(120% 80% at 50% 0%, #fffaf0 0%, #fdf4e5 45%, #f6e4c6 100%);
   color: var(--ink);
 }
 
 .screen {
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%23ffffff' fill-opacity='.022'%3E%3Crect x='10' y='14' width='16' height='16' rx='5'/%3E%3Crect x='42' y='60' width='11' height='11' rx='3.5'/%3E%3Crect x='86' y='26' width='14' height='14' rx='4.5'/%3E%3Crect x='66' y='96' width='9' height='9' rx='3'/%3E%3Crect x='16' y='84' width='12' height='12' rx='4'/%3E%3C/g%3E%3C/svg%3E"),
-    radial-gradient(125% 85% at 50% 12%, #35223f 0%, #21132b 52%, #150c1b 100%);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%23a37a44' fill-opacity='.055'%3E%3Crect x='10' y='14' width='16' height='16' rx='5'/%3E%3Crect x='42' y='60' width='11' height='11' rx='3.5'/%3E%3Crect x='86' y='26' width='14' height='14' rx='4.5'/%3E%3Crect x='66' y='96' width='9' height='9' rx='3'/%3E%3Crect x='16' y='84' width='12' height='12' rx='4'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(125% 85% at 50% 12%, #fffaf0 0%, #fdf4e5 52%, #f6e4c6 100%);
 }
 
 /* ======================================================================
@@ -232,7 +247,7 @@ body {
    ====================================================================== */
 .screenh {
   color: var(--ink);
-  text-shadow: 0 3px 0 rgba(10, 4, 16, .45);
+  text-shadow: 0 2px 0 rgba(255, 255, 255, .55);
 }
 .screensub { color: var(--muted); }
 
@@ -266,6 +281,8 @@ body {
 /* ======================================================================
    CHIPS & PILLS
    ====================================================================== */
+/* Currency figures: the deep gold, not the bright one, so they read on cream. */
+.mycelchip b, .curchip b, .tn-coin b, .lootchip b { color: var(--gold-edge); }
 .mycelchip,
 .curchip,
 .tn-coin,
@@ -279,6 +296,8 @@ body {
   border: none;
   box-shadow: var(--bevel-sm);
 }
+/* Currency figures: the deep gold, not the bright one, so they read on cream. */
+.mycelchip b, .curchip b, .tn-coin b, .lootchip b { color: var(--gold-edge); }
 .mycelchip,
 .tn-coin,
 .lbchip { background: var(--panel-hi); border-radius: var(--r-pill); }
@@ -295,13 +314,13 @@ body {
   border-radius: var(--r-pill);
   box-shadow: var(--bevel-sm);
 }
-.troadbar .tr-bar { background: rgba(0, 0, 0, .32); border-radius: var(--r-pill); }
+.troadbar .tr-bar { background: rgba(120, 90, 50, .18); border-radius: var(--r-pill); }
 .troadbar .tr-fill { background: linear-gradient(90deg, var(--gold), var(--gold-glow)); }
 
 .topnav {
   border: none;
-  background: linear-gradient(180deg, #33203f, #26162f);
-  box-shadow: 0 4px 0 rgba(10, 4, 16, .35);
+  background: linear-gradient(180deg, var(--panel), var(--bg1));
+  box-shadow: 0 3px 0 var(--panel-edge);
 }
 .tn-av { background: var(--panel-hi); box-shadow: inset 0 0 0 2px var(--hive-dim); }
 
@@ -309,11 +328,11 @@ body {
    BOTTOM NAV — a slab with a rounded-square active tile
    ====================================================================== */
 .homenav {
-  background: linear-gradient(180deg, #2f1d3a, #20122a);
+  background: linear-gradient(180deg, var(--panel), var(--bg1));
   border: none;
-  box-shadow: 0 -4px 0 rgba(10, 4, 16, .35);
+  box-shadow: 0 -3px 0 var(--panel-edge);
 }
-.navitem { color: rgba(255, 244, 230, .72); border-radius: var(--r-md); }
+.navitem { color: var(--ink-soft); border-radius: var(--r-md); }
 .navitem.active {
   color: #3a2600;
   background: linear-gradient(180deg, var(--gold-glow), var(--gold));
@@ -324,7 +343,7 @@ body {
    PROGRESS BARS — a deep well with a bright, rounded fill
    ====================================================================== */
 .qbar, .qp, .cbar, .sb, .lbbar {
-  background: rgba(0, 0, 0, .34);
+  background: rgba(120, 90, 50, .18);
   border-radius: var(--r-pill);
   overflow: hidden;
 }
@@ -339,7 +358,7 @@ body {
   box-shadow: var(--bevel-sm);
 }
 .troadbar:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--panel-edge); }
-.troadbar .tr-bar { background: rgba(0, 0, 0, .34); border-radius: var(--r-pill); }
+.troadbar .tr-bar { background: rgba(120, 90, 50, .18); border-radius: var(--r-pill); }
 .troadbar .tr-fill { background: linear-gradient(90deg, var(--gold), var(--gold-glow)); }
 
 .pip { background: rgba(255, 255, 255, .12); border-radius: var(--r-pill); }
@@ -362,18 +381,24 @@ body {
 .collcell.locked .cc-ic { filter: grayscale(.9) brightness(.8) contrast(.95); }
 .collcell.locked { opacity: .72; }
 .ccard.locked .cname { color: var(--ink-soft); }
-.ccard .cveil { background: rgba(21, 12, 27, .34); border-radius: var(--r-lg); }
+/* A cream wash, not a dark one: on a light card a dark veil turns the art to mud, and
+   the price sitting on it stops being readable. */
+.ccard .cveil { background: rgba(255, 250, 240, .58); border-radius: var(--r-lg); }
+.ccard .cveil .cc { color: var(--gold-edge); }
+.ccard.locked canvas,
+.collcell.locked .cc-ic { filter: grayscale(.75) brightness(1.02) contrast(.92); }
+.ccard.locked { background: var(--panel-hi); }
 .rbanner { box-shadow: var(--bevel), inset 0 0 0 2px var(--tc, transparent); }
 
 /* A corner ribbon is only a corner ribbon if the card clips it. */
 .stile { overflow: hidden; }
-.ribbon { box-shadow: 0 2px 0 rgba(0, 0, 0, .3); }
+.ribbon { box-shadow: 0 2px 0 rgba(120, 90, 50, .28); }
 
 /* ======================================================================
    THE MATCH HUD — the board's frame
    ====================================================================== */
 header {
-  background: linear-gradient(180deg, #2a1836, rgba(42, 24, 54, 0));
+  background: linear-gradient(180deg, var(--bg1), rgba(248, 232, 206, 0));
 }
 .stat, .hivechip {
   border: none;
@@ -384,17 +409,17 @@ header {
 .timeband {
   background: var(--bg1);
   border: none;
-  box-shadow: 0 3px 0 rgba(10, 4, 16, .4);
+  box-shadow: 0 3px 0 var(--panel-edge);
 }
 .timeband { padding: 0 12px 8px; }
 .timebar {
   height: 10px;
-  background: rgba(0, 0, 0, .38);
+  background: rgba(120, 90, 50, .20);
   border-radius: var(--r-pill);
 }
 .timebar i { border-radius: var(--r-pill); }
 
-footer { background: linear-gradient(0deg, #22132c, rgba(34, 19, 44, 0)); }
+footer { background: linear-gradient(0deg, var(--bg1), rgba(248, 232, 206, 0)); }
 .btn {
   border: none;
   background: var(--panel);
@@ -428,7 +453,7 @@ footer { background: linear-gradient(0deg, #22132c, rgba(34, 19, 44, 0)); }
 /* ======================================================================
    OVERLAYS & TOASTS
    ====================================================================== */
-.overlay { background: rgba(12, 6, 18, .72); }
+.overlay { background: rgba(70, 48, 24, .58); }
 .card { box-shadow: var(--bevel), var(--lift); }
 .rc { background: var(--panel-hi); border: none; border-radius: var(--r-md); box-shadow: var(--bevel-sm); }
 .toast {
@@ -441,7 +466,7 @@ footer { background: linear-gradient(0deg, #22132c, rgba(34, 19, 44, 0)); }
 .toast.good { box-shadow: 0 3px 0 var(--grass-edge), var(--lift); }
 .toast.bad { box-shadow: 0 3px 0 var(--danger-edge), var(--lift); }
 .toast.warn { box-shadow: 0 3px 0 var(--gold-edge), var(--lift); }
-.toast.hive { box-shadow: 0 3px 0 #6b2b9c, var(--lift); }
+.toast.hive { box-shadow: 0 3px 0 var(--hive-glow), var(--lift); }
 
 /* ======================================================================
    THE ROAD — chapters as tinted trays
@@ -642,3 +667,74 @@ footer { background: linear-gradient(0deg, #22132c, rgba(34, 19, 44, 0)); }
 .sp .nm { font-size: 20px; }
 .sp .ds, .sp .tr { font-size: 13px; }
 .sp .mods { font-size: 15px; }
+
+/* ======================================================================
+   LIGHT-GROUND CORRECTIONS
+   ----------------------------------------------------------------------
+   game.css was written for dark chrome, so it reaches for the VIVID half of
+   every colour pair when it wants text to stand out. On cream that is the
+   wrong half — pale green on white is not emphasis, it is a smudge. These
+   rules put the readable half back wherever a colour is used as type.
+
+   The species colours come from `setFactionColor` as a base, a vivid `-glow`
+   and a dark `-dark` (palette.ts), so the fix is `-dark` throughout.
+   ====================================================================== */
+.timeband .timelabel { color: var(--you-dark); }
+.timeband.ai .timelabel { color: var(--ai-dark); }
+.stat.you .v { color: var(--you-dark); }
+.stat.ai .v { color: var(--ai-dark); }
+.hivechip.awake .v,
+.hivechip.awake .k { color: var(--hive-glow); }
+.btn.on { color: var(--you-dark); }
+.btn.end { color: var(--ai-dark); }
+.btn.ability { color: var(--hive-glow); }
+.btn.surr { color: var(--danger-edge); }
+.sp .tr { color: var(--you-dark); }
+.sp .nm .prem { color: var(--hive-glow); }
+.rules b { color: var(--you-dark); }
+.rules .ai { color: var(--ai-dark); }
+.rules .hv { color: var(--hive-glow); }
+.win h1 { color: var(--grass-edge); }
+.lose h1 { color: var(--danger-edge); }
+.seg button.on { color: var(--you-dark); }
+.pmeta b { color: var(--you-dark); }
+.tb-you span { color: var(--you-dark); }
+.tb-ai span { color: var(--ai-dark); }
+.pubtag, .ac-chip.got { color: var(--hive-glow); }
+.card h1 .z, .hometitle .z { color: var(--hive-glow); text-shadow: none; }
+.toast.warn { color: var(--gold-edge); }
+/* game.css picks a light mint for "what this buys you", which was right on the old dark
+   chrome and is a smudge on cream. Same message, readable weight. */
+.rtrack .re,
+.hcrow .hce,
+.cheff,
+.srow .sv.up,
+.homelogo .hl-z { color: var(--grass-edge); }
+
+/* The match HUD sits on cream now, so its chips need a light face and the
+   turn banner needs to stop being a dark strip across a bright page. */
+header { background: linear-gradient(180deg, var(--bg1), rgba(248, 232, 206, 0)); }
+.timeband { background: var(--bg1); box-shadow: 0 3px 0 rgba(150, 110, 60, .16); }
+footer { background: linear-gradient(0deg, var(--bg1), rgba(248, 232, 206, 0)); }
+
+/* Overlays: a warm scrim rather than a black one. */
+.overlay { background: rgba(60, 40, 20, .55); }
+
+/* The screen title carried a hard drop shadow meant for a dark ground. */
+.screenh { text-shadow: 0 2px 0 rgba(255, 255, 255, .6); }
+
+/* Tinted action buttons: mix toward the panel, which is now light, so the
+   tint has to be stronger to register at all. */
+.btn.on { background: color-mix(in srgb, var(--you) 22%, var(--panel)); }
+.btn.end { background: color-mix(in srgb, var(--ai) 20%, var(--panel)); }
+.btn.ability { background: color-mix(in srgb, var(--hive) 20%, var(--panel)); }
+.btn.surr { background: color-mix(in srgb, var(--danger) 16%, var(--panel)); }
+
+/* The scattered-square page texture was a light wash on a dark ground; on
+   cream it has to be a shadow instead or it disappears. */
+.pip { background: rgba(120, 90, 50, .16); }
+.qbar, .qp, .cbar, .sb, .lbbar,
+.troadbar .tr-bar { background: rgba(120, 90, 50, .18); }
+.dcard .rtrack, .hcrow { background: none; }
+.roadcell.empty { background: rgba(120, 90, 50, .06); }
+
