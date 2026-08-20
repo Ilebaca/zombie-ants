@@ -21,21 +21,45 @@ export const SPECIES_COL: Record<SpeciesId, readonly [string, string, string]> =
 };
 
 /**
- * Outdoor map palette. The board is the "outside world" — the dark nest theme belongs to
- * the home screen, so these are deliberately not CSS variables.
+ * The board's palette.
+ *
+ * The playfield is a DIORAMA: a rounded tray with a pale rim, sitting on the same deep
+ * plum the rest of the app uses. That surround is what makes the warm ground and the
+ * colony colours read — on a mid-green field they all fight each other.
+ *
+ * The ground is a warm earth in two shades. Warm and mid-toned rather than dark, because
+ * a near-black field made the whole board read as a hole; two shades, because the
+ * checkerboard gives the eye a grid without a single drawn line. The upper bound is set
+ * by the colony colours — the ground has to stay darker than every species base so the
+ * owned tiles keep reading as raised blocks on top of it.
  */
 export const MAP = {
-  fieldCenter: "#5f9248",
-  fieldEdge: "#365a2a",
-  vignette: "rgba(16,30,12,0.55)",
-  grid: "rgba(30,56,22,0.28)",
-  motes: "rgba(245,255,225,0.20)",
-  cell: "rgba(120,160,92,0.22)",
-  cellEdge: "rgba(235,250,215,0.10)",
-  rock: "rgba(120,112,96,0.95)",
-  rockTop: "rgba(156,148,130,0.95)",
-  resCell: "rgba(255,214,90,0.14)",
-  resEdge: "rgba(255,214,90,0.55)",
+  /** Behind the tray — matches the page so the canvas has no visible seam. */
+  surround: "#1b1024",
+  /** The tray: a pale rim with a solid darker band beneath it, never a blurred shadow. */
+  trayRim: "#f3e3c8",
+  trayEdge: "#b9a184",
+  trayShade: "rgba(12,6,18,0.45)",
+
+  /** The two checker shades, and the shadow objects cast onto them. */
+  groundA: "#7d5f42",
+  groundB: "#6e5239",
+  groundShade: "rgba(38,20,10,0.30)",
+
+  motes: "rgba(255,240,206,0.20)",
+
+  rock: "#6d5b74",
+  rockTop: "#8a7591",
+  rockEdge: "#43354b",
+
+  resCell: "rgba(255,197,61,0.10)",
+  resEdge: "rgba(255,197,61,0.5)",
+  gem: "#ffc53d",
+  gemTop: "#ffe08a",
+  gemEdge: "#c8901a",
+
+  water: "#56d9c0",
+  waterEdge: "#2c9c88",
 } as const;
 
 const VAR_NAMES = [

@@ -8,6 +8,7 @@ import { FxLayer } from "../fx";
 import { animate, sourceOf } from "../animate";
 import { basicLook } from "../art";
 import { drawTile, type Scene } from "../board";
+import { MAP } from "../palette";
 import { makeRecorder, type Call, type Recorder } from "./recorder";
 
 function scene(state: GameState, over: Partial<Scene> = {}): { s: Scene; rec: Recorder } {
@@ -139,8 +140,32 @@ describe("drawTile", () => {
     const state = blankGame("tiny");
     const t = put(state, 1, 1, { terrain: "blocked" });
     const rec = draw(state, t);
-    expect(rec.fills().some((f) => f.includes("120,112,96"))).toBe(true);
+    // Palette-driven rather than a literal colour, so a recolour does not fail the test
+    // but a missing rock still does.
+    expect(rec.fills()).toContain(MAP.rock.toLowerCase());
     expect(rec.texts()).toHaveLength(0);          // no count pill on a rock
+  });
+
+  /**
+   * Every raised object is a stack: a shade on the ground, a solid side, then the lit face.
+   * Flattening one back to a single fill is the exact regression this catches.
+   */
+  it("builds a rock from its ground shade, its side and its top", () => {
+    const state = blankGame("tiny");
+    const t = put(state, 1, 1, { terrain: "blocked" });
+    const fills = draw(state, t).fills();
+    for (const layer of [MAP.groundShade, MAP.rockEdge, MAP.rock, MAP.rockTop]) {
+      expect(fills, `rock is missing its ${layer} layer`).toContain(layer.toLowerCase());
+    }
+  });
+
+  it("draws a resource as a gem with a facet, over a shaded base", () => {
+    const state = blankGame("tiny");
+    const t = put(state, 2, 2, { terrain: "resource" });
+    const fills = draw(state, t).fills();
+    for (const layer of [MAP.gemEdge, MAP.gem, MAP.gemTop]) {
+      expect(fills, `gem is missing its ${layer} layer`).toContain(layer.toLowerCase());
+    }
   });
 
   /**

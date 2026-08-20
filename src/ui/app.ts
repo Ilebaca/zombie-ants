@@ -29,6 +29,7 @@ import { buildQuests } from "./quests";
 import { buildComingSoon, buildMenu, buildRules, buildSettings } from "./screens-simple";
 import { buildTrophyRoad } from "./road";
 import "./game.css";
+import "./skin.css";   // the look, layered over the structure
 
 /**
  * Route ids are the legacy build's screen ids. The stylesheet is that build's, and some of

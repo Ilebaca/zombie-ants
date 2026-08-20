@@ -1,0 +1,474 @@
+/*
+ * ============================================================================
+ *  THE SKIN — a flat-vector diorama look, layered over game.css
+ * ============================================================================
+ *
+ * game.css is the structural sheet (a verbatim copy of the legacy build, and
+ * test-locked to it). This file loads after it and restyles the *look* through
+ * the same selectors, so the two never fight: game.css decides where things
+ * are, this decides what they are made of.
+ *
+ * THE RULES, taken from the reference art:
+ *
+ *  1. Depth is SOLID, never blurred. A raised thing is a light top face with a
+ *     darker band directly beneath it — the same trick the reference uses for
+ *     rocks, crates and buttons alike. Blur is reserved for glow.
+ *  2. No hairline borders. Shapes are told apart by value, not by 1px strokes.
+ *  3. Radii are generous and proportional — roughly a quarter of the shape.
+ *  4. Warm mid-tones on a deep, desaturated ground. The aubergine surround is
+ *     what makes the sand and gold sing; on navy they go muddy.
+ *  5. One dominant hue family per surface, one cool accent against it.
+ *  6. Texture stays quiet: scattered low-opacity squares, nothing louder.
+ */
+
+:root {
+  /* ---------------------------------------------------------------- INK */
+  --ink: #fff4e6;                 /* warm white — never pure #fff */
+  --ink-soft: #e8d5e0;
+  --muted: #b49ab0;               /* readable on plum, unlike the old blue-grey */
+
+  /* ------------------------------------------------------------ SURFACES
+     A plum/aubergine family. Each step is a real value jump so panels read
+     without borders. `-edge` colours are the solid band under a raised face. */
+  --bg0: #150c1b;
+  --bg1: #1e1128;
+  --bg2: #2a1836;
+  --panel: #33203f;
+  --panel-hi: #402a4e;
+  --panel-edge: #1a0f22;
+  --line: #4a3157;                /* only for dividers that must stay hairline */
+  --hud: #2a1836;
+  --hud-line: #47305a;
+
+  /* ------------------------------------------------------------- WARMTH
+     The playfield family, straight off the reference floor tiles. */
+  --sand: #efa95a;
+  --sand-alt: #e79e4e;
+  --sand-deep: #c87c33;
+  --cream: #f6e7cf;
+
+  /* ------------------------------------------------------------ ACCENTS */
+  --gold: #ffc53d;
+  --gold-glow: #ffe08a;
+  --gold-edge: #d18f14;
+  --mint: #56d9c0;
+  --mint-edge: #2c9c88;
+  --plum: #8e3d6b;
+  --plum-edge: #6b2b50;
+  --danger: #f0563e;
+  --danger-edge: #b8351f;
+  --grass: #63b93f;
+  --grass-glow: #92da5f;
+  --grass-edge: #3f8a26;
+
+  --hive: #a855f7;
+  --hive-glow: #e9b8ff;
+  --hive-dim: #5b3a78;
+
+  /* --------------------------------------------------------------- FORM */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 26px;
+  --r-pill: 999px;
+  /* The one and only shadow language: a solid band below, plus a soft ground
+     shade far enough down that it never reads as a blur around the edge. */
+  --bevel: 0 4px 0 var(--panel-edge);
+  --bevel-sm: 0 3px 0 var(--panel-edge);
+  --lift: 0 10px 24px rgba(10, 4, 16, .45);
+}
+
+/* ======================================================================
+   GROUND
+   A deep plum field with the reference's scattered squares, quiet enough
+   to read as texture rather than pattern.
+   ====================================================================== */
+body {
+  background:
+    radial-gradient(120% 80% at 50% 0%, #33203f 0%, #1e1128 45%, #150c1b 100%);
+  color: var(--ink);
+}
+
+.screen {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%23ffffff' fill-opacity='.022'%3E%3Crect x='10' y='14' width='16' height='16' rx='5'/%3E%3Crect x='42' y='60' width='11' height='11' rx='3.5'/%3E%3Crect x='86' y='26' width='14' height='14' rx='4.5'/%3E%3Crect x='66' y='96' width='9' height='9' rx='3'/%3E%3Crect x='16' y='84' width='12' height='12' rx='4'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(125% 85% at 50% 12%, #35223f 0%, #21132b 52%, #150c1b 100%);
+}
+
+/* ======================================================================
+   PANELS — solid slabs with a bevel, no outlines
+   ====================================================================== */
+.card,
+.metacard,
+.chcard,
+.dcard,
+.qcard,
+.qhero,
+.challcard,
+.dailycard,
+.stile,
+.luckycard,
+.rbanner,
+.dhero,
+.hillcut,
+.antcell,
+.lbbanner,
+.lbrow,
+.menudraw,
+.setrow,
+.roadhead {
+  border: none;
+  background: var(--panel);
+  border-radius: var(--r-lg);
+  box-shadow: var(--bevel);
+}
+
+.hillcut,
+.dcard,
+.metacard,
+.qhero { background: var(--panel); }
+
+/* The nested cards inside a page sit a step lighter, so a card on a card
+   still reads as two things. */
+.dcard .rtrack,
+.hcrow { background: none; }
+
+/* ======================================================================
+   BUTTONS — a face and an edge that compresses when pressed
+   ====================================================================== */
+.cta,
+.playbtn,
+.buybtn,
+.qbtn,
+.passbuy,
+.buybar,
+.challplay,
+.setbtn,
+.claimchip,
+.antcta,
+.hbuy,
+.passchip {
+  border: none;
+  border-radius: var(--r-md);
+  box-shadow: var(--bevel);
+  transition: transform .06s ease, box-shadow .06s ease, filter .12s ease;
+}
+.cta:active,
+.playbtn:active,
+.buybtn:active:not(:disabled),
+.qbtn:active:not(:disabled),
+.passbuy:active:not(:disabled),
+.buybar:active:not(:disabled),
+.challplay:active,
+.setbtn:active,
+.claimchip:active,
+.antcta:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--panel-edge);
+}
+
+/* Two accents, split by meaning: GREEN means go, GOLD means spend. The play button was
+   blue, which belonged to neither the warm artwork nor the plum chrome and read as a
+   system dialog; gold got lost against the sand it sits on. */
+/* #begin and the two Next buttons are styled by id in the legacy sheet, so they have to
+   be answered by id here — a class rule loses to them. */
+.playbtn,
+#begin,
+.cta.begin,
+.challplay {
+  background: linear-gradient(180deg, var(--grass-glow), var(--grass));
+  color: #06280c;
+  box-shadow: 0 5px 0 var(--grass-edge), var(--lift);
+}
+.cta {
+  background: linear-gradient(180deg, var(--gold-glow), var(--gold));
+  color: #3a2600;
+  box-shadow: 0 5px 0 var(--gold-edge);
+}
+.cta.neutral {
+  background: var(--panel-hi);
+  color: var(--ink);
+  box-shadow: var(--bevel);
+}
+.buybtn,
+.buybar,
+.passbuy,
+.claimchip {
+  background: linear-gradient(180deg, var(--gold-glow), var(--gold));
+  color: #3a2600;
+  box-shadow: 0 4px 0 var(--gold-edge);
+}
+.qbtn.ready,
+.buybar.free {
+  background: linear-gradient(180deg, #7ee06a, #3fae42);
+  color: #06280c;
+  box-shadow: 0 4px 0 #2a7d2c;
+}
+.buybtn.off,
+.buybar.off,
+.qbtn.wip,
+.qbtn.claimed,
+.buybar.soft {
+  background: var(--panel-hi);
+  color: var(--muted);
+  box-shadow: 0 3px 0 var(--panel-edge);
+}
+.buybtn.max {
+  background: none;
+  color: var(--hive-glow);
+  box-shadow: inset 0 0 0 2px var(--hive);
+}
+.ghostbtn {
+  border: none;
+  background: var(--panel-hi);
+  color: var(--ink-soft);
+  border-radius: var(--r-md);
+  box-shadow: var(--bevel-sm);
+}
+.ghostbtn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--panel-edge); }
+
+/* ======================================================================
+   HEADERS — a display title over a quiet subtitle
+   ====================================================================== */
+.screenh {
+  color: var(--ink);
+  text-shadow: 0 3px 0 rgba(10, 4, 16, .45);
+}
+.screensub { color: var(--muted); }
+
+.backbtn {
+  border: none;
+  background: var(--panel-hi);
+  color: var(--ink);
+  border-radius: var(--r-md);
+  box-shadow: var(--bevel-sm);
+}
+.backbtn:active { transform: translateY(-50%) translateY(2px); box-shadow: 0 1px 0 var(--panel-edge); }
+
+/* The intermediate "Next" steps stay deliberately quiet (that is the legacy hierarchy),
+   but they still get the tray + edge so they read as pressable. */
+#toFormation,
+#mapNext {
+  border: none;
+  background: var(--panel-hi);
+  color: var(--ink);
+  box-shadow: var(--bevel);
+}
+#toFormation:active,
+#mapNext:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--panel-edge); }
+
+/* section rules: a soft plum line, never a hard grey one */
+.sechead .l,
+.tierhead .tline { background: linear-gradient(90deg, transparent, var(--line), transparent); }
+.secthead,
+.sechead h3 { color: var(--ink); }
+
+/* ======================================================================
+   CHIPS & PILLS
+   ====================================================================== */
+.mycelchip,
+.curchip,
+.tn-coin,
+.lootchip,
+.lbchip,
+.dailybadge,
+.passon,
+.dlvl,
+.clv,
+.anttag {
+  border: none;
+  box-shadow: var(--bevel-sm);
+}
+.mycelchip,
+.tn-coin,
+.lbchip { background: var(--panel-hi); border-radius: var(--r-pill); }
+.mycelchip b { color: var(--gold); }
+
+.tn-plus {
+  background: linear-gradient(180deg, #7ee06a, #3fae42);
+  color: #06280c;
+  box-shadow: 0 2px 0 #2a7d2c;
+}
+.troadbar {
+  border: none;
+  background: var(--panel);
+  border-radius: var(--r-pill);
+  box-shadow: var(--bevel-sm);
+}
+.troadbar .tr-bar { background: rgba(0, 0, 0, .32); border-radius: var(--r-pill); }
+.troadbar .tr-fill { background: linear-gradient(90deg, var(--gold), var(--gold-glow)); }
+
+.topnav {
+  border: none;
+  background: linear-gradient(180deg, #33203f, #26162f);
+  box-shadow: 0 4px 0 rgba(10, 4, 16, .35);
+}
+.tn-av { background: var(--panel-hi); box-shadow: inset 0 0 0 2px var(--hive-dim); }
+
+/* ======================================================================
+   BOTTOM NAV — a slab with a rounded-square active tile
+   ====================================================================== */
+.homenav {
+  background: linear-gradient(180deg, #2f1d3a, #20122a);
+  border: none;
+  box-shadow: 0 -4px 0 rgba(10, 4, 16, .35);
+}
+.navitem { color: rgba(255, 244, 230, .72); border-radius: var(--r-md); }
+.navitem.active {
+  color: #3a2600;
+  background: linear-gradient(180deg, var(--gold-glow), var(--gold));
+  box-shadow: 0 3px 0 var(--gold-edge);
+}
+
+/* ======================================================================
+   PROGRESS BARS — a deep well with a bright, rounded fill
+   ====================================================================== */
+.qbar, .qp, .cbar, .sb, .lbbar {
+  background: rgba(0, 0, 0, .34);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.qbar i, .qp i, .cbar i {
+  background: linear-gradient(90deg, var(--gold), var(--gold-glow));
+  border-radius: var(--r-pill);
+}
+.troadbar {
+  border: none;
+  background: var(--panel);
+  border-radius: var(--r-pill);
+  box-shadow: var(--bevel-sm);
+}
+.troadbar:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--panel-edge); }
+.troadbar .tr-bar { background: rgba(0, 0, 0, .34); border-radius: var(--r-pill); }
+.troadbar .tr-fill { background: linear-gradient(90deg, var(--gold), var(--gold-glow)); }
+
+.pip { background: rgba(255, 255, 255, .12); border-radius: var(--r-pill); }
+.pip.on { background: linear-gradient(180deg, var(--gold-glow), var(--gold)); }
+
+/* ======================================================================
+   COLLECTION CARDS — the tier colour does the work, not a border
+   ====================================================================== */
+.antcell, .ccard {
+  border: none;
+  background: var(--panel);
+  border-radius: var(--r-lg);
+  box-shadow: var(--bevel);
+}
+.ccard.sel { box-shadow: 0 4px 0 var(--panel-edge), inset 0 0 0 3px var(--tc, var(--gold)); }
+.ccard.locked { background: var(--panel); }
+/* Locked art still has to be recognisable — the player is looking at what they'd buy.
+   Desaturate it and drop it a little; do not black it out. */
+.ccard.locked canvas,
+.collcell.locked .cc-ic { filter: grayscale(.9) brightness(.8) contrast(.95); }
+.collcell.locked { opacity: .72; }
+.ccard.locked .cname { color: var(--ink-soft); }
+.ccard .cveil { background: rgba(21, 12, 27, .34); border-radius: var(--r-lg); }
+.rbanner { box-shadow: var(--bevel), inset 0 0 0 2px var(--tc, transparent); }
+
+/* A corner ribbon is only a corner ribbon if the card clips it. */
+.stile { overflow: hidden; }
+.ribbon { box-shadow: 0 2px 0 rgba(0, 0, 0, .3); }
+
+/* ======================================================================
+   THE MATCH HUD — the board's frame
+   ====================================================================== */
+header {
+  background: linear-gradient(180deg, #2a1836, rgba(42, 24, 54, 0));
+}
+.stat, .hivechip {
+  border: none;
+  background: var(--panel);
+  border-radius: var(--r-pill);
+  box-shadow: var(--bevel-sm);
+}
+.timeband {
+  background: var(--bg1);
+  border: none;
+  box-shadow: 0 3px 0 rgba(10, 4, 16, .4);
+}
+.timeband { padding: 0 12px 8px; }
+.timebar {
+  height: 10px;
+  background: rgba(0, 0, 0, .38);
+  border-radius: var(--r-pill);
+}
+.timebar i { border-radius: var(--r-pill); }
+
+footer { background: linear-gradient(0deg, #22132c, rgba(34, 19, 44, 0)); }
+.btn {
+  border: none;
+  background: var(--panel);
+  border-radius: var(--r-md);
+  box-shadow: var(--bevel);
+  color: var(--ink);
+}
+.btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--panel-edge); }
+.btn.on { background: color-mix(in srgb, var(--you) 30%, var(--panel)); color: var(--you-glow); }
+.btn.end { background: color-mix(in srgb, var(--ai) 26%, var(--panel)); color: var(--ai-glow); }
+.btn.ability { background: color-mix(in srgb, var(--hive) 30%, var(--panel)); color: var(--hive-glow); }
+.btn.surr { background: color-mix(in srgb, var(--danger) 26%, var(--panel)); color: #ffb9ad; }
+
+/* The two home fabs are one family: plum tray, gold face for the one with a reward. */
+.settingsfab {
+  border: none;
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: var(--r-md);
+  box-shadow: var(--bevel-sm), var(--lift);
+}
+.dailyfab {
+  border: none;
+  background: linear-gradient(180deg, var(--gold-glow), var(--gold));
+  color: #3a2600;
+  border-radius: var(--r-md);
+  box-shadow: 0 4px 0 var(--gold-edge), var(--lift);
+}
+.settingsfab:active, .dailyfab:active { transform: translateY(2px); }
+
+/* ======================================================================
+   OVERLAYS & TOASTS
+   ====================================================================== */
+.overlay { background: rgba(12, 6, 18, .72); }
+.card { box-shadow: var(--bevel), var(--lift); }
+.rc { background: var(--panel-hi); border: none; border-radius: var(--r-md); box-shadow: var(--bevel-sm); }
+.toast {
+  background: var(--panel-hi);
+  border: none;
+  border-radius: var(--r-pill);
+  box-shadow: var(--bevel-sm), var(--lift);
+  color: var(--ink);
+}
+.toast.good { box-shadow: 0 3px 0 var(--grass-edge), var(--lift); }
+.toast.bad { box-shadow: 0 3px 0 var(--danger-edge), var(--lift); }
+.toast.warn { box-shadow: 0 3px 0 var(--gold-edge), var(--lift); }
+.toast.hive { box-shadow: 0 3px 0 #6b2b9c, var(--lift); }
+
+/* ======================================================================
+   THE ROAD — chapters as tinted trays
+   ====================================================================== */
+.roadchap { border-radius: var(--r-xl); }
+.roadcell { border: none; background: var(--panel); border-radius: var(--r-md); box-shadow: var(--bevel-sm); }
+.roadcell.ready { background: linear-gradient(180deg, var(--gold-glow), var(--gold)); color: #3a2600; box-shadow: 0 4px 0 var(--gold-edge); }
+.roadcell.ready .rc-btn { color: #5a3a00; }
+.roadcell.empty { background: rgba(255, 255, 255, .03); box-shadow: none; }
+.rnode {
+  border: none;
+  background: var(--panel-hi);
+  color: var(--muted);
+  box-shadow: var(--bevel-sm);
+}
+.rnode.done { background: linear-gradient(180deg, var(--gold-glow), var(--gold)); color: #3a2600; box-shadow: 0 3px 0 var(--gold-edge); }
+
+/* ======================================================================
+   SETUP PICKERS
+   ====================================================================== */
+.mp, .shp, .sp, .coscell {
+  border: none;
+  background: var(--panel);
+  border-radius: var(--r-lg);
+  box-shadow: var(--bevel);
+}
+.mp.on, .shp.on, .sp.on {
+  box-shadow: 0 4px 0 var(--panel-edge), inset 0 0 0 3px var(--you);
+}
+.sp.splock { opacity: .62; }

@@ -49,45 +49,102 @@ export function seedMotes(reduced: boolean): Mote[] {
   return out;
 }
 
-/** Sunlit field, vignette, the playing grid, and drifting pollen. */
+/**
+ * The diorama: a plum surround, a pale tray with a solid edge, and a checkerboard floor.
+ *
+ * There is not a single drawn grid line — the two ground shades do that job, which is what
+ * keeps the board looking like a built object rather than a spreadsheet.
+ */
 export function drawBackground(
   ctx: CanvasRenderingContext2D, layout: Layout, motes: Mote[], startedAt: number,
 ): void {
   const w = layout.width, h = layout.height, n = layout.size;
+  const ts = layout.ts;
+  const bx = layout.ox, by = layout.oy, bw = ts * n, bh = ts * n;
 
-  const field = ctx.createRadialGradient(w / 2, h * 0.40, 30, w / 2, h * 0.5, Math.max(w, h) * 0.80);
-  field.addColorStop(0, MAP.fieldCenter);
-  field.addColorStop(1, MAP.fieldEdge);
-  ctx.fillStyle = field; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = MAP.surround;
+  ctx.fillRect(0, 0, w, h);
 
-  const vig = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.30, w / 2, h / 2, Math.max(w, h) * 0.72);
-  vig.addColorStop(0, "rgba(0,0,0,0)");
-  vig.addColorStop(1, MAP.vignette);
-  ctx.fillStyle = vig; ctx.fillRect(0, 0, w, h);
+  // The tray, built from the bottom up: a ground shade, the solid edge band, then the rim.
+  const pad = Math.max(9, ts * 0.30);
+  const rim = Math.max(6, ts * 0.20);
+  const lip = Math.max(5, ts * 0.16);
+  const radius = Math.max(14, ts * 0.55);
 
-  // straight-line grid — no rounded cells, no gaps: it shows the playing field, not the tiles
-  ctx.strokeStyle = MAP.grid; ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (let c = 0; c <= n; c++) {
-    const gx = Math.round(layout.x0(c)) + 0.5;
-    ctx.moveTo(gx, layout.oy); ctx.lineTo(gx, layout.oy + n * layout.ts);
+  rrect(ctx, bx - pad, by - pad + lip * 1.6, bw + pad * 2, bh + pad * 2, radius);
+  ctx.fillStyle = MAP.trayShade; ctx.fill();
+
+  rrect(ctx, bx - pad, by - pad + lip, bw + pad * 2, bh + pad * 2, radius);
+  ctx.fillStyle = MAP.trayEdge; ctx.fill();
+
+  rrect(ctx, bx - pad, by - pad, bw + pad * 2, bh + pad * 2, radius);
+  ctx.fillStyle = MAP.trayRim; ctx.fill();
+
+  // The floor sits inside the rim, its own corners softened.
+  ctx.save();
+  rrect(ctx, bx - rim, by - rim, bw + rim * 2, bh + rim * 2, radius * 0.72);
+  ctx.clip();
+  ctx.fillStyle = MAP.groundA;
+  ctx.fillRect(bx - rim, by - rim, bw + rim * 2, bh + rim * 2);
+  ctx.fillStyle = MAP.groundB;
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      if ((r + c) % 2 === 0) continue;
+      ctx.fillRect(layout.x0(c), layout.y0(r), ts, ts);
+    }
   }
-  for (let r = 0; r <= n; r++) {
-    const gy = Math.round(layout.y0(r)) + 0.5;
-    ctx.moveTo(layout.ox, gy); ctx.lineTo(layout.ox + n * layout.ts, gy);
-  }
-  ctx.stroke();
+  // A soft inner shade at the rim, so the floor sits *in* the tray rather than on it.
+  const inner = ctx.createRadialGradient(bx + bw / 2, by + bh / 2, bw * 0.34, bx + bw / 2, by + bh / 2, bw * 0.78);
+  inner.addColorStop(0, "rgba(0,0,0,0)");
+  inner.addColorStop(1, "rgba(18,8,22,0.42)");
+  ctx.fillStyle = inner;
+  ctx.fillRect(bx - rim, by - rim, bw + rim * 2, bh + rim * 2);
+  ctx.restore();
 
   const t = (performance.now() - startedAt) / 1000;
   for (const p of motes) {
     p.y -= p.sp * 0.012;
     if (p.y < -0.05) { p.y = 1.05; p.x = Math.random(); }
     const x = (p.x + Math.sin(t * 0.6 + p.ph) * 0.01) * w, y = p.y * h;
-    ctx.globalAlpha = 0.22;
+    ctx.globalAlpha = 0.18;
     ctx.fillStyle = MAP.motes;
     ctx.beginPath(); ctx.arc(x, y, p.s, 0, TAU); ctx.fill();
     ctx.globalAlpha = 1;
   }
+}
+
+/**
+ * Pass one of two: the solid band under every owned tile.
+ *
+ * Drawn for the whole board before any tile face, so a colony reads as one thick slab —
+ * the band only shows along its bottom edge, where no tile of the same colour covers it.
+ */
+export function drawTileBevels(scene: Scene): void {
+  const { ctx, layout, state, reveal } = scene;
+  const ts = layout.ts;
+  const drop = Math.max(3, ts * 0.13);
+
+  for (const row of state.grid) {
+    for (const t of row) {
+      if (!t.owner || t.struct === "vein") continue;
+      if (reveal.progress(t.c, t.r) < 1) continue;        // still filling: no edge yet
+      const [tl, tr, br, bl] = capturedCorners(state, t, Math.max(3, ts * 0.20));
+      rrectC(ctx, layout.x0(t.c), layout.y0(t.r) + drop, ts, ts, tl, tr, br, bl);
+      ctx.fillStyle = shade(ownerCol(t.owner), 0.42);
+      ctx.fill();
+    }
+  }
+}
+
+/** Mix a colour toward black — the one way this renderer makes a darker face. */
+export function shade(hex: string, amount: number): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const v = parseInt(m[1] as string, 16);
+  const r = Math.round(((v >> 16) & 255) * (1 - amount));
+  const g = Math.round(((v >> 8) & 255) * (1 - amount));
+  const b = Math.round((v & 255) * (1 - amount));
+  return `rgb(${r},${g},${b})`;
 }
 
 /** Clip to the revealed portion of a cell — a directional "progress bar" wipe. */
@@ -152,10 +209,18 @@ export function drawTile(scene: Scene, t: Tile): void {
   const r = Math.max(3, ts * 0.18);
 
   if (t.terrain === "blocked") {
+    // A rock is a block, not a blob: ground shade, solid side, lit top — the same three
+    // layers every raised object on this board is built from.
+    const bx = x + w * 0.11, by = y + h * 0.10, bw = w * 0.78, bh = h * 0.74;
+    const drop = Math.max(3, ts * 0.12);
+    ctx.fillStyle = MAP.groundShade;
+    rrect(ctx, bx + drop * 0.5, by + drop * 1.2, bw, bh, r * 0.75); ctx.fill();
+    ctx.fillStyle = MAP.rockEdge;
+    rrect(ctx, bx, by + drop, bw, bh, r * 0.75); ctx.fill();
     ctx.fillStyle = MAP.rock;
-    rrect(ctx, x + w * 0.12, y + h * 0.12, w * 0.76, h * 0.76, r * 0.7); ctx.fill();
+    rrect(ctx, bx, by, bw, bh, r * 0.75); ctx.fill();
     ctx.fillStyle = MAP.rockTop;
-    ctx.beginPath(); ctx.arc(layout.cx(t.c), layout.cy(t.r), w * 0.16, 0, TAU); ctx.fill();
+    rrect(ctx, bx + bw * 0.16, by + bh * 0.13, bw * 0.5, bh * 0.34, r * 0.5); ctx.fill();
     return;
   }
 
@@ -212,20 +277,34 @@ export function drawTile(scene: Scene, t: Tile): void {
     ctx.restore();
 
   } else if (t.terrain === "resource") {
-    // a subtle square tint (no rounding) so the diamond has a home
+    // a warm patch under the gem, rounded like everything else on this board
     ctx.fillStyle = MAP.resCell;
-    ctx.fillRect(layout.x0(t.c), layout.y0(t.r), ts, ts);
+    rrect(ctx, layout.x0(t.c) + ts * 0.06, layout.y0(t.r) + ts * 0.06, ts * 0.88, ts * 0.88, r * 0.8);
+    ctx.fill();
   }
 
   if (t.terrain === "resource") {
+    // A cut gem: a shaded base, the stone, and one lit facet across the top-left. The glow
+    // is the only blur on the board, and it earns it — this is the thing worth fighting for.
+    const gx = layout.cx(t.c), gy = layout.cy(t.r) - (t.owner ? h * 0.16 : 0);
+    const s = w * 0.19, drop = Math.max(2, ts * 0.07);
+    const diamond = (cx: number, cy: number, rad: number): void => {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - rad); ctx.lineTo(cx + rad, cy);
+      ctx.lineTo(cx, cy + rad); ctx.lineTo(cx - rad, cy);
+      ctx.closePath();
+    };
+    ctx.fillStyle = MAP.groundShade; diamond(gx, gy + drop * 1.6, s); ctx.fill();
+    ctx.fillStyle = MAP.gemEdge; diamond(gx, gy + drop, s); ctx.fill();
     ctx.save();
-    ctx.shadowColor = COL["gold-glow"] ?? "#ffe48a"; ctx.shadowBlur = ts * 0.3;
-    ctx.fillStyle = COL.gold ?? "#ffd23f";
-    const gx = layout.cx(t.c), gy = layout.cy(t.r) - (t.owner ? h * 0.16 : 0), s = w * 0.16;
-    ctx.beginPath();
-    ctx.moveTo(gx, gy - s); ctx.lineTo(gx + s, gy); ctx.lineTo(gx, gy + s); ctx.lineTo(gx - s, gy);
-    ctx.closePath(); ctx.fill();
+    ctx.shadowColor = MAP.gemTop; ctx.shadowBlur = ts * 0.26;
+    ctx.fillStyle = MAP.gem; diamond(gx, gy, s); ctx.fill();
     ctx.restore();
+    ctx.fillStyle = MAP.gemTop;
+    ctx.beginPath();
+    ctx.moveTo(gx, gy - s * 0.86); ctx.lineTo(gx + s * 0.42, gy - s * 0.12);
+    ctx.lineTo(gx - s * 0.42, gy - s * 0.12);
+    ctx.closePath(); ctx.fill();
   }
 
   if (hive) drawHiveTile(scene, t);
@@ -284,7 +363,7 @@ export function drawTile(scene: Scene, t: Tile): void {
   // Ghost cloak: YOUR hidden tiles render at ~50%. The enemy sees nothing — the AI skips them.
   if (t.hidden && t.owner === "you") {
     ctx.save();
-    ctx.globalAlpha = 0.5; ctx.fillStyle = MAP.fieldCenter;
+    ctx.globalAlpha = 0.5; ctx.fillStyle = MAP.groundA;
     rrect(ctx, x, y, w, h, r); ctx.fill();
     ctx.globalAlpha = 0.35 + 0.12 * Math.sin(performance.now() / 300 + t.c + t.r);
     ctx.strokeStyle = "#cfe0ff"; ctx.lineWidth = Math.max(1, ts * 0.04);
@@ -369,6 +448,17 @@ export function drawHiveTile(scene: Scene, t: Tile): void {
   const col = awake ? (COL.hive ?? "#b14de0") : (COL["hive-dim"] ?? "#4b3a6e");
   const glow = awake ? (COL["hive-glow"] ?? "#dd9bff") : "rgba(120,90,170,0.4)";
   const pulse = awake ? (0.6 + 0.4 * Math.sin(performance.now() / 300)) : 0.3;
+
+  // The hive sits on its own dark slab, so the fungus reads against any ground colour and
+  // the five tiles group into one object rather than five loose circles.
+  const px = layout.x0(t.c), py = layout.y0(t.r);
+  const drop = Math.max(3, ts * 0.11);
+  ctx.fillStyle = MAP.groundShade;
+  rrect(ctx, px + ts * 0.05, py + ts * 0.05 + drop, ts * 0.9, ts * 0.9, ts * 0.26); ctx.fill();
+  ctx.fillStyle = awake ? "#3a1f57" : "#2c1c3c";
+  rrect(ctx, px + ts * 0.05, py + ts * 0.05, ts * 0.9, ts * 0.9, ts * 0.26); ctx.fill();
+  ctx.fillStyle = awake ? "#4d2a70" : "#35234a";
+  rrect(ctx, px + ts * 0.11, py + ts * 0.10, ts * 0.78, ts * 0.42, ts * 0.20); ctx.fill();
 
   ctx.save();
   ctx.shadowColor = glow;
