@@ -1,7 +1,7 @@
 import {
   allTiles, distance, isHiveTerrain, neighbours, nestTile, otherPlayer,
   attackMultiplier, defenceMultiplier, fight, flatDefence,
-  moveOrAttack,
+  moveOrAttack, endTurn,
   snapshot, restore,
   abilityOf, abilityReady, activateAbility, frontline, onEnemyHalf,
 } from "../engine";
@@ -169,16 +169,28 @@ function genRoot(state: GameState, p: Player, s: Ctx): Candidate[] {
   return generate(state, p, s.ctx, { ...s.profile.gen, limit: s.profile.branching });
 }
 
-/** Play an action on the real state with `turn` to move, then undo it exactly. */
+/**
+ * Play an action on the real state with `turn` to move, hand the turn over, then undo it
+ * all exactly.
+ *
+ * Handing the turn over matters more than it looks. The search used to apply the action
+ * and recurse without calling `endTurn`, so nothing that happens BETWEEN turns happened in
+ * the tree: no production, no effects ticking, no cooldowns counting down, no hive clock,
+ * and no turn limit. Every ply took the imagined game further from the real one, which is
+ * why more search made the AI play worse rather than better — it was optimising a position
+ * that could not occur.
+ *
+ * It costs a production pass per node. That is worth paying for a tree that models the
+ * game it is playing.
+ */
 function withAction<T>(
   state: GameState, turn: Player, a: Action, s: Ctx, body: () => T,
 ): T {
   const snap = snapshot(state);
-  const prev = state.current;
   state.current = turn;
   applyAction(state, a, s.ctx);
+  if (!state.over) endTurn(state, s.ctx.mods);
   const out = body();
-  state.current = prev;
   restore(state, snap);
   return out;
 }

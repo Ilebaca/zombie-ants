@@ -113,6 +113,13 @@ levels against each other; `npm run arena <a> <b> [games]` plays two; `tools/eva
 sweeps one evaluation weight. `speed` divides every level's node budget by the same factor
 so a ladder runs in minutes — it changes how deep everyone gets, not who should win.
 
+**A mirror match is not a coin flip.** Combat is deterministic and so are the AIs, so the
+same difficulty against itself with the same species has essentially ONE outcome per side
+assignment — the seed only shifts ability scatter. Four of six species hand the first player
+every game on the small board; two hand it to the second. That is determinism, not a
+balance measurement, and it says nothing about whether the game is fair for a human.
+`tools/fairness.ts` reports it per species so the shape is visible.
+
 **Two evenly matched AIs cannot be told apart by a short match.** `match()` alternates
 sides to cancel the first-move advantage (§8), which works — but when the two are close,
 side decides every game, so A wins the eight where it is on the good side and loses the
@@ -129,6 +136,13 @@ Several early readings in this file's history were contaminated exactly that way
 
 Things self-play has already settled. Do not undo them without re-running the ladder:
 
+- **The search must hand the turn over, not just apply the move.** For a long time it
+  applied an action and recursed without calling `endTurn`, so nothing that happens BETWEEN
+  turns happened in the tree: no production, no effects ticking, no cooldowns counting down,
+  no hive clock, no turn limit. Every ply took the imagined game further from the real one,
+  so more search made the AI play WORSE — it was optimising a position that could not occur.
+  Fixing it took `hard` from 50% against `normal` to 85%, and `normal` from 88% against
+  `easy` to 100%. It costs a production pass per node and is worth every bit of it.
 - **An evaluation that only counts what a player HAS makes deeper search worse.** The
   original one did, and `hard` scored 35% against `normal` — the ladder was inverted at the
   top and every unit test passed. Search optimises whatever it is given; a function that
@@ -156,9 +170,9 @@ Things self-play has already settled. Do not undo them without re-running the la
   they lose an anchor. Counting one as a whole tile taught the AI to prefer a four-tile
   travel — four veins — over an adjacent resource.
 
-Measured ladder at the shipped budgets (20 games each, sides and species swapped):
-hard beats normal ~75%, normal beats easy ~70%, hard beats easy ~85%. Before this work,
-hard scored **35%** against normal.
+Measured ladder (20 games each, sides and species swapped, node-budgeted): hard beats
+normal **85%**, normal beats easy **100%**, hard beats easy **85%**. Before this work, hard
+scored **35%** against normal — the ladder was inverted at the top.
 
 ## 5. Gotchas — bugs already paid for once
 
