@@ -126,8 +126,19 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
       case "effectExpired":
         break;
 
+      case "hiveCaptured": {
+        // Taking the queen hands over all five hive tiles at once and emits no `capture`
+        // for any of them. Reveal them as one ordered group, queen first, so the hive
+        // fills the same way every other capture does instead of snapping over.
+        const cells = orderedFromQueen(e.cells);
+        reveal.begin(cells.map((at) => ({ at, edge: "L" as RevealEdge, prev: null })));
+        const step = reveal.stepMs(cells.length);
+        cells.forEach((at, i) => fx.pop(at, e.owner, i * step + step));
+        sinks.onNotice?.(e);
+        break;
+      }
+
       case "hiveAwake":
-      case "hiveCaptured":
       case "hiveRespawn":
       case "production":
       case "gameOver":
@@ -160,6 +171,19 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
     fx.flow([fight.src, fight.at], fight.attacker);
     fx.clash(fight.at, FLOW_MS_PER_STEP);
   }
+}
+
+/**
+ * The hive is a plus-shape: the queen at the centre and four guards around her. Filling
+ * from the middle outwards reads as the colony taking her and spreading, which is what
+ * happened; the grid order the engine hands over would fill it top to bottom.
+ */
+function orderedFromQueen(cells: readonly Coord[]): Coord[] {
+  if (cells.length < 2) return cells.slice();
+  const cx = cells.reduce((n, p) => n + p.c, 0) / cells.length;
+  const cy = cells.reduce((n, p) => n + p.r, 0) / cells.length;
+  return cells.slice().sort((a, b) =>
+    (Math.abs(a.c - cx) + Math.abs(a.r - cy)) - (Math.abs(b.c - cx) + Math.abs(b.r - cy)));
 }
 
 /** Direction of travel into `path[i]`, as a fill edge. */

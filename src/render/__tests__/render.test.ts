@@ -483,3 +483,50 @@ describe("sending troops down a row", () => {
     expect(reveal.progress(3, 0)).toBe(0);
   });
 });
+
+describe("capturing the Hive", () => {
+  /**
+   * Taking the queen hands over all five hive tiles in one action and emits no `capture`
+   * event for any of them — only `hiveCaptured`. The animator used to treat that as a
+   * toast and nothing else, so the whole hive snapped to its new colour while every other
+   * capture in the game fills tile by tile.
+   */
+  const captured = (): { reveal: RevealTracker; cells: Coord[] } => {
+    // The plus-shape the engine builds: queen at the centre, four guards around her.
+    const cells: Coord[] = [
+      { c: 4, r: 3 }, { c: 3, r: 4 }, { c: 4, r: 4 }, { c: 5, r: 4 }, { c: 4, r: 5 },
+    ];
+    const reveal = new RevealTracker();
+    reveal.reduced = false;
+    animate([{ type: "hiveCaptured", owner: "you", level: 1, cells }], { reveal, fx: new FxLayer() });
+    return { reveal, cells };
+  };
+
+  it("fills the five tiles one at a time, starting at the queen", () => {
+    const { reveal } = captured();
+    const start = performance.now();
+    const step = reveal.stepMs(5);
+
+    // Mid-way through the first slot: the queen is filling, the guards have not begun.
+    reveal.step(start + step * 0.5);
+    expect(reveal.progress(4, 4)).toBeGreaterThan(0);
+    expect(reveal.progress(4, 4)).toBeLessThan(1);
+    expect(reveal.progress(4, 3)).toBe(0);
+    expect(reveal.progress(3, 4)).toBe(0);
+
+    // ...and the last guard only lands at the end of the run.
+    reveal.step(start + step * 4.5);
+    const guards = [[4, 3], [3, 4], [5, 4], [4, 5]] as const;
+    expect(guards.filter(([c, r]) => reveal.progress(c, r) < 1).length).toBe(1);
+  });
+
+  it("still passes the event on as a notice", () => {
+    const seen: EngineEvent[] = [];
+    const reveal = new RevealTracker(); reveal.reduced = false;
+    animate(
+      [{ type: "hiveCaptured", owner: "you", level: 1, cells: [{ c: 4, r: 4 }] }],
+      { reveal, fx: new FxLayer(), onNotice: (e) => seen.push(e) },
+    );
+    expect(seen.map((e) => e.type)).toContain("hiveCaptured");
+  });
+});

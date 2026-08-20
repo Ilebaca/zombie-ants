@@ -1,6 +1,6 @@
 import { HIVE_GROW_EVERY } from "./config";
 import { allTiles } from "./board";
-import type { EngineEvent, GameState, Player, Tile } from "./types";
+import type { Coord, EngineEvent, GameState, Player, Tile } from "./types";
 
 /**
  * THE HIVE — the map's shared objective and its clock.
@@ -62,13 +62,18 @@ export function captureQueen(state: GameState, p: Player, events: EngineEvent[] 
   state.hive.owner = p;
   state.hive.buffLeft = state.limits.buffTurns;
 
+  const cells: Coord[] = [];
   for (const t of hiveCells(state)) {
     t.owner = p;
     t.soldiers = Math.max(t.soldiers, 1);
     t.struct = "stable";
     t.tunnel = false;
+    cells.push({ c: t.c, r: t.r });
   }
-  events.push({ type: "hiveCaptured", owner: p, level: state.hive.level });
+  // The tiles ride along on the event: taking the queen changes five of them at once and
+  // emits no `capture` for any of them, so without this the whole hive snapped to its new
+  // colour with no reveal while every other capture in the game fills tile by tile.
+  events.push({ type: "hiveCaptured", owner: p, level: state.hive.level, cells });
   return events;
 }
 

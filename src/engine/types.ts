@@ -166,7 +166,8 @@ export type EngineEvent =
   | { type: "fortified"; at: Coord; owner: Player; gained: number }
   | { type: "tunnelDug"; at: Coord; owner: Player }
   | { type: "hiveAwake" }
-  | { type: "hiveCaptured"; owner: Player; level: number }
+  /** `cells` are the five hive tiles that changed hands, so the renderer can fill them. */
+  | { type: "hiveCaptured"; owner: Player; level: number; cells: Coord[] }
   | { type: "hiveRespawn"; level: number }
   | { type: "gameOver"; winner: Player; reason: GameOverReason };
 
