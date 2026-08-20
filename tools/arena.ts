@@ -44,8 +44,10 @@ const SPECIES: SpeciesId[] = ["fire", "leafcutter", "carpenter", "weaver", "army
 /** A round-robin of `games` matches with A and B swapping sides each time. */
 export function match(a: Difficulty, b: Difficulty, games: number, map: MapId = "small"): {
   aWins: number; bWins: number; draws: number; avgTurns: number;
+  /** Wins by SIDE rather than by player, to catch a first-move advantage that swamps skill. */
+  youWins: number; aiWins: number;
 } {
-  let aWins = 0, bWins = 0, draws = 0, turns = 0;
+  let aWins = 0, bWins = 0, draws = 0, turns = 0, youWins = 0, aiWins = 0;
   for (let i = 0; i < games; i++) {
     const aIsYou = i % 2 === 0;
     const sp: Record<Player, SpeciesId> = {
@@ -54,11 +56,13 @@ export function match(a: Difficulty, b: Difficulty, games: number, map: MapId = 
     };
     const r = playGame(aIsYou ? a : b, aIsYou ? b : a, 1000 + i, map, sp);
     turns += r.turns;
+    if (r.winner === "you") youWins++;
+    if (r.winner === "ai") aiWins++;
     if (r.winner === null) draws++;
     else if ((r.winner === "you") === aIsYou) aWins++;
     else bWins++;
   }
-  return { aWins, bWins, draws, avgTurns: turns / games };
+  return { aWins, bWins, draws, avgTurns: turns / games, youWins, aiWins };
 }
 
 if (process.argv[1]?.endsWith("arena.ts")) {
@@ -74,5 +78,7 @@ if (process.argv[1]?.endsWith("arena.ts")) {
   const r = match(a, b, n, map);
   const pct = ((r.aWins + r.draws / 2) / n * 100).toFixed(1);
   console.log(`${a} vs ${b} on ${map}: ${r.aWins}-${r.bWins}-${r.draws}  (${a} scores ${pct}%)`);
+  console.log(`by side: bottom-left ${r.youWins}, top-right ${r.aiWins}  (a lopsided split means`);
+  console.log(`the map or the move order decided it, not the difficulty)`);
   console.log(`avg ${r.avgTurns.toFixed(1)} turns · ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 }

@@ -113,6 +113,14 @@ levels against each other; `npm run arena <a> <b> [games]` plays two; `tools/eva
 sweeps one evaluation weight. `speed` divides every level's node budget by the same factor
 so a ladder runs in minutes — it changes how deep everyone gets, not who should win.
 
+**Two evenly matched AIs cannot be told apart by a short match.** `match()` alternates
+sides to cancel the first-move advantage (§8), which works — but when the two are close,
+side decides every game, so A wins the eight where it is on the good side and loses the
+other eight. The result is exactly 50% every single time, which looks like a precise
+measurement and is the opposite of one. A run that returns the same score for several
+different configurations is reporting "too close to call", not "identical". Widen the gap
+or play many more games.
+
 **The tools budget by nodes, the game budgets by the clock.** That difference is deliberate
 and matters. Shipped, a wall-clock budget is right: a slow phone thinks less rather than
 stuttering. Measuring, it is useless — a busy machine also thinks less, so a ladder run off
@@ -230,6 +238,11 @@ provisional and say so if asked.
 - Production/turn: nest 2, stable 1, resource stable 3 (up to 6 with Fungal Cultivation)
 - Flat defence: nest +6, stable +1, resource stable +2, wild guard +1, vein 0, hive 0
 - Species multipliers span 0.70–1.25 — deliberately narrow. Species change *how* you win.
+- **Moving first is worth roughly two to one.** Same difficulty, same species, both sides:
+  the bottom-left corner (the player's) wins about 8 of 12 on the small board. The maps
+  are 180°-symmetric and tested to be — so this is the move order, not the ground. Whether
+  to compensate the second player is an open design question; note that the AI always plays
+  second, so every match a player sees is one the AI starts behind in.
 - Trophies: +30 win / −15 loss, floored at 0
 - Maps: Skirmish 7×7 (wake 10, limit 32), Corridor 9×9 (14/45), Gauntlet 13×13 (18/80)
 
