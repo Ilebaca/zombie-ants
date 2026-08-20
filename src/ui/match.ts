@@ -20,7 +20,15 @@ import { BoardRenderer } from "../render";
 /** Seconds a player gets per move before the turn passes automatically. */
 const MOVE_SECONDS = 15;
 /** Pause before the AI moves, so its turn reads as deliberate rather than instant. */
-const AI_THINK_MS = 1500;
+/**
+ * How long an AI turn takes from the player's side, thinking included.
+ *
+ * This is a MINIMUM, not a delay. Easy decides in a millisecond and Hard can spend a few
+ * hundred actually searching; without this the two would feel like different games for the
+ * wrong reason. Whatever the search costs comes out of the pause, so every level keeps the
+ * same rhythm and Hard's extra thinking is free.
+ */
+const AI_TURN_MS = 1100;
 
 type Mode = "go" | "rally" | "tunnel";
 type ToastKind = "good" | "bad" | "warn" | "hive";
@@ -231,7 +239,8 @@ export class MatchScreen {
 
     this.startTimer();
     if (this.state.current === "ai") {
-      this.aiTimer = window.setTimeout(() => this.runAI(), AI_THINK_MS);
+      // Thinking starts a beat in, so the player sees the board settle before it moves.
+      this.aiTimer = window.setTimeout(() => this.runAI(), 260);
     }
   }
 
@@ -246,11 +255,15 @@ export class MatchScreen {
   private runAI(): void {
     this.aiTimer = null;
     if (this.state.over) { this.finish(); return; }
+    const started = performance.now();
     const events = aiTurn(this.state, "ai", this.opts.difficulty, this.opts.ctx);
     this.consume(events);
     this.refreshHUD();
-    // Let the reveal finish before the turn flips, or the animation is cut off mid-sweep.
-    window.setTimeout(() => this.handOver(), events.length ? 700 : 200);
+    // Spend what is left of the turn's budget, then let the reveal finish before handing
+    // over — flipping the turn mid-sweep cuts the animation off.
+    const thought = performance.now() - started;
+    const rest = Math.max(0, AI_TURN_MS - 260 - thought);
+    window.setTimeout(() => this.handOver(), rest + (events.length ? 700 : 200));
   }
 
   private finish(): void {

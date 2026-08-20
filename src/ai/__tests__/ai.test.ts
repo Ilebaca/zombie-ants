@@ -4,6 +4,7 @@ import {
   recomputeConnectivity, restore, snapshot, tile, NEUTRAL_MODS,
 } from "../../engine";
 import { aiTurn, chooseMove, evaluate, generateMoves } from "../search";
+import { generate } from "../moves";
 import { blankGame, put } from "../../engine/__tests__/helpers";
 
 const ctx = defaultContext();
@@ -71,7 +72,7 @@ describe("search quality", () => {
     expect(tile(s, 10, 10).soldiers).toBeGreaterThan(before);
   });
 
-  it("prefers a resource over plain ground", () => {
+  it("ranks an adjacent resource above adjacent plain ground", () => {
     const s = blankGame();
     put(s, 1, 1, { owner: "ai", struct: "nest", soldiers: 10 });
     put(s, 1, 2, { owner: "ai", struct: "stable", soldiers: 20 });
@@ -81,8 +82,17 @@ describe("search quality", () => {
     recomputeConnectivity(s);
     s.current = "ai";
 
-    aiTurn(s, "ai", "hard", ctx);
-    expect(tile(s, 0, 2).owner).toBe("ai");
+    // Asserted on the ORDERING, not on the move played. Two things make the played move a
+    // bad assertion on an otherwise empty board: with no enemy contact, a long push into
+    // open ground is a defensible choice, and the wild Hive sits at the centre of every
+    // map, so "empty board" positions quietly offer the AI a better objective than the
+    // resource. What must never be defensible is rating plain ground above a resource.
+    const ranked = generate(s, "ai", ctx, { limit: 20, travel: true, rally: true, reinforce: true, veinGuard: true });
+    const resource = ranked.findIndex((c) => c.action.to.c === 0 && c.action.to.r === 2);
+    const plain = ranked.findIndex((c) => c.action.to.c === 2 && c.action.to.r === 2);
+    expect(resource).toBeGreaterThanOrEqual(0);
+    expect(resource, "the resource should be rated first").toBe(0);
+    expect(plain).toBeGreaterThan(resource);
   });
 
   it("never sees through a cloaked tile", () => {

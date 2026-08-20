@@ -97,6 +97,45 @@ These were each decided deliberately, several after bugs. Changing one silently 
 8. **The AI gets no anthill upgrades and no research.** It competes on decision quality only,
    so player progression never becomes mandatory.
 
+## 4a. The AI
+
+`src/ai/` is three files: `evaluate.ts` (what a position is worth), `moves.ts` (what can be
+played), `search.ts` (alpha-beta over the two). It consumes the engine and nothing else.
+
+**The three difficulties are three different players, not one player at three depths.** Easy
+searches one ply on a deliberately blind evaluation and cannot reinforce, so it never masses
+an army and never sees a tile hanging — the mistakes a beginner makes. Normal searches three
+plies with the full evaluation. Hard deepens iteratively to eight with quiescence, the whole
+action set, and its ability chosen by search.
+
+**Strength is measured, never assumed.** `npm run ladder [games] [map] [speed]` plays the
+levels against each other; `npm run arena <a> <b> [games]` plays two; `tools/eval-ab.ts`
+sweeps one evaluation weight. `speed` divides every level's thinking budget by the same
+factor so a ladder runs in minutes — it changes how deep everyone gets, not who should win.
+
+Things self-play has already settled. Do not undo them without re-running the ladder:
+
+- **An evaluation that only counts what a player HAS makes deeper search worse.** The
+  original one did, and `hard` scored 35% against `normal` — the ladder was inverted at the
+  top and every unit test passed. Search optimises whatever it is given; a function that
+  cannot see danger walks a stack into a losing fight because the position looks fine one
+  ply before the punishment. The `hanging` term (what the opponent can capture next move,
+  which deterministic combat makes exact arithmetic) is what fixed it.
+- **Quiescence is not optional.** Stop the search on a capture and the recapture is
+  invisible. In a game this capture-dense that single blind spot is worth more than several
+  plies of depth.
+- **Rally is a trap.** Allowed whenever the pooled fist beat something, it scored **10%**
+  against the same AI without it. It leaves every other tile at its one-soldier floor and a
+  fist can only be in one place. It is generated for exactly two cases: the fist takes the
+  enemy queen (there is no next turn to be punished in) and the AI's own queen falls
+  otherwise. Widening that gate is how this regresses.
+- **Travel and rally are root-only.** Enumerating travel targets is a flood-fill from every
+  tile that can act; doing it at every node cost more than a hundredfold for a fraction of a
+  ply. The AI plays them, it just does not model the opponent playing them deep in a line.
+- **Budgets are wall-clock as well as node count**, so a slow phone thinks less rather than
+  stuttering. The clock is read on a counter every 512 nodes, not on a bitmask — a bitmask
+  only lands on the sample point by luck and the search sails past its deadline.
+
 ## 5. Gotchas — bugs already paid for once
 
 Each of these cost a debugging round. Do not repeat them.

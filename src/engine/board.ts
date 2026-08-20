@@ -17,10 +17,13 @@ export function tile(state: GameState, c: number, r: number): Tile {
 }
 
 /** Orthogonal neighbours only — the game has no diagonal movement. */
+/** Hoisted: `neighbours` runs in the AI's inner search loop, so it allocates one array
+ *  per call rather than two. */
+const DELTAS: ReadonlyArray<readonly [number, number]> = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
 export function neighbours(state: GameState, t: Tile): Tile[] {
   const out: Tile[] = [];
-  const deltas: ReadonlyArray<readonly [number, number]> = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-  for (const [dc, dr] of deltas) {
+  for (const [dc, dr] of DELTAS) {
     const n = tileAt(state, t.c + dc, t.r + dr);
     if (n) out.push(n);
   }

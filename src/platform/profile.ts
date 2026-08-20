@@ -79,6 +79,8 @@ export interface Profile {
   /** Last setup choices, so the pickers open where the player left off. */
   lastSpecies: SpeciesId;
   lastMap: MapId;
+  /** The difficulty the player last chose. Kept here so it survives a reload. */
+  difficulty: "easy" | "normal" | "hard";
   lastShape: string;
   tutorialDone: boolean;
 }
@@ -117,6 +119,7 @@ export function defaultProfile(): Profile {
     // "currently fielded" slot, and the legacy build starts it on Fire.
     lastSpecies: "fire",
     lastMap: "small",
+    difficulty: "normal",
     lastShape: "wedge",
     tutorialDone: false,
   };
@@ -191,6 +194,8 @@ export function normalise(raw: unknown): Profile {
       : [],
     lastSpecies: isSpecies(p.lastSpecies) ? p.lastSpecies : base.lastSpecies,
     lastMap: p.lastMap === "tiny" || p.lastMap === "small" || p.lastMap === "mid" ? p.lastMap : base.lastMap,
+    difficulty: p.difficulty === "easy" || p.difficulty === "normal" || p.difficulty === "hard"
+      ? p.difficulty : base.difficulty,
     lastShape: typeof p.lastShape === "string" ? p.lastShape : base.lastShape,
     tutorialDone: p.tutorialDone === true,
   };

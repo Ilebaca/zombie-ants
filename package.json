@@ -9,7 +9,10 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "ladder": "tsx tools/ladder.ts",
+    "arena": "tsx tools/arena.ts",
+    "ai:bench": "tsx tools/bench.ts"
   },
   "engines": {
     "node": ">=22"
@@ -17,6 +20,7 @@
   "devDependencies": {
     "@types/node": "^26.2.0",
     "jsdom": "^30.0.1",
+    "tsx": "^4.23.12",
     "typescript": "^5.6.3",
     "vite": "^5.4.10",
     "vitest": "^2.1.4"

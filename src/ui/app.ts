@@ -62,7 +62,8 @@ export class App {
   /** Which colony the #antup page is showing. */
   private speciesPage: SpeciesId = "leafcutter";
   private menu: HTMLElement | null = null;
-  private difficulty: Difficulty = "normal";
+  /** Read from the profile at boot — a setting that forgets itself is not a setting. */
+  private difficulty: Difficulty;
   /**
    * Where purchases go. The demo gateway grants without charging, which is all the web
    * build can do; the Capacitor build swaps in RevenueCat behind the same interface.
@@ -84,6 +85,7 @@ export class App {
       species: saved.lastSpecies,
       shape: (saved.lastShape in START_SHAPES ? saved.lastShape : "wedge") as ShapeId,
     };
+    this.difficulty = saved.difficulty;
     // The faction colour is deliberately NOT set here. Like the legacy build, the home and
     // map screens paint in the stylesheet's default palette; the species picker is what
     // recolours the UI, and it does so on entry.
@@ -204,6 +206,7 @@ export class App {
         onCycleDifficulty: () => {
           const order: Difficulty[] = ["easy", "normal", "hard"];
           this.difficulty = order[(order.indexOf(this.difficulty) + 1) % order.length] as Difficulty;
+          this.profile.update((p) => { p.difficulty = this.difficulty; });
           this.show("settings");
         },
       });
