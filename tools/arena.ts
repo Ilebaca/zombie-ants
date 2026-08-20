@@ -16,7 +16,12 @@ import type { Difficulty } from "../src/ai/search";
 const mods = { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } };
 const ctx = defaultContext();
 
-export interface GameResult { winner: Player | null; turns: number; reason: string }
+export interface GameResult {
+  winner: Player | null;
+  turns: number;
+  /** How it ended — "nest", "wipe", "turnLimit", or a note if it never resolved. */
+  reason: string;
+}
 
 export function playGame(
   youAI: Difficulty, aiAI: Difficulty, seed: number, map: MapId,
@@ -24,18 +29,23 @@ export function playGame(
 ): GameResult {
   const state: GameState = createGame({ map, species, seed });
   let guard = 0;
+  let reason = "";
   while (!state.over && guard++ < 4000) {
     const p = state.current;
-    aiTurn(state, p, p === "you" ? youAI : aiAI, ctx);
+    for (const e of aiTurn(state, p, p === "you" ? youAI : aiAI, ctx)) {
+      if (e.type === "gameOver") reason = e.reason;
+    }
     if (state.over) break;
-    endTurn(state, mods);
+    for (const e of endTurn(state, mods)) {
+      if (e.type === "gameOver") reason = e.reason;
+    }
   }
   const you = allTiles(state).filter((t) => t.owner === "you").length;
   const ai = allTiles(state).filter((t) => t.owner === "ai").length;
   return {
     winner: state.winner,
     turns: state.turn,
-    reason: state.over ? "over" : `stalled you=${you} ai=${ai}`,
+    reason: state.over ? (reason || "over") : `stalled you=${you} ai=${ai}`,
   };
 }
 
