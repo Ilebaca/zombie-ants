@@ -3,6 +3,7 @@ import { blankGame, put } from "./helpers";
 import {
   NEUTRAL_MODS, PERMANENT, activateAbility, abilityCooldown, allTiles, createGame,
   moveOrAttack, defaultContext, recomputeConnectivity, snapshot, restore, startTurn, tile,
+  addEffect, tunnelTargets,
 } from "../index";
 import type { GameState, PlayerMods, SpeciesId } from "../index";
 
@@ -36,6 +37,45 @@ describe("bud (Pharaoh)", () => {
     recomputeConnectivity(s);
     expect(activateAbility(s, "you", mods())).toHaveLength(0);
     expect(s.cooldown.you).toBe(0);                   // a no-op must not burn the cooldown
+  });
+});
+
+describe("a leaf wall stops a tunnel too", () => {
+  /**
+   * A leaf wall is ground nothing can cross — `blockedByEnemyLeaf` refuses every move,
+   * attack and travel onto one. Digging under it and surfacing inside was the one way
+   * through, which made the wall a wall for everyone except a Ghost. The tunnel is a way
+   * past the ARMY in front of a wall, not a loophole in the wall itself.
+   */
+  const walledBoard = () => {
+    const s = blankGame("mid", { you: "ghost", ai: "leafcutter" });
+    s.current = "you";
+    s.cooldown.you = 0;
+    put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 40 });
+    put(s, 11, 11, { owner: "ai", struct: "nest", soldiers: 10 });
+    recomputeConnectivity(s);
+    addEffect(s, 4, 7, "leaf", "ai", 4);
+    return s;
+  };
+
+  it("is not offered as a tunnel target", () => {
+    const s = walledBoard();
+    expect(tunnelTargets(s, "you").some((v) => v.c === 4 && v.r === 7)).toBe(false);
+  });
+
+  it("refuses the dig even when the player taps it directly", () => {
+    const s = walledBoard();
+    const events = activateAbility(s, "you", mods(), { target: { c: 4, r: 7 } });
+    expect(events).toHaveLength(0);
+    expect(tile(s, 4, 7).owner).toBeNull();
+    expect(s.cooldown.you, "a refused cast must not burn the cooldown").toBe(0);
+  });
+
+  it("still lets a player surface inside their OWN wall", () => {
+    const s = walledBoard();
+    s.effects = [];
+    addEffect(s, 4, 7, "leaf", "you", 4);
+    expect(tunnelTargets(s, "you").some((v) => v.c === 4 && v.r === 7)).toBe(true);
   });
 });
 

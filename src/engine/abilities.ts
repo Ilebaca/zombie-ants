@@ -101,10 +101,29 @@ export function payWorkers(state: GameState, p: Player, n: number): boolean {
 }
 
 /** Empty, unguarded ground a gallery may be dug to. */
-export function tunnelTargets(state: GameState): Coord[] {
+/**
+ * Where a gallery may surface.
+ *
+ * A leaf wall is ground nothing can cross — `blockedByEnemyLeaf` stops every move, attack
+ * and travel onto one. Digging under it and popping up inside was the one way through, and
+ * that made the wall a wall for everyone except a Ghost. The tunnel is not a loophole in
+ * the wall; it is a way past the ARMY standing in front of it.
+ *
+ * Takes the digging player because a leaf only blocks the other side: your own wall is
+ * ground you may still surface on.
+ */
+export function tunnelTargets(state: GameState, p: Player): Coord[] {
   return allTiles(state)
-    .filter((t) => t.owner === null && t.guard === 0 && (t.terrain === "ground" || t.terrain === "resource"))
+    .filter((t) => t.owner === null && t.guard === 0
+      && (t.terrain === "ground" || t.terrain === "resource")
+      && !walledAgainst(state, t, p))
     .map((t) => ({ c: t.c, r: t.r }));
+}
+
+/** Is there an enemy leaf wall on this tile? Mirrors `blockedByEnemyLeaf` in actions.ts. */
+function walledAgainst(state: GameState, t: Tile, p: Player): boolean {
+  const wall = effectAt(state, t.c, t.r, "leaf");
+  return wall !== undefined && wall.owner === otherPlayer(p);
 }
 
 /** Any captured ground/resource tile becomes a producing stable. Nests keep their role. */
@@ -431,7 +450,7 @@ function castTunnel(state: GameState, p: Player, target: Coord | null, events: E
     // AI: a beachhead as close to the enemy nest as possible, but never on top of it.
     const foe = nestTile(state, otherPlayer(p));
     let bestDistance = Infinity;
-    for (const v of tunnelTargets(state)) {
+    for (const v of tunnelTargets(state, p)) {
       const t = tileAt(state, v.c, v.r);
       if (!t) continue;
       if (!foe) { best ??= t; continue; }
@@ -443,6 +462,7 @@ function castTunnel(state: GameState, p: Player, target: Coord | null, events: E
 
   if (!best || best.owner !== null || best.guard > 0) return false;
   if (best.terrain !== "ground" && best.terrain !== "resource") return false;
+  if (walledAgainst(state, best, p)) return false;         // no surfacing inside a wall
   if (!payWorkers(state, p, 5)) return false;                      // the diggers march from your own tiles
 
   best.owner = p;

@@ -378,7 +378,7 @@ export class MatchScreen {
     this.clearSelection();
     if (m === "tunnel") {
       // highlight every diggable tile, since there is no source to select first
-      this.valid = tunnelTargets(this.state);
+      this.valid = tunnelTargets(this.state, "you");
       this.renderer.setSelection(null, this.valid);
     }
     this.syncModeButtons();

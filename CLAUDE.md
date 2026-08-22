@@ -79,22 +79,27 @@ These were each decided deliberately, several after bugs. Changing one silently 
    - Recompute connectivity after every action **and immediately after effects tick**, so
      venom/fire that severs a colony deactivates the far part at once.
 
-3. **Veins have no defence.** Attacking an enemy vein captures it instantly — no combat, no
+3. **A leaf wall blocks everything, tunnelling included.** `blockedByEnemyLeaf` stops every
+   move, attack and travel onto an enemy wall; `tunnelTargets` refuses to surface there too.
+   A gallery is a way past the ARMY in front of a wall, not a loophole in the wall. Your own
+   wall is still ground you may surface on.
+
+4. **Veins have no defence.** Attacking an enemy vein captures it instantly — no combat, no
    losses. It becomes a stable.
 
-4. **Dangling veins prune.** A vein needs ≥2 same-owner colony neighbours. When it loses an
+5. **Dangling veins prune.** A vein needs ≥2 same-owner colony neighbours. When it loses an
    anchor the trail is destroyed back to the nearest captured tile. Junctions survive: only
    the genuinely dead branch prunes.
 
-5. **Veins are infrastructure, not tiles.** They produce nothing, cannot be a Rally target,
+6. **Veins are infrastructure, not tiles.** They produce nothing, cannot be a Rally target,
    and are skipped by Fortify. Troops landing on a vein promote it to a stable.
 
-6. **Losing your nest loses the match** — immediately, regardless of how much else you hold.
+7. **Losing your nest loses the match** — immediately, regardless of how much else you hold.
    Capturing the enemy nest wins it the same way.
 
-7. **A tile always keeps a floor of 1 soldier** (5 on a tunnel mouth). You can never empty one.
+8. **A tile always keeps a floor of 1 soldier** (5 on a tunnel mouth). You can never empty one.
 
-8. **The AI gets no anthill upgrades and no research.** It competes on decision quality only,
+9. **The AI gets no anthill upgrades and no research.** It competes on decision quality only,
    so player progression never becomes mandatory.
 
 ## 4a. The AI
@@ -234,6 +239,11 @@ Each of these cost a debugging round. Do not repeat them.
   like a broken permanent-leaf cap.
 - **`checkWipe` runs after an ability too.** A test board with no enemy tiles ends the match
   on the first cast, and every later assertion silently tests nothing.
+- **A travel only fills the ground it actually CLAIMS.** A long send crosses tiles the
+  player already owns; re-revealing those made the colony look rebuilt from scratch every
+  time anything walked over it. `travel()` emits one `veinLaid` per step it claims, so the
+  animator reveals exactly that set — and each keeps its true slot along the path, so the
+  front still crosses owned ground at the same rate, with nothing to light up there.
 - **A travel's trail is emitted BEFORE the travel event.** `travel()` pushes one `veinLaid`
   per step and only then the `travel` itself. The animator used to react to the travel when
   it arrived, which was too late: every vein had already opened its own one-tile reveal, all

@@ -59,9 +59,12 @@ export interface RevealState {
 
 interface Group {
   keys: string[];
+  /** Where each key sits in the run. Usually 0,1,2… but see `begin`. */
+  slots: number[];
   start: number;
   dur: number;
-  n: number;
+  /** Total slots the front crosses, which can exceed `keys.length`. */
+  span: number;
 }
 
 export class RevealTracker {
@@ -73,18 +76,37 @@ export class RevealTracker {
     ? matchMedia("(prefers-reduced-motion: reduce)").matches
     : false;
 
-  begin(tiles: ReadonlyArray<{ at: Coord; edge: RevealEdge; prev: Player | null }>): void {
+  /**
+   * Start one reveal front over a run of tiles.
+   *
+   * A tile may carry a `slot`: its position along the run, which is not always its
+   * position in this list. A long send crosses ground the player ALREADY owns, and those
+   * tiles must not fill again — they are already theirs. Only the newly claimed ones are
+   * passed in, but the front still has to cross the whole distance at a constant rate, so
+   * each keeps its true place in the path and the gaps are simply time in which nothing
+   * lights up. Without that, a send over four owned tiles and one empty one would fill the
+   * empty one instantly instead of when the troops actually reach it.
+   */
+  begin(
+    tiles: ReadonlyArray<{ at: Coord; edge: RevealEdge; prev: Player | null; slot?: number }>,
+  ): void {
     if (!tiles.length) return;
     if (this.reduced) return;                       // nothing to animate; tiles draw settled
 
     const keys: string[] = [];
-    for (const t of tiles) {
+    const slots: number[] = [];
+    let span = 0;
+    tiles.forEach((t, i) => {
       const k = key(t.at.c, t.at.r);
+      const slot = t.slot ?? i;
       keys.push(k);
+      slots.push(slot);
+      if (slot + 1 > span) span = slot + 1;
       this.states.set(k, { rv: 0, edge: t.edge, prev: t.prev });
-    }
-    const n = keys.length;
-    this.groups.push({ keys, start: performance.now(), dur: revealStepMs(n) * n, n });
+    });
+    this.groups.push({
+      keys, slots, start: performance.now(), dur: revealStepMs(span) * span, span,
+    });
   }
 
   step(now: number): void {
@@ -94,12 +116,12 @@ export class RevealTracker {
       const raw = (now - g.start) / g.dur;
       const p = raw <= 0 ? 0 : (raw >= 1 ? 1 : raw);
       // Linear: one front advancing along the path at a constant tile-per-second rate.
-      const front = p * g.n;
+      const front = p * g.span;
 
-      for (let j = 0; j < g.n; j++) {
+      for (let j = 0; j < g.keys.length; j++) {
         const st = this.states.get(g.keys[j] as string);
         if (!st) continue;
-        const d = front - j;
+        const d = front - (g.slots[j] as number);
         st.rv = d <= 0 ? 0 : (d >= 1 ? 1 : d);
       }
       if (p >= 1) {

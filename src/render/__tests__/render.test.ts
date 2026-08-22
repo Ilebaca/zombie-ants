@@ -71,7 +71,14 @@ describe("animate: events to animation", () => {
     const s = sinks();
     s.reveal.reduced = false;
     const path: Coord[] = [{ c: 0, r: 0 }, { c: 1, r: 0 }, { c: 2, r: 0 }, { c: 3, r: 0 }];
-    animate([{ type: "travel", path, owner: "you", count: 9 }], s);
+    // The engine emits one `veinLaid` per step it actually claims, and the animator
+    // reveals exactly those — so a faithful test has to include them.
+    animate([
+      { type: "veinLaid", at: { c: 1, r: 0 }, owner: "you" },
+      { type: "veinLaid", at: { c: 2, r: 0 }, owner: "you" },
+      { type: "veinLaid", at: { c: 3, r: 0 }, owner: "you" },
+      { type: "travel", path, owner: "you", count: 9 },
+    ], s);
     // the source tile is not revealed; each step is, and all share one front
     expect(s.reveal.get(0, 0)).toBeUndefined();
     expect(s.reveal.get(1, 0)?.edge).toBe("L");
@@ -79,6 +86,44 @@ describe("animate: events to animation", () => {
     // the tail has not started while the head is still filling
     s.reveal.step(performance.now());
     expect(s.reveal.progress(3, 0)).toBeLessThan(1);
+  });
+
+  /**
+   * A long send usually crosses ground the player ALREADY owns. Those tiles must not fill
+   * again — they are not being claimed, the troops are only walking over them, and
+   * re-revealing them makes the colony look like it is being rebuilt from scratch every
+   * time anything moves.
+   */
+  it("fills only the tiles a travel actually claims", () => {
+    const s = sinks();
+    s.reveal.reduced = false;
+    // Six tiles. The first two steps are already ours; only the last three are new.
+    const path: Coord[] = [
+      { c: 0, r: 0 }, { c: 1, r: 0 }, { c: 2, r: 0 },
+      { c: 3, r: 0 }, { c: 4, r: 0 }, { c: 5, r: 0 },
+    ];
+    animate([
+      { type: "veinLaid", at: { c: 3, r: 0 }, owner: "you" },
+      { type: "veinLaid", at: { c: 4, r: 0 }, owner: "you" },
+      { type: "veinLaid", at: { c: 5, r: 0 }, owner: "you" },
+      { type: "travel", path, owner: "you", count: 9 },
+    ], s);
+
+    expect(s.reveal.get(1, 0), "re-filled ground we already held").toBeUndefined();
+    expect(s.reveal.get(2, 0), "re-filled ground we already held").toBeUndefined();
+    expect(s.reveal.get(3, 0)).toBeDefined();
+
+    // ...and the new ground still fills at its own place in the path, not immediately:
+    // the front has five slots to cross and the first new tile sits at the third.
+    const start = performance.now();
+    const step = s.reveal.stepMs(5);
+    s.reveal.step(start + step * 1.5);
+    expect(s.reveal.progress(3, 0), "lit up before the troops got there").toBe(0);
+    s.reveal.step(start + step * 3.5);
+    expect(s.reveal.progress(3, 0)).toBe(1);
+    expect(s.reveal.progress(4, 0)).toBeGreaterThan(0);
+    expect(s.reveal.progress(4, 0)).toBeLessThan(1);
+    expect(s.reveal.progress(5, 0)).toBe(0);
   });
 
   it("does not double-reveal veins that a travel already covered", () => {

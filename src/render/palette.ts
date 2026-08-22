@@ -23,35 +23,33 @@ export const SPECIES_COL: Record<SpeciesId, readonly [string, string, string]> =
 /**
  * The board's palette.
  *
- * The playfield is a DIORAMA: a rounded tray with a pale rim, sitting on the same sage the
- * rest of the app uses. The surround matches the page, so the board reads as a patch of
- * bare soil cut out of the undergrowth rather than a window onto somewhere else.
+ * The playfield is a DIORAMA: a rounded tray with a mossy rim, sitting on the same deep
+ * forest the rest of the app uses. The surround matches the page, so the board reads as a
+ * patch of bare soil cleared in the undergrowth rather than a window onto somewhere else.
  *
- * The ground is a warm sand in two shades: two, because the checkerboard gives the eye a
- * grid without a single drawn line. Its value is set by what has to sit ON it — every
- * species colour and every neutral object — so it stays mid-toned. Darker and the whole
- * board reads as a hole punched in a bright page; lighter and the pale colonies (Ghost,
- * Carpenter) stop reading as colonies at all, which is the harder failure of the two.
+ * The ground is dark earth in two shades: two, because the checkerboard gives the eye a
+ * grid without a single drawn line. Dark, so that the colonies are the brightest thing on
+ * the board — every species colour has to sit on this and be the first thing seen.
  */
 export const MAP = {
   /** Behind the tray — matches the page so the canvas has no visible seam. */
-  surround: "#c6d4b3",
+  surround: "#142318",
   /** The tray: a pale rim with a solid darker band beneath it, never a blurred shadow. */
-  trayRim: "#e9f0dd",
-  trayEdge: "#9db089",
-  trayShade: "rgba(50,70,38,0.24)",
+  trayRim: "#3d5c44",
+  trayEdge: "#0d1810",
+  trayShade: "rgba(0,0,0,0.45)",
 
   /** The two checker shades, and the shadow objects cast onto them. */
-  groundA: "#c2a678",
-  groundB: "#b39769",
-  groundShade: "rgba(70,58,30,0.26)",
+  groundA: "#5c4a33",
+  groundB: "#51402c",
+  groundShade: "rgba(0,0,0,0.34)",
 
-  motes: "rgba(255,255,255,0.30)",
+  motes: "rgba(190,235,160,0.20)",
 
   /** Stone: a cool grey-brown, the one desaturated thing on the board. */
-  rock: "#8d8878",
-  rockTop: "#a7a290",
-  rockEdge: "#615d50",
+  rock: "#5f6357",
+  rockTop: "#787d6e",
+  rockEdge: "#33362e",
 
   /**
    * Resources are a turquoise crystal, not a gold one. Gold on sand is barely a step in

@@ -15,12 +15,13 @@
  *     rocks, crates and buttons alike. Blur is reserved for glow.
  *  2. No hairline borders. Shapes are told apart by value, not by 1px strokes.
  *  3. Radii are generous and proportional — roughly a quarter of the shape.
- *  4. A LEAF, not a cave and not a sheet of paper. The palette is sage and
- *     moss over soil, with saturated accents on top. Two earlier versions
- *     missed in opposite directions: a deep aubergine that suited the word
- *     "zombie" and nothing else, and a cream so pale the app read as a form
- *     rather than a garden. Green is the game's own colour — the colonies
- *     farm fungus — so the chrome is green and the accents work against it.
+ *  4. UNDERGROWTH AT DUSK. Deep forest green, dark enough that the colony
+ *     colours and the artwork are the brightest things on screen. The palette
+ *     has been round the houses to get here: a deep aubergine that suited the
+ *     word "zombie" and nothing else, a cream so pale the app read as a form
+ *     rather than a garden, and a mid sage that was the right hue at the wrong
+ *     value. Green is the game's own colour — the colonies farm fungus — and
+ *     dark is what lets everything else glow against it.
  *  5. One dominant hue family per surface, one cool accent against it.
  *  6. Texture stays quiet: scattered low-opacity squares, nothing louder.
  *
@@ -33,57 +34,57 @@
 
 :root {
   /* ---------------------------------------------------------------- INK
-     Deep forest rather than black: on a green ground, black reads as a hole. */
-  --ink: #22301d;
-  --ink-soft: #4a5c40;
-  --muted: #75886a;
+     Pale moss rather than pure white: on a dark green ground, white glares. */
+  --ink: #e8f2dd;
+  --ink-soft: #b9cbaa;
+  --muted: #8ba37c;
 
   /* ------------------------------------------------------------ SURFACES
-     A sage/moss family, mid-toned. Each step is a real value jump so panels
-     read without borders. `-edge` colours are the solid band under a raised
-     face — a mossy shadow, never grey. */
-  --bg0: #d3dfc2;
-  --bg1: #c6d4b3;
-  --bg2: #b8c8a4;
-  --panel: #e9f0dd;
-  --panel-hi: #f2f7ea;
-  --panel-edge: #9db089;
-  --line: #b6c7a4;                /* only for dividers that must stay hairline */
-  --hud: #e9f0dd;
-  --hud-line: #b6c7a4;
+     Deep forest, climbing out of the dark rather than down into it. Each step
+     is a real value jump so panels read without borders. `-edge` colours are
+     the solid band under a raised face — deeper green, never black. */
+  --bg0: #0e1a12;
+  --bg1: #142318;
+  --bg2: #1b2e1f;
+  --panel: #22392a;
+  --panel-hi: #2d4834;
+  --panel-edge: #0d1810;
+  --line: #35513c;                /* only for dividers that must stay hairline */
+  --hud: #22392a;
+  --hud-line: #35513c;
 
   /* ------------------------------------------------------------- WARMTH
      The playfield family: soil under the leaves, not a dungeon floor. */
   --sand: #c9ab7c;
   --sand-alt: #b99b6b;
   --sand-deep: #96784c;
-  --cream: #f2f7ea;
+  --cream: #e8f2dd;
 
   /* ------------------------------------------------------------ ACCENTS
      Saturated and cheerful, and each one dark enough to carry white or
      near-black text without a second thought. */
-  --gold: #f0a828;
-  --gold-glow: #ffc862;
-  --gold-edge: #b87706;
-  --mint: #17b8a6;
-  --mint-edge: #0e8578;
-  --sky: #35a7e8;
+  --gold: #ffb62e;
+  --gold-glow: #ffd571;
+  --gold-edge: #c07f08;
+  --mint: #35d6c1;
+  --mint-edge: #12897a;
+  --sky: #4fb8f0;
   --sky-edge: #1b7cb5;
   --plum: #d4568f;
   --plum-edge: #a63368;
-  --danger: #f2593f;
-  --danger-edge: #c23a22;
-  /* The primary action is a deep leaf green: on a sage ground it has to be
-     several steps darker and more saturated than the surface, or "go" and
-     "background" become the same colour. */
-  --grass: #3f9e3a;
-  --grass-glow: #63c25c;
-  --grass-edge: #26701f;
+  --danger: #f2674c;
+  --danger-edge: #a8341f;
+  /* The primary action is a bright leaf green: against dark undergrowth it has
+     to be several steps LIGHTER than the surface — the opposite of what the
+     same button needed on a pale ground. */
+  --grass: #58c94c;
+  --grass-glow: #86e878;
+  --grass-edge: #2c7a25;
 
-  --hive: #9b5cf6;
-  --hive-glow: #6d28d9;           /* the READABLE one on sage, see the note above */
-  --hive-soft: #dcc8ff;
-  --hive-dim: #ab93d8;
+  --hive: #a855f7;
+  --hive-glow: #d8b4fe;           /* the READABLE one on dark green, see the note above */
+  --hive-soft: #ede0ff;
+  --hive-dim: #5f4a7d;
 
   /* --------------------------------------------------------------- FORM */
   --r-sm: 10px;
@@ -95,7 +96,7 @@
      shade far enough down that it never reads as a blur around the edge. */
   --bevel: 0 4px 0 var(--panel-edge);
   --bevel-sm: 0 3px 0 var(--panel-edge);
-  --lift: 0 10px 22px rgba(60, 80, 45, .24);
+  --lift: 0 10px 24px rgba(0, 0, 0, .45);
 }
 
 /* ======================================================================
@@ -106,14 +107,14 @@
 body {
   /* Light falling from the top of the page, the way it falls on the artwork. */
   background:
-    radial-gradient(120% 80% at 50% 0%, #e4edd6 0%, #d3dfc2 45%, #bfd0aa 100%);
+    radial-gradient(120% 80% at 50% 0%, #1e3423 0%, #142318 45%, #0b150f 100%);
   color: var(--ink);
 }
 
 .screen {
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%23486b39' fill-opacity='.06'%3E%3Crect x='10' y='14' width='16' height='16' rx='5'/%3E%3Crect x='42' y='60' width='11' height='11' rx='3.5'/%3E%3Crect x='86' y='26' width='14' height='14' rx='4.5'/%3E%3Crect x='66' y='96' width='9' height='9' rx='3'/%3E%3Crect x='16' y='84' width='12' height='12' rx='4'/%3E%3C/g%3E%3C/svg%3E"),
-    radial-gradient(125% 85% at 50% 12%, #e7efdb 0%, #d3dfc2 52%, #bfd0aa 100%);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%23a8e08a' fill-opacity='.035'%3E%3Crect x='10' y='14' width='16' height='16' rx='5'/%3E%3Crect x='42' y='60' width='11' height='11' rx='3.5'/%3E%3Crect x='86' y='26' width='14' height='14' rx='4.5'/%3E%3Crect x='66' y='96' width='9' height='9' rx='3'/%3E%3Crect x='16' y='84' width='12' height='12' rx='4'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(125% 85% at 50% 12%, #1f3625 0%, #142318 52%, #0b150f 100%);
 }
 
 /* ======================================================================
@@ -675,72 +676,73 @@ footer { background: linear-gradient(0deg, var(--bg1), rgba(198, 212, 179, 0)); 
 .sp .mods { font-size: 15px; }
 
 /* ======================================================================
-   LIGHT-GROUND CORRECTIONS
+   DARK-GROUND CORRECTIONS
    ----------------------------------------------------------------------
-   game.css was written for dark chrome, so it reaches for the VIVID half of
-   every colour pair when it wants text to stand out. On cream that is the
-   wrong half — pale green on white is not emphasis, it is a smudge. These
-   rules put the readable half back wherever a colour is used as type.
+   game.css was written for dark chrome and reaches for the VIVID half of
+   every colour pair when it wants text to stand out, which is right again
+   now. These rules exist because the palette went pale for a while and had
+   to be told the opposite; they are kept, pointed back the right way, so the
+   next person can see at a glance which half belongs to which ground.
 
-   The species colours come from `setFactionColor` as a base, a vivid `-glow`
-   and a dark `-dark` (palette.ts), so the fix is `-dark` throughout.
+   The species colours arrive as a base, a vivid `-glow` and a dark `-dark`
+   (palette.ts). On dark undergrowth the vivid one carries; on a pale ground
+   it is the dark one, and getting it backwards is the difference between a
+   HUD you can read and a smudge.
    ====================================================================== */
-.timeband .timelabel { color: var(--you-dark); }
-.timeband.ai .timelabel { color: var(--ai-dark); }
-.stat.you .v { color: var(--you-dark); }
-.stat.ai .v { color: var(--ai-dark); }
+.timeband .timelabel { color: var(--you-glow); }
+.timeband.ai .timelabel { color: var(--ai-glow); }
+.stat.you .v { color: var(--you-glow); }
+.stat.ai .v { color: var(--ai-glow); }
 .hivechip.awake .v,
 .hivechip.awake .k { color: var(--hive-glow); }
-.btn.on { color: var(--you-dark); }
-.btn.end { color: var(--ai-dark); }
+.btn.on { color: var(--you-glow); }
+.btn.end { color: var(--ai-glow); }
 .btn.ability { color: var(--hive-glow); }
-.btn.surr { color: var(--danger-edge); }
-.sp .tr { color: var(--you-dark); }
+.btn.surr { color: #ffb0a0; }
+.sp .tr { color: var(--you-glow); }
 .sp .nm .prem { color: var(--hive-glow); }
-.rules b { color: var(--you-dark); }
-.rules .ai { color: var(--ai-dark); }
+.rules b { color: var(--you-glow); }
+.rules .ai { color: var(--ai-glow); }
 .rules .hv { color: var(--hive-glow); }
-.win h1 { color: var(--grass-edge); }
-.lose h1 { color: var(--danger-edge); }
-.seg button.on { color: var(--you-dark); }
-.pmeta b { color: var(--you-dark); }
-.tb-you span { color: var(--you-dark); }
-.tb-ai span { color: var(--ai-dark); }
+.win h1 { color: var(--grass-glow); }
+.lose h1 { color: var(--danger); }
+.seg button.on { color: var(--you-glow); }
+.pmeta b { color: var(--you-glow); }
+.tb-you span { color: var(--you-glow); }
+.tb-ai span { color: var(--ai-glow); }
 .pubtag, .ac-chip.got { color: var(--hive-glow); }
-.card h1 .z, .hometitle .z { color: var(--hive-glow); text-shadow: none; }
-.toast.warn { color: var(--gold-edge); }
-/* game.css picks a light mint for "what this buys you", which was right on the old dark
-   chrome and is a smudge on cream. Same message, readable weight. */
+.card h1 .z, .hometitle .z { color: var(--hive-glow); text-shadow: 0 0 22px var(--hive); }
+.toast.warn { color: var(--gold-glow); }
+.mycelchip b, .curchip b, .tn-coin b, .lootchip b { color: var(--gold); }
+/* "What this buys you" — a light mint, which is what a dark ground wants. */
 .rtrack .re,
 .hcrow .hce,
 .cheff,
 .srow .sv.up,
-.homelogo .hl-z { color: var(--grass-edge); }
+.homelogo .hl-z { color: var(--grass-glow); }
 
-/* The match HUD sits on cream now, so its chips need a light face and the
-   turn banner needs to stop being a dark strip across a bright page. */
-header { background: linear-gradient(180deg, var(--bg1), rgba(198, 212, 179, 0)); }
-.timeband { background: var(--bg1); box-shadow: 0 3px 0 rgba(60, 80, 45, .18); }
-footer { background: linear-gradient(0deg, var(--bg1), rgba(198, 212, 179, 0)); }
+/* The match chrome fades into the page rather than banding across it. */
+header { background: linear-gradient(180deg, var(--bg1), rgba(20, 35, 24, 0)); }
+.timeband { background: var(--bg1); box-shadow: 0 3px 0 var(--panel-edge); }
+footer { background: linear-gradient(0deg, var(--bg1), rgba(20, 35, 24, 0)); }
 
-/* Overlays: a warm scrim rather than a black one. */
-.overlay { background: rgba(60, 40, 20, .55); }
+.overlay { background: rgba(4, 10, 6, .74); }
+.screenh { text-shadow: 0 3px 0 rgba(0, 0, 0, .45); }
 
-/* The screen title carried a hard drop shadow meant for a dark ground. */
-.screenh { text-shadow: 0 2px 0 rgba(255, 255, 255, .6); }
+/* Tinted action buttons: mix toward the panel, which is dark again. */
+.btn.on { background: color-mix(in srgb, var(--you) 26%, var(--panel)); }
+.btn.end { background: color-mix(in srgb, var(--ai) 24%, var(--panel)); }
+.btn.ability { background: color-mix(in srgb, var(--hive) 26%, var(--panel)); }
+.btn.surr { background: color-mix(in srgb, var(--danger) 22%, var(--panel)); }
 
-/* Tinted action buttons: mix toward the panel, which is now light, so the
-   tint has to be stronger to register at all. */
-.btn.on { background: color-mix(in srgb, var(--you) 22%, var(--panel)); }
-.btn.end { background: color-mix(in srgb, var(--ai) 20%, var(--panel)); }
-.btn.ability { background: color-mix(in srgb, var(--hive) 20%, var(--panel)); }
-.btn.surr { background: color-mix(in srgb, var(--danger) 16%, var(--panel)); }
-
-/* The scattered-square page texture was a light wash on a dark ground; on
-   cream it has to be a shadow instead or it disappears. */
-.pip { background: rgba(45, 70, 35, .14); }
+/* Wells and tracks are a shadow cut into the surface. */
+.pip { background: rgba(0, 0, 0, .3); }
 .qbar, .qp, .cbar, .sb, .lbbar,
-.troadbar .tr-bar { background: rgba(45, 70, 35, .16); }
+.troadbar .tr-bar { background: rgba(0, 0, 0, .34); }
 .dcard .rtrack, .hcrow { background: none; }
-.roadcell.empty { background: rgba(45, 70, 35, .06); }
-
+.roadcell.empty { background: rgba(255, 255, 255, .04); }
+.ccard .cveil { background: rgba(6, 14, 9, .62); }
+.ccard .cveil .cc { color: var(--gold); }
+.ccard.locked canvas,
+.collcell.locked .cc-ic { filter: grayscale(.85) brightness(.75); }
+.ccard.locked { background: var(--bg2); }

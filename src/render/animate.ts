@@ -54,8 +54,18 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
   // opened its own one-tile reveal. Those all start on the same frame, so the whole trail
   // flashed in at once instead of one tile after another.
   const onTravelPath = new Set<string>();
+  /**
+   * Which tiles a travel actually CLAIMED.
+   *
+   * `travel()` emits one `veinLaid` per step that was previously unowned, so this set is
+   * exactly the new ground. The rest of the path is territory the player already held, and
+   * re-filling it looks like the colony is being rebuilt from scratch every time troops
+   * walk over it. Only the new tiles animate.
+   */
+  const claimed = new Set<string>();
   for (const e of events) {
     if (e.type === "travel") for (const p of e.path) onTravelPath.add(key(p.c, p.r));
+    if (e.type === "veinLaid") claimed.add(key(e.at.c, e.at.r));
   }
   const covered = (at: Coord): boolean => onTravelPath.has(key(at.c, at.r));
 
@@ -75,13 +85,15 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
         break;
 
       case "travel": {
-        // The path includes the source at index 0; only the steps beyond it are revealed.
+        // The path includes the source at index 0; only the steps beyond it can be new.
+        // Each keeps its place along the path, so the front crosses already-owned ground
+        // at the same rate it crosses new ground — it just has nothing to light up there.
         const steps = e.path.slice(1);
-        reveal.begin(steps.map((at, i) => ({
-          at,
-          edge: edgeAlongPath(e.path, i + 1),
-          prev: null,
-        })));
+        reveal.begin(
+          steps
+            .map((at, i) => ({ at, edge: edgeAlongPath(e.path, i + 1), prev: null, slot: i }))
+            .filter((t) => claimed.has(key(t.at.c, t.at.r))),
+        );
         fx.flow(e.path, e.owner);
         // The troops land when the front reaches the far end, not when the send is ordered.
         fx.pop(e.path[e.path.length - 1] as Coord, e.owner, reveal.stepMs(steps.length) * steps.length);
