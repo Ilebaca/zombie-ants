@@ -43,6 +43,18 @@ export const MAP = {
   groundA: "#5c4a33",
   groundB: "#51402c",
   groundShade: "rgba(0,0,0,0.34)",
+  /** A shade darker than groundB, for the tonal drift in the undergrowth. */
+  groundDark: "#3d3122",
+  /** The cleared patch the grid sits on — lighter than the ground around it. */
+  clearing: "rgba(126,102,68,0.55)",
+
+  /** Scenery: fallen logs and greenery in the margin, none of it interactive. */
+  log: "#6b4f33",
+  logTop: "#846544",
+  logShade: "rgba(0,0,0,0.32)",
+  logEnd: "#4d3823",
+  leaf: "#4e7a3a",
+  leafDark: "#37592a",
 
   motes: "rgba(190,235,160,0.20)",
 

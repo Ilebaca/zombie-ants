@@ -250,6 +250,15 @@ Each of these cost a debugging round. Do not repeat them.
   starting on the same frame, so a four-tile send flashed its whole trail in at once instead
   of filling tile by tile. `animate()` now pre-scans the batch for travel paths before
   walking it. Any new event that participates in a group has the same hazard — scan first.
+- **Scenery is baked once, not drawn per frame.** The undergrowth around the playfield
+  (`render/terrain.ts`) is a still life — rocks, logs, ferns — and redrawing it sixty times
+  a second was by far the most expensive thing on the frame. It renders to an offscreen
+  canvas keyed on size and grid origin, and blits. Placement is seeded, never `Math.random`
+  at draw time, or the scenery reshuffles itself on every resize.
+- **The marching ants need closed LOOPS, not edges.** `render/trails.ts` traces each
+  colony's boundary into real loops so one dash offset carries the whole way round. Stroking
+  each boundary edge separately is far simpler and looks wrong: every edge restarts the dash
+  pattern, so the marks sit still at corners and march in contradictory directions.
 - **Reveal progress must never live on a tile.** The legacy build stored `t.rv`/`t.rvDir` on
   the tile, which put view state inside the engine where snapshot/restore would copy it. It
   lives in `RevealTracker`, keyed by coordinate.

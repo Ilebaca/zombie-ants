@@ -13,6 +13,8 @@ import type { Look } from "./art";
 import { nestArt } from "./art";
 import { COL, MAP, hexA, ownerCol } from "./palette";
 import { capturedCorners, rrect, rrectC } from "./shapes";
+import { drawTerrain } from "./terrain";
+import { drawTrail, territoryLoops } from "./trails";
 
 const TAU = 6.283;
 
@@ -50,57 +52,22 @@ export function seedMotes(reduced: boolean): Mote[] {
 }
 
 /**
- * The diorama: a plum surround, a pale tray with a solid edge, and a checkerboard floor.
+ * The board's ground, edge to edge.
  *
- * There is not a single drawn grid line — the two ground shades do that job, which is what
- * keeps the board looking like a built object rather than a spreadsheet.
+ * There was a rounded tray with a pale rim here — a board game on a table. The playfield
+ * is a cleared patch of forest floor now: the same soil runs to every edge of the screen,
+ * the chequer fades out at the grid's border instead of being framed by one, and the
+ * margin is undergrowth. See terrain.ts, which bakes all of that once.
+ *
+ * There is still not a single drawn grid line — the two ground shades do that job.
  */
 export function drawBackground(
   ctx: CanvasRenderingContext2D, layout: Layout, motes: Mote[], startedAt: number,
 ): void {
-  const w = layout.width, h = layout.height, n = layout.size;
-  const ts = layout.ts;
-  const bx = layout.ox, by = layout.oy, bw = ts * n, bh = ts * n;
+  // The ground and everything growing on it, baked once and blitted (terrain.ts).
+  drawTerrain(ctx, layout);
 
-  ctx.fillStyle = MAP.surround;
-  ctx.fillRect(0, 0, w, h);
-
-  // The tray, built from the bottom up: a ground shade, the solid edge band, then the rim.
-  const pad = Math.max(9, ts * 0.30);
-  const rim = Math.max(6, ts * 0.20);
-  const lip = Math.max(5, ts * 0.16);
-  const radius = Math.max(14, ts * 0.55);
-
-  rrect(ctx, bx - pad, by - pad + lip * 1.6, bw + pad * 2, bh + pad * 2, radius);
-  ctx.fillStyle = MAP.trayShade; ctx.fill();
-
-  rrect(ctx, bx - pad, by - pad + lip, bw + pad * 2, bh + pad * 2, radius);
-  ctx.fillStyle = MAP.trayEdge; ctx.fill();
-
-  rrect(ctx, bx - pad, by - pad, bw + pad * 2, bh + pad * 2, radius);
-  ctx.fillStyle = MAP.trayRim; ctx.fill();
-
-  // The floor sits inside the rim, its own corners softened.
-  ctx.save();
-  rrect(ctx, bx - rim, by - rim, bw + rim * 2, bh + rim * 2, radius * 0.72);
-  ctx.clip();
-  ctx.fillStyle = MAP.groundA;
-  ctx.fillRect(bx - rim, by - rim, bw + rim * 2, bh + rim * 2);
-  ctx.fillStyle = MAP.groundB;
-  for (let r = 0; r < n; r++) {
-    for (let c = 0; c < n; c++) {
-      if ((r + c) % 2 === 0) continue;
-      ctx.fillRect(layout.x0(c), layout.y0(r), ts, ts);
-    }
-  }
-  // A soft inner shade at the rim, so the floor sits *in* the tray rather than on it.
-  const inner = ctx.createRadialGradient(bx + bw / 2, by + bh / 2, bw * 0.34, bx + bw / 2, by + bh / 2, bw * 0.78);
-  inner.addColorStop(0, "rgba(0,0,0,0)");
-  inner.addColorStop(1, "rgba(18,8,22,0.42)");
-  ctx.fillStyle = inner;
-  ctx.fillRect(bx - rim, by - rim, bw + rim * 2, bh + rim * 2);
-  ctx.restore();
-
+  const w = layout.width, h = layout.height;
   const t = (performance.now() - startedAt) / 1000;
   for (const p of motes) {
     p.y -= p.sp * 0.012;
@@ -110,6 +77,27 @@ export function drawBackground(
     ctx.fillStyle = MAP.motes;
     ctx.beginPath(); ctx.arc(x, y, p.s, 0, TAU); ctx.fill();
     ctx.globalAlpha = 1;
+  }
+}
+
+/**
+ * The marching ants: a dashed line travelling round the outside of each colony.
+ *
+ * Drawn after every tile face so it sits on top of the territory it encloses, and before
+ * the selection, which has to stay the loudest thing on the board.
+ */
+export function drawTrails(scene: Scene): void {
+  const { ctx, layout, state } = scene;
+  const now = performance.now();
+  const width = Math.max(1.6, layout.ts * 0.055);
+  for (const p of ["you", "ai"] as const) {
+    const loops = territoryLoops(state, p);
+    drawTrail(ctx, layout, loops, {
+      colour: hexA(ownerCol(p, "glow"), 0.85),
+      width,
+      // Half a phase apart, so the two colonies' ants are never in lockstep.
+      phase: p === "ai" ? 0.5 : 0,
+    }, now);
   }
 }
 
@@ -178,7 +166,7 @@ function countBadge(scene: Scene, o: BadgeOptions): void {
   const px = o.cx - pw / 2;
   const py = o.cy - ph / 2;
 
-  ctx.fillStyle = "rgba(48,32,18,0.84)";      // warm dark, so it belongs on a sunlit board
+  ctx.fillStyle = "rgba(18,26,16,0.86)";      // deep forest, so it belongs on this ground
   rrect(ctx, px, py, pw, ph, ph / 2); ctx.fill();
   ctx.lineWidth = Math.max(1.2, ts * 0.022);
   ctx.strokeStyle = o.stroke;

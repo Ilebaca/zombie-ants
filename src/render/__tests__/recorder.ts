@@ -8,9 +8,15 @@
  */
 export interface Call { fn: string; args: unknown[]; fill?: string; stroke?: string }
 
+/** Numeric context properties worth asserting on — `lineDashOffset` is what makes ants march. */
+const NUMBERS = ["lineDashOffset", "lineWidth", "globalAlpha"] as const;
+type NumberProp = (typeof NUMBERS)[number];
+
 export interface Recorder {
   ctx: CanvasRenderingContext2D;
   calls: Call[];
+  /** Last value written to a numeric property. */
+  num(prop: NumberProp): number;
   /** Every call by name. */
   of(fn: string): Call[];
   /** Fill styles used by `fillRect`/`fill`/`fillText`, lowercased. */
@@ -29,6 +35,7 @@ const METHODS = [
 export function makeRecorder(): Recorder {
   const calls: Call[] = [];
   const state = { fillStyle: "", strokeStyle: "" };
+  const numbers: Record<string, number> = { lineDashOffset: 0, lineWidth: 1, globalAlpha: 1 };
 
   const target: Record<string, unknown> = {
     measureText: (t: string) => ({ width: String(t).length * 6 }),
@@ -46,12 +53,14 @@ export function makeRecorder(): Recorder {
     get(obj, prop: string) {
       if (prop === "fillStyle") return state.fillStyle;
       if (prop === "strokeStyle") return state.strokeStyle;
+      if (prop in numbers) return numbers[prop];
       if (prop in obj) return obj[prop];
       return undefined;
     },
     set(_obj, prop: string, value: unknown) {
       if (prop === "fillStyle") state.fillStyle = String(value);
       else if (prop === "strokeStyle") state.strokeStyle = String(value);
+      else if (prop in numbers) numbers[prop] = Number(value);
       return true;
     },
   }) as unknown as CanvasRenderingContext2D;
@@ -64,6 +73,7 @@ export function makeRecorder(): Recorder {
       .filter((c) => c.fn === "fill" || c.fn === "fillRect" || c.fn === "fillText")
       .map((c) => (c.fill ?? "").toLowerCase()),
     texts: () => calls.filter((c) => c.fn === "fillText").map((c) => String(c.args[0])),
+    num: (prop) => numbers[prop] ?? 0,
     has: (fn) => calls.some((c) => c.fn === fn),
   };
 }
