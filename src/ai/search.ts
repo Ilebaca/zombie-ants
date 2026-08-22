@@ -1,12 +1,12 @@
 import {
-  allTiles, distance, isHiveTerrain, neighbours, nestTile, otherPlayer,
+  allTiles, isHiveTerrain, neighbours, otherPlayer,
   attackMultiplier, defenceMultiplier, fight, flatDefence,
-  moveOrAttack, endTurn,
+  endTurn,
   snapshot, restore,
   abilityOf, abilityReady, activateAbility, frontline, onEnemyHalf,
 } from "../engine";
 import type {
-  ActionContext, Coord, EngineEvent, GameState, Player, PlayerMods, Tile,
+  ActionContext, Coord, EngineEvent, GameState, Player, PlayerMods,
 } from "../engine";
 import { FULL, NAIVE, WIN, evaluate as evaluateWith } from "./evaluate";
 import type { EvalWeights } from "./evaluate";
@@ -307,6 +307,7 @@ export function chooseMove(
     let localValue = -Infinity;
     let alpha = -Infinity;
 
+    let complete = true;
     for (const m of candidates) {
       s.nodes++;
       const value = withAction(state, me, m.action, s, () =>
@@ -315,10 +316,22 @@ export function chooseMove(
           : -negamax(state, opp, depth - 1, -Infinity, -alpha, s));
       if (value > localValue) { localValue = value; localBest = m; }
       if (value > alpha) alpha = value;
-      if (spent(s)) break;
+      if (spent(s)) { complete = false; break; }
     }
 
-    if (localBest) {
+    /**
+     * A PASS THAT RAN OUT OF TIME IS THROWN AWAY.
+     *
+     * This is the whole discipline of iterative deepening and it is easy to get wrong.
+     * When the budget latches mid-pass, every node still to be visited returns a static
+     * evaluation instead of searching — so the numbers that pass produced are not depth-N
+     * values at all, they are a mixture of real ones and stand-ins, and they are not
+     * comparable to each other. Adopting them threw away a complete, trustworthy answer
+     * from the depth below in favour of a truncated one. In the position that exposed
+     * this, a completed depth 3 correctly reinforced a nest about to fall; a truncated
+     * depth 5 abandoned it and marched the garrison off across the board.
+     */
+    if (localBest && (complete || reached === 0)) {
       best = localBest; bestValue = localValue; reached = depth;
       // Carry the best line to the front of the next, deeper pass.
       candidates = [localBest, ...candidates.filter((c) => c !== localBest)];
@@ -354,8 +367,6 @@ export function aiTurn(
 ): EngineEvent[] {
   if (state.over) return [];
   const profile = PROFILES[difficulty];
-  const opp = otherPlayer(me);
-  const myNest = nestTile(state, me);
   const events: EngineEvent[] = [];
 
   // An ability is a free extra action, so fire it first and still take a move afterwards.
@@ -366,35 +377,11 @@ export function aiTurn(
     if (state.over) return events;
   }
 
-  // Reflex — the nest is life. Reinforce it before considering anything else. Easy does
-  // not get this: walking into a lost queen is exactly the mistake it should be making.
-  if (myNest && difficulty !== "easy") {
-    const rescue = nestRescue(state, me, opp, myNest);
-    if (rescue) {
-      state.current = me;
-      events.push(...moveOrAttack(state, rescue, { c: myNest.c, r: myNest.r }, ctx));
-      return events;
-    }
-  }
-
   const decision = chooseMove(state, me, difficulty, ctx);
   if (!decision.move) return events;
   state.current = me;
   events.push(...applyAction(state, decision.move.action, ctx));
   return events;
-}
-
-/** The neighbour that should step into the nest, if the nest is in danger. */
-function nestRescue(state: GameState, me: Player, opp: Player, nest: Tile): Coord | null {
-  let threat = 0;
-  for (const t of allTiles(state)) {
-    if (t.owner === opp && distance(t, nest) <= 2) threat = Math.max(threat, t.soldiers);
-  }
-  if (threat === 0 || nest.soldiers >= threat + 2) return null;
-  const feeder = neighbours(state, nest)
-    .filter((n) => n.owner === me && n.soldiers >= 2)
-    .sort((a, b) => b.soldiers - a.soldiers)[0];
-  return feeder ? { c: feeder.c, r: feeder.r } : null;
 }
 
 /**

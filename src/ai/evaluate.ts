@@ -102,7 +102,11 @@ function tileValue(t: Tile, w: EvalWeights): number {
     v += (t.terrain === "resource" ? PROD.resourceStable : PROD.stable) * w.income;
   }
   if (t.terrain === "resource") v += w.resource;
-  if (t.struct === "nest") v += 400;                  // losing it loses the match
+  // Losing the nest loses the match outright (CLAUDE.md §4.6), so a queen the opponent can
+  // take NEXT MOVE is not "a bad position", it is a lost one. Priced anywhere near ordinary
+  // territory, the search trades her for a good land grab and finds out one ply past its
+  // own horizon. This is what makes the AI defend with everything it has.
+  if (t.struct === "nest") v += WIN / 8;
   return v;
 }
 
@@ -194,13 +198,26 @@ export function evaluate(
   }
 
   const mine = side[me], theirs = side[opp];
+
+  /**
+   * Income is worth what it will still PAY OUT, not a flat rate.
+   *
+   * A resource stable producing three a turn is worth a hundred and twenty soldiers on
+   * turn one and nine on turn forty — the same tile, two completely different purchases.
+   * Pricing it flat is why the AI would wander past a resource early and then fight over
+   * one in the endgame when it could no longer pay for itself. Scaled this way it grabs
+   * the economy first and switches to territory as the clock runs down, which is how the
+   * game is actually meant to be played.
+   */
+  const left = Math.max(0, state.limits.turnLimit - state.turn);
+  const payout = Math.min(2, left / (state.limits.turnLimit * 0.5));
   // Tried and rejected: scaling this term up as the turn limit approaches, on the theory
   // that the limit is decided on tile count so late tiles are worth more. It cost hard
   // fifteen points against easy — the AI over-extends grabbing ground it cannot hold, and
   // arrives at the count behind rather than ahead.
   let score =
       (mine.tiles - theirs.tiles) * w.tile
-    + (mine.income - theirs.income) * w.income
+    + (mine.income - theirs.income) * w.income * payout
     + (mine.resources - theirs.resources) * w.resource
     + (myArmy - oppArmy) * w.army
     + (fistValue(mine.maxStack) - fistValue(theirs.maxStack)) * w.concentration

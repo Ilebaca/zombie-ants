@@ -81,32 +81,111 @@ export function generate(
       if (score > 0) out.push({ action: { kind: "move", from: xy(src), to: xy(n) }, score });
     }
 
-    // A long send lays a vein trail behind it, so it both takes ground and extends supply.
+    /**
+     * A long send lays a vein trail behind it, so it takes ground AND extends supply, and
+     * it does in one turn what walking would take four to do. With one action per turn
+     * that tempo IS the game — an AI that steps one tile at a time is playing four times
+     * slower than one that sends.
+     *
+     * So a travel is rated on where it lands plus how far it got there: the reach is the
+     * point, not an incidental. It still sits below a capture, because taking ground off
+     * the opponent beats claiming empty ground, and the search sorts out the rest.
+     */
     if (opts.travel && commit >= 4) {
       for (const to of travelTargets(state, src)) {
         const gain = oppNest ? Math.max(0, srcDist - distance(to, oppNest)) : 0;
         const t = state.grid[to.r]?.[to.c];
         if (!t) continue;
-        // The trail is not the prize — it is veins, which produce nothing and prune the
-        // moment they lose an anchor. So a travel is rated on where it LANDS. Ranked
-        // deliberately below taking an adjacent resource and above taking plain ground:
-        // rated any higher, a dozen travels filled the candidate list and crowded the
-        // ordinary moves out of it entirely.
-        const worth = (t.terrain === "resource" ? 40 : 0) + gain * 4;
-        if (worth <= 0) continue;
+        const reach = Math.abs(to.c - src.c) + Math.abs(to.r - src.r);
+        const worth = (t.terrain === "resource" ? 44 : 12) + gain * 6 + reach * 7;
         out.push({ action: { kind: "travel", from: xy(src), to }, score: worth });
       }
     }
   }
 
   if (opts.rally) out.push(...rallyCandidates(state, p, opp, ctx, atkMul, defMul));
-  if (opts.veinGuard) out.push(...veinGuardCandidates(state, p, opp));
+  if (opts.veinGuard) {
+    out.push(...veinGuardCandidates(state, p, opp));
+    out.push(...nestDefenceCandidates(state, p, opp, ctx));
+  }
 
   out.sort((a, b) => b.score - a.score);
-  return out.slice(0, opts.limit);
+  return dedupe(out).slice(0, opts.limit);
 }
 
 const xy = (t: Tile): Coord => ({ c: t.c, r: t.r });
+
+/**
+ * One entry per distinct action, keeping the highest score.
+ *
+ * The same move can be proposed by more than one rater — a reinforcement onto the nest is
+ * both an ordinary reinforcement and a nest defence — and a duplicate costs a slot in the
+ * branching budget without adding a single new position to the tree. The list is already
+ * sorted, so the first sighting is the best one.
+ */
+function dedupe(list: readonly Candidate[]): Candidate[] {
+  const seen = new Set<string>();
+  const out: Candidate[] = [];
+  for (const c of list) {
+    const a = c.action;
+    const k = a.kind === "rally"
+      ? `r${a.to.c},${a.to.r}`
+      : `${a.kind}${a.from.c},${a.from.r}>${a.to.c},${a.to.r}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(c);
+  }
+  return out;
+}
+
+/**
+ * Bring troops home when the queen is in danger.
+ *
+ * Losing the nest loses the match outright (CLAUDE.md §4.6), so this is the one thing
+ * worth spending any turn on. It used to be a reflex that ran ahead of the search and
+ * marched exactly ONE neighbour in; as a candidate the search can weigh it, and it can
+ * answer with a rally instead — which brings the whole colony home rather than a single
+ * tile's spare troops. Defending with everything is only an option if "everything" is on
+ * the list.
+ */
+function nestDefenceCandidates(
+  state: GameState, p: Player, opp: Player, ctx: ActionContext,
+): Candidate[] {
+  const nest = nestTile(state, p);
+  if (!nest) return [];
+
+  const atkOpp = attackMultiplier(state, opp, ctx.mods[opp]);
+  const defMe = defenceMultiplier(state, p, ctx.mods[p]);
+  const flat = flatDefence(state, nest, ctx.mods[p]);
+
+  // The worst single blow that can land on the queen next turn, from anything close
+  // enough to reach her — adjacent now, or one step from being adjacent.
+  //
+  // Connectivity is the gate. A stack that has lost its chain back to its own nest cannot
+  // act at all (`canActFrom`), so it is not a threat however large it is. Without this
+  // check the AI garrisons against armies that are already dead on their feet.
+  let worst = 0;
+  for (const t of allTiles(state)) {
+    if (t.owner !== opp || !isConnected(state, t)) continue;
+    if (Math.abs(t.c - nest.c) + Math.abs(t.r - nest.r) > 2) continue;
+    worst = Math.max(worst, t.soldiers - keepOn(t));
+  }
+  if (worst < 1) return [];
+  if (worst * atkOpp <= nest.soldiers * defMe + flat) return [];   // she already holds
+
+  const out: Candidate[] = [];
+  for (const n of neighbours(state, nest)) {
+    if (n.owner !== p) continue;
+    const give = n.soldiers - keepOn(n);
+    if (give < 1) continue;
+    const holds = worst * atkOpp <= (nest.soldiers + give) * defMe + flat;
+    out.push({
+      action: { kind: "move", from: xy(n), to: xy(nest) },
+      score: holds ? 900 : 120,        // a partial reinforcement is better than nothing
+    });
+  }
+  return out;
+}
 
 /**
  * Garrison a vein whose loss would cut the colony in half.
@@ -135,12 +214,23 @@ function veinGuardCandidates(state: GameState, p: Player, opp: Player): Candidat
 
 /** Would losing this tile disconnect more than just the tile itself? */
 function severs(state: GameState, v: Tile, owner: Player): boolean {
-  const before = state.conn[owner].size;
+  return tilesSevered(state, v, owner) > 0;
+}
+
+/**
+ * How many of `owner`'s tiles lose their link to the nest if this one is taken, not
+ * counting the tile itself.
+ *
+ * Re-floods the colony graph, so it is only ever called from the root pass.
+ */
+function tilesSevered(state: GameState, v: Tile, owner: Player): number {
+  if (v.owner !== owner) return 0;
+  const before = countConnected(state, owner);
   const saved = v.owner;
   v.owner = null;
   const after = countConnected(state, owner);
   v.owner = saved;
-  return before - after > 1;
+  return Math.max(0, before - after - 1);
 }
 
 function countConnected(state: GameState, p: Player): number {
@@ -171,8 +261,13 @@ function rateStep(
   }
 
   if (apparent === opp && n.struct === "vein") {
-    // Enemy trails have no defence and taking one collapses everything downstream.
-    return 42 + forward * 3;
+    // Enemy trails have no defence at all (CLAUDE.md §4.3) — they are taken for free.
+    // What makes one worth taking is what hangs off the far side of it: connectivity is
+    // nest-anchored, so cutting the right vein sends everything past it dark in one move.
+    // Rated by how many tiles that is, which is the difference between a tidy capture and
+    // a colony cut in half.
+    const severed = opts.veinGuard ? tilesSevered(state, n, opp) : 0;
+    return 42 + forward * 3 + severed * 26;
   }
 
   if (apparent === opp) {

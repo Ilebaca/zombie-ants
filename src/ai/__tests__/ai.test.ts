@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
-  allTiles, createGame, defaultContext, endTurn, moveOrAttack,
-  recomputeConnectivity, restore, snapshot, tile, NEUTRAL_MODS,
+  allTiles, attackMultiplier, createGame, defaultContext, defenceMultiplier, endTurn,
+  flatDefence, isConnected, moveOrAttack, recomputeConnectivity, restore, snapshot, tile,
+  NEUTRAL_MODS,
 } from "../../engine";
 import { aiTurn, chooseMove, evaluate, generateMoves } from "../search";
 import { generate } from "../moves";
@@ -59,17 +60,40 @@ describe("search quality", () => {
   });
 
   it("defends its nest before attacking elsewhere", () => {
-    const s = blankGame();
-    put(s, 10, 10, { owner: "ai", struct: "nest", soldiers: 3 });
-    put(s, 10, 9, { owner: "ai", struct: "stable", soldiers: 40 });   // reserve
-    put(s, 9, 10, { owner: "you", struct: "stable", soldiers: 30 });  // threat
-    put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
+    const s = blankGame("small");
+    put(s, 7, 7, { owner: "ai", struct: "nest", soldiers: 3 });
+    put(s, 7, 6, { owner: "ai", struct: "stable", soldiers: 40 });    // reserve
+    // The threat has to be CONNECTED to its own nest or it cannot act at all
+    // (`canActFrom`), and an AI that garrisons against an army which is already cut off is
+    // wasting the turn. An earlier version of this test forgot that and was passing on a
+    // threat that could never have landed.
+    put(s, 6, 7, { owner: "you", struct: "stable", soldiers: 30 });
+    for (const r of [6, 5, 4, 3, 2]) put(s, 6, r, { owner: "you", struct: "stable", soldiers: 2 });
+    put(s, 6, 1, { owner: "you", struct: "nest", soldiers: 10 });
     recomputeConnectivity(s);
     s.current = "ai";
 
-    const before = tile(s, 10, 10).soldiers;
     aiTurn(s, "ai", "hard", ctx);
-    expect(tile(s, 10, 10).soldiers).toBeGreaterThan(before);
+    endTurn(s, mods);           // hand over, which is when burn and production tick
+
+    /*
+     * Asserted on the OUTCOME at the moment it matters, not on the move.
+     *
+     * There is more than one right answer here and the AI has found two of them: garrison
+     * the queen, or take (6,6) and cut the 30-stack off from its own nest, after which it
+     * cannot act at all. It has also played a third — set the raider alight and let the
+     * burn tick down before it can swing. Demanding the garrison specifically would have
+     * failed all the cleverer plays; what must be true is only that when the opponent is
+     * actually on move, the queen is not there for the taking.
+     */
+    const queen = tile(s, 7, 7);
+    const raider = tile(s, 6, 7);
+    const canTakeHer = raider.owner === "you"
+      && isConnected(s, raider)
+      && (raider.soldiers - 1) * attackMultiplier(s, "you", NEUTRAL_MODS)
+         > queen.soldiers * defenceMultiplier(s, "ai", NEUTRAL_MODS)
+           + flatDefence(s, queen, NEUTRAL_MODS);
+    expect(canTakeHer, "left the queen there for the taking").toBe(false);
   });
 
   it("ranks an adjacent resource above adjacent plain ground", () => {
@@ -87,11 +111,15 @@ describe("search quality", () => {
     // open ground is a defensible choice, and the wild Hive sits at the centre of every
     // map, so "empty board" positions quietly offer the AI a better objective than the
     // resource. What must never be defensible is rating plain ground above a resource.
-    const ranked = generate(s, "ai", ctx, { limit: 20, travel: true, rally: true, reinforce: true, veinGuard: true });
-    const resource = ranked.findIndex((c) => c.action.to.c === 0 && c.action.to.r === 2);
-    const plain = ranked.findIndex((c) => c.action.to.c === 2 && c.action.to.r === 2);
+    const ranked = generate(s, "ai", ctx, { limit: 400, travel: true, rally: true, reinforce: true, veinGuard: true });
+    const step = (c: number, r: number): number =>
+      ranked.findIndex((x) => x.action.kind === "move" && x.action.to.c === c && x.action.to.r === r);
+    const resource = step(0, 2);
+    const plain = step(2, 2);
+    // Compared against each other, not against the whole list: a long send can and should
+    // outrank both, because with one action per turn a four-tile reach beats a one-tile
+    // step even onto something good. What must never invert is these two.
     expect(resource).toBeGreaterThanOrEqual(0);
-    expect(resource, "the resource should be rated first").toBe(0);
     expect(plain).toBeGreaterThan(resource);
   });
 
