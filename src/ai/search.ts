@@ -65,11 +65,19 @@ export const PROFILES: Record<Difficulty, Profile> = {
     timeBudgetMs: 30,
   },
   /**
-   * A solid club player. Real search, sees hanging tiles, builds a fist and sends it
-   * somewhere — but with a three-ply horizon it can still be out-planned.
+   * A club player: it sees the reply, but not the reply to the reply.
+   *
+   * Two plies is the whole difference between Normal and Hard, and it is deliberate. Every
+   * OTHER thing that makes the AI play well — pricing income by what it will still pay
+   * out, rating a travel by its reach, cutting a vein by how much it severs, treating a
+   * takeable queen as near-terminal — is correct play and belongs in both. Taking any of
+   * those away from Normal made it worse than Easy rather than merely worse than Hard
+   * (removing long travel scored it 44% against Easy). Depth is the one dial that
+   * separates the two cleanly: at two plies Hard beats it 94% and it still beats Easy
+   * 100%, which is what a middle difficulty should look like.
    */
   normal: {
-    depth: 3,
+    depth: 2,
     branching: 8,
     quiescence: true,
     gen: { travel: true, rally: false, reinforce: true, veinGuard: true },
