@@ -15,10 +15,12 @@
  *     rocks, crates and buttons alike. Blur is reserved for glow.
  *  2. No hairline borders. Shapes are told apart by value, not by 1px strokes.
  *  3. Radii are generous and proportional — roughly a quarter of the shape.
- *  4. DAYLIGHT, not a cave. The palette is warm cream and sunlit sand with
- *     saturated toy colours on top. An earlier version of this file ran a deep
- *     aubergine, which suited the word "zombie" and nothing else about the
- *     game: the artwork is a sunny one, and dark chrome fought it.
+ *  4. A LEAF, not a cave and not a sheet of paper. The palette is sage and
+ *     moss over soil, with saturated accents on top. Two earlier versions
+ *     missed in opposite directions: a deep aubergine that suited the word
+ *     "zombie" and nothing else, and a cream so pale the app read as a form
+ *     rather than a garden. Green is the game's own colour — the colonies
+ *     farm fungus — so the chrome is green and the accents work against it.
  *  5. One dominant hue family per surface, one cool accent against it.
  *  6. Texture stays quiet: scattered low-opacity squares, nothing louder.
  *
@@ -31,37 +33,38 @@
 
 :root {
   /* ---------------------------------------------------------------- INK
-     Warm dark brown rather than black: on cream, black reads as a hole. */
-  --ink: #3a2b1f;
-  --ink-soft: #6b5544;
-  --muted: #97806c;
+     Deep forest rather than black: on a green ground, black reads as a hole. */
+  --ink: #22301d;
+  --ink-soft: #4a5c40;
+  --muted: #75886a;
 
   /* ------------------------------------------------------------ SURFACES
-     A cream/sand family. Each step is a real value jump so panels read
-     without borders. `-edge` colours are the solid band under a raised face. */
-  --bg0: #fdf4e5;
-  --bg1: #f8e8ce;
-  --bg2: #f2dcb8;
-  --panel: #fffaf0;
-  --panel-hi: #fff1d9;
-  --panel-edge: #e0c69f;
-  --line: #ecd8b8;                /* only for dividers that must stay hairline */
-  --hud: #fffaf0;
-  --hud-line: #ecd8b8;
+     A sage/moss family, mid-toned. Each step is a real value jump so panels
+     read without borders. `-edge` colours are the solid band under a raised
+     face — a mossy shadow, never grey. */
+  --bg0: #d3dfc2;
+  --bg1: #c6d4b3;
+  --bg2: #b8c8a4;
+  --panel: #e9f0dd;
+  --panel-hi: #f2f7ea;
+  --panel-edge: #9db089;
+  --line: #b6c7a4;                /* only for dividers that must stay hairline */
+  --hud: #e9f0dd;
+  --hud-line: #b6c7a4;
 
   /* ------------------------------------------------------------- WARMTH
-     The playfield family: sunlit ground, not a dungeon floor. */
-  --sand: #e9c894;
-  --sand-alt: #ddb87f;
-  --sand-deep: #c2955c;
-  --cream: #fffaf0;
+     The playfield family: soil under the leaves, not a dungeon floor. */
+  --sand: #c9ab7c;
+  --sand-alt: #b99b6b;
+  --sand-deep: #96784c;
+  --cream: #f2f7ea;
 
   /* ------------------------------------------------------------ ACCENTS
      Saturated and cheerful, and each one dark enough to carry white or
      near-black text without a second thought. */
-  --gold: #ffb52e;
-  --gold-glow: #ffd571;
-  --gold-edge: #d78a00;
+  --gold: #f0a828;
+  --gold-glow: #ffc862;
+  --gold-edge: #b87706;
   --mint: #17b8a6;
   --mint-edge: #0e8578;
   --sky: #35a7e8;
@@ -70,14 +73,17 @@
   --plum-edge: #a63368;
   --danger: #f2593f;
   --danger-edge: #c23a22;
-  --grass: #43c05a;
-  --grass-glow: #74dd84;
-  --grass-edge: #2b8f3d;
+  /* The primary action is a deep leaf green: on a sage ground it has to be
+     several steps darker and more saturated than the surface, or "go" and
+     "background" become the same colour. */
+  --grass: #3f9e3a;
+  --grass-glow: #63c25c;
+  --grass-edge: #26701f;
 
   --hive: #9b5cf6;
-  --hive-glow: #7c3aed;           /* the READABLE one on cream, see the note above */
-  --hive-soft: #d9c2ff;
-  --hive-dim: #b79aeb;
+  --hive-glow: #6d28d9;           /* the READABLE one on sage, see the note above */
+  --hive-soft: #dcc8ff;
+  --hive-dim: #ab93d8;
 
   /* --------------------------------------------------------------- FORM */
   --r-sm: 10px;
@@ -89,7 +95,7 @@
      shade far enough down that it never reads as a blur around the edge. */
   --bevel: 0 4px 0 var(--panel-edge);
   --bevel-sm: 0 3px 0 var(--panel-edge);
-  --lift: 0 10px 22px rgba(150, 110, 60, .22);
+  --lift: 0 10px 22px rgba(60, 80, 45, .24);
 }
 
 /* ======================================================================
@@ -100,14 +106,14 @@
 body {
   /* Light falling from the top of the page, the way it falls on the artwork. */
   background:
-    radial-gradient(120% 80% at 50% 0%, #fffaf0 0%, #fdf4e5 45%, #f6e4c6 100%);
+    radial-gradient(120% 80% at 50% 0%, #e4edd6 0%, #d3dfc2 45%, #bfd0aa 100%);
   color: var(--ink);
 }
 
 .screen {
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%23a37a44' fill-opacity='.055'%3E%3Crect x='10' y='14' width='16' height='16' rx='5'/%3E%3Crect x='42' y='60' width='11' height='11' rx='3.5'/%3E%3Crect x='86' y='26' width='14' height='14' rx='4.5'/%3E%3Crect x='66' y='96' width='9' height='9' rx='3'/%3E%3Crect x='16' y='84' width='12' height='12' rx='4'/%3E%3C/g%3E%3C/svg%3E"),
-    radial-gradient(125% 85% at 50% 12%, #fffaf0 0%, #fdf4e5 52%, #f6e4c6 100%);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%23486b39' fill-opacity='.06'%3E%3Crect x='10' y='14' width='16' height='16' rx='5'/%3E%3Crect x='42' y='60' width='11' height='11' rx='3.5'/%3E%3Crect x='86' y='26' width='14' height='14' rx='4.5'/%3E%3Crect x='66' y='96' width='9' height='9' rx='3'/%3E%3Crect x='16' y='84' width='12' height='12' rx='4'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(125% 85% at 50% 12%, #e7efdb 0%, #d3dfc2 52%, #bfd0aa 100%);
 }
 
 /* ======================================================================
@@ -314,7 +320,7 @@ body {
   border-radius: var(--r-pill);
   box-shadow: var(--bevel-sm);
 }
-.troadbar .tr-bar { background: rgba(120, 90, 50, .18); border-radius: var(--r-pill); }
+.troadbar .tr-bar { background: rgba(45, 70, 35, .16); border-radius: var(--r-pill); }
 .troadbar .tr-fill { background: linear-gradient(90deg, var(--gold), var(--gold-glow)); }
 
 .topnav {
@@ -343,7 +349,7 @@ body {
    PROGRESS BARS — a deep well with a bright, rounded fill
    ====================================================================== */
 .qbar, .qp, .cbar, .sb, .lbbar {
-  background: rgba(120, 90, 50, .18);
+  background: rgba(45, 70, 35, .16);
   border-radius: var(--r-pill);
   overflow: hidden;
 }
@@ -358,7 +364,7 @@ body {
   box-shadow: var(--bevel-sm);
 }
 .troadbar:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--panel-edge); }
-.troadbar .tr-bar { background: rgba(120, 90, 50, .18); border-radius: var(--r-pill); }
+.troadbar .tr-bar { background: rgba(45, 70, 35, .16); border-radius: var(--r-pill); }
 .troadbar .tr-fill { background: linear-gradient(90deg, var(--gold), var(--gold-glow)); }
 
 .pip { background: rgba(255, 255, 255, .12); border-radius: var(--r-pill); }
@@ -383,7 +389,7 @@ body {
 .ccard.locked .cname { color: var(--ink-soft); }
 /* A cream wash, not a dark one: on a light card a dark veil turns the art to mud, and
    the price sitting on it stops being readable. */
-.ccard .cveil { background: rgba(255, 250, 240, .58); border-radius: var(--r-lg); }
+.ccard .cveil { background: rgba(233, 240, 221, .62); border-radius: var(--r-lg); }
 .ccard .cveil .cc { color: var(--gold-edge); }
 .ccard.locked canvas,
 .collcell.locked .cc-ic { filter: grayscale(.75) brightness(1.02) contrast(.92); }
@@ -392,13 +398,13 @@ body {
 
 /* A corner ribbon is only a corner ribbon if the card clips it. */
 .stile { overflow: hidden; }
-.ribbon { box-shadow: 0 2px 0 rgba(120, 90, 50, .28); }
+.ribbon { box-shadow: 0 2px 0 rgba(45, 70, 35, .26); }
 
 /* ======================================================================
    THE MATCH HUD — the board's frame
    ====================================================================== */
 header {
-  background: linear-gradient(180deg, var(--bg1), rgba(248, 232, 206, 0));
+  background: linear-gradient(180deg, var(--bg1), rgba(198, 212, 179, 0));
 }
 .stat, .hivechip {
   border: none;
@@ -414,12 +420,12 @@ header {
 .timeband { padding: 0 12px 8px; }
 .timebar {
   height: 10px;
-  background: rgba(120, 90, 50, .20);
+  background: rgba(45, 70, 35, .18);
   border-radius: var(--r-pill);
 }
 .timebar i { border-radius: var(--r-pill); }
 
-footer { background: linear-gradient(0deg, var(--bg1), rgba(248, 232, 206, 0)); }
+footer { background: linear-gradient(0deg, var(--bg1), rgba(198, 212, 179, 0)); }
 .btn {
   border: none;
   background: var(--panel);
@@ -453,7 +459,7 @@ footer { background: linear-gradient(0deg, var(--bg1), rgba(248, 232, 206, 0)); 
 /* ======================================================================
    OVERLAYS & TOASTS
    ====================================================================== */
-.overlay { background: rgba(70, 48, 24, .58); }
+.overlay { background: rgba(28, 42, 22, .58); }
 .card { box-shadow: var(--bevel), var(--lift); }
 .rc { background: var(--panel-hi); border: none; border-radius: var(--r-md); box-shadow: var(--bevel-sm); }
 .toast {
@@ -713,9 +719,9 @@ footer { background: linear-gradient(0deg, var(--bg1), rgba(248, 232, 206, 0)); 
 
 /* The match HUD sits on cream now, so its chips need a light face and the
    turn banner needs to stop being a dark strip across a bright page. */
-header { background: linear-gradient(180deg, var(--bg1), rgba(248, 232, 206, 0)); }
-.timeband { background: var(--bg1); box-shadow: 0 3px 0 rgba(150, 110, 60, .16); }
-footer { background: linear-gradient(0deg, var(--bg1), rgba(248, 232, 206, 0)); }
+header { background: linear-gradient(180deg, var(--bg1), rgba(198, 212, 179, 0)); }
+.timeband { background: var(--bg1); box-shadow: 0 3px 0 rgba(60, 80, 45, .18); }
+footer { background: linear-gradient(0deg, var(--bg1), rgba(198, 212, 179, 0)); }
 
 /* Overlays: a warm scrim rather than a black one. */
 .overlay { background: rgba(60, 40, 20, .55); }
@@ -732,9 +738,9 @@ footer { background: linear-gradient(0deg, var(--bg1), rgba(248, 232, 206, 0)); 
 
 /* The scattered-square page texture was a light wash on a dark ground; on
    cream it has to be a shadow instead or it disappears. */
-.pip { background: rgba(120, 90, 50, .16); }
+.pip { background: rgba(45, 70, 35, .14); }
 .qbar, .qp, .cbar, .sb, .lbbar,
-.troadbar .tr-bar { background: rgba(120, 90, 50, .18); }
+.troadbar .tr-bar { background: rgba(45, 70, 35, .16); }
 .dcard .rtrack, .hcrow { background: none; }
-.roadcell.empty { background: rgba(120, 90, 50, .06); }
+.roadcell.empty { background: rgba(45, 70, 35, .06); }
 

@@ -23,9 +23,9 @@ export const SPECIES_COL: Record<SpeciesId, readonly [string, string, string]> =
 /**
  * The board's palette.
  *
- * The playfield is a DIORAMA: a rounded tray with a pale rim, sitting on the same warm
- * cream the rest of the app uses. Daylight, not a dungeon — the surround matches the page
- * so the board reads as a sunlit patch of ground someone set down on the table.
+ * The playfield is a DIORAMA: a rounded tray with a pale rim, sitting on the same sage the
+ * rest of the app uses. The surround matches the page, so the board reads as a patch of
+ * bare soil cut out of the undergrowth rather than a window onto somewhere else.
  *
  * The ground is a warm sand in two shades: two, because the checkerboard gives the eye a
  * grid without a single drawn line. Its value is set by what has to sit ON it — every
@@ -35,23 +35,23 @@ export const SPECIES_COL: Record<SpeciesId, readonly [string, string, string]> =
  */
 export const MAP = {
   /** Behind the tray — matches the page so the canvas has no visible seam. */
-  surround: "#f8e8ce",
+  surround: "#c6d4b3",
   /** The tray: a pale rim with a solid darker band beneath it, never a blurred shadow. */
-  trayRim: "#fffaf0",
-  trayEdge: "#dcbe93",
-  trayShade: "rgba(150,110,60,0.22)",
+  trayRim: "#e9f0dd",
+  trayEdge: "#9db089",
+  trayShade: "rgba(50,70,38,0.24)",
 
   /** The two checker shades, and the shadow objects cast onto them. */
-  groundA: "#e0b98a",
-  groundB: "#d3a974",
-  groundShade: "rgba(140,95,45,0.24)",
+  groundA: "#c2a678",
+  groundB: "#b39769",
+  groundShade: "rgba(70,58,30,0.26)",
 
-  motes: "rgba(255,255,255,0.40)",
+  motes: "rgba(255,255,255,0.30)",
 
   /** Stone: a cool grey-brown, the one desaturated thing on the board. */
-  rock: "#9c8a78",
-  rockTop: "#b8a795",
-  rockEdge: "#6f5e4d",
+  rock: "#8d8878",
+  rockTop: "#a7a290",
+  rockEdge: "#615d50",
 
   /**
    * Resources are a turquoise crystal, not a gold one. Gold on sand is barely a step in
