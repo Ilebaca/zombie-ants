@@ -136,6 +136,12 @@ Several early readings in this file's history were contaminated exactly that way
 
 Things self-play has already settled. Do not undo them without re-running the ladder:
 
+- **A pass of iterative deepening that ran out of time must be thrown away.** When the
+  budget latches mid-pass, every node still to visit returns a static evaluation instead of
+  searching, so that pass's numbers are a mixture of real values and stand-ins and are not
+  comparable to each other. Adopting them discarded a complete, trustworthy answer from the
+  depth below for a truncated one — a completed depth 3 reinforcing a queen about to fall,
+  a truncated depth 5 marching the garrison off across the board.
 - **The search must hand the turn over, not just apply the move.** For a long time it
   applied an action and recursed without calling `endTurn`, so nothing that happens BETWEEN
   turns happened in the tree: no production, no effects ticking, no cooldowns counting down,
@@ -170,9 +176,16 @@ Things self-play has already settled. Do not undo them without re-running the la
   they lose an anchor. Counting one as a whole tile taught the AI to prefer a four-tile
   travel — four veins — over an adjacent resource.
 
-Measured ladder (24 games each, sides and species swapped, node-budgeted): hard beats
-normal **79%**, hard beats easy **79%**, normal beats easy **100%**. Before this work, hard
-scored **35%** against normal — the ladder was inverted at the top.
+Measured ladder (20 games each, sides and species swapped, node-budgeted): hard beats
+normal **65%**, hard beats easy **100%**, normal beats easy **100%**. Before any of this
+work, hard scored **35%** against normal — the ladder was inverted at the top.
+
+The gap between hard and normal is the open problem, not the gap above easy. Most of what
+makes the AI play well — pricing income by what it will still pay out, rating a travel by
+its reach, cutting a vein by how much it severs, treating a takeable queen as near-terminal
+— belongs in BOTH levels, so improving the AI tends to close the ladder rather than widen
+it. Separating them means deciding what normal is not allowed to know, which is a design
+question about what "normal" should feel like, not a tuning one.
 
 **Almost every AI match is decided on tile count, not by a kill.** Of sixteen hard-vs-easy
 games none ended by capturing a queen; of sixteen hard-vs-normal, two did. So a nest capture

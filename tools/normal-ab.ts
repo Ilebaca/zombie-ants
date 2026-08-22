@@ -20,16 +20,9 @@ const base = JSON.parse(JSON.stringify(PROFILES.normal));
 
 const variants: Array<[string, () => void]> = [
   ["baseline", () => {}],
-  ["no quiescence", () => { PROFILES.normal.quiescence = false; }],
   ["no vein guard", () => { PROFILES.normal.gen.veinGuard = false; }],
   ["no travel", () => { PROFILES.normal.gen.travel = false; }],
   ["depth 2", () => { PROFILES.normal.depth = 2; }],
-  ["branching 5", () => { PROFILES.normal.branching = 5; }],
-  // The candidate mid tier: Normal keeps the tactical term (it will not hang a tile) but
-  // loses the strategic ones, so it fights over ground while Hard fights over the Hive.
-  ["no hive sense", () => { PROFILES.normal.weights = { ...FULL, surge: 0, hive: 2 }; }],
-  ["no massing sense", () => { PROFILES.normal.weights = { ...FULL, concentration: 0 }; }],
-  ["neither", () => { PROFILES.normal.weights = { ...FULL, surge: 0, hive: 2, concentration: 0 }; }],
 ];
 
 for (const [name, apply] of variants) {
