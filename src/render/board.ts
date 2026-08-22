@@ -474,7 +474,9 @@ export function drawHiveTile(scene: Scene, t: Tile): void {
   const { ctx, layout, state } = scene;
   const ts = layout.ts;
   const x = layout.cx(t.c), y = layout.cy(t.r), R = ts * 0.30;
-  const awake = state.hive.phase !== "dormant";
+  // "cooling" is a grave, not a hive: the queen is dead and her tiles hold nothing. It gets
+  // the dim look, or the board shows a glowing queen on ground with nothing to fight.
+  const awake = state.hive.phase === "awake" || state.hive.phase === "buff";
   const col = awake ? (COL.hive ?? "#b14de0") : (COL["hive-dim"] ?? "#4b3a6e");
   const glow = awake ? (COL["hive-soft"] ?? "#d9c2ff") : "rgba(255,255,255,0.55)";
   const pulse = awake ? (0.6 + 0.4 * Math.sin(performance.now() / 300)) : 0.3;

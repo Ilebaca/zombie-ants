@@ -52,7 +52,7 @@ export function createGame(opts: NewGameOptions): GameState {
     current: "you",
     over: false,
     winner: null,
-    hive: { phase: "dormant", level: 1, owner: null, buffLeft: 0, coolLeft: 0, awokeTurn: null },
+    hive: { phase: "dormant", level: 1, owner: null, buffLeft: 0, coolLeft: 0, banked: 0, awokeTurn: null },
     effects: [],
     species: { ...opts.species },
     cooldown: {

@@ -51,6 +51,15 @@ export interface HiveState {
   buffLeft: number;
   /** Turns left before a dead queen returns. Only meaningful while `cooling`. */
   coolLeft: number;
+  /**
+   * Soldiers the hive has eaten and will come back with.
+   *
+   * Anything standing on the five tiles when the surge lapses, and anything standing there
+   * when she grows back, is absorbed rather than destroyed — leaving a garrison on the hive
+   * feeds the next queen instead of quietly vanishing.
+   */
+  banked: number;
+  /** The turn the hive first woke. NOT reset by a respawn — see HIVE_LEVEL_GROWTH. */
   awokeTurn: number | null;
 }
 

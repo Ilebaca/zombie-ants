@@ -97,12 +97,29 @@ These were each decided deliberately, several after bugs. Changing one silently 
 6. **Veins are infrastructure, not tiles.** They produce nothing, cannot be a Rally target,
    and are skipped by Fortify. Troops landing on a vein promote it to a stable.
 
-7. **The Hive is a contest, not a tap.** Taking the queen kills her: all five tiles and the
+7. **The Hive is a contest, not a tap.** Only the QUEEN — the middle tile — grants the
+   surge; taking a guard just takes a tile. Taking her kills her: all five tiles and the
    troops on them become the captor's, and the surge runs for the map's buff length. When it
    lapses the tiles go back to bare ground and the queen is GONE for `HIVE_COOLDOWN` turns
    (4) before growing back one level stronger. That gap is deliberate — without it the
    colony that just rode a surge walks straight onto a fresh queen. The GDD describes the
    respawn but sets no gap, so the number is a design decision, not a port.
+   - **While she is dead there is nothing there.** Her tiles are ordinary ground: no
+     garrison, no fight, and no surge for stepping on them. They still LOOK like hive tiles,
+     which is why the combat path has to ask `hiveIsAlive` rather than checking the terrain
+     — otherwise attacking the empty middle tile beat a garrison of zero and handed out a
+     full surge from a corpse.
+   - **She must always come back harder.** The level MULTIPLIES the whole garrison
+     (`HIVE_LEVEL_GROWTH`) and `awokeTurn` survives a respawn, so the growth clock runs from
+     the hive's first waking for the whole match. With a flat per-level bonus and a clock
+     that restarted, a long-ignored level-1 queen outclassed the level-2 queen who replaced
+     her — capturing the Hive made the Hive easier.
+   - **The Hive eats what is left standing on it.** Troops on the five tiles when the surge
+     lapses, and troops camped on the bare ground when she returns, are banked
+     (`hive.banked`) and come back as part of the next garrison, split in proportion to what
+     each tile is already worth. Deleting them was a garrison the player had paid for
+     vanishing with no explanation, and camping the grave now feeds her rather than denying
+     the respawn.
 
 8. **Losing your nest loses the match** — immediately, regardless of how much else you hold.
    Capturing the enemy nest wins it the same way. **There is no turn limit.** The clock used

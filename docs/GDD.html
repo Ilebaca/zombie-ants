@@ -383,12 +383,14 @@ table tbody tr:hover { background: #f5f1ea; }
     <ol>
       <li><strong>Dormant.</strong> From turn 1 until the map's awaken turn. Defended <strong>1.5×</strong> harder than when awake — tough, but never impossible for an early all-in.</li>
       <li><strong>Awake.</strong> The queen becomes the obvious prize. The hive <em>spreads a dividing wall</em> across the board, reshaping lanes as the match goes long.</li>
-      <li><strong>Captured (surge).</strong> The capturing colony holds all 5 tiles as stables and gains the surge for the buff duration.</li>
-      <li><strong>Respawn.</strong> When the surge ends the hive resets to neutral, clears its walls, and returns <strong>one level stronger</strong>.</li>
+      <li><strong>Captured (surge).</strong> Only the <strong>queen</strong> — the middle tile — grants the surge; beating a guard simply takes that tile. Capturing her hands the capturing colony all 5 tiles as stables, with the troops standing on them, for the buff duration.</li>
+      <li><strong>Cooling.</strong> When the surge ends the tiles revert to bare ground and the queen is <strong>gone for 4 turns</strong>. There is nothing there to fight and nothing to capture — walking onto the middle tile during this window claims ordinary ground and grants no surge. Anything left standing on the five tiles, at the lapse or during the wait, is <em>absorbed</em>: it comes back as part of the next garrison instead of being destroyed.</li>
+      <li><strong>Respawn.</strong> She grows back neutral and <strong>one level stronger</strong>, plus whatever the hive absorbed.</li>
     </ol>
 
     <h2>Garrison strength</h2>
-    <p>Queen = 16 + 9 per hive level + 6 per growth step. Guards = 9 + 5 per hive level + 3 per growth step. A growth step occurs every 4 turns since waking, so <strong>the longer she is left alone, the harder she gets</strong> — and dormant multiplies it by 1.5.</p>
+    <p>Queen = (16 + 6 per growth step) × 1.55 per hive level above the first. Guards = (9 + 3 per growth step) × the same. A growth step occurs every 4 turns since the hive <em>first</em> woke — the clock is not reset by a capture — so <strong>the longer the match runs, the harder she gets</strong>, and every level multiplies the lot. Dormant multiplies it by a further 1.5.</p>
+    <p>The level has to multiply rather than add, and the clock has to keep running, for one reason: <strong>a queen must never come back weaker than the one that was just beaten</strong>. With a flat per-level bonus and a clock that restarted on respawn, a long-ignored level-1 queen outclassed the level-2 queen who replaced her, so capturing the Hive made the Hive easier.</p>
 
     <h2>The surge reward</h2>
     <div class="tw"><table>

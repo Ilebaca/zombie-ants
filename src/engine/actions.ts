@@ -6,7 +6,7 @@ import {
   attackMultiplier, defenceMultiplier, fight, flatDefence, guardDefence,
 } from "./combat";
 import { isConnected, pruneAllVeins, recomputeConnectivity } from "./connectivity";
-import { captureQueen } from "./hive";
+import { captureQueen, hiveIsAlive } from "./hive";
 import { key } from "./types";
 import type {
   Coord, EngineEvent, GameState, Player, PlayerMods, Tile,
@@ -87,8 +87,12 @@ export function moveOrAttack(
     return finish(state, events);
   }
 
+  // While the queen is dead her five tiles are ordinary ground: no garrison, no fight, and
+  // no surge for walking onto them. What is left standing there feeds her when she returns.
+  const onHive = isHiveTerrain(dst) && hiveIsAlive(state);
+
   // Unowned tile held by a neutral wild garrison — beat it first.
-  if (!dst.owner && dst.guard > 0 && !isHiveTerrain(dst)) {
+  if (!dst.owner && dst.guard > 0 && !onHive) {
     const res = fight(commit, attackMultiplier(state, attacker, ctx.mods[attacker]), dst.guard, 1.0, guardDefence(dst));
     src.soldiers = keep;
     events.push({ type: "combat", at: to, attacker, from: dir, won: res.winner === "atk", survivors: res.survivors });
@@ -103,7 +107,7 @@ export function moveOrAttack(
   }
 
   // Empty ground or resource: claimed directly.
-  if (!dst.owner && !isHiveTerrain(dst)) {
+  if (!dst.owner && !onHive) {
     src.soldiers = keep;
     dst.owner = attacker; dst.soldiers = commit;
     promote(dst);
@@ -112,7 +116,7 @@ export function moveOrAttack(
   }
 
   // COMBAT — enemy tile or hive tile.
-  const hive = isHiveTerrain(dst);
+  const hive = onHive;
   const defender = dst.owner;
   const defMod = hive || !defender ? 1 : defenceMultiplier(state, defender, ctx.mods[defender]);
   const flat = hive || !defender ? 0 : flatDefence(state, dst, ctx.mods[defender]);

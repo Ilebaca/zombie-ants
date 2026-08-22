@@ -489,6 +489,12 @@ export class MatchScreen {
       chip.className = "hivechip awake";
       this.el.hiveK.textContent = s.hive.owner === "you" ? "Surge" : "Enemy";
       this.el.hiveV.textContent = `×${s.hive.level + 1} (${s.hive.buffLeft})`;
+    } else if (s.hive.phase === "cooling") {
+      // She is dead and her ground is bare. Saying "Lvl 2" here reads as a queen standing
+      // there to be fought, which is the opposite of what is on the board.
+      chip.className = "hivechip";
+      this.el.hiveK.textContent = "Hive";
+      this.el.hiveV.textContent = `Back in ${s.hive.coolLeft}`;
     } else {
       chip.className = "hivechip awake";
       this.el.hiveK.textContent = "Hive";

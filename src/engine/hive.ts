@@ -1,4 +1,7 @@
-import { HIVE_COOLDOWN, HIVE_GROW_EVERY } from "./config";
+import {
+  HIVE_COOLDOWN, HIVE_GROW_EVERY, HIVE_GUARD_BASE, HIVE_GUARD_STEP, HIVE_LEVEL_GROWTH,
+  HIVE_QUEEN_BASE, HIVE_QUEEN_STEP,
+} from "./config";
 import { allTiles } from "./board";
 import type { Coord, EngineEvent, GameState, Player, Tile } from "./types";
 
@@ -10,6 +13,17 @@ import type { Coord, EngineEvent, GameState, Player, Tile } from "./types";
  * Each capture raises her level, making the next one a bigger swing.
  */
 
+/**
+ * Is there anything on the hive to fight?
+ *
+ * Between a surge lapsing and the queen growing back she is simply GONE, and her five tiles
+ * are bare ground with no garrison at all. Without this the combat path still treated them
+ * as the hive: attacking the empty middle tile beat a garrison of zero and handed out a full
+ * surge from a dead queen, which is a free buff for whoever happened to be standing next to
+ * her when the last one lapsed.
+ */
+export const hiveIsAlive = (state: GameState): boolean => state.hive.phase !== "cooling";
+
 export function hiveCells(state: GameState): Tile[] {
   return allTiles(state).filter((t) => t.terrain === "hiveQ" || t.terrain === "hiveG");
 }
@@ -20,21 +34,30 @@ export const hiveBuffMultiplier = (state: GameState): number => state.hive.level
 /**
  * Set the neutral hive garrison. Dormant is 1.5× tougher than awake — hard, but never
  * impossible for an early all-in.
+ *
+ * The level MULTIPLIES the whole garrison, growth step included, and `awokeTurn` survives a
+ * respawn. Both are needed for the one property that matters: a queen must never come back
+ * weaker than the one that was just beaten. With a flat per-level bonus and a growth clock
+ * that restarted on respawn, a long-ignored level-1 queen (16 + many steps) outclassed the
+ * level-2 queen who replaced her (25), so capturing her made the Hive EASIER.
  */
 export function setHiveDefence(state: GameState): void {
-  const L = state.hive.level;
-  const elapsed = state.hive.awokeTurn !== null ? Math.max(0, state.turn - state.hive.awokeTurn) : 0;
-  const step = Math.floor(elapsed / HIVE_GROW_EVERY);
-
-  const queen = 16 + (L - 1) * 9 + step * 6;
-  const guard = 9 + (L - 1) * 5 + step * 3;
-  const mult = state.hive.phase === "dormant" ? 1.5 : 1;
-
   for (const t of hiveCells(state)) {
     if (t.owner !== null) continue;
-    if (t.terrain === "hiveQ") t.soldiers = Math.max(1, Math.round(queen * mult));
-    if (t.terrain === "hiveG") t.soldiers = Math.max(1, Math.round(guard * mult));
+    t.soldiers = Math.max(1, hiveGarrison(state, t.terrain === "hiveQ"));
   }
+}
+
+/** What one neutral hive tile is worth right now. */
+export function hiveGarrison(state: GameState, queen: boolean): number {
+  const elapsed = state.hive.awokeTurn !== null ? Math.max(0, state.turn - state.hive.awokeTurn) : 0;
+  const step = Math.floor(elapsed / HIVE_GROW_EVERY);
+  const base = queen
+    ? HIVE_QUEEN_BASE + step * HIVE_QUEEN_STEP
+    : HIVE_GUARD_BASE + step * HIVE_GUARD_STEP;
+  const level = Math.pow(HIVE_LEVEL_GROWTH, state.hive.level - 1);
+  const dormant = state.hive.phase === "dormant" ? 1.5 : 1;
+  return Math.round(base * level * dormant);
 }
 
 /** Advance hive state at the start of `p`'s turn. */
@@ -98,6 +121,7 @@ export function endSurge(state: GameState, events: EngineEvent[] = []): EngineEv
   state.hive.buffLeft = 0;
   state.hive.coolLeft = HIVE_COOLDOWN;
 
+  absorbGarrisons(state);
   for (const t of hiveCells(state)) {
     t.owner = null;
     t.struct = null;
@@ -108,21 +132,65 @@ export function endSurge(state: GameState, events: EngineEvent[] = []): EngineEv
   return events;
 }
 
-/** The queen grows back on the empty ground, one level stronger. */
+/**
+ * The queen grows back on the empty ground, one level stronger.
+ *
+ * `awokeTurn` is deliberately NOT reset: the growth clock runs from the hive's first waking
+ * for the whole match, which together with the level multiplier guarantees she returns
+ * stronger than she fell (see `setHiveDefence`).
+ */
 export function respawnHive(state: GameState, events: EngineEvent[] = []): EngineEvent[] {
   state.hive.level++;
   state.hive.phase = "awake";
   state.hive.owner = null;
   state.hive.buffLeft = 0;
   state.hive.coolLeft = 0;
-  state.hive.awokeTurn = state.turn;
 
+  // Anything camped on the bare ground waiting for her is eaten too, on top of whatever was
+  // banked when the surge lapsed. Sitting on the hive through the cooldown does not deny the
+  // respawn — it feeds it.
+  absorbGarrisons(state);
   for (const t of hiveCells(state)) {
     t.owner = null;
     t.struct = null;
     t.soldiers = 0;
+    t.tunnel = false;
   }
   setHiveDefence(state);
+  spendBanked(state);
   events.push({ type: "hiveRespawn", level: state.hive.level });
   return events;
+}
+
+/** Take everything standing on the five tiles into the pool the next queen comes back with. */
+function absorbGarrisons(state: GameState): void {
+  for (const t of hiveCells(state)) {
+    if (t.soldiers > 0) state.hive.banked += t.soldiers;
+  }
+}
+
+/**
+ * Hand the banked soldiers to the fresh garrison, split in proportion to what each tile is
+ * already worth — so the pool keeps the plus-shape's own balance instead of turning a guard
+ * into the strongest tile on the board. Rounding down leaves a remainder, which goes to the
+ * queen; she is the tile that has to be beaten.
+ */
+function spendBanked(state: GameState): void {
+  const pool = state.hive.banked;
+  state.hive.banked = 0;
+  if (pool <= 0) return;
+
+  const cells = hiveCells(state);
+  const total = cells.reduce((n, t) => n + t.soldiers, 0);
+  if (total <= 0) return;
+
+  let handed = 0;
+  for (const t of cells) {
+    if (t.terrain === "hiveQ") continue;
+    const share = Math.floor(pool * (t.soldiers / total));
+    t.soldiers += share;
+    handed += share;
+  }
+  const queen = cells.find((t) => t.terrain === "hiveQ");
+  if (queen) queen.soldiers += pool - handed;
 }

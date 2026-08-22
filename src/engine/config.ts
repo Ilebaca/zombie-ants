@@ -24,8 +24,24 @@ export const TRAVEL_RANGE = 4;
 export const KEEP_NORMAL = 1;
 export const KEEP_TUNNEL = 5;
 
-/** Hive defenders grow one step every N turns since waking. */
+/** Hive defenders grow one step every N turns since the hive first woke. */
 export const HIVE_GROW_EVERY = 4;
+
+/** Neutral garrison a level-1 queen and each of her guards wake with, and their growth step. */
+export const HIVE_QUEEN_BASE = 16;
+export const HIVE_QUEEN_STEP = 6;
+export const HIVE_GUARD_BASE = 9;
+export const HIVE_GUARD_STEP = 3;
+
+/**
+ * What one hive level is worth, as a multiplier on the whole garrison.
+ *
+ * It has to MULTIPLY rather than add, and the growth clock has to keep running across a
+ * respawn, or a queen who had been sitting a long time came back at level 2 with FEWER
+ * soldiers than the level-1 queen the player had just beaten. Levelling up must always
+ * make her harder.
+ */
+export const HIVE_LEVEL_GROWTH = 1.55;
 
 /**
  * Turns between a surge ending and the queen coming back, one level stronger.
