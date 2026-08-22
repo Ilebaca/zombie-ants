@@ -27,6 +27,15 @@ export const KEEP_TUNNEL = 5;
 /** Hive defenders grow one step every N turns since waking. */
 export const HIVE_GROW_EVERY = 4;
 
+/**
+ * Turns between a surge ending and the queen coming back, one level stronger.
+ *
+ * The GDD describes the respawn but sets no gap for it, so this is a design decision:
+ * without one, the colony that just rode a surge walks straight back onto a fresh queen,
+ * and the Hive becomes a tap rather than a contest.
+ */
+export const HIVE_COOLDOWN = 4;
+
 export type MapId = "tiny" | "small" | "mid";
 
 export interface MapDef extends MapLimits {

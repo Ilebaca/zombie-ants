@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { addEffect, isConnected, recomputeConnectivity, tickEffects, tile, NEUTRAL_MODS, PERMANENT } from "../index";
+import {
+  addEffect, isConnected, recomputeConnectivity, startTurn, tickEffects, tile,
+  NEUTRAL_MODS, PERMANENT,
+} from "../index";
 import { blankGame, put } from "./helpers";
 
 const mods = { ...NEUTRAL_MODS };
@@ -57,5 +60,72 @@ describe("effects", () => {
     addEffect(s, 6, 6, "leaf", "you", PERMANENT);
     for (let i = 0; i < 20; i++) tickEffects(s, "you", mods);
     expect(s.effects.some(e => e.kind === "leaf" && e.c === 6)).toBe(true);
+  });
+});
+
+describe("venom on a trail", () => {
+  /**
+   * A vein holds no garrison at all, so the soldier arithmetic in the venom tick could
+   * never touch one — the barrage fell straight through the thing most worth hitting.
+   * Breaking one is rarely just one tile: connectivity is nest-anchored (§4.2), so
+   * everything that reached the nest only through here goes dark, and the trail beyond
+   * the break loses its anchor and prunes in turn (§4.5).
+   */
+  const trail = () => {
+    const s = blankGame("small");
+    s.current = "you";
+    // nest — vein — vein — vein — outpost, a single thread out from the colony
+    put(s, 0, 0, { owner: "you", struct: "nest", soldiers: 20 });
+    for (const c of [1, 2, 3]) put(s, c, 0, { owner: "you", struct: "vein", soldiers: 0 });
+    put(s, 4, 0, { owner: "you", struct: "stable", soldiers: 6 });
+    recomputeConnectivity(s);
+    return s;
+  };
+
+  it("destroys the vein it lands on", () => {
+    const s = trail();
+    addEffect(s, 2, 0, "venom", "ai", 3);
+    startTurn(s, { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } });
+    expect(tile(s, 2, 0).owner, "the trail survived a direct hit").toBeNull();
+    expect(tile(s, 2, 0).struct).toBeNull();
+  });
+
+  it("takes the whole trail with it, and strands what hung off the end", () => {
+    const s = trail();
+    addEffect(s, 2, 0, "venom", "ai", 3);
+    startTurn(s, { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } });
+
+    /*
+     * The ENTIRE thread goes, not just the far half. A vein needs two same-owner anchors
+     * (§4.5), so the break leaves (1,0) hanging off the nest with nothing on its other
+     * side and (3,0) hanging off the outpost — both prune, and the prune iterates.
+     * Trails are all-or-nothing that way, which is what makes cutting one worth a cast.
+     */
+    for (const c of [1, 2, 3]) {
+      expect(tile(s, c, 0).owner, `vein at ${c} should have collapsed`).toBeNull();
+    }
+    // The outpost is not destroyed — it is CUT OFF, which is a different and worse thing:
+    // it still belongs to the player, it just produces nothing until it is relinked.
+    expect(tile(s, 4, 0).owner).toBe("you");
+    expect(isConnected(s, tile(s, 4, 0)), "should have gone dark in the same tick").toBe(false);
+    expect(tile(s, 0, 0).owner, "the nest is never touched by this").toBe("you");
+  });
+
+  it("leaves the caster's own trails alone", () => {
+    const s = trail();
+    addEffect(s, 2, 0, "venom", "you", 3);          // our own barrage
+    startTurn(s, { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } });
+    expect(tile(s, 2, 0).owner).toBe("you");
+  });
+
+  it("still bleeds a garrisoned tile rather than deleting it outright", () => {
+    const s = trail();
+    put(s, 4, 0, { owner: "you", struct: "stable", soldiers: 30 });   // enough to survive
+    recomputeConnectivity(s);
+    addEffect(s, 4, 0, "venom", "ai", 3);
+    startTurn(s, { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } });
+    const t = tile(s, 4, 0);
+    expect(t.owner, "a defended tile is bled, not deleted").toBe("you");
+    expect(t.soldiers).toBeLessThan(30);
   });
 });

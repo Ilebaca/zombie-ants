@@ -34,7 +34,14 @@ export interface Tile {
 
 export type Grid = Tile[][];
 
-export type HivePhase = "dormant" | "awake" | "buff";
+/**
+ * dormant → awake → buff → cooling → awake, one level stronger.
+ *
+ * `cooling` is the gap after a surge ends: the queen is dead, her tiles are neutral ground
+ * again, and nothing is there to capture until she returns. Without it a colony could take
+ * the queen, ride the surge, and walk straight back onto a fresh one the moment it lapsed.
+ */
+export type HivePhase = "dormant" | "awake" | "buff" | "cooling";
 
 export interface HiveState {
   phase: HivePhase;
@@ -42,6 +49,8 @@ export interface HiveState {
   level: number;
   owner: Player | null;
   buffLeft: number;
+  /** Turns left before a dead queen returns. Only meaningful while `cooling`. */
+  coolLeft: number;
   awokeTurn: number | null;
 }
 
@@ -168,6 +177,8 @@ export type EngineEvent =
   | { type: "hiveAwake" }
   /** `cells` are the five hive tiles that changed hands, so the renderer can fill them. */
   | { type: "hiveCaptured"; owner: Player; level: number; cells: Coord[] }
+  /** The surge lapsed. The tiles stay with whoever took them; only the bonus ends. */
+  | { type: "hiveSurgeEnded"; level: number }
   | { type: "hiveRespawn"; level: number }
   | { type: "gameOver"; winner: Player; reason: GameOverReason };
 

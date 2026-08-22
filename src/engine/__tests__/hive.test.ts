@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   captureQueen, defaultContext, hiveCells, moveOrAttack, recomputeConnectivity,
-  respawnHive, setHiveDefence, tile, isConnected,
+  respawnHive, setHiveDefence, tile, isConnected, hiveTick, HIVE_COOLDOWN,
 } from "../index";
 import { blankGame, put } from "./helpers";
 
@@ -65,6 +65,49 @@ describe("hive", () => {
     expect(s.hive.level).toBe(before + 1);
     expect(s.hive.owner).toBeNull();
     for (const t of hiveCells(s)) expect(t.owner).toBeNull();
+  });
+
+  /**
+   * The queen does not come back the instant the surge lapses. She is dead, her ground is
+   * bare, and there is a gap before she grows again — otherwise the colony that just rode
+   * a surge walks straight onto a fresh one and the Hive is a tap rather than a contest.
+   */
+  it("goes cold between the surge ending and the queen returning", () => {
+    const s = blankGame("small");
+    s.turn = 20;
+    captureQueen(s, "you");
+    expect(s.hive.phase).toBe("buff");
+    const level = s.hive.level;
+
+    // Run the surge down. The clock only ticks on the holder's turn.
+    for (let i = 0; i < s.limits.buffTurns; i++) hiveTick(s, "you");
+    expect(s.hive.phase, "the queen should be gone, not instantly back").toBe("cooling");
+    expect(s.hive.coolLeft).toBe(HIVE_COOLDOWN);
+    expect(s.hive.level, "she does not level up until she returns").toBe(level);
+    for (const t of hiveCells(s)) {
+      expect(t.owner, "the tiles are his only while the surge runs").toBeNull();
+      expect(t.soldiers, "there must be nothing there to capture").toBe(0);
+    }
+
+    // Nothing is capturable during the wait, however many turns pass.
+    for (let i = 0; i < HIVE_COOLDOWN - 1; i++) { hiveTick(s, "you"); hiveTick(s, "ai"); }
+    expect(s.hive.phase).toBe("cooling");
+    for (const t of hiveCells(s)) expect(t.soldiers).toBe(0);
+
+    hiveTick(s, "you");
+    expect(s.hive.phase).toBe("awake");
+    expect(s.hive.level).toBe(level + 1);
+    for (const t of hiveCells(s)) expect(t.soldiers).toBeGreaterThan(0);
+  });
+
+  it("counts the wait once per round, not once per side", () => {
+    const s = blankGame("small");
+    captureQueen(s, "you");
+    for (let i = 0; i < s.limits.buffTurns; i++) hiveTick(s, "you");
+    // A full round is one tick of the clock, so the AI's turn must not spend one.
+    const before = s.hive.coolLeft;
+    hiveTick(s, "ai");
+    expect(s.hive.coolLeft).toBe(before);
   });
 
   it("capturing a hive GUARD keeps it as a usable stable", () => {

@@ -77,7 +77,8 @@ These were each decided deliberately, several after bugs. Changing one silently 
    - Tunnel galleries are their own roots — they can never be cut off.
    - Hive tiles are never considered cut off.
    - Recompute connectivity after every action **and immediately after effects tick**, so
-     venom/fire that severs a colony deactivates the far part at once.
+     venom/fire that severs a colony deactivates the far part at once. `startTurn` prunes
+     trails and rebuilds supply lines right after `tickEffects` for exactly this reason.
 
 3. **A leaf wall blocks everything, tunnelling included.** `blockedByEnemyLeaf` stops every
    move, attack and travel onto an enemy wall; `tunnelTargets` refuses to surface there too.
@@ -85,7 +86,9 @@ These were each decided deliberately, several after bugs. Changing one silently 
    wall is still ground you may surface on.
 
 4. **Veins have no defence.** Attacking an enemy vein captures it instantly — no combat, no
-   losses. It becomes a stable.
+   losses. It becomes a stable. **Venom destroys one outright** — a vein holds no garrison,
+   so the damage arithmetic can never bite it, and it has to be a special case or the
+   barrage falls straight through the thing most worth hitting.
 
 5. **Dangling veins prune.** A vein needs ≥2 same-owner colony neighbours. When it loses an
    anchor the trail is destroyed back to the nearest captured tile. Junctions survive: only
@@ -94,12 +97,19 @@ These were each decided deliberately, several after bugs. Changing one silently 
 6. **Veins are infrastructure, not tiles.** They produce nothing, cannot be a Rally target,
    and are skipped by Fortify. Troops landing on a vein promote it to a stable.
 
-7. **Losing your nest loses the match** — immediately, regardless of how much else you hold.
+7. **The Hive is a contest, not a tap.** Taking the queen kills her: all five tiles and the
+   troops on them become the captor's, and the surge runs for the map's buff length. When it
+   lapses the tiles go back to bare ground and the queen is GONE for `HIVE_COOLDOWN` turns
+   (4) before growing back one level stronger. That gap is deliberate — without it the
+   colony that just rode a surge walks straight onto a fresh queen. The GDD describes the
+   respawn but sets no gap, so the number is a design decision, not a port.
+
+8. **Losing your nest loses the match** — immediately, regardless of how much else you hold.
    Capturing the enemy nest wins it the same way.
 
-8. **A tile always keeps a floor of 1 soldier** (5 on a tunnel mouth). You can never empty one.
+9. **A tile always keeps a floor of 1 soldier** (5 on a tunnel mouth). You can never empty one.
 
-9. **The AI gets no anthill upgrades and no research.** It competes on decision quality only,
+10. **The AI gets no anthill upgrades and no research.** It competes on decision quality only,
    so player progression never becomes mandatory.
 
 ## 4a. The AI

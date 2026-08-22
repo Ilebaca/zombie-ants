@@ -1,4 +1,4 @@
-import { HIVE_GROW_EVERY } from "./config";
+import { HIVE_COOLDOWN, HIVE_GROW_EVERY } from "./config";
 import { allTiles } from "./board";
 import type { Coord, EngineEvent, GameState, Player, Tile } from "./types";
 
@@ -47,7 +47,14 @@ export function hiveTick(state: GameState, p: Player, events: EngineEvent[] = []
   }
   if (state.hive.phase === "buff" && state.hive.owner === p) {
     state.hive.buffLeft--;
-    if (state.hive.buffLeft <= 0) respawnHive(state, events);
+    if (state.hive.buffLeft <= 0) endSurge(state, events);
+    return events;                       // the tick that ends a surge does not also spend
+  }                                      // the first turn of the wait that follows it
+  // The dead queen's own clock. She belongs to nobody while she is gone, so it runs once
+  // per ROUND rather than once per side — tied to a player it would halve the wait.
+  if (state.hive.phase === "cooling" && p === "you") {
+    state.hive.coolLeft--;
+    if (state.hive.coolLeft <= 0) respawnHive(state, events);
   }
   return events;
 }
@@ -77,12 +84,37 @@ export function captureQueen(state: GameState, p: Player, events: EngineEvent[] 
   return events;
 }
 
-/** When the surge ends the hive resets to neutral, one level stronger. */
+/**
+ * The surge lapses: the five tiles are the capturing colony's only for as long as it runs.
+ *
+ * They go back to bare ground here, and the queen is simply GONE — no garrison to fight,
+ * nothing to capture — until she grows back. That gap is the point. Without it a colony
+ * could ride a surge and walk straight onto a fresh queen the moment it lapsed, which
+ * turns the Hive from a contest into a tap.
+ */
+export function endSurge(state: GameState, events: EngineEvent[] = []): EngineEvent[] {
+  state.hive.phase = "cooling";
+  state.hive.owner = null;
+  state.hive.buffLeft = 0;
+  state.hive.coolLeft = HIVE_COOLDOWN;
+
+  for (const t of hiveCells(state)) {
+    t.owner = null;
+    t.struct = null;
+    t.soldiers = 0;
+    t.tunnel = false;
+  }
+  events.push({ type: "hiveSurgeEnded", level: state.hive.level });
+  return events;
+}
+
+/** The queen grows back on the empty ground, one level stronger. */
 export function respawnHive(state: GameState, events: EngineEvent[] = []): EngineEvent[] {
   state.hive.level++;
   state.hive.phase = "awake";
   state.hive.owner = null;
   state.hive.buffLeft = 0;
+  state.hive.coolLeft = 0;
   state.hive.awokeTurn = state.turn;
 
   for (const t of hiveCells(state)) {

@@ -61,13 +61,32 @@ export function tickEffects(
       }
     }
 
-    if (e.kind === "venom" && e.owner !== p && t.owner === p && t.soldiers > 0) {
-      const loss = Math.round(7 * glandCut(mods));
-      const before = t.soldiers;
-      t.soldiers = Math.max(0, t.soldiers - loss);
-      const wiped = t.soldiers <= 0;
-      if (wiped) { t.owner = null; t.struct = null; }
-      events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "venom", lost: before - t.soldiers, wiped });
+    if (e.kind === "venom" && e.owner !== p && t.owner === p) {
+      if (t.struct === "vein") {
+        /*
+         * Venom on a trail EATS the trail. A vein holds no garrison at all, so the
+         * soldier arithmetic below could never touch one — the barrage fell straight
+         * through the thing most worth hitting.
+         *
+         * Breaking one tile of a trail is rarely just one tile: connectivity is
+         * nest-anchored (CLAUDE.md §4.2), so everything that reached the nest only
+         * through here goes dark, and the rest of the trail beyond the break has lost
+         * its anchor and prunes in turn (§4.5). `startTurn` runs both passes right
+         * after this one, which is what makes the collapse happen in the same tick as
+         * the hit rather than on the next action.
+         */
+        t.owner = null;
+        t.struct = null;
+        t.soldiers = 0;
+        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "venom", lost: 0, wiped: true });
+      } else if (t.soldiers > 0) {
+        const loss = Math.round(7 * glandCut(mods));
+        const before = t.soldiers;
+        t.soldiers = Math.max(0, t.soldiers - loss);
+        const wiped = t.soldiers <= 0;
+        if (wiped) { t.owner = null; t.struct = null; }
+        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "venom", lost: before - t.soldiers, wiped });
+      }
     }
   }
 

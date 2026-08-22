@@ -535,6 +535,8 @@ export class MatchScreen {
     if (e.type === "hiveAwake") this.toast("The Hive stirs. The queen is awake.", "hive");
     else if (e.type === "hiveCaptured") {
       this.toast(e.owner === "you" ? "You take the Hive queen — surge!" : "The enemy takes the Hive queen.", "hive");
+    } else if (e.type === "hiveSurgeEnded") {
+      this.toast("The surge fades. The ground you took stays yours.", "hive");
     } else if (e.type === "hiveRespawn") this.toast(`The Hive returns — level ${e.level}.`, "hive");
     else if (e.type === "effectDamage" && e.wiped) this.toast("A garrison is wiped out.", "bad");
   }

@@ -151,6 +151,7 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
       }
 
       case "hiveAwake":
+      case "hiveSurgeEnded":
       case "hiveRespawn":
       case "production":
       case "gameOver":

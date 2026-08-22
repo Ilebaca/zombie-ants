@@ -1,7 +1,7 @@
 import { MAPS, START_SOLDIERS } from "./config";
 import type { MapId } from "./config";
 import { allTiles, makeGrid, nestTile, otherPlayer, tileAt } from "./board";
-import { recomputeConnectivity } from "./connectivity";
+import { pruneAllVeins, recomputeConnectivity } from "./connectivity";
 import { setHiveDefence, hiveTick } from "./hive";
 import { runProduction } from "./production";
 import { tickEffects } from "./effects";
@@ -52,7 +52,7 @@ export function createGame(opts: NewGameOptions): GameState {
     current: "you",
     over: false,
     winner: null,
-    hive: { phase: "dormant", level: 1, owner: null, buffLeft: 0, awokeTurn: null },
+    hive: { phase: "dormant", level: 1, owner: null, buffLeft: 0, coolLeft: 0, awokeTurn: null },
     effects: [],
     species: { ...opts.species },
     cooldown: {
@@ -227,6 +227,12 @@ export function startTurn(state: GameState, mods: Record<Player, PlayerMods>): E
   const p = state.current;
 
   tickEffects(state, p, mods[p], events);
+  // Effects break structure — venom eats a trail, fire wipes a tile — so the colony has to
+  // be re-examined before anything else in the turn reads it. Trails that lost an anchor
+  // prune, then supply lines are rebuilt, so a colony severed by the barrage goes inactive
+  // in the same tick it was cut rather than on the next action (CLAUDE.md §4.2).
+  pruneAllVeins(state, events);
+  recomputeConnectivity(state);
   if (state.cooldown[p] > 0) state.cooldown[p]--;
   if (state.shield[p] > 0) state.shield[p]--;
   if (state.cloak[p] > 0) state.cloak[p]--;
