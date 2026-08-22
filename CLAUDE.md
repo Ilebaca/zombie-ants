@@ -176,8 +176,8 @@ Things self-play has already settled. Do not undo them without re-running the la
   they lose an anchor. Counting one as a whole tile taught the AI to prefer a four-tile
   travel — four veins — over an adjacent resource.
 
-Measured ladder (20 games each, sides and species swapped, node-budgeted): hard beats
-normal **65%**, hard beats easy **100%**, normal beats easy **100%**. Before any of this
+Measured ladder (24 games each, sides and species swapped, node-budgeted): hard beats
+normal **96%**, hard beats easy **100%**, normal beats easy **100%**. Before any of this
 work, hard scored **35%** against normal — the ladder was inverted at the top.
 
 **Depth is the only dial that separates hard from normal.** Everything else that makes the
@@ -186,7 +186,7 @@ cutting a vein by how much it severs, treating a takeable queen as near-terminal
 correct play and belongs in both, so improving the AI tends to CLOSE the ladder rather than
 widen it. Taking a capability away from normal to reopen it does not work: without long
 travel it scored 44% against easy, which is worse than easy rather than merely worse than
-hard. Two plies against eight is what gives hard 94% while normal still beats easy 100%.
+hard. Two plies against eight is what gives hard 96% while normal still beats easy 100%.
 
 **Almost every AI match is decided on tile count, not by a kill.** Of sixteen hard-vs-easy
 games none ended by capturing a queen; of sixteen hard-vs-normal, two did. So a nest capture
