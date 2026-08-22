@@ -9,8 +9,8 @@
 import { describe, expect, it } from "vitest";
 import { blankGame, put } from "./helpers";
 import {
-  DEF, NEUTRAL_MODS, TRAVEL_RANGE, allTiles, flatDefence, guardDefence, moveOrAttack,
-  recomputeConnectivity, tile, travel,
+  DEF, NEUTRAL_MODS, TRAVEL_RANGE, allTiles, createGame, endTurn, flatDefence, guardDefence,
+  moveOrAttack, recomputeConnectivity, tile, travel,
 } from "../index";
 import type { GameState, PlayerMods } from "../index";
 
@@ -133,5 +133,48 @@ describe("long sends", () => {
     expect(tile(s, 4, 1)!.struct).toBe("stable");     // only the destination is territory
     const veins = allTiles(s).filter((t) => t.struct === "vein");
     for (const v of veins) expect(flatDefence(s, v, mods)).toBe(0);
+  });
+});
+
+/**
+ * THE MATCH ENDS WHEN A QUEEN FALLS, AND ONLY THEN (CLAUDE.md §4.8).
+ *
+ * The clock used to run out and award the match to whoever held more ground. That decided
+ * games nobody had won: a player ahead on territory could simply stop playing, and one
+ * behind had no route back however the position stood. `limits.turnLimit` survives as the
+ * length a match is EXPECTED to run — the AI prices income against it and the measurement
+ * tools adjudicate there — but it is not a rule of the game.
+ */
+describe("how a match ends", () => {
+  const both = { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } };
+
+  it("keeps playing past the map's expected length", () => {
+    const s = createGame({ map: "small", species: { you: "fire", ai: "fire" } });
+    s.turn = s.limits.turnLimit;
+    s.current = "ai";
+    endTurn(s, both);                       // rolls the counter past the limit
+    expect(s.turn).toBeGreaterThan(s.limits.turnLimit);
+    expect(s.over, "the clock is not a result").toBe(false);
+    expect(s.winner).toBeNull();
+  });
+
+  it("still runs turns long after it", () => {
+    const s = createGame({ map: "tiny", species: { you: "fire", ai: "fire" } });
+    for (let i = 0; i < s.limits.turnLimit * 4; i++) endTurn(s, both);
+    expect(s.over).toBe(false);
+    expect(s.turn).toBeGreaterThan(s.limits.turnLimit * 1.5);
+  });
+
+  it("ends the moment a nest changes hands", () => {
+    const s = blankGame("small");
+    s.turn = s.limits.turnLimit + 20;       // well past the old limit: irrelevant either way
+    put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 400 });
+    put(s, 2, 1, { owner: "ai", struct: "nest", soldiers: 1 });
+    recomputeConnectivity(s);
+    s.current = "you";
+    const events = moveOrAttack(s, { c: 1, r: 1 }, { c: 2, r: 1 }, ctx);
+    expect(s.over).toBe(true);
+    expect(s.winner).toBe("you");
+    expect(events.find((e) => e.type === "gameOver")).toMatchObject({ reason: "nest" });
   });
 });

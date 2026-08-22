@@ -19,7 +19,7 @@ const ctx = defaultContext();
 export interface GameResult {
   winner: Player | null;
   turns: number;
-  /** How it ended — "nest", "wipe", "turnLimit", or a note if it never resolved. */
+  /** How it ended — "nest", "wipe", "adjudicated", or a note if it never resolved. */
   reason: string;
 }
 
@@ -30,7 +30,16 @@ export function playGame(
   const state: GameState = createGame({ map, species, seed });
   let guard = 0;
   let reason = "";
-  while (!state.over && guard++ < 4000) {
+  /*
+   * ADJUDICATION IS THE TOOL'S JOB, NOT THE GAME'S.
+   *
+   * The engine has no turn limit: a match ends when a queen falls (CLAUDE.md §4.8). Two
+   * AIs that neither crack a nest would therefore play forever, and a run of them would
+   * measure nothing. So the harness stops at the map's expected length and awards the
+   * result on tile count — exactly the rule the engine used to apply itself, which keeps
+   * every number in this file comparable with the ones already recorded.
+   */
+  while (!state.over && state.turn <= state.limits.turnLimit && guard++ < 4000) {
     const p = state.current;
     for (const e of aiTurn(state, p, p === "you" ? youAI : aiAI, ctx)) {
       if (e.type === "gameOver") reason = e.reason;
@@ -42,11 +51,11 @@ export function playGame(
   }
   const you = allTiles(state).filter((t) => t.owner === "you").length;
   const ai = allTiles(state).filter((t) => t.owner === "ai").length;
-  return {
-    winner: state.winner,
-    turns: state.turn,
-    reason: state.over ? (reason || "over") : `stalled you=${you} ai=${ai}`,
-  };
+  if (state.over) return { winner: state.winner, turns: state.turn, reason: reason || "over" };
+  if (state.turn > state.limits.turnLimit) {
+    return { winner: you >= ai ? "you" : "ai", turns: state.turn, reason: "adjudicated" };
+  }
+  return { winner: null, turns: state.turn, reason: `stalled you=${you} ai=${ai}` };
 }
 
 const SPECIES: SpeciesId[] = ["fire", "leafcutter", "carpenter", "weaver", "army", "bullet"];

@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { blankGame, put } from "../../engine/__tests__/helpers";
 import { recomputeConnectivity, tile, travel } from "../../engine";
 import type { Coord, EngineEvent, GameState, Tile } from "../../engine";
 import { Layout } from "../layout";
 import { REVEAL_MS_PER_TILE, RevealTracker, edgeFor } from "../reveal";
-import { FxLayer } from "../fx";
+import { CRUMBLE_MS, FxLayer } from "../fx";
 import { animate, sourceOf } from "../animate";
 import { basicLook } from "../art";
 import { drawFillets, drawTile, type Scene } from "../board";
@@ -649,5 +649,89 @@ describe("rounding a colony's inner corners", () => {
     const { s: sc, rec } = scene(s);
     drawFillets(sc);
     expect(rec.fills()).not.toContain(ownerCol("you").toLowerCase());
+  });
+});
+
+/**
+ * LOSING GROUND.
+ *
+ * The engine clears a destroyed tile the instant it dies, so without this the ground simply
+ * is not there the next time you look — a venom hit that eats a four-tile trail is the
+ * biggest thing that can happen on a turn and had no animation at all. The tile gets a stay
+ * of execution: it holds, whites out, and shatters.
+ */
+describe("destroying a tile", () => {
+  const clock = () => vi.useFakeTimers({ toFake: ["performance", "Date"] });
+
+  const frame = (fx: FxLayer): Recorder => {
+    const rec = makeRecorder();
+    const l = new Layout(13);
+    l.ts = 40; l.ox = 0; l.oy = 0; l.width = 520; l.height = 520;
+    fx.draw(rec.ctx, l);
+    return rec;
+  };
+
+  /** The cell shape is built with `rrect`, which is the only thing here using `arcTo`. */
+  const cells = (rec: Recorder): number => rec.of("arcTo").length / 4;
+
+  const pruned = (at: { c: number; r: number }): EngineEvent =>
+    ({ type: "veinPruned", at, owner: "you" });
+
+  it("holds the tile on screen after the engine has cleared it", () => {
+    clock();
+    const fx = new FxLayer();
+    animate([pruned({ c: 3, r: 3 })], { reveal: new RevealTracker(), fx });
+    const rec = frame(fx);
+    expect(cells(rec), "nothing was drawn where the tile used to be").toBe(1);
+    expect(rec.fills()).toContain(ownerCol("you").toLowerCase());
+    vi.useRealTimers();
+  });
+
+  it("whites the tile out before it goes", () => {
+    clock();
+    const fx = new FxLayer();
+    animate([pruned({ c: 3, r: 3 })], { reveal: new RevealTracker(), fx });
+    const early = frame(fx).fills().filter((f) => f.startsWith("rgba(255,255,255"));
+    vi.advanceTimersByTime(CRUMBLE_MS * 0.35);
+    const late = frame(fx).fills().filter((f) => f.startsWith("rgba(255,255,255"));
+    const alpha = (f: string): number => Number(/,([\d.]+)\)$/.exec(f)?.[1] ?? 0);
+    expect(alpha(late[0] as string)).toBeGreaterThan(alpha(early[0] as string));
+    vi.useRealTimers();
+  });
+
+  it("is gone once the destruction has run", () => {
+    clock();
+    const fx = new FxLayer();
+    animate([pruned({ c: 3, r: 3 })], { reveal: new RevealTracker(), fx });
+    vi.advanceTimersByTime(CRUMBLE_MS + 50);
+    expect(frame(fx).calls).toHaveLength(0);
+    vi.useRealTimers();
+  });
+
+  /** A collapse travels; a row of tiles blinking out at once reads as a glitch. */
+  it("staggers a whole trail collapsing", () => {
+    clock();
+    const fx = new FxLayer();
+    animate([pruned({ c: 3, r: 3 }), pruned({ c: 4, r: 3 }), pruned({ c: 5, r: 3 })],
+      { reveal: new RevealTracker(), fx });
+    expect(cells(frame(fx)), "all three started on the same frame").toBe(1);
+    vi.advanceTimersByTime(150);
+    expect(cells(frame(fx))).toBe(3);
+    vi.useRealTimers();
+  });
+
+  it("destroys a tile an effect wiped out, and only clashes on one it merely hurt", () => {
+    clock();
+    const killed = new FxLayer();
+    animate([{ type: "effectDamage", at: { c: 2, r: 2 }, kind: "venom", lost: 9, wiped: true, owner: "ai" }],
+      { reveal: new RevealTracker(), fx: killed });
+    expect(cells(frame(killed))).toBe(1);
+
+    const hurt = new FxLayer();
+    animate([{ type: "effectDamage", at: { c: 2, r: 2 }, kind: "venom", lost: 4, wiped: false, owner: "ai" }],
+      { reveal: new RevealTracker(), fx: hurt });
+    expect(cells(frame(hurt)), "a survivor must not be destroyed").toBe(0);
+    expect(frame(hurt).has("stroke"), "a survivor still takes a hit").toBe(true);
+    vi.useRealTimers();
   });
 });

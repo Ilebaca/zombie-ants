@@ -29,6 +29,17 @@ const MAX_RALLY_FLOWS = 14;
 /** One streak step, matching FLOW_MS_PER_STEP in fx.ts. */
 const FLOW_MS_PER_STEP = 260;
 
+/**
+ * Stagger between tiles dying in the same batch, and the point it stops growing.
+ *
+ * A venom hit that severs a long trail can destroy a dozen tiles at once. Spacing them
+ * makes the collapse travel; letting the spacing run unbounded would leave the last tile
+ * of a big collapse standing for seconds after the rest.
+ */
+const RUIN_STAGGER_MS = 70;
+const RUIN_STAGGER_MAX = 6;
+const ruin = (i: number): number => Math.min(i, RUIN_STAGGER_MAX) * RUIN_STAGGER_MS;
+
 export interface AnimationSinks {
   reveal: RevealTracker;
   fx: FxLayer;
@@ -76,6 +87,8 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
   // A won fight emits `combat` then `capture` for the same tile. The clash has to wait for
   // that tile's turn in the run, so it is held here and released with the capture.
   const clashes = new Map<string, { at: Coord; src: Coord; attacker: Player }>();
+  /** How many tiles have already been destroyed in this batch, for the collapse stagger. */
+  let ruins = 0;
 
   for (const e of events) {
     switch (e.type) {
@@ -129,11 +142,20 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
       }
 
       case "effectDamage":
-        fx.clash(e.at);
+        // A hit that killed the tile gets the destruction, not the clash: the tile has
+        // already gone from the board and this is the only thing that says it was there.
+        if (e.wiped) fx.crumble(e.at, e.owner, false, ruin(ruins++));
+        else fx.clash(e.at);
         sinks.onNotice?.(e);
         break;
 
       case "veinPruned":
+        // A trail losing an anchor collapses back to the nearest held tile, and the pruner
+        // emits one pass at a time — so staggering by arrival makes the chain reaction read
+        // as one thing unravelling rather than a row of tiles blinking out together.
+        fx.crumble(e.at, e.owner, true, ruin(ruins++));
+        break;
+
       case "effectApplied":
       case "effectExpired":
         break;

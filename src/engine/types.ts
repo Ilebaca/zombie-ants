@@ -167,7 +167,9 @@ export type EngineEvent =
   | { type: "production"; owner: Player; gained: number }
   | { type: "effectApplied"; at: Coord; kind: EffectKind; owner: Player; turns: number }
   | { type: "effectExpired"; at: Coord; kind: EffectKind }
-  | { type: "effectDamage"; at: Coord; kind: EffectKind; lost: number; wiped: boolean }
+  | { type: "effectDamage"; at: Coord; kind: EffectKind; lost: number; wiped: boolean;
+      /** Who held the tile — the renderer crumbles it in their colour. */
+      owner: Player | null }
   | { type: "abilityCast"; owner: Player; kind: AbilityKind; name: string }
   | { type: "budded"; at: Coord; owner: Player; count: number }
   | { type: "devoured"; at: Coord; into: Coord; owner: Player; count: number }
@@ -187,7 +189,12 @@ export type EngineEvent =
  * objective was met or missed and tells the engine to stop — the engine has no notion of
  * what the objective was, only that the match is over.
  */
-export type GameOverReason = "nest" | "wipe" | "turnLimit" | "surrender" | "objective";
+/**
+ * A match ends when a queen falls, and only then (CLAUDE.md §4.8). There is no turn
+ * limit: running the clock out used to hand the win to whoever held more ground, which
+ * decided matches nobody had won.
+ */
+export type GameOverReason = "nest" | "wipe" | "surrender" | "objective";
 
 export interface Coord { c: number; r: number }
 

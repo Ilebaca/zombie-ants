@@ -727,9 +727,6 @@ function syncFabs(home: HTMLElement): void {
  * wording is the only place the *reason* a match ended is ever stated.
  */
 function resultFlavour(won: boolean, reason: GameOverReason | null, turns: number): string {
-  if (reason === "turnLimit") {
-    return `The fungus blooms at turn ${turns}. The larger colony consumes the smaller.`;
-  }
   if (reason === "surrender") {
     return `You surrendered on turn ${turns}. The hollow falls silent.`;
   }

@@ -78,18 +78,42 @@ export function territoryLoops(state: GameState, p: Player): Corner[][] {
     const startKey = edges.keys().next().value as string;
     const loop: Corner[] = [];
     let cur = startKey;
+    let from = cornerOf(startKey);
+    let dir: Corner | null = null;
     // Walk forward until the trail runs out or comes back on itself.
     while (edges.has(cur)) {
       const outs = edges.get(cur) as Corner[];
-      const next = outs.pop() as Corner;
+      const next = outs.splice(pickTurn(outs, from, dir), 1)[0] as Corner;
       if (!outs.length) edges.delete(cur);
       loop.push(next);
+      dir = step(from, next);
+      from = next;
       cur = key(next.c, next.r);
       if (cur === startKey) break;
     }
     if (loop.length > 2) loops.push(loop);
   }
   return loops;
+}
+
+/**
+ * Which way to go at a corner where two cells meet only DIAGONALLY.
+ *
+ * Four edges arrive at that one point and either pairing joins up, so a naive walk fuses
+ * the two cells into a single figure-eight loop and the dashes run between them as if they
+ * were connected. They are not: a corner touch is not a shared edge, and two cells that
+ * only kiss should each get their own unbroken ring.
+ *
+ * Taking the sharpest RIGHT turn always keeps them apart, because the whole trace is wound
+ * clockwise per cell — following the turn the winding is already making stays inside the
+ * cell being walked. Everywhere else there is only one edge to take, so the rule costs
+ * nothing.
+ */
+function pickTurn(outs: readonly Corner[], from: Corner, dir: Corner | null): number {
+  if (outs.length < 2 || !dir) return outs.length - 1;
+  const right = { c: -dir.r, r: dir.c };
+  const i = outs.findIndex((o) => sameDir(step(from, o), right));
+  return i >= 0 ? i : outs.length - 1;
 }
 
 function addEdge(edges: Map<string, Corner[]>, from: Corner, to: Corner): void {
@@ -148,7 +172,7 @@ export function veinTrails(state: GameState, p: Player): Corner[][] {
 
   for (const startKey of starts) {
     while ((adj.get(startKey) ?? []).length) {
-      const path: Corner[] = [fromKey(startKey)];
+      const path: Corner[] = [halfNodeOf(startKey)];
       let cur = path[0] as Corner;
       let dir: Corner | null = null;
       for (;;) {
@@ -189,7 +213,14 @@ function drop(
   if (!list.length) m.delete(k);
 }
 
-const fromKey = (k: string): Corner => {
+/** A grid corner back out of its key. */
+const cornerOf = (k: string): Corner => {
+  const [a, b] = k.split(",");
+  return { c: Number(a), r: Number(b) };
+};
+
+/** A vein-spine node back out of its key — those are stored doubled, on a half-tile lattice. */
+const halfNodeOf = (k: string): Corner => {
   const [a, b] = k.split(",");
   return { c: Number(a) / 2, r: Number(b) / 2 };
 };

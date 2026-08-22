@@ -216,3 +216,52 @@ describe("tracing the vein spines", () => {
       .toBe(off((r) => drawTrail(r.ctx, layout(), [loop], style, 700)));
   });
 });
+
+/**
+ * DIAGONAL TOUCH.
+ *
+ * Two cells that meet at a corner are not connected — a corner touch is not a shared edge.
+ * Four boundary edges arrive at that one point and either pairing joins up, so a naive walk
+ * fuses them into one figure-eight and the dashes run between the two as if there were
+ * ground there.
+ */
+describe("cells that touch only at a corner", () => {
+  const diagonal = (a: [number, number], b: [number, number]) => {
+    const s = blankGame();
+    put(s, a[0], a[1], { owner: "you", struct: "stable", soldiers: 2 });
+    put(s, b[0], b[1], { owner: "you", struct: "stable", soldiers: 2 });
+    recomputeConnectivity(s);
+    return territoryLoops(s, "you");
+  };
+
+  it("gives each one its own unbroken ring", () => {
+    const loops = diagonal([3, 3], [4, 4]);
+    expect(loops, "one figure-eight instead of two rings").toHaveLength(2);
+    expect(loops.map((l) => l.length)).toEqual([4, 4]);
+  });
+
+  it("does the same on the other diagonal", () => {
+    const loops = diagonal([4, 3], [3, 4]);
+    expect(loops).toHaveLength(2);
+    expect(loops.map((l) => l.length)).toEqual([4, 4]);
+  });
+
+  /** Each ring must be one cell's four corners, not a mixture of both cells'. */
+  it("keeps each ring inside its own cell", () => {
+    for (const loop of diagonal([3, 3], [4, 4])) {
+      const cs = loop.map((p) => p.c).sort((a, b) => a - b);
+      expect((cs.at(-1) as number) - (cs[0] as number), "the ring spans both cells").toBe(1);
+    }
+  });
+
+  it("still fuses cells that share a real edge", () => {
+    const s = blankGame();
+    put(s, 3, 3, { owner: "you", struct: "stable", soldiers: 2 });
+    put(s, 4, 3, { owner: "you", struct: "stable", soldiers: 2 });
+    put(s, 4, 4, { owner: "you", struct: "stable", soldiers: 2 });
+    recomputeConnectivity(s);
+    const loops = territoryLoops(s, "you");
+    expect(loops).toHaveLength(1);
+    expect(loops[0]).toHaveLength(8);
+  });
+});

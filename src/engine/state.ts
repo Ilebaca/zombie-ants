@@ -247,14 +247,16 @@ export function endTurn(state: GameState, mods: Record<Player, PlayerMods>): Eng
   state.current = otherPlayer(state.current);
   if (state.current === "you") state.turn++;
 
-  if (state.turn > state.limits.turnLimit) {
-    // The fungus blooms: the larger colony consumes the smaller.
-    const you = allTiles(state).filter((t) => t.owner === "you").length;
-    const ai = allTiles(state).filter((t) => t.owner === "ai").length;
-    const winner: Player = you >= ai ? "you" : "ai";
-    state.over = true; state.winner = winner;
-    return [{ type: "gameOver", winner, reason: "turnLimit" }];
-  }
+  /*
+   * NO TURN LIMIT (CLAUDE.md §4.8).
+   *
+   * The clock used to run out and hand the match to whoever held more ground. That decided
+   * games nobody had won — a player ahead on territory could simply stop playing, and one
+   * behind had no way back however the position stood. A match ends when a queen falls and
+   * only then, so `limits.turnLimit` is now just the length a match is EXPECTED to run:
+   * the AI prices income against it, and the measurement tools adjudicate there so their
+   * numbers stay comparable. Neither is a rule of the game.
+   */
   return startTurn(state, mods);
 }
 

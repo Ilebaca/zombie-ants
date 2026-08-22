@@ -214,7 +214,7 @@ table tbody tr:hover { background: #f5f1ea; }
     <ul>
       <li><strong>Queen fall (primary).</strong> Capture the enemy nest tile and you win immediately — no matter how many tiles they still hold. Losing your own nest loses you the match the same way.</li>
       <li><strong>Wipe.</strong> A colony reduced to zero tiles is eliminated.</li>
-      <li><strong>Turn limit.</strong> If the limit is reached (32 / 45 / 80 by map), the larger colony is declared the winner — the fungus blooms and consumes the smaller one.</li>
+      <li><strong>No turn limit.</strong> A match runs until a queen falls. The per-map turn figures (32 / 45 / 80) are how long a match is <em>expected</em> to last — they pace the Hive and the AI's reading of income — but reaching one does not end anything. Awarding the win to the larger colony when the clock ran out decided matches nobody had won.</li>
       <li><strong>Surrender.</strong> Available from the match HUD.</li>
     </ul>
 
@@ -495,7 +495,7 @@ table tbody tr:hover { background: #f5f1ea; }
     <h1>Three boards</h1>
 
     <div class="tw"><table>
-      <thead><tr><th>Map</th><th>Grid</th><th>Hive wakes</th><th>Turn limit</th><th>Surge length</th><th>Feel</th></tr></thead>
+      <thead><tr><th>Map</th><th>Grid</th><th>Hive wakes</th><th>Expected length</th><th>Surge length</th><th>Feel</th></tr></thead>
       <tbody>
         <tr><td><strong>Skirmish</strong></td><td>7×7</td><td>Turn 10</td><td>32</td><td>3 turns</td><td>Knife fight. Contact almost immediately, the Hive is always relevant.</td></tr>
         <tr><td><strong>Corridor</strong></td><td>9×9</td><td>Turn 14</td><td>45</td><td>4 turns</td><td>The default duel — room for one economic decision before the fighting.</td></tr>

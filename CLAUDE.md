@@ -105,7 +105,14 @@ These were each decided deliberately, several after bugs. Changing one silently 
    respawn but sets no gap, so the number is a design decision, not a port.
 
 8. **Losing your nest loses the match** — immediately, regardless of how much else you hold.
-   Capturing the enemy nest wins it the same way.
+   Capturing the enemy nest wins it the same way. **There is no turn limit.** The clock used
+   to run out and hand the match to whoever held more ground, which decided games nobody had
+   won — a player ahead on territory could stop playing, and one behind had no route back
+   however the position stood. `limits.turnLimit` survives as the length a match is EXPECTED
+   to run: it paces nothing by itself, the AI prices income against it, and the measurement
+   tools adjudicate there so their numbers stay comparable. It is not a rule of the game, and
+   two AIs that never crack a nest will play forever without one — which is why `arena.ts`
+   stops the match itself rather than waiting for the engine to.
 
 9. **A tile always keeps a floor of 1 soldier** (5 on a tunnel mouth). You can never empty one.
 
@@ -279,6 +286,16 @@ Each of these cost a debugging round. Do not repeat them.
   reason the outline is traced into loops, and the walk carries STRAIGHT on through a
   junction — turn there and a straight run gets chopped up and rounded where the bar
   underneath goes straight.
+- **Two cells touching only at a CORNER are not connected.** Four boundary edges arrive at
+  that one point and either pairing joins up, so the naive walk fuses them into a single
+  figure-eight and the dashes run between the two as though there were ground there. Taking
+  the sharpest RIGHT turn at every junction keeps them apart, because the trace is wound
+  clockwise per cell. Everywhere else there is only one edge to take, so the rule is free.
+- **A destroyed tile has to outlive the engine.** The rules clear it the instant it dies, so
+  without the `crumble` effect a venom hit that eats a four-tile trail leaves no trace at
+  all — the biggest thing that can happen on a turn, invisible. The effect draws over ground
+  the engine has already cleared, which gives the tile its stay of execution without any
+  view state living on the tile (§5, reveal).
 - **The marching ants need closed LOOPS, not edges.** `render/trails.ts` traces each
   colony's boundary into real loops so one dash offset carries the whole way round. Stroking
   each boundary edge separately is far simpler and looks wrong: every edge restarts the dash
@@ -326,7 +343,8 @@ provisional and say so if asked.
   to compensate the second player is an open design question; note that the AI always plays
   second, so every match a player sees is one the AI starts behind in.
 - Trophies: +30 win / −15 loss, floored at 0
-- Maps: Skirmish 7×7 (wake 10, limit 32), Corridor 9×9 (14/45), Gauntlet 13×13 (18/80)
+- Maps: Skirmish 7×7 (wake 10, expected 32), Corridor 9×9 (14/45), Gauntlet 13×13 (18/80).
+  The turn figure is an expectation, not a limit — nothing happens when it passes (§4.8).
 
 ## 9. Roadmap
 

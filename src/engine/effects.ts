@@ -36,13 +36,13 @@ export function tickEffects(
     // Enemy fire burns p's garrison; small garrisons are wiped out entirely.
     if (e.kind === "fire" && e.owner !== p && t.owner === p && t.soldiers > 0) {
       if (t.soldiers <= 5) {
-        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "fire", lost: t.soldiers, wiped: true });
+        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "fire", lost: t.soldiers, wiped: true, owner: p });
         t.soldiers = 0; t.owner = null; t.struct = null;
       } else {
         const keepRatio = 1 - 0.30 * glandCut(mods);
         const before = t.soldiers;
         t.soldiers = Math.round(t.soldiers * keepRatio);
-        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "fire", lost: before - t.soldiers, wiped: false });
+        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "fire", lost: before - t.soldiers, wiped: false, owner: t.owner });
       }
     }
 
@@ -53,11 +53,11 @@ export function tickEffects(
         const lost = Math.max(2, Math.round(t.soldiers * 0.30));
         const before = t.soldiers;
         t.soldiers = Math.max(0, t.soldiers - lost);
-        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "fire", lost: before - t.soldiers, wiped: false });
+        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "fire", lost: before - t.soldiers, wiped: false, owner: t.owner });
       } else if (t.owner === null && t.guard > 0) {
         const before = t.guard;
         t.guard = Math.max(0, Math.round(t.guard * 0.70));
-        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "fire", lost: before - t.guard, wiped: false });
+        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "fire", lost: before - t.guard, wiped: false, owner: null });
       }
     }
 
@@ -78,14 +78,14 @@ export function tickEffects(
         t.owner = null;
         t.struct = null;
         t.soldiers = 0;
-        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "venom", lost: 0, wiped: true });
+        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "venom", lost: 0, wiped: true, owner: p });
       } else if (t.soldiers > 0) {
         const loss = Math.round(7 * glandCut(mods));
         const before = t.soldiers;
         t.soldiers = Math.max(0, t.soldiers - loss);
         const wiped = t.soldiers <= 0;
         if (wiped) { t.owner = null; t.struct = null; }
-        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "venom", lost: before - t.soldiers, wiped });
+        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "venom", lost: before - t.soldiers, wiped, owner: p });
       }
     }
   }

@@ -137,20 +137,25 @@ describe("search quality", () => {
 });
 
 describe("difficulty", () => {
-  it("plays a full deterministic match without error at every depth", () => {
+  it("plays a long deterministic match without error at every depth", () => {
     for (const level of ["easy", "normal", "hard"] as const) {
       const s = createGame({ map: "small", species: { you: "fire", ai: "fire" } });
       let guard = 0;
       // Drive it exactly as the match screen does: whoever is `current` acts, then the turn
-      // is handed over. Setting `current` by hand instead means endTurn never increments the
-      // turn counter, so the turn limit can never resolve a stalemate.
-      while (!s.over && guard++ < 400) {
+      // is handed over. Setting `current` by hand instead means endTurn never increments
+      // the turn counter, so effects and production never tick between turns.
+      //
+      // A match now ends only when a queen falls, and two AIs rarely crack one (CLAUDE.md
+      // §4a), so this plays well past the map's expected length and asserts the game is
+      // still coherent rather than asserting somebody won.
+      while (!s.over && guard++ < 2 * s.limits.turnLimit) {
         aiTurn(s, s.current, s.current === "ai" ? level : "easy", ctx);
         if (s.over) break;
         endTurn(s, mods);
       }
-      expect(s.over, `${level} never resolved`).toBe(true);
-      expect(s.winner).not.toBeNull();
+      // Either a queen fell, or the match is still running well past the old limit.
+      if (s.over) expect(s.winner, `${level} ended with no winner`).not.toBeNull();
+      else expect(s.turn, `${level} stopped advancing the clock`).toBeGreaterThan(s.limits.turnLimit);
     }
   });
 
