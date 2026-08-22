@@ -5,16 +5,16 @@
  * pulses, drifting motes) either lives in the renderer's own state or is derived from
  * the clock, so drawing a frame can never change the game.
  */
-import { isConnected } from "../engine";
+import { isConnected, tile } from "../engine";
 import type { Coord, GameState, Player, Tile } from "../engine";
 import type { Layout } from "./layout";
 import type { RevealTracker, RevealEdge } from "./reveal";
 import type { Look } from "./art";
 import { nestArt } from "./art";
 import { COL, MAP, hexA, ownerCol } from "./palette";
-import { capturedCorners, rrect, rrectC } from "./shapes";
+import { capturedCorners, filletPath, innerCorners, rrect, rrectC } from "./shapes";
 import { drawTerrain } from "./terrain";
-import { drawTrail, territoryLoops } from "./trails";
+import { drawTrail, drawVeinTrail, territoryLoops, veinTrails } from "./trails";
 
 const TAU = 6.283;
 
@@ -91,14 +91,55 @@ export function drawTrails(scene: Scene): void {
   const now = performance.now();
   const width = Math.max(1.6, layout.ts * 0.055);
   for (const p of ["you", "ai"] as const) {
-    const loops = territoryLoops(state, p);
-    drawTrail(ctx, layout, loops, {
+    const style = {
       colour: hexA(ownerCol(p, "glow"), 0.85),
       width,
       // Half a phase apart, so the two colonies' ants are never in lockstep.
       phase: p === "ai" ? 0.5 : 0,
-    }, now);
+    };
+    drawTrail(ctx, layout, territoryLoops(state, p), style, now);
+    drawVeinTrail(ctx, layout, veinTrails(state, p), style, now);
   }
+}
+
+/**
+ * Round the colony's INNER corners.
+ *
+ * A cell suppresses a corner radius wherever a same-owner neighbour touches it, which is
+ * what fuses the cells into one slab — but it leaves a sharp reflex vertex wherever three
+ * cells wrap an empty one. That is not a per-cell radius, it is a fillet dropped into the
+ * notch afterwards, so it gets its own pass.
+ *
+ * `raise` lifts the fillet onto the under-band, so the shadow keeps the same silhouette as
+ * the face above it.
+ */
+export function drawFillets(scene: Scene, raise = 0, tint?: (c: string) => string): void {
+  const { ctx, layout, state } = scene;
+  const radius = Math.max(3, layout.ts * 0.20);
+
+  for (const p of ["you", "ai"] as const) {
+    for (const k of innerCorners(state, p)) {
+      // Only once the three cells around it have finished filling in — a fillet across a
+      // half-revealed corner draws colour where the reveal has not reached yet.
+      if (!settled(scene, k.c - 1, k.r - 1) || !settled(scene, k.c, k.r - 1)
+        || !settled(scene, k.c - 1, k.r) || !settled(scene, k.c, k.r)) continue;
+      // Take the colour from the cell diagonally OPPOSITE the notch: it is owned by
+      // definition, and shares the notch's connectivity, so a cut-off arm greys out whole.
+      const owned = tile(state, k.sx > 0 ? k.c - 1 : k.c, k.sy > 0 ? k.r - 1 : k.r);
+      const face = isConnected(state, owned) ? ownerCol(p) : "rgb(56,68,88)";
+      ctx.fillStyle = tint ? tint(face) : face;
+      filletPath(ctx, layout.ox + k.c * layout.ts, layout.oy + k.r * layout.ts + raise,
+        k.sx, k.sy, radius);
+      ctx.fill();
+    }
+  }
+}
+
+/** A cell that is either not the colony's or has finished revealing. */
+function settled(scene: Scene, c: number, r: number): boolean {
+  const t = scene.state.grid[r]?.[c];
+  if (!t || !t.owner) return true;
+  return scene.reveal.progress(c, r) >= 1;
 }
 
 /**
@@ -122,6 +163,7 @@ export function drawTileBevels(scene: Scene): void {
       ctx.fill();
     }
   }
+  drawFillets(scene, drop, (c) => shade(c, 0.42));
 }
 
 /** Mix a colour toward black — the one way this renderer makes a darker face. */

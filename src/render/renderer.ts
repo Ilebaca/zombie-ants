@@ -13,7 +13,7 @@ import { animate } from "./animate";
 import { basicLook, type Look } from "./art";
 import { loadColors, setFactionColor } from "./palette";
 import {
-  drawBackground, drawSelection, drawTile, drawTileBevels, drawTrails, seedMotes,
+  drawBackground, drawFillets, drawSelection, drawTile, drawTileBevels, drawTrails, seedMotes,
   type Mote, type Scene,
 } from "./board";
 
@@ -169,6 +169,7 @@ export class BoardRenderer {
       // colony reads as one slab instead of a grid of separately-shadowed squares.
       drawTileBevels(scene);
       for (const row of this.state.grid) for (const t of row) drawTile(scene, t);
+      drawFillets(scene);
       drawTrails(scene);
       drawSelection(scene);
       this.fx.draw(ctx, this.layout);

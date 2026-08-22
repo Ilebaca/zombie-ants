@@ -63,3 +63,58 @@ export function capturedCorners(
     (!dn && !lf) ? radius : 0,
   ];
 }
+
+/**
+ * INNER CORNERS.
+ *
+ * `capturedCorners` suppresses a radius wherever a same-owner neighbour touches, which fuses
+ * the cells — but it leaves the union with a SHARP reflex vertex wherever three cells meet
+ * around an empty one. Rounding that vertex means adding a small fillet into the notch, not
+ * cutting one out, so it cannot be expressed as a per-cell radius; it is its own little
+ * shape drawn afterwards.
+ *
+ * Returns each such corner as the grid corner it sits on plus the quadrant the missing cell
+ * lies in, so the caller can build the fillet in pixels.
+ */
+export interface InnerCorner { c: number; r: number; sx: -1 | 1; sy: -1 | 1 }
+
+export function innerCorners(state: GameState, owner: Player): InnerCorner[] {
+  const out: InnerCorner[] = [];
+  for (let r = 1; r < state.size; r++) {
+    for (let c = 1; c < state.size; c++) {
+      // The four cells that meet at grid corner (c, r), and where each one sits from it.
+      const quad = [
+        { c: c - 1, r: r - 1, sx: -1 as const, sy: -1 as const },
+        { c, r: r - 1, sx: 1 as const, sy: -1 as const },
+        { c: c - 1, r, sx: -1 as const, sy: 1 as const },
+        { c, r, sx: 1 as const, sy: 1 as const },
+      ];
+      const gap = quad.filter((q) => !isCaptured(state, q.c, q.r, owner));
+      if (gap.length !== 1) continue;
+
+      // Only fillet into open ground: filling into the enemy's cell, a vein or a rock would
+      // paint over something that is drawn there.
+      const hole = tileAt(state, (gap[0] as InnerCorner).c, (gap[0] as InnerCorner).r);
+      if (!hole || hole.owner || hole.terrain === "blocked") continue;
+      out.push({ c, r, sx: (gap[0] as InnerCorner).sx, sy: (gap[0] as InnerCorner).sy });
+    }
+  }
+  return out;
+}
+
+/**
+ * The curved triangle that fills a reflex corner: two straight sides meeting at the corner
+ * and an arc swept back TOWARD it, so the notch reads as a smooth fillet rather than a
+ * quarter-disc bump stuck on the outside of it.
+ */
+export function filletPath(
+  ctx: CanvasRenderingContext2D, x: number, y: number, sx: number, sy: number, radius: number,
+): void {
+  // Centre of the arc sits in the empty cell, one radius away along both axes.
+  const cx = x + sx * radius, cy = y + sy * radius;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + sx * radius, y);
+  ctx.arc(cx, cy, radius, Math.atan2(-sy, 0), Math.atan2(0, -sx), sx * sy > 0);
+  ctx.closePath();
+}

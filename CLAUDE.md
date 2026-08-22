@@ -265,6 +265,20 @@ Each of these cost a debugging round. Do not repeat them.
   a second was by far the most expensive thing on the frame. It renders to an offscreen
   canvas keyed on size and grid origin, and blits. Placement is seeded, never `Math.random`
   at draw time, or the scenery reshuffles itself on every resize.
+- **A colony's INNER corners need their own pass.** `capturedCorners` suppresses a corner
+  radius wherever a same-owner neighbour touches, which is what fuses the cells into one
+  slab — but three cells wrapped round an empty one leave a sharp reflex vertex that no
+  per-cell radius can reach. Rounding it ADDS material (a fillet in the notch) rather than
+  cutting a corner off, so it is a separate shape drawn after the cells, on both the face
+  and the under-band. It only fillets into open ground: an enemy cell, a vein or a rock has
+  something drawn there already.
+- **Veins get a spine, not an outline.** The tile draws a vein as a bar through its middle,
+  so `territoryLoops` excludes veins and `veinTrails` traces the middle of the bar instead.
+  Outlining a one-tile-wide trail turns a line into a tube whose two dashed sides march
+  against each other. The spine is chained into as few polylines as possible for the same
+  reason the outline is traced into loops, and the walk carries STRAIGHT on through a
+  junction — turn there and a straight run gets chopped up and rounded where the bar
+  underneath goes straight.
 - **The marching ants need closed LOOPS, not edges.** `render/trails.ts` traces each
   colony's boundary into real loops so one dash offset carries the whole way round. Stroking
   each boundary edge separately is far simpler and looks wrong: every edge restarts the dash

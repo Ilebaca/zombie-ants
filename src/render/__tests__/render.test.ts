@@ -7,8 +7,9 @@ import { REVEAL_MS_PER_TILE, RevealTracker, edgeFor } from "../reveal";
 import { FxLayer } from "../fx";
 import { animate, sourceOf } from "../animate";
 import { basicLook } from "../art";
-import { drawTile, type Scene } from "../board";
-import { MAP } from "../palette";
+import { drawFillets, drawTile, type Scene } from "../board";
+import { MAP, ownerCol } from "../palette";
+import { innerCorners } from "../shapes";
 import { makeRecorder, type Call, type Recorder } from "./recorder";
 
 function scene(state: GameState, over: Partial<Scene> = {}): { s: Scene; rec: Recorder } {
@@ -573,5 +574,80 @@ describe("capturing the Hive", () => {
       { reveal, fx: new FxLayer(), onNotice: (e) => seen.push(e) },
     );
     expect(seen.map((e) => e.type)).toContain("hiveCaptured");
+  });
+});
+
+/**
+ * INNER CORNERS.
+ *
+ * A cell drops its corner radius wherever a same-owner neighbour touches, which is what
+ * fuses the cells into one slab — but three cells wrapped round an empty one leave a sharp
+ * reflex vertex that no per-cell radius can reach. The fillet pass fills that notch.
+ */
+describe("rounding a colony's inner corners", () => {
+  /** An L: (3,3), (4,3), (3,4) captured, so (4,4) is the notch. The corner is the nest,
+   *  so the arm counts as connected and keeps its colour. */
+  const ell = (): GameState => {
+    const s = blankGame();
+    put(s, 3, 3, { owner: "you", struct: "nest", soldiers: 2 });
+    put(s, 4, 3, { owner: "you", struct: "stable", soldiers: 2 });
+    put(s, 3, 4, { owner: "you", struct: "stable", soldiers: 2 });
+    recomputeConnectivity(s);
+    return s;
+  };
+
+  it("finds the notch three cells leave round an empty one", () => {
+    expect(innerCorners(ell(), "you")).toEqual([{ c: 4, r: 4, sx: 1, sy: 1 }]);
+  });
+
+  it("finds nothing along a straight edge", () => {
+    const s = blankGame();
+    for (let c = 2; c <= 5; c++) put(s, c, 3, { owner: "you", struct: "stable", soldiers: 2 });
+    recomputeConnectivity(s);
+    expect(innerCorners(s, "you")).toHaveLength(0);
+  });
+
+  /** Filling into an occupied cell would paint over whatever is drawn there. */
+  it("refuses to fillet into a cell that is not open ground", () => {
+    const s = ell();
+    put(s, 4, 4, { owner: "ai", struct: "stable", soldiers: 2 });
+    recomputeConnectivity(s);
+    expect(innerCorners(s, "you")).toHaveLength(0);
+
+    const rock = ell();
+    tile(rock, 4, 4).terrain = "blocked";
+    expect(innerCorners(rock, "you")).toHaveLength(0);
+  });
+
+  it("draws the fillet as an arc, not a mitre", () => {
+    const { s, rec } = scene(ell());
+    drawFillets(s);
+    expect(rec.of("arc")).toHaveLength(1);
+    // Swept about a centre inside the empty cell, one radius in along both axes.
+    const [cx, cy] = (rec.of("arc")[0] as Call).args as number[];
+    expect(cx).toBeGreaterThan(4 * 40);
+    expect(cy).toBeGreaterThan(4 * 40);
+    expect(rec.fills()).toContain(ownerCol("you").toLowerCase());
+  });
+
+  /** A fillet across a cell that is still filling in paints colour the reveal has not reached. */
+  it("waits for the three cells to finish revealing", () => {
+    const st = ell();
+    const { s, rec } = scene(st);
+    s.reveal.begin([{ at: { c: 4, r: 3 }, edge: "L", prev: null }]);
+    drawFillets(s);
+    expect(rec.of("arc")).toHaveLength(0);
+  });
+
+  it("greys the fillet out with the arm it belongs to", () => {
+    const s = blankGame();
+    // A detached L — no nest anywhere, so nothing is connected.
+    put(s, 3, 3, { owner: "you", struct: "stable", soldiers: 2 });
+    put(s, 4, 3, { owner: "you", struct: "stable", soldiers: 2 });
+    put(s, 3, 4, { owner: "you", struct: "stable", soldiers: 2 });
+    recomputeConnectivity(s);
+    const { s: sc, rec } = scene(s);
+    drawFillets(sc);
+    expect(rec.fills()).not.toContain(ownerCol("you").toLowerCase());
   });
 });
