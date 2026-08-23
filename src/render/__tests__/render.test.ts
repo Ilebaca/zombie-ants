@@ -1055,3 +1055,67 @@ describe("the surge wave", () => {
     expect(lit(board("awake"))).toBe(0);
   });
 });
+
+/**
+ * THE ROUT.
+ *
+ * Flee emitted nothing the renderer understood, so garrisons vanished off one tile and
+ * appeared on another with no streak, no fill and no sign they had run — the single biggest
+ * reason the ability read as broken rather than dramatic.
+ */
+describe("animating a rout", () => {
+  const rout = (over: Partial<Extract<EngineEvent, { type: "fled" }>> = {}): EngineEvent => ({
+    type: "fled", from: { c: 3, r: 2 }, to: { c: 5, r: 2 }, owner: "ai", count: 6,
+    claimed: true, ...over,
+  });
+
+  const run = (events: EngineEvent[]) => {
+    const reveal = new RevealTracker();
+    reveal.reduced = false;
+    const fx = new FxLayer();
+    animate(events, { reveal, fx });
+    return { reveal, fx };
+  };
+
+  it("fills the ground the runner took", () => {
+    const { reveal } = run([rout()]);
+    expect(reveal.get(5, 2), "the tile it ran to never filled in").toBeDefined();
+    expect(reveal.get(5, 2)?.edge, "it fills from the side the runner came from").toBe("L");
+  });
+
+  it("does not re-fill ground the colony already held", () => {
+    const { reveal } = run([rout({ claimed: false })]);
+    expect(reveal.get(5, 2)).toBeUndefined();
+  });
+
+  it("draws nothing for a garrison that had nowhere to run", () => {
+    const { reveal, fx } = run([rout({ to: null })]);
+    expect(reveal.animating).toBe(false);
+    const rec = makeRecorder();
+    const l = new Layout(13);
+    l.ts = 40; l.ox = 0; l.oy = 0; l.width = 520; l.height = 520;
+    fx.draw(rec.ctx, l);
+    expect(rec.calls).toHaveLength(0);
+  });
+
+  /** A tile somebody else was pushed ONTO never emptied, so it must not white out. */
+  it("blanks the tile that emptied, but not one another runner landed on", () => {
+    vi.useFakeTimers({ toFake: ["performance", "Date"] });
+    const { fx } = run([
+      rout({ from: { c: 3, r: 2 }, to: { c: 5, r: 2 } }),
+      rout({ from: { c: 5, r: 2 }, to: { c: 7, r: 2 } }),
+    ]);
+    const rec = makeRecorder();
+    const l = new Layout(13);
+    l.ts = 40; l.ox = 0; l.oy = 0; l.width = 520; l.height = 520;
+    vi.advanceTimersByTime(60);
+    fx.draw(rec.ctx, l);
+    // The blink paints a whole rounded cell, whose path starts one corner radius in.
+    const corner = 40 * 0.2;
+    const blanked = rec.calls.filter((c) => c.fn === "moveTo").map((c) => c.args[0] as number);
+    expect(blanked, "the tile it left never whited out").toContain(3 * 40 + corner);
+    expect(blanked, "a tile another runner landed on must not white out")
+      .not.toContain(5 * 40 + corner);
+    vi.useRealTimers();
+  });
+});

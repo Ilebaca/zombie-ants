@@ -86,6 +86,8 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
   }> = [];
   /** Tiles a fight was won on, so a wild garrison beaten off blanks out like an enemy tile. */
   const beaten = new Set<string>();
+  /** Garrisons routed by a terror pheromone, gathered so the whole rout moves as one run. */
+  const routed: Array<{ from: Coord; to: Coord; owner: Player; claimed: boolean }> = [];
   // A won fight emits `combat` then `capture` for the same tile. The clash has to wait for
   // that tile's turn in the run, so it is held here and released with the capture.
   const clashes = new Map<string, { at: Coord; src: Coord; attacker: Player }>();
@@ -152,6 +154,11 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
         sinks.onNotice?.(e);
         break;
 
+      case "fled":
+        // Nowhere to run: the garrison stayed where it was, and nothing happened to draw.
+        if (e.to) routed.push({ from: e.from, to: e.to, owner: e.owner, claimed: e.claimed });
+        break;
+
       case "veinPruned":
         // A trail losing an anchor collapses back to the nearest held tile, and the pruner
         // emits one pass at a time — so staggering by arrival makes the chain reaction read
@@ -205,6 +212,30 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
       // destroys nothing, so it simply fills.
       if (prev || beaten.has(k)) fx.blink(at, prev, i * step);
       fx.pop(at, owner, i * step + step);
+    });
+  }
+
+  /*
+   * THE ROUT.
+   *
+   * Flee emitted nothing the renderer understood, so garrisons vanished off one tile and
+   * appeared on another with no streak, no fill and no sign they had run — the single
+   * biggest reason the ability read as broken rather than dramatic.
+   *
+   * Each runner streaks to where it ends up, the ground it takes fills like any other
+   * capture, and the tile it abandoned whites out — unless somebody else was pushed onto
+   * that same tile, in which case it never emptied.
+   */
+  if (routed.length) {
+    const landed = new Set(routed.map((r) => key(r.to.c, r.to.r)));
+    reveal.begin(routed.filter((r) => r.claimed).map((r) => ({
+      at: r.to, edge: edgeAlongPath([r.from, r.to], 1), prev: null,
+    })));
+    const step = reveal.stepMs(routed.length);
+    routed.forEach(({ from, to, owner }, i) => {
+      fx.flow([from, to], owner, i * step);
+      if (!landed.has(key(from.c, from.r))) fx.blink(from, owner, i * step);
+      fx.pop(to, owner, i * step + step);
     });
   }
 

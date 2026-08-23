@@ -356,6 +356,14 @@ function castVenom(state: GameState, p: Player, mods: PlayerMods, events: Engine
 /**
  * Demon — terror pheromone. Mobile enemy garrisons within reach flee directly away.
  *
+ * A panicked garrison RUNS: one tile at a time, along a single axis, stopping the moment it
+ * is clear of the colony that scared it, hits something it cannot cross, or has run the
+ * ability's reach. The port inherited a walk that stepped DIAGONALLY (nothing else on this
+ * board does), passed straight through rocks, walls and the caster's own tiles, and measured
+ * "am I clear yet?" against the caster's whole colony — so a single far-flung outpost could
+ * drag a garrison seven tiles across the map out of a three-tile ability. It read as a
+ * teleport rather than a rout.
+ *
  * Flee relocates garrisons ONLY. It must never prune veins or break structure: doing so
  * destroyed trails and detached units (CLAUDE.md §5). Veins, tunnels, resources, nests and
  * hive tiles cannot be pushed.
@@ -376,6 +384,11 @@ function castFlee(state: GameState, p: Player, mods: PlayerMods, events: EngineE
     if (!t) return false;
     if (t.terrain === "blocked" || isHiveTerrain(t)) return false;
     if (t.owner === p || t.struct === "nest") return false;
+    // A wild garrison holds its ground: running onto one left the tile owned by the fleeing
+    // colony with a neutral garrison still sitting on it, which is not a state that exists.
+    if (t.guard > 0) return false;
+    // A leaf wall stops everything (CLAUDE.md §4.3), and being pushed is no exception.
+    if (blockedByEnemyLeaf(state, t, enemy)) return false;
     return true;
   };
 
@@ -392,34 +405,46 @@ function castFlee(state: GameState, p: Player, mods: PlayerMods, events: EngineE
   const placements = new Map<string, number>();
 
   for (const e of fleers) {
-    // run directly away from the nearest tile of mine, until beyond reach or off the board
+    // Which way is "away": the axis it is most offset along from the nearest tile of mine.
+    // One axis only — a garrison cutting diagonally across the board is the one movement
+    // this game never makes. The direction is fixed before the run rather than recomputed
+    // each step, or a colony with tiles on both sides sends it oscillating between them.
     let nearest = mine[0] as Tile;
     let best = 99;
     for (const t of mine) {
       const d = Math.abs(e.c - t.c) + Math.abs(e.r - t.r);
       if (d < best) { best = d; nearest = t; }
     }
-    let dx = Math.sign(e.c - nearest.c), dy = Math.sign(e.r - nearest.r);
-    if (dx === 0 && dy === 0) dx = 1;
+    const dc = Math.sign(e.c - nearest.c), dr = Math.sign(e.r - nearest.r);
+    const alongC = Math.abs(e.c - nearest.c) >= Math.abs(e.r - nearest.r);
+    const first: [number, number] = alongC ? [dc || 1, 0] : [0, dr || 1];
+    const second: [number, number] = alongC ? [0, dr] : [dc, 0];
+    const usable = (d: [number, number]): boolean =>
+      (d[0] !== 0 || d[1] !== 0) && canLandOn(e.c + d[0], e.r + d[1]);
+    const dir = usable(first) ? first : (usable(second) ? second : null);
 
-    let cc = e.c, cr = e.r, tc = e.c, tr = e.r, steps = 0;
-    while (steps < state.size * 2) {
-      const nc = cc + dx, nr = cr + dy;
-      if (nc < 0 || nr < 0 || nc >= state.size || nr >= state.size) break;
-      cc = nc; cr = nr; steps++;
-      if (canLandOn(cc, cr)) {
-        tc = cc; tr = cr;
-        if (distanceToMe(cc, cr) > reach) break;
+    // It runs at most as far as the fear reaches, and stops the moment it is clear of the
+    // colony — a rout, not a teleport to the far side of the board.
+    let tc = e.c, tr = e.r;
+    if (dir) {
+      for (let step = 0; step < reach; step++) {
+        const nc = tc + dir[0], nr = tr + dir[1];
+        if (!canLandOn(nc, nr)) break;
+        tc = nc; tr = nr;
+        if (distanceToMe(tc, tr) > reach) break;
       }
     }
     const k = `${tc},${tr}`;
     placements.set(k, (placements.get(k) ?? 0) + e.soldiers);
+    // Read before anything is placed, so it describes the ground as the runner found it.
+    const landing = tileAt(state, tc, tr);
     events.push({
       type: "fled",
       from: { c: e.c, r: e.r },
       to: tc === e.c && tr === e.r ? null : { c: tc, r: tr },
       owner: enemy,
       count: e.soldiers,
+      claimed: landing?.owner !== enemy,
     });
   }
 

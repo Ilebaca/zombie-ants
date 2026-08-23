@@ -226,6 +226,116 @@ describe("flee (Demon)", () => {
     expect(fled).toBeDefined();
     expect(tile(s, 2, 1).owner).not.toBe("ai");       // it vacated
   });
+
+  /**
+   * A ROUT, NOT A TELEPORT.
+   *
+   * The walk this was ported from stepped DIAGONALLY, passed straight through rocks, walls
+   * and the caster's own tiles, and asked "am I clear yet?" of the caster's whole colony —
+   * so one far-flung outpost could drag a garrison most of the way across the board out of a
+   * three-tile ability. Each of those is its own assertion below.
+   */
+  const routOf = (s: ReturnType<typeof withSpecies>) => {
+    const events = activateAbility(s, "you", mods());
+    const fled = events.find((e) => e.type === "fled");
+    return fled && fled.type === "fled" ? fled : null;
+  };
+
+  /** Row 2 on the 13x13 board: well clear of the hive, which sits across rows 5-7. */
+  it("runs along one axis — never diagonally", () => {
+    const s = withSpecies("demon");
+    put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
+    put(s, 2, 2, { owner: "ai", struct: "stable", soldiers: 6 });
+    recomputeConnectivity(s);
+
+    const to = routOf(s)?.to as { c: number; r: number };
+    expect(to).toBeTruthy();
+    expect(to.c !== 2 && to.r !== 2, "it cut across the board diagonally").toBe(false);
+  });
+
+  it("stops at a rock instead of passing through it", () => {
+    const s = withSpecies("demon");
+    put(s, 1, 2, { owner: "you", struct: "nest", soldiers: 10 });
+    put(s, 3, 2, { owner: "ai", struct: "stable", soldiers: 6 });
+    put(s, 5, 2, { terrain: "blocked" });
+    put(s, 6, 2, { terrain: "blocked" });
+    recomputeConnectivity(s);
+
+    expect(routOf(s)?.to).toEqual({ c: 4, r: 2 });
+  });
+
+  it("stops at the caster's own ground instead of leaping over it", () => {
+    const s = withSpecies("demon");
+    put(s, 1, 2, { owner: "you", struct: "nest", soldiers: 10 });
+    put(s, 3, 2, { owner: "ai", struct: "stable", soldiers: 6 });
+    put(s, 5, 2, { owner: "you", struct: "stable", soldiers: 4 });
+    recomputeConnectivity(s);
+
+    expect(routOf(s)?.to, "it ran clean past a tile it cannot enter").toEqual({ c: 4, r: 2 });
+  });
+
+  it("never runs further than the fear reaches", () => {
+    const s = withSpecies("demon");
+    put(s, 1, 2, { owner: "you", struct: "nest", soldiers: 10 });
+    put(s, 3, 2, { owner: "ai", struct: "stable", soldiers: 6 });
+    put(s, 6, 2, { owner: "you", struct: "stable", soldiers: 4 });   // an outpost beyond it
+    recomputeConnectivity(s);
+
+    const to = routOf(s)?.to as { c: number; r: number };
+    expect(Math.abs(to.c - 3) + Math.abs(to.r - 2)).toBeLessThanOrEqual(3);
+  });
+
+  /** An owned tile with a live wild garrison on it is not a state this game has. */
+  it("will not run onto a wild garrison", () => {
+    const s = withSpecies("demon");
+    put(s, 1, 2, { owner: "you", struct: "nest", soldiers: 10 });
+    put(s, 3, 2, { owner: "ai", struct: "stable", soldiers: 6 });
+    put(s, 5, 2, { guard: 8 });
+    recomputeConnectivity(s);
+
+    activateAbility(s, "you", mods());
+    expect(tile(s, 5, 2).owner).toBeNull();
+    for (const t of allTiles(s)) {
+      if (t.owner) expect(t.guard, `${t.c},${t.r} is owned and guarded`).toBe(0);
+    }
+  });
+
+  /** A leaf wall stops everything (CLAUDE.md §4.3), and being pushed is no exception. */
+  it("will not be pushed through a leaf wall", () => {
+    const s = withSpecies("demon");
+    put(s, 1, 2, { owner: "you", struct: "nest", soldiers: 10 });
+    put(s, 3, 2, { owner: "ai", struct: "stable", soldiers: 6 });
+    addEffect(s, 4, 2, "leaf", "you", 4);
+    recomputeConnectivity(s);
+
+    expect(routOf(s)?.to, "it walked straight through the wall").toBeNull();
+  });
+
+  it("stays put when there is nowhere to run", () => {
+    const s = withSpecies("demon");
+    put(s, 1, 2, { owner: "you", struct: "nest", soldiers: 10 });
+    put(s, 3, 2, { owner: "ai", struct: "stable", soldiers: 6 });
+    put(s, 4, 2, { terrain: "blocked" });
+    recomputeConnectivity(s);
+
+    expect(routOf(s)?.to).toBeNull();
+    expect(tile(s, 3, 2).owner, "it was deleted rather than left alone").toBe("ai");
+    expect(tile(s, 3, 2).soldiers).toBe(6);
+  });
+
+  /** Re-filling ground the colony already held makes it look rebuilt from scratch. */
+  it("says whether the runner took new ground or merged into its own", () => {
+    const s = withSpecies("demon");
+    put(s, 1, 2, { owner: "you", struct: "nest", soldiers: 10 });
+    put(s, 3, 2, { owner: "ai", struct: "stable", soldiers: 6 });
+    put(s, 5, 2, { owner: "ai", struct: "stable", soldiers: 2 });
+    recomputeConnectivity(s);
+
+    const events = activateAbility(s, "you", mods());
+    const onto5 = events.find((e) => e.type === "fled" && e.to?.c === 5 && e.to?.r === 2);
+    expect(onto5, "nothing was pushed onto the tile they already held").toBeDefined();
+    expect(onto5 && onto5.type === "fled" ? onto5.claimed : true).toBe(false);
+  });
 });
 
 describe("tunnel (Ghost)", () => {

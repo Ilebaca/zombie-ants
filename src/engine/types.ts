@@ -182,7 +182,15 @@ export type EngineEvent =
   | { type: "abilityCast"; owner: Player; kind: AbilityKind; name: string }
   | { type: "budded"; at: Coord; owner: Player; count: number }
   | { type: "devoured"; at: Coord; into: Coord; owner: Player; count: number }
-  | { type: "fled"; from: Coord; to: Coord | null; owner: Player; count: number }
+  | {
+      type: "fled"; from: Coord; to: Coord | null; owner: Player; count: number;
+      /**
+       * Did the garrison land on ground it did not already hold? Two fleers can be pushed
+       * onto the same tile, and one can be pushed onto a tile its colony already holds —
+       * re-filling those makes the colony look rebuilt from scratch (CLAUDE.md §5, travel).
+       */
+      claimed: boolean;
+    }
   | { type: "fortified"; at: Coord; owner: Player; gained: number }
   | { type: "tunnelDug"; at: Coord; owner: Player }
   | { type: "hiveAwake" }

@@ -263,6 +263,19 @@ Each of these cost a debugging round. Do not repeat them.
 - **Never prune veins on Flee.** Flee relocates mobile garrisons only. Pruning during flee
   destroyed trails and detached units. Flee must not break structure at all.
 - **Flee cannot push:** veins, tunnels, resources, hive queen/guards, blocked tiles.
+- **Flee is a rout, not a teleport.** The walk ported from the legacy build stepped
+  DIAGONALLY (the one movement this game never makes), ran straight through rocks, leaf
+  walls and the caster's own tiles, and asked "am I clear yet?" of the caster's whole
+  colony — so one outpost past the runner dragged a garrison seven tiles out of a
+  three-tile ability. It now runs along ONE axis, fixed before the run (recomputing it each
+  step sends the runner oscillating between two of the caster's tiles), stops at the first
+  tile it cannot enter, and never runs further than the reach. It also refuses to land on a
+  wild garrison, which used to leave a tile owned by the fleeing colony with a neutral
+  garrison still on it — a state the game has no other way to produce.
+- **A `fled` event that nothing animates looks like a bug.** The renderer had no case for
+  it, so garrisons vanished off one tile and appeared on another with no streak and no
+  fill. `claimed` on the event says whether the runner took new ground, so a merge into the
+  colony's own tile does not re-fill it (same trap as travel).
 - **Feeding Swarm must snapshot its targets at cast time.** Resolving while mutating let
   newly captured tiles seed new targets and it cascaded across the whole map.
 - **Permanent leaves are a running total, not per-cast.** Cap is the total the player may ever
