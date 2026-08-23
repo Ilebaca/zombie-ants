@@ -1010,49 +1010,210 @@ describe("a captured hive tile", () => {
 });
 
 /**
- * THE SURGE, MADE VISIBLE. A wave leaves the queen and washes over her guards every couple
- * of seconds — the queen first and the guards a beat later, so it reads as something
- * spreading out of her rather than five tiles blinking together.
+ * THE SURGE, MADE VISIBLE.
+ *
+ * The surge is a colony-wide effect — every tile is producing more — so it has to look like
+ * one. A wave leaves the queen and washes out across EVERYTHING the holder owns, each tile
+ * lighting as the front reaches its distance from her.
  */
 describe("the surge wave", () => {
+  /** A colony strung out along a row, so distance from the queen is easy to reason about. */
   const board = (phase: "buff" | "awake"): GameState => {
     const s = blankGame("small");
     s.hive.phase = phase;
     s.hive.owner = phase === "buff" ? "you" : null;
+    const q = hiveCells(s).find((t) => t.terrain === "hiveQ") as { c: number; r: number };
+    for (let i = 0; i <= 3; i++) {
+      put(s, q.c, q.r + i, { owner: "you", struct: i === 0 ? "stable" : "stable", soldiers: 3 });
+    }
+    recomputeConnectivity(s);
     return s;
   };
 
-  const lit = (s: GameState): number => {
+  /** Which rows the wave painted this frame, as tile rows. */
+  const litRows = (s: GameState): number[] => {
     const { s: sc, rec } = scene(s);
     drawSurge(sc);
-    return rec.of("fill").length;
+    return rec.calls.filter((c) => c.fn === "moveTo").map((c) => Math.round((c.args[1] as number) / 40));
   };
 
-  it("washes over the hive while the surge runs", () => {
+  it("washes over the colony while the surge runs", () => {
     vi.useFakeTimers({ toFake: ["performance", "Date"] });
     const s = board("buff");
     const seen: number[] = [];
-    for (let i = 0; i < 14; i++) { seen.push(lit(s)); vi.advanceTimersByTime(200); }
+    for (let i = 0; i < 20; i++) { seen.push(litRows(s).length); vi.advanceTimersByTime(60); }
     expect(Math.max(...seen), "nothing ever lights up").toBeGreaterThan(0);
     expect(new Set(seen).size, "the wave has to MOVE").toBeGreaterThan(1);
     vi.useRealTimers();
   });
 
-  it("leaves the queen before it reaches the guards", () => {
+  /**
+   * The whole point of the change: it is not a hive effect, it is a colony effect. A tile
+   * three away from the queen has to light up too.
+   */
+  it("reaches ground far from the queen", () => {
     vi.useFakeTimers({ toFake: ["performance", "Date"] });
     const s = board("buff");
-    const q = hiveCells(s).find((t) => t.terrain === "hiveQ") as { c: number; r: number };
-    const { s: sc, rec } = scene(s);
-    drawSurge(sc);                                  // t = 0: the front is on the queen
-    const centres = rec.calls.filter((c) => c.fn === "moveTo").map((c) => c.args[1] as number);
-    expect(centres.length, "the queen is not lit at the head of the wave").toBeGreaterThan(0);
-    // Only her row is drawn, so nothing is painted a whole tile above her.
-    expect(Math.min(...centres)).toBeGreaterThanOrEqual((q.r) * 40);
+    const q = hiveCells(s).find((t) => t.terrain === "hiveQ") as { r: number };
+    let reached = false;
+    for (let i = 0; i < 40; i++) {
+      if (litRows(s).some((r) => r >= q.r + 3)) { reached = true; break; }
+      vi.advanceTimersByTime(30);
+    }
+    expect(reached, "the wave never left the hive").toBe(true);
     vi.useRealTimers();
   });
 
+  it("leaves the queen before it reaches the far end", () => {
+    vi.useFakeTimers({ toFake: ["performance", "Date"] });
+    const s = board("buff");
+    const q = hiveCells(s).find((t) => t.terrain === "hiveQ") as { r: number };
+    const at = (row: number): number => {
+      for (let i = 0; i < 60; i++) {
+        if (litRows(s).includes(row)) return i;
+        vi.advanceTimersByTime(20);
+      }
+      return 999;
+    };
+    const queenAt = at(q.r);
+    vi.setSystemTime(0);
+    const farAt = at(q.r + 3);
+    expect(queenAt, "the far tile lit before the queen did").toBeLessThan(farAt);
+    vi.useRealTimers();
+  });
+
+  /** Pinned to t = 0, where the front sits on the queen — the one moment it must be silent. */
   it("draws nothing when nobody holds her", () => {
-    expect(lit(board("awake"))).toBe(0);
+    vi.useFakeTimers({ toFake: ["performance", "Date"] });
+    const s = board("awake");
+    const { s: sc, rec } = scene(s);
+    drawSurge(sc);
+    expect(rec.of("fill"), "a colony with no surge is pulsing").toHaveLength(0);
+    vi.useRealTimers();
+  });
+});
+
+/**
+ * A held resource pays three a turn where a plain stable pays one, and nothing on the board
+ * said so. Under a colony the stone breathes; unowned it sits still, because an idle seam
+ * is not producing anything.
+ */
+describe("a worked resource seam", () => {
+  /**
+   * The gem is drawn as diamonds: a moveTo, three lineTo, a closePath. The cell fill under
+   * an owned tile rounds its corners with arcTo, so it cannot be mistaken for one.
+   */
+  const firstDiamondRadius = (rec: Recorder): number => {
+    const c = rec.calls;
+    for (let i = 0; i + 4 < c.length; i++) {
+      if ((c[i] as Call).fn !== "moveTo") continue;
+      if ((c[i + 1] as Call).fn !== "lineTo" || (c[i + 2] as Call).fn !== "lineTo") continue;
+      if ((c[i + 3] as Call).fn !== "lineTo" || (c[i + 4] as Call).fn !== "closePath") continue;
+      return ((c[i + 1] as Call).args[0] as number) - ((c[i] as Call).args[0] as number);
+    }
+    return 0;
+  };
+
+  /** Sampled right across the bloom's period, so it cannot pass or fail on one lucky frame. */
+  const gemOverTime = (owner: "you" | null): number[] => {
+    const s = blankGame();
+    put(s, 3, 3, { terrain: "resource", owner, struct: owner ? "stable" : null, soldiers: owner ? 3 : 0 });
+    recomputeConnectivity(s);
+    const sizes: number[] = [];
+    for (let i = 0; i < 16; i++) {
+      const { s: sc, rec } = scene(s);
+      drawTile(sc, tile(s, 3, 3));
+      sizes.push(Number(firstDiamondRadius(rec).toFixed(4)));
+      vi.advanceTimersByTime(250);
+    }
+    return sizes;
+  };
+
+  it("blooms while a colony holds it", () => {
+    vi.useFakeTimers({ toFake: ["performance", "Date"] });
+    const sizes = gemOverTime("you");
+    expect(sizes[0], "no gem was drawn at all").not.toBe(0);
+    expect(new Set(sizes).size, "the stone must catch the light at some point").toBeGreaterThan(1);
+    vi.useRealTimers();
+  });
+
+  /** A short swell in a long period. A gem that is always blooming is just a brighter gem. */
+  it("is still for most of the time", () => {
+    vi.useFakeTimers({ toFake: ["performance", "Date"] });
+    const sizes = gemOverTime("you");
+    const commonest = sizes.filter((n) => n === sizes.slice().sort()[0]).length;
+    expect(commonest / sizes.length).toBeGreaterThan(0.5);
+    vi.useRealTimers();
+  });
+
+  it("sits still while nobody does", () => {
+    vi.useFakeTimers({ toFake: ["performance", "Date"] });
+    const sizes = gemOverTime(null);
+    expect(sizes[0]).not.toBe(0);
+    expect(new Set(sizes).size, "an idle seam is not producing anything").toBe(1);
+    vi.useRealTimers();
+  });
+});
+
+/** The board layer has to hand its reveal state to the tracer, or none of that reaches the screen. */
+describe("drawing the trail against a live reveal", () => {
+  const twoTiles = (): GameState => {
+    const s = blankGame();
+    put(s, 3, 3, { owner: "you", struct: "stable", soldiers: 2 });
+    put(s, 4, 3, { owner: "you", struct: "stable", soldiers: 2 });
+    recomputeConnectivity(s);
+    return s;
+  };
+
+  it("draws only the ground that has finished filling", () => {
+    const settled = scene(twoTiles());
+    drawTrails(settled.s);
+
+    const filling = scene(twoTiles());
+    filling.s.reveal.reduced = false;
+    filling.s.reveal.begin([{ at: { c: 4, r: 3 }, edge: "L", prev: null }]);
+    drawTrails(filling.s);
+
+    // How far right the traced path reaches: one tile ends at x=160, two at x=200.
+    const reach = (rec: Recorder): number => Math.max(
+      ...rec.calls.filter((c) => c.fn === "moveTo" || c.fn === "arcTo")
+        .map((c) => c.args[0] as number),
+    );
+    expect(reach(filling.rec), "the outline ran ahead of the fill")
+      .toBeLessThan(reach(settled.rec));
+  });
+});
+
+/**
+ * THE HIVE, ONCE SOMEBODY HOLDS IT.
+ *
+ * Violet is the colour of the thing nobody owns — it is what makes the shared objective read
+ * as neutral. Leaving the slab on captured tiles said the prize still belonged to the board.
+ */
+describe("a captured hive tile", () => {
+  const VIOLETS = ["#7c4fd0", "#9166e0", "#b14de0"];
+
+  const drawn = (owner: "you" | null): string[] => {
+    const s = blankGame("small");
+    s.hive.phase = owner ? "buff" : "awake";
+    s.hive.owner = owner;
+    const q = hiveCells(s).find((t) => t.terrain === "hiveQ") as { c: number; r: number };
+    if (owner) put(s, q.c, q.r, { owner, struct: "stable", soldiers: 8 });
+    recomputeConnectivity(s);
+    const { s: sc, rec } = scene(s);
+    drawTile(sc, tile(s, q.c, q.r));
+    return rec.fills().concat(rec.calls.map((c) => (c.stroke ?? "").toLowerCase()));
+  };
+
+  it("is painted in the holder's colour, not the hive's", () => {
+    const used = drawn("you");
+    for (const v of VIOLETS) expect(used, `still ${v}`).not.toContain(v);
+    expect(used.some((f) => f.includes(ownerCol("you", "glow").toLowerCase().slice(1)))
+      || used.includes(ownerCol("you", "glow").toLowerCase())).toBe(true);
+  });
+
+  it("keeps the violet while it is still nobody's", () => {
+    expect(drawn(null).some((f) => VIOLETS.includes(f))).toBe(true);
   });
 });
 

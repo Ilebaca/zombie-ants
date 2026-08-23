@@ -5,7 +5,7 @@
  * pulses, drifting motes) either lives in the renderer's own state or is derived from
  * the clock, so drawing a frame can never change the game.
  */
-import { hiveCells, isConnected, tile } from "../engine";
+import { allTiles, hiveCells, isConnected, tile } from "../engine";
 import type { Coord, GameState, Player, Tile } from "../engine";
 import type { Layout } from "./layout";
 import type { RevealTracker, RevealEdge } from "./reveal";
@@ -610,39 +610,69 @@ export function drawHiveTile(scene: Scene, t: Tile): void {
   }
 }
 
-/** How often the surge sends a wave out across the five tiles, and how long the front is. */
-const SURGE_MS = 2600;
-const SURGE_WIDTH = 0.6;
+/**
+ * How the surge wave travels: tiles a second, how wide the bright front is, and how much
+ * empty distance follows it before the next one leaves the queen.
+ *
+ * A constant SPEED rather than a fixed period, so the wave looks the same crossing a
+ * four-tile colony and a forty-tile one — a fixed period would have it crawl early and
+ * streak across the board late. The gap is in tiles for the same reason: the pause between
+ * waves stays the same length whatever the colony is doing.
+ */
+const SURGE_TILES_PER_SEC = 9;
+const SURGE_WIDTH = 1.1;
+const SURGE_GAP = 13;
 
 /**
- * The growth surge, made visible: a wave leaving the queen and washing over her guards,
- * every couple of seconds, for as long as it runs.
+ * The growth surge, made visible: a wave leaving the queen and washing out across
+ * EVERYTHING the holder owns, for as long as the surge runs.
  *
- * Drawn as one pass over the five tiles rather than per tile, because the whole point is
- * that they move TOGETHER — the queen first and the guards a beat later, which is what makes
- * it read as something spreading out of her rather than five tiles blinking.
+ * The surge is a colony-wide effect — every tile is producing more — so it has to look like
+ * one. Lighting only the five hive tiles said the opposite: that whatever was happening was
+ * happening over there, on the ground the queen used to sit on.
+ *
+ * One pass over the board rather than per tile, because the whole point is that they move
+ * TOGETHER: each tile lights as the front reaches its distance from the queen, so the
+ * brightness sweeps outward instead of the colony blinking as a whole.
  */
 export function drawSurge(scene: Scene): void {
   const { ctx, layout, state } = scene;
-  if (state.hive.phase !== "buff" || !state.hive.owner) return;
-  const ts = layout.ts;
-  const cells = hiveCells(state);
-  const queen = cells.find((t) => t.terrain === "hiveQ");
+  const owner = state.hive.owner;
+  if (state.hive.phase !== "buff" || !owner) return;
+  const queen = hiveCells(state).find((t) => t.terrain === "hiveQ");
   if (!queen) return;
 
-  // The front travels a little past the guards, so the wave leaves the hive rather than
-  // stopping dead on its edge.
-  const front = ((performance.now() % SURGE_MS) / SURGE_MS) * 2.4;
-  const light = ownerCol(state.hive.owner, "glow");
+  const ts = layout.ts;
+  const held = allTiles(state).filter((t) => t.owner === owner);
+  if (!held.length) return;
+
+  const ringOf = (t: Tile): number => Math.abs(t.c - queen.c) + Math.abs(t.r - queen.r);
+  let furthest = 0;
+  for (const t of held) furthest = Math.max(furthest, ringOf(t));
+
+  // The front runs past the furthest tile before the cycle restarts, so the wave leaves the
+  // colony rather than stopping dead on its edge.
+  const cycle = furthest + SURGE_WIDTH + SURGE_GAP;
+  const front = ((performance.now() / 1000) * SURGE_TILES_PER_SEC) % cycle;
+  const light = ownerCol(owner, "glow");
+  const radius = Math.max(3, ts * 0.20);
 
   ctx.save();
-  for (const t of cells) {
-    const ring = Math.abs(t.c - queen.c) + Math.abs(t.r - queen.r);
-    const d = Math.abs(front - ring);
+  for (const t of held) {
+    const d = Math.abs(front - ringOf(t));
     if (d > SURGE_WIDTH) continue;
     const k = (1 - d / SURGE_WIDTH) ** 2;
-    ctx.fillStyle = hexA(light, 0.42 * k);
-    rrect(ctx, layout.x0(t.c), layout.y0(t.r), ts, ts, ts * 0.2);
+    ctx.fillStyle = hexA(light, 0.40 * k);
+    if (t.struct === "vein") {
+      // A vein is a bar through the middle of its tile, not a filled cell. Washing the whole
+      // cell would make the trail read as solid ground every time the wave passed.
+      const half = ts * 0.17;
+      rrect(ctx, layout.cx(t.c) - half, layout.cy(t.r) - half, half * 2, half * 2, ts * 0.08);
+    } else {
+      // The colony's own fused silhouette, so the wave washes over the shape that is there.
+      const [tl, tr, br, bl] = capturedCorners(state, t, radius);
+      rrectC(ctx, layout.x0(t.c), layout.y0(t.r), ts, ts, tl, tr, br, bl);
+    }
     ctx.fill();
   }
   ctx.restore();

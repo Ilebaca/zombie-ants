@@ -114,6 +114,13 @@ These were each decided deliberately, several after bugs. Changing one silently 
      the hive's first waking for the whole match. With a flat per-level bonus and a clock
      that restarted, a long-ignored level-1 queen outclassed the level-2 queen who replaced
      her — capturing the Hive made the Hive easier.
+   - **The surge is a COLONY effect, so it has to look like one.** The wave that marks it
+     leaves the queen and washes out across every tile the holder owns, each lighting as the
+     front reaches its distance from her. Lighting only the five hive tiles said the
+     opposite — that whatever was happening was happening over there, on the ground she used
+     to sit on. The front travels at a constant tiles-per-second and the gap behind it is
+     measured in tiles too, so a four-tile colony and a forty-tile one look the same; a
+     fixed period would crawl early and streak across the board late.
    - **The Hive eats what is left standing on it.** Troops on the five tiles when the surge
      lapses, and troops camped on the bare ground when she returns, are banked
      (`hive.banked`) and come back as part of the next garrison, split in proportion to what
