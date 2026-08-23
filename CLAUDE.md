@@ -106,7 +106,7 @@ These were each decided deliberately, several after bugs. Changing one silently 
    respawn but sets no gap, so the number is a design decision, not a port.
    - **While she is dead there is nothing there.** Her tiles are ordinary ground: no
      garrison, no fight, and no surge for stepping on them. They still LOOK like hive tiles,
-     which is why the combat path has to ask `hiveIsAlive` rather than checking the terrain
+     which is why the combat path has to ask `queenIsTakeable` rather than checking the terrain
      — otherwise attacking the empty middle tile beat a garrison of zero and handed out a
      full surge from a corpse.
    - **She must always come back harder.** The level MULTIPLIES the whole garrison

@@ -14,15 +14,31 @@ import type { Coord, EngineEvent, GameState, Player, Tile } from "./types";
  */
 
 /**
- * Is there anything on the hive to fight?
+ * Do the five tiles behave as THE HIVE right now? Only while she is neutral and standing.
  *
- * Between a surge lapsing and the queen growing back she is simply GONE, and her five tiles
- * are bare ground with no garrison at all. Without this the combat path still treated them
- * as the hive: attacking the empty middle tile beat a garrison of zero and handed out a full
- * surge from a dead queen, which is a free buff for whoever happened to be standing next to
- * her when the last one lapsed.
+ * Dead — between a surge lapsing and her growing back — they are bare ground with no
+ * garrison. The combat path used to recognise them by terrain regardless, so attacking the
+ * empty middle tile beat a garrison of zero and handed out a full surge from a corpse.
+ *
+ * Held during a surge, they are ordinary tiles of whoever holds them. They can be fought for
+ * like any others, but taking them does not hand the growth over: once a colony has her the
+ * surge is theirs for its full length, or the reward for cracking a garrison of eighty was
+ * one turn of production before somebody standing nearby walked in and took it off them.
  */
-export const hiveIsAlive = (state: GameState): boolean => state.hive.phase !== "cooling";
+export const queenIsTakeable = (state: GameState): boolean =>
+  state.hive.phase === "dormant" || state.hive.phase === "awake";
+
+/**
+ * How long a surge runs, and how long the queen stays dead afterwards.
+ *
+ * Both stretch by a turn per level. A level-3 queen costs far more to crack than a level-1
+ * one, so the swing she pays out has to grow with her — and the gap before she returns has
+ * to grow too, or the board spends more and more of the match with a surge running on it.
+ */
+export const surgeTurns = (state: GameState): number =>
+  state.limits.buffTurns + (state.hive.level - 1);
+export const surgeCooldown = (state: GameState): number =>
+  HIVE_COOLDOWN + (state.hive.level - 1);
 
 export function hiveCells(state: GameState): Tile[] {
   return allTiles(state).filter((t) => t.terrain === "hiveQ" || t.terrain === "hiveG");
@@ -90,7 +106,7 @@ export function hiveTick(state: GameState, p: Player, events: EngineEvent[] = []
 export function captureQueen(state: GameState, p: Player, events: EngineEvent[] = []): EngineEvent[] {
   state.hive.phase = "buff";
   state.hive.owner = p;
-  state.hive.buffLeft = state.limits.buffTurns;
+  state.hive.buffLeft = surgeTurns(state);
 
   const cells: Coord[] = [];
   for (const t of hiveCells(state)) {
@@ -119,7 +135,7 @@ export function endSurge(state: GameState, events: EngineEvent[] = []): EngineEv
   state.hive.phase = "cooling";
   state.hive.owner = null;
   state.hive.buffLeft = 0;
-  state.hive.coolLeft = HIVE_COOLDOWN;
+  state.hive.coolLeft = surgeCooldown(state);
 
   absorbGarrisons(state);
   for (const t of hiveCells(state)) {

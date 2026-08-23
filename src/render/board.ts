@@ -5,7 +5,7 @@
  * pulses, drifting motes) either lives in the renderer's own state or is derived from
  * the clock, so drawing a frame can never change the game.
  */
-import { isConnected, tile } from "../engine";
+import { hiveCells, isConnected, tile } from "../engine";
 import type { Coord, GameState, Player, Tile } from "../engine";
 import type { Layout } from "./layout";
 import type { RevealTracker, RevealEdge } from "./reveal";
@@ -17,6 +17,19 @@ import { drawTerrain } from "./terrain";
 import { colonyTrails, drawTrail, drawVeinTrail } from "./trails";
 
 const TAU = 6.283;
+
+/** The colour a worked seam flashes, and how often. Blue: no species wears it. */
+const SEAM_BLUE = "#59c8ff";
+const SEAM_MS = 3200;
+/** The share of that period the bloom is actually visible for. */
+const SEAM_BLOOM = 0.3;
+
+/** 0 for most of the period, then one smooth swell. `offset` staggers tiles a little. */
+function gemBloom(offset: number): number {
+  const p = ((performance.now() / SEAM_MS) + offset * 0.11) % 1;
+  if (p > SEAM_BLOOM) return 0;
+  return Math.sin((p / SEAM_BLOOM) * Math.PI);
+}
 
 export interface Scene {
   ctx: CanvasRenderingContext2D;
@@ -326,16 +339,18 @@ export function drawTile(scene: Scene, t: Tile): void {
     // is the only blur on the board, and it earns it — this is the thing worth fighting for.
     const gx = layout.cx(t.c), gy = layout.cy(t.r) - (t.owner ? h * 0.16 : 0);
     /*
-     * A WORKED SEAM BREATHES.
+     * A WORKED SEAM CATCHES THE LIGHT.
      *
      * A held resource pays three a turn where a plain stable pays one, and nothing on the
      * board said so — it looked like any other captured cell with a gem on it. Under a
-     * colony the stone swells and its glow rises and falls; unowned it sits still, because
-     * an idle seam is not producing anything. Kept small on purpose: it has to read as one
-     * tile working, not as an alert.
+     * colony a cold blue bloom runs over the stone every few seconds and then it is still
+     * again; unowned it never does, because an idle seam is not producing anything.
+     *
+     * A short bump in a long period rather than a constant throb: the eye catches the one
+     * thing that just changed, and a board of gems all breathing at once is noise.
      */
-    const beat = t.owner ? 0.5 + 0.5 * Math.sin(performance.now() / 460 + t.c + t.r) : 0;
-    const s = w * 0.19 * (1 + 0.10 * beat), drop = Math.max(2, ts * 0.07);
+    const beat = t.owner ? gemBloom(t.c + t.r) : 0;
+    const s = w * 0.19 * (1 + 0.07 * beat), drop = Math.max(2, ts * 0.07);
     const diamond = (cx: number, cy: number, rad: number): void => {
       ctx.beginPath();
       ctx.moveTo(cx, cy - rad); ctx.lineTo(cx + rad, cy);
@@ -345,8 +360,13 @@ export function drawTile(scene: Scene, t: Tile): void {
     ctx.fillStyle = MAP.groundShade; diamond(gx, gy + drop * 1.6, s); ctx.fill();
     ctx.fillStyle = MAP.gemEdge; diamond(gx, gy + drop, s); ctx.fill();
     ctx.save();
-    ctx.shadowColor = MAP.gemTop; ctx.shadowBlur = ts * (0.26 + 0.30 * beat);
+    ctx.shadowColor = beat > 0.02 ? SEAM_BLUE : MAP.gemTop;
+    ctx.shadowBlur = ts * (0.26 + 0.5 * beat);
     ctx.fillStyle = MAP.gem; diamond(gx, gy, s); ctx.fill();
+    if (beat > 0.02) {                       // the bloom itself, over the cut stone
+      ctx.fillStyle = hexA(SEAM_BLUE, 0.55 * beat);
+      diamond(gx, gy, s * 1.35); ctx.fill();
+    }
     ctx.restore();
     ctx.fillStyle = MAP.gemTop;
     ctx.beginPath();
@@ -507,6 +527,40 @@ export function drawHiveTile(scene: Scene, t: Tile): void {
   const { ctx, layout, state } = scene;
   const ts = layout.ts;
   const x = layout.cx(t.c), y = layout.cy(t.r), R = ts * 0.30;
+
+  /*
+   * A CAPTURED HIVE TILE IS NOT VIOLET.
+   *
+   * Violet is the colour of the thing nobody owns — it is what makes the shared objective
+   * read as neutral. Once a colony holds these five they are its tiles, drawn like the rest
+   * of its territory, and keeping the slab on them said the opposite: the prize still looked
+   * like it belonged to the board. All that is left is the fungus itself, in the holder's
+   * own light, so the objective is still findable.
+   */
+  if (t.owner) {
+    const light = ownerCol(t.owner, "glow");
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.strokeStyle = light;
+    ctx.lineWidth = Math.max(1.2, ts * 0.035);
+    ctx.lineCap = "round";
+    if (t.terrain === "hiveQ") {
+      for (let i = 0; i < 5; i++) {
+        const a = -1.57 + (i - 2) * 0.5;
+        const ex = x + Math.cos(a) * R * 1.5, ey = y + Math.sin(a) * R * 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x + Math.cos(a) * R, y + Math.sin(a) * R - R * 0.6, ex, ey);
+        ctx.stroke();
+        ctx.fillStyle = light;
+        ctx.beginPath(); ctx.arc(ex, ey, ts * 0.04, 0, TAU); ctx.fill();
+      }
+    }
+    ctx.fillStyle = hexA(light, 0.55);
+    ctx.beginPath(); ctx.arc(x, y, R * (t.terrain === "hiveQ" ? 0.44 : 0.30), 0, TAU); ctx.fill();
+    ctx.restore();
+    return;
+  }
   // "cooling" is a grave, not a hive: the queen is dead and her tiles hold nothing. It gets
   // the dim look, or the board shows a glowing queen on ground with nothing to fight.
   const awake = state.hive.phase === "awake" || state.hive.phase === "buff";
@@ -554,6 +608,44 @@ export function drawHiveTile(scene: Scene, t: Tile): void {
     ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText("🛡" + t.soldiers, x, y + R * 1.25);
   }
+}
+
+/** How often the surge sends a wave out across the five tiles, and how long the front is. */
+const SURGE_MS = 2600;
+const SURGE_WIDTH = 0.6;
+
+/**
+ * The growth surge, made visible: a wave leaving the queen and washing over her guards,
+ * every couple of seconds, for as long as it runs.
+ *
+ * Drawn as one pass over the five tiles rather than per tile, because the whole point is
+ * that they move TOGETHER — the queen first and the guards a beat later, which is what makes
+ * it read as something spreading out of her rather than five tiles blinking.
+ */
+export function drawSurge(scene: Scene): void {
+  const { ctx, layout, state } = scene;
+  if (state.hive.phase !== "buff" || !state.hive.owner) return;
+  const ts = layout.ts;
+  const cells = hiveCells(state);
+  const queen = cells.find((t) => t.terrain === "hiveQ");
+  if (!queen) return;
+
+  // The front travels a little past the guards, so the wave leaves the hive rather than
+  // stopping dead on its edge.
+  const front = ((performance.now() % SURGE_MS) / SURGE_MS) * 2.4;
+  const light = ownerCol(state.hive.owner, "glow");
+
+  ctx.save();
+  for (const t of cells) {
+    const ring = Math.abs(t.c - queen.c) + Math.abs(t.r - queen.r);
+    const d = Math.abs(front - ring);
+    if (d > SURGE_WIDTH) continue;
+    const k = (1 - d / SURGE_WIDTH) ** 2;
+    ctx.fillStyle = hexA(light, 0.42 * k);
+    rrect(ctx, layout.x0(t.c), layout.y0(t.r), ts, ts, ts * 0.2);
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 /** The white selection ring plus the pulsing dashed rings on every legal target. */

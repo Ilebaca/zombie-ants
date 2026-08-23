@@ -149,11 +149,14 @@ describe("the queen's strength across levels", () => {
     return s;
   };
 
-  /** Run a whole capture → surge → cooldown → respawn cycle. */
+  /**
+   * Run a whole capture → surge → cooldown → respawn cycle. Both stretch by a turn per
+   * level, so this drives to the next phase rather than counting a fixed number of ticks.
+   */
   const cycle = (s: GameState): void => {
-    for (let i = 0; i < s.limits.buffTurns; i++) hiveTick(s, "you");
+    for (let i = 0; i < 40 && s.hive.phase === "buff"; i++) hiveTick(s, "you");
     expect(s.hive.phase).toBe("cooling");
-    for (let i = 0; i < HIVE_COOLDOWN; i++) { hiveTick(s, "you"); hiveTick(s, "ai"); }
+    for (let i = 0; i < 40 && s.hive.phase === "cooling"; i++) { hiveTick(s, "you"); hiveTick(s, "ai"); }
     expect(s.hive.phase).toBe("awake");
   };
 
@@ -291,5 +294,70 @@ describe("what actually grants the surge", () => {
     expect(s.hive.phase, "a dead queen grants no surge").toBe("cooling");
     expect(s.hive.owner).toBeNull();
     expect(s.hive.coolLeft).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * A SURGE CANNOT BE STOLEN.
+ *
+ * Cracking a level-3 queen costs a garrison the player has spent the whole match building.
+ * If the enemy could walk onto the middle tile the turn after and inherit the growth, that
+ * investment bought one turn of production. The tiles can still be fought for — they are
+ * ordinary tiles of whoever holds them now — but the surge belongs to whoever took her.
+ */
+describe("holding the surge", () => {
+  const runSurgeDown = (s: GameState): void => {
+    for (let i = 0; i < 40 && s.hive.phase === "buff"; i++) hiveTick(s, "you");
+  };
+
+  const surging = (): GameState => {
+    const s = blankGame("small");
+    s.hive.phase = "awake"; s.hive.awokeTurn = 1; s.turn = 10; setHiveDefence(s);
+    captureQueen(s, "you");
+    return s;
+  };
+
+  it("does not hand the growth over when the queen's tile is retaken", () => {
+    const s = surging();
+    const q = hiveCells(s).find((t) => t.terrain === "hiveQ") as { c: number; r: number };
+    tile(s, q.c, q.r).soldiers = 2;
+    const near = { c: q.c, r: q.r - 2 };
+    put(s, near.c, near.r, { owner: "ai", struct: "nest", soldiers: 300 });
+    recomputeConnectivity(s);
+    s.current = "ai";
+    moveOrAttack(s, near, { c: q.c, r: q.r - 1 }, defaultContext());
+    s.current = "ai";
+    moveOrAttack(s, { c: q.c, r: q.r - 1 }, { c: q.c, r: q.r }, defaultContext());
+
+    expect(tile(s, q.c, q.r).owner, "the ground itself is still fair game").toBe("ai");
+    expect(s.hive.owner, "the surge stays with whoever took her").toBe("you");
+    expect(s.hive.phase).toBe("buff");
+  });
+
+  it("runs its full length whatever happens on the ground", () => {
+    const s = surging();
+    const left = s.hive.buffLeft;
+    expect(left).toBeGreaterThan(0);
+    for (let i = 0; i < left - 1; i++) hiveTick(s, "you");
+    expect(s.hive.phase).toBe("buff");
+    hiveTick(s, "you");
+    expect(s.hive.phase).toBe("cooling");
+  });
+
+  /** A bigger queen pays a bigger swing, and leaves a bigger gap before the next one. */
+  it("stretches the surge and the wait by a turn per level", () => {
+    const one = blankGame("small");
+    one.hive.phase = "awake"; one.hive.awokeTurn = 1; one.turn = 10; setHiveDefence(one);
+    captureQueen(one, "you");
+    expect(one.hive.buffLeft).toBe(one.limits.buffTurns);
+
+    const three = blankGame("small");
+    three.hive.phase = "awake"; three.hive.awokeTurn = 1; three.turn = 10; three.hive.level = 3;
+    setHiveDefence(three);
+    captureQueen(three, "you");
+    expect(three.hive.buffLeft).toBe(three.limits.buffTurns + 2);
+
+    runSurgeDown(three);
+    expect(three.hive.coolLeft).toBe(HIVE_COOLDOWN + 2);
   });
 });

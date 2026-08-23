@@ -6,7 +6,7 @@ import {
   attackMultiplier, defenceMultiplier, fight, flatDefence, guardDefence,
 } from "./combat";
 import { isConnected, pruneAllVeins, recomputeConnectivity } from "./connectivity";
-import { captureQueen, hiveIsAlive } from "./hive";
+import { captureQueen, queenIsTakeable } from "./hive";
 import { key } from "./types";
 import type {
   Coord, EngineEvent, GameState, Player, PlayerMods, Tile,
@@ -87,9 +87,15 @@ export function moveOrAttack(
     return finish(state, events);
   }
 
-  // While the queen is dead her five tiles are ordinary ground: no garrison, no fight, and
-  // no surge for walking onto them. What is left standing there feeds her when she returns.
-  const onHive = isHiveTerrain(dst) && hiveIsAlive(state);
+  /*
+   * The five tiles only behave as THE HIVE while she is neutral and standing.
+   *
+   * Dead, they are ordinary ground: no garrison, no fight, no surge for walking onto them
+   * (what is left standing there feeds her when she returns). Held during a surge, they are
+   * ordinary tiles of whoever holds them — they can be fought for like any other, but taking
+   * them does not hand the growth over.
+   */
+  const onHive = isHiveTerrain(dst) && queenIsTakeable(state);
 
   // Unowned tile held by a neutral wild garrison — beat it first.
   if (!dst.owner && dst.guard > 0 && !onHive) {
@@ -135,7 +141,7 @@ export function moveOrAttack(
   const wasNest = dst.struct === "nest";
   const previous = dst.owner;
 
-  if (hive && dst.terrain === "hiveQ") {
+  if (hive && dst.terrain === "hiveQ" && queenIsTakeable(state)) {
     captureQueen(state, attacker, events);
     dst.soldiers = res.survivors;
   } else {

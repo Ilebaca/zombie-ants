@@ -5,7 +5,7 @@
  * rounded where BOTH touching sides face a different owner. Same-owner neighbours therefore
  * fuse into a single blob instead of reading as a grid of separate lozenges.
  */
-import { isHiveTerrain, tileAt } from "../engine";
+import { tileAt } from "../engine";
 import type { GameState, Player, Tile } from "../engine";
 
 export function rrect(
@@ -96,19 +96,17 @@ export function innerCorners(state: GameState, owner: Player): InnerCorner[] {
       const sy: -1 | 1 = (!tl || !tr) ? -1 : 1;
 
       /*
-       * Only fillet where the corner of the empty cell is actually EMPTY.
+       * The one cell that must not be filleted into is somebody's SOLID cell — that cell
+       * fills its own corner, and two colonies rounding into the same point would overlap.
        *
-       * A vein is a bar through the middle of its tile, so its corners are bare ground and
-       * the fillet has nothing to paint over — and skipping those left sharp notches all
-       * over a colony grown by travel, which threads veins through its own territory. A
-       * rock, a hive tile or somebody's solid cell does fill its corner, so those are left
-       * alone.
+       * Everything else leaves the corner of the cell bare, whatever sits in the middle of
+       * it: a vein is a bar through the centre, a rock and a hive tile are inset rounded
+       * slabs, a resource is a gem. Being fussier than that is what left sharp notches
+       * against veins, and then against the hive.
        */
       const hole = tileAt(state, sx < 0 ? c - 1 : c, sy < 0 ? r - 1 : r);
       if (!hole) continue;
-      const bare = hole.struct === "vein"
-        || (!hole.owner && hole.terrain !== "blocked" && !isHiveTerrain(hole));
-      if (!bare) continue;
+      if (hole.owner && hole.struct !== "vein") continue;
       out.push({ c, r, sx, sy });
     }
   }
