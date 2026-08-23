@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import { blankGame, put } from "../../engine/__tests__/helpers";
-import { recomputeConnectivity, tile, travel } from "../../engine";
+import { addEffect, recomputeConnectivity, tile, travel } from "../../engine";
 import type { Coord, EngineEvent, GameState, Tile } from "../../engine";
 import { Layout } from "../layout";
 import { REVEAL_MS_PER_TILE, RevealTracker, edgeFor } from "../reveal";
 import { CRUMBLE_MS, FxLayer } from "../fx";
 import { animate, sourceOf } from "../animate";
 import { basicLook } from "../art";
-import { drawFillets, drawTile, type Scene } from "../board";
-import { MAP, ownerCol } from "../palette";
+import { drawFillets, drawTile, drawTileEffects, type Scene } from "../board";
+import { MAP, hexA, ownerCol } from "../palette";
 import { innerCorners } from "../shapes";
 import { makeRecorder, type Call, type Recorder } from "./recorder";
 
@@ -733,5 +733,48 @@ describe("destroying a tile", () => {
     expect(cells(frame(hurt)), "a survivor must not be destroyed").toBe(0);
     expect(frame(hurt).has("stroke"), "a survivor still takes a hit").toBe(true);
     vi.useRealTimers();
+  });
+});
+
+/**
+ * LEAF ARMOUR IS NOT A COLONY OUTLINE.
+ *
+ * It used to draw as a dashed rounded rect in the owner's colour, which is now exactly what
+ * the marching ants are. Fungal Growth armours every frontline tile at once, so one cast
+ * filled the board with dashed rings that read as broken colony outlines. Nothing that is
+ * not the trail may draw a dashed border.
+ */
+describe("the leaf after-armour marker", () => {
+  const armoured = (): GameState => {
+    const s = blankGame();
+    put(s, 3, 3, { owner: "you", struct: "stable", soldiers: 4 });
+    recomputeConnectivity(s);
+    addEffect(s, 3, 3, "armor", "you", 4);
+    return s;
+  };
+
+  it("does not draw a dashed line", () => {
+    const s = armoured();
+    const { s: sc, rec } = scene(s);
+    drawTileEffects(sc, tile(s, 3, 3));
+    const dashes = rec.of("setLineDash").filter((c) => (c.args[0] as number[]).length > 0);
+    expect(dashes, "a dashed border is the ants' language, not armour's").toHaveLength(0);
+  });
+
+  it("still marks the tile in the owner's colour", () => {
+    const s = armoured();
+    const { s: sc, rec } = scene(s);
+    drawTileEffects(sc, tile(s, 3, 3));
+    expect(rec.calls.length).toBeGreaterThan(0);
+    const glow = hexA(ownerCol("you", "glow"), 1).slice(0, -3);   // "rgba(r,g,b,"
+    expect(rec.fills().some((f) => f.startsWith(glow.toLowerCase()))).toBe(true);
+  });
+
+  it("draws nothing on a tile with no effect on it", () => {
+    const s = blankGame();
+    put(s, 3, 3, { owner: "you", struct: "stable", soldiers: 4 });
+    const { s: sc, rec } = scene(s);
+    drawTileEffects(sc, tile(s, 3, 3));
+    expect(rec.calls).toHaveLength(0);
   });
 });

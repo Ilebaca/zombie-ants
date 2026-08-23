@@ -413,13 +413,28 @@ export function drawTileEffects(scene: Scene, t: Tile): void {
     if (e.c !== t.c || e.r !== t.r) continue;
 
     if (e.kind === "armor") {
+      /*
+       * PLATING, NOT A DASHED RING.
+       *
+       * Leaf armour used to be a dashed rounded rect in the owner's colour — which is now
+       * exactly what the marching ants are (render/trails.ts). Casting Fungal Growth
+       * armours every frontline tile at once, so the board filled up with dashed rings
+       * that read as broken colony outlines rather than as a defence bonus. It draws as
+       * two overlapping plates in the corner instead: a badge, with no continuous edge for
+       * the eye to mistake for the trail.
+       */
+      const px = x + s * 0.80, py = y + s * 0.80, pr = s * 0.13;
       ctx.save();
-      ctx.globalAlpha = 0.5;
-      ctx.strokeStyle = hexA(ownerCol(e.owner, "glow"), 0.8);
-      ctx.lineWidth = Math.max(1.5, ts * 0.05);
-      ctx.setLineDash([ts * 0.12, ts * 0.10]);
-      rrect(ctx, x + s * 0.1, y + s * 0.1, s * 0.8, s * 0.8, 8); ctx.stroke();
-      ctx.setLineDash([]);
+      ctx.fillStyle = hexA(ownerCol(e.owner, "glow"), 0.22);
+      rrect(ctx, x + s * 0.08, y + s * 0.08, s * 0.84, s * 0.84, s * 0.18); ctx.fill();
+      ctx.fillStyle = hexA(ownerCol(e.owner, "glow"), 0.9);
+      ctx.beginPath();                                   // a shield: flat top, pointed base
+      ctx.moveTo(px - pr, py - pr);
+      ctx.lineTo(px + pr, py - pr);
+      ctx.lineTo(px + pr, py + pr * 0.2);
+      ctx.quadraticCurveTo(px + pr, py + pr, px, py + pr);
+      ctx.quadraticCurveTo(px - pr, py + pr, px - pr, py + pr * 0.2);
+      ctx.closePath(); ctx.fill();
       ctx.restore();
       continue;
     }

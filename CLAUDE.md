@@ -313,6 +313,10 @@ Each of these cost a debugging round. Do not repeat them.
   all — the biggest thing that can happen on a turn, invisible. The effect draws over ground
   the engine has already cleared, which gives the tile its stay of execution without any
   view state living on the tile (§5, reveal).
+- **Nothing but the trail may draw a dashed border.** Leaf after-armour used to, in the
+  owner's colour, and Fungal Growth armours every frontline tile at once — so one cast
+  filled the board with dashed rings that read as broken colony outlines. It is a corner
+  shield on a light plate now. Any new per-tile marker has the same trap.
 - **The marching ants need closed LOOPS, not edges.** `render/trails.ts` traces each
   colony's boundary into real loops so one dash offset carries the whole way round. Stroking
   each boundary edge separately is far simpler and looks wrong: every edge restarts the dash
