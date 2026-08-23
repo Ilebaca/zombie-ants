@@ -14,6 +14,7 @@ import type {
   AbilityKind, ActionContext, Coord, EngineEvent, GameOverReason, GameState, MapId, Player, PlayerMods, SpeciesId,
 } from "../engine";
 import { Thinker, adopt } from "../ai/thinker";
+import type { Thought } from "../ai/thinker";
 import type { Difficulty } from "../ai/search";
 import { BoardRenderer } from "../render";
 
@@ -272,16 +273,26 @@ export class MatchScreen {
     // The match may have ended — surrendered, or torn down — while it was thinking. Adopting
     // the searched board then would undo that, so the answer is simply dropped.
     if (gen !== this.generation || this.state.over) return;
-    adopt(this.state, thought.next);
 
-    // However fast the answer came back, the board settles before the AI moves.
+    // However fast the answer came back, the board settles before the AI moves. The searched
+    // board is NOT adopted yet: it lands with the animation that shows it (see `playAI`).
     const beat = Math.max(0, AI_BEAT_MS - (performance.now() - started));
-    this.aiTimer = window.setTimeout(() => this.playAI(thought.events, started, gen), beat);
+    this.aiTimer = window.setTimeout(() => this.playAI(thought, started, gen), beat);
   }
 
-  private playAI(events: readonly EngineEvent[], started: number, gen: number): void {
+  /**
+   * The AI's move lands, and is animated, in the same tick.
+   *
+   * The board must not change before the animation that dramatises it. Adopting the searched
+   * board as soon as the answer arrived showed the finished move — troops already on the far
+   * tile, in the enemy's colour — and only then played the reveal that was supposed to be
+   * showing it happening. It read as the destination flashing and then being animated into.
+   */
+  private playAI(thought: Thought, started: number, gen: number): void {
     this.aiTimer = null;
     if (gen !== this.generation) return;
+    adopt(this.state, thought.next);
+    const events = thought.events;
     this.consume(events);
     this.refreshHUD();
     // Spend what is left of the turn's budget, then let the reveal finish before handing

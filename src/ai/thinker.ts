@@ -2,9 +2,11 @@
  * Ask the AI for its turn without stopping the world.
  *
  * The search runs in a worker when the platform has one, and inline when it does not — a
- * jsdom test, or a webview with workers disabled. Either way the caller awaits a result and
- * decides whether to adopt it, so a match that ended while the AI was thinking can drop the
- * answer instead of resurrecting itself with it.
+ * jsdom test, or a webview with workers disabled. Either way it works on a COPY and the
+ * caller's board is left exactly as it was, so the caller decides both whether to take the
+ * answer and WHEN. Both matter: a match that ended mid-think drops the answer instead of
+ * resurrecting itself with it, and the move lands in the same tick as the animation that
+ * dramatises it rather than a beat before.
  */
 import { restore, snapshot } from "../engine";
 import type { ActionContext, EngineEvent, GameState, Player } from "../engine";
@@ -14,10 +16,7 @@ import type { ThinkReply, ThinkRequest } from "./worker";
 
 export interface Thought {
   events: EngineEvent[];
-  /**
-   * The board the AI left behind. The same object the caller passed in when the search ran
-   * inline; a copy when it ran in a worker — `adopt` folds one into the other.
-   */
+  /** The board the AI left behind — always a copy. `adopt` folds it onto the live one. */
   next: GameState;
 }
 
@@ -53,11 +52,15 @@ export class Thinker {
   }
 
   think(state: GameState, me: Player, difficulty: Difficulty, ctx: ActionContext): Promise<Thought> {
+    const inline = (): Thought => {
+      // On a copy, so the caller's board is untouched whichever way the search ran.
+      const next = structuredClone(state);
+      return { events: aiTurn(next, me, difficulty, ctx), next };
+    };
     const worker = this.worker;
-    if (!worker) return Promise.resolve({ events: aiTurn(state, me, difficulty, ctx), next: state });
+    if (!worker) return Promise.resolve(inline());
 
     const id = this.nextId++;
-    const inline = (): Thought => ({ events: aiTurn(state, me, difficulty, ctx), next: state });
     return new Promise<Thought>((resolve) => {
       this.pending.set(id, { land: resolve, inline });
       try {

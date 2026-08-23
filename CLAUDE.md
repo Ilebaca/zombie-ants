@@ -229,7 +229,12 @@ copy of the board searched elsewhere reaches the same answer, and the mutated co
 whole (`adopt`, which is `restore(live, snapshot(next))`). A platform with no Worker thinks
 inline, exactly as before — that is also every test, since jsdom has none. A reply that
 arrives after the match ended is DROPPED rather than adopted, or a surrender would be undone
-by it.
+by it — and `think` works on a COPY either way, so the caller decides both whether to take
+the answer and WHEN. The when matters: the answer usually arrives well before the AI is due
+to move, and adopting it on arrival put the finished move on the board a beat before the
+reveal that was supposed to be showing it happen. The destination flashed, then animated
+into. It is adopted in the same tick as the events are consumed (`playAI`), and
+`src/ui/__tests__/match.test.ts` drives the real screen on a fake clock to hold that.
 
 **Depth is the only dial that separates hard from normal.** Everything else that makes the
 AI play well — pricing income by what it will still pay out, rating a travel by its reach,

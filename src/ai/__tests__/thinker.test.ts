@@ -18,24 +18,37 @@ describe("thinking without a worker", () => {
   it("still takes the turn inline", async () => {
     const s = game();
     s.current = "ai";
+    const thinker = new Thinker();
+    const thought = await thinker.think(s, "ai", "normal", ctx);
+    thinker.dispose();
+    expect(thought.events.length).toBeGreaterThan(0);
+  });
+
+  /**
+   * The caller decides both whether to take the answer and WHEN. Mutating the live board
+   * inside `think` put the AI's finished move on screen a beat before the animation that
+   * was supposed to be showing it happening.
+   */
+  it("leaves the caller's board exactly as it was", async () => {
+    const s = game();
+    s.current = "ai";
     const before = sig(s);
     const thinker = new Thinker();
     const thought = await thinker.think(s, "ai", "normal", ctx);
     thinker.dispose();
 
-    expect(thought.events.length).toBeGreaterThan(0);
-    expect(thought.next, "inline thinking works on the board it was given").toBe(s);
-    expect(sig(s)).not.toBe(before);
+    expect(sig(s), "the board moved before anybody adopted the answer").toBe(before);
+    expect(sig(thought.next), "the search did not actually play a move").not.toBe(before);
   });
 
-  it("reaches the same board the search would have", async () => {
+  it("reaches the same board every time", async () => {
     const a = game(); a.current = "ai";
     const b = game(); b.current = "ai";
     const thinker = new Thinker();
-    await thinker.think(a, "ai", "normal", ctx);
-    await thinker.think(b, "ai", "normal", ctx);
+    const one = await thinker.think(a, "ai", "normal", ctx);
+    const two = await thinker.think(b, "ai", "normal", ctx);
     thinker.dispose();
-    expect(sig(a)).toBe(sig(b));
+    expect(sig(one.next)).toBe(sig(two.next));
   });
 });
 
