@@ -258,7 +258,7 @@ table tbody tr:hover { background: #f5f1ea; }
       <li><strong>Veins have no defence.</strong> Attacking an enemy vein captures it <em>instantly</em> — no combat roll, no losses, the attacker simply moves in and the tile becomes a stable.</li>
       <li><strong>Dangling veins collapse.</strong> A vein needs at least two colony neighbours to survive. When it loses an anchor, the trail is destroyed back to the nearest captured tile. Junctions are preserved: only the genuinely dead branch prunes.</li>
       <li><strong>Veins cannot receive troops</strong> from Rally or Fortify — they are not valid targets. Troops that <em>do</em> land on a vein (by Travel, or a Rally onto it) promote it to a stable.</li>
-      <li>Pruning runs after every action and after Flee, so trails never linger in an impossible state.</li>
+      <li>Pruning runs after every action, but <strong>never after Flee</strong> — Flee relocates garrisons only, and pruning there destroyed the trails it was not supposed to touch. Supply lines are recomputed instead.</li>
     </ul>
     <div class="flag">Because veins are free to capture, cutting an enemy's supply line is a deliberate, cheap and powerful tactic — one soldier can collapse an entire overextended arm.</div>
 
@@ -354,7 +354,7 @@ table tbody tr:hover { background: #f5f1ea; }
         <tr><td>Weaver Ant</td><td><strong>Spread</strong></td><td>5</td><td>Claims every empty tile you border on the enemy's half of the map.</td></tr>
         <tr><td>Carpenter</td><td><strong>Fortify</strong></td><td>6</td><td>Every frontline <em>active</em> tile gains +12% garrison (veins excluded), and the whole colony defends at +70% for 3 turns.</td></tr>
         <tr><td>Bullet Ant</td><td><strong>Venom Rain</strong></td><td>6</td><td>Venom scatters across the board. Enemy tiles caught lose troops each turn for 3 turns. Your tiles and both nests are immune.</td></tr>
-        <tr><td>Demon Ant</td><td><strong>Flee</strong></td><td>6</td><td>Every mobile enemy garrison within <strong>3 tiles</strong> flees directly away until beyond that reach; colliding tiles merge. <strong>Cannot push:</strong> veins, tunnels, resources, the Hive queen/guards, or blocked tiles — and it never breaks a vein.</td></tr>
+        <tr><td>Demon Ant</td><td><strong>Flee</strong></td><td>6</td><td>Every mobile enemy garrison within <strong>3 tiles</strong> runs directly away along one axis, up to 3 tiles, stopping as soon as it is clear of your colony or reaches ground it cannot enter (a rock, a leaf wall, a wild garrison, or one of your own tiles); colliding runners merge. <strong>Cannot push:</strong> veins, tunnels, resources, the Hive queen/guards, or blocked tiles — and it never breaks a vein.</td></tr>
       </tbody>
     </table></div>
 
