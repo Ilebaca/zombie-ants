@@ -265,3 +265,55 @@ describe("cells that touch only at a corner", () => {
     expect(loops[0]).toHaveLength(8);
   });
 });
+
+/**
+ * THE OUTLINE FOLLOWS THE FILL.
+ *
+ * The engine hands a tile over the instant the move resolves, but it fills in over the next
+ * quarter-second. Tracing off the engine alone snapped the whole boundary out to the far
+ * end of a long send on the first frame, while the troops were still on tile one.
+ */
+describe("tracing only what has arrived", () => {
+  const line = () => {
+    const s = blankGame();
+    for (let c = 3; c <= 6; c++) put(s, c, 3, { owner: "you", struct: "stable", soldiers: 2 });
+    recomputeConnectivity(s);
+    return s;
+  };
+
+  it("leaves out tiles that are still filling in", () => {
+    const s = line();
+    // Only the first two have landed.
+    const loops = territoryLoops(s, "you", (c) => c <= 4);
+    expect(loops).toHaveLength(1);
+    expect(loops[0], "two tiles is six corners; all four would be ten").toHaveLength(6);
+  });
+
+  it("extends one tile at a time as the front advances", () => {
+    const s = line();
+    const at = (front: number): number =>
+      (territoryLoops(s, "you", (c) => c <= front)[0] as unknown[]).length;
+    // A 1×n run traces 2n+2 corners: every grid corner along it, collinear ones included.
+    expect(at(3)).toBe(4);
+    expect(at(4)).toBe(6);
+    expect(at(5)).toBe(8);
+    expect(at(6)).toBe(10);
+  });
+
+  it("holds a vein spine back until its tile lands too", () => {
+    const s = blankGame();
+    put(s, 3, 3, { owner: "you", struct: "stable", soldiers: 2 });
+    put(s, 4, 3, { owner: "you", struct: "vein", soldiers: 0 });
+    put(s, 5, 3, { owner: "you", struct: "vein", soldiers: 0 });
+    put(s, 6, 3, { owner: "you", struct: "stable", soldiers: 2 });
+    recomputeConnectivity(s);
+    const full = veinTrails(s, "you")[0] as unknown[];
+    const partial = veinTrails(s, "you", (c) => c <= 4)[0] as unknown[];
+    expect(partial.length).toBeLessThan(full.length);
+  });
+
+  it("traces everything when nothing is animating", () => {
+    const s = line();
+    expect(territoryLoops(s, "you")[0]).toHaveLength(10);
+  });
+});

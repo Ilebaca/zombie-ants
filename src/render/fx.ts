@@ -13,7 +13,8 @@ type Fx =
   | { type: "flow"; path: Coord[]; owner: Player; t: number; dur: number }
   | { type: "clash"; at: Coord; t: number; dur: number }
   | { type: "pop"; at: Coord; owner: Player; t: number; dur: number }
-  | { type: "crumble"; at: Coord; owner: Player | null; vein: boolean; t: number; dur: number };
+  | { type: "crumble"; at: Coord; owner: Player | null; vein: boolean; t: number; dur: number }
+  | { type: "blink"; at: Coord; owner: Player | null; t: number; dur: number };
 
 const TAU = 6.283;
 
@@ -30,6 +31,17 @@ const FLOW_MS_PER_STEP = 260;
 export const CRUMBLE_MS = 520;
 /** The share of that spent going white-hot, before it breaks up. */
 const FLASH = 0.42;
+
+/**
+ * How long a tile changing hands blanks out for.
+ *
+ * The same white-out a destroyed tile gets, without the shatter — what was there is beaten,
+ * and the colony that beat it is filling the ground underneath while the flash fades off.
+ * Matched to one reveal slot so the flash clears as the fill lands.
+ */
+const BLINK_MS = 280;
+/** Where the flash peaks. Quick in, slow out, so the new colour emerges rather than pops. */
+const BLINK_PEAK = 0.34;
 
 export class FxLayer {
   private items: Fx[] = [];
@@ -69,6 +81,18 @@ export class FxLayer {
     this.items.push({
       type: "crumble", at, owner, vein,
       t: performance.now() + delay, dur: this.reduced ? 1 : CRUMBLE_MS,
+    });
+  }
+
+  /**
+   * A tile changing hands: it whites out and the new owner is underneath when it clears.
+   *
+   * Only for ground that had to be BEATEN — an enemy tile or a wild garrison. Walking onto
+   * empty ground destroys nothing, so it just fills.
+   */
+  blink(at: Coord, owner: Player | null, delay = 0): void {
+    this.items.push({
+      type: "blink", at, owner, t: performance.now() + delay, dur: this.reduced ? 1 : BLINK_MS,
     });
   }
 
@@ -115,6 +139,21 @@ export class FxLayer {
           ctx.arc(x + Math.cos(a) * rr, y + Math.sin(a) * rr, ts * 0.05 * (1 - k), 0, TAU);
           ctx.fill();
         }
+        ctx.restore();
+
+      } else if (f.type === "blink") {
+        const a = k < BLINK_PEAK ? k / BLINK_PEAK : 1 - (k - BLINK_PEAK) / (1 - BLINK_PEAK);
+        const x = layout.x0(f.at.c), y = layout.y0(f.at.r);
+        ctx.save();
+        // The loser's colour under the flash, so the tile is still theirs as it goes.
+        if (f.owner) {
+          ctx.globalAlpha = Math.max(0, 1 - k / BLINK_PEAK);
+          ctx.fillStyle = ownerCol(f.owner);
+          rrect(ctx, x, y, ts, ts, ts * 0.2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = `rgba(255,255,255,${a.toFixed(3)})`;
+        rrect(ctx, x, y, ts, ts, ts * 0.2); ctx.fill();
         ctx.restore();
 
       } else if (f.type === "crumble") {

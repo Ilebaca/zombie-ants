@@ -313,6 +313,11 @@ Each of these cost a debugging round. Do not repeat them.
   all — the biggest thing that can happen on a turn, invisible. The effect draws over ground
   the engine has already cleared, which gives the tile its stay of execution without any
   view state living on the tile (§5, reveal).
+- **The outline must be traced against the REVEAL, not the engine.** A tile is the player's
+  the instant the move resolves, but it fills in over the next quarter-second — so tracing
+  off engine state alone snapped the whole boundary out to the far end of a long send while
+  the troops were still on tile one. `territoryLoops`/`veinTrails` take a "has this tile
+  landed?" predicate and `drawTrails` supplies it from `RevealTracker`.
 - **Nothing but the trail may draw a dashed border.** Leaf after-armour used to, in the
   owner's colour, and Fungal Growth armours every frontline tile at once — so one cast
   filled the board with dashed rings that read as broken colony outlines. It is a corner

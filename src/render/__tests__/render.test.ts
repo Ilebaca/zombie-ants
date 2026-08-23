@@ -7,7 +7,7 @@ import { REVEAL_MS_PER_TILE, RevealTracker, edgeFor } from "../reveal";
 import { CRUMBLE_MS, FxLayer } from "../fx";
 import { animate, sourceOf } from "../animate";
 import { basicLook } from "../art";
-import { drawFillets, drawTile, drawTileEffects, type Scene } from "../board";
+import { drawFillets, drawTile, drawTileEffects, drawTrails, type Scene } from "../board";
 import { MAP, hexA, ownerCol } from "../palette";
 import { innerCorners } from "../shapes";
 import { makeRecorder, type Call, type Recorder } from "./recorder";
@@ -776,5 +776,164 @@ describe("the leaf after-armour marker", () => {
     const { s: sc, rec } = scene(s);
     drawTileEffects(sc, tile(s, 3, 3));
     expect(rec.calls).toHaveLength(0);
+  });
+});
+
+/**
+ * TAKING GROUND OFF SOMEBODY.
+ *
+ * A tile that had to be beaten blanks out the way a destroyed one does, and the colony that
+ * beat it is filling underneath as the flash clears. Walking onto empty ground destroys
+ * nothing, so it just fills.
+ */
+describe("a tile changing hands", () => {
+  const clock = () => vi.useFakeTimers({ toFake: ["performance", "Date"] });
+
+  const frame = (fx: FxLayer): Recorder => {
+    const rec = makeRecorder();
+    const l = new Layout(13);
+    l.ts = 40; l.ox = 0; l.oy = 0; l.width = 520; l.height = 520;
+    fx.draw(rec.ctx, l);
+    return rec;
+  };
+  /** The blink paints the whole cell; nothing else in this batch fills a rounded cell. */
+  const whites = (rec: Recorder): string[] =>
+    rec.fills().filter((f) => f.startsWith("rgba(255,255,255"));
+
+  const run = (events: EngineEvent[]): FxLayer => {
+    const fx = new FxLayer();
+    const reveal = new RevealTracker();
+    reveal.reduced = false;
+    animate(events, { reveal, fx });
+    return fx;
+  };
+
+  it("blanks a tile taken off the enemy", () => {
+    clock();
+    const fx = run([{ type: "capture", at: { c: 2, r: 2 }, owner: "you", from: "R", previous: "ai" }]);
+    vi.advanceTimersByTime(90);
+    expect(whites(frame(fx)).length).toBeGreaterThan(0);
+    vi.useRealTimers();
+  });
+
+  it("clears again so the new owner shows through", () => {
+    clock();
+    const fx = run([{ type: "capture", at: { c: 2, r: 2 }, owner: "you", from: "R", previous: "ai" }]);
+    const alpha = (): number => Number(/,([\d.]+)\)$/.exec(whites(frame(fx))[0] ?? "rgba(0,0,0,0)")?.[1] ?? 0);
+    vi.advanceTimersByTime(90);
+    const peak = alpha();
+    vi.advanceTimersByTime(150);
+    expect(alpha(), "the flash has to fade off the tile").toBeLessThan(peak);
+    vi.useRealTimers();
+  });
+
+  it("does not blank plain expansion onto empty ground", () => {
+    clock();
+    const fx = run([{ type: "capture", at: { c: 2, r: 2 }, owner: "you", from: "R", previous: null }]);
+    vi.advanceTimersByTime(90);
+    expect(whites(frame(fx)), "nothing was beaten there").toHaveLength(0);
+    vi.useRealTimers();
+  });
+
+  /** A wild garrison has no owner, but it still had to be fought through. */
+  it("blanks a wild garrison that was fought off", () => {
+    clock();
+    const fx = run([
+      { type: "combat", at: { c: 2, r: 2 }, attacker: "you", from: "R", won: true, survivors: 4 },
+      { type: "capture", at: { c: 2, r: 2 }, owner: "you", from: "R", previous: null },
+    ]);
+    vi.advanceTimersByTime(90);
+    expect(whites(frame(fx)).length).toBeGreaterThan(0);
+    vi.useRealTimers();
+  });
+
+  /** Each tile blanks as its own turn in the run comes round, not all on frame one. */
+  it("waits its turn in a multi-tile run", () => {
+    clock();
+    const fx = run([
+      { type: "capture", at: { c: 2, r: 2 }, owner: "you", from: "R", previous: "ai" },
+      { type: "capture", at: { c: 3, r: 2 }, owner: "you", from: "R", previous: "ai" },
+      { type: "capture", at: { c: 4, r: 2 }, owner: "you", from: "R", previous: "ai" },
+    ]);
+    expect(whites(frame(fx))).toHaveLength(1);
+    vi.advanceTimersByTime(REVEAL_MS_PER_TILE);
+    expect(whites(frame(fx)).length).toBeGreaterThan(1);
+    vi.useRealTimers();
+  });
+});
+
+/**
+ * A held resource pays three a turn where a plain stable pays one, and nothing on the board
+ * said so. Under a colony the stone breathes; unowned it sits still, because an idle seam
+ * is not producing anything.
+ */
+describe("a worked resource seam", () => {
+  /**
+   * The gem is drawn as diamonds: a moveTo, three lineTo, a closePath. The cell fill under
+   * an owned tile rounds its corners with arcTo, so it cannot be mistaken for one.
+   */
+  const firstDiamondRadius = (rec: Recorder): number => {
+    const c = rec.calls;
+    for (let i = 0; i + 4 < c.length; i++) {
+      if ((c[i] as Call).fn !== "moveTo") continue;
+      if ((c[i + 1] as Call).fn !== "lineTo" || (c[i + 2] as Call).fn !== "lineTo") continue;
+      if ((c[i + 3] as Call).fn !== "lineTo" || (c[i + 4] as Call).fn !== "closePath") continue;
+      return ((c[i + 1] as Call).args[0] as number) - ((c[i] as Call).args[0] as number);
+    }
+    return 0;
+  };
+
+  const gemOverTime = (owner: "you" | null): number[] => {
+    const s = blankGame();
+    put(s, 3, 3, { terrain: "resource", owner, struct: owner ? "stable" : null, soldiers: owner ? 3 : 0 });
+    recomputeConnectivity(s);
+    const sizes: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      const { s: sc, rec } = scene(s);
+      drawTile(sc, tile(s, 3, 3));
+      sizes.push(Number(firstDiamondRadius(rec).toFixed(4)));
+      vi.advanceTimersByTime(700);
+    }
+    return sizes;
+  };
+
+  it("breathes while a colony holds it", () => {
+    vi.useFakeTimers({ toFake: ["performance", "Date"] });
+    const sizes = gemOverTime("you");
+    expect(sizes[0], "no gem was drawn at all").not.toBe(0);
+    expect(new Set(sizes).size, "the stone must change size over time").toBeGreaterThan(1);
+    vi.useRealTimers();
+  });
+
+  it("sits still while nobody does", () => {
+    vi.useFakeTimers({ toFake: ["performance", "Date"] });
+    const sizes = gemOverTime(null);
+    expect(sizes[0]).not.toBe(0);
+    expect(new Set(sizes).size, "an idle seam is not producing anything").toBe(1);
+    vi.useRealTimers();
+  });
+});
+
+/** The board layer has to hand its reveal state to the tracer, or none of that reaches the screen. */
+describe("drawing the trail against a live reveal", () => {
+  const twoTiles = (): GameState => {
+    const s = blankGame();
+    put(s, 3, 3, { owner: "you", struct: "stable", soldiers: 2 });
+    put(s, 4, 3, { owner: "you", struct: "stable", soldiers: 2 });
+    recomputeConnectivity(s);
+    return s;
+  };
+
+  it("draws only the ground that has finished filling", () => {
+    const settled = scene(twoTiles());
+    drawTrails(settled.s);
+
+    const filling = scene(twoTiles());
+    filling.s.reveal.reduced = false;
+    filling.s.reveal.begin([{ at: { c: 4, r: 3 }, edge: "L", prev: null }]);
+    drawTrails(filling.s);
+
+    // One tile is four corners, two fused tiles are six.
+    expect(filling.rec.of("arcTo").length).toBeLessThan(settled.rec.of("arcTo").length);
   });
 });

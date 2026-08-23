@@ -84,6 +84,8 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
   const captures: Array<{
     at: Coord; edge: RevealEdge; prev: Player | null; src: Coord; owner: Player;
   }> = [];
+  /** Tiles a fight was won on, so a wild garrison beaten off blanks out like an enemy tile. */
+  const beaten = new Set<string>();
   // A won fight emits `combat` then `capture` for the same tile. The clash has to wait for
   // that tile's turn in the run, so it is held here and released with the capture.
   const clashes = new Map<string, { at: Coord; src: Coord; attacker: Player }>();
@@ -121,6 +123,7 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
       case "combat":
         // Held until the capture that follows gives it a place in the run. A fight that
         // did not take the tile has no capture, so it is released at the end.
+        if (e.won) beaten.add(key(e.at.c, e.at.r));
         clashes.set(key(e.at.c, e.at.r), {
           at: e.at, src: sourceOf(e.at, e.from), attacker: e.attacker,
         });
@@ -187,7 +190,7 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
     // Each flourish leaves as its tile's turn comes round, so they stay in step with the
     // fill rather than all firing on the first frame.
     const step = reveal.stepMs(captures.length);
-    captures.forEach(({ src, at, owner }, i) => {
+    captures.forEach(({ src, at, owner, prev }, i) => {
       const k = key(at.c, at.r);
       const fight = clashes.get(k);
       if (fight) {
@@ -197,6 +200,10 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
       } else {
         fx.flow([src, at], owner, i * step);
       }
+      // Ground that had to be beaten blanks out the way a destroyed tile does, and the
+      // colony that beat it is filling underneath as the flash clears. Empty ground
+      // destroys nothing, so it simply fills.
+      if (prev || beaten.has(k)) fx.blink(at, prev, i * step);
       fx.pop(at, owner, i * step + step);
     });
   }

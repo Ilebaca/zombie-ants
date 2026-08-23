@@ -87,8 +87,11 @@ export function drawBackground(
  * the selection, which has to stay the loudest thing on the board.
  */
 export function drawTrails(scene: Scene): void {
-  const { ctx, layout, state } = scene;
+  const { ctx, layout, state, reveal } = scene;
   const now = performance.now();
+  // A tile joins the outline only once it has finished filling in, so the ants extend one
+  // tile at a time along a send instead of snapping out to its far end on the first frame.
+  const settled = (c: number, r: number): boolean => reveal.progress(c, r) >= 1;
   const width = Math.max(1.6, layout.ts * 0.055);
   for (const p of ["you", "ai"] as const) {
     const style = {
@@ -97,8 +100,8 @@ export function drawTrails(scene: Scene): void {
       // Half a phase apart, so the two colonies' ants are never in lockstep.
       phase: p === "ai" ? 0.5 : 0,
     };
-    drawTrail(ctx, layout, territoryLoops(state, p), style, now);
-    drawVeinTrail(ctx, layout, veinTrails(state, p), style, now);
+    drawTrail(ctx, layout, territoryLoops(state, p, settled), style, now);
+    drawVeinTrail(ctx, layout, veinTrails(state, p, settled), style, now);
   }
 }
 
@@ -317,7 +320,17 @@ export function drawTile(scene: Scene, t: Tile): void {
     // A cut gem: a shaded base, the stone, and one lit facet across the top-left. The glow
     // is the only blur on the board, and it earns it — this is the thing worth fighting for.
     const gx = layout.cx(t.c), gy = layout.cy(t.r) - (t.owner ? h * 0.16 : 0);
-    const s = w * 0.19, drop = Math.max(2, ts * 0.07);
+    /*
+     * A WORKED SEAM BREATHES.
+     *
+     * A held resource pays three a turn where a plain stable pays one, and nothing on the
+     * board said so — it looked like any other captured cell with a gem on it. Under a
+     * colony the stone swells and its glow rises and falls; unowned it sits still, because
+     * an idle seam is not producing anything. Kept small on purpose: it has to read as one
+     * tile working, not as an alert.
+     */
+    const beat = t.owner ? 0.5 + 0.5 * Math.sin(performance.now() / 460 + t.c + t.r) : 0;
+    const s = w * 0.19 * (1 + 0.10 * beat), drop = Math.max(2, ts * 0.07);
     const diamond = (cx: number, cy: number, rad: number): void => {
       ctx.beginPath();
       ctx.moveTo(cx, cy - rad); ctx.lineTo(cx + rad, cy);
@@ -327,7 +340,7 @@ export function drawTile(scene: Scene, t: Tile): void {
     ctx.fillStyle = MAP.groundShade; diamond(gx, gy + drop * 1.6, s); ctx.fill();
     ctx.fillStyle = MAP.gemEdge; diamond(gx, gy + drop, s); ctx.fill();
     ctx.save();
-    ctx.shadowColor = MAP.gemTop; ctx.shadowBlur = ts * 0.26;
+    ctx.shadowColor = MAP.gemTop; ctx.shadowBlur = ts * (0.26 + 0.30 * beat);
     ctx.fillStyle = MAP.gem; diamond(gx, gy, s); ctx.fill();
     ctx.restore();
     ctx.fillStyle = MAP.gemTop;

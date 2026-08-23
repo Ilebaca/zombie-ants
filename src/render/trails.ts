@@ -37,17 +37,29 @@ const SPEED = 0.9;
 const CORNER = 0.20;
 
 /**
+ * Ground the ants have actually reached.
+ *
+ * The engine hands a tile over the instant the move resolves, but it fills in over the next
+ * quarter-second (render/reveal.ts). Tracing the outline off the engine alone therefore
+ * snapped the whole boundary out to the far end of a long send before the troops had
+ * crossed a single tile. The renderer passes its reveal state in, so the outline extends in
+ * step with the fill — one tile at a time, toward the destination.
+ */
+export type Settled = (c: number, r: number) => boolean;
+const ALWAYS: Settled = () => true;
+
+/**
  * Only SOLID territory contributes to the outline. Veins get their own line down the middle
  * of the tile (see `veinTrails`), because a trail one tile wide outlined on both sides reads
  * as a tube rather than as a line.
  */
-const owns = (t: Tile | undefined, p: Player): boolean =>
-  t?.owner === p && t.struct !== "vein";
+const owns = (t: Tile | undefined, p: Player, done: Settled): boolean =>
+  t?.owner === p && t.struct !== "vein" && done(t.c, t.r);
 
 /** Does `t` link a vein at (c, r) — same owner and part of the colony, vein or solid? */
-const links = (state: GameState, p: Player, c: number, r: number): boolean => {
+const links = (state: GameState, p: Player, c: number, r: number, done: Settled): boolean => {
   const t = state.grid[r]?.[c];
-  return !!t && t.owner === p
+  return !!t && t.owner === p && done(c, r)
     && (t.struct === "vein" || t.struct === "stable" || t.struct === "nest");
 };
 
@@ -58,18 +70,18 @@ const links = (state: GameState, p: Player, c: number, r: number): boolean => {
  * tile. Wound consistently, those edges join end-to-end into loops with no bookkeeping
  * beyond a map from each edge's start corner to its end.
  */
-export function territoryLoops(state: GameState, p: Player): Corner[][] {
+export function territoryLoops(state: GameState, p: Player, done: Settled = ALWAYS): Corner[][] {
   const edges = new Map<string, Corner[]>();
   const at = (c: number, r: number): Tile | undefined => state.grid[r]?.[c];
 
   for (const row of state.grid) {
     for (const t of row) {
-      if (!owns(t, p)) continue;
+      if (!owns(t, p, done)) continue;
       const { c, r } = t;
-      if (!owns(at(c, r - 1), p)) addEdge(edges, { c, r }, { c: c + 1, r });
-      if (!owns(at(c + 1, r), p)) addEdge(edges, { c: c + 1, r }, { c: c + 1, r: r + 1 });
-      if (!owns(at(c, r + 1), p)) addEdge(edges, { c: c + 1, r: r + 1 }, { c, r: r + 1 });
-      if (!owns(at(c - 1, r), p)) addEdge(edges, { c, r: r + 1 }, { c, r });
+      if (!owns(at(c, r - 1), p, done)) addEdge(edges, { c, r }, { c: c + 1, r });
+      if (!owns(at(c + 1, r), p, done)) addEdge(edges, { c: c + 1, r }, { c: c + 1, r: r + 1 });
+      if (!owns(at(c, r + 1), p, done)) addEdge(edges, { c: c + 1, r: r + 1 }, { c, r: r + 1 });
+      if (!owns(at(c - 1, r), p, done)) addEdge(edges, { c, r: r + 1 }, { c, r });
     }
   }
 
@@ -134,7 +146,7 @@ function addEdge(edges: Map<string, Corner[]>, from: Corner, to: Corner): void {
  * into loops — one path carries one dash offset, so the marks flow instead of restarting at
  * every tile boundary.
  */
-export function veinTrails(state: GameState, p: Player): Corner[][] {
+export function veinTrails(state: GameState, p: Player, done: Settled = ALWAYS): Corner[][] {
   const adj = new Map<string, Corner[]>();
   const at = (n: Corner): string => `${Math.round(n.c * 2)},${Math.round(n.r * 2)}`;
   const join = (a: Corner, b: Corner): void => {
@@ -144,13 +156,13 @@ export function veinTrails(state: GameState, p: Player): Corner[][] {
 
   for (const row of state.grid) {
     for (const t of row) {
-      if (t.owner !== p || t.struct !== "vein") continue;
+      if (t.owner !== p || t.struct !== "vein" || !done(t.c, t.r)) continue;
       const hub: Corner = { c: t.c + 0.5, r: t.r + 0.5 };
       const arms: Array<[boolean, Corner]> = [
-        [links(state, p, t.c - 1, t.r), { c: t.c, r: t.r + 0.5 }],
-        [links(state, p, t.c + 1, t.r), { c: t.c + 1, r: t.r + 0.5 }],
-        [links(state, p, t.c, t.r - 1), { c: t.c + 0.5, r: t.r }],
-        [links(state, p, t.c, t.r + 1), { c: t.c + 0.5, r: t.r + 1 }],
+        [links(state, p, t.c - 1, t.r, done), { c: t.c, r: t.r + 0.5 }],
+        [links(state, p, t.c + 1, t.r, done), { c: t.c + 1, r: t.r + 0.5 }],
+        [links(state, p, t.c, t.r - 1, done), { c: t.c + 0.5, r: t.r }],
+        [links(state, p, t.c, t.r + 1, done), { c: t.c + 0.5, r: t.r + 1 }],
       ];
       let any = false;
       for (const [linked, port] of arms) if (linked) { join(hub, port); any = true; }
