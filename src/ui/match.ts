@@ -13,7 +13,7 @@ import {
 import type {
   AbilityKind, ActionContext, Coord, EngineEvent, GameOverReason, GameState, MapId, Player, PlayerMods, SpeciesId,
 } from "../engine";
-import { aiTurn } from "../ai/search";
+import { Thinker, adopt } from "../ai/thinker";
 import type { Difficulty } from "../ai/search";
 import { BoardRenderer } from "../render";
 
@@ -29,6 +29,8 @@ const MOVE_SECONDS = 15;
  * same rhythm and Hard's extra thinking is free.
  */
 const AI_TURN_MS = 1100;
+/** How long the board is left alone after the AI's turn begins, before it moves. */
+const AI_BEAT_MS = 260;
 
 type Mode = "go" | "rally" | "tunnel";
 type ToastKind = "good" | "bad" | "warn" | "hive";
@@ -86,6 +88,13 @@ export class MatchScreen {
   private endReason: GameOverReason | null = null;
   /** Coaching toasts still pending; cleared with the rest when the match is torn down. */
   private tutorialTimers: number[] = [];
+  private thinker = new Thinker();
+  /**
+   * Bumped whenever this match stops caring about an answer still in flight — torn down, or
+   * already finished. The AI thinks off the main thread now, so a reply can arrive after the
+   * board it was thinking about has gone.
+   */
+  private generation = 0;
 
   constructor(host: HTMLElement, private opts: MatchOptions) {
     this.root = document.createElement("div");
@@ -132,6 +141,8 @@ export class MatchScreen {
   }
 
   destroy(): void {
+    this.generation++;
+    this.thinker.dispose();
     this.renderer.stop();
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
     this.clearTimers();
@@ -238,10 +249,9 @@ export class MatchScreen {
     if (this.state.over) { this.clearTimers(); this.finish(); return; }
 
     this.startTimer();
-    if (this.state.current === "ai") {
-      // Thinking starts a beat in, so the player sees the board settle before it moves.
-      this.aiTimer = window.setTimeout(() => this.runAI(), 260);
-    }
+    // Thinking starts at once and happens off the main thread, so it overlaps the fill the
+    // player's own move is still playing out. The beat before the AI MOVES is kept below.
+    if (this.state.current === "ai") void this.runAI();
   }
 
   private handOver(): void {
@@ -252,18 +262,32 @@ export class MatchScreen {
     this.beginTurn();
   }
 
-  private runAI(): void {
+  private async runAI(): Promise<void> {
     this.aiTimer = null;
     if (this.state.over) { this.finish(); return; }
+    const gen = this.generation;
     const started = performance.now();
-    const events = aiTurn(this.state, "ai", this.opts.difficulty, this.opts.ctx);
+
+    const thought = await this.thinker.think(this.state, "ai", this.opts.difficulty, this.opts.ctx);
+    // The match may have ended — surrendered, or torn down — while it was thinking. Adopting
+    // the searched board then would undo that, so the answer is simply dropped.
+    if (gen !== this.generation || this.state.over) return;
+    adopt(this.state, thought.next);
+
+    // However fast the answer came back, the board settles before the AI moves.
+    const beat = Math.max(0, AI_BEAT_MS - (performance.now() - started));
+    this.aiTimer = window.setTimeout(() => this.playAI(thought.events, started, gen), beat);
+  }
+
+  private playAI(events: readonly EngineEvent[], started: number, gen: number): void {
+    this.aiTimer = null;
+    if (gen !== this.generation) return;
     this.consume(events);
     this.refreshHUD();
     // Spend what is left of the turn's budget, then let the reveal finish before handing
     // over — flipping the turn mid-sweep cuts the animation off.
-    const thought = performance.now() - started;
-    const rest = Math.max(0, AI_TURN_MS - 260 - thought);
-    window.setTimeout(() => this.handOver(), rest + (events.length ? 700 : 200));
+    const rest = Math.max(0, AI_TURN_MS - (performance.now() - started));
+    this.aiTimer = window.setTimeout(() => this.handOver(), rest + (events.length ? 700 : 200));
   }
 
   private finish(): void {

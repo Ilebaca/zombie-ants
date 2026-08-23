@@ -619,6 +619,18 @@ describe("rounding a colony's inner corners", () => {
     expect(innerCorners(rock, "you")).toHaveLength(0);
   });
 
+  /**
+   * A vein is a bar through the MIDDLE of its tile, so its corners are bare ground. Skipping
+   * them left sharp notches all over a colony grown by travel, which threads its own veins
+   * through its territory.
+   */
+  it("fillets into the corner of a vein tile", () => {
+    const s = ell();
+    put(s, 4, 4, { owner: "you", struct: "vein", soldiers: 0 });
+    recomputeConnectivity(s);
+    expect(innerCorners(s, "you")).toEqual([{ c: 4, r: 4, sx: 1, sy: 1 }]);
+  });
+
   it("draws the fillet as an arc, not a mitre", () => {
     const { s, rec } = scene(ell());
     drawFillets(s);
@@ -933,7 +945,12 @@ describe("drawing the trail against a live reveal", () => {
     filling.s.reveal.begin([{ at: { c: 4, r: 3 }, edge: "L", prev: null }]);
     drawTrails(filling.s);
 
-    // One tile is four corners, two fused tiles are six.
-    expect(filling.rec.of("arcTo").length).toBeLessThan(settled.rec.of("arcTo").length);
+    // How far right the traced path reaches: one tile ends at x=160, two at x=200.
+    const reach = (rec: Recorder): number => Math.max(
+      ...rec.calls.filter((c) => c.fn === "moveTo" || c.fn === "arcTo")
+        .map((c) => c.args[0] as number),
+    );
+    expect(reach(filling.rec), "the outline ran ahead of the fill")
+      .toBeLessThan(reach(settled.rec));
   });
 });

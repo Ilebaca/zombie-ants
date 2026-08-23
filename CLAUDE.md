@@ -219,6 +219,18 @@ Measured ladder (24 games each, sides and species swapped, node-budgeted): hard 
 normal **96%**, hard beats easy **100%**, normal beats easy **100%**. Before any of this
 work, hard scored **35%** against normal — the ladder was inverted at the top.
 
+**The search runs in a Web Worker** (`ai/worker.ts`, driven by `ai/thinker.ts`). Hard thinks
+for about a third of a second and it does it synchronously, so on the main thread every AI
+turn froze the page — measured in the browser at a **377 ms** worst frame gap, dropping to
+**45 ms** through the worker. That was invisible while the board was still; the marching ants
+made it the most obvious thing in the game, landing exactly as the player's move finished
+filling in. Nothing about the search changed to move it: the engine is pure and seeded, so a
+copy of the board searched elsewhere reaches the same answer, and the mutated copy is adopted
+whole (`adopt`, which is `restore(live, snapshot(next))`). A platform with no Worker thinks
+inline, exactly as before — that is also every test, since jsdom has none. A reply that
+arrives after the match ended is DROPPED rather than adopted, or a surrender would be undone
+by it.
+
 **Depth is the only dial that separates hard from normal.** Everything else that makes the
 AI play well — pricing income by what it will still pay out, rating a travel by its reach,
 cutting a vein by how much it severs, treating a takeable queen as near-terminal — is
@@ -313,6 +325,14 @@ Each of these cost a debugging round. Do not repeat them.
   all — the biggest thing that can happen on a turn, invisible. The effect draws over ground
   the engine has already cleared, which gives the tile its stay of execution without any
   view state living on the tile (§5, reveal).
+- **The board redraws every frame, so per-frame work is real work.** The trace behind the
+  ants (outline, vein spines, inner corners) is cached on a cheap integer signature of the
+  grid and only rebuilt when a tile changes hands or lands — it was rebuilding a few thousand
+  short-lived objects a second for an answer that was almost always identical. Every loop is
+  a SUBPATH of one path stroked once, rather than a stroke each: a colony threaded with its
+  own veins traces a couple of dozen rings, and a dashed stroke is the most expensive call on
+  the board. Collinear points are dropped before stroking — the tracer emits one per grid
+  corner, and an arc through a collinear corner is a straight line.
 - **The outline must be traced against the REVEAL, not the engine.** A tile is the player's
   the instant the move resolves, but it fills in over the next quarter-second — so tracing
   off engine state alone snapped the whole boundary out to the far end of a long send while

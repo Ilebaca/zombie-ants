@@ -12,9 +12,9 @@ import type { RevealTracker, RevealEdge } from "./reveal";
 import type { Look } from "./art";
 import { nestArt } from "./art";
 import { COL, MAP, hexA, ownerCol } from "./palette";
-import { capturedCorners, filletPath, innerCorners, rrect, rrectC } from "./shapes";
+import { capturedCorners, filletPath, rrect, rrectC } from "./shapes";
 import { drawTerrain } from "./terrain";
-import { drawTrail, drawVeinTrail, territoryLoops, veinTrails } from "./trails";
+import { colonyTrails, drawTrail, drawVeinTrail } from "./trails";
 
 const TAU = 6.283;
 
@@ -87,11 +87,8 @@ export function drawBackground(
  * the selection, which has to stay the loudest thing on the board.
  */
 export function drawTrails(scene: Scene): void {
-  const { ctx, layout, state, reveal } = scene;
+  const { ctx, layout, state } = scene;
   const now = performance.now();
-  // A tile joins the outline only once it has finished filling in, so the ants extend one
-  // tile at a time along a send instead of snapping out to its far end on the first frame.
-  const settled = (c: number, r: number): boolean => reveal.progress(c, r) >= 1;
   const width = Math.max(1.6, layout.ts * 0.055);
   for (const p of ["you", "ai"] as const) {
     const style = {
@@ -100,8 +97,9 @@ export function drawTrails(scene: Scene): void {
       // Half a phase apart, so the two colonies' ants are never in lockstep.
       phase: p === "ai" ? 0.5 : 0,
     };
-    drawTrail(ctx, layout, territoryLoops(state, p, settled), style, now);
-    drawVeinTrail(ctx, layout, veinTrails(state, p, settled), style, now);
+    const traced = colonyTrails(state, settledOf(scene))[p];
+    drawTrail(ctx, layout, traced.loops, style, now);
+    drawVeinTrail(ctx, layout, traced.veins, style, now);
   }
 }
 
@@ -121,7 +119,7 @@ export function drawFillets(scene: Scene, raise = 0, tint?: (c: string) => strin
   const radius = Math.max(3, layout.ts * 0.20);
 
   for (const p of ["you", "ai"] as const) {
-    for (const k of innerCorners(state, p)) {
+    for (const k of colonyTrails(state, settledOf(scene))[p].notches) {
       // Only once the three cells around it have finished filling in — a fillet across a
       // half-revealed corner draws colour where the reveal has not reached yet.
       if (!settled(scene, k.c - 1, k.r - 1) || !settled(scene, k.c, k.r - 1)
@@ -137,6 +135,13 @@ export function drawFillets(scene: Scene, raise = 0, tint?: (c: string) => strin
     }
   }
 }
+
+/**
+ * A tile joins the outline only once it has finished filling in, so the ants extend one tile
+ * at a time along a send instead of snapping out to its far end on the first frame.
+ */
+const settledOf = (scene: Scene) => (c: number, r: number): boolean =>
+  scene.reveal.progress(c, r) >= 1;
 
 /** A cell that is either not the colony's or has finished revealing. */
 function settled(scene: Scene, c: number, r: number): boolean {

@@ -21,6 +21,7 @@
 import { key } from "../engine";
 import type { GameState, Player, Tile } from "../engine";
 import type { Layout } from "./layout";
+import { innerCorners, type InnerCorner } from "./shapes";
 
 /** A corner of the grid, in tile units — (0,0) is the top-left corner of tile (0,0). */
 interface Corner { c: number; r: number }
@@ -240,6 +241,67 @@ const halfNodeOf = (k: string): Corner => {
 const step = (a: Corner, b: Corner): Corner => ({ c: Math.sign(b.c - a.c), r: Math.sign(b.r - a.r) });
 const sameDir = (a: Corner, b: Corner): boolean => a.c === b.c && a.r === b.r;
 
+/**
+ * One colony's traced geometry: the outline of its solid ground, its vein spines, and the
+ * reflex corners its cells leave round an empty one. All three read the same thing — who
+ * holds what, and what has landed — so they are traced together and cached together.
+ */
+export interface ColonyTrails { loops: Corner[][]; veins: Corner[][]; notches: InnerCorner[] }
+
+interface CacheEntry { sig: number; you: ColonyTrails; ai: ColonyTrails }
+const cache = new WeakMap<GameState, CacheEntry>();
+
+/**
+ * Trace both colonies, reusing the last frame's answer while nothing has moved.
+ *
+ * The board is redrawn sixty times a second whether or not anything changed — the ants have
+ * to keep marching — but the SHAPE they march round only changes when a tile changes hands
+ * or finishes filling in. Retracing it every frame allocated a few thousand short-lived
+ * objects and strings a second for an answer that was almost always identical.
+ *
+ * Keyed on the state object, so a new match starts with a clean cache and nothing has to
+ * remember to invalidate it.
+ */
+export function colonyTrails(state: GameState, done: Settled = ALWAYS): Record<Player, ColonyTrails> {
+  const sig = signature(state, done);
+  const hit = cache.get(state);
+  if (hit && hit.sig === sig) return hit;
+
+  const entry: CacheEntry = {
+    sig,
+    you: {
+      loops: territoryLoops(state, "you", done),
+      veins: veinTrails(state, "you", done),
+      notches: innerCorners(state, "you"),
+    },
+    ai: {
+      loops: territoryLoops(state, "ai", done),
+      veins: veinTrails(state, "ai", done),
+      notches: innerCorners(state, "ai"),
+    },
+  };
+  cache.set(state, entry);
+  return entry;
+}
+
+/**
+ * A cheap fingerprint of everything the trace depends on: who holds each tile, whether it is
+ * a vein, and whether it has landed. Integer maths over the grid, no allocation — far
+ * cheaper than the trace it is deciding to skip.
+ */
+function signature(state: GameState, done: Settled): number {
+  let h = 2166136261;
+  for (const row of state.grid) {
+    for (const t of row) {
+      const code = (t.owner === "you" ? 1 : t.owner === "ai" ? 2 : 0)
+        | (t.struct === "vein" ? 4 : t.struct ? 8 : 0)
+        | (t.owner && done(t.c, t.r) ? 16 : 0);
+      h = Math.imul(h ^ code, 16777619);
+    }
+  }
+  return h >>> 0;
+}
+
 export interface TrailStyle {
   colour: string;
   /** Line width in pixels. */
@@ -264,12 +326,18 @@ export function drawTrail(
   const radius = ts * CORNER;
 
   beginDashes(ctx, layout, style, now);
+  // Every loop is a SUBPATH of one path, stroked once. A colony broken up by its own vein
+  // trails traces a couple of dozen separate rings, and stroking each on its own meant a
+  // couple of dozen dashed strokes a frame — the most expensive call on the board, repeated.
+  // Subpaths each restart the dash pattern from `lineDashOffset` anyway, so this is the same
+  // picture for a fraction of the work.
+  ctx.beginPath();
   for (const loop of loops) {
-    const pts = loop.map((p) => ({ x: layout.ox + p.c * ts, y: layout.oy + p.r * ts }));
-    ctx.beginPath();
+    const pts = straighten(loop, true)
+      .map((p) => ({ x: layout.ox + p.c * ts, y: layout.oy + p.r * ts }));
     roundedLoop(ctx, pts, radius);
-    ctx.stroke();
   }
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -288,11 +356,12 @@ export function drawVeinTrail(
   const radius = ts * CORNER;
 
   beginDashes(ctx, layout, style, now);
+  ctx.beginPath();
   for (const path of paths) {
-    const pts = path.map((p) => ({ x: layout.ox + p.c * ts, y: layout.oy + p.r * ts }));
+    const pts = straighten(path, false)
+      .map((p) => ({ x: layout.ox + p.c * ts, y: layout.oy + p.r * ts }));
     const n = pts.length;
     if (n < 2) continue;
-    ctx.beginPath();
     ctx.moveTo((pts[0] as { x: number }).x, (pts[0] as { y: number }).y);
     for (let i = 1; i < n - 1; i++) {
       const k = pts[i] as { x: number; y: number };
@@ -301,8 +370,8 @@ export function drawVeinTrail(
     }
     const last = pts[n - 1] as { x: number; y: number };
     ctx.lineTo(last.x, last.y);
-    ctx.stroke();
   }
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -320,6 +389,29 @@ function beginDashes(
   ctx.lineWidth = style.width;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
+}
+
+/**
+ * Drop the points a straight run passes through.
+ *
+ * The tracer emits a point at EVERY grid corner along the boundary, because that is how the
+ * edges chain together — a ten-tile straight edge arrives as eleven collinear points. The
+ * drawn shape is identical without them (an arc through a collinear corner is a straight
+ * line), and the path is a fraction of the size, which matters because it is rebuilt and
+ * dash-stroked on every frame.
+ */
+function straighten(pts: readonly Corner[], closed: boolean): Corner[] {
+  const n = pts.length;
+  if (n < 3) return pts.slice();
+  const out: Corner[] = [];
+  for (let i = 0; i < n; i++) {
+    if (!closed && (i === 0 || i === n - 1)) { out.push(pts[i] as Corner); continue; }
+    const prev = pts[(i - 1 + n) % n] as Corner;
+    const cur = pts[i] as Corner;
+    const next = pts[(i + 1) % n] as Corner;
+    if (!sameDir(step(prev, cur), step(cur, next))) out.push(cur);
+  }
+  return out.length >= 3 || !closed ? out : pts.slice();
 }
 
 /** A closed path through `pts` with every corner rounded off. */

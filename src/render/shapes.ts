@@ -5,7 +5,7 @@
  * rounded where BOTH touching sides face a different owner. Same-owner neighbours therefore
  * fuse into a single blob instead of reading as a grid of separate lozenges.
  */
-import { tileAt } from "../engine";
+import { isHiveTerrain, tileAt } from "../engine";
 import type { GameState, Player, Tile } from "../engine";
 
 export function rrect(
@@ -82,21 +82,34 @@ export function innerCorners(state: GameState, owner: Player): InnerCorner[] {
   const out: InnerCorner[] = [];
   for (let r = 1; r < state.size; r++) {
     for (let c = 1; c < state.size; c++) {
-      // The four cells that meet at grid corner (c, r), and where each one sits from it.
-      const quad = [
-        { c: c - 1, r: r - 1, sx: -1 as const, sy: -1 as const },
-        { c, r: r - 1, sx: 1 as const, sy: -1 as const },
-        { c: c - 1, r, sx: -1 as const, sy: 1 as const },
-        { c, r, sx: 1 as const, sy: 1 as const },
-      ];
-      const gap = quad.filter((q) => !isCaptured(state, q.c, q.r, owner));
-      if (gap.length !== 1) continue;
+      // The four cells that meet at grid corner (c, r). Scanned without building anything:
+      // this runs for both colonies on every frame, and the objects it used to allocate per
+      // corner were thousands a second for an answer that is usually empty.
+      const tl = isCaptured(state, c - 1, r - 1, owner);
+      const tr = isCaptured(state, c, r - 1, owner);
+      const bl = isCaptured(state, c - 1, r, owner);
+      const br = isCaptured(state, c, r, owner);
+      if ((tl ? 1 : 0) + (tr ? 1 : 0) + (bl ? 1 : 0) + (br ? 1 : 0) !== 3) continue;
 
-      // Only fillet into open ground: filling into the enemy's cell, a vein or a rock would
-      // paint over something that is drawn there.
-      const hole = tileAt(state, (gap[0] as InnerCorner).c, (gap[0] as InnerCorner).r);
-      if (!hole || hole.owner || hole.terrain === "blocked") continue;
-      out.push({ c, r, sx: (gap[0] as InnerCorner).sx, sy: (gap[0] as InnerCorner).sy });
+      // Where the one missing cell sits from the corner.
+      const sx: -1 | 1 = (!tl || !bl) ? -1 : 1;
+      const sy: -1 | 1 = (!tl || !tr) ? -1 : 1;
+
+      /*
+       * Only fillet where the corner of the empty cell is actually EMPTY.
+       *
+       * A vein is a bar through the middle of its tile, so its corners are bare ground and
+       * the fillet has nothing to paint over — and skipping those left sharp notches all
+       * over a colony grown by travel, which threads veins through its own territory. A
+       * rock, a hive tile or somebody's solid cell does fill its corner, so those are left
+       * alone.
+       */
+      const hole = tileAt(state, sx < 0 ? c - 1 : c, sy < 0 ? r - 1 : r);
+      if (!hole) continue;
+      const bare = hole.struct === "vein"
+        || (!hole.owner && hole.terrain !== "blocked" && !isHiveTerrain(hole));
+      if (!bare) continue;
+      out.push({ c, r, sx, sy });
     }
   }
   return out;
