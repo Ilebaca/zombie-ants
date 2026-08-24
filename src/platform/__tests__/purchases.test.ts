@@ -57,7 +57,7 @@ describe("the catalogue", () => {
     );
     for (const b of SHOP_PRODUCTS.filter((p) => p.kind === "bundle")) {
       expect((b.grant.mycel ?? 0), `${b.id} bundles less mycelium than the smallest pack`)
-        .toBeGreaterThanOrEqual(cheapest("🍄"));
+        .toBeGreaterThanOrEqual(cheapest("mycel"));
     }
   });
 });

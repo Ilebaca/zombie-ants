@@ -15,6 +15,7 @@
 import { DAILY_GIFT, SHOP_PRODUCTS } from "../platform";
 import type { ProfileStore, Product, PurchaseGateway } from "../platform";
 import { el, screenEl, screenHeader, toast } from "./chrome";
+import { icon } from "./icons";
 
 export function buildShop(
   store: ProfileStore, gateway: PurchaseGateway, onBack: () => void,
@@ -35,7 +36,8 @@ export function buildShop(
     // the difference between a placeholder and a lie.
     if (!gateway.live) {
       const note = el("div", "passnote");
-      note.append(el("span", undefined, "🧪"),
+      note.appendChild(icon("flask", 15));
+      note.append(
         el("span", undefined, "Test shop — purchases are granted instantly and nothing is charged."));
       wrap.appendChild(note);
     }
@@ -43,8 +45,8 @@ export function buildShop(
     wrap.appendChild(dailyGift());
 
     wrap.append(...section("Bundles"), row(byKind("bundle")));
-    wrap.append(...section("Mycelium", "Chambers, research and colonies"), row(byKind("currency", "🍄")));
-    wrap.append(...section("Pheromone dust", "Spent in the shop and on the road"), row(byKind("currency", "🧪")));
+    wrap.append(...section("Mycelium", "Chambers, research and colonies"), row(byKind("currency", "mycel")));
+    wrap.append(...section("Pheromone dust", "Spent in the shop and on the road"), row(byKind("currency", "pheromone")));
     wrap.append(...section("Unlocks"), row([...byKind("pass"), ...byKind("species")]));
 
     body.appendChild(wrap);
@@ -74,7 +76,12 @@ export function buildShop(
     }
 
     const art = el("div", "art");
-    art.appendChild(el("span", "ic", product.icon));
+    // A mark from the icon family on its own plate. These were emoji — a gift, a cardboard
+    // box and a crown from three different sets, which is what made the shop look like a
+    // list of stock images rather than a storefront.
+    const mark = el("span", "ic");
+    mark.appendChild(icon(product.icon, product.kind === "currency" ? 30 : 26));
+    art.appendChild(mark);
     const amount = (product.grant.mycel ?? 0) + (product.grant.pheromone ?? 0);
     if (product.kind === "currency") {
       art.appendChild(el("span", "amt", amount.toLocaleString()));
@@ -123,11 +130,14 @@ export function buildShop(
     const ready = store.dailyGiftReady();
     const cell = el("div", "stile");
     const art = el("div", "art");
-    art.append(
-      el("span", "ic", "🎁"),
-      el("span", "amt", `${DAILY_GIFT.mycel} 🍄 + ${DAILY_GIFT.pheromone} 🧪`),
-      el("span", "sub", "Daily gift"),
+    const mark = el("span", "ic");
+    mark.appendChild(icon("gift", 26));
+    const amount = el("span", "amt reward");
+    amount.append(
+      icon("mycel", 15), el("b", undefined, String(DAILY_GIFT.mycel)),
+      icon("pheromone", 15), el("b", undefined, String(DAILY_GIFT.pheromone)),
     );
+    art.append(mark, amount, el("span", "sub", "Daily gift"));
     cell.appendChild(art);
 
     const btn = el("button", "buybar " + (ready ? "free" : "off"), ready ? "FREE" : hoursLeft());
@@ -136,7 +146,7 @@ export function buildShop(
       btn.onclick = () => {
         if (store.claimDailyGift()) {
           render();
-          toast(root, `Daily gift: +${DAILY_GIFT.mycel} 🍄  +${DAILY_GIFT.pheromone} 🧪`, "good");
+          toast(root, `Daily gift claimed: +${DAILY_GIFT.mycel} mycelium, +${DAILY_GIFT.pheromone} pheromone`, "good");
         }
       };
     }

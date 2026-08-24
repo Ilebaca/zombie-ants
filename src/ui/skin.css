@@ -746,3 +746,650 @@ footer { background: linear-gradient(0deg, var(--bg1), rgba(20, 35, 24, 0)); }
 .ccard.locked canvas,
 .collcell.locked .cc-ic { filter: grayscale(.85) brightness(.75); }
 .ccard.locked { background: var(--bg2); }
+
+/* ======================================================================
+   ==  THE SECOND PASS  =================================================
+   ======================================================================
+
+   Everything above dressed the legacy structure: it made the surfaces
+   green and gave them a bevel. What it never did was DESIGN the meta
+   layer — the screens still read as the game's own board chrome repeated
+   five times, because that is what they were.
+
+   What changes here, and why:
+
+   1. SURFACES CATCH LIGHT. A flat fill plus a hard band under it reads as
+      a game object; a top-lit face with a hairline of light along its
+      upper edge reads as a crafted one. Same silhouette, a fraction of a
+      percent of extra ink, completely different impression.
+   2. HEADERS ARE BARS, NOT TITLE CARDS. A 32px centred title with a
+      subtitle under it belongs on a title screen. Five of them in a row
+      is five title screens. The title moves left, drops two steps of
+      size, and shares one line with the back button and the currency.
+   3. THE TAB BAR STOPS SHOUTING. A solid gold square under the active tab
+      is the loudest thing on every screen, and gold already means SPEND
+      here. The active tab is now the colour, the weight and a short bar
+      above it; the tray behind it is a single quiet plane.
+   4. SMALL CAPS DO THE SECTION WORK. Section headings were display-sized
+      and centred between two rules, so they competed with the screen's
+      own title. They are small, letterspaced and left-aligned now, which
+      is what a label is for.
+   5. ONE RHYTHM. A single spacing step (--gap) and a single card padding,
+      so every screen stacks on the same grid instead of each choosing.
+   ====================================================================== */
+
+:root {
+  /* Warmer and a touch deeper than the first pass: the artwork is the
+     brightest thing in the app and everything else gets out of its way. */
+  --bg0: #0c160f;
+  --bg1: #111d15;
+  --bg2: #17281c;
+  --panel: #1e3225;
+  --panel-hi: #294432;
+  --panel-edge: #0a120c;
+  --line: #2f4a37;
+
+  --ink: #eaf4e2;
+  --ink-soft: #b4c8a6;
+  --muted: #86a077;
+
+  /* One spacing step and one card padding for the whole meta layer. */
+  --gap: 12px;
+  --pad: 16px;
+
+  /* The light along the top edge of every raised face. */
+  --sheen: inset 0 1px 0 rgba(255, 255, 255, .09);
+  --bevel: 0 3px 0 var(--panel-edge), var(--sheen);
+  --bevel-sm: 0 2px 0 var(--panel-edge), var(--sheen);
+  --lift: 0 12px 28px rgba(0, 0, 0, .5);
+}
+
+/* ---------------------------------------------------------------- GROUND
+   The scattered squares were doing nothing at 3.5% except adding noise to
+   screenshots. A single soft pool of light at the top does the work. */
+body,
+.screen {
+  background:
+    radial-gradient(150% 60% at 50% -10%, #21382a 0%, #16261a 45%, #0c160f 100%);
+}
+
+/* --------------------------------------------------------------- PANELS
+   A face lit from above, a solid edge below it, and a hairline of light
+   along the top. No borders anywhere. */
+.card, .metacard, .chcard, .dcard, .qcard, .qhero, .challcard, .dailycard,
+.stile, .luckycard, .rbanner, .dhero, .hillcut, .antcell, .lbbanner, .lbrow,
+.menudraw, .setrow, .roadhead {
+  background: linear-gradient(180deg, var(--panel-hi) 0%, var(--panel) 62%);
+  border-radius: 18px;
+  box-shadow: var(--bevel);
+}
+
+/* --------------------------------------------------------------- HEADER
+   One bar: back, title, currency. The subtitle tucks under the title at
+   label size rather than taking a line of its own at body size. */
+.screentop {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
+  /* The subtitle spans under the chip as well — boxed into the title column it wrapped
+     to two lines and the bar grew a row. */
+  grid-template-areas:
+    "back title chip"
+    "back sub   sub";
+  align-items: center;
+  column-gap: 12px;
+  text-align: left;
+  padding: 14px 16px 10px;
+  min-height: 56px;
+}
+.screentop:has(.backbtn) { padding-left: 16px; }
+.screentop:has(.mycelchip) { padding-right: 16px; }
+
+.screentop .backbtn {
+  grid-area: back;
+  position: static;
+  transform: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  color: var(--ink-soft);
+  background: var(--panel);
+  border-radius: 12px;
+}
+.screentop .backbtn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--panel-edge); }
+
+.screentop .screenh {
+  grid-area: title;
+  align-self: end;
+  font-size: 21px;
+  line-height: 1.1;
+  letter-spacing: .2px;
+  text-shadow: none;
+  text-align: left;
+}
+.screentop .screensub {
+  grid-area: sub;
+  align-self: start;
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+}
+.screentop .mycelchip { grid-area: chip; position: static; transform: none; }
+
+/* ------------------------------------------------------------- SECTIONS
+   Labels, not titles: small, wide-tracked, left-aligned, with the rule
+   running out to the right of the words rather than framing them. */
+.sechead, .tierhead, .secthead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 16px 10px;
+  text-align: left;
+}
+.sechead h3, .secthead, .tierhead .tname {
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.sechead .l, .tierhead .tline {
+  flex: 1 1 auto;
+  height: 1px;
+  background: linear-gradient(90deg, var(--line), transparent);
+}
+.sechead .l:first-child { display: none; }
+
+/* ------------------------------------------------------------- TAB BAR
+   A quiet tray. The active tab is told by colour, weight and a short bar
+   above it — gold means SPEND everywhere else in this app. */
+.homenav {
+  background: linear-gradient(180deg, rgba(30, 50, 37, .96), var(--bg1));
+  box-shadow: 0 -1px 0 var(--line), 0 -12px 24px rgba(0, 0, 0, .35);
+  padding-top: 6px;
+}
+.navitem {
+  position: relative;
+  color: var(--muted);
+  background: none;
+  border-radius: 12px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  transition: color .15s ease;
+}
+.navitem .ni { display: grid; place-items: center; font-size: 0; }
+.navitem .ni svg { width: 23px; height: 23px; transition: transform .15s ease; }
+.navitem.active { color: var(--grass-glow); background: none; }
+.navitem.active .ni { font-size: 0; }
+.navitem.active .ni svg { transform: translateY(-1px) scale(1.06); }
+.navitem.active::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  width: 26px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--grass-glow);
+}
+
+/* ------------------------------------------------------- CURRENCY CHIPS
+   The three coins were identical dark lozenges with a green "+" fighting
+   the play button for the same colour. Each mark now sits in its own
+   tinted disc, and the "+" is a quiet stud rather than a second action. */
+.topnav { gap: 8px; }
+.tn-coin {
+  background: rgba(0, 0, 0, .3);
+  border: none;
+  border-radius: var(--r-pill);
+  box-shadow: var(--sheen);
+  grid-template-columns: 22px 1fr 18px;
+  gap: 5px;
+  padding: 5px 7px 5px 5px;
+}
+.tn-coin .tn-ic {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 0;
+}
+.tn-coin .tn-ic svg { width: 14px; height: 14px; }
+.c-trophy .tn-ic { background: rgba(255, 182, 46, .18); color: var(--gold); }
+.c-mycel .tn-ic { background: rgba(242, 103, 76, .2); color: #ff8f6d; }
+.c-pheromone .tn-ic { background: rgba(79, 184, 240, .18); color: var(--sky); }
+.tn-coin .tn-num { font-size: 12.5px; font-weight: 900; color: var(--ink); letter-spacing: .2px; }
+.tn-plus {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .1);
+  color: var(--ink-soft);
+  font-size: 0;
+}
+.tn-plus svg { width: 11px; height: 11px; }
+.tn-plus:active { background: rgba(255, 255, 255, .2); }
+.tn-plus.ghost { visibility: hidden; }
+
+.mycelchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 6px 8px;
+  background: rgba(0, 0, 0, .3);
+  border: none;
+  border-radius: var(--r-pill);
+  box-shadow: var(--sheen);
+  color: #ff8f6d;
+}
+.mycelchip b { color: var(--ink); font-size: 13px; }
+.mycelchip small { color: var(--muted); font-size: 9.5px; letter-spacing: .8px; }
+
+/* --------------------------------------------------------- TROPHY STRIP
+   It used to be a slab of chrome laid across the top of the artwork. It
+   is a thin rail now, the same family as the coins above it. */
+.troadbar {
+  gap: 10px;
+  padding: 0 12px;
+  min-height: 38px;
+  background: rgba(0, 0, 0, .3);
+  border: none;
+  border-radius: var(--r-pill);
+  box-shadow: var(--sheen);
+  margin: 8px 16px 0;
+}
+.troadbar .tr-ic { color: var(--gold); font-size: 0; display: grid; place-items: center; }
+.troadbar .tr-rew { color: #ff8f6d; font-size: 0; display: grid; place-items: center; }
+.troadbar .tr-bar { height: 6px; background: rgba(0, 0, 0, .4); border-radius: 3px; }
+.troadbar .tr-fill { background: linear-gradient(90deg, var(--gold), var(--gold-glow)); }
+
+/* ----------------------------------------------------------------- HOME
+   The artwork is the whole screen, so it gets a vignette to sit the
+   controls on, a wordmark at the top, and the two floating buttons made
+   into one family instead of a dark square beside a gold one. */
+.hillwrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(12, 22, 15, .55) 0%, rgba(12, 22, 15, 0) 26%),
+    linear-gradient(0deg, rgba(12, 22, 15, .88) 0%, rgba(12, 22, 15, .35) 24%, rgba(12, 22, 15, 0) 46%);
+}
+.hilltag {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 3.4px;
+  color: var(--ink-soft);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .8);
+}
+/* One family, one size. `syncFabs` copies the daily button's measured box onto the menu
+   button, so only the daily one is sized here. */
+.dailyfab {
+  width: 50px;
+  padding: 8px 0 7px;
+  gap: 2px;
+  border-radius: 15px;
+  background: linear-gradient(180deg, var(--gold-glow), var(--gold));
+  color: #3a2600;
+  box-shadow: 0 3px 0 var(--gold-edge), 0 8px 18px rgba(0, 0, 0, .5), var(--sheen);
+}
+.settingsfab {
+  padding: 0;
+  border-radius: 15px;
+  background: rgba(16, 28, 19, .86);
+  color: var(--ink-soft);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, .5), 0 8px 18px rgba(0, 0, 0, .45), var(--sheen);
+}
+
+/* ----------------------------------------------------------- THE ACTION
+   One green, one shape, one place. The play button is the only thing on
+   the home screen that is allowed to be this bright. */
+.playbtn, #begin, .cta.begin, .challplay {
+  border-radius: 16px;
+  letter-spacing: .6px;
+}
+.playbtn {
+  height: 58px;
+  font-size: 21px;
+  box-shadow: 0 4px 0 var(--grass-edge), 0 10px 26px rgba(0, 0, 0, .45), var(--sheen);
+}
+
+/* -------------------------------------------------------------- LISTS
+   Cards were all edge-to-edge slabs at the same weight, so a screen read
+   as one long striped wall. Consistent inset, consistent gap. */
+.chcard, .dcard, .challcard, .setrow, .lbrow, .qcard {
+  padding: var(--pad);
+  margin-left: 16px;
+  margin-right: 16px;
+}
+.chcard + .chcard, .challcard + .challcard, .setrow + .setrow { margin-top: var(--gap); }
+
+/* An icon in a list row sits on its own tinted plate, so the row has a
+   left edge to line up against. */
+.chcard .chico, .qcard .qico, .challcard .challico {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, .26);
+  box-shadow: var(--sheen);
+}
+
+/* ------------------------------------------------------------- BUTTONS */
+.cta, .buybtn, .qbtn, .passbuy, .buybar, .setbtn, .claimchip, .antcta, .hbuy {
+  border-radius: 14px;
+  font-weight: 900;
+  letter-spacing: .3px;
+}
+
+/* --------------------------------------------------------------- SHOP
+   The demo notice was a dashed box, which is what an unfinished feature
+   looks like. It is a quiet note now — the shop is real, it just does not
+   charge. */
+.shopnote, .testnote, .demo-note {
+  border: none;
+  background: rgba(79, 184, 240, .1);
+  border-radius: 14px;
+  color: var(--ink-soft);
+  box-shadow: var(--sheen);
+}
+
+/* ------------------------------------------------- CORRECTIONS TO THE ABOVE
+   The first pass gave the active tab a gold face AND a gold edge. The face is
+   overridden above; the edge has to go with it or the tab keeps a gold rind. */
+.navitem.active { box-shadow: none; }
+.navitem.active::before { left: 50%; transform: translateX(-50%); }
+
+/* ----------------------------------------------------------------- HOME
+   The artwork runs the whole screen, so the controls need ground to sit on:
+   a wash down from the top for the bar, and a deeper one up from the bottom
+   for the wordmark, the tagline and the button. */
+#home::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    linear-gradient(180deg, rgba(10, 18, 12, .72) 0%, rgba(10, 18, 12, 0) 22%),
+    linear-gradient(0deg, rgba(10, 18, 12, .92) 0%, rgba(10, 18, 12, .55) 22%, rgba(10, 18, 12, 0) 48%);
+}
+/* Lift the content above the wash — WITHOUT touching `position`, which the two floating
+   buttons rely on being `absolute`. Setting it on every child put them back in the flow
+   and they stretched to the full width of the screen. */
+.tophead, .homeplay { position: relative; z-index: 1; }
+.settingsfab, .dailyfab { z-index: 6; }
+
+.homemark {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: -4px;
+  line-height: 1;
+  text-shadow: 0 3px 14px rgba(0, 0, 0, .75);
+}
+.homemark b {
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -.5px;
+  color: var(--ink);
+}
+.homemark span {
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: 5px;
+  color: var(--grass-glow);
+}
+.hometag {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--ink-soft);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, .85);
+}
+.homeplay { gap: 14px; padding-bottom: 10px; }
+
+.howtolink {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 2px auto 0;
+  padding: 9px 16px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, .08);
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: .3px;
+  text-decoration: none;
+}
+.howtolink:active { background: rgba(255, 255, 255, .16); }
+
+/* The top bar and the trophy rail are one block of chrome, so the rail sits on
+   the panel rather than floating on the artwork underneath it. */
+.tophead {
+  gap: 0;
+  background: linear-gradient(180deg, var(--panel) 0%, var(--bg1) 100%);
+  padding-bottom: 10px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .35);
+}
+.topnav { background: none; border-bottom: none; }
+.troadbar { margin: 2px 14px 0; background: rgba(0, 0, 0, .32); }
+
+.dailyfab small { font-size: 8.5px; font-weight: 900; letter-spacing: .4px; }
+
+/* -------------------------------------------------- HEADER, SECOND LOOK
+   Uppercasing the subtitle made it ~15% wider, so "Nest chambers &
+   excavation" wrapped and the bar grew a line. Sentence case, and it fits. */
+.screentop .screensub {
+  text-transform: none;
+  letter-spacing: .1px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------- ICON PLATES
+   Every mark in a list sits on the same 40px plate, so rows line up down a
+   single left edge instead of each icon finding its own width. */
+.hci, .chic, .ri {
+  display: inline-grid;
+  place-items: center;
+  color: var(--ink-soft);
+}
+.chic, .ri {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, .26);
+  box-shadow: var(--sheen);
+  color: var(--grass-glow);
+}
+.hci { width: 22px; height: 22px; color: var(--muted); }
+
+/* Species stats: a mark and a number, not a glyph and a number. */
+.statchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.statchip svg { color: var(--muted); }
+
+.buybtn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.cc { display: inline-flex; align-items: center; gap: 4px; }
+
+/* ----------------------------------------------------------- SECONDARY
+   "Upgrade & Customize" was a full-bleed gold slab — the loudest thing on
+   the screen for a link to a sub-page. Gold is for spending; this is
+   navigation, so it reads as a quiet tray with a bright label. */
+.antcta {
+  background: var(--panel-hi);
+  color: var(--grass-glow);
+  box-shadow: var(--bevel);
+  font-size: 14px;
+}
+
+/* ---------------------------------------------------------------- SHOP
+   The demo notice was a dashed box, which is what an unfinished feature
+   looks like — the shop is real, it just does not take money yet. The
+   product art was emoji, so a gift, a cardboard box and a crown from three
+   different sets sat in one row; each is now a mark on its own plate. */
+.passnote, .hatchnote {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: rgba(79, 184, 240, .09);
+  border-radius: 14px;
+  color: var(--ink-soft);
+  box-shadow: var(--sheen);
+  font-size: 12.5px;
+  line-height: 1.45;
+  text-align: left;
+}
+.passnote svg { flex: 0 0 auto; color: var(--sky); }
+
+.shopitem-art, .stile .art {
+  border: none;
+  background: none;
+}
+.stile .ic {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 8px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, .28);
+  box-shadow: var(--sheen);
+  color: var(--gold-glow);
+  font-size: 0;
+}
+.stile .amt { font-size: 17px; font-weight: 900; letter-spacing: .2px; }
+.stile .sub { font-size: 11px; color: var(--muted); }
+.buybar { font-size: 15px; }
+
+/* The section already says MYCELIUM; the line under it repeated the same
+   idea a size down and in the same caps, so it read as a second heading. */
+.secsub {
+  margin: -4px 16px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .1px;
+  text-transform: none;
+  color: var(--muted);
+  text-align: left;
+}
+
+/* The gift card led with a 40px emoji and spelled its reward with two more.
+   Marks, and the numbers do the talking. */
+.dailycard .gift, .dailycard .ic { font-size: 0; }
+
+/* The gift's reward line: two marks and two numbers, on one baseline. */
+.amt.reward {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.amt.reward svg { color: var(--muted); }
+.amt.reward svg + b { margin-right: 6px; }
+.amt.reward b { font-weight: 900; }
+
+/* --------------------------------------------------------------- SETUP
+   Three screens that never said they were three screens. Dots at the top,
+   and the "Next" that is the only action on the screen looks like it. */
+.setupsteps {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  margin: 2px 0 6px;
+}
+.sstep {
+  width: 22px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .12);
+}
+.sstep.done { background: var(--grass-edge); }
+.sstep.on { width: 30px; background: var(--grass-glow); }
+
+#mapNext, #toFormation {
+  background: linear-gradient(180deg, var(--grass-glow), var(--grass));
+  color: #10300c;
+  box-shadow: 0 4px 0 var(--grass-edge), var(--sheen);
+  font-size: 17px;
+}
+#mapNext:active, #toFormation:active { box-shadow: 0 1px 0 var(--grass-edge); }
+
+/* A map card is a choice between match LENGTHS, not board sizes. */
+.mpwords { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.mpmeta {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  line-height: 1.3;
+}
+.mp { align-items: center; }
+.mp.on { box-shadow: 0 0 0 2px var(--grass-glow), var(--bevel); }
+
+/* The picker floated in the middle of a tall empty screen with the header
+   marooned at the top; the content sits under the header now. */
+.setupbox { justify-content: flex-start; padding-top: 4px; }
+
+/* ----------------------------------------------------------------- MENU
+   The drawer floated straight on the artwork with nothing behind it, and
+   its seven entries were seven emoji from seven sets. */
+.menuwrap { background: rgba(8, 15, 10, .6); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+.menudraw { padding: 8px; border-radius: 20px 0 0 20px; }
+.menuitem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: none;
+  border-radius: 14px;
+  background: none;
+  color: var(--ink);
+  font-weight: 800;
+}
+.menuitem:active { background: rgba(255, 255, 255, .07); }
+.menuitem .mi {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: rgba(0, 0, 0, .26);
+  box-shadow: var(--sheen);
+  color: var(--grass-glow);
+  font-size: 0;
+}
+.csico { color: var(--muted); font-size: 0; display: block; margin-bottom: 8px; }
+
+/* Quest and division marks get the same plate every other list icon has. */
+.qic, .lbbadge {
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, .26);
+  box-shadow: var(--sheen);
+  color: var(--grass-glow);
+  font-size: 0;
+}
+.qic { width: 40px; height: 40px; }
+.lbbadge { width: 48px; height: 48px; border-radius: 14px; color: var(--gold-glow); }
+.qstreak { color: var(--gold-glow); font-weight: 800; letter-spacing: .3px; }

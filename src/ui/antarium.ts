@@ -20,6 +20,7 @@ import {
 import type { ProfileStore, Research, ResearchTrack } from "../platform";
 import { SPECIES_COL, antHead, basicLook } from "../render";
 import { buyButton, el, pips, screenEl, screenHeader, toast } from "./chrome";
+import { icon } from "./icons";
 
 export interface AntariumOptions {
   /** Opens the per-species page. The app router owns which screen is showing. */
@@ -71,10 +72,10 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
 
     const meta = el("div", "rb-meta");
     meta.appendChild(el("span", "lv",
-      owned ? `LV ${researchTotal(research)}/${RESEARCH_TOTAL_MAX}` : "🔒 LOCKED"));
+      owned ? `LV ${researchTotal(research)}/${RESEARCH_TOTAL_MAX}` : "LOCKED"));
     meta.append(
-      el("span", undefined, `⚔ ${(species.atk * (1 + research.mandible * 0.05)).toFixed(2)}`),
-      el("span", undefined, `🛡 ${(species.def * (1 + research.cuticle * 0.05)).toFixed(2)}`),
+      statChip("attack", (species.atk * (1 + research.mandible * 0.05)).toFixed(2)),
+      statChip("defence", (species.def * (1 + research.cuticle * 0.05)).toFixed(2)),
       el("span", undefined, `⚗️ ${cooldownOf(id, research)}t CD`),
     );
     info.appendChild(meta);
@@ -97,7 +98,7 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
     btn.id = "antCTA";
     btn.textContent = owned
       ? "⚙  Upgrade & Customize"
-      : affordable ? `Unlock ${species.name} · 🍄 ${price}` : `Locked · needs 🍄 ${price}`;
+      : affordable ? `Unlock ${species.name} · ${price} mycelium` : `Locked · needs ${price} mycelium`;
 
     btn.onclick = () => {
       if (owned) { opts.onOpenSpecies(id); return; }
@@ -156,8 +157,8 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
     card.append(
       el("div", "cname", species.name),
       el("div", "cstat",
-        `⚔ ${(species.atk * (1 + research.mandible * 0.05)).toFixed(2)} · ` +
-        `🛡 ${(species.def * (1 + research.cuticle * 0.05)).toFixed(2)}`),
+        `${(species.atk * (1 + research.mandible * 0.05)).toFixed(2)} · ` +
+        `${(species.def * (1 + research.cuticle * 0.05)).toFixed(2)}`),
     );
 
     if (owned) {
@@ -168,7 +169,11 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
       card.appendChild(bar);
     } else {
       const veil = el("div", "cveil");
-      veil.append(el("span", "cl", "🔒"), el("span", "cc", `🍄 ${SPECIES_UNLOCK[id]}`));
+      const shut = el("span", "cl");
+      shut.appendChild(iconMark("lock", 18));
+      const price = el("span", "cc");
+      price.append(iconMark("mycel", 13), el("span", undefined, String(SPECIES_UNLOCK[id])));
+      veil.append(shut, price);
       card.appendChild(veil);
     }
 
@@ -263,7 +268,9 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     /* Research */
     const res = el("div", "dcard");
     const rh = el("div", "ch");
-    rh.append(el("span", undefined, "Research"), el("span", undefined, `🍄 ${profile.mycel}`));
+    const purse = el("span");
+    purse.append(iconMark("mycel", 13), el("span", undefined, String(profile.mycel)));
+    rh.append(el("span", undefined, "Research"), purse);
     res.appendChild(rh);
     for (const track of RESEARCH_TRACKS) {
       res.appendChild(trackRow(track.id, track.icon, track.name, track.desc, track.effect,
@@ -300,7 +307,9 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     track: ResearchTrack, icon: string, name: string, desc: string, effect: string, level: number,
   ): HTMLElement => {
     const row = el("div", "rtrack");
-    row.appendChild(el("span", "ri", icon));
+    const mark = el("span", "ri");
+    mark.appendChild(iconMark(icon, 18));
+    row.appendChild(mark);
 
     const info = el("div", "rb");
     info.append(
@@ -390,4 +399,16 @@ function portrait(id: SpeciesId, size: number): HTMLCanvasElement {
   if (!g) return cv;
   antHead(g, size / 2, size / 2, size * 0.46, SPECIES_COL[id], basicLook(id));
   return cv;
+}
+
+/** A mark from the icon family; `iconMark` because `icon` is a parameter name in here. */
+function iconMark(name: string, size: number): SVGSVGElement {
+  return icon(name, size);
+}
+
+/** One species stat: a mark and a number, in the pill the stylesheet already draws. */
+function statChip(mark: string, value: string): HTMLElement {
+  const chip = el("span", "statchip");
+  chip.append(icon(mark, 13), el("span", undefined, value));
+  return chip;
 }

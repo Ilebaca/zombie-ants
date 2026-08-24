@@ -6,6 +6,7 @@
  * as "Coming soon" panels, and hiding them here would leave the menu with dead entries.
  */
 import { el, screenEl, screenHeader } from "./chrome";
+import { icon as iconMark } from "./icons";
 
 /** How to play. A full screen in the legacy build, not a popup. */
 export function buildRules(): HTMLElement {
@@ -88,7 +89,9 @@ export function buildComingSoon(
   screenHeader(root, { title, sub, onBack });
   const body = el("div", "screenbody");
   const box = el("div", "comingsoon");
-  box.append(el("span", "csico", icon), document.createTextNode("Coming soon"));
+  const mark = el("span", "csico");
+  mark.appendChild(iconMark(icon, 34));
+  box.append(mark, document.createTextNode("Coming soon"));
   body.appendChild(box);
   root.appendChild(body);
   return root;
@@ -102,13 +105,13 @@ export interface MenuEntry {
 
 /** The slide-in menu behind the home screen's hamburger. */
 export const MENU_ENTRIES: readonly MenuEntry[] = [
-  { id: "settings", icon: "⚙️", label: "Settings" },
-  { id: "news", icon: "📰", label: "News" },
-  { id: "friends", icon: "👥", label: "Friends" },
-  { id: "support", icon: "🛟", label: "Support" },
-  { id: "luckyhatch", icon: "🥚", label: "Lucky hatch" },
-  { id: "leaderboard", icon: "🏆", label: "Leaderboard" },
-  { id: "achievements", icon: "🏆", label: "Trophy Road" },
+  { id: "settings", icon: "gear", label: "Settings" },
+  { id: "news", icon: "news", label: "News" },
+  { id: "friends", icon: "friends", label: "Friends" },
+  { id: "support", icon: "support", label: "Support" },
+  { id: "luckyhatch", icon: "brood", label: "Lucky hatch" },
+  { id: "leaderboard", icon: "star", label: "Leaderboard" },
+  { id: "achievements", icon: "trophy", label: "Trophy Road" },
 ];
 
 export function buildMenu(onPick: (id: string) => void, onDismiss: () => void): HTMLElement {
@@ -118,7 +121,9 @@ export function buildMenu(onPick: (id: string) => void, onDismiss: () => void): 
   for (const entry of MENU_ENTRIES) {
     const item = el("button", "menuitem");
     item.dataset.go = entry.id;
-    item.append(el("span", "mi", entry.icon), document.createTextNode(entry.label));
+    const mark = el("span", "mi");
+    mark.appendChild(iconMark(entry.icon, 20));
+    item.append(mark, document.createTextNode(entry.label));
     item.onclick = () => onPick(entry.id);
     draw.appendChild(item);
   }

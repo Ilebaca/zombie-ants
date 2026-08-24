@@ -3,6 +3,9 @@
  *
  * This is meta-layer data, not rules. The engine owns the *effect* of a chamber or research
  * level (PlayerMods); this file owns the price, the icon and the sentence the player reads.
+ *
+ * `icon` names a mark in src/ui/icons.ts. These were emoji, which meant a crown, an egg and
+ * a pair of swords from three different illustrators sitting in one list.
  * Keeping the wording here means a copy change never touches combat maths.
  *
  * The effect strings must stay in step with the engine — each one names the file that
@@ -30,27 +33,27 @@ export interface ChamberDef {
  */
 export const CHAMBERS: readonly ChamberDef[] = [
   {
-    id: "royal", icon: "👑", name: "Royal Chamber", max: CHAMBER_MAX.royal,
+    id: "royal", icon: "crown", name: "Royal Chamber", max: CHAMBER_MAX.royal,
     desc: "A deeper chamber lets the queen lay a slightly larger brood before the war begins.",
     effect: (l) => `+${l} soldier${l === 1 ? "" : "s"} in your base at match start`,
   },
   {
-    id: "brood", icon: "🥚", name: "Brood Nursery", max: CHAMBER_MAX.brood,
+    id: "brood", icon: "brood", name: "Brood Nursery", max: CHAMBER_MAX.brood,
     desc: "Nurse workers tend eggs around the clock, hatching replacements.",
     effect: (l) => `Base hatches +${l} soldier${l === 1 ? "" : "s"} per turn`,
   },
   {
-    id: "soldierCaste", icon: "⚔️", name: "Soldier Caste", max: CHAMBER_MAX.soldierCaste,
+    id: "soldierCaste", icon: "attack", name: "Soldier Caste", max: CHAMBER_MAX.soldierCaste,
     desc: "Major workers with oversized heads plug the nest entrance.",
     effect: (l) => `+${l * 5}% defense on your base tile`,
   },
   {
-    id: "gland", icon: "🧪", name: "Metapleural Gland", max: CHAMBER_MAX.gland,
+    id: "gland", icon: "flask", name: "Metapleural Gland", max: CHAMBER_MAX.gland,
     desc: "Secretes antibiotics that suppress fungal and chemical attack.",
     effect: (l) => `−${l * 5}% damage from venom, fire & the Hive`,
   },
   {
-    id: "cultivate", icon: "🌱", name: "Fungal Cultivation", max: CHAMBER_MAX.cultivate,
+    id: "cultivate", icon: "leaf", name: "Fungal Cultivation", max: CHAMBER_MAX.cultivate,
     desc: "Research lets the colony cultivate captured resource tiles — each upgrade makes every resource yield more.",
     effect: (l) => `+${l} production on each resource tile`,
   },
@@ -72,17 +75,17 @@ export interface ResearchDef {
  */
 export const RESEARCH_TRACKS: readonly ResearchDef[] = [
   {
-    id: "reservoir", icon: "⚗️", name: "Exocrine reservoir",
+    id: "reservoir", icon: "flask", name: "Exocrine reservoir",
     desc: "Larger gland reserves refill faster and dose harder. Leafcutter: one barrier wall stays permanent per cast, up to 1/2/3 total (Lv 2/3/4).",
     effect: "−1 turn cooldown at max (Leafcutter: +1 permanent leaf per cast, Lv 2–4)",
   },
   {
-    id: "mandible", icon: "⚔️", name: "Mandible muscle",
+    id: "mandible", icon: "attack", name: "Mandible muscle",
     desc: "Thicker adductor muscle, harder bite.",
     effect: "+5% attack per level",
   },
   {
-    id: "cuticle", icon: "🛡️", name: "Sclerotised cuticle",
+    id: "cuticle", icon: "defence", name: "Sclerotised cuticle",
     desc: "Cross-linked chitin hardens the exoskeleton.",
     effect: "+5% defense per level",
   },

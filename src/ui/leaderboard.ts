@@ -8,6 +8,7 @@
  * Markup is the legacy build's (lbchips → lbbanner → lblist).
  */
 import { el, screenEl, screenHeader } from "./chrome";
+import { icon } from "./icons";
 
 export interface Division {
   name: string;
@@ -18,12 +19,12 @@ export interface Division {
 }
 
 export const DIVISIONS: readonly Division[] = [
-  { name: "Forager", min: 0, max: 250, icon: "🐜", col: "#c08457" },
+  { name: "Forager", min: 0, max: 250, icon: "antarium", col: "#c08457" },
   { name: "Scout", min: 250, max: 600, icon: "🧭", col: "#9fb0c8" },
   { name: "Soldier", min: 600, max: 1200, icon: "⚔️", col: "#e7b53a" },
-  { name: "Guardian", min: 1200, max: 2200, icon: "🛡️", col: "#27d3bd" },
+  { name: "Guardian", min: 1200, max: 2200, icon: "defence", col: "#27d3bd" },
   { name: "Major", min: 2200, max: 3800, icon: "🎖️", col: "#4a9eff" },
-  { name: "Warlord", min: 3800, max: 6000, icon: "🔥", col: "#b14de0" },
+  { name: "Warlord", min: 3800, max: 6000, icon: "flag", col: "#b14de0" },
   { name: "Queen", min: 6000, max: Infinity, icon: "👑", col: "#f24fc8" },
 ];
 
@@ -86,9 +87,11 @@ export function buildLeaderboard(trophies: number, onBack: () => void): HTMLElem
 
     const banner = el("div", "lbbanner");
     banner.style.setProperty("--c", division.col);
-    banner.appendChild(el("div", "lbbadge", division.icon));
+    const badge = el("div", "lbbadge");
+    badge.appendChild(icon(division.icon, 26));
+    banner.appendChild(badge);
     const text = el("div");
-    text.append(el("div", "lbname", division.name), el("div", "lbrange", `🏆 ${range(division)}`));
+    text.append(el("div", "lbname", division.name), el("div", "lbrange", range(division)));
     banner.appendChild(text);
     body.appendChild(banner);
 
@@ -98,7 +101,7 @@ export function buildLeaderboard(trophies: number, onBack: () => void): HTMLElem
       line.append(
         el("div", "lbrank", medal(i + 1)),
         el("div", "lbpname", row.name),
-        el("div", "lbpts", `🏆 ${row.points.toLocaleString()}`),
+        el("div", "lbpts", row.points.toLocaleString()),
       );
       list.appendChild(line);
     });
@@ -122,4 +125,4 @@ const range = (d: Division): string =>
     : `${d.min.toLocaleString()}–${(d.max - 1).toLocaleString()} pts`;
 
 const medal = (rank: number): string =>
-  rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : String(rank);
+  String(rank);

@@ -16,7 +16,8 @@ import type { PurchaseGateway } from "../platform";
 import { SPECIES_COL, antHead, basicLook, hexA, setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
 import { buildAntarium, buildSpeciesPage } from "./antarium";
-import { NAV_SCREENS, bottomNav, el, toast, topBar } from "./chrome";
+import { icon } from "./icons";
+import { NAV_SCREENS, bottomNav, el, setupSteps, toast, topBar } from "./chrome";
 import type { NavId } from "./chrome";
 import { MatchScreen } from "./match";
 import {
@@ -252,7 +253,7 @@ export class App {
       const b = document.createElement("button");
       b.className = "backbtn";
       b.setAttribute("aria-label", "Back");
-      b.textContent = "←";
+      b.appendChild(icon("back", 20));
       if (backId) b.id = backId;
       b.onclick = back;
       top.appendChild(b);
@@ -288,20 +289,21 @@ export class App {
     settings.setAttribute("aria-label", "Menu");
     // `currentColor`, not a fixed white: the button's face is a light one now, and a
     // hardcoded white icon on it is an invisible button.
-    settings.innerHTML =
-      '<svg viewBox="0 0 18 14" width="20" height="16" aria-hidden="true">' +
-      '<rect width="18" height="2.8" rx="1.4" fill="currentColor"/>' +
-      '<rect y="5.6" width="18" height="2.8" rx="1.4" fill="currentColor"/>' +
-      '<rect y="11.2" width="18" height="2.8" rx="1.4" fill="currentColor"/></svg>';
+    settings.appendChild(icon("menu", 19));
     settings.onclick = () => this.openMenu();
 
-    const daily = el("button", "dailyfab", "🗓️");
+    const daily = el("button", "dailyfab");
     daily.title = "Daily challenges";
-    daily.appendChild(el("small", undefined, "Daily"));
+    daily.append(icon("calendar", 17), el("small", undefined, "Daily"));
     daily.onclick = () => this.show("daily");
     root.append(settings, daily);
 
     const play = el("div", "homeplay");
+    // The app had no name on its own front page. The artwork is the title screen; this is
+    // the title.
+    const mark = el("div", "homemark");
+    mark.append(el("b", undefined, "ZOMBIE"), el("span", undefined, "ANTS"));
+    play.appendChild(mark);
     play.appendChild(el("div", "hometag", "Spread · Surround · Consume"));
 
     const btn = el("button", "playbtn", "PLAY");
@@ -309,7 +311,8 @@ export class App {
     btn.onclick = () => this.show("mapsel");
     play.appendChild(btn);
 
-    const how = el("button", "howtolink", "📖 How to play");
+    const how = el("button", "howtolink");
+    how.append(icon("book", 15), el("span", undefined, "How to play"));
     how.id = "howToBtn";
     how.onclick = () => this.show("rules");
     play.appendChild(how);
@@ -324,6 +327,7 @@ export class App {
   private buildMapSelect(): HTMLElement {
     const el = this.screen("mapsel");
     this.header(el, "Choose your map", undefined, () => this.show("home"), "mapBack");
+    el.appendChild(setupSteps(0));
 
     const body = document.createElement("div");
     body.className = "screenbody";
@@ -338,10 +342,18 @@ export class App {
       const card = document.createElement("div");
       card.className = "mp" + (id === this.choices.map ? " on" : "");
       card.appendChild(mapThumb(def.size));
+      const words = document.createElement("div");
+      words.className = "mpwords";
       const nm = document.createElement("div");
       nm.className = "snm";
       nm.textContent = def.name;
-      card.appendChild(nm);
+      // The card said only how big the board is. What a player actually chooses between is
+      // how long the match runs and when the Hive wakes up in it.
+      const meta = document.createElement("div");
+      meta.className = "mpmeta";
+      meta.textContent = `Hive wakes turn ${def.awakenTurn} · about ${def.turnLimit} turns`;
+      words.append(nm, meta);
+      card.appendChild(words);
       card.onclick = () => {
         grid.querySelectorAll(".mp").forEach((x) => x.classList.remove("on"));
         card.classList.add("on");
@@ -367,6 +379,7 @@ export class App {
   private buildSpeciesSelect(): HTMLElement {
     const root = this.screen("start");
     this.header(root, "Choose your species", undefined, () => this.show("mapsel"), "specBack");
+    root.appendChild(setupSteps(1));
 
     const body = document.createElement("div");
     body.className = "screenbody";
@@ -473,6 +486,7 @@ export class App {
   private buildFormationSelect(): HTMLElement {
     const el = this.screen("formation");
     this.header(el, "Choose your formation", undefined, () => this.show("start"), "formBack");
+    el.appendChild(setupSteps(2));
 
     const body = document.createElement("div");
     body.className = "screenbody";

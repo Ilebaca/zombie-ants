@@ -54,43 +54,43 @@ export interface Product {
 export const SHOP_PRODUCTS: readonly Product[] = [
   // ---- headline bundles ------------------------------------------------------------
   {
-    id: "bundle.starter", kind: "bundle", price: "€1.99", icon: "🎁",
+    id: "bundle.starter", kind: "bundle", price: "€1.99", icon: "gift",
     title: "Colony Starter", sub: "A running start",
     grant: { mycel: 400, pheromone: 600 },
   },
   {
-    id: "bundle.brood", kind: "bundle", price: "€4.99", icon: "📦",
+    id: "bundle.brood", kind: "bundle", price: "€4.99", icon: "brood",
     title: "Brood Bundle", sub: "Chambers & research",
     ribbon: "BEST VALUE", ribbonClass: "best",
     grant: { mycel: 1200, pheromone: 2000 },
   },
   {
-    id: "bundle.hoard", kind: "bundle", price: "€9.99", icon: "👑",
+    id: "bundle.hoard", kind: "bundle", price: "€9.99", icon: "crown",
     title: "Queen's Hoard", sub: "The whole anthill",
     grant: { mycel: 3000, pheromone: 5000, pass: true },
   },
 
   // ---- mycelium --------------------------------------------------------------------
-  { id: "mycel.150", kind: "currency", price: "€0.99", icon: "🍄", grant: { mycel: 150 } },
-  { id: "mycel.400", kind: "currency", price: "€2.49", icon: "🍄", grant: { mycel: 400 } },
+  { id: "mycel.150", kind: "currency", price: "€0.99", icon: "mycel", grant: { mycel: 150 } },
+  { id: "mycel.400", kind: "currency", price: "€2.49", icon: "mycel", grant: { mycel: 400 } },
   {
-    id: "mycel.1000", kind: "currency", price: "€4.99", icon: "🍄",
+    id: "mycel.1000", kind: "currency", price: "€4.99", icon: "mycel",
     ribbon: "MOST POPULAR", ribbonClass: "best", grant: { mycel: 1000 },
   },
 
   // ---- pheromone -------------------------------------------------------------------
-  { id: "pher.500", kind: "currency", price: "€0.99", icon: "🧪", grant: { pheromone: 500 } },
-  { id: "pher.1800", kind: "currency", price: "€2.99", icon: "🧪", grant: { pheromone: 1800 } },
-  { id: "pher.5000", kind: "currency", price: "€4.99", icon: "🧪", grant: { pheromone: 5000 } },
+  { id: "pher.500", kind: "currency", price: "€0.99", icon: "pheromone", grant: { pheromone: 500 } },
+  { id: "pher.1800", kind: "currency", price: "€2.99", icon: "pheromone", grant: { pheromone: 1800 } },
+  { id: "pher.5000", kind: "currency", price: "€4.99", icon: "pheromone", grant: { pheromone: 5000 } },
 
   // ---- the things that are not currency ---------------------------------------------
   {
-    id: "pass.trophy", kind: "pass", price: "€3.99", icon: "🎫",
+    id: "pass.trophy", kind: "pass", price: "€3.99", icon: "star",
     title: "Trophy Pass", sub: "The road's second track",
     grant: { pass: true },
   },
   {
-    id: "species.demon", kind: "species", price: "€2.99", icon: "😈",
+    id: "species.demon", kind: "species", price: "€2.99", icon: "flag",
     title: "Demon Ant", sub: "The premium colony",
     grant: { species: "demon" },
   },

@@ -10,6 +10,7 @@
 import { isClaimable, isComplete, levelReward, questDef } from "../platform";
 import type { ProfileStore, QuestState } from "../platform";
 import { el, screenEl, screenHeader, toast } from "./chrome";
+import { icon } from "./icons";
 
 export function buildQuests(store: ProfileStore, onBack: () => void): HTMLElement {
   const root = screenEl("quests");
@@ -77,14 +78,16 @@ export function buildQuests(store: ProfileStore, onBack: () => void): HTMLElemen
   };
 
   const streakLine = (streak: number): HTMLElement =>
-    el("div", "qstreak", `🔥 Daily streak: ${streak} day${streak === 1 ? "" : "s"}`);
+    el("div", "qstreak", `Daily streak · ${streak} day${streak === 1 ? "" : "s"}`);
 
   const questCard = (state: QuestState): HTMLElement => {
     const def = questDef(state.id);
     const card = el("div", "qcard");
     if (!def) return card;
 
-    card.appendChild(el("span", "qic", def.icon));
+    const qmark = el("span", "qic");
+    qmark.appendChild(icon(def.icon, 22));
+    card.appendChild(qmark);
 
     const info = el("div", "qb");
     info.appendChild(el("div", "qn", def.text));
@@ -96,8 +99,8 @@ export function buildQuests(store: ProfileStore, onBack: () => void): HTMLElemen
     info.appendChild(bar);
 
     const rewards = [
-      def.reward.mycel ? `+${def.reward.mycel} 🍄` : "",
-      def.reward.pheromone ? `+${def.reward.pheromone} 🧪` : "",
+      def.reward.mycel ? `+${def.reward.mycel} mycelium` : "",
+      def.reward.pheromone ? `+${def.reward.pheromone} pheromone` : "",
     ].filter(Boolean).join("  ");
     info.appendChild(el("div", "qmeta", `+${def.xp} XP · ${rewards}`));
     card.appendChild(info);

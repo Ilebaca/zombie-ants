@@ -12,6 +12,7 @@ import { chamberCost } from "../engine";
 import { CHAMBERS } from "../platform";
 import type { ProfileStore } from "../platform";
 import { buyButton, el, pips, screenEl, screenHeader, toast } from "./chrome";
+import { icon } from "./icons";
 
 export function buildAnthill(store: ProfileStore): HTMLElement {
   const root = screenEl("anthill");
@@ -40,7 +41,7 @@ export function buildAnthill(store: ProfileStore): HTMLElement {
       const level = profile.hill[ch.id] ?? 0;
       const row = el("div", "hcrow" + (level ? "" : " dim"));
       row.append(
-        el("span", "hci", ch.icon),
+        iconSlot("hci", ch.icon, 16),
         el("span", "hcn", ch.name),
         el("span", "hce", level ? ch.effect(level) : "—"),
       );
@@ -58,7 +59,7 @@ export function buildAnthill(store: ProfileStore): HTMLElement {
       const card = el("div", "chcard");
       const top = el("div", "chtop");
       top.append(
-        el("span", "chic", ch.icon),
+        iconSlot("chic", ch.icon, 22),
         el("span", "chnm", ch.name),
         el("span", "chlv", `Lv ${level}/${ch.max}`),
       );
@@ -95,4 +96,11 @@ export function buildAnthill(store: ProfileStore): HTMLElement {
 
   render();
   return root;
+}
+
+/** A mark from the icon family in a span the legacy stylesheet already positions. */
+function iconSlot(cls: string, name: string, size: number): HTMLElement {
+  const box = el("span", cls);
+  box.appendChild(icon(name, size));
+  return box;
 }

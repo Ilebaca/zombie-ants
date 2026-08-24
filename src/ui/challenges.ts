@@ -61,7 +61,7 @@ export const GOAL_TEXT: Record<ChallengeGoal, string> = {
 
 /**
  * What a challenge pays. The legacy build's challenge screen pays 40 mycelium and its
- * daily screen advertises "250 🧪 + 40 🍄" while paying the same 40 — the pheromone half
+ * daily screen advertises "250 pheromone + 40 mycelium" while paying the same 40 — the pheromone half
  * is honoured here so the promise on screen is the promise kept.
  */
 export const CHALLENGE_REWARD = 40;
@@ -101,7 +101,7 @@ export function buildDaily(onPlay: (index: number) => void, onBack: () => void,
   top.append(el("span", "challname", challenge.name), el("span", "challstars", stars(challenge.stars)));
   card.append(top, el("div", "challdesc", challenge.desc));
   card.appendChild(el("div", "dailyreward",
-    `🎁 Reward: ${DAILY_BONUS_PHEROMONE} 🧪 + ${CHALLENGE_REWARD} 🍄`));
+    `Reward · ${DAILY_BONUS_PHEROMONE} pheromone + ${CHALLENGE_REWARD} mycelium`));
 
   const play = el("button", "cta challplay", "Play daily →");
   play.onclick = () => onPlay(index);

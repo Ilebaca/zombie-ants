@@ -127,7 +127,7 @@ describe("antarium collection", () => {
     const root = openAntarium(store());
     click(cardFor(root, "Bullet Ant"));
     expect(root.querySelector(".rb-name")?.textContent).toBe("Bullet Ant");
-    expect(root.querySelector("#antCTA")?.textContent).toContain("🍄 " + SPECIES_UNLOCK.bullet);
+    expect(root.querySelector("#antCTA")?.textContent).toContain(String(SPECIES_UNLOCK.bullet));
     expect(root.querySelector(".rb-meta .lv")?.textContent).toContain("LOCKED");
   });
 
@@ -286,7 +286,7 @@ describe("colony screen", () => {
     const s = store();
     const root = buildQuests(s, () => {});
     expect(root.querySelectorAll(".qcard").length).toBe(s.dailyQuests().length);
-    expect(root.textContent).toContain("Daily streak: 0 days");
+    expect(root.textContent).toContain("Daily streak · 0 days");
     expect(root.querySelector(".qbadge b")?.textContent).toBe("1");
     // Nothing is claimable on a fresh profile.
     expect(root.querySelectorAll(".qbtn.ready").length).toBe(0);

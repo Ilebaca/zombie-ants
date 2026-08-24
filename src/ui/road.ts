@@ -65,7 +65,7 @@ export function buildTrophyRoad(store: ProfileStore, onBack: () => void, onShop:
     const box = el("div", "roadhead");
     const left = el("div", "roadhl");
     left.append(
-      el("div", "roadt", `🏆 ${profile.trophies} trophies`),
+      el("div", "roadt", `${profile.trophies} trophies`),
       el("div", "roadsub",
         `Free reward every ${ROAD_CHAPTER} · Pass reward every ${ROAD_STEP} · New chapter every ${ROAD_CHAPTER}`),
     );
@@ -113,7 +113,7 @@ export function buildTrophyRoad(store: ProfileStore, onBack: () => void, onShop:
     const cell = el("button", `roadcell ${track} ${cellState(claimed, claimable, passLocked)}`);
     cell.append(
       el("div", "rc-rew", rewardText(reward)),
-      el("div", "rc-btn", claimed ? "✓ Claimed" : passLocked ? "🔒 Pass" : claimable ? "Claim" : "🔒"),
+      el("div", "rc-btn", claimed ? "Claimed" : passLocked ? "Pass only" : claimable ? "Claim" : "Locked"),
     );
     cell.disabled = !claimable;
     if (claimable) {

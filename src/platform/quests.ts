@@ -41,11 +41,11 @@ export interface QuestState {
  */
 export const QUEST_POOL: readonly QuestDef[] = [
   { id: "play3", icon: "⚔️", text: "Play 3 matches", kind: "play", goal: 3, xp: 60, reward: { mycel: 40 } },
-  { id: "win2", icon: "🏆", text: "Win 2 matches", kind: "win", goal: 2, xp: 90, reward: { mycel: 60 } },
-  { id: "conq30", icon: "🐜", text: "Conquer 30 enemy tiles", kind: "conquered", goal: 30, xp: 70, reward: { pheromone: 300 } },
-  { id: "abil5", icon: "✨", text: "Use 5 abilities", kind: "ability", goal: 5, xp: 60, reward: { mycel: 40 } },
+  { id: "win2", icon: "trophy", text: "Win 2 matches", kind: "win", goal: 2, xp: 90, reward: { mycel: 60 } },
+  { id: "conq30", icon: "antarium", text: "Conquer 30 enemy tiles", kind: "conquered", goal: 30, xp: 70, reward: { pheromone: 300 } },
+  { id: "abil5", icon: "star", text: "Use 5 abilities", kind: "ability", goal: 5, xp: 60, reward: { mycel: 40 } },
   { id: "win1fast", icon: "⚡", text: "Win a match", kind: "win", goal: 1, xp: 50, reward: { mycel: 30 } },
-  { id: "play5", icon: "🔥", text: "Play 5 matches", kind: "play", goal: 5, xp: 100, reward: { pheromone: 500 } },
+  { id: "play5", icon: "flag", text: "Play 5 matches", kind: "play", goal: 5, xp: 100, reward: { pheromone: 500 } },
 ];
 
 /** Paid on top when all of a day's quests are claimed, as in the legacy build. */
@@ -115,10 +115,10 @@ export function levelProgress(totalXp: number): LevelProgress {
 
 /** Every few levels pays something the player must tap to claim. */
 export function levelReward(level: number): QuestReward & { label: string } {
-  if (level % 10 === 0) return { mycel: 200, pheromone: 400, label: "200 🍄 + 400 🧪" };
-  if (level % 5 === 0) return { mycel: 150, label: "150 🍄" };
-  if (level % 2 === 0) return { pheromone: 400, label: "400 🧪" };
-  return { mycel: 60, label: "60 🍄" };
+  if (level % 10 === 0) return { mycel: 200, pheromone: 400, label: "200 mycelium + 400 pheromone" };
+  if (level % 5 === 0) return { mycel: 150, label: "150 mycelium" };
+  if (level % 2 === 0) return { pheromone: 400, label: "400 pheromone" };
+  return { mycel: 60, label: "60 mycelium" };
 }
 
 /** Levels reached but not yet claimed. Level 1 is free, so claims start once level 2 lands. */

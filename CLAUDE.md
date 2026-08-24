@@ -507,6 +507,18 @@ How to check a screen really matches, without being able to see it:
 
 These differ from the legacy build **on purpose**. Anything else that differs is a bug.
 
+- **No emoji in the chrome.** The legacy build draws every tab, currency, chamber, quest and
+  product with an emoji. That is the single loudest "unconsidered" signal an interface can
+  carry: a cart, a plant pot, a dartboard and a house in one row of tabs, each from a
+  different illustrator, at a different weight, rendered differently on every platform.
+  `src/ui/icons.ts` is one family of solid marks on a 24 grid drawn in `currentColor`, and
+  the chrome uses those. `Product.icon`, `Chamber.icon`, `Quest.icon` and the rest now name a
+  mark rather than carrying a glyph — a test that greps for an emoji has to be updated with
+  them. What emoji remain are ILLUSTRATION (the ant portraits), where a big coloured picture
+  is the point.
+- **Currency in words, not glyphs.** "60 🍄" became "60 mycelium". A reward line is read, not
+  scanned, and the glyph was the only thing telling two currencies apart.
+
 - **Larva.** The lucky-hatch currency is not ported, so rewards paid in larva pay pheromone
   instead (50 each). Affects the Trophy Road tables, two quests and the trophy-strip icon.
 - **Daily quest roll.** Legacy rolls with `Math.random` and stores the result; this build

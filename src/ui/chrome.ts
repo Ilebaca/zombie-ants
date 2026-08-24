@@ -10,6 +10,7 @@
  */
 import { ROAD_STEP, freeReward, passReward } from "../platform";
 import type { Profile } from "../platform";
+import { icon } from "./icons";
 
 /** Small element factory: `el("div", "cls", "text")`. */
 export function el<K extends keyof HTMLElementTagNameMap>(
@@ -43,7 +44,8 @@ export interface HeaderOptions {
 export function screenHeader(parent: HTMLElement, opts: HeaderOptions): void {
   const top = el("div", "screentop");
   if (opts.onBack) {
-    const back = el("button", "backbtn", "←");
+    const back = el("button", "backbtn");
+    back.appendChild(icon("back", 20));
     back.setAttribute("aria-label", "Back");
     if (opts.backId) back.id = opts.backId;
     back.onclick = opts.onBack;
@@ -61,10 +63,10 @@ export function screenHeader(parent: HTMLElement, opts: HeaderOptions): void {
   parent.appendChild(top);
 }
 
-/** 🍄 chip pinned to the top-right of a screen header. */
+/** Mycelium chip pinned to the top-right of a screen header. */
 export function mycelChip(mycel: number): HTMLElement {
   const chip = el("div", "mycelchip");
-  chip.append(el("span", undefined, "🍄"), el("b", "mycelv", String(mycel)), el("small", undefined, "mycel"));
+  chip.append(icon("mycel", 18), el("b", "mycelv", String(mycel)), el("small", undefined, "mycel"));
   return chip;
 }
 
@@ -102,9 +104,9 @@ export function topBar(profile: Readonly<Profile>, opts: TopBarOptions): HTMLEle
   cur.append(
     // Trophies cannot be bought, so their "+" is a hidden spacer that keeps the three
     // coins on the same grid.
-    coin("🏆", "lb-pts", profile.trophies, null),
-    coin("🍄", "ophio-pts", profile.mycel, { label: "Get mycel", onClick: opts.onShop }),
-    coin("🧪", "pher-pts", profile.pheromone, { label: "Get pheromone", onClick: opts.onShop }),
+    coin("trophy", "lb-pts", profile.trophies, null),
+    coin("mycel", "ophio-pts", profile.mycel, { label: "Get mycel", onClick: opts.onShop }),
+    coin("pheromone", "pher-pts", profile.pheromone, { label: "Get pheromone", onClick: opts.onShop }),
   );
   nav.appendChild(cur);
   head.appendChild(nav);
@@ -114,13 +116,17 @@ export function topBar(profile: Readonly<Profile>, opts: TopBarOptions): HTMLEle
 }
 
 function coin(
-  icon: string, numClass: string, value: number,
+  mark: string, numClass: string, value: number,
   plus: { label: string; onClick: () => void } | null,
 ): HTMLElement {
   const box = el("div", "tn-coin");
-  box.append(el("span", "tn-ic", icon), el("span", `tn-num ${numClass}`, String(value)));
+  box.classList.add(`c-${mark}`);
+  const ic = el("span", "tn-ic");
+  ic.appendChild(icon(mark, 18));
+  box.append(ic, el("span", `tn-num ${numClass}`, String(value)));
   if (plus) {
-    const btn = el("button", "tn-plus", "+");
+    const btn = el("button", "tn-plus");
+    btn.appendChild(icon("plus", 15));
     btn.setAttribute("aria-label", plus.label);
     btn.onclick = plus.onClick;
     box.appendChild(btn);
@@ -147,11 +153,11 @@ export function trophyBar(trophies: number, onClick: () => void): HTMLElement {
   track.appendChild(fill);
 
   const reward = freeReward(next) ?? passReward(next);
-  bar.append(
-    el("span", "tr-ic", "🏆"),
-    track,
-    el("span", "tr-rew", reward?.pheromone ? "🧪" : "🍄"),
-  );
+  const lead = el("span", "tr-ic");
+  lead.appendChild(icon("trophy", 16));
+  const pay = el("span", "tr-rew");
+  pay.appendChild(icon(reward?.pheromone ? "pheromone" : "mycel", 16));
+  bar.append(lead, track, pay);
   bar.onclick = onClick;
   return bar;
 }
@@ -187,11 +193,11 @@ export type NavId = "shop" | "anthill" | "home" | "antarium" | "challenges";
 
 /** The five tabs, in the legacy order — Home sits in the middle. */
 export const NAV_TABS: ReadonlyArray<readonly [NavId, string, string]> = [
-  ["shop", "🛒", "Shop"],
-  ["anthill", "🕳️", "Anthill"],
-  ["home", "🏠", "Home"],
-  ["antarium", "🪴", "Antarium"],
-  ["challenges", "🎯", "Challenges"],
+  ["shop", "shop", "Shop"],
+  ["anthill", "anthill", "Anthill"],
+  ["home", "home", "Home"],
+  ["antarium", "antarium", "Antarium"],
+  ["challenges", "challenges", "Challenges"],
 ];
 
 /** Screens that show the bottom nav. Everything else (setup, match) hides it. */
@@ -203,10 +209,12 @@ export const NAV_SCREENS: readonly string[] = [
 export function bottomNav(onNav: (id: NavId) => void): HTMLElement {
   const nav = el("nav", "homenav");
   nav.id = "mainNav";
-  for (const [id, icon, label] of NAV_TABS) {
+  for (const [id, iconName, label] of NAV_TABS) {
     const b = el("button", "navitem");
     b.dataset.nav = id;
-    b.append(el("span", "ni", icon), el("span", undefined, label));
+    const mark = el("span", "ni");
+    mark.appendChild(icon(iconName, 24));
+    b.append(mark, el("span", undefined, label));
     b.onclick = () => onNav(id);
     nav.appendChild(b);
   }
@@ -241,7 +249,9 @@ export function buyButton(opts: BuyOptions): HTMLButtonElement {
     b.disabled = true;
     return b;
   }
-  const b = el("button", "buybtn" + (opts.affordable ? "" : " off"), `${opts.icon} ${opts.cost}`);
+  const b = el("button", "buybtn" + (opts.affordable ? "" : " off"));
+  // The currency is a mark from the icon family, not the emoji the price used to carry.
+  b.append(icon(opts.icon === "🧪" ? "pheromone" : "mycel", 15), el("span", undefined, String(opts.cost)));
   b.disabled = !opts.affordable;
   if (opts.affordable) b.onclick = opts.onBuy;
   return b;
@@ -266,4 +276,18 @@ export function toast(host: HTMLElement, msg: string, kind: ToastKind = "good"):
     setTimeout(() => line.remove(), 400);
   }, 1900);
   while (box.children.length > 3) box.removeChild(box.firstChild as ChildNode);
+}
+
+/**
+ * Where you are in the three steps before a match.
+ *
+ * The flow gave no sign it WAS a flow: three screens, each with a back arrow and a quiet
+ * "Next", and nothing saying how many more there were.
+ */
+export function setupSteps(current: number): HTMLElement {
+  const row = el("div", "setupsteps");
+  for (let i = 0; i < 3; i++) {
+    row.appendChild(el("span", "sstep" + (i === current ? " on" : i < current ? " done" : "")));
+  }
+  return row;
 }
