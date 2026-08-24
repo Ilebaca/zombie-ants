@@ -8,8 +8,9 @@
  */
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { createGame, defaultContext, NEUTRAL_MODS } from "../../engine";
-import { MemoryStore, ProfileStore } from "../../platform";
+import { MemoryStore, ProfileStore, TOUR_VERSION } from "../../platform";
 import { App } from "../app";
+import { normalise } from "../../platform";
 import { MatchScreen } from "../match";
 import { Tour } from "../tour";
 
@@ -37,9 +38,24 @@ describe("the first-run tour", () => {
   it("stays away once it has been seen", () => {
     const host = mount();
     const profile = new ProfileStore(new MemoryStore());
-    profile.update((p) => { p.tutorialDone = true; });
+    profile.update((p) => { p.tourSeen = TOUR_VERSION; });
     new App(host, profile).start();
     expect(host.querySelector(".tourwrap")).toBeNull();
+  });
+
+  /**
+   * The build before this one wrote `tutorialDone: true` for three coaching toasts that no
+   * longer exist. Honouring that flag hid the real walkthrough from everyone who had ever
+   * started a match — which is exactly how it was found.
+   */
+  it("still runs for a save from before the tour existed", () => {
+    const store = new MemoryStore();
+    store.set("zombie-ants.profile", JSON.stringify({ mycel: 500, trophies: 90, tutorialDone: true }));
+    expect(normalise(JSON.parse(store.get("zombie-ants.profile") as string)).tourSeen).toBe(0);
+
+    const host = mount();
+    new App(host, new ProfileStore(store)).start();
+    expect(host.querySelector(".tourbubble"), "an existing player was skipped over").not.toBeNull();
   });
 
   it("does not come back after a skip", () => {
@@ -49,7 +65,7 @@ describe("the first-run tour", () => {
     host.querySelector<HTMLButtonElement>("#tourSkip")?.click();
 
     expect(host.querySelector(".tourwrap")).toBeNull();
-    expect(profile.get().tutorialDone, "a skip did not settle it").toBe(true);
+    expect(profile.get().tourSeen, "a skip did not settle it").toBe(TOUR_VERSION);
 
     // A second launch on the same profile is a returning player.
     const again = mount();
@@ -60,7 +76,7 @@ describe("the first-run tour", () => {
   it("can be replayed from settings", () => {
     const host = mount();
     const profile = new ProfileStore(new MemoryStore());
-    profile.update((p) => { p.tutorialDone = true; });
+    profile.update((p) => { p.tourSeen = TOUR_VERSION; });
     const app = new App(host, profile);
     app.start();
 

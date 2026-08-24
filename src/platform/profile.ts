@@ -82,8 +82,19 @@ export interface Profile {
   /** The difficulty the player last chose. Kept here so it survives a reload. */
   difficulty: "easy" | "normal" | "hard";
   lastShape: string;
-  tutorialDone: boolean;
+  /**
+   * Which guided tour this player has already been walked through.
+   *
+   * A number rather than a flag, and deliberately so: the build before this one recorded
+   * "tutorial seen" for three coaching lines that no longer exist, and honouring that flag
+   * would have hidden the real walkthrough from every player who had ever started a match.
+   * A tour that changes gets a new version and is shown once more.
+   */
+  tourSeen: number;
 }
+
+/** The tour the current build ships. Bump it to show the walkthrough again. */
+export const TOUR_VERSION = 1;
 
 /**
  * Species available from the very first launch — the founding castes, the three the
@@ -121,7 +132,7 @@ export function defaultProfile(): Profile {
     lastMap: "small",
     difficulty: "normal",
     lastShape: "wedge",
-    tutorialDone: false,
+    tourSeen: 0,
   };
 }
 
@@ -197,7 +208,8 @@ export function normalise(raw: unknown): Profile {
     difficulty: p.difficulty === "easy" || p.difficulty === "normal" || p.difficulty === "hard"
       ? p.difficulty : base.difficulty,
     lastShape: typeof p.lastShape === "string" ? p.lastShape : base.lastShape,
-    tutorialDone: p.tutorialDone === true,
+    // An old save's `tutorialDone` is deliberately NOT read: see `tourSeen`.
+    tourSeen: typeof p.tourSeen === "number" && p.tourSeen > 0 ? Math.floor(p.tourSeen) : 0,
   };
 
   // A save with every species stripped would leave nothing to field.

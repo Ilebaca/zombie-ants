@@ -11,7 +11,7 @@ import {
 import type { EngineEvent, GameOverReason, MapId, Player, SpeciesId } from "../engine";
 import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
-import { DEFAULT_SPECIES, DemoGateway, ProfileStore, SPECIES_ORDER } from "../platform";
+import { DEFAULT_SPECIES, DemoGateway, ProfileStore, SPECIES_ORDER, TOUR_VERSION } from "../platform";
 import type { PurchaseGateway } from "../platform";
 import { SPECIES_COL, antHead, basicLook, hexA, setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
@@ -102,9 +102,9 @@ export class App {
 
   start(): void {
     this.show("home");
-    // First run only. `tutorialDone` is written when the walk finishes OR is skipped, so a
+    // First run only. `tourSeen` is written when the walk finishes OR is skipped, so a
     // player who knows the game sees it once and never again.
-    if (!this.profile.get().tutorialDone) this.startTour();
+    if (this.profile.get().tourSeen < TOUR_VERSION) this.startTour();
   }
 
   /* ----------------------------------------------------------------------- TOUR */
@@ -127,7 +127,7 @@ export class App {
   }
 
   private tutorialSeen(): void {
-    this.profile.update((p) => { p.tutorialDone = true; });
+    this.profile.update((p) => { p.tourSeen = TOUR_VERSION; });
   }
 
   private metaSteps(): TourStep[] {
@@ -326,7 +326,7 @@ export class App {
           this.show("settings");
         },
         onReplayTutorial: () => {
-          this.profile.update((p) => { p.tutorialDone = false; });
+          this.profile.update((p) => { p.tourSeen = 0; });
           this.startTour();
         },
       });
@@ -690,8 +690,8 @@ export class App {
       difficulty: this.difficulty,
       map: this.choices.map,
       // The meta walk ends on the button that got us here, so the match picks the tutorial
-      // up and finishes it. A player who skipped has `tutorialDone` set already.
-      tutorial: !this.profile.get().tutorialDone,
+      // up and finishes it. A player who skipped has `tourSeen` written already.
+      tutorial: this.profile.get().tourSeen < TOUR_VERSION,
       tour: this.tour,
       onTutorialDone: () => this.tutorialSeen(),
       onAbilityCast: (kind) => {

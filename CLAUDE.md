@@ -560,9 +560,13 @@ there is never a second overlay and the meta walk runs straight into the match o
 - **The tour pauses the match.** `startTour` stops the turn clock, `startTimer` refuses to
   run while a step is up, and a move made during the walk does NOT hand the turn over — the
   player taps End turn on the last step. Reading a step must never cost the turn.
-- **It shows once.** `profile.tutorialDone` is written when the last step finishes AND when
-  Skip is pressed; every step carries Skip. Settings → Tutorial → Replay is the only way
-  back to it.
+- **It shows once, and "once" is VERSIONED.** `profile.tourSeen` holds the tour version the
+  player has walked, and it is written when the last step finishes AND when Skip is pressed;
+  every step carries Skip. Settings → Tutorial → Replay is the other way back.
+  The old flag it replaced, `tutorialDone`, is deliberately not read: it recorded three
+  coaching toasts that no longer exist, so honouring it hid the real walkthrough from every
+  player who had ever started a match — which is how it was found, on the live build. A tour
+  that changes materially gets `TOUR_VERSION` bumped and is shown once more.
 
 ## 11. Verifying visual work
 
