@@ -1,0 +1,195 @@
+/**
+ * The deck: the five main screens as one strip the player drags between.
+ *
+ * This is NOT a scroll container. Native scroll-snap looked right until a screen with a
+ * scrolling panel in it was under the finger: the panel claimed the gesture and the deck
+ * stopped moving entirely, and `touch-action` cannot fix that — it is computed down the
+ * whole hit-test chain, so allowing the panel to pan vertically also forbids the ancestor
+ * from panning sideways. Owning the gesture is the only way to have both.
+ *
+ * So the rail is a transform, and a drag is claimed only once it is clearly horizontal.
+ * Until then the touch belongs to whatever is under it, which is what keeps a long list
+ * scrolling normally. `touch-action: pan-y` on the rail says exactly that to the browser:
+ * vertical is yours, horizontal is mine.
+ */
+
+/** How far a drag must run before it is a swipe rather than a tap or a scroll. */
+const AXIS_LOCK = 10;
+/** Past this fraction of the screen, the finger has committed to the next screen. */
+const COMMIT = 0.22;
+/** ...or past this speed, in pixels per millisecond, however short the drag was. */
+const FLICK = 0.45;
+/** Resistance when dragging past either end, where there is nothing to show. */
+const RUBBER = 0.35;
+
+export class Deck<T extends string> {
+  readonly el: HTMLElement;
+  private rail: HTMLElement;
+  private slots = new Map<T, HTMLElement>();
+  private index = 0;
+
+  /** Drag state. `axis` is null until the gesture commits to one. */
+  private startX = 0;
+  private startY = 0;
+  private startAt = 0;
+  private axis: "x" | "y" | null = null;
+  private pointer: number | null = null;
+
+  constructor(
+    private ids: readonly T[],
+    private build: (id: T) => HTMLElement,
+    /** Fired when a screen becomes the one on show, however it got there. */
+    private onArrive: (id: T) => void,
+  ) {
+    this.el = document.createElement("div");
+    this.el.className = "deck";
+    this.el.id = "deck";
+
+    this.rail = document.createElement("div");
+    this.rail.className = "deckrail";
+    this.rail.style.width = `${ids.length * 100}%`;
+    this.el.appendChild(this.rail);
+
+    for (const id of ids) {
+      const slot = document.createElement("div");
+      slot.className = "slide";
+      slot.dataset.slide = id;
+      slot.style.width = `${100 / ids.length}%`;
+      slot.appendChild(build(id));
+      this.slots.set(id, slot);
+      this.rail.appendChild(slot);
+    }
+
+    // Touch is handled alongside the pointer events, for one reason: `preventDefault` on a
+    // non-passive touchmove is the only thing that stops the browser taking a horizontal
+    // gesture for itself. `touch-action: pan-y` was not enough — Chromium still claimed a
+    // swipe that began near the left edge, cancelled our pointer stream mid-drag, and
+    // navigated the whole app away to a blank page.
+    this.el.addEventListener("touchmove", this.onTouchMove, { passive: false });
+    this.el.addEventListener("pointerdown", this.onDown);
+    this.el.addEventListener("pointermove", this.onMove);
+    this.el.addEventListener("pointerup", this.onUp);
+    this.el.addEventListener("pointercancel", this.onCancel);
+    window.addEventListener("resize", () => this.place(false));
+    this.place(false);
+  }
+
+  get at(): T { return this.ids[this.index] as T; }
+  get hidden(): boolean { return this.el.classList.contains("hidden"); }
+  set hidden(v: boolean) { this.el.classList.toggle("hidden", v); }
+
+  /** Move to a screen. `animate` false is for arriving from somewhere else entirely. */
+  goTo(id: T, animate: boolean): void {
+    const next = this.ids.indexOf(id);
+    if (next < 0) return;
+    const changed = next !== this.index;
+    this.index = next;
+    this.place(animate);
+    if (changed || !animate) this.arrive();
+  }
+
+  /** Rebuild one screen in place — they read the profile, which changes under them. */
+  refresh(id: T): void {
+    this.slots.get(id)?.replaceChildren(this.build(id));
+  }
+
+  private arrive(): void {
+    this.refresh(this.at);
+    this.onArrive(this.at);
+  }
+
+  private width(): number {
+    return this.el.clientWidth || window.innerWidth || 1;
+  }
+
+  /** Put the rail where the current index says, plus any drag in progress. */
+  private place(animate: boolean, drag = 0): void {
+    this.rail.style.transition = animate ? "transform .34s cubic-bezier(.22,.61,.36,1)" : "none";
+    this.rail.style.transform = `translate3d(${-this.index * this.width() + drag}px,0,0)`;
+  }
+
+  /* ------------------------------------------------------------------- GESTURE */
+
+  private onDown = (e: PointerEvent): void => {
+    // A second finger mid-drag would fight the first.
+    if (this.pointer !== null) return;
+    this.pointer = e.pointerId;
+    this.startX = e.clientX;
+    this.startY = e.clientY;
+    this.startAt = e.timeStamp;
+    this.axis = null;
+  };
+
+  private onTouchMove = (e: TouchEvent): void => {
+    const t = e.touches[0];
+    if (!t || this.pointer === null) return;
+    this.lock(t.clientX - this.startX, t.clientY - this.startY);
+    if (this.axis === "x") e.preventDefault();
+  };
+
+  /** Decide, once, whether this gesture is the deck's or the list's underneath. */
+  private lock(dx: number, dy: number): void {
+    if (this.axis !== null) return;
+    if (Math.abs(dx) < AXIS_LOCK && Math.abs(dy) < AXIS_LOCK) return;
+    this.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+  }
+
+  private onMove = (e: PointerEvent): void => {
+    if (this.pointer !== e.pointerId) return;
+    const dx = e.clientX - this.startX;
+    const dy = e.clientY - this.startY;
+
+    // Nothing is claimed until the gesture has a direction. A tap never gets this far, and
+    // a vertical drag is handed to the list under the finger.
+    const had = this.axis;
+    this.lock(dx, dy);
+    if (this.axis !== "x") return;
+    // Capture keeps the drag alive when the finger leaves the element. It can be refused
+    // (a pointer the browser has already taken back), and that must not kill the drag.
+    if (had === null) { try { this.el.setPointerCapture(e.pointerId); } catch { /* fine */ } }
+
+    this.place(false, this.resist(dx));
+  };
+
+  private onUp = (e: PointerEvent): void => {
+    if (this.pointer !== e.pointerId) return;
+    this.pointer = null;
+    if (this.axis !== "x") { this.axis = null; return; }
+    this.axis = null;
+
+    const dx = e.clientX - this.startX;
+    const elapsed = Math.max(1, e.timeStamp - this.startAt);
+    const speed = Math.abs(dx) / elapsed;
+    const far = Math.abs(dx) > this.width() * COMMIT;
+    const flick = speed > FLICK && Math.abs(dx) > AXIS_LOCK * 2;
+
+    let next = this.index;
+    if (far || flick) next = dx < 0 ? this.index + 1 : this.index - 1;
+    next = Math.max(0, Math.min(this.ids.length - 1, next));
+
+    const changed = next !== this.index;
+    this.index = next;
+    this.place(true);
+    if (changed) this.arrive();
+  };
+
+  /**
+   * The browser took the gesture over — a swipe that starts within its edge-back region
+   * does this. The event carries no useful position (Chromium reports 0), so treating it
+   * as a finished drag read as a full-width swipe in the wrong direction and jumped a
+   * screen. Nothing has happened: put the rail back where it was.
+   */
+  private onCancel = (e: PointerEvent): void => {
+    if (this.pointer !== e.pointerId) return;
+    this.pointer = null;
+    this.axis = null;
+    this.place(true);
+  };
+
+  /** Dragging past the first or last screen pulls back, so the end is felt. */
+  private resist(dx: number): number {
+    const first = this.index === 0 && dx > 0;
+    const last = this.index === this.ids.length - 1 && dx < 0;
+    return first || last ? dx * RUBBER : dx;
+  }
+}

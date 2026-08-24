@@ -107,9 +107,10 @@ export function defaultProfile(): Profile {
     v: VERSION,
     name: "Commander",
     trophies: 0,
-    // A new colony opens with a little mycelium, as the legacy build hands out: enough to
-    // buy the first chamber and see what the Anthill is for.
-    mycel: 120,
+    // A new colony starts with nothing. The legacy build handed out 120 mycelium so the
+    // Anthill had something to do on the first visit; earning the first chamber from a
+    // match instead is what gives that visit a point.
+    mycel: 0,
     pheromone: 0,
     stats: { games: 0, wins: 0, conquered: 0, abilities: 0, tunnels: 0, winStreak: 0, bestStreak: 0 },
     unlocked: [...STARTER_SPECIES],

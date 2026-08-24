@@ -47,6 +47,18 @@ export interface TourStep {
   button?: string;
   /** Corner radius of the ring. An element target supplies its own; this overrides it. */
   radius?: string;
+  /**
+   * Run as the step opens — the app uses it to bring the right screen up. It fires BEFORE
+   * the first measure, and `find` is polled anyway, so a screen that takes a moment to
+   * arrive (a deck sliding to it) is fine.
+   */
+  enter?: () => void;
+  /**
+   * Show the lit thing but keep it inert. Some steps are "look at this screen" rather than
+   * "press this": the screen has to be VISIBLE, which a hole gives, but a tap on it would
+   * navigate out from under the tour. A pane of glass over the hole solves both.
+   */
+  block?: boolean;
 }
 
 export interface TourOptions {
@@ -72,6 +84,7 @@ export class Tour {
   private wrap: HTMLElement | null = null;
   private shades: HTMLElement[] = [];
   private ring: HTMLElement | null = null;
+  private glass: HTMLElement | null = null;
   private bubble: HTMLElement | null = null;
   private timer: number | null = null;
   private opts: TourOptions = {};
@@ -123,6 +136,7 @@ export class Tour {
     this.wrap = null;
     this.shades = [];
     this.ring = null;
+    this.glass = null;
     this.bubble = null;
     this.hole = null;
     this.steps = [];
@@ -148,6 +162,7 @@ export class Tour {
     this.lit = false;
     this.hole = null;
     this.node = null;
+    step.enter?.();
     this.paint(step);
     this.measure();
     this.opts.onStep?.(step, this.index);
@@ -166,6 +181,11 @@ export class Tour {
       wrap.appendChild(s);
       return s;
     });
+
+    const glass = document.createElement("div");
+    glass.className = "tourglass";
+    wrap.appendChild(glass);
+    this.glass = glass;
 
     const ring = document.createElement("div");
     ring.className = "tourring";
@@ -270,6 +290,7 @@ export class Tour {
       box(left, 0, h, 0, 0);
       box(right, w, h, 0, 0);
       if (this.ring) this.ring.style.opacity = "0";
+      if (this.glass) box(this.glass, 0, 0, 0, 0);
     } else {
       box(top, 0, 0, w, Math.max(0, spot.top));
       box(bottom, 0, spot.top + spot.height, w, Math.max(0, h - spot.top - spot.height));
@@ -281,6 +302,10 @@ export class Tour {
         // The target's own corner is the right one; a cell target falls back to the sheet's.
         this.ring.style.borderRadius = step.radius ?? radiusOf(this.node) ?? "";
         box(this.ring, spot.left, spot.top, spot.width, spot.height);
+      }
+      if (this.glass) {
+        if (step.block) box(this.glass, spot.left, spot.top, spot.width, spot.height);
+        else box(this.glass, 0, 0, 0, 0);
       }
     }
     this.placeBubble(spot, w, h);

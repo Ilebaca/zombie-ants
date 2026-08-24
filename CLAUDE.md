@@ -475,10 +475,41 @@ The progression layer sits in three files, and none of them is reachable from th
 - `platform/road.ts` — Trophy Road reward table, pure functions of a trophy count.
 - `platform/quests.ts` — the daily pool and a day-seeded roll.
 
+A new player starts with nothing — no mycelium, no pheromone, no trophies. The legacy
+build's 120-mycelium welcome grant is deliberately gone: it bought the first chamber
+before the player knew what a chamber was.
+
 Currencies have separate jobs: **mycelium** buys chambers and species, **pheromone** buys
 research. Every purchase goes through a `ProfileStore` method that returns `false` rather
 than throwing when the player cannot afford it, so a screen can tap optimistically and
 nothing ever goes half-spent.
+
+## 9a. The deck
+
+The five bottom-bar screens — Shop, Anthill, Home, Antarium, Challenges — are not five
+screens the router swaps between. They are one strip (`src/ui/deck.ts`) that the player
+drags, with Home in the middle so everything is one swipe away, and the bar itself lives
+OUTSIDE the strip so it never moves. Everything else — the setup flow, the drawer's
+screens, the species page — is still a page shown on top, and hides the deck while it is up.
+
+- **The deck is a transform, not a scroll container.** Native `scroll-snap` looked right
+  until a screen with a scrolling panel was under the finger: the panel claimed the gesture
+  and the deck stopped moving entirely. `touch-action` cannot fix that — it is computed
+  down the whole hit-test chain, so `pan-y` on the panel to keep its list scrolling also
+  forbids its ANCESTOR from panning sideways. Owning the gesture is the only way to have
+  both, so the drag is claimed only once it is clearly horizontal and the list keeps
+  everything else.
+- **`preventDefault` on a non-passive `touchmove` is what stops the browser stealing it.**
+  With only `touch-action: pan-y` on the rail, Chromium still took a swipe that began near
+  the left edge, cancelled the pointer stream mid-drag, and navigated the app away to a
+  blank page. `overscroll-behavior-x: none` on the root is needed too, and neither alone
+  was enough.
+- **A `pointercancel` is not a finished drag.** It arrives with no useful position
+  (Chromium reports 0), so treating it like a `pointerup` read as a full-width swipe in the
+  wrong direction and jumped a screen. It snaps back instead.
+- **The screen the deck arrives on is REBUILT.** These screens read the profile: spend
+  mycelium in the shop and the anthill two panels over is showing a stale balance. That is
+  the same rule the router had — rebuild on entry — applied to a strip.
 
 ## 10. Staying identical to the legacy build
 
@@ -535,9 +566,12 @@ These differ from the legacy build **on purpose**. Anything else that differs is
 ## 10a. The guided tour
 
 `src/ui/tour.ts` is the first-run walkthrough, and it is one component doing both halves:
-eleven steps across the meta screens ending on the button that starts a match, then six
-more inside it. The app owns the `Tour` and hands the same instance to `MatchScreen`, so
-there is never a second overlay and the meta walk runs straight into the match one.
+fifteen steps across the meta screens — the currencies, the trophy road, the bar, then each
+of the four other deck screens in turn, then the three setup choices — ending on the button
+that starts a match, and eight more inside it: your nest, select it, take a tile, the Hive,
+the enemy queen, the HUD, your ability, end turn. The app owns the `Tour` and hands the same
+instance to `MatchScreen`, so there is never a second overlay and the meta walk runs
+straight into the match one.
 
 - **The dark IS the gate.** Four panels cover the screen with a hole between them, so the
   only tap that can land is the one being taught — nothing else needs disabling, because a
@@ -549,6 +583,12 @@ there is never a second overlay and the meta walk runs straight into the match o
   the step opens. The overlay re-measures on a 90 ms timer for the same reason: a step can
   be waiting for a screen that does not exist yet, the board resizes, and polling covers all
   of it without every screen having to know the tour exists.
+- **A step can move the app.** `enter` fires as the step opens — that is how the tour walks
+  the deck to the screen it is about to explain, without the deck knowing the tour exists.
+- **"Look at this screen" is a step type of its own.** Four steps show a whole screen rather
+  than point at a control, so the hole has to be big enough to READ — and a tap inside it
+  would navigate out from under the tour. `block` puts a pane of clear glass over the hole:
+  visible, inert.
 - **A step ends the way it says it does.** `tap` (the player taps the lit thing), `next` (a
   button in the bubble) or `signal` — the app confirms the deed afterwards. The match's
   "move into that tile" step is a `signal`, so a tap the engine refused leaves the step
@@ -604,7 +644,10 @@ what keeps AI search from writing stats or currencies (§5).
   caps, and a save stripped of every species is repopulated — the player must always have
   something to field.
 - **`normalise()` fallbacks are the default profile's values, never bare zeros.** A new save
-  has no `mycel` field at all, and falling back to 0 silently cancelled the starting grant.
+  has no `mycel` field at all, and falling back to 0 once silently cancelled the starting
+  grant. There is no grant any more — **a new colony starts on zero of everything**, and
+  earns its first chamber from a match — so the rule is held by a test that compares
+  `normalise({})` to `defaultProfile()` field by field rather than by the balance itself.
 - Daily quests roll from the **day number**, not from stored randomness, so a reload mid-day
   returns the same three. Progress is written by the app shell from engine events it
   receives through `MatchScreen`'s `onEvents` — the engine knows nothing about quests, and

@@ -178,6 +178,17 @@ export class MatchScreen {
     return fresh ?? this.valid[0] ?? null;
   }
 
+  /** The Hive queen's tile — the middle of the board's five hive tiles. */
+  private queenCell(): Coord | null {
+    for (const t of this.state.grid.flat()) if (t.terrain === "hiveQ") return { c: t.c, r: t.r };
+    return null;
+  }
+
+  private enemyNest(): Coord | null {
+    const nest = nestTile(this.state, "ai");
+    return nest ? { c: nest.c, r: nest.r } : null;
+  }
+
   private tourSteps(): TourStep[] {
     return [
       {
@@ -203,6 +214,23 @@ export class MatchScreen {
         rect: () => this.cellRect(this.tourTarget()),
         pad: 4,
         advance: "signal",
+      },
+      {
+        id: "hive",
+        title: "The Hive",
+        text: `A wild queen sleeps in the middle, infected with the fungus this game is `
+          + `named after. She wakes on turn ${MAPS[this.opts.map].awakenTurn}. Take HER `
+          + `tile — not just her guards — and your whole colony surges.`,
+        rect: () => this.cellRect(this.queenCell()),
+        pad: 4,
+      },
+      {
+        id: "enemy",
+        title: "How it ends",
+        text: "That far corner is the enemy queen. Take it and the match is yours; lose "
+          + "your own and it is theirs. There is no timer on the match itself.",
+        rect: () => this.cellRect(this.enemyNest()),
+        pad: 4,
       },
       {
         id: "hud",

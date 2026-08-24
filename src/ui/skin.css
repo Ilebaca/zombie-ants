@@ -1495,3 +1495,65 @@ body,
 @media (prefers-reduced-motion: reduce) {
   .tourring { animation: none; }
 }
+
+/* ======================================================================
+   THE DECK
+   The five tabs are one strip rather than five screens the router swaps
+   between, so moving between them is a movement — and the bar underneath
+   is outside the strip, so it never moves at all.
+
+   The screens themselves are unchanged: each still emits the legacy
+   `.screen` DOM. What changes is that `position:absolute; inset:0` is
+   relative to the SLIDE it sits in rather than to the viewport.
+   ====================================================================== */
+/* The browser's own edge swipe pops history — on a phone that means the deck's
+   first screen swipes the whole app away to a blank page. `touch-action` on the
+   rail is not enough; the navigation is an overscroll of the ROOT, so it has to
+   be refused there. */
+html, body { overscroll-behavior-x: none; }
+
+.deck {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  overflow: hidden;
+}
+
+.deck.hidden { display: none; }
+
+.deckrail {
+  display: flex;
+  height: 100%;
+  will-change: transform;
+  /* Vertical is the browser's, horizontal is the deck's own — see src/ui/deck.ts.
+     Without this the browser pans sideways as well and the two fight. */
+  touch-action: pan-y;
+}
+
+.slide {
+  position: relative;
+  flex: 0 0 auto;
+  height: 100%;
+}
+
+/* Inside a slide the screen fills the slide, not the viewport. Everything
+   else about it — the padding, the gradient, the bottom-bar clearance —
+   is the stylesheet's own. */
+.slide > .screen { position: absolute; inset: 0; z-index: auto; }
+
+/* A list that reaches its end must not hand the leftover scroll to
+   anything above it. */
+.slide .screenbody,
+.slide .hillwrap,
+.slide .antscroll,
+.slide .shopwrap,
+.slide .adetail,
+.slide .collgrid,
+.slide .challist { overscroll-behavior: contain; }
+
+/* The bar sits above the deck and outside it. */
+#mainNav { z-index: 60; }
+
+/* A "look at this screen" step: the screen is lit through the hole, and this pane
+   over it swallows the taps that would otherwise navigate out from under the tour. */
+.tourglass { position: fixed; background: transparent; pointer-events: auto; }

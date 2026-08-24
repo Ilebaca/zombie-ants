@@ -29,6 +29,7 @@ import { buildShop } from "./shop";
 import { buildQuests } from "./quests";
 import { buildComingSoon, buildMenu, buildRules, buildSettings } from "./screens-simple";
 import { buildTrophyRoad } from "./road";
+import { Deck } from "./deck";
 import { Tour } from "./tour";
 import type { TourStep } from "./tour";
 import "./game.css";
@@ -43,6 +44,14 @@ type ScreenId =
   | "anthill" | "antarium" | "antup" | "achievements" | "quests"
   | "challenges" | "daily" | "rules" | "settings" | "news" | "friends" | "support"
   | "leaderboard" | "shop";
+
+/**
+ * The five screens on the deck, in the order the bottom bar lists them. Home sits in the
+ * middle, so it is one swipe from everything.
+ */
+const DECK = ["shop", "anthill", "home", "antarium", "challenges"] as const;
+type DeckId = (typeof DECK)[number];
+const isDeck = (id: string): id is DeckId => (DECK as readonly string[]).includes(id);
 
 const MAP_ORDER: readonly MapId[] = ["tiny", "small", "mid"];
 
@@ -65,6 +74,8 @@ export class App {
   /** Which colony the #antup page is showing. */
   private speciesPage: SpeciesId = "leafcutter";
   private menu: HTMLElement | null = null;
+  /** The five-tab deck. Built on first use, then it outlives every screen. */
+  private deck: Deck<DeckId> | null = null;
   /** Read from the profile at boot — a setting that forgets itself is not a setting. */
   private difficulty: Difficulty;
   /**
@@ -132,6 +143,19 @@ export class App {
 
   private metaSteps(): TourStep[] {
     const find = (sel: string) => () => document.querySelector(sel);
+    /** A screen on the deck, shown whole and made inert while it is being explained. */
+    const deckStep = (
+      id: DeckId, inner: string, title: string, text: string,
+    ): TourStep => ({
+      id,
+      title,
+      text,
+      enter: () => this.slideTo(id, this.deckShowing),
+      find: find(`.slide[data-slide="${id}"] ${inner}`),
+      block: true,
+      pad: 4,
+    });
+
     return [
       {
         id: "welcome",
@@ -139,12 +163,14 @@ export class App {
         text: "Two ant colonies fight for one grid, and a queen infected with a real "
           + "parasitic fungus sleeps in the middle. Let me show you around.",
         button: "Show me",
+        enter: () => this.slideTo("home", false),
       },
       {
         id: "currency",
         title: "Your three currencies",
         text: "Mycelium buys chambers and new colonies. Pheromone pays for research. "
-          + "Trophies are what you win and lose with each match.",
+          + "Trophies are what you win and lose with each match. You start with none — "
+          + "every one of them is earned on the board.",
         find: find(".tn-cur"),
       },
       {
@@ -156,16 +182,28 @@ export class App {
       },
       {
         id: "nav",
-        title: "Where your colony lives",
-        text: "The Anthill upgrades your chambers, the Antarium unlocks new species, and "
-          + "Challenges are set matches with a twist.",
+        title: "Five screens, one deck",
+        text: "Tap a tab to move between them — or just swipe left and right. Home is in "
+          + "the middle, so everything is one swipe away.",
         find: find("#mainNav"),
         pad: 2,
       },
+      deckStep("shop", ".shopwrap", "The Shop",
+        "Mycelium and pheromone in bulk, the Trophy Pass, and the premium colony. "
+        + "Nothing here is needed to win — it is a shortcut, not a wall."),
+      deckStep("anthill", ".hillwrap", "The Anthill",
+        "Chambers upgrade your whole colony: more income, tougher soldiers, a longer "
+        + "reach. This is where mycelium goes first."),
+      deckStep("antarium", ".antscroll", "The Antarium",
+        "Nine real ant species, each with a real behaviour as its ability. Unlock them "
+        + "here, and spend pheromone on research for the one you field."),
+      deckStep("challenges", ".challist", "Challenges",
+        "Set matches with a twist and a fixed objective, plus a fresh one every day."),
       {
         id: "play",
         title: "Into a match",
-        text: "Tap PLAY to set one up. Three quick choices and you are on the board.",
+        text: "That is the colony. Tap PLAY and let's take some ground.",
+        enter: () => this.slideTo("home", true),
         find: find("#goPlay"),
         advance: "tap",
       },
@@ -185,8 +223,8 @@ export class App {
       {
         id: "species",
         title: "Your colony",
-        text: "Nine real ants. Each one's ability is something the species really does — "
-          + "leafcutters farm fungus, fire ants sting in a swarm.",
+        text: "Leafcutters farm fungus, fire ants sting in a swarm, carpenters tunnel. "
+          + "The ability is the species.",
         find: find("#pick"),
       },
       {
@@ -218,6 +256,17 @@ export class App {
     this.clearOverlay();
     this.closeMenu();
     this.syncNav(id);
+
+    // The five tabs are not five screens the router swaps between — they are one deck the
+    // player scrolls through, with the bar underneath standing still. Everything else is a
+    // page ON TOP of that deck: the setup flow, the drawer's screens, the species page.
+    if (isDeck(id)) {
+      this.hideOverlayScreens();
+      this.slideTo(id, this.deckShowing);
+      return;
+    }
+
+    if (this.deck) this.deck.hidden = true;
     for (const [key, el] of this.screens) el.classList.toggle("hidden", key !== id);
     if (!this.screens.has(id)) {
       const el = this.build(id);
@@ -230,6 +279,41 @@ export class App {
       this.screens.set(id, fresh);
     }
     for (const [key, el] of this.screens) el.classList.toggle("hidden", key !== id);
+  }
+
+  /* ---------------------------------------------------------------------- DECK */
+
+  /** True while the deck is the thing on screen, so a tab change can animate. */
+  private get deckShowing(): boolean {
+    return this.deck !== null && !this.deck.hidden;
+  }
+
+  private hideOverlayScreens(): void {
+    for (const [, el] of this.screens) el.classList.add("hidden");
+  }
+
+  /**
+   * Bring one of the five up. The deck owns the movement; the app only says which screen
+   * and whether it should be a movement at all — arriving from the setup flow or a match
+   * should not slide the whole colony past the player.
+   */
+  private slideTo(id: DeckId, smooth: boolean): void {
+    const deck = this.deck ?? this.buildDeck();
+    deck.hidden = false;
+    // The bar marks where the deck is going, not where the router thinks it is: a slide
+    // driven from anywhere — a tab, a swipe, the tour — lights the same tab.
+    this.syncNav(id);
+    deck.goTo(id, smooth);
+  }
+
+  private buildDeck(): Deck<DeckId> {
+    const deck = new Deck<DeckId>(DECK, (id) => this.build(id), (id) => {
+      // However the deck arrived — a tab, a swipe — the bar follows it.
+      this.syncNav(id);
+    });
+    this.host.appendChild(deck.el);
+    this.deck = deck;
+    return deck;
   }
 
   /**
@@ -277,6 +361,15 @@ export class App {
   }
 
   private onNav(tab: NavId): void {
+    // Tapping a tab is the same movement as swiping to it, so it animates.
+    if (isDeck(tab)) {
+      this.clearOverlay();
+      this.closeMenu();
+      this.hideOverlayScreens();
+      this.syncNav(tab);
+      this.slideTo(tab, this.deckShowing);
+      return;
+    }
     this.show(tab);
   }
 

@@ -87,7 +87,7 @@ describe("progression", () => {
 
   it("buys a chamber only when affordable and uncapped", () => {
     const s = store();
-    s.update((p) => { p.mycel = 0; });                // a new profile starts with a grant
+    s.update((p) => { p.mycel = 0; });                // broke, which is where a profile starts
     expect(s.buyChamber("royal")).toBe(false);        // broke
 
     s.update((p) => { p.mycel = chamberCost(0); });
@@ -110,16 +110,28 @@ describe("progression", () => {
 });
 
 describe("a brand-new profile", () => {
+  it("has nothing to spend", () => {
+    // A colony earns its first chamber from a match. The legacy build's 120-mycelium
+    // welcome grant is gone deliberately, so the Anthill's first visit has a point.
+    for (const p of [defaultProfile(), store().get(), normalise({}), normalise(null)]) {
+      expect(p.mycel).toBe(0);
+      expect(p.pheromone).toBe(0);
+    }
+  });
+
   /**
-   * normalise() runs over every profile including the default one, so a fallback of zero
-   * there silently cancels anything the default profile grants.
+   * normalise() runs over every profile including the default one, so a fallback of its
+   * own — a bare zero, an empty string — silently overrides whatever the default profile
+   * says a new player starts with. It must fall back to the DEFAULT, field for field.
    */
-  it("keeps the starting mycelium the default profile grants", () => {
-    const granted = defaultProfile().mycel;
-    expect(granted).toBeGreaterThan(0);
-    expect(store().get().mycel).toBe(granted);
-    expect(normalise({}).mycel).toBe(granted);
-    expect(normalise(null).mycel).toBe(granted);
+  it("falls back to the default profile's values, never to its own", () => {
+    const base = defaultProfile();
+    const fresh = normalise({});
+    const fields = [
+      "name", "trophies", "mycel", "pheromone", "xp", "tourSeen",
+      "lastSpecies", "lastMap", "lastShape", "difficulty", "pass",
+    ] as const;
+    for (const key of fields) expect(fresh[key], key).toEqual(base[key]);
   });
 
   it("still takes a saved balance over the default", () => {
