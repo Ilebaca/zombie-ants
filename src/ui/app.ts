@@ -29,6 +29,8 @@ import { buildShop } from "./shop";
 import { buildQuests } from "./quests";
 import { buildComingSoon, buildMenu, buildRules, buildSettings } from "./screens-simple";
 import { buildTrophyRoad } from "./road";
+import { Tour } from "./tour";
+import type { TourStep } from "./tour";
 import "./game.css";
 import "./skin.css";   // the look, layered over the structure
 
@@ -75,10 +77,16 @@ export class App {
 
   private choices: Choices;
   private profile: ProfileStore;
+  /**
+   * The guided tour, shared with the match screen so there is only ever one overlay: the
+   * meta walk hands straight over to the in-match one.
+   */
+  private tour: Tour;
 
   constructor(private host: HTMLElement, profile = new ProfileStore()) {
     this.host.replaceChildren();
     this.profile = profile;
+    this.tour = new Tour(host);
     // Reopen on the player's last setup, so a rematch is two taps.
     const saved = profile.get();
     this.choices = {
@@ -94,6 +102,113 @@ export class App {
 
   start(): void {
     this.show("home");
+    // First run only. `tutorialDone` is written when the walk finishes OR is skipped, so a
+    // player who knows the game sees it once and never again.
+    if (!this.profile.get().tutorialDone) this.startTour();
+  }
+
+  /* ----------------------------------------------------------------------- TOUR */
+
+  /**
+   * The walk through the meta screens, ending on the button that starts a match — the
+   * match screen picks the tour up from there (see `startMatch`).
+   *
+   * Every target is looked up by id or class at the moment it is needed, not captured:
+   * `show()` REBUILDS a screen on entry, so an element grabbed when the step list was
+   * written is a detached node by the time the step opens.
+   */
+  private startTour(): void {
+    this.show("home");
+    this.tour.start(this.metaSteps(), {
+      // Skipping is a decision about the whole tutorial, not this screen: it is not shown
+      // again. Finishing the meta walk is NOT the end — the match tour still has to run.
+      onSkip: () => this.tutorialSeen(),
+    });
+  }
+
+  private tutorialSeen(): void {
+    this.profile.update((p) => { p.tutorialDone = true; });
+  }
+
+  private metaSteps(): TourStep[] {
+    const find = (sel: string) => () => document.querySelector(sel);
+    return [
+      {
+        id: "welcome",
+        title: "Welcome to the colony",
+        text: "Two ant colonies fight for one grid, and a queen infected with a real "
+          + "parasitic fungus sleeps in the middle. Let me show you around.",
+        button: "Show me",
+      },
+      {
+        id: "currency",
+        title: "Your three currencies",
+        text: "Mycelium buys chambers and new colonies. Pheromone pays for research. "
+          + "Trophies are what you win and lose with each match.",
+        find: find(".tn-cur"),
+      },
+      {
+        id: "road",
+        title: "Trophy Road",
+        text: "Every win pushes this bar along. Reach a marker and the reward is yours "
+          + "to claim.",
+        find: find(".troadbar"),
+      },
+      {
+        id: "nav",
+        title: "Where your colony lives",
+        text: "The Anthill upgrades your chambers, the Antarium unlocks new species, and "
+          + "Challenges are set matches with a twist.",
+        find: find("#mainNav"),
+        pad: 2,
+      },
+      {
+        id: "play",
+        title: "Into a match",
+        text: "Tap PLAY to set one up. Three quick choices and you are on the board.",
+        find: find("#goPlay"),
+        advance: "tap",
+      },
+      {
+        id: "map",
+        title: "The board",
+        text: "Bigger boards mean longer matches and a Hive that wakes later. Skirmish is "
+          + "the quickest.",
+        find: find("#mapPick"),
+      },
+      {
+        id: "mapnext",
+        text: "Pick the one you want, then tap Next.",
+        find: find("#mapNext"),
+        advance: "tap",
+      },
+      {
+        id: "species",
+        title: "Your colony",
+        text: "Nine real ants. Each one's ability is something the species really does — "
+          + "leafcutters farm fungus, fire ants sting in a swarm.",
+        find: find("#pick"),
+      },
+      {
+        id: "specnext",
+        text: "Choose a colony, then tap Next.",
+        find: find("#toFormation"),
+        advance: "tap",
+      },
+      {
+        id: "shape",
+        title: "Your opening",
+        text: "Where your first five tiles sit in the corner. A wedge pushes out, a wall "
+          + "holds ground.",
+        find: find("#shapePick"),
+      },
+      {
+        id: "begin",
+        text: "That is the setup. Tap it and the match begins.",
+        find: find("#begin"),
+        advance: "tap",
+      },
+    ];
   }
 
   /* --------------------------------------------------------------------- ROUTER */
@@ -209,6 +324,10 @@ export class App {
           this.difficulty = order[(order.indexOf(this.difficulty) + 1) % order.length] as Difficulty;
           this.profile.update((p) => { p.difficulty = this.difficulty; });
           this.show("settings");
+        },
+        onReplayTutorial: () => {
+          this.profile.update((p) => { p.tutorialDone = false; });
+          this.startTour();
         },
       });
     }
@@ -570,6 +689,11 @@ export class App {
       ctx: { mods },
       difficulty: this.difficulty,
       map: this.choices.map,
+      // The meta walk ends on the button that got us here, so the match picks the tutorial
+      // up and finishes it. A player who skipped has `tutorialDone` set already.
+      tutorial: !this.profile.get().tutorialDone,
+      tour: this.tour,
+      onTutorialDone: () => this.tutorialSeen(),
       onAbilityCast: (kind) => {
         this.profile.update((p) => {
           p.stats.abilities++;

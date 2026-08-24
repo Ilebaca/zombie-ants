@@ -1393,3 +1393,105 @@ body,
 .qic { width: 40px; height: 40px; }
 .lbbadge { width: 48px; height: 48px; border-radius: 14px; color: var(--gold-glow); }
 .qstreak { color: var(--gold-glow); font-weight: 800; letter-spacing: .3px; }
+
+/* ======================================================================
+   GUIDED TOUR
+   Four dark panels with a hole between them, a ring around the hole and
+   one card of type. The panels are what block the rest of the interface,
+   so they must sit above everything the app draws — including the match
+   HUD and the slide-in menu — and the ring must never eat the tap the
+   step is asking for.
+   ====================================================================== */
+.tourwrap { position: fixed; inset: 0; z-index: 9000; pointer-events: none; }
+
+.tourshade {
+  position: fixed;
+  background: rgba(4, 10, 6, .80);
+  pointer-events: auto;
+  backdrop-filter: blur(1.5px);
+}
+
+.tourring {
+  position: fixed;
+  border-radius: var(--r-md);
+  pointer-events: none;
+  box-shadow:
+    0 0 0 2px var(--grass-glow),
+    0 0 0 7px rgba(134, 232, 120, .22),
+    0 0 26px rgba(134, 232, 120, .35);
+  animation: tourbreathe 2s ease-in-out infinite;
+}
+
+@keyframes tourbreathe {
+  0%, 100% { box-shadow: 0 0 0 2px var(--grass-glow), 0 0 0 6px rgba(134, 232, 120, .18), 0 0 20px rgba(134, 232, 120, .30); }
+  50%      { box-shadow: 0 0 0 2px var(--grass-glow), 0 0 0 10px rgba(134, 232, 120, .10), 0 0 30px rgba(134, 232, 120, .45); }
+}
+
+.tourbubble {
+  position: fixed;
+  width: min(330px, calc(100vw - 24px));
+  pointer-events: auto;
+  background: linear-gradient(180deg, var(--panel-hi), var(--panel));
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--bevel), var(--lift);
+  padding: 14px 16px 12px;
+}
+
+.tourttl {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: .2px;
+  color: var(--grass-glow);
+  margin-bottom: 4px;
+}
+
+.tourtxt { font-size: 13.5px; line-height: 1.42; color: var(--ink-soft); }
+
+.tourrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.tourbtns { display: flex; align-items: center; gap: 8px; }
+
+.tourcount {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  color: var(--muted);
+}
+
+.tourskip {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 4px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.tournext {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: .3px;
+  color: #06210a;
+  background: linear-gradient(180deg, var(--grass-glow), var(--grass));
+  border: 0;
+  border-radius: var(--r-pill);
+  box-shadow: 0 3px 0 var(--grass-edge);
+  padding: 9px 16px;
+}
+
+.tournext:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--grass-edge); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tourring { animation: none; }
+}

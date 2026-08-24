@@ -8,7 +8,8 @@
 import {
   MAPS, actionTargets, canActFrom, endTurn, incomeOf, armyOf, moveOrAttack,
   rally, speciesOf, surrender, tileAt, travel, distance, isConnected,
-  abilityReady, activateAbility, sparePool, tunnelTargets, endByObjective,
+  abilityReady, activateAbility, sparePool, tunnelTargets, endByObjective, nestTile,
+  tilesOwnedBy,
 } from "../engine";
 import type {
   AbilityKind, ActionContext, Coord, EngineEvent, GameOverReason, GameState, MapId, Player, PlayerMods, SpeciesId,
@@ -17,6 +18,7 @@ import { Thinker, adopt } from "../ai/thinker";
 import type { Thought } from "../ai/thinker";
 import type { Difficulty } from "../ai/search";
 import { BoardRenderer } from "../render";
+import type { SpotRect, Tour, TourStep } from "./tour";
 
 /** Seconds a player gets per move before the turn passes automatically. */
 const MOVE_SECONDS = 15;
@@ -56,6 +58,14 @@ export interface MatchOptions {
    * play on. The match asks; it does not know what the objective is.
    */
   judge?: (events: readonly EngineEvent[]) => Player | null;
+  /**
+   * Walk a new player through their first turn. The overlay belongs to the app shell, so
+   * the meta tour and this one are the same tour and never appear at once.
+   */
+  tutorial?: boolean;
+  tour?: Tour;
+  /** The last step was finished or skipped: the tutorial is over for good. */
+  onTutorialDone?: () => void;
 }
 
 export class MatchScreen {
@@ -110,9 +120,117 @@ export class MatchScreen {
     this.renderer.start();
     this.canvas.addEventListener("pointerdown", this.onPointerDown);
     this.beginTurn();
+    if (this.opts.tutorial && this.opts.tour) this.startTour();
+  }
+
+  /* ----------------------------------------------------------------------- TOUR */
+
+  /**
+   * The first-turn walkthrough. It PAUSES the match: `startTimer` refuses to run while the
+   * tour is up, so a player reading a step never loses the turn to the clock. The steps
+   * that ask for a tap wait for the deed rather than the tap — selecting a tile and moving
+   * into one are confirmed from `tap()`, so a tap that the engine refused does not count.
+   */
+  private startTour(): void {
+    const tour = this.opts.tour;
+    if (!tour) return;
+    this.stopTimer();
+    const done = (): void => {
+      this.opts.onTutorialDone?.();
+      // The clock was held for the whole walk; the turn starts properly now.
+      this.startTimer();
+    };
+    tour.start(this.tourSteps(), { onDone: done, onSkip: done });
+  }
+
+  private get touring(): boolean {
+    return this.opts.tour?.running === true;
+  }
+
+  /** A board cell as a viewport rectangle, for the tour's spotlight. */
+  private cellRect(at: Coord | null): SpotRect | null {
+    if (!at) return null;
+    const box = this.canvas.getBoundingClientRect();
+    const layout = this.renderer.layout;
+    if (!box.width || layout.ts <= 0) return null;
+    return {
+      left: box.left + layout.x0(at.c), top: box.top + layout.y0(at.r),
+      width: layout.ts, height: layout.ts,
+    };
+  }
+
+  /** The tile the tour asks the player to move from: the nest, or anything that can act. */
+  private tourSource(): Coord | null {
+    const nest = nestTile(this.state, "you");
+    if (nest && canActFrom(this.state, nest)) return { c: nest.c, r: nest.r };
+    const any = tilesOwnedBy(this.state, "you").find((t) => canActFrom(this.state, t));
+    return any ? { c: any.c, r: any.r } : null;
+  }
+
+  /**
+   * The tile it asks them to move INTO. Ground the player does not already hold, so the
+   * step ends in a capture — the thing the whole game is made of — rather than in troops
+   * shuffling between two tiles they already own.
+   */
+  private tourTarget(): Coord | null {
+    if (!this.valid.length) return null;
+    const fresh = this.valid.find((at) => tileAt(this.state, at.c, at.r)?.owner !== "you");
+    return fresh ?? this.valid[0] ?? null;
+  }
+
+  private tourSteps(): TourStep[] {
+    return [
+      {
+        id: "nest",
+        title: "Your nest",
+        text: "The corner tile is your queen. Every tile you hold has to trace a path back "
+          + "to her, and if she falls the match is over.",
+        rect: () => this.cellRect(this.tourSource()),
+        pad: 4,
+      },
+      {
+        id: "select",
+        text: "Tap it to pick up its soldiers.",
+        rect: () => this.cellRect(this.tourSource()),
+        pad: 4,
+        advance: "signal",
+      },
+      {
+        id: "move",
+        title: "Take ground",
+        text: "The lit tiles are where those soldiers can go. Tap this one to march in and "
+          + "claim it.",
+        rect: () => this.cellRect(this.tourTarget()),
+        pad: 4,
+        advance: "signal",
+      },
+      {
+        id: "hud",
+        title: "The count that matters",
+        text: "Your army and what it earns each turn, against the enemy's. The chip on the "
+          + "right is the Hive: when its queen wakes, taking her is worth a growth surge.",
+        find: () => this.root.querySelector("header"),
+        pad: 2,
+      },
+      {
+        id: "ability",
+        title: "Your species ability",
+        text: "Every colony has one, drawn from what the real ant does. It is free — you "
+          + "still get your move — and then it recharges for a few turns.",
+        find: () => this.root.querySelector("#bAbility"),
+      },
+      {
+        id: "end",
+        text: "That is the whole game: spread, surround, consume. Tap End turn and the "
+          + "enemy colony moves.",
+        find: () => this.root.querySelector("#bEnd"),
+        advance: "tap",
+      },
+    ];
   }
 
   destroy(): void {
+    if (this.touring) this.opts.tour?.stop();
     this.generation++;
     this.thinker.dispose();
     this.renderer.stop();
@@ -306,9 +424,7 @@ export class MatchScreen {
         if (events.length) {
           this.consume(events);
           this.handOver();
-        } else {
         }
-      } else {
       }
       return;
     }
@@ -337,7 +453,11 @@ export class MatchScreen {
       if (events.length) {
         this.consume(events);
         this.refreshHUD();
-        this.handOver();
+        // The tour's move step waits for the move to RESOLVE, so a tap the engine refused
+        // leaves the step standing. It also holds the turn: handing over mid-walkthrough
+        // would put the enemy on the board before the player has been told there is one.
+        this.opts.tour?.signal("move");
+        if (!this.touring) this.handOver();
       }
       return;
     }
@@ -353,6 +473,7 @@ export class MatchScreen {
     this.selection = at;
     this.valid = actionTargets(this.state, t);
     this.renderer.setSelection(this.selection, this.valid);
+    this.opts.tour?.signal("select");
   }
 
   private clearSelection(): void {
@@ -412,6 +533,8 @@ export class MatchScreen {
   private startTimer(): void {
     this.stopTimer();
     if (this.state.over) { this.updateTimerUI(); return; }
+    // A tutorial step holds the match still: reading one must never cost the turn.
+    if (this.touring) { this.updateTimerUI(); return; }
     this.timeLeft = MOVE_SECONDS;
     this.updateTimerUI();
     this.timerId = window.setInterval(() => {

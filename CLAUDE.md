@@ -532,6 +532,38 @@ These differ from the legacy build **on purpose**. Anything else that differs is
 - **Venom Rain's description** says "10 troops/turn" in the legacy build, but both engines
   do 7. The text was copied verbatim, so the number is wrong in both — worth deciding.
 
+## 10a. The guided tour
+
+`src/ui/tour.ts` is the first-run walkthrough, and it is one component doing both halves:
+eleven steps across the meta screens ending on the button that starts a match, then six
+more inside it. The app owns the `Tour` and hands the same instance to `MatchScreen`, so
+there is never a second overlay and the meta walk runs straight into the match one.
+
+- **The dark IS the gate.** Four panels cover the screen with a hole between them, so the
+  only tap that can land is the one being taught — nothing else needs disabling, because a
+  panel swallows the tap before it reaches what is underneath. A hole punched with a
+  `box-shadow` or a `clip-path` looks identical and still eats the tap in the middle, which
+  is the one thing it must not do.
+- **Targets are looked up on every measure, never captured.** `show()` REBUILDS a screen on
+  entry, so an element grabbed when the step list was written is a detached node by the time
+  the step opens. The overlay re-measures on a 90 ms timer for the same reason: a step can
+  be waiting for a screen that does not exist yet, the board resizes, and polling covers all
+  of it without every screen having to know the tour exists.
+- **A step ends the way it says it does.** `tap` (the player taps the lit thing), `next` (a
+  button in the bubble) or `signal` — the app confirms the deed afterwards. The match's
+  "move into that tile" step is a `signal`, so a tap the engine refused leaves the step
+  standing rather than marching the tutorial on without the player.
+- **A `tap` advances on the NEXT tick**, because the app's own handler is behind the tour's
+  in the capture phase and may navigate. By then the tour may have moved on — the last meta
+  step starts a match, and the match starts a tour of its own — so the timeout re-checks
+  that the step it was fired for is still the one showing.
+- **The tour pauses the match.** `startTour` stops the turn clock, `startTimer` refuses to
+  run while a step is up, and a move made during the walk does NOT hand the turn over — the
+  player taps End turn on the last step. Reading a step must never cost the turn.
+- **It shows once.** `profile.tutorialDone` is written when the last step finishes AND when
+  Skip is pressed; every step carries Skip. Settings → Tutorial → Replay is the only way
+  back to it.
+
 ## 11. Verifying visual work
 
 You cannot see the screen, so "it renders" is not something to assert from reading code.

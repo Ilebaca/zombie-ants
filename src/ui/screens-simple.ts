@@ -51,6 +51,8 @@ export interface SettingsOptions {
   difficulty: string;
   onCycleBoard: () => void;
   onCycleDifficulty: () => void;
+  /** Run the guided tour again. It is a first-run thing, so this is the only way back. */
+  onReplayTutorial: () => void;
 }
 
 export function buildSettings(opts: SettingsOptions): HTMLElement {
@@ -73,6 +75,7 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
   card.append(
     row("Board size", opts.board, "setBoard", opts.onCycleBoard),
     row("Enemy AI", opts.difficulty, "setDiff", opts.onCycleDifficulty),
+    row("Tutorial", "Replay", "setTutorial", opts.onReplayTutorial),
     row("Sound", "On", "setSound"),
     row("Vibration", "On", "setVibe"),
   );
