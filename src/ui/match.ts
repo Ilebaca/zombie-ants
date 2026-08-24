@@ -34,7 +34,6 @@ const AI_TURN_MS = 1100;
 const AI_BEAT_MS = 260;
 
 type Mode = "go" | "rally" | "tunnel";
-type ToastKind = "good" | "bad" | "warn" | "hive";
 
 export interface MatchOptions {
   state: GameState;
@@ -56,10 +55,6 @@ export interface MatchOptions {
    * play on. The match asks; it does not know what the objective is.
    */
   judge?: (events: readonly EngineEvent[]) => Player | null;
-  /** Show the first-match coaching toasts. The shell owns whether they are still due. */
-  tutorial?: boolean;
-  /** Called once the coaching toasts have run, so they are never shown twice. */
-  onTutorialShown?: () => void;
 }
 
 export class MatchScreen {
@@ -71,7 +66,6 @@ export class MatchScreen {
     youArmy: HTMLElement; aiArmy: HTMLElement;
     hiveChip: HTMLElement; hiveK: HTMLElement; hiveV: HTMLElement;
     timeBand: HTMLElement; timeFill: HTMLElement; timeLabel: HTMLElement;
-    toast: HTMLElement;
     bMove: HTMLButtonElement; bRally: HTMLButtonElement;
     bAbility: HTMLButtonElement; bEnd: HTMLButtonElement; bSurr: HTMLButtonElement;
   };
@@ -87,8 +81,6 @@ export class MatchScreen {
   private surrenderTimer: number | null = null;
   /** Why the match ended. Only the engine's gameOver event carries it. */
   private endReason: GameOverReason | null = null;
-  /** Coaching toasts still pending; cleared with the rest when the match is torn down. */
-  private tutorialTimers: number[] = [];
   private thinker = new Thinker();
   /**
    * Bumped whenever this match stops caring about an answer still in flight — torn down, or
@@ -110,7 +102,6 @@ export class MatchScreen {
 
     this.renderer = new BoardRenderer(this.canvas, opts.state, {
       species: opts.state.species,
-      onNotice: (e) => this.notice(e),
     });
   }
 
@@ -118,27 +109,6 @@ export class MatchScreen {
     this.renderer.start();
     this.canvas.addEventListener("pointerdown", this.onPointerDown);
     this.beginTurn();
-
-    // Who you are, and where you are. Shown every match, as the legacy build does.
-    const you = speciesOf(this.state.species.you);
-    this.toast(`You are the ${you.name}. Expand from your corner.`, "good");
-    if (this.opts.tutorial) this.runTutorial();
-  }
-
-  /**
-   * Three coaching lines, spaced out over the opening turns so they land while the player
-   * is looking at the thing each one describes. First match only.
-   */
-  private runTutorial(): void {
-    this.opts.onTutorialShown?.();
-    const lines: Array<[number, string, ToastKind]> = [
-      [900, "Tap a glowing tile, then a neighbour to move or attack.", "hive"],
-      [4200, "Resources 🍄 boost growth — grab them early.", "hive"],
-      [7600, "The Hive wakes mid-game. Its Queen is power — or doom.", "warn"],
-    ];
-    for (const [delay, text, kind] of lines) {
-      this.tutorialTimers.push(window.setTimeout(() => this.toast(text, kind), delay));
-    }
   }
 
   destroy(): void {
@@ -163,7 +133,6 @@ export class MatchScreen {
       youArmy: pick("youArmy"), aiArmy: pick("aiArmy"),
       hiveChip: pick("hiveChip"), hiveK: pick("hiveK"), hiveV: pick("hiveV"),
       timeBand: pick("timeBand"), timeFill: pick("timeFill"), timeLabel: pick("timeLabel"),
-      toast: pick("toast"),
       bMove: pick<HTMLButtonElement>("bMove"), bRally: pick<HTMLButtonElement>("bRally"),
       bAbility: pick<HTMLButtonElement>("bAbility"), bEnd: pick<HTMLButtonElement>("bEnd"),
       bSurr: pick<HTMLButtonElement>("bSurr"),
@@ -173,7 +142,6 @@ export class MatchScreen {
     this.el.bRally.onclick = () => this.setMode("rally");
     this.el.bEnd.onclick = () => {
       if (this.state.over || this.state.current !== "you") return;
-      this.toast("You hold the line.", "good");
       this.handOver();
     };
     this.el.bSurr.onclick = () => this.onSurrender();
@@ -191,31 +159,23 @@ export class MatchScreen {
     if (s.over || s.current !== "you") return;
     const ability = speciesOf(s.species.you).ability;
 
-    if (!abilityReady(s, "you")) {
-      const left = s.cooldown.you;
-      this.toast(`${ability.name} recharging — ${left} turn${left > 1 ? "s" : ""}`, "bad");
-      return;
-    }
+    if (!abilityReady(s, "you")) return;
 
     if (ability.kind === "tunnel") {
       if (sparePool(s, "you") < 5) {
-        this.toast("You need 5 spare workers to dig a gallery.", "bad");
         return;
       }
       this.setMode("tunnel");
-      this.toast("Choose an empty tile to dig to — costs 5 workers and ends your turn.", "good");
       return;
     }
 
     const events = activateAbility(s, "you", this.opts.mods.you);
     if (!events.length) {
-      this.toast(`${ability.name} had no valid target this turn.`, "bad");
       return;
     }
     this.opts.onAbilityCast?.(ability.kind);
     this.consume(events);
     this.showSpellCard(ability.name, ability.desc);
-    this.toast(`${ability.name}! You can still move.`, "good");
     this.clearSelection();
     this.refreshHUD();
     if (s.over) this.finish();
@@ -305,8 +265,6 @@ export class MatchScreen {
     this.clearTimers();
     this.renderer.setSelection(null, []);
     const winner = this.state.winner;
-    this.toast(winner === "you" ? "The colony consumes them. Victory." : "Your colony falls.",
-      winner === "you" ? "good" : "bad");
     this.updateTimerUI();
     this.opts.onExit?.(winner, this.endReason);
   }
@@ -326,18 +284,15 @@ export class MatchScreen {
 
     if (this.mode === "tunnel") {
       if (!this.valid.some((v) => v.c === at.c && v.r === at.r)) {
-        this.toast("Tap an empty, unguarded tile to dig to.", "bad");
         return;
       }
       const events = activateAbility(this.state, "you", this.opts.mods.you, { target: at });
       this.setMode("go");
       if (!events.length) {
-        this.toast("Not enough spare workers — a gallery needs 5.", "bad");
         return;
       }
       this.opts.onAbilityCast?.("tunnel");
       this.consume(events);
-      this.toast("Gallery dug — your turn ends.", "good");
       this.refreshHUD();
       this.handOver();                       // tunnelling deliberately costs the turn
       return;
@@ -348,13 +303,10 @@ export class MatchScreen {
         const events = rally(this.state, at);
         if (events.length) {
           this.consume(events);
-          this.toast("Troops rallied to one tile.", "good");
           this.handOver();
         } else {
-          this.toast("No spare troops to gather.", "bad");
         }
       } else {
-        this.toast("Tap one of your linked tiles to gather everything there.", "bad");
       }
       return;
     }
@@ -362,7 +314,6 @@ export class MatchScreen {
     // selecting a source
     if (!this.selection) {
       if (canActFrom(this.state, t)) this.select(at);
-      else if (t.owner === "you") this.toast("That cell needs 2+ soldiers to act.", "bad");
       return;
     }
 
@@ -434,7 +385,6 @@ export class MatchScreen {
       this.surrenderArmed = true;
       this.el.bSurr.classList.add("armed");
       this.setLabel(this.el.bSurr, "Confirm?");
-      this.toast("Tap Surrender again to forfeit the match.", "warn");
       this.surrenderTimer = window.setTimeout(() => this.disarmSurrender(), 3000);
       return;
     }
@@ -468,7 +418,6 @@ export class MatchScreen {
       if (this.timeLeft <= 0) {
         this.stopTimer();
         if (!this.state.over && this.state.current === "you") {
-          this.toast("Time's up — turn passed.", "warn");
           this.handOver();
         }
       }
@@ -483,8 +432,6 @@ export class MatchScreen {
     this.stopTimer();
     if (this.aiTimer) { clearTimeout(this.aiTimer); this.aiTimer = null; }
     if (this.surrenderTimer) { clearTimeout(this.surrenderTimer); this.surrenderTimer = null; }
-    for (const id of this.tutorialTimers) clearTimeout(id);
-    this.tutorialTimers.length = 0;
   }
 
   private updateTimerUI(): void {
@@ -569,33 +516,6 @@ export class MatchScreen {
     }
   }
 
-  /* ---------------------------------------------------------------------- TOASTS */
-
-  /** Engine events the player should hear about, rather than only see. */
-  private notice(e: EngineEvent): void {
-    if (e.type === "hiveAwake") this.toast("The Hive stirs. The queen is awake.", "hive");
-    else if (e.type === "hiveCaptured") {
-      this.toast(e.owner === "you" ? "You take the Hive queen — surge!" : "The enemy takes the Hive queen.", "hive");
-    } else if (e.type === "hiveSurgeEnded") {
-      this.toast("The surge fades. The ground you took stays yours.", "hive");
-    } else if (e.type === "hiveRespawn") this.toast(`The Hive returns — level ${e.level}.`, "hive");
-    else if (e.type === "effectDamage" && e.wiped) this.toast("A garrison is wiped out.", "bad");
-  }
-
-  private toast(msg: string, kind?: ToastKind): void {
-    const box = this.el.toast;
-    const el = document.createElement("div");
-    el.className = "toast " + (kind ?? "");
-    el.textContent = msg;
-    box.appendChild(el);
-    setTimeout(() => {
-      el.style.transition = "opacity .4s,transform .4s";
-      el.style.opacity = "0";
-      el.style.transform = "translateY(-6px)";
-      setTimeout(() => el.remove(), 400);
-    }, 2200);
-    while (box.children.length > 3) box.removeChild(box.firstChild as ChildNode);
-  }
 }
 
 const escapeHtml = (s: string): string =>
@@ -613,7 +533,6 @@ const MARKUP = `
   </div>
   <main>
     <canvas id="cv"></canvas>
-    <div id="toast"></div>
     <div class="hint" id="hint">Tap one of your cells, then tap where to act.</div>
   </main>
   <footer>

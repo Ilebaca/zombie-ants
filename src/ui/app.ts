@@ -569,9 +569,6 @@ export class App {
       // income readout but do nothing in a fight.
       ctx: { mods },
       difficulty: this.difficulty,
-      // The coaching toasts run once, on the very first match a profile ever plays.
-      tutorial: !this.profile.get().tutorialDone,
-      onTutorialShown: () => this.profile.update((p) => { p.tutorialDone = true; }),
       map: this.choices.map,
       onAbilityCast: (kind) => {
         this.profile.update((p) => {

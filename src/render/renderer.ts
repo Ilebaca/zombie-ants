@@ -23,8 +23,6 @@ export interface RendererOptions {
   species: Record<Player, SpeciesId>;
   /** Cosmetic look per side. Defaults to each species' basic look. */
   looks?: Partial<Record<Player, Look>>;
-  /** Notified for events the match screen turns into toasts / HUD updates. */
-  onNotice?: (event: EngineEvent) => void;
 }
 
 export class BoardRenderer {
@@ -50,7 +48,7 @@ export class BoardRenderer {
   constructor(
     private canvas: HTMLCanvasElement,
     private state: GameState,
-    private opts: RendererOptions,
+    opts: RendererOptions,
   ) {
     this.layout = new Layout(state.size);
     loadColors();
@@ -66,7 +64,6 @@ export class BoardRenderer {
   /** Point the renderer at a new match without rebuilding the canvas. */
   reset(state: GameState, opts: RendererOptions): void {
     this.state = state;
-    this.opts = opts;
     this.layout.size = state.size;
     setFactionColor("you", opts.species.you);
     setFactionColor("ai", opts.species.ai);
@@ -126,7 +123,7 @@ export class BoardRenderer {
   /** Dramatise one action's events. */
   consume(events: readonly EngineEvent[]): void {
     if (!events.length) return;
-    animate(events, { reveal: this.reveal, fx: this.fx, onNotice: this.opts.onNotice });
+    animate(events, { reveal: this.reveal, fx: this.fx });
   }
 
   setSelection(selection: Coord | null, valid: readonly Coord[] = []): void {

@@ -43,8 +43,6 @@ const ruin = (i: number): number => Math.min(i, RUIN_STAGGER_MAX) * RUIN_STAGGER
 export interface AnimationSinks {
   reveal: RevealTracker;
   fx: FxLayer;
-  /** Called for events the match screen surfaces as a toast or HUD change. */
-  onNotice?: (event: EngineEvent) => void;
 }
 
 /**
@@ -151,7 +149,6 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
         // already gone from the board and this is the only thing that says it was there.
         if (e.wiped) fx.crumble(e.at, e.owner, false, ruin(ruins++));
         else fx.clash(e.at);
-        sinks.onNotice?.(e);
         break;
 
       case "fled":
@@ -178,7 +175,6 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
         reveal.begin(cells.map((at) => ({ at, edge: "L" as RevealEdge, prev: null })));
         const step = reveal.stepMs(cells.length);
         cells.forEach((at, i) => fx.pop(at, e.owner, i * step + step));
-        sinks.onNotice?.(e);
         break;
       }
 
@@ -187,7 +183,6 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
       case "hiveRespawn":
       case "production":
       case "gameOver":
-        sinks.onNotice?.(e);
         break;
     }
   }
@@ -266,9 +261,4 @@ function edgeAlongPath(path: readonly Coord[], i: number): RevealEdge {
   const movement: Direction =
     cur.c > prev.c ? "R" : cur.c < prev.c ? "L" : cur.r > prev.r ? "D" : "U";
   return edgeFor(movement);
-}
-
-/** Owners a set of events hands a tile to — used by the match screen for toasts. */
-export function capturesBy(events: readonly EngineEvent[], p: Player): number {
-  return events.filter((e) => e.type === "capture" && e.owner === p).length;
 }

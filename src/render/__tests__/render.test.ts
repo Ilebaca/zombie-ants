@@ -533,9 +533,9 @@ describe("sending troops down a row", () => {
 describe("capturing the Hive", () => {
   /**
    * Taking the queen hands over all five hive tiles in one action and emits no `capture`
-   * event for any of them — only `hiveCaptured`. The animator used to treat that as a
-   * toast and nothing else, so the whole hive snapped to its new colour while every other
-   * capture in the game fills tile by tile.
+   * event for any of them — only `hiveCaptured`. The animator used to pass it straight
+   * through without a reveal, so the whole hive snapped to its new colour while every
+   * other capture in the game fills tile by tile.
    */
   const captured = (): { reveal: RevealTracker; cells: Coord[] } => {
     // The plus-shape the engine builds: queen at the centre, four guards around her.
@@ -566,15 +566,6 @@ describe("capturing the Hive", () => {
     expect(guards.filter(([c, r]) => reveal.progress(c, r) < 1).length).toBe(1);
   });
 
-  it("still passes the event on as a notice", () => {
-    const seen: EngineEvent[] = [];
-    const reveal = new RevealTracker(); reveal.reduced = false;
-    animate(
-      [{ type: "hiveCaptured", owner: "you", level: 1, cells: [{ c: 4, r: 4 }] }],
-      { reveal, fx: new FxLayer(), onNotice: (e) => seen.push(e) },
-    );
-    expect(seen.map((e) => e.type)).toContain("hiveCaptured");
-  });
 });
 
 /**
