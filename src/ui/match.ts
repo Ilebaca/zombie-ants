@@ -20,18 +20,19 @@ import { BoardRenderer } from "../render";
 
 /** Seconds a player gets per move before the turn passes automatically. */
 const MOVE_SECONDS = 15;
-/** Pause before the AI moves, so its turn reads as deliberate rather than instant. */
 /**
- * How long an AI turn takes from the player's side, thinking included.
+ * How long the AI sits on its turn before playing, in milliseconds.
  *
- * This is a MINIMUM, not a delay. Easy decides in a millisecond and Hard can spend a few
- * hundred actually searching; without this the two would feel like different games for the
- * wrong reason. Whatever the search costs comes out of the pause, so every level keeps the
- * same rhythm and Hard's extra thinking is free.
+ * A move that lands the instant the turn flips reads as a machine answering, not as an
+ * opponent deciding — the player never gets to look at the board between the two turns.
+ * The pause is rolled fresh every turn inside this range so the rhythm is never metronomic.
+ *
+ * It is a floor on the whole turn, not a delay on top of one: the search runs off the main
+ * thread and whatever it spends comes out of the pause, so Easy deciding in a millisecond
+ * and Hard searching for a third of a second still feel like the same opponent thinking.
  */
-const AI_TURN_MS = 1100;
-/** How long the board is left alone after the AI's turn begins, before it moves. */
-const AI_BEAT_MS = 260;
+const AI_THINK_MIN_MS = 1000;
+const AI_THINK_MAX_MS = 4000;
 
 type Mode = "go" | "rally" | "tunnel";
 
@@ -228,16 +229,18 @@ export class MatchScreen {
     if (this.state.over) { this.finish(); return; }
     const gen = this.generation;
     const started = performance.now();
+    const thinkFor = AI_THINK_MIN_MS + Math.random() * (AI_THINK_MAX_MS - AI_THINK_MIN_MS);
 
     const thought = await this.thinker.think(this.state, "ai", this.opts.difficulty, this.opts.ctx);
     // The match may have ended — surrendered, or torn down — while it was thinking. Adopting
     // the searched board then would undo that, so the answer is simply dropped.
     if (gen !== this.generation || this.state.over) return;
 
-    // However fast the answer came back, the board settles before the AI moves. The searched
-    // board is NOT adopted yet: it lands with the animation that shows it (see `playAI`).
-    const beat = Math.max(0, AI_BEAT_MS - (performance.now() - started));
-    this.aiTimer = window.setTimeout(() => this.playAI(thought, started, gen), beat);
+    // However fast the answer came back, the AI sits on the move for the rest of its think
+    // time. The searched board is NOT adopted yet: it lands with the animation that shows
+    // it (see `playAI`).
+    const beat = Math.max(0, thinkFor - (performance.now() - started));
+    this.aiTimer = window.setTimeout(() => this.playAI(thought, gen), beat);
   }
 
   /**
@@ -248,17 +251,16 @@ export class MatchScreen {
    * tile, in the enemy's colour — and only then played the reveal that was supposed to be
    * showing it happening. It read as the destination flashing and then being animated into.
    */
-  private playAI(thought: Thought, started: number, gen: number): void {
+  private playAI(thought: Thought, gen: number): void {
     this.aiTimer = null;
     if (gen !== this.generation) return;
     adopt(this.state, thought.next);
     const events = thought.events;
     this.consume(events);
     this.refreshHUD();
-    // Spend what is left of the turn's budget, then let the reveal finish before handing
-    // over — flipping the turn mid-sweep cuts the animation off.
-    const rest = Math.max(0, AI_TURN_MS - (performance.now() - started));
-    this.aiTimer = window.setTimeout(() => this.handOver(), rest + (events.length ? 700 : 200));
+    // Let the reveal finish before handing over — flipping the turn mid-sweep cuts the
+    // animation off.
+    this.aiTimer = window.setTimeout(() => this.handOver(), events.length ? 700 : 200);
   }
 
   private finish(): void {

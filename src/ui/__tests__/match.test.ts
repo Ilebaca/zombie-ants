@@ -55,8 +55,10 @@ describe("the AI's turn", () => {
 
     // Step forward in small slices, noting when the board first moves and when the events
     // are handed over. They have to be the same slice.
+    // The AI sits on its move for a second to four before playing, so the sampling has to
+    // run past the longest of those.
     let boardMovedAt = -1, eventsAt = -1;
-    for (let t = 0; t < 40; t++) {
+    for (let t = 0; t < 240; t++) {
       await vi.advanceTimersByTimeAsync(25);
       if (boardMovedAt < 0 && sig(w.state) !== before) boardMovedAt = t;
       if (eventsAt < 0 && w.log.length) eventsAt = t;
@@ -68,12 +70,28 @@ describe("the AI's turn", () => {
     expect(boardMovedAt, "the board moved before anything was animated").toBe(eventsAt);
   });
 
+  /**
+   * An answer that lands the instant the turn flips reads as a machine, not an opponent.
+   * The search finishes in a few milliseconds on this board, so without the pause the move
+   * would already be on the board here.
+   */
+  it("sits on its move rather than answering instantly", async () => {
+    vi.useFakeTimers();
+    const w = watch();
+    const before = sig(w.state);
+    w.screen.start();
+    await vi.advanceTimersByTimeAsync(900);
+    const still = sig(w.state);
+    w.screen.destroy();
+    expect(still, "the AI answered before it had thought").toBe(before);
+  });
+
   it("still plays the turn", async () => {
     vi.useFakeTimers();
     const w = watch();
     const before = sig(w.state);
     w.screen.start();
-    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(6000);
     w.screen.destroy();
     expect(sig(w.state), "the AI stood still").not.toBe(before);
   });
