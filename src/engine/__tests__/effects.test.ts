@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
-  addEffect, isConnected, recomputeConnectivity, startTurn, tickEffects, tile,
-  NEUTRAL_MODS, PERMANENT,
+  addEffect, hiveCells, isConnected, recomputeConnectivity, setHiveDefence, startTurn,
+  tickEffects, tile, NEUTRAL_MODS, PERMANENT,
 } from "../index";
 import { blankGame, put } from "./helpers";
 
@@ -127,5 +127,41 @@ describe("venom on a trail", () => {
     const t = tile(s, 4, 0);
     expect(t.owner, "a defended tile is bled, not deleted").toBe("you");
     expect(t.soldiers).toBeLessThan(30);
+  });
+});
+
+/**
+ * YOUR OWN FIRE BURNS WHAT IS NOT YOURS.
+ *
+ * Hive terrain stays hive terrain after somebody captures it, and the branch that softens
+ * the neutral hive recognised tiles by that terrain alone — so a colony's own fire burned
+ * the hive tiles it was holding, down past the one-soldier floor and on to zero. That leaves
+ * a tile with an owner and no garrison, which nothing else in the rules can produce.
+ */
+describe("wildfire and the hive", () => {
+  it("softens a hive tile nobody holds", () => {
+    const s = blankGame("small");
+    s.hive.phase = "awake"; s.hive.awokeTurn = 1; s.turn = 6;
+    setHiveDefence(s);
+    const guard = hiveCells(s).find((t) => t.terrain === "hiveG") as { c: number; r: number };
+    const before = tile(s, guard.c, guard.r).soldiers;
+    addEffect(s, guard.c, guard.r, "fire", "you", 3);
+
+    tickEffects(s, "you", { ...NEUTRAL_MODS });
+    expect(tile(s, guard.c, guard.r).soldiers).toBeLessThan(before);
+  });
+
+  it("leaves a hive tile its own colony is holding alone", () => {
+    const s = blankGame("small");
+    s.hive.phase = "awake"; s.hive.awokeTurn = 1; s.turn = 6;
+    setHiveDefence(s);
+    const guard = hiveCells(s).find((t) => t.terrain === "hiveG") as { c: number; r: number };
+    put(s, guard.c, guard.r, { owner: "you", struct: "stable", soldiers: 3 });
+    addEffect(s, guard.c, guard.r, "fire", "you", 3);
+
+    tickEffects(s, "you", { ...NEUTRAL_MODS });
+    const t = tile(s, guard.c, guard.r);
+    expect(t.soldiers, "it burned its own garrison").toBe(3);
+    expect(t.owner).toBe("you");
   });
 });

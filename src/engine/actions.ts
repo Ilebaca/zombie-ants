@@ -37,8 +37,17 @@ export function canActFrom(state: GameState, t: Tile): boolean {
 }
 
 /** Promote a captured tile to a stable. Nests and hive terrain are never re-labelled here. */
-function promote(t: Tile): void {
-  if (t.struct !== "nest" && (t.terrain === "ground" || t.terrain === "resource")) t.struct = "stable";
+/**
+ * Ground somebody holds is a stable — whatever is printed on it.
+ *
+ * This used to promote only "ground" and "resource", which left one hole: a dead queen's
+ * tiles keep their hive terrain, so walking onto one during the cooldown gave a tile with an
+ * owner and NO structure. That is not a state the rest of the rules understand — it anchors
+ * no vein, it is not "captured" for the corner logic, and it produces nothing. A rock can
+ * never be owned, so every other terrain promotes.
+ */
+export function promote(t: Tile): void {
+  if (t.struct !== "nest" && t.terrain !== "blocked") t.struct = "stable";
 }
 
 function endIfNestFell(state: GameState, victim: Player, winner: Player, events: EngineEvent[]): void {

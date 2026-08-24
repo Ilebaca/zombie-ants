@@ -12,7 +12,7 @@ import { RESEARCH_MAX } from "./config";
 import {
   allTiles, isHiveTerrain, neighbours, nestTile, otherPlayer, tileAt,
 } from "./board";
-import { isConnected, recomputeConnectivity } from "./connectivity";
+import { isConnected, pruneAllVeins, recomputeConnectivity } from "./connectivity";
 import { addEffect, effectAt } from "./effects";
 import { speciesOf } from "./species";
 import { shuffle } from "./random";
@@ -20,7 +20,7 @@ import { PERMANENT } from "./types";
 import type {
   Ability, Coord, EngineEvent, GameState, Player, PlayerMods, Tile,
 } from "./types";
-import { blockedByEnemyLeaf, checkWipe, keepOn } from "./actions";
+import { blockedByEnemyLeaf, checkWipe, keepOn, promote } from "./actions";
 
 /* ------------------------------------------------------- RESEARCH SCALING */
 
@@ -127,10 +127,6 @@ function walledAgainst(state: GameState, t: Tile, p: Player): boolean {
 }
 
 /** Any captured ground/resource tile becomes a producing stable. Nests keep their role. */
-function promote(t: Tile): void {
-  if (t.struct !== "nest" && (t.terrain === "ground" || t.terrain === "resource")) t.struct = "stable";
-}
-
 export interface AbilityOptions {
   /** Tunnelling only: the tile the player tapped. The AI picks its own if omitted. */
   target?: Coord | null;
@@ -166,6 +162,18 @@ export function activateAbility(
   state.cooldown[p] = abilityCooldown(ability, mods);
   events.unshift({ type: "abilityCast", owner: p, kind: ability.kind, name: ability.name });
 
+  /*
+   * An ability finishes the way an action does (§4.5): dangling trails prune, then supply
+   * lines are rebuilt. It used to only rebuild, so a cast that cleared the tile anchoring a
+   * trail — terror pheromone pushing the outpost on the end of it away — left the loose
+   * veins standing until somebody happened to move, which looked like the rule firing a
+   * turn late.
+   *
+   * The §5 warning is about pruning DURING the flee walk, while garrisons are mid-relocation
+   * and tiles are briefly in states the rules never produce. Once here, the board has
+   * settled and the ordinary rule applies.
+   */
+  pruneAllVeins(state, events);
   recomputeConnectivity(state);
   checkWipe(state, events);
   return events;

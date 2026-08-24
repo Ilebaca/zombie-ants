@@ -198,21 +198,51 @@ describe("flee (Demon)", () => {
     expect(nest.owner).toBe("ai");
   });
 
-  /** CLAUDE.md §5: flee relocates garrisons only. Pruning here destroyed trails. */
+  /**
+   * CLAUDE.md §5: flee relocates garrisons only, and must not break structure on its way
+   * through. A trail anchored at both ends, far from the panic, is untouched by it.
+   */
   it("leaves the enemy's trail structure intact", () => {
     const s = withSpecies("demon");
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
-    put(s, 6, 6, { owner: "ai", struct: "nest", soldiers: 10 });
-    const trail = [put(s, 5, 6, { owner: "ai", struct: "vein", soldiers: 0 }),
-                   put(s, 4, 6, { owner: "ai", struct: "vein", soldiers: 0 })];
-    put(s, 3, 1, { owner: "ai", struct: "stable", soldiers: 6 });
+    put(s, 6, 10, { owner: "ai", struct: "nest", soldiers: 10 });
+    const trail = [put(s, 5, 10, { owner: "ai", struct: "vein", soldiers: 0 }),
+                   put(s, 4, 10, { owner: "ai", struct: "vein", soldiers: 0 })];
+    put(s, 3, 10, { owner: "ai", struct: "stable", soldiers: 5 });   // the far anchor
+    put(s, 3, 1, { owner: "ai", struct: "stable", soldiers: 6 });    // the one that panics
     recomputeConnectivity(s);
 
     activateAbility(s, "you", mods());
+    expect(tile(s, 3, 1).owner, "nothing was frightened at all").toBeNull();
     for (const v of trail) {
       expect(v.owner).toBe("ai");
       expect(v.struct).toBe("vein");
     }
+  });
+
+  /**
+   * A TRAIL THAT LOSES ITS ANCHOR PRUNES AT ONCE (§4.5).
+   *
+   * An ability used to only rebuild supply lines, never prune, so a cast that cleared the
+   * tile anchoring a trail left the loose veins standing until somebody happened to move.
+   * The rule looked like it was firing a turn late.
+   */
+  it("prunes a trail whose anchor the ability took away", () => {
+    const s = withSpecies("demon");
+    put(s, 1, 2, { owner: "you", struct: "nest", soldiers: 30 });
+    put(s, 1, 10, { owner: "ai", struct: "nest", soldiers: 20 });
+    put(s, 2, 2, { owner: "ai", struct: "stable", soldiers: 6 });    // the anchor, in reach
+    const trail = [put(s, 3, 2, { owner: "ai", struct: "vein", soldiers: 0 }),
+                   put(s, 4, 2, { owner: "ai", struct: "vein", soldiers: 0 })];
+    put(s, 5, 2, { owner: "ai", struct: "stable", soldiers: 4 });
+    recomputeConnectivity(s);
+
+    const events = activateAbility(s, "you", mods());
+    expect(tile(s, 2, 2).owner, "the anchor never moved").toBeNull();
+    for (const v of trail) {
+      expect(v.owner, `the trail at ${v.c},${v.r} is still standing on nothing`).toBeNull();
+    }
+    expect(events.filter((e) => e.type === "veinPruned").length).toBeGreaterThan(0);
   });
 
   it("moves a mobile garrison away from the caster", () => {

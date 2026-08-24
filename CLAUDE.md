@@ -375,6 +375,30 @@ Each of these cost a debugging round. Do not repeat them.
   the tile, which put view state inside the engine where snapshot/restore would copy it. It
   lives in `RevealTracker`, keyed by coordinate.
 
+## 5a. Invariants
+
+`src/engine/__tests__/invariants.test.ts` plays real games and checks the WHOLE board after
+every ability, move and hand-over: no owned tile without a structure or below the one-soldier
+floor, no owned tile still holding a wild garrison, no vein standing on fewer than two
+anchors, no stale supply-line cache, no surge without an owner. Every rule in §4 has its own
+test on a board built to exercise it; this is the other half, and it is how four bugs nobody
+was looking for turned up at once:
+
+- an ability that cleared a trail's anchor did not prune, so the loose veins stood until
+  somebody happened to move — §4.5 firing a turn late. `activateAbility` finishes the way an
+  action does now. The §5 warning is about pruning DURING the flee walk, not after it.
+- `promote` only recognised "ground" and "resource", so claiming a dead queen's tile (hive
+  terrain, no garrison, §4.7) gave a tile with an owner and NO structure — a shape that
+  anchors no vein, is not "captured" for the corner logic, and produces nothing.
+- the supply-line cache went stale whenever the hive handed its five tiles back, because
+  `startTurn` rebuilt before `hiveTick` rather than after it.
+- a colony's own Wildfire burned the hive tiles IT was holding, because the branch that
+  softens the neutral hive recognised them by terrain alone. Straight past the one-soldier
+  floor to zero.
+
+The lesson worth keeping: three of the four were the hive's terrain outliving its ownership.
+Anything that asks "is this a hive tile?" almost always means "is this the NEUTRAL hive?".
+
 ## 6. Testing
 
 `npm test` runs Vitest. **Run it before saying a change works.**

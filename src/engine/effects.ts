@@ -46,10 +46,19 @@ export function tickEffects(
       }
     }
 
-    // Your OWN fire still burns what isn't yours: wild garrisons and the hive. Without this,
-    // Wildfire would be purely anti-player and could never soften the hive for a run at it.
+    /*
+     * Your OWN fire still burns what isn't YOURS: wild garrisons and the neutral hive.
+     * Without this, Wildfire would be purely anti-player and could never soften the hive
+     * for a run at it.
+     *
+     * `!t.owner` matters. Hive terrain stays hive terrain after somebody captures it, so
+     * without it a colony's own fire burned the hive tiles it was holding — down past the
+     * one-soldier floor and on to zero, leaving a tile with an owner and no garrison, which
+     * nothing else in the rules can produce. A tile somebody holds takes damage through the
+     * ordinary path above, which knows how to give it up when it is wiped out.
+     */
     if (e.kind === "fire" && e.owner === p) {
-      if (isHiveTerrain(t) && t.soldiers > 0) {
+      if (isHiveTerrain(t) && !t.owner && t.soldiers > 0) {
         const lost = Math.max(2, Math.round(t.soldiers * 0.30));
         const before = t.soldiers;
         t.soldiers = Math.max(0, t.soldiers - lost);
