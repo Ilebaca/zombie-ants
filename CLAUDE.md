@@ -503,6 +503,31 @@ research. Every purchase goes through a `ProfileStore` method that returns `fals
 than throwing when the player cannot afford it, so a screen can tap optimistically and
 nothing ever goes half-spent.
 
+## 9b. The chapter road (the home screen)
+
+The home screen IS the Trophy Road, seen from the front. `src/ui/chapters.ts` draws one
+platform per chapter: the one the player is on fills the middle with the play button on it,
+the one behind is a sliver at the bottom, and the one ahead floats above carrying the
+trophy count that opens it. Nothing here has its own idea of progress — `chapterStanding()`
+in `platform/road.ts` is the single source, so the two screens cannot disagree.
+
+- **The gap IS the lock.** A dashed trail crosses each slab. Between the chapter behind and
+  the current one it carries straight over and lands; toward the chapter ahead it sets off
+  and fades out in mid-air. Reaching the next chapter is what closes that gap, which is the
+  whole mechanic and the reason the platforms float apart rather than touching.
+- **Canvas for the ground, DOM for the controls.** A slab is a trapezoid with a wall and a
+  ragged underside — none of it is a rectangle, so none of it is CSS. The play button, the
+  chapter chip and the locked chip are real elements positioned from the SAME geometry the
+  canvas draws with (`placeControls`), so they cannot drift off the platform.
+- **Every chapter is forest floor for now.** `THEMES` is a table keyed by chapter index and
+  everything falls back to `FOREST`, so giving chapter 3 a swamp is a row of colours.
+- **The screen it replaced is kept whole.** Settings → Home screen switches between
+  "Chapters" and "Classic" (`profile.homeStyle`), so the new one can be judged against the
+  old without a rebuild.
+- **A seeded generator that starts cold repeats itself.** The scenery is seeded on the
+  chapter index; without warming the generator up, every chapter drew the same two rocks in
+  the same two places.
+
 ## 9a. The deck
 
 The five bottom-bar screens — Shop, Anthill, Home, Antarium, Challenges — are not five

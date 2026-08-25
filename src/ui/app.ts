@@ -28,6 +28,7 @@ import { buildLeaderboard } from "./leaderboard";
 import { buildShop } from "./shop";
 import { buildQuests } from "./quests";
 import { buildComingSoon, buildMenu, buildRules, buildSettings } from "./screens-simple";
+import { buildChapterRoad } from "./chapters";
 import { buildTrophyRoad } from "./road";
 import { Deck } from "./deck";
 import { Tour } from "./tour";
@@ -418,6 +419,14 @@ export class App {
           this.profile.update((p) => { p.difficulty = this.difficulty; });
           this.show("settings");
         },
+        home: this.profile.get().homeStyle === "chapters" ? "Chapters" : "Classic",
+        onCycleHome: () => {
+          this.profile.update((p) => {
+            p.homeStyle = p.homeStyle === "chapters" ? "classic" : "chapters";
+          });
+          this.deck?.refresh("home");
+          this.show("settings");
+        },
         onReplayTutorial: () => {
           this.profile.update((p) => { p.tourSeen = 0; });
           this.startTour();
@@ -509,6 +518,25 @@ export class App {
     daily.append(icon("calendar", 17), el("small", undefined, "Daily"));
     daily.onclick = () => this.show("daily");
     root.append(settings, daily);
+
+    // The chapter road IS the home screen now: the Trophy Road's chapters as platforms,
+    // the one being played on in front and the next one locked above it. The title-screen
+    // home is kept whole behind a setting, so it is one tap to go back to it.
+    if (this.profile.get().homeStyle === "chapters") {
+      root.classList.add("chaphome");
+      root.appendChild(buildChapterRoad({
+        trophies: this.profile.get().trophies,
+        onPlay: () => this.show("mapsel"),
+        onRoad: () => this.show("achievements"),
+      }));
+      const how = el("button", "howtolink");
+      how.append(icon("book", 15), el("span", undefined, "How to play"));
+      how.id = "howToBtn";
+      how.onclick = () => this.show("rules");
+      root.appendChild(how);
+      requestAnimationFrame(() => syncFabs(root));
+      return root;
+    }
 
     const play = el("div", "homeplay");
     // The app had no name on its own front page. The artwork is the title screen; this is
