@@ -1869,3 +1869,27 @@ button:not(.playbtn):active,
 /* The rail's track was see-through, so an empty bar showed the artwork
    through it and read as a hole rather than as nothing earned yet. */
 .troadbar .tr-bar { background: var(--panel-edge); }
+
+/* ---------------------------------------------------------- WHAT IS PICKED
+   Every picker marked its choice with an inset shadow, and clearing the
+   shadows cleared the marks with them: the map and formation cards had
+   nothing at all saying which one was chosen. An outline is not a shadow,
+   does not move the box, and survives that rule. */
+.mp.on, .shp.on {
+  outline: 2px solid var(--grass-glow);
+  outline-offset: -2px;
+}
+.mp.on .snm, .shpcell:has(.shp.on) .snm { color: var(--grass-glow); }
+
+/* The species card carries its colony's own colour, which the picker sets
+   inline; the map and formation cards have no colour of their own, so they
+   take the accent that means "chosen" everywhere else in the app. */
+.mp.on { background: rgba(88, 201, 76, .1); }
+.shp.on { background: rgba(88, 201, 76, .1); }
+
+/* The rail itself was a translucent black pill, so the artwork came through
+   it and the whole strip read as half-there. Solid dark green, like every
+   other panel; the groove inside it stays darker so an empty bar still
+   reads as a bar rather than as a gap. */
+.troadbar { background: var(--panel); }
+.troadbar .tr-bar { background: var(--panel-edge); }
