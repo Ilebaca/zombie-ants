@@ -237,8 +237,14 @@ body {
 }
 .buybtn.max {
   background: none;
-  color: var(--hive-glow);
-  box-shadow: inset 0 0 0 2px var(--hive);
+  /* Not the Hive's purple, which it inherited from the legacy sheet and which
+     means FUNGUS everywhere else in the app. A finished track is something you
+     HAVE, and what you have is mint here — the same green as the pips under it. */
+  color: var(--grass-glow);
+  /* A BORDER, not an inset shadow: the legacy sheet draws this ring with
+     `border`, and the app-wide rule that clears every box-shadow would eat
+     an inset one anyway (§10, deliberate deviations). */
+  border: 1px solid color-mix(in srgb, var(--grass) 60%, transparent);
 }
 .ghostbtn {
   border: none;
@@ -2013,3 +2019,195 @@ button:not(.playbtn):active,
    wrapper's left edge and hung 9px off the right: 16px of margin on one side, 7 on the
    other. It fills the wrapper instead, and the wrapper is what does the centring. */
 .overModalWrap > .card { width: 100%; }
+
+/* ======================================================================
+   ==  THE ANTHILL  =====================================================
+   ======================================================================
+
+   The screen had every chamber on it twice — a summary table naming all
+   five, then five cards naming all five again — and inside each card the
+   reason to spend was one long line that said the same sentence twice
+   ("Now: +2 soldiers in your base at match start → +3 soldiers in your
+   base at match start"), so the only thing that changed was the hardest
+   thing to find.
+
+   Three moves:
+
+   1. THE DIGEST SHOWS WHAT YOU HAVE, not what exists. Effects only, no
+      names — the effect line already says what the chamber is — plus one
+      bar for how far the whole nest has come, which is the one thing the
+      screen could never say before.
+   2. NOW AND NEXT ARE A COMPARISON. Two labelled rows on one left edge in
+      a well cut into the card. The sentences line up, so the eye lands on
+      the word that differs, and the colour says which is which: mint is
+      what you have, gold is what you are buying, which is the colour of
+      the button that buys it.
+   3. CONTRAST. The description was `--muted` on the panel's lit top edge,
+      which is 3.7:1 — under AA for text this size. It reads at ink-soft
+      (6:1), and `--muted` is left doing what it is for: micro-labels.
+   ====================================================================== */
+
+/* ----------------------------------------------------------- THE DIGEST */
+.hillcut {
+  padding: 14px 16px 6px;
+  margin: 0 16px 4px;
+}
+/* The section label lives inside this card, so it cannot carry the page
+   margins the standalone ones do. */
+.hillcut .secthead { margin: 0 0 10px; }
+.hillcut .secthead .hl-t { flex: 1; }
+/* The count is a figure, not a label: gold, tabular, and not shouted. */
+.hillcut .secthead .hl-c {
+  letter-spacing: .2px;
+  font-size: 12px;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.hl-track {
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, .34);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.hl-fill {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--grass), var(--grass-glow));
+  transition: width .35s ease;
+}
+
+/* A row is an effect and how deep the chamber that gives it is. The gap
+   matches the cards' column gap exactly: 40 + 12 puts this text on the
+   same left edge as every chamber title below. */
+.hcrow {
+  align-items: flex-start;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, .05);
+}
+.hcrow:last-child { border-bottom: none; }
+/* The gutter is the chamber cards' 40px icon column, so every mark on the
+   screen shares a centre line and every line of text shares a left edge. */
+.hcrow .hci {
+  width: 40px;
+  height: 20px;
+  margin-top: 1px;
+  color: var(--grass-glow);
+}
+.hcrow .hcn {
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--ink);
+  text-align: left;
+}
+.hcrow .hce {
+  flex: 0 0 auto;
+  min-width: 46px;
+  text-align: center;
+  margin-top: 1px;
+  padding: 2px 7px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, .28);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .8px;
+  color: var(--ink-soft);
+}
+/* Nothing dug yet: one quiet line that says what this screen is for. */
+.hcrow.dim .hci { color: var(--muted); }
+.hcrow.dim .hcn { font-weight: 600; color: var(--ink-soft); }
+.hcrow.dim .hce { display: none; }
+
+/* --------------------------------------------------------- THE CHAMBERS */
+/* One content column, with the mark hanging in a gutter beside it. Title,
+   description, comparison and footer all start on the same left edge —
+   and it is the same edge the digest's rows use, so the whole screen has
+   one line down it instead of one per block. */
+.chcard {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  column-gap: 12px;
+  padding: 14px 16px 16px;
+}
+.chcard > .chic { grid-column: 1; grid-row: 1; }
+.chcard > .chtop,
+.chcard > .chdesc,
+.chcard > .cheff,
+.chcard > .chfoot { grid-column: 2; }
+
+.chtop { gap: 12px; min-height: 40px; }
+.chnm {
+  font-size: 15px;
+  line-height: 1.2;
+  letter-spacing: .2px;
+}
+/* The level is a state, so it sits on a plate rather than floating as text. */
+.chlv {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, .28);
+  font-size: 10.5px;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.chcard.maxed .chlv { color: var(--gold); }
+
+.chdesc {
+  margin: 10px 0 12px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+/* The comparison, in a well cut into the card face. */
+.cheff {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  /* A well cut into the card face. The app clears every box-shadow (§10), so
+     the depth is the darker fill alone — which is enough on this ground. */
+  background: rgba(0, 0, 0, .24);
+}
+.che-row {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  align-items: baseline;
+  gap: 10px;
+}
+.che-row + .che-row { margin-top: 7px; }
+.che-k {
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.che-v {
+  font-size: 12.5px;
+  /* A shade lighter than the chamber's name above it: the name leads the card,
+     the values answer it. At 900 the wrapped gold line outshouted the title. */
+  font-weight: 700;
+  line-height: 1.4;
+}
+.che-now .che-v { color: var(--grass-glow); }
+/* Gold is SPEND everywhere in this app, and this line is what the gold
+   button below it buys. */
+.che-next .che-v { color: var(--gold); }
+/* Nothing here yet, so there is no value to state in the "have" colour. */
+.chcard.fresh .che-now .che-v { color: var(--muted); font-weight: 700; }
+
+.chfoot { gap: 12px; }
+.chfoot .pips { gap: 5px; }
+.chfoot .pip {
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, .34);
+}
+.chfoot .pip.on { background: var(--grass); }

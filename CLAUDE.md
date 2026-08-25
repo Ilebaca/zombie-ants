@@ -585,6 +585,28 @@ How to check a screen really matches, without being able to see it:
   to be redrawn because they were built OUT of shadows rather than merely wearing one: the
   tour's spotlight ring (a border now) and the selected-colony marks (outlines).
 
+- **The Anthill is redesigned, not ported.** The legacy screen listed all five chambers in a
+  summary table and then again as five cards — every name and every effect twice, half a
+  screen of scrolling to be told the same thing — and inside each card the reason to spend
+  was one line that printed the same sentence twice ("Now: +2 soldiers in your base at match
+  start → +3 soldiers in your base at match start"), so the only thing that changed was the
+  hardest thing to find. Now: the digest carries only what the player HAS (effects, not
+  names — the effect line already says what the chamber is) plus a bar for the whole nest's
+  progress, and each card states NOW and NEXT as two labelled rows on one left edge, mint
+  for what you have and gold for what you are buying. The skeleton class names are unchanged
+  because they are styling (`hillwrap`/`hillcut`/`hcrow`/`chcard`/`cheff`/…); everything
+  inside them is ours, dressed at the end of `skin.css`.
+  - **One left edge.** The mark hangs in a 40px gutter and title, description, comparison and
+    footer all begin at the same x — and the digest's rows use the same gutter, so the whole
+    screen has one line down it. Its rows' gap has to MATCH the cards' column gap or the two
+    columns land two pixels apart, which is exactly what it looks like.
+  - Descriptions read at `--ink-soft`, not `--muted`: muted on the panel's lit top edge is
+    3.7:1, under AA for text that size. `--muted` is left doing micro-labels.
+  - `.buybtn.max` is mint rather than the Hive's purple, which it inherited from the legacy
+    sheet. Purple means FUNGUS everywhere else in this app; a finished track is something you
+    HAVE, and what you have is green. It is a border, not an inset shadow — the app-wide rule
+    above would eat the shadow.
+
 These differ from the legacy build **on purpose**. Anything else that differs is a bug.
 
 - **No emoji in the chrome.** The legacy build draws every tab, currency, chamber, quest and

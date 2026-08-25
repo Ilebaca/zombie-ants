@@ -32,6 +32,11 @@ const click = (el: Element | null | undefined): void => {
   (el as HTMLElement).click();
 };
 
+/** The card whose title matches. */
+const cardFor = (root: HTMLElement, selector: string, name: string): HTMLElement | null =>
+  Array.from(root.querySelectorAll<HTMLElement>(selector))
+    .find((cell) => cell.textContent?.includes(name)) ?? null;
+
 /** The buy button on the card whose title matches. */
 const buyIn = (root: HTMLElement, selector: string, name: string): HTMLButtonElement | null => {
   for (const cell of Array.from(root.querySelectorAll(selector))) {
@@ -80,6 +85,56 @@ describe("anthill screen", () => {
     for (let i = 0; i < CHAMBER_MAX.royal; i++) s.buyChamber("royal");
     const root = buildAnthill(s);
     expect(buyIn(root, ".chcard", "Royal Chamber")?.textContent).toBe("MAX");
+  });
+
+  /**
+   * The digest used to list all five chambers whether or not the player had them, which
+   * made the screen say everything twice: a table of five names and effects, then five
+   * cards with the same five names and effects.
+   */
+  it("digests only the chambers the player actually has", () => {
+    const s = store(100000);
+    s.buyChamber("royal");
+    const rows = Array.from(buildAnthill(s).querySelectorAll("#hillCut .hcrow"));
+    expect(rows.length).toBe(1);
+    expect(rows[0]?.textContent).toContain("+1 soldier in your base at match start");
+    expect(rows[0]?.textContent, "the digest repeated the chamber's name").not.toContain("Royal Chamber");
+  });
+
+  it("says what the screen is for when nothing has been dug", () => {
+    const root = buildAnthill(store());
+    const rows = Array.from(root.querySelectorAll("#hillCut .hcrow"));
+    expect(rows.length).toBe(1);
+    expect(rows[0]?.className).toContain("dim");
+    expect(rows[0]?.textContent).toContain("Nothing excavated");
+  });
+
+  /** The whole nest's progress, which the screen had no way to say before. */
+  it("counts every level dug against every level there is", () => {
+    const s = store(100000);
+    s.buyChamber("royal");
+    s.buyChamber("gland");
+    const total = Object.values(CHAMBER_MAX).reduce((a, b) => a + b, 0);
+    expect(buildAnthill(s).querySelector(".hl-c")?.textContent).toBe(`2 / ${total}`);
+  });
+
+  /** "Now: X → Y" put the same sentence twice on one line. Two rows, one left edge. */
+  it("states the level you have and the one you would buy as two rows", () => {
+    const s = store(100000);
+    s.buyChamber("royal");
+    const card = cardFor(buildAnthill(s), ".chcard", "Royal Chamber");
+    expect(card?.querySelector(".che-now .che-v")?.textContent)
+      .toBe("+1 soldier in your base at match start");
+    expect(card?.querySelector(".che-next .che-v")?.textContent)
+      .toBe("+2 soldiers in your base at match start");
+  });
+
+  it("offers nothing to buy on a chamber that is finished", () => {
+    const s = store(100000);
+    for (let i = 0; i < CHAMBER_MAX.royal; i++) s.buyChamber("royal");
+    const card = cardFor(buildAnthill(s), ".chcard", "Royal Chamber");
+    expect(card?.querySelector(".che-next")).toBeNull();
+    expect(card?.className).toContain("maxed");
   });
 
   /** Nav tabs carry no back arrow — the bottom nav is the way out (legacy behaviour). */
