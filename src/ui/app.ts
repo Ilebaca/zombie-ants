@@ -814,7 +814,10 @@ export class App {
       },
       onExit: (winner, reason) => {
         // Snapshot before recording, so the card can report what this match actually paid.
-        const beforeXp = this.profile.get().xp;
+        const before = this.profile.get();
+        const beforeXp = before.xp;
+        const beforeTrophies = before.trophies;
+        const beforeMycel = before.mycel;
         const beforeLevel = this.profile.level().level;
         this.profile.recordResult(winner === "you", this.choices.species, state.turn);
         this.profile.questProgress("play");
@@ -839,6 +842,9 @@ export class App {
           aiArmy: armyOf(state, "ai"),
           species: this.choices.species,
           xpGained: after.xp - beforeXp,
+          trophies: after.trophies,
+          trophyDelta: after.trophies - beforeTrophies,
+          mycel: after.mycel - beforeMycel,
           leveledTo: level > beforeLevel ? level : null,
           reason,
         });
@@ -855,12 +861,18 @@ export class App {
   /* --------------------------------------------------------------------- RESULT */
 
   /**
-   * The result card, in the legacy build's shape: title, one line of flavour that depends
-   * on how the match ended, a five-item recap, and three ways out.
+   * The result card.
+   *
+   * Three blocks, in the order the player cares about them: what happened, what it PAID,
+   * and what the match looked like. The rewards came first only after the card was seen on
+   * a phone — the old one led with four cramped facts and mentioned XP last, while the two
+   * numbers that actually move the player forward, trophies and mycelium, were not on it
+   * at all.
    */
   private showResult(winner: Player | null, recap: {
     turns: number; youArmy: number; aiArmy: number; species: SpeciesId;
-    xpGained: number; leveledTo: number | null; reason: GameOverReason | null;
+    xpGained: number; trophies: number; trophyDelta: number; mycel: number;
+    leveledTo: number | null; reason: GameOverReason | null;
     challenge: Challenge | null;
   }): void {
     const won = winner === "you";
@@ -868,7 +880,7 @@ export class App {
     ov.id = "over";
     const wrap = el("div", "overModalWrap");
 
-    const card = el("div", "card " + (won ? "win" : "lose"));
+    const card = el("div", "card result " + (won ? "win" : "lose"));
     card.id = "overCard";
 
     const h1 = el("h1", undefined,
@@ -878,50 +890,68 @@ export class App {
       ? `${recap.challenge.name} — ${GOAL_TEXT[recap.challenge.goal]}  ${won ? "✓" : "✗"}`
       : resultFlavour(won, recap.reason, recap.turns));
     tag.id = "overSub";
+    card.append(h1, tag);
 
-    const rows = el("div", "recap");
-    rows.id = "overRecap";
-    const stat = (k: string, v: string | number): HTMLElement => {
-      const d = el("div", "rc");
-      d.append(el("span", "rk", k), el("span", "rv", String(v)));
-      return d;
+    // WHAT IT PAID. Three cells, equal width, each one a currency the player recognises
+    // from the top bar — the same marks, so the card reads as the bar being fed.
+    const rewards = el("div", "payouts");
+    rewards.id = "overRewards";
+    const reward = (mark: string, value: string, note: string, kind: string): HTMLElement => {
+      const cell = el("div", `payout pay-${kind}`);
+      const head = el("div", "payv");
+      head.append(icon(mark, 17), el("b", undefined, value));
+      cell.append(head, el("small", undefined, note));
+      return cell;
     };
-    rows.append(
-      stat("Turns", recap.turns),
-      stat("Your army", recap.youArmy),
-      stat("Enemy army", recap.aiArmy),
-      stat("Species", SPECIES[recap.species].name.split(" ")[0] ?? ""),
-      stat("XP gained", `+${recap.xpGained}`),
+    rewards.append(
+      reward("trophy", signed(recap.trophyDelta), `${recap.trophies} total`, "trophy"),
+      reward("mycel", signed(recap.mycel), "mycelium", "mycel"),
+      reward("star", `+${recap.xpGained}`, "colony XP", "xp"),
     );
-    card.append(h1, tag, rows);
+    card.appendChild(rewards);
 
-    // A level-up is the one thing worth its own banner — it is why the XP line matters.
+    // A level-up is the one thing worth its own line — it is why the XP cell matters.
     if (recap.leveledTo !== null) {
-      const banner = el("div", "recap");
-      const cell = el("div", "rc");
-      cell.style.cssText = "min-width:100%;background:linear-gradient(180deg,#ffd23f,#f5a623);color:#3a2a00";
-      const k = el("span", "rk", "LEVEL UP");
-      k.style.color = "#3a2a00";
-      const v = el("span", "rv", `Colony level ${recap.leveledTo}!`);
-      v.style.color = "#3a2a00";
-      cell.append(k, v);
-      banner.appendChild(cell);
+      const banner = el("div", "levelup");
+      banner.append(icon("star", 16), el("b", undefined, `Colony level ${recap.leveledTo}`));
       card.appendChild(banner);
     }
 
-    const again = el("button", "cta", "Play again");
+    // WHAT THE MATCH LOOKED LIKE. Quieter, and on a grid: four facts in a row across a
+    // phone gave four different column widths and a fifth cell stranded underneath.
+    const facts = el("div", "facts");
+    facts.id = "overRecap";
+    const fact = (k: string, v: string | number): HTMLElement => {
+      const d = el("div", "fact");
+      d.append(el("span", "fk", k), el("span", "fv", String(v)));
+      return d;
+    };
+    facts.append(
+      fact("Turns", recap.turns),
+      fact("Colony", SPECIES[recap.species].name.split(" ")[0] ?? ""),
+      fact("Your army", recap.youArmy),
+      fact("Enemy army", recap.aiArmy),
+    );
+    card.appendChild(facts);
+
+    const acts = el("div", "resultacts");
+    const again = el("button", "cta begin", "Play again");
     again.id = "again";
     again.onclick = () => { this.clearOverlay(); this.startMatch(); };
 
+    const minor = el("div", "resultminor");
     const reSpecies = el("button", "ghostbtn", "Change colony");
     reSpecies.id = "reSpecies";
     reSpecies.onclick = () => { this.clearOverlay(); this.show("start"); };
 
-    const home = el("button", "ghostbtn", "← Home");
+    const home = el("button", "ghostbtn", "Home");
     home.id = "overHome";
     home.onclick = () => { this.clearOverlay(); this.show("home"); };
 
-    card.append(again, reSpecies, home);
+    minor.append(reSpecies, home);
+    acts.append(again, minor);
+    card.appendChild(acts);
+
     wrap.appendChild(card);
     ov.appendChild(wrap);
     this.host.appendChild(ov);
@@ -943,6 +973,9 @@ export class App {
  * with it on a short screen. A zero-sized measurement means the screen is not laid out
  * yet — skip rather than pin them to 0 (CLAUDE.md §5).
  */
+/** A delta the way a scoreboard writes one: the sign is part of the number. */
+const signed = (n: number): string => (n >= 0 ? `+${n}` : String(n));
+
 function syncFabs(home: HTMLElement): void {
   const daily = home.querySelector<HTMLElement>(".dailyfab");
   const settings = home.querySelector<HTMLElement>(".settingsfab");
