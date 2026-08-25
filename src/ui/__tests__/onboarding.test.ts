@@ -7,7 +7,7 @@
  * the tour running does not let the turn clock take the turn away from someone reading.
  */
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
-import { createGame, defaultContext, NEUTRAL_MODS } from "../../engine";
+import { arrangeTutorial, createGame, defaultContext, NEUTRAL_MODS } from "../../engine";
 import { MemoryStore, ProfileStore, TOUR_VERSION } from "../../platform";
 import { App } from "../app";
 import { normalise } from "../../platform";
@@ -96,6 +96,7 @@ describe("a match with the tour up", () => {
   const running = (): { state: ReturnType<typeof createGame>; screen: MatchScreen; host: HTMLElement } => {
     const host = mount();
     const state = createGame({ map: "small", species: { you: "fire", ai: "fire" }, seed: 7 });
+    arrangeTutorial(state);
     const screen = new MatchScreen(host, {
       state,
       mods: { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } },
@@ -121,6 +122,33 @@ describe("a match with the tour up", () => {
     expect(state.turn, "the clock took the turn during the tutorial").toBe(1);
     expect(state.current).toBe("you");
     screen.destroy();
+  });
+
+  /**
+   * A step's `enter` picks a tile up for the player, and the step opens the moment the
+   * previous deed resolves — which is in the MIDDLE of the handler that resolved it.
+   * `onAbility` clears the selection after consuming its events and a rally puts the mode
+   * back the same way, so a step opened inside the batch had the tile taken straight back
+   * out of its hand and the walkthrough stalled on a board it could not act from.
+   */
+  it("does not open the next step until the action that ended this one is finished", () => {
+    const { screen, host } = running();
+    screen.start();
+    const tour = (screen as unknown as { opts: { tour: Tour } }).opts.tour;
+
+    host.querySelector<HTMLButtonElement>("#tourNext")?.click();   // past the opening line
+    tour.signal("select");
+    expect(tour.step?.id, "expected to be waiting on a move").toBe("move");
+
+    (screen as unknown as { consume: (e: unknown[]) => void }).consume(
+      [{ type: "move", from: { c: 0, r: 0 }, to: { c: 0, r: 1 }, owner: "you", count: 2 }],
+    );
+    expect(tour.step?.id, "the step advanced inside the batch that ended it").toBe("move");
+
+    return Promise.resolve().then(() => {
+      expect(tour.step?.id, "the step never advanced at all").toBe("attack");
+      screen.destroy();
+    });
   });
 
   it("starts the clock once the tour is out of the way", async () => {

@@ -9,10 +9,11 @@ import {
   MAPS, actionTargets, canActFrom, endTurn, incomeOf, armyOf, moveOrAttack,
   rally, speciesOf, surrender, tileAt, travel, distance, isConnected,
   abilityReady, activateAbility, sparePool, tunnelTargets, endByObjective, nestTile,
-  tilesOwnedBy,
+  tilesOwnedBy, allTiles, neighbours,
 } from "../engine";
 import type {
-  AbilityKind, ActionContext, Coord, EngineEvent, GameOverReason, GameState, MapId, Player, PlayerMods, SpeciesId,
+  AbilityKind, ActionContext, Coord, EngineEvent, GameOverReason, GameState, MapId, Player,
+  PlayerMods, SpeciesId, Tile,
 } from "../engine";
 import { Thinker, adopt } from "../ai/thinker";
 import type { Thought } from "../ai/thinker";
@@ -159,29 +160,86 @@ export class MatchScreen {
     };
   }
 
-  /** The tile the tour asks the player to move from: the nest, or anything that can act. */
-  private tourSource(): Coord | null {
-    const nest = nestTile(this.state, "you");
-    if (nest && canActFrom(this.state, nest)) return { c: nest.c, r: nest.r };
-    const any = tilesOwnedBy(this.state, "you").find((t) => canActFrom(this.state, t));
-    return any ? { c: any.c, r: any.r } : null;
-  }
-
   /**
-   * The tile it asks them to move INTO. Ground the player does not already hold, so the
-   * step ends in a capture — the thing the whole game is made of — rather than in troops
-   * shuffling between two tiles they already own.
+   * The spearhead: the tutorial board's fat garrison, standing beside the Hive.
+   *
+   * Every other step deliberately works around it. Moving it, attacking with it or
+   * travelling it away spends the one stack that can crack the queen, and the walkthrough
+   * ends on cracking the queen.
    */
-  private tourTarget(): Coord | null {
-    if (!this.valid.length) return null;
-    const fresh = this.valid.find((at) => tileAt(this.state, at.c, at.r)?.owner !== "you");
-    return fresh ?? this.valid[0] ?? null;
+  private spear(): Tile | null {
+    const mine = tilesOwnedBy(this.state, "you");
+    if (!mine.length) return null;
+    return mine.reduce((best, t) => (t.soldiers > best.soldiers ? t : best));
   }
 
-  /** The Hive queen's tile — the middle of the board's five hive tiles. */
-  private queenCell(): Coord | null {
-    for (const t of this.state.grid.flat()) if (t.terrain === "hiveQ") return { c: t.c, r: t.r };
+  /** A tile to teach a plain move with — anything but the spearhead. */
+  private moveSource(): Tile | null {
+    const spear = this.spear();
+    return tilesOwnedBy(this.state, "you").find(
+      (t) => t !== spear && canActFrom(this.state, t) && this.freeNeighbour(t) !== null,
+    ) ?? null;
+  }
+
+  /** Empty ground beside a tile: what a move CLAIMS, rather than shuffling troops around. */
+  private freeNeighbour(from: Tile | null): Coord | null {
+    if (!from) return null;
+    for (const at of actionTargets(this.state, from)) {
+      if (distance(from, at) !== 1) continue;
+      const t = tileAt(this.state, at.c, at.r);
+      if (t && !t.owner && t.guard === 0 && t.terrain === "ground") return at;
+    }
     return null;
+  }
+
+  /** The enemy outpost the tutorial board puts within reach, and who can take it. */
+  private foeCell(): Tile | null {
+    return tilesOwnedBy(this.state, "ai").find(
+      (t) => neighbours(this.state, t).some((n) => n.owner === "you" && n !== this.spear()),
+    ) ?? null;
+  }
+
+  private assaultSource(): Tile | null {
+    const foe = this.foeCell();
+    if (!foe) return null;
+    const spear = this.spear();
+    return neighbours(this.state, foe).find(
+      (n) => n.owner === "you" && n !== spear && canActFrom(this.state, n),
+    ) ?? null;
+  }
+
+  /** A tile with somewhere far to send troops, and the tile to send them to. */
+  private travelSource(): Tile | null {
+    const spear = this.spear();
+    return tilesOwnedBy(this.state, "you").find(
+      (t) => t !== spear && canActFrom(this.state, t) && this.travelTarget(t) !== null,
+    ) ?? null;
+  }
+
+  private travelTarget(from: Tile | null): Coord | null {
+    if (!from) return null;
+    return actionTargets(this.state, from).find((at) => distance(from, at) > 1) ?? null;
+  }
+
+  /** The Hive queen's tile, and the guard standing between the spearhead and her. */
+  private queenCell(): Coord | null {
+    const t = allTiles(this.state).find((x) => x.terrain === "hiveQ");
+    return t ? { c: t.c, r: t.r } : null;
+  }
+
+  private guardCell(): Coord | null {
+    const spear = this.spear();
+    if (!spear) return null;
+    const guard = neighbours(this.state, spear).find((n) => n.terrain === "hiveG" && n.owner !== "you");
+    return guard ? { c: guard.c, r: guard.r } : null;
+  }
+
+  /** A hive tile the player has taken — the doorstep the queen is attacked from. */
+  private doorstep(): Tile | null {
+    const queen = this.queenCell();
+    if (!queen) return null;
+    const q = tileAt(this.state, queen.c, queen.r);
+    return q ? neighbours(this.state, q).find((n) => n.owner === "you" && canActFrom(this.state, n)) ?? null : null;
   }
 
   private enemyNest(): Coord | null {
@@ -189,40 +247,169 @@ export class MatchScreen {
     return nest ? { c: nest.c, r: nest.r } : null;
   }
 
+  private at(t: Tile | null): Coord | null {
+    return t ? { c: t.c, r: t.r } : null;
+  }
+
+  /**
+   * Pick a tile up on the player's behalf as a step opens.
+   *
+   * The walkthrough teaches selection ONCE. Making the player re-select a source before
+   * every later lesson would be six taps of nothing, and each one is a chance to select
+   * the wrong tile and strand the step.
+   */
+  private preselect(t: Tile | null): void {
+    if (this.mode !== "go") this.setMode("go");
+    if (t) this.select({ c: t.c, r: t.r });
+  }
+
+  /**
+   * Turn a batch of events into the deed a step is waiting for.
+   *
+   * The steps wait for what actually RESOLVED rather than for the tap that started it, so
+   * a move the engine refused leaves the step standing.
+   *
+   * The signal is deferred to a microtask, and that is not decoration: it opens the next
+   * step, whose `enter` may select a tile for the player — and the caller we are inside is
+   * not finished. `onAbility` clears the selection after consuming its events, and a rally
+   * puts the mode back the same way, so a step opened DURING the batch had the tile taken
+   * straight back out of its hand.
+   */
+  private tourSignals(events: readonly EngineEvent[]): void {
+    const tour = this.opts.tour;
+    if (!tour) return;
+    const deeds: string[] = [];
+    for (const e of events) {
+      if (e.type === "hiveCaptured") deeds.push("queen");
+      else if (e.type === "combat") {
+        const t = tileAt(this.state, e.at.c, e.at.r);
+        // The queen's own capture is announced by hiveCaptured; this is the guard in front.
+        if (t?.terrain === "hiveG") deeds.push("guard");
+        else if (t?.terrain !== "hiveQ") deeds.push("attack");
+      } else if (e.type === "travel") deeds.push("travel");
+      else if (e.type === "rally") deeds.push("rally");
+      else if (e.type === "abilityCast") deeds.push("ability");
+      else if (e.type === "move") deeds.push("move");
+    }
+    if (!deeds.length) return;
+    queueMicrotask(() => { for (const deed of deeds) tour.signal(deed); });
+  }
+
   private tourSteps(): TourStep[] {
-    return [
+    const ability = speciesOf(this.state.species.you).ability;
+    const steps: TourStep[] = [
       {
         id: "nest",
         title: "Your nest",
         text: "The corner tile is your queen. Every tile you hold has to trace a path back "
           + "to her, and if she falls the match is over.",
-        rect: () => this.cellRect(this.tourSource()),
+        rect: () => this.cellRect(this.at(nestTile(this.state, "you"))),
         pad: 4,
       },
       {
         id: "select",
-        text: "Tap it to pick up its soldiers.",
-        rect: () => this.cellRect(this.tourSource()),
+        title: "Pick a tile up",
+        text: "Tap this one. A tile can act when it has two or more soldiers — one always "
+          + "stays behind to hold the ground.",
+        rect: () => this.cellRect(this.at(this.moveSource())),
         pad: 4,
         advance: "signal",
       },
       {
         id: "move",
         title: "Take ground",
-        text: "The lit tiles are where those soldiers can go. Tap this one to march in and "
-          + "claim it.",
-        rect: () => this.cellRect(this.tourTarget()),
+        text: "The lit tiles are where those soldiers can go. Tap this one: empty ground is "
+          + "claimed just by walking onto it.",
+        rect: () => this.cellRect(this.freeNeighbour(this.moveSource())),
         pad: 4,
         advance: "signal",
       },
       {
-        id: "hive",
+        id: "attack",
+        title: "Attack",
+        text: "An enemy tile is taken by force. Attack and defence are pure arithmetic — no "
+          + "dice — so you can count it out first. Win and the garrison is destroyed and "
+          + "the tile is yours; lose and your attackers are gone instead.",
+        enter: () => this.preselect(this.assaultSource()),
+        rect: () => this.cellRect(this.at(this.foeCell())),
+        pad: 4,
+        advance: "signal",
+      },
+      {
+        id: "travel",
+        title: "The long send",
+        text: "Further than one tile, your soldiers march instead — laying a vein behind "
+          + "them. Veins carry supply and can be cut, but they produce nothing.",
+        enter: () => this.preselect(this.travelSource()),
+        rect: () => this.cellRect(this.travelTarget(this.travelSource())),
+        pad: 4,
+        advance: "signal",
+      },
+      {
+        id: "rallybtn",
+        title: "Make a fist",
+        text: "Rally pulls every spare soldier in the colony onto one tile. Tap it.",
+        find: () => this.root.querySelector("#bRally"),
+        advance: "tap",
+      },
+      {
+        id: "rally",
+        text: "Now tap the tile beside the Hive. Everything you can spare marches to it — "
+          + "and everywhere else is left holding one soldier, so this is a commitment.",
+        rect: () => this.cellRect(this.at(this.spear())),
+        pad: 4,
+        advance: "signal",
+      },
+    ];
+
+    // The ability is free — the turn continues after it — but tunnelling needs a target,
+    // so for a digging colony the cast takes two taps rather than one.
+    if (ability.kind === "tunnel") {
+      steps.push({
+        id: "abilitybtn",
+        title: "Your species ability",
+        text: `${ability.name}: ${ability.desc} Tap it, then choose where to dig.`,
+        find: () => this.root.querySelector("#bAbility"),
+        advance: "tap",
+      }, {
+        id: "ability",
+        text: "Tap one of the lit tiles to dig through to it.",
+        rect: () => this.cellRect(this.valid[0] ?? null),
+        pad: 4,
+        advance: "signal",
+      });
+    } else {
+      steps.push({
+        id: "ability",
+        title: "Your species ability",
+        text: `${ability.name}: ${ability.desc} It is free — you still get your move — and `
+          + "then it recharges for a few turns. Tap it.",
+        find: () => this.root.querySelector("#bAbility"),
+        advance: "signal",
+      });
+    }
+
+    steps.push(
+      {
+        id: "guard",
         title: "The Hive",
-        text: `A wild queen sleeps in the middle, infected with the fungus this game is `
-          + `named after. She wakes on turn ${MAPS[this.opts.map].awakenTurn}. Take HER `
-          + `tile — not just her guards — and your whole colony surges.`,
+        text: "A wild queen sleeps in the middle, infected with the fungus this game is "
+          + "named after. Her four guards ring her, so she cannot be reached until one of "
+          + "them falls. Take this one.",
+        enter: () => this.preselect(this.spear()),
+        rect: () => this.cellRect(this.guardCell()),
+        pad: 4,
+        advance: "signal",
+      },
+      {
+        id: "queen",
+        title: "Take the queen",
+        text: "Now she is next door. Taking HER tile — not just her guards — hands your "
+          + "whole colony a growth surge for a few turns.",
+        enter: () => this.preselect(this.doorstep()),
         rect: () => this.cellRect(this.queenCell()),
         pad: 4,
+        advance: "signal",
       },
       {
         id: "enemy",
@@ -236,16 +423,9 @@ export class MatchScreen {
         id: "hud",
         title: "The count that matters",
         text: "Your army and what it earns each turn, against the enemy's. The chip on the "
-          + "right is the Hive: when its queen wakes, taking her is worth a growth surge.",
+          + "right tracks the Hive.",
         find: () => this.root.querySelector("header"),
         pad: 2,
-      },
-      {
-        id: "ability",
-        title: "Your species ability",
-        text: "Every colony has one, drawn from what the real ant does. It is free — you "
-          + "still get your move — and then it recharges for a few turns.",
-        find: () => this.root.querySelector("#bAbility"),
       },
       {
         id: "end",
@@ -254,7 +434,8 @@ export class MatchScreen {
         find: () => this.root.querySelector("#bEnd"),
         advance: "tap",
       },
-    ];
+    );
+    return steps;
   }
 
   destroy(): void {
@@ -442,7 +623,7 @@ export class MatchScreen {
       this.opts.onAbilityCast?.("tunnel");
       this.consume(events);
       this.refreshHUD();
-      this.handOver();                       // tunnelling deliberately costs the turn
+      if (!this.touring) this.handOver();     // tunnelling deliberately costs the turn
       return;
     }
 
@@ -451,7 +632,10 @@ export class MatchScreen {
         const events = rally(this.state, at);
         if (events.length) {
           this.consume(events);
-          this.handOver();
+          // The walkthrough keeps the turn (see the move branch), so the mode has to come
+          // back by itself — `handOver` is what normally resets it.
+          if (this.touring) this.setMode("go");
+          else this.handOver();
         }
       }
       return;
@@ -657,6 +841,7 @@ export class MatchScreen {
     for (const e of events) if (e.type === "gameOver") this.endReason = e.reason;
     this.renderer.consume(events as EngineEvent[]);
     this.opts.onEvents?.(events);
+    this.tourSignals(events);
 
     // A scenario objective can settle mid-turn — a challenge that asks you to strike first
     // is decided by the first attack, not by whose nest falls.

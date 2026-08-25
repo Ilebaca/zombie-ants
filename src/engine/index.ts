@@ -12,3 +12,4 @@ export * from "./abilities";
 export * from "./hive";
 export * from "./actions";
 export * from "./state";
+export * from "./tutorial";

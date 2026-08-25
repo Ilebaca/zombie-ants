@@ -566,12 +566,34 @@ These differ from the legacy build **on purpose**. Anything else that differs is
 ## 10a. The guided tour
 
 `src/ui/tour.ts` is the first-run walkthrough, and it is one component doing both halves:
-fifteen steps across the meta screens — the currencies, the trophy road, the bar, then each
-of the four other deck screens in turn, then the three setup choices — ending on the button
-that starts a match, and eight more inside it: your nest, select it, take a tile, the Hive,
-the enemy queen, the HUD, your ability, end turn. The app owns the `Tour` and hands the same
-instance to `MatchScreen`, so there is never a second overlay and the meta walk runs
-straight into the match one.
+twelve steps across the meta screens — the currencies, the trophy road, the bar, each of the
+four other deck screens in turn, then one step per setup choice — ending on the button that
+starts a match, and thirteen more inside it, which walk the player through every action the
+game has: select, move onto empty ground, attack, the long send, rally, the species ability,
+cracking a hive guard, taking the queen, and ending the turn.
+
+**The match tour is played on an ARRANGED board** (`src/engine/tutorial.ts`). A first match
+played straight cannot teach the game: the Hive sleeps for ten turns, the enemy is a dozen
+tiles away, and five tiles of three soldiers cannot crack anything, so the walkthrough could
+only ever demonstrate "move onto empty ground". `arrangeTutorial` puts a spearhead beside the
+Hive with soldiers enough to take a guard AND the queen behind her, a supply line holding it
+to the colony, and an enemy outpost within reach — on whatever map the player picked, so it
+never contradicts their choice. It changes no rules; it decides where things START, the way a
+formation does. `src/engine/__tests__/tutorial.test.ts` plays the whole walkthrough on every
+map and each ability shape, because a step asking for something the board cannot deliver
+leaves the tutorial stuck with nothing but Skip.
+
+- **The spearhead is the one stack that can crack the queen**, so every earlier step works
+  around it: `moveSource`, `assaultSource` and `travelSource` all exclude it, and the rally
+  step gathers ONTO it. An early step that spends it strands the last two.
+- **A signal is delivered on a microtask, not inside the batch.** A step's `enter` picks a
+  tile up for the player, and the step opens the moment the previous deed resolves — in the
+  middle of the handler that resolved it. `onAbility` clears the selection after consuming
+  its events, and a rally puts the mode back the same way, so a step opened inside the batch
+  had the tile taken straight back out of its hand.
+
+The app owns the `Tour` and hands the same instance to `MatchScreen`, so there is never a
+second overlay and the meta walk runs straight into the match one.
 
 - **The dark IS the gate.** Four panels cover the screen with a hole between them, so the
   only tap that can land is the one being taught — nothing else needs disabling, because a
@@ -585,6 +607,14 @@ straight into the match one.
   of it without every screen having to know the tour exists.
 - **A step can move the app.** `enter` fires as the step opens — that is how the tour walks
   the deck to the screen it is about to explain, without the deck knowing the tour exists.
+- **A lit tab nobody can see teaches nothing.** The deck steps light the SCREEN, and the bar
+  is `lift`ed — raised above the dark and made inert for that step — so the tab for the
+  screen being explained can be seen lit under it. One hole, one raised element; a second
+  hole would need a second set of panels.
+- **A setup step lights the whole box, not the button.** Lighting only "Next →" asked the
+  player to "pick the one you want" with the picker itself in the dark. They end on `signal`
+  — the router says when the screen actually changed — so every control on the screen stays
+  live under the tour without a tap on a card marching the step on.
 - **"Look at this screen" is a step type of its own.** Four steps show a whole screen rather
   than point at a control, so the hole has to be big enough to READ — and a tap inside it
   would navigate out from under the tour. `block` puts a pane of clear glass over the hole:

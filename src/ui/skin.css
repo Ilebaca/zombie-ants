@@ -1557,3 +1557,7 @@ html, body { overscroll-behavior-x: none; }
 /* A "look at this screen" step: the screen is lit through the hole, and this pane
    over it swallows the taps that would otherwise navigate out from under the tour. */
 .tourglass { position: fixed; background: transparent; pointer-events: auto; }
+
+/* Raised out of the dark for one step — visible, and inert while it is up. The bottom
+   bar uses this so the tab being explained can be seen lit under its own screen. */
+.tourlift { z-index: 9001; pointer-events: none; }

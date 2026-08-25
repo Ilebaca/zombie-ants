@@ -59,6 +59,12 @@ export interface TourStep {
    * navigate out from under the tour. A pane of glass over the hole solves both.
    */
   block?: boolean;
+  /**
+   * Something to keep VISIBLE alongside the lit thing, without a second hole: it is raised
+   * above the dark and made inert. The bottom bar uses it, so the tab being explained can
+   * still be seen lit while the screen itself is what the hole is around.
+   */
+  lift?: () => Element | null | undefined;
 }
 
 export interface TourOptions {
@@ -94,6 +100,8 @@ export class Tour {
   private lit = false;
   /** The element the hole is currently around, so the ring can borrow its shape. */
   private node: Element | null = null;
+  /** Raised out of the dark for this step, and put back when it ends. */
+  private lifted: Element | null = null;
 
   constructor(private host: HTMLElement) {}
 
@@ -130,6 +138,7 @@ export class Tour {
   }
 
   stop(): void {
+    this.drop();
     if (this.timer !== null) { clearInterval(this.timer); this.timer = null; }
     window.removeEventListener("pointerdown", this.onPointerDown, true);
     this.wrap?.remove();
@@ -162,10 +171,17 @@ export class Tour {
     this.lit = false;
     this.hole = null;
     this.node = null;
+    this.drop();
     step.enter?.();
     this.paint(step);
     this.measure();
     this.opts.onStep?.(step, this.index);
+  }
+
+  /** Put whatever the last step raised back under the dark. */
+  private drop(): void {
+    this.lifted?.classList.remove("tourlift");
+    this.lifted = null;
   }
 
   private build(): void {
@@ -276,6 +292,12 @@ export class Tour {
 
     const spot = this.spotOf(step);
     this.hole = spot;
+
+    const lift = step.lift?.() ?? null;
+    if (lift !== this.lifted) {
+      this.drop();
+      if (lift) { lift.classList.add("tourlift"); this.lifted = lift; }
+    }
     if (spot) this.lit = true;
 
     const w = window.innerWidth, h = window.innerHeight;

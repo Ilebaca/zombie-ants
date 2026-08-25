@@ -6,7 +6,7 @@
  * through `onExit`.
  */
 import {
-  MAPS, SPECIES, START_SHAPES, armyOf, createGame,
+  MAPS, SPECIES, START_SHAPES, armyOf, arrangeTutorial, createGame,
 } from "../engine";
 import type { EngineEvent, GameOverReason, MapId, Player, SpeciesId } from "../engine";
 import type { Difficulty } from "../ai/search";
@@ -152,6 +152,9 @@ export class App {
       text,
       enter: () => this.slideTo(id, this.deckShowing),
       find: find(`.slide[data-slide="${id}"] ${inner}`),
+      // The bar is raised with it: the tab for the screen being explained is already lit,
+      // and a lit tab nobody can see teaches nothing about where they are.
+      lift: () => document.getElementById("mainNav"),
       block: true,
       pad: 4,
     });
@@ -207,44 +210,35 @@ export class App {
         find: find("#goPlay"),
         advance: "tap",
       },
+      // One step per setup screen, lighting the WHOLE box. Lighting only the Next button
+      // asked the player to "pick the one you want" with the picker itself in the dark;
+      // these advance when the screen actually changes, not on the first tap inside.
       {
         id: "map",
         title: "The board",
         text: "Bigger boards mean longer matches and a Hive that wakes later. Skirmish is "
-          + "the quickest.",
-        find: find("#mapPick"),
-      },
-      {
-        id: "mapnext",
-        text: "Pick the one you want, then tap Next.",
-        find: find("#mapNext"),
-        advance: "tap",
+          + "the quickest. Pick one, then tap Next.",
+        find: find("#mapsel .setupbox"),
+        advance: "signal",
+        pad: 4,
       },
       {
         id: "species",
         title: "Your colony",
-        text: "Leafcutters farm fungus, fire ants sting in a swarm, carpenters tunnel. "
-          + "The ability is the species.",
-        find: find("#pick"),
-      },
-      {
-        id: "specnext",
-        text: "Choose a colony, then tap Next.",
-        find: find("#toFormation"),
-        advance: "tap",
+        text: "Leafcutters farm fungus, fire ants sting in a swarm, carpenters tunnel. The "
+          + "ability is the species. Choose one, then tap Next.",
+        find: find("#start .setupbox"),
+        advance: "signal",
+        pad: 4,
       },
       {
         id: "shape",
         title: "Your opening",
         text: "Where your first five tiles sit in the corner. A wedge pushes out, a wall "
-          + "holds ground.",
-        find: find("#shapePick"),
-      },
-      {
-        id: "begin",
-        text: "That is the setup. Tap it and the match begins.",
-        find: find("#begin"),
-        advance: "tap",
+          + "holds ground. Pick one and begin — I will walk you through the first turn.",
+        find: find("#formation .setupbox"),
+        advance: "signal",
+        pad: 4,
       },
     ];
   }
@@ -252,6 +246,12 @@ export class App {
   /* --------------------------------------------------------------------- ROUTER */
 
   private show(id: ScreenId): void {
+    // The setup steps end when the player LEAVES the screen they are about, so the whole
+    // screen can stay live under the tour rather than only its Next button.
+    if (this.tour.running) {
+      if (id === "start") this.tour.signal("map");
+      else if (id === "formation") this.tour.signal("species");
+    }
     this.clearMatch();
     this.clearOverlay();
     this.closeMenu();
@@ -744,6 +744,10 @@ export class App {
   /* ---------------------------------------------------------------------- MATCH */
 
   private startMatch(): void {
+    if (this.tour.running) this.tour.signal("shape");
+    // Whether this match is the tutorial one, decided once: the board is arranged for it
+    // and the match screen runs the walkthrough on it.
+    const tutorial = this.profile.get().tourSeen < TOUR_VERSION;
     // "Play again" comes straight back here, so tear the old match down first — otherwise
     // its render loop and timers keep running behind the new one.
     this.clearMatch();
@@ -766,6 +770,11 @@ export class App {
       seed: (Date.now() ^ (Math.random() * 0xffffffff)) | 0,
     });
 
+    // A first match played straight cannot teach the game: the Hive sleeps for ten turns
+    // and five tiles of three soldiers cannot crack anything. The tutorial is played on an
+    // arranged board where every lesson is available on turn one.
+    if (tutorial) arrangeTutorial(state);
+
     this.profile.update((p) => {
       p.lastMap = this.choices.map;
       p.lastSpecies = this.choices.species;
@@ -784,7 +793,7 @@ export class App {
       map: this.choices.map,
       // The meta walk ends on the button that got us here, so the match picks the tutorial
       // up and finishes it. A player who skipped has `tourSeen` written already.
-      tutorial: this.profile.get().tourSeen < TOUR_VERSION,
+      tutorial,
       tour: this.tour,
       onTutorialDone: () => this.tutorialSeen(),
       onAbilityCast: (kind) => {
