@@ -1851,3 +1851,21 @@ button:not(.playbtn):active,
   border: 0;
   box-shadow: none;
 }
+
+/* ------------------------------------------------------- THE ROAD'S FOOTER
+   The card carrying the trophy count and the pass sat at the END of the
+   ladder, fifty chapters down — so the one line telling the player where
+   they stand was the one thing they had to go looking for. It sticks to
+   the bottom of the view instead. It is still the last child of the
+   scroller, so nothing hides behind it at the end of the list. */
+.achbody > .roadhead {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  background: var(--panel);
+}
+
+/* The rail's track was see-through, so an empty bar showed the artwork
+   through it and read as a hole rather than as nothing earned yet. */
+.troadbar .tr-bar { background: var(--panel-edge); }
