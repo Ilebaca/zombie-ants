@@ -19,9 +19,24 @@ const buildStamp = (): string => {
   }
 };
 
+const STAMP = buildStamp();
+
 export default defineConfig({
   base: "./",                    // relative paths so the build works in a Capacitor shell
-  define: { __BUILD__: JSON.stringify(buildStamp()) },
+  define: { __BUILD__: JSON.stringify(STAMP) },
+  plugins: [{
+    // The same stamp, as a file the running app can ask for. Pages caches the HTML, so a
+    // device can sit on the previous bundle for minutes after a deploy; this is what lets
+    // the app notice and take the new one (src/platform/freshness.ts).
+    name: "zombie-ants:version-file",
+    generateBundle() {
+      this.emitFile({
+        type: "asset",
+        fileName: "version.json",
+        source: JSON.stringify({ build: STAMP }),
+      });
+    },
+  }],
   build: { outDir: "dist", target: "es2020" },
   test: {
     globals: true,

@@ -409,6 +409,15 @@ Anything that asks "is this a hive tile?" almost always means "is this the NEUTR
 cached page and a real bug look identical from the outside; reading the commit off the
 screen settles which one it is in one line.
 
+**And the app takes a newer build by itself.** Pages serves the HTML with its own cache
+lifetime, so a device can sit on the previous bundle for minutes after a deploy — which
+reads as a fix that did not work. The build writes `version.json` beside the bundle;
+`platform/freshness.ts` reads it on boot with the cache bypassed and, if it names another
+build, reloads onto `?v=<commit>` — the query is what makes the browser fetch the HTML
+again instead of handing back the copy it has. It reloads at most ONCE per version
+(remembered in `sessionStorage`): a cache that ignores the query too would otherwise spin
+for ever, which is far worse than being one version behind.
+
 ## 6. Testing
 
 `npm test` runs Vitest. **Run it before saying a change works.**
