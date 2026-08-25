@@ -25,6 +25,11 @@ Grounded in real ant biology: nine real species whose real behaviours are their 
 Milan — **not a developer**. He directs the design, reviews the result, and sends short
 corrections. He does not read long explanations and does not want to run complex tooling.
 
+**Always end a deploy with the link.** Every time you push to `main` and the build goes
+out, give him https://ilebaca.github.io/zombie-ants/ in the reply — he opens it on a phone
+and should never have to ask for it or scroll back to find it. Say which build went out
+(Settings shows the same stamp), so a cached page is obvious.
+
 **How to work with him:**
 - **Keep answers very short.** A few lines. No walls of text, no essays of caveats.
 - He will describe problems in plain language ("veins look wrong", "AI is too passive").
