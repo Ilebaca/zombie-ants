@@ -150,3 +150,73 @@ describe("travel", () => {
     }
   });
 });
+
+/**
+ * A LOOP IS NOT AN ANCHOR.
+ *
+ * The dangling rule is local: it asks each vein how many same-owner neighbours it has. A
+ * closed ring answers "two" for ever, so a loop cut off from its colony by a barrage stood
+ * on the board permanently — ground that produced nothing, defended nothing, and had to be
+ * cleared one tile at a time. Reported from a real match, where venom severed the trail
+ * that held one.
+ */
+describe("veins cut off from the colony", () => {
+  /** A 2×2 ring of veins, and a colony somewhere else entirely. */
+  const looseRing = () => {
+    const s = blankGame();
+    put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 20 });
+    for (const [c, r] of [[5, 5], [6, 5], [5, 6], [6, 6]] as const) {
+      put(s, c, r, { owner: "you", struct: "vein", soldiers: 0 });
+    }
+    recomputeConnectivity(s);
+    return s;
+  };
+
+  it("destroys a ring that reaches no captured tile", () => {
+    const s = looseRing();
+    // Every vein in the ring has two same-owner neighbours, so the anchor rule alone is
+    // satisfied by all four of them.
+    pruneAllVeins(s);
+    for (const [c, r] of [[5, 5], [6, 5], [5, 6], [6, 6]] as const) {
+      expect(tile(s, c, r).owner, `the ring survived at ${c},${r}`).toBeNull();
+      expect(tile(s, c, r).struct).toBeNull();
+    }
+    expect(tile(s, 1, 1).owner, "the colony is never touched by this").toBe("you");
+  });
+
+  it("keeps a ring that is still joined to the colony", () => {
+    const s = looseRing();
+    // A stable beside the ring: redundant infrastructure is legal, and useful.
+    put(s, 4, 5, { owner: "you", struct: "stable", soldiers: 4 });
+    recomputeConnectivity(s);
+    pruneAllVeins(s);
+    for (const [c, r] of [[5, 5], [6, 5], [5, 6], [6, 6]] as const) {
+      expect(tile(s, c, r).struct, `the ring lost ${c},${r}`).toBe("vein");
+    }
+  });
+
+  it("takes the whole thing when the tile holding it up is lost", () => {
+    const s = looseRing();
+    put(s, 4, 5, { owner: "you", struct: "stable", soldiers: 4 });
+    recomputeConnectivity(s);
+    pruneAllVeins(s);
+
+    // The enemy takes the one captured tile the ring hung from.
+    put(s, 4, 5, { owner: "ai", struct: "stable", soldiers: 4 });
+    pruneAllVeins(s);
+    for (const [c, r] of [[5, 5], [6, 5], [5, 6], [6, 6]] as const) {
+      expect(tile(s, c, r).owner, `${c},${r} outlived its anchor`).toBeNull();
+    }
+  });
+
+  it("leaves a trail that still ends on a captured tile", () => {
+    const s = blankGame();
+    put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 20 });
+    for (const c of [2, 3, 4]) put(s, c, 1, { owner: "you", struct: "vein", soldiers: 0 });
+    put(s, 5, 1, { owner: "you", struct: "stable", soldiers: 6 });
+    recomputeConnectivity(s);
+
+    pruneAllVeins(s);
+    for (const c of [2, 3, 4]) expect(tile(s, c, 1).struct, `vein at ${c}`).toBe("vein");
+  });
+});

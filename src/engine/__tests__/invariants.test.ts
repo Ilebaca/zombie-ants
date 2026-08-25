@@ -33,6 +33,9 @@ function faults(s: GameState): string[] {
     if (!t.owner && t.soldiers > 0 && !isHiveTerrain(t)) bad.push(`${at} is unowned but garrisoned`);
     if (t.terrain === "blocked" && t.owner) bad.push(`${at} is a rock somebody owns`);
     if (t.struct === "vein" && t.owner && anchors(s, t) < 2) bad.push(`${at} is a vein standing on nothing`);
+    // A ring of veins satisfies the anchor count for ever, so the count alone cannot tell
+    // a supply line from a loop floating in the middle of the board.
+    if (t.struct === "vein" && t.owner && !holdsUp(s, t)) bad.push(`${at} is a vein reaching no colony`);
   }
   for (const p of ["you", "ai"] as const) {
     const fresh = connectedSet(s, p);
@@ -45,6 +48,30 @@ function faults(s: GameState): string[] {
     bad.push("a dead queen still has a garrison");
   }
   return bad;
+}
+
+/**
+ * §4.5, the other half: a vein has to be able to WALK to a captured tile of its own
+ * colony. Veins hold each other up in a loop, so only a stable or a nest counts as ground.
+ */
+function holdsUp(s: GameState, t: Tile): boolean {
+  const owner = t.owner;
+  if (!owner) return true;
+  const seen = new Set<string>([`${t.c},${t.r}`]);
+  const queue: Tile[] = [t];
+  while (queue.length) {
+    const cur = queue.pop() as Tile;
+    for (const nb of neighbours(s, cur)) {
+      if (nb.owner !== owner) continue;
+      if (nb.struct === "stable" || nb.struct === "nest") return true;
+      if (nb.struct !== "vein") continue;
+      const k = `${nb.c},${nb.r}`;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      queue.push(nb);
+    }
+  }
+  return false;
 }
 
 /** §4.5: a vein needs two same-owner colony neighbours or the trail prunes. */

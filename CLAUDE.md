@@ -95,9 +95,16 @@ These were each decided deliberately, several after bugs. Changing one silently 
    so the damage arithmetic can never bite it, and it has to be a special case or the
    barrage falls straight through the thing most worth hitting.
 
-5. **Dangling veins prune.** A vein needs ≥2 same-owner colony neighbours. When it loses an
-   anchor the trail is destroyed back to the nearest captured tile. Junctions survive: only
-   the genuinely dead branch prunes.
+5. **Dangling veins prune, and so do stranded ones.** Two rules, because one was not
+   enough. A vein needs ≥2 same-owner colony neighbours: when it loses an anchor the trail
+   is destroyed back to the nearest captured tile, junctions surviving because they keep
+   two or more. But that rule is LOCAL, and a closed ring satisfies it for ever — every
+   vein in a loop has two vein neighbours. A barrage that severed the trail holding one
+   left it standing permanently: ground that produced nothing, defended nothing, and had to
+   be cleared a tile at a time. So a vein must also be able to REACH a captured tile of its
+   own colony through same-owner tiles. A trail always can, because a trail ends at one; a
+   floating loop never can. Only a stable or a nest counts as ground — start the walk from
+   veins as well and a loop holds itself up again.
 
 6. **Veins are infrastructure, not tiles.** They produce nothing, cannot be a Rally target,
    and are skipped by Fortify. Troops landing on a vein promote it to a stable.
