@@ -2007,3 +2007,9 @@ button:not(.playbtn):active,
   .card.result { padding: 18px 14px 14px; }
   .payout .payv b { font-size: 17px; }
 }
+
+/* The card carries its own `width: min(520px, 94vw)` from the legacy sheet, which on a
+   390px phone is 367px — inside a wrapper that is 358px and centred. So it started at the
+   wrapper's left edge and hung 9px off the right: 16px of margin on one side, 7 on the
+   other. It fills the wrapper instead, and the wrapper is what does the centring. */
+.overModalWrap > .card { width: 100%; }
