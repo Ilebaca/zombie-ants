@@ -1821,3 +1821,20 @@ button:not(.playbtn):active,
   margin: 8px 14px 0;
 }
 .troadbar .tr-bar { background: rgba(255, 255, 255, .14); }
+
+/* ======================================================================
+   NO SCROLLBARS
+   Several panels scroll — the shop, the anthill, the antarium, the trophy
+   road — and each of them drew a bar down its edge. On a phone a
+   scrollbar is chrome nobody asked for: the content moving IS the
+   feedback. Scrolling is untouched; only the bar is gone.
+   ====================================================================== */
+* {
+  scrollbar-width: none;              /* Firefox */
+  -ms-overflow-style: none;           /* old Edge */
+}
+*::-webkit-scrollbar {                /* Chromium, Safari, every phone */
+  width: 0;
+  height: 0;
+  display: none;
+}
