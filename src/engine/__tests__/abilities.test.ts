@@ -3,7 +3,7 @@ import { blankGame, put } from "./helpers";
 import {
   NEUTRAL_MODS, PERMANENT, activateAbility, abilityCooldown, allTiles, createGame,
   moveOrAttack, defaultContext, recomputeConnectivity, snapshot, restore, startTurn, tile,
-  addEffect, tunnelTargets,
+  addEffect, tunnelTargets, hiveCells, setHiveDefence, abilitySpendsTurn,
 } from "../index";
 import type { GameState, PlayerMods, SpeciesId } from "../index";
 
@@ -153,6 +153,51 @@ describe("swarm (Army Ant)", () => {
     expect(tile(s, 3, 1).owner).toBe("you");          // eaten, it bordered us
     expect(tile(s, 4, 1).owner).toBe("ai");           // untouched — it did not border us at cast time
     expect(tile(s, 5, 1).owner).toBe("ai");
+  });
+
+  /**
+   * A vein holds no garrison, so a percentage of it is a percentage of nothing — the bite
+   * fell straight through the one thing on the board that cannot defend itself (§4.4).
+   */
+  it("destroys an enemy vein outright", () => {
+    const s = withSpecies("army");
+    put(s, 1, 1, { owner: "you", struct: "stable", soldiers: 20 });
+    const vein = put(s, 2, 1, { owner: "ai", struct: "vein", soldiers: 0 });
+    recomputeConnectivity(s);
+
+    activateAbility(s, "you", mods());
+    expect(vein.owner).toBeNull();
+    expect(vein.struct).toBeNull();
+  });
+
+  it("eats a wild garrison, and claims the ground when it finishes it", () => {
+    const s = withSpecies("army");
+    put(s, 1, 1, { owner: "you", struct: "stable", soldiers: 20 });
+    const wild = put(s, 2, 1, { owner: null, guard: 12 });
+    recomputeConnectivity(s);
+
+    activateAbility(s, "you", mods());
+    expect(wild.guard).toBeLessThan(12);
+  });
+
+  /**
+   * The surge is a contest that has to be walked into (§4.7). Claiming her here would grant
+   * it from an ability and skip the capture path entirely.
+   */
+  it("bites the neutral hive without ever taking it", () => {
+    const s = blankGame("small", { you: "army", ai: "fire" });
+    s.current = "you"; s.cooldown.you = 0;
+    s.hive.phase = "awake"; s.hive.awokeTurn = 1; s.turn = 6;
+    setHiveDefence(s);
+    const cell = hiveCells(s).find((t) => t.terrain === "hiveG") as { c: number; r: number };
+    const before = tile(s, cell.c, cell.r).soldiers;
+    put(s, cell.c - 1, cell.r, { owner: "you", struct: "stable", soldiers: 20 });
+    recomputeConnectivity(s);
+
+    activateAbility(s, "you", mods());
+    const t = tile(s, cell.c, cell.r);
+    expect(t.soldiers).toBeLessThan(before);
+    expect(t.owner, "the swarm walked off with the hive").toBeNull();
   });
 
   it("never bites a nest", () => {
@@ -512,6 +557,17 @@ describe("abilities never break the board", () => {
         if (t.owner === null) expect(t.soldiers).toBe(0);
         else expect(t.struct).not.toBeNull();
       }
+    }
+  });
+
+  /**
+   * Tunnelling is the one exception, and the rule lives in the engine so that the screen and
+   * the AI cannot disagree about it.
+   */
+  it("names tunnelling as the one ability that costs the turn", () => {
+    expect(abilitySpendsTurn("tunnel")).toBe(true);
+    for (const kind of ["bud", "leaf", "fire", "swarm", "spread", "fortify", "venom", "flee"] as const) {
+      expect(abilitySpendsTurn(kind), `${kind} started costing the turn`).toBe(false);
     }
   });
 

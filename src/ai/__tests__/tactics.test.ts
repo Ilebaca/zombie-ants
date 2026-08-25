@@ -261,3 +261,41 @@ describe("the ladder", () => {
     }
   }, 60000);
 });
+
+/**
+ * AN ABILITY THAT COSTS THE TURN.
+ *
+ * Tunnelling lands five workers anywhere on the board — that IS the move. The AI used to
+ * cast it and then still take a move, so a digging colony got two actions a turn where
+ * every other species gets one. The player's screen has always ended the turn on a dig;
+ * this is the other half of the same rule.
+ */
+describe("tunnelling", () => {
+  const digger = () => {
+    const s = blankGame("small", { you: "fire", ai: "ghost" });
+    put(s, 6, 6, { owner: "ai", struct: "nest", soldiers: 20 });
+    put(s, 5, 6, { owner: "ai", struct: "stable", soldiers: 12 });
+    put(s, 4, 6, { owner: "you", struct: "stable", soldiers: 2 });
+    put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
+    s.cooldown.ai = 0;
+    recomputeConnectivity(s);
+    return s;
+  };
+
+  it("digs instead of moving, never both", () => {
+    const s = digger();
+    const events = aiTurn(s, "ai", "normal", ctx);
+    expect(events.some((e) => e.type === "tunnelDug"), "it did not dig at all").toBe(true);
+    const moved = events.some((e) => e.type === "move" || e.type === "travel"
+      || e.type === "combat" || e.type === "rally");
+    expect(moved, "it dug AND marched — two actions in one turn").toBe(false);
+  });
+
+  it("still takes its move on a turn it cannot dig", () => {
+    const s = digger();
+    s.cooldown.ai = 3;                                  // recharging: no dig this turn
+    const events = aiTurn(s, "ai", "normal", ctx);
+    expect(events.some((e) => e.type === "tunnelDug")).toBe(false);
+    expect(events.length, "it did nothing at all").toBeGreaterThan(0);
+  });
+});

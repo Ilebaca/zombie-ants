@@ -3,7 +3,7 @@ import {
   attackMultiplier, defenceMultiplier, fight, flatDefence,
   endTurn,
   snapshot, restore,
-  abilityOf, abilityReady, activateAbility, frontline, onEnemyHalf,
+  abilityOf, abilityReady, abilitySpendsTurn, activateAbility, frontline, onEnemyHalf,
 } from "../engine";
 import type {
   ActionContext, Coord, EngineEvent, GameState, Player, PlayerMods,
@@ -377,12 +377,16 @@ export function aiTurn(
   const profile = PROFILES[difficulty];
   const events: EngineEvent[] = [];
 
-  // An ability is a free extra action, so fire it first and still take a move afterwards.
+  // An ability is a free extra action, so fire it first and still take a move afterwards —
+  // unless it is one that spends the turn, and then the cast IS the move.
   // The AI runs on NEUTRAL_MODS — it never gets research scaling (CLAUDE.md §4.8).
   if (abilityReady(state, me) && shouldCast(state, me, ctx, profile)) {
     state.current = me;
-    events.push(...activateAbility(state, me, ctx.mods[me]));
+    const cast = activateAbility(state, me, ctx.mods[me]);
+    events.push(...cast);
     if (state.over) return events;
+    // An ability that returned nothing did not fire (CLAUDE.md §5), so it costs nothing.
+    if (cast.length && abilitySpendsTurn(abilityOf(state, me).kind)) return events;
   }
 
   const decision = chooseMove(state, me, difficulty, ctx);

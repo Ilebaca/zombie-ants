@@ -91,9 +91,18 @@ These were each decided deliberately, several after bugs. Changing one silently 
    wall is still ground you may surface on.
 
 4. **Veins have no defence.** Attacking an enemy vein captures it instantly — no combat, no
-   losses. It becomes a stable. **Venom destroys one outright** — a vein holds no garrison,
-   so the damage arithmetic can never bite it, and it has to be a special case or the
-   barrage falls straight through the thing most worth hitting.
+   losses. It becomes a stable. **Anything that deals damage destroys one outright** — a vein
+   holds no garrison, so a percentage of it is a percentage of nothing, and without a special
+   case the hit falls straight through the thing most worth hitting. That is one function,
+   `strike()` in `effects.ts`, and every damaging ability goes through it: venom, wildfire and
+   the Army Ant's bite. Each of them had its own arithmetic somewhere else in the file once,
+   which is exactly how veins ended up immune to two of the three.
+   - **And damage does not ask whose tile it is.** A wild garrison and the NEUTRAL hive take
+     it the same way a colony does. `strike` never stops at one either: a rounding rule that
+     could not take the last soldier left wild guards and hive tiles sitting at 1 for ever.
+     The one-soldier floor (§4.9) is about what you may SPEND, not about what can be killed.
+   - Emptying the queen does not hand her over: the surge is a contest that has to be walked
+     into (§4.7), so an ability may soften her and never claim her.
 
 5. **Dangling veins prune, and so do stranded ones.** Two rules, because one was not
    enough. A vein needs ≥2 same-owner colony neighbours: when it loses an anchor the trail
@@ -151,6 +160,12 @@ These were each decided deliberately, several after bugs. Changing one silently 
    stops the match itself rather than waiting for the engine to.
 
 9. **A tile always keeps a floor of 1 soldier** (5 on a tunnel mouth). You can never empty one.
+
+10. **An ability is a free extra action — except one that spends the turn.** Tunnelling lands
+   five workers anywhere on the board, which IS the move: a digging colony that could plant a
+   beachhead behind the line and then still play its turn got two actions where every other
+   species gets one. `abilitySpendsTurn()` in the engine owns the rule so the screen and the
+   AI cannot disagree about it — `aiTurn` used to cast and march in the same turn.
 
 10. **The AI gets no anthill upgrades and no research.** It competes on decision quality only,
    so player progression never becomes mandatory.

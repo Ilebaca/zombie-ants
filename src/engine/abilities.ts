@@ -1,8 +1,8 @@
 /**
  * The nine species abilities.
  *
- * An ability is a free extra action: it does NOT consume the turn (except Tunnelling, which
- * the UI ends the turn on deliberately), and it goes on cooldown only if it actually fired.
+ * An ability is a free extra action: it does NOT consume the turn — except Tunnelling, which
+ * does (`abilitySpendsTurn`, CLAUDE.md §4.10) — and it goes on cooldown only if it fired.
  * Every one returns EngineEvent[] like any other action — the engine still never animates.
  *
  * Scatter effects use the seeded generator on GameState, never `Math.random()`, so search
@@ -13,7 +13,7 @@ import {
   allTiles, isHiveTerrain, neighbours, nestTile, otherPlayer, tileAt,
 } from "./board";
 import { isConnected, pruneAllVeins, recomputeConnectivity } from "./connectivity";
-import { addEffect, effectAt } from "./effects";
+import { addEffect, effectAt, garrisonOf, strike } from "./effects";
 import { speciesOf } from "./species";
 import { shuffle } from "./random";
 import { PERMANENT } from "./types";
@@ -53,6 +53,17 @@ export const abilityOf = (state: GameState, p: Player): Ability =>
 export function abilityReady(state: GameState, p: Player): boolean {
   return state.cooldown[p] <= 0 && !state.over;
 }
+
+/**
+ * Does casting this cost the turn?
+ *
+ * An ability is normally a free extra action. Tunnelling is the exception: it lands five
+ * workers on any empty tile on the board, which IS the move — a colony that could dig a
+ * beachhead behind the enemy line and then still play its turn was getting two moves where
+ * every other species gets one. The rule lives here rather than in the screen because the
+ * AI has to obey it as well, and it used to cast and march in the same turn.
+ */
+export const abilitySpendsTurn = (kind: Ability["kind"]): boolean => kind === "tunnel";
 
 /* --------------------------------------------------------------- HELPERS */
 
@@ -274,7 +285,12 @@ function castFire(state: GameState, p: Player, mods: PlayerMods, events: EngineE
 }
 
 /**
- * Army Ant — bordering enemy garrisons are devoured into the colony.
+ * Army Ant — bordering garrisons are devoured into the colony.
+ *
+ * It eats whatever is standing next to it, not only the enemy: a wild guard and the neutral
+ * hive are meat as well, and an enemy VEIN is destroyed outright — it holds no garrison, so
+ * a percentage of it is a percentage of nothing and the bite fell straight through the one
+ * thing on the board that cannot defend itself (CLAUDE.md §4.4).
  *
  * Targets are snapshotted at cast time. Resolving while mutating let a tile captured by
  * the bite seed new targets, and the swarm cascaded across the whole map (CLAUDE.md §5).
@@ -284,24 +300,43 @@ function castSwarm(state: GameState, p: Player, mods: PlayerMods, events: Engine
   const targets: Array<{ from: Tile; into: Tile }> = [];
 
   for (const t of allTiles(state)) {
-    if (t.owner !== enemy || t.struct === "nest" || t.soldiers <= 0) continue;
+    if (t.struct === "nest" || t.terrain === "blocked") continue;    // bases are immune
+    const vein = t.owner === enemy && t.struct === "vein";
+    const meat = (t.owner === enemy || t.owner === null) && garrisonOf(t) > 0;
+    if (!vein && !meat) continue;
     const into = neighbours(state, t).find((n) => n.owner === p && n.struct !== "nest");
     if (into) targets.push({ from: t, into });
   }
 
   for (const { from, into } of targets) {
-    const bite = Math.max(1, Math.round(from.soldiers * Math.min(0.50, 0.15 * power(mods))));
-    from.soldiers -= bite;
-    into.soldiers += bite;
+    const previous = from.owner;
+    // "Is this a hive tile?" nearly always means "is this the NEUTRAL hive?" (CLAUDE.md §5a).
+    const wildHive = !from.owner && isHiveTerrain(from);
+    const had = garrisonOf(from);
+    const bite = Math.max(1, Math.round(had * Math.min(0.50, 0.15 * power(mods))));
+    const hit = strike(from, bite);
+
+    if (previous && !hit.lost && hit.wiped) {                        // a vein: nothing to eat
+      events.push({ type: "veinPruned", at: { c: from.c, r: from.r }, owner: previous });
+      continue;
+    }
+    if (!hit.lost) continue;
+
+    into.soldiers += hit.lost;                                       // devoured, not just killed
     events.push({
       type: "devoured",
-      at: { c: from.c, r: from.r }, into: { c: into.c, r: into.r }, owner: p, count: bite,
+      at: { c: from.c, r: from.r }, into: { c: into.c, r: into.r }, owner: p, count: hit.lost,
     });
-    if (from.soldiers <= 0) {
+    /*
+     * Emptying the queen does NOT hand her over. The surge is a contest that has to be
+     * walked into (§4.7) — claiming her here would grant it from an ability, and skip the
+     * whole capture path.
+     */
+    if (hit.wiped && !wildHive) {
       from.owner = p;
       from.soldiers = 1;
       promote(from);
-      events.push({ type: "capture", at: { c: from.c, r: from.r }, owner: p, from: "R", previous: enemy });
+      events.push({ type: "capture", at: { c: from.c, r: from.r }, owner: p, from: "R", previous });
     }
   }
   return targets.length > 0;

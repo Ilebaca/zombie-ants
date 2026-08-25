@@ -192,3 +192,55 @@ describe("wildfire and the hive", () => {
     expect(t.owner).toBe("you");
   });
 });
+
+/**
+ * DAMAGE DOES NOT STOP AT ONE, AND DOES NOT ASK WHOSE TILE IT IS.
+ *
+ * A barrage that only ever hurt the enemy colony was a barrage the wild guards and the
+ * sleeping queen sat out — and a rounding rule that could never take the last soldier left
+ * them at 1 forever, which is not a floor anyone designed (CLAUDE.md §4.9 is about what you
+ * may SPEND, not about what can be killed).
+ */
+describe("venom lands on whatever it was scattered over", () => {
+  it("bleeds a wild garrison", () => {
+    const s = blankGame("small");
+    const wild = put(s, 1, 1, { owner: null, guard: 10 });
+    addEffect(s, 1, 1, "venom", "you", 3);
+
+    tickEffects(s, "you", { ...NEUTRAL_MODS });
+    expect(wild.guard).toBeLessThan(10);
+  });
+
+  it("bleeds the neutral hive", () => {
+    const s = blankGame("small");
+    s.hive.phase = "awake"; s.hive.awokeTurn = 1; s.turn = 6;
+    setHiveDefence(s);
+    const cell = hiveCells(s).find((t) => t.terrain === "hiveG") as { c: number; r: number };
+    const before = tile(s, cell.c, cell.r).soldiers;
+    addEffect(s, cell.c, cell.r, "venom", "you", 3);
+
+    tickEffects(s, "you", { ...NEUTRAL_MODS });
+    expect(tile(s, cell.c, cell.r).soldiers).toBeLessThan(before);
+  });
+
+  it("takes the last guard rather than leaving one standing forever", () => {
+    const s = blankGame("small");
+    const wild = put(s, 1, 1, { owner: null, guard: 3 });
+    addEffect(s, 1, 1, "fire", "you", 9);
+
+    for (let i = 0; i < 9 && wild.guard > 0; i++) tickEffects(s, "you", { ...NEUTRAL_MODS });
+    expect(wild.guard, "a rounding rule left the last guard immortal").toBe(0);
+  });
+
+  it("leaves a hive tile its own colony is holding alone", () => {
+    const s = blankGame("small");
+    s.hive.phase = "awake"; s.hive.awokeTurn = 1; s.turn = 6;
+    setHiveDefence(s);
+    const cell = hiveCells(s).find((t) => t.terrain === "hiveG") as { c: number; r: number };
+    put(s, cell.c, cell.r, { owner: "you", struct: "stable", soldiers: 4 });
+    addEffect(s, cell.c, cell.r, "venom", "you", 3);
+
+    tickEffects(s, "you", { ...NEUTRAL_MODS });
+    expect(tile(s, cell.c, cell.r).soldiers, "it poisoned its own garrison").toBe(4);
+  });
+});

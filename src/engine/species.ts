@@ -10,7 +10,7 @@ export const SPECIES: Record<SpeciesId, Species> = {
     blurb: "Stealth over strength. Strikes unseen.",
     trait: "Pheromone mask — soldier counts hidden until contact.",
     ability: { name: "Tunnelling", kind: "tunnel", cooldown: 5, startSpent: true,
-      desc: "Dig a hidden gallery to an empty tile deep in the field. The tunnel mouth is yours instantly with 5 workers, stays linked to the colony even when surrounded, and you can Rally to it or expand from it like any tile. It must always hold 5 workers." },
+      desc: "Dig a hidden gallery to an empty tile deep in the field. The tunnel mouth is yours instantly with 5 workers, stays linked to the colony even when surrounded, and you can Rally to it or expand from it like any tile. It must always hold 5 workers. Digging costs your turn." },
   },
   pharaoh: {
     id: "pharaoh", name: "Pharaoh Ant", atk: 0.99, def: 1.12, prod: 1.25,
@@ -38,7 +38,7 @@ export const SPECIES: Record<SpeciesId, Species> = {
     blurb: "Nomadic raider. Lives to attack.",
     trait: "Bivouac — a devouring column.",
     ability: { name: "Feeding Swarm", kind: "swarm", cooldown: 6,
-      desc: "Bordering enemy tiles lose 15% of their troops — devoured and added to your colony. Only tiles touching your colony at cast time are eaten." },
+      desc: "Bordering tiles lose 15% of their troops — devoured and added to your colony. Enemy veins are destroyed, wild garrisons and the Hive are eaten too. Only tiles touching your colony at cast time." },
   },
   weaver: {
     id: "weaver", name: "Weaver Ant", atk: 1.07, def: 1.04, prod: 1.0,

@@ -8,7 +8,8 @@
 import {
   MAPS, actionTargets, canActFrom, endTurn, incomeOf, armyOf, moveOrAttack,
   rally, speciesOf, surrender, tileAt, travel, distance, isConnected,
-  abilityReady, activateAbility, sparePool, tunnelTargets, endByObjective, nestTile,
+  abilityReady, abilitySpendsTurn, activateAbility, sparePool, tunnelTargets,
+  endByObjective, nestTile,
   tilesOwnedBy, allTiles, neighbours,
 } from "../engine";
 import type {
@@ -623,7 +624,11 @@ export class MatchScreen {
       this.opts.onAbilityCast?.("tunnel");
       this.consume(events);
       this.refreshHUD();
-      if (!this.touring) this.handOver();     // tunnelling deliberately costs the turn
+      // Tunnelling spends the turn — `abilitySpendsTurn` in the engine owns that rule, and
+      // the AI obeys the same one. The walkthrough keeps the turn, as everywhere else here.
+      if (!this.touring && abilitySpendsTurn(speciesOf(this.state.species.you).ability.kind)) {
+        this.handOver();
+      }
       return;
     }
 

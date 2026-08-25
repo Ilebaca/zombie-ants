@@ -1,7 +1,10 @@
 import { isHiveTerrain, otherPlayer, tileAt } from "./board";
 import { recomputeConnectivity } from "./connectivity";
 import { PERMANENT } from "./types";
-import type { EngineEvent, GameState, Player, PlayerMods, TileEffect } from "./types";
+import type { EngineEvent, GameState, Player, PlayerMods, Tile, TileEffect } from "./types";
+
+/** Soldiers a venom cloud takes off a tile each turn, before the victim's research. */
+export const VENOM_BITE = 7;
 
 /** Metapleural Gland softens fire, venom and hive damage by 5% per level. */
 export const glandCut = (mods: PlayerMods): number => Math.max(0.25, 1 - mods.gland * 0.05);
@@ -20,6 +23,65 @@ export function effectAt(state: GameState, c: number, r: number, kind: TileEffec
   return state.effects.find((e) => e.c === c && e.r === r && e.kind === kind);
 }
 
+export interface Hit {
+  /** Soldiers actually taken off the tile. */
+  lost: number;
+  /** The tile lost everything it had: a colony gave it up, a garrison is gone. */
+  wiped: boolean;
+}
+
+/**
+ * WHERE DAMAGE LANDS. Every ability that hurts a tile comes through here.
+ *
+ * One function because the tile can be four different things, and each of them was getting
+ * its own arithmetic somewhere else in the file — which is how veins ended up immune to
+ * everything, and how a wild garrison of one soldier ended up immortal.
+ *
+ *  - A VEIN dies outright. It holds no garrison at all, so a percentage of it is a
+ *    percentage of nothing and the hit fell straight through the one thing on the board
+ *    that cannot defend itself (CLAUDE.md §4.4).
+ *  - A tile somebody HOLDS loses soldiers, and is given up when they run out. The
+ *    one-soldier floor is about what you may spend (§4.9), not about what can be killed.
+ *  - A WILD GARRISON loses guards the same way, and the tile goes back to bare ground.
+ *  - The NEUTRAL HIVE loses its garrison the same way. `!t.owner` is what keeps this off
+ *    hive tiles a colony is holding — that terrain outlives its ownership (§5a), and a
+ *    held tile takes damage through the ordinary path.
+ *
+ * Nothing here stops at one. A rounding rule that could never take the last soldier left
+ * wild guards and hive tiles sitting at 1 forever, which is not a floor anyone designed.
+ */
+export function strike(t: Tile, amount: number): Hit {
+  if (t.owner && t.struct === "vein") {
+    t.owner = null; t.struct = null; t.soldiers = 0; t.tunnel = false;
+    return { lost: 0, wiped: true };
+  }
+  if (amount <= 0) return { lost: 0, wiped: false };
+
+  if (t.owner) {
+    const before = t.soldiers;
+    t.soldiers = Math.max(0, t.soldiers - amount);
+    const wiped = t.soldiers <= 0;
+    if (wiped) { t.owner = null; t.struct = null; t.tunnel = false; }
+    return { lost: before - t.soldiers, wiped };
+  }
+  if (t.guard > 0) {
+    const before = t.guard;
+    t.guard = Math.max(0, t.guard - amount);
+    return { lost: before - t.guard, wiped: t.guard === 0 };
+  }
+  if (isHiveTerrain(t) && t.soldiers > 0) {
+    const before = t.soldiers;
+    t.soldiers = Math.max(0, t.soldiers - amount);
+    // Never "wiped": the queen's tile is still there when her garrison is gone, and the
+    // renderer crumbles a wiped tile. Emptying her makes her takeable, not destroyed.
+    return { lost: before - t.soldiers, wiped: false };
+  }
+  return { lost: 0, wiped: false };
+}
+
+/** What a tile has standing on it, whoever it belongs to. */
+export const garrisonOf = (t: Tile): number => (t.owner ? t.soldiers : t.guard > 0 ? t.guard : t.soldiers);
+
 /**
  * Resolve damage and age effects at the start of `p`'s turn.
  *
@@ -33,27 +95,21 @@ export function tickEffects(
     const t = tileAt(state, e.c, e.r);
     if (!t) continue;
 
+    const hurt = (kind: "fire" | "venom", amount: number): void => {
+      const hit = strike(t, amount);
+      if (!hit.lost && !hit.wiped) return;
+      events.push({
+        type: "effectDamage", at: { c: t.c, r: t.r }, kind,
+        lost: hit.lost, wiped: hit.wiped, owner: t.owner ?? null,
+      });
+    };
+
     // Enemy fire burns p's garrison; small garrisons are wiped out entirely.
     if (e.kind === "fire" && e.owner !== p && t.owner === p) {
-      if (t.struct === "vein") {
-        // Fire on a trail EATS the trail, exactly as venom does (CLAUDE.md §4.4). A vein
-        // holds no garrison at all, so a percentage of its soldiers is a percentage of
-        // nothing: the burn fell straight through the one thing on the board that cannot
-        // defend itself. Burning it is deterministic for the same reason — there is no
-        // garrison for the arithmetic to bite, so it either dies or nothing happens.
-        t.owner = null;
-        t.struct = null;
-        t.soldiers = 0;
-        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "fire", lost: 0, wiped: true, owner: p });
-      } else if (t.soldiers > 0 && t.soldiers <= 5) {
-        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "fire", lost: t.soldiers, wiped: true, owner: p });
-        t.soldiers = 0; t.owner = null; t.struct = null;
-      } else if (t.soldiers > 0) {
-        const keepRatio = 1 - 0.30 * glandCut(mods);
-        const before = t.soldiers;
-        t.soldiers = Math.round(t.soldiers * keepRatio);
-        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "fire", lost: before - t.soldiers, wiped: false, owner: t.owner });
-      }
+      const soft = glandCut(mods);
+      hurt("fire", t.struct === "vein" ? 0
+        : t.soldiers <= 5 ? t.soldiers
+        : Math.max(1, Math.round(t.soldiers * 0.30 * soft)));
     }
 
     /*
@@ -66,46 +122,23 @@ export function tickEffects(
      * one-soldier floor and on to zero, leaving a tile with an owner and no garrison, which
      * nothing else in the rules can produce. A tile somebody holds takes damage through the
      * ordinary path above, which knows how to give it up when it is wiped out.
+     *
+     * No gland softening here: that is the VICTIM's research, and neither a wild garrison
+     * nor the hive has any.
      */
-    if (e.kind === "fire" && e.owner === p) {
-      if (isHiveTerrain(t) && !t.owner && t.soldiers > 0) {
-        const lost = Math.max(2, Math.round(t.soldiers * 0.30));
-        const before = t.soldiers;
-        t.soldiers = Math.max(0, t.soldiers - lost);
-        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "fire", lost: before - t.soldiers, wiped: false, owner: t.owner });
-      } else if (t.owner === null && t.guard > 0) {
-        const before = t.guard;
-        t.guard = Math.max(0, Math.round(t.guard * 0.70));
-        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "fire", lost: before - t.guard, wiped: false, owner: null });
-      }
+    if (e.kind === "fire" && e.owner === p && !t.owner) {
+      hurt("fire", Math.max(1, Math.round(garrisonOf(t) * 0.30)));
     }
 
     if (e.kind === "venom" && e.owner !== p && t.owner === p) {
-      if (t.struct === "vein") {
-        /*
-         * Venom on a trail EATS the trail. A vein holds no garrison at all, so the
-         * soldier arithmetic below could never touch one — the barrage fell straight
-         * through the thing most worth hitting.
-         *
-         * Breaking one tile of a trail is rarely just one tile: connectivity is
-         * nest-anchored (CLAUDE.md §4.2), so everything that reached the nest only
-         * through here goes dark, and the rest of the trail beyond the break has lost
-         * its anchor and prunes in turn (§4.5). `startTurn` runs both passes right
-         * after this one, which is what makes the collapse happen in the same tick as
-         * the hit rather than on the next action.
-         */
-        t.owner = null;
-        t.struct = null;
-        t.soldiers = 0;
-        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "venom", lost: 0, wiped: true, owner: p });
-      } else if (t.soldiers > 0) {
-        const loss = Math.round(7 * glandCut(mods));
-        const before = t.soldiers;
-        t.soldiers = Math.max(0, t.soldiers - loss);
-        const wiped = t.soldiers <= 0;
-        if (wiped) { t.owner = null; t.struct = null; }
-        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "venom", lost: before - t.soldiers, wiped, owner: p });
-      }
+      hurt("venom", Math.round(VENOM_BITE * glandCut(mods)));
+    }
+
+    // ...and venom lands on whatever else it was scattered over. The barrage does not
+    // choose its targets (§4.1), so it hits the hive and the wild garrisons it falls on
+    // exactly as hard as it hits a colony.
+    if (e.kind === "venom" && e.owner === p && !t.owner) {
+      hurt("venom", VENOM_BITE);
     }
   }
 
