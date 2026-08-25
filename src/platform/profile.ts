@@ -91,11 +91,6 @@ export interface Profile {
    * A tour that changes gets a new version and is shown once more.
    */
   tourSeen: number;
-  /**
-   * Which home screen to show. "chapters" is the Trophy Road as platforms; "classic" is
-   * the title screen it replaced, kept whole so a build can be judged against it.
-   */
-  homeStyle: "chapters" | "classic";
 }
 
 /** The tour the current build ships. Bump it to show the walkthrough again. */
@@ -139,7 +134,6 @@ export function defaultProfile(): Profile {
     difficulty: "normal",
     lastShape: "wedge",
     tourSeen: 0,
-    homeStyle: "chapters",
   };
 }
 
@@ -217,7 +211,6 @@ export function normalise(raw: unknown): Profile {
     lastShape: typeof p.lastShape === "string" ? p.lastShape : base.lastShape,
     // An old save's `tutorialDone` is deliberately NOT read: see `tourSeen`.
     tourSeen: typeof p.tourSeen === "number" && p.tourSeen > 0 ? Math.floor(p.tourSeen) : 0,
-    homeStyle: p.homeStyle === "classic" ? "classic" : base.homeStyle,
   };
 
   // A save with every species stripped would leave nothing to field.

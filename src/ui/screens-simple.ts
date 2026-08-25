@@ -54,9 +54,6 @@ export interface SettingsOptions {
   onCycleDifficulty: () => void;
   /** Run the guided tour again. It is a first-run thing, so this is the only way back. */
   onReplayTutorial: () => void;
-  /** Which home screen: the chapter road, or the title screen it replaced. */
-  home: string;
-  onCycleHome: () => void;
 }
 
 export function buildSettings(opts: SettingsOptions): HTMLElement {
@@ -79,7 +76,6 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
   card.append(
     row("Board size", opts.board, "setBoard", opts.onCycleBoard),
     row("Enemy AI", opts.difficulty, "setDiff", opts.onCycleDifficulty),
-    row("Home screen", opts.home, "setHome", opts.onCycleHome),
     row("Tutorial", "Replay", "setTutorial", opts.onReplayTutorial),
     row("Sound", "On", "setSound"),
     row("Vibration", "On", "setVibe"),

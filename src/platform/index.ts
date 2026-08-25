@@ -16,9 +16,8 @@ export type { ChamberDef, ResearchDef, ResearchTrack, Tier } from "./catalogue";
 export {
   ROAD_CHAPTER, ROAD_CHAPTERS, ROAD_MAX, ROAD_STEP, freeReward, isPassKey, passReward,
   rewardFor, rewardText, roadKey, roadStops, roadTrophies,
-  chapterAt, chapterOf, chapterRewards, chapterStanding,
 } from "./road";
-export type { Chapter, ChapterStanding, RoadReward, RoadStop, RoadTrack } from "./road";
+export type { RoadReward, RoadStop, RoadTrack } from "./road";
 export { DemoGateway, SHOP_PRODUCTS, productById } from "./purchases";
 export type { Grant, Product, ProductKind, PurchaseGateway, PurchaseResult } from "./purchases";
 export {
