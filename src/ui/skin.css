@@ -1561,3 +1561,16 @@ html, body { overscroll-behavior-x: none; }
 /* Raised out of the dark for one step — visible, and inert while it is up. The bottom
    bar uses this so the tab being explained can be seen lit under its own screen. */
 .tourlift { z-index: 9001; pointer-events: none; }
+
+/* "Over here": a tap in the dark pulses whatever the step is asking for, so a blocked
+   tap reads as the tour holding the interface rather than as a dead button. */
+.tournudge { animation: tournudge .42s ease-out 2; }
+
+@keyframes tournudge {
+  0%, 100% { transform: scale(1); }
+  40%      { transform: scale(1.045); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tournudge { animation: none; }
+}

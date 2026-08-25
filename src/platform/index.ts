@@ -1,4 +1,5 @@
 /** Platform surface: storage, profile and progression. */
+export { BUILD } from "./build";
 export { MemoryStore, defaultStore, readJson, writeJson } from "./storage";
 export type { KeyValueStore } from "./storage";
 export {

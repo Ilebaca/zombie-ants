@@ -178,6 +178,19 @@ export class Tour {
     this.opts.onStep?.(step, this.index);
   }
 
+  /**
+   * Say "over here" — one pulse on the ring and the bubble. Restarting an animation needs
+   * the class off, a reflow, and the class back on, or a second tap does nothing.
+   */
+  private nudge(): void {
+    for (const node of [this.ring, this.bubble]) {
+      if (!node) continue;
+      node.classList.remove("tournudge");
+      void node.offsetWidth;
+      node.classList.add("tournudge");
+    }
+  }
+
   /** Put whatever the last step raised back under the dark. */
   private drop(): void {
     this.lifted?.classList.remove("tourlift");
@@ -270,8 +283,12 @@ export class Tour {
   /** A tap inside the hole is the tap the step was waiting for. */
   private onPointerDown = (e: PointerEvent): void => {
     const step = this.step;
-    if (!step || (step.advance ?? "next") !== "tap" || !this.hole) return;
-    if (!inside(this.hole, e.clientX, e.clientY)) return;
+    if (!step) return;
+    // A tap in the dark did nothing at all and looked like a broken button — the player
+    // has no way to know the tour is holding the interface until it gets what it asked
+    // for. Point at the thing being asked for instead.
+    if (!this.hole || !inside(this.hole, e.clientX, e.clientY)) { this.nudge(); return; }
+    if ((step.advance ?? "next") !== "tap") return;
     // The app's own handler has not run yet — it is behind this one in the capture phase,
     // and it may navigate. Advancing on the next tick lets the tap do its job first, which
     // means the tour may have moved on by the time this runs: the last meta step starts a

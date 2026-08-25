@@ -399,6 +399,11 @@ was looking for turned up at once:
 The lesson worth keeping: three of the four were the hive's terrain outliving its ownership.
 Anything that asks "is this a hive tile?" almost always means "is this the NEUTRAL hive?".
 
+**Settings shows the build it is running** (`src/platform/build.ts`, stamped by
+`vite.config.ts` from the commit). Milan tests the deployed build on a phone, where a stale
+cached page and a real bug look identical from the outside; reading the commit off the
+screen settles which one it is in one line.
+
 ## 6. Testing
 
 `npm test` runs Vitest. **Run it before saying a change works.**
@@ -623,6 +628,10 @@ second overlay and the meta walk runs straight into the match one.
   button in the bubble) or `signal` — the app confirms the deed afterwards. The match's
   "move into that tile" step is a `signal`, so a tap the engine refused leaves the step
   standing rather than marching the tutorial on without the player.
+- **A tap in the dark POINTS.** It used to do nothing at all, which is indistinguishable
+  from a broken button — and that is exactly how it came back: "I hit Play and nothing
+  happens". The ring and the bubble pulse instead, so a blocked tap reads as the tour
+  holding the interface until it gets what it asked for.
 - **A `tap` advances on the NEXT tick**, because the app's own handler is behind the tour's
   in the capture phase and may navigate. By then the tour may have moved on — the last meta
   step starts a match, and the match starts a tour of its own — so the timeout re-checks

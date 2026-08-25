@@ -118,6 +118,29 @@ describe("the guided tour", () => {
     tour.stop();
   });
 
+  /**
+   * A tap the dark swallowed used to do nothing at all, which is indistinguishable from a
+   * broken button — and that is exactly how it was reported.
+   */
+  it("points at what it is waiting for when a tap lands in the dark", async () => {
+    vi.useFakeTimers();
+    const h = host();
+    const button = document.createElement("button");
+    document.body.appendChild(button);
+    measure(button, { x: 100, y: 100, w: 60, h: 24 });
+
+    const tour = new Tour(h);
+    tour.start([{ id: "press", text: "press it", find: () => button, advance: "tap" }]);
+    await vi.advanceTimersByTimeAsync(120);
+    expect(h.querySelector(".tourbubble.tournudge")).toBeNull();
+
+    tap(300, 500);                              // out in the dark
+    await vi.advanceTimersByTimeAsync(10);
+    expect(h.querySelector(".tourbubble.tournudge"), "the blocked tap said nothing").not.toBeNull();
+    expect(h.querySelector(".tourring.tournudge")).not.toBeNull();
+    tour.stop();
+  });
+
   it("goes dark and waits when a step's target has not been built yet", async () => {
     vi.useFakeTimers();
     const h = host();

@@ -5,6 +5,7 @@
  * them unchanged. The placeholders are deliberately faithful: the legacy build ships them
  * as "Coming soon" panels, and hiding them here would leave the menu with dead entries.
  */
+import { BUILD } from "../platform";
 import { el, screenEl, screenHeader } from "./chrome";
 import { icon as iconMark } from "./icons";
 
@@ -78,6 +79,9 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
     row("Tutorial", "Replay", "setTutorial", opts.onReplayTutorial),
     row("Sound", "On", "setSound"),
     row("Vibration", "On", "setVibe"),
+    // Not a setting — it is here so the build running on a phone can be read off the
+    // screen. A stale cached page and a real bug look identical without it.
+    row("Build", BUILD, "setBuild"),
   );
   body.appendChild(card);
   root.appendChild(body);
