@@ -128,6 +128,33 @@ describe("venom on a trail", () => {
     expect(t.owner, "a defended tile is bled, not deleted").toBe("you");
     expect(t.soldiers).toBeLessThan(30);
   });
+
+  /**
+   * FIRE EATS A TRAIL THE SAME WAY.
+   *
+   * Wildfire takes 30% of a garrison, and 30% of a vein's garrison is 30% of nothing — so
+   * the burn fell straight through the one thing on the board that cannot defend itself.
+   * A vein has nothing for the arithmetic to bite, which is exactly why the outcome has to
+   * be flat: it burns away, every time.
+   */
+  it("burns away under enemy fire, every time", () => {
+    const s = trail();
+    addEffect(s, 2, 0, "fire", "ai", 3);
+    startTurn(s, { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } });
+    expect(tile(s, 2, 0).owner, "the trail survived being set alight").toBeNull();
+    expect(tile(s, 2, 0).struct).toBeNull();
+    // And the collapse is the same one venom causes: the rest of the thread loses its
+    // anchors in the same tick.
+    for (const c of [1, 3]) expect(tile(s, c, 0).owner, `vein at ${c}`).toBeNull();
+    expect(isConnected(s, tile(s, 4, 0)), "the outpost should have gone dark").toBe(false);
+  });
+
+  it("does not burn the caster's own trail", () => {
+    const s = trail();
+    addEffect(s, 2, 0, "fire", "you", 3);
+    startTurn(s, { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } });
+    expect(tile(s, 2, 0).owner, "a colony burned its own supply line").toBe("you");
+  });
 });
 
 /**

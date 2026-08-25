@@ -34,11 +34,21 @@ export function tickEffects(
     if (!t) continue;
 
     // Enemy fire burns p's garrison; small garrisons are wiped out entirely.
-    if (e.kind === "fire" && e.owner !== p && t.owner === p && t.soldiers > 0) {
-      if (t.soldiers <= 5) {
+    if (e.kind === "fire" && e.owner !== p && t.owner === p) {
+      if (t.struct === "vein") {
+        // Fire on a trail EATS the trail, exactly as venom does (CLAUDE.md §4.4). A vein
+        // holds no garrison at all, so a percentage of its soldiers is a percentage of
+        // nothing: the burn fell straight through the one thing on the board that cannot
+        // defend itself. Burning it is deterministic for the same reason — there is no
+        // garrison for the arithmetic to bite, so it either dies or nothing happens.
+        t.owner = null;
+        t.struct = null;
+        t.soldiers = 0;
+        events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "fire", lost: 0, wiped: true, owner: p });
+      } else if (t.soldiers > 0 && t.soldiers <= 5) {
         events.push({ type: "effectDamage", at: { c: t.c, r: t.r }, kind: "fire", lost: t.soldiers, wiped: true, owner: p });
         t.soldiers = 0; t.owner = null; t.struct = null;
-      } else {
+      } else if (t.soldiers > 0) {
         const keepRatio = 1 - 0.30 * glandCut(mods);
         const before = t.soldiers;
         t.soldiers = Math.round(t.soldiers * keepRatio);

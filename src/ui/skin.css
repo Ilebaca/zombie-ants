@@ -1267,7 +1267,7 @@ body,
   border: none;
   background: none;
 }
-.stile .ic {
+.stile > .art > span.ic {
   display: grid;
   place-items: center;
   width: 54px;
@@ -1574,3 +1574,250 @@ html, body { overscroll-behavior-x: none; }
 @media (prefers-reduced-motion: reduce) {
   .tournudge { animation: none; }
 }
+
+/* ======================================================================
+   FLAT
+   The chrome was built on a hard ledge — `0 4px 0` under every button,
+   pressed by moving the face down onto it. Five of those in a row is a
+   toybox, and it fights the artwork rather than framing it.
+
+   Everything clickable is flat now: a filled face, a hairline where one
+   is needed, and a press that dims rather than sinks. The ONE exception
+   is the play button, which is the single thing on the home screen the
+   player is meant to hit — it keeps its ledge and reads as the only
+   raised object in the app.
+   ====================================================================== */
+:root {
+  /* The shadow language stops being a ledge and becomes a lift off the
+     ground: soft, short, and the same everywhere. */
+  --bevel: 0 1px 2px rgba(0, 0, 0, .3);
+  --bevel-sm: 0 1px 2px rgba(0, 0, 0, .24);
+}
+
+button:not(.playbtn),
+.mp, .sp, .shp, .ccard, .stile, .chcard, .qcard, .rtrack {
+  box-shadow: none;
+}
+
+/* A press dims the face instead of dropping it onto an edge. */
+button:not(.playbtn):active,
+.mp:active, .sp:active, .shp:active, .ccard:active {
+  transform: none;
+  box-shadow: none;
+  filter: brightness(.92);
+}
+
+/* The accent buttons keep their colour and lose the ledge under it. */
+.cta,
+.cta.neutral,
+#mapNext,
+#toFormation,
+#begin,
+.cta.begin,
+.challplay,
+.buybtn,
+.buybar,
+.passbuy,
+.claimchip,
+.qbtn,
+.qbtn.ready,
+.buybar.free,
+.antcta,
+.hbuy,
+.passchip,
+.setbtn,
+.ghostbtn,
+.backbtn,
+.troadbar,
+.btn {
+  box-shadow: none;
+}
+
+/* The board's action row: flat faces, and the armed one marked by its
+   colour rather than by standing further out of the screen. */
+.btn:active:not(:disabled) { transform: none; filter: brightness(.9); }
+.backbtn:active { transform: translateY(-50%); filter: brightness(.9); }
+
+/* The one raised thing in the app. */
+.playbtn {
+  box-shadow: 0 5px 0 var(--grass-edge), var(--lift);
+}
+.playbtn:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--grass-edge), var(--lift);
+  filter: none;
+}
+
+/* ------------------------------------------------------------- CURRENCIES
+   The three marks sat in tinted discs, which put a second shape around
+   every icon and made the row read as six objects rather than three
+   numbers. The mark carries its own colour; the disc is gone, and the
+   grid columns are sized to the glyph so the icon and its number sit on
+   one centre line. */
+.tn-coin {
+  grid-template-columns: 18px 1fr 16px;
+  gap: 6px;
+  padding: 5px 8px;
+  align-items: center;
+}
+.tn-coin .tn-ic {
+  width: 18px;
+  height: 18px;
+  background: none;
+  border-radius: 0;
+  display: grid;
+  place-items: center;
+}
+.tn-coin .tn-ic svg { width: 16px; height: 16px; display: block; }
+.c-trophy .tn-ic { background: none; color: var(--gold-glow); }
+.c-mycel .tn-ic { background: none; color: #ff9a7a; }
+.c-pheromone .tn-ic { background: none; color: var(--sky); }
+.tn-coin .tn-num { text-align: center; line-height: 18px; }
+
+/* The "+" is a quiet affordance, not a button competing with the row. */
+.tn-plus {
+  width: 16px;
+  height: 16px;
+  background: none;
+  color: var(--muted);
+  border-radius: 0;
+}
+.tn-plus svg { width: 14px; height: 14px; display: block; }
+.tn-plus:active { background: none; color: var(--ink); }
+
+/* The trophy strip's own marks lose their discs for the same reason. */
+.troadbar .ri,
+.troadbar .rmark { background: none; box-shadow: none; }
+
+/* ------------------------------------------------------------- THE RAIL
+   The trophy bar was part of the top panel, which made the chrome a
+   two-storey block. It belongs to the artwork: the panel ends with the
+   currency row and the rail floats on the picture underneath. */
+.tophead {
+  background: none;
+  box-shadow: none;
+  padding-bottom: 0;
+}
+.topnav {
+  background: linear-gradient(180deg, var(--panel) 0%, var(--bg1) 100%);
+  border-bottom: none;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .35);
+}
+.troadbar {
+  background: none;
+  margin: 8px 14px 0;
+}
+/* Floating on the artwork, the track has to carry its own contrast. */
+.troadbar .tr-bar { background: rgba(0, 0, 0, .45); }
+
+/* ---------------------------------------------------------- PAGE HEADERS
+   The title sat against the back button, which read as a label on the
+   button rather than as the name of the screen. It centres on the screen
+   now: the two outer columns share the leftover width equally, so the
+   title lands on the middle whether or not there is a chip on the right.
+   The subtitle takes its own full-width row rather than being boxed into
+   the middle column, where it wrapped. */
+.screentop {
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-areas:
+    "back title chip"
+    "sub  sub   sub";
+  text-align: center;
+}
+.screentop .backbtn { justify-self: start; }
+.screentop .mycelchip { justify-self: end; }
+.screentop .screenh { text-align: center; }
+.screentop .screensub { grid-area: sub; text-align: center; }
+
+/* ------------------------------------------------------- SHOP TILE MARKS
+   Every icon carries the class `ic`, and the tile's plate was written as
+   `.stile .ic` — so the two little currency marks in a reward line were
+   being blown up to 54px and given a plate of their own. The plate belongs
+   to the tile's own mark, and to nothing else inside it. */
+.stile span.ic {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 8px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, .28);
+  box-shadow: var(--sheen);
+  color: var(--gold-glow);
+  font-size: 0;
+}
+.stile .amt svg.ic,
+.stile .sub svg.ic {
+  width: 16px;
+  height: 16px;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+}
+
+/* ======================================================================
+   NO SHADOWS
+   Every panel, button, chip and card had a shadow under it — a ledge, a
+   lift, or both — and stacked five deep down a screen they read as a
+   pile of objects rather than as one surface. Flat everywhere: colour and
+   spacing do the separating.
+
+   The play button keeps its solid ledge, and only that. It is not a drop
+   shadow but the button's own edge, and it is the one thing on the home
+   screen the player is meant to press.
+   ====================================================================== */
+:root {
+  --bevel: 0 0 0 rgba(0, 0, 0, 0);
+  --bevel-sm: 0 0 0 rgba(0, 0, 0, 0);
+  --lift: 0 0 0 rgba(0, 0, 0, 0);
+  --sheen: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+/* `!important` earns its place exactly twice in this file, and this is
+   once: the legacy sheet and a handful of inline styles both set shadows,
+   and "none, anywhere" cannot be said any other way. */
+*, *::before, *::after { text-shadow: none !important; }
+*:not(.playbtn) { box-shadow: none !important; }
+
+.playbtn { box-shadow: 0 5px 0 var(--grass-edge) !important; }
+.playbtn:active { box-shadow: 0 2px 0 var(--grass-edge) !important; }
+
+/* The tour's ring was drawn AS a shadow — a stack of three, glow and all.
+   It is a plain border now, and it breathes by colour rather than by glow:
+   the hole's opacity is set inline, so animating that instead would fight
+   it. */
+.tourring {
+  border: 2px solid var(--grass-glow);
+  animation: tourbreathe 2s ease-in-out infinite;
+}
+@keyframes tourbreathe {
+  0%, 100% { border-color: var(--grass-glow); }
+  50%      { border-color: rgba(134, 232, 120, .45); }
+}
+
+/* Two selection marks were drawn with inset shadows. An outline is not a
+   shadow and does not move the box. */
+.ccard.sel { outline: 3px solid var(--tc, var(--gold)); outline-offset: -3px; }
+.sp.on { outline: 2px solid currentColor; outline-offset: -2px; }
+
+/* The menu button sat as a translucent pane on the artwork, which made it
+   read as part of the picture. Solid, like every other control. */
+.settingsfab {
+  background: var(--panel);
+  color: var(--ink);
+}
+.settingsfab:active { background: var(--panel-hi); }
+
+/* The rail keeps its OWN wrapper — a dark pill on the artwork — it is only
+   the panel band behind it that had to go. Without the wrapper the icons
+   and the track sat loose on the picture with nothing holding them
+   together. */
+.troadbar {
+  background: rgba(0, 0, 0, .34);
+  border-radius: var(--r-pill);
+  padding: 0 14px;
+  min-height: 38px;
+  margin: 8px 14px 0;
+}
+.troadbar .tr-bar { background: rgba(255, 255, 255, .14); }

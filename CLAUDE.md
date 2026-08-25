@@ -546,6 +546,14 @@ How to check a screen really matches, without being able to see it:
 
 ### Deliberate deviations
 
+- **No drop shadows, and one 3D object.** Every panel, button and chip in the legacy build
+  sits on a hard ledge (`0 4px 0`) and presses by dropping onto it. Stacked down a screen
+  they read as a pile of objects rather than one surface, so `src/ui/skin.css` ends with a
+  rule that clears every `box-shadow` and `text-shadow` in the app. The PLAY button keeps
+  its solid ledge — it is the one control the home screen exists to offer. Two things had
+  to be redrawn because they were built OUT of shadows rather than merely wearing one: the
+  tour's spotlight ring (a border now) and the selected-colony marks (outlines).
+
 These differ from the legacy build **on purpose**. Anything else that differs is a bug.
 
 - **No emoji in the chrome.** The legacy build draws every tab, currency, chamber, quest and
