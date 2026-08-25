@@ -1830,11 +1830,24 @@ button:not(.playbtn):active,
    feedback. Scrolling is untouched; only the bar is gone.
    ====================================================================== */
 * {
-  scrollbar-width: none;              /* Firefox */
+  scrollbar-width: none;              /* Chrome 121+, Firefox */
+  scrollbar-color: transparent transparent;
   -ms-overflow-style: none;           /* old Edge */
 }
-*::-webkit-scrollbar {                /* Chromium, Safari, every phone */
+
+/* The older spelling, which is what an in-app browser on Android is likely to be running.
+   Three declarations rather than one: some builds of that engine honour the size but not
+   `display`, and the fading overlay thumb is painted from the THUMB pseudo-element rather
+   than from the bar, so it has to be answered separately. */
+*::-webkit-scrollbar {
   width: 0;
   height: 0;
   display: none;
+}
+*::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
