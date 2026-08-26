@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   addEffect, hiveCells, isConnected, recomputeConnectivity, setHiveDefence, startTurn,
-  tickEffects, tile, NEUTRAL_MODS, PERMANENT,
+  tickEffects, tile, FIRE_BITE, NEUTRAL_MODS, PERMANENT,
 } from "../index";
 import { blankGame, put } from "./helpers";
 
@@ -46,8 +46,12 @@ describe("effects", () => {
       tickEffects(s, "you", { ...mods, gland });
       return tile(s, 2, 1).soldiers;
     };
-    expect(make(0)).toBe(70);                 // 30% lost
-    expect(make(5)).toBeGreaterThan(70);      // gland reduces the burn
+    // The figure is written out on purpose. Deriving it from FIRE_BITE tests the shape of
+    // the rule and nothing about the balance — it passes at any value, which is exactly
+    // what a guard on a tuned number must not do.
+    expect(FIRE_BITE, "the burn was retuned; is that deliberate?").toBe(0.20);
+    expect(make(0)).toBe(80);
+    expect(make(5), "the gland did not soften the burn").toBeGreaterThan(80);
   });
 
   it("expires a leaf wall into defensive armour, but never a permanent one", () => {
@@ -132,7 +136,7 @@ describe("venom on a trail", () => {
   /**
    * FIRE EATS A TRAIL THE SAME WAY.
    *
-   * Wildfire takes 30% of a garrison, and 30% of a vein's garrison is 30% of nothing — so
+   * Wildfire takes a share of a garrison, and a share of a vein's garrison is nothing — so
    * the burn fell straight through the one thing on the board that cannot defend itself.
    * A vein has nothing for the arithmetic to bite, which is exactly why the outcome has to
    * be flat: it burns away, every time.

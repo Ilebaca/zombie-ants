@@ -499,7 +499,10 @@ provisional and say so if asked.
 - Species multipliers span 0.70–1.25 — deliberately narrow. Species change *how* you win.
 - Ability cooldowns are 5–7 turns. Wildfire is the one on 7: it is the only ability that
   keeps working after the turn it is cast on, so its cost is the wait rather than the cast.
-  The Army Ant's bite is a quarter of each bordering garrison (`SWARM_BITE`).
+  Per-turn damage: fire takes a fifth of a garrison (`FIRE_BITE`), venom seven soldiers flat
+  (`VENOM_BITE`). The Army Ant's bite is a quarter of each bordering garrison (`SWARM_BITE`).
+  A garrison of five or fewer is wiped by fire outright — that is a separate rule from the
+  percentage, and not a rounding of it.
 - **Moving first is worth roughly two to one.** Same difficulty, same species, both sides:
   the bottom-left corner (the player's) wins about 8 of 12 on the small board. The maps
   are 180°-symmetric and tested to be — so this is the move order, not the ground. Whether

@@ -6,6 +6,9 @@ import type { EngineEvent, GameState, Player, PlayerMods, Tile, TileEffect } fro
 /** Soldiers a venom cloud takes off a tile each turn, before the victim's research. */
 export const VENOM_BITE = 7;
 
+/** The share of a garrison Wildfire takes each turn, before the victim's research. */
+export const FIRE_BITE = 0.20;
+
 /** Metapleural Gland softens fire, venom and hive damage by 5% per level. */
 export const glandCut = (mods: PlayerMods): number => Math.max(0.25, 1 - mods.gland * 0.05);
 
@@ -109,7 +112,7 @@ export function tickEffects(
       const soft = glandCut(mods);
       hurt("fire", t.struct === "vein" ? 0
         : t.soldiers <= 5 ? t.soldiers
-        : Math.max(1, Math.round(t.soldiers * 0.30 * soft)));
+        : Math.max(1, Math.round(t.soldiers * FIRE_BITE * soft)));
     }
 
     /*
@@ -127,7 +130,7 @@ export function tickEffects(
      * nor the hive has any.
      */
     if (e.kind === "fire" && e.owner === p && !t.owner) {
-      hurt("fire", Math.max(1, Math.round(garrisonOf(t) * 0.30)));
+      hurt("fire", Math.max(1, Math.round(garrisonOf(t) * FIRE_BITE)));
     }
 
     if (e.kind === "venom" && e.owner !== p && t.owner === p) {

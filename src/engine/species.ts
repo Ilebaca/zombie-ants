@@ -31,7 +31,7 @@ export const SPECIES: Record<SpeciesId, Species> = {
     blurb: "Balanced & territorial. The honest fighter.",
     trait: "Swarm response — scorched-earth defender.",
     ability: { name: "Wildfire", kind: "fire", cooldown: 7,
-      desc: "Your colony's borders ignite for 3 turns; enemies on fire lose 30% each turn and any vein caught in it burns away. Detached tiles don't ignite." },
+      desc: "Your colony's borders ignite for 3 turns; enemies on fire lose 20% each turn and any vein caught in it burns away. Detached tiles don't ignite." },
   },
   army: {
     id: "army", name: "Army Ant", atk: 1.10, def: 0.79, prod: 0.95,
