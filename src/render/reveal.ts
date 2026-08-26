@@ -87,8 +87,15 @@ export class RevealTracker {
    * lights up. Without that, a send over four owned tiles and one empty one would fill the
    * empty one instantly instead of when the troops actually reach it.
    */
+  /**
+   * `at` starts the front LATER than now. Every tile is registered at once either way, so
+   * it draws unfilled from this moment — which is what the match opening needs: the
+   * colonies must not be sitting there while the camera is still coming down through the
+   * canopy, only to be revealed once it lands (render/intro.ts).
+   */
   begin(
     tiles: ReadonlyArray<{ at: Coord; edge: RevealEdge; prev: Player | null; slot?: number }>,
+    at = performance.now(),
   ): void {
     if (!tiles.length) return;
     if (this.reduced) return;                       // nothing to animate; tiles draw settled
@@ -104,9 +111,7 @@ export class RevealTracker {
       if (slot + 1 > span) span = slot + 1;
       this.states.set(k, { rv: 0, edge: t.edge, prev: t.prev });
     });
-    this.groups.push({
-      keys, slots, start: performance.now(), dur: revealStepMs(span) * span, span,
-    });
+    this.groups.push({ keys, slots, start: at, dur: revealStepMs(span) * span, span });
   }
 
   step(now: number): void {

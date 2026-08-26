@@ -109,10 +109,20 @@ describe("a match with the tour up", () => {
     return { state, screen, host };
   };
 
+  /**
+   * The camera comes down through the canopy before the turn begins (render/intro.ts), and
+   * the tour waits for it. A tap cuts it short, which is what a player does — and doing it
+   * that way keeps these tests about the tour rather than about the opening's length.
+   */
+  const opened = (host: HTMLElement): void => {
+    host.querySelector("canvas")?.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+  };
+
   it("holds the turn while a step is showing", async () => {
     vi.useFakeTimers();
     const { state, screen, host } = running();
     screen.start();
+    opened(host);
     expect(host.querySelector(".tourbubble"), "the match tour never opened").not.toBeNull();
 
     // Well past the 15-second move clock: a player reading a step must not be timed out.
@@ -134,6 +144,7 @@ describe("a match with the tour up", () => {
   it("does not open the next step until the action that ended this one is finished", () => {
     const { screen, host } = running();
     screen.start();
+    opened(host);
     const tour = (screen as unknown as { opts: { tour: Tour } }).opts.tour;
 
     host.querySelector<HTMLButtonElement>("#tourNext")?.click();   // past the opening line
@@ -155,6 +166,7 @@ describe("a match with the tour up", () => {
     vi.useFakeTimers();
     const { state, screen, host } = running();
     screen.start();
+    opened(host);
     host.querySelector<HTMLButtonElement>("#tourSkip")?.click();
     expect(host.querySelector(".tourwrap")).toBeNull();
 

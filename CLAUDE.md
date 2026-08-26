@@ -372,6 +372,25 @@ Each of these cost a debugging round. Do not repeat them.
   figure-eight and the dashes run between the two as though there were ground there. Taking
   the sharpest RIGHT turn at every junction keeps them apart, because the trace is wound
   clockwise per cell. Everywhere else there is only one edge to take, so the rule is free.
+- **The opening is a VIEW too.** A match begins above the trees: leaves rush past at three
+  depths as the camera drops between them, the floor grows up and locks, and only then do
+  the two colonies grow out of their nests (`render/intro.ts`). Like the finale it is one
+  transform around the frame plus a wash over the top — the board underneath is the one the
+  engine built, and the layout is untouched, or a tap would land on the wrong cell.
+  - **Three sheets, not one.** One sheet of leaves scaling up reads as a texture being
+    zoomed; the difference in rate between three is the only cue a flat canvas has for
+    "between the trees".
+  - **The floor has to run to every edge.** At the top of the descent the board does not
+    fill the screen, so without a soil fill under the camera the map floated on void.
+  - **The colonies are scheduled at the START and set off at the landing.** `RevealTracker.
+    begin` takes a future `at` for exactly this: registering the tiles immediately is what
+    makes them draw UNFILLED during the descent. Beginning the reveal on arrival instead
+    left them sitting finished on the floor the whole way down and then blinking out.
+  - **Every control skips it**, canvas and footer alike. The footer is DOM and stays live
+    under the animation — End turn during the descent handed the first turn over before the
+    match had visibly started — and sitting through the same descent every match is the
+    fastest way to make an animation hated.
+
 - **The finale is a VIEW, not a set of moves.** When a match is decided the winner's colour
   sweeps out from their nest and consumes the whole board — enemy ground, veins, wild
   garrisons, the Hive and the rocks — before the result card comes up (`render/flood.ts`).

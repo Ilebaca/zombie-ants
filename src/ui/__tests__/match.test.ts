@@ -58,6 +58,7 @@ describe("the AI's turn", () => {
     const w = watch();
     const before = sig(w.state);
     w.screen.start();
+    opened(w);
 
     // Step forward in small slices, noting when the board first moves and when the events
     // are handed over. They have to be the same slice.
@@ -86,6 +87,7 @@ describe("the AI's turn", () => {
     const w = watch();
     const before = sig(w.state);
     w.screen.start();
+    opened(w);
     await vi.advanceTimersByTimeAsync(900);
     const still = sig(w.state);
     w.screen.destroy();
@@ -97,11 +99,20 @@ describe("the AI's turn", () => {
     const w = watch();
     const before = sig(w.state);
     w.screen.start();
+    opened(w);
     await vi.advanceTimersByTimeAsync(6000);
     w.screen.destroy();
     expect(sig(w.state), "the AI stood still").not.toBe(before);
   });
 });
+
+/**
+ * The camera comes down through the canopy before the turn begins (render/intro.ts). A tap
+ * cuts it short, which is what a player does — and it keeps these tests about the AI.
+ */
+const opened = (w: Watch): void => {
+  w.host.querySelector("canvas")?.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+};
 
 /** Ends the match the way the player does: surrender takes two taps. */
 const quit = (w: Watch): void => {
@@ -123,6 +134,7 @@ describe("the end of a match", () => {
     const w = watch();
     w.state.current = "you";
     w.screen.start();
+    opened(w);
 
     quit(w);
     expect(w.state.over, "the surrender did not take").toBe(true);
@@ -142,9 +154,54 @@ describe("the end of a match", () => {
     const w = watch();
     w.state.current = "you";
     w.screen.start();
+    opened(w);
     quit(w);
     w.screen.destroy();
     await vi.advanceTimersByTimeAsync(4000);
     expect(w.exits).toBe(0);
+  });
+});
+
+/**
+ * THE OPENING HOLDS THE TURN.
+ *
+ * The camera comes down through the canopy and the colonies grow out of their nests before
+ * anything can be played (render/intro.ts). The clock must not be running under it — and a
+ * tap must cut it short, because sitting through the same descent every match is the
+ * fastest way to make an animation hated.
+ */
+describe("the opening", () => {
+  /**
+   * The AI's own pause is one to four seconds, so a still board proves nothing inside the
+   * opening. The HUD does: it carries the markup's zeros until `beginTurn` fills it in, and
+   * that is the first thing the match does.
+   */
+  const army = (w: Watch): string => w.host.querySelector("#youArmy")?.textContent ?? "";
+
+  it("holds the turn until the camera has landed", async () => {
+    vi.useFakeTimers();
+    const w = watch();
+    w.screen.start();
+    expect(army(w), "the match began before the descent did").toBe("0 / +0");
+
+    await vi.advanceTimersByTimeAsync(1200);            // still coming down
+    expect(army(w), "the match began under the canopy").toBe("0 / +0");
+
+    await vi.advanceTimersByTimeAsync(4000);
+    expect(army(w), "the match never began at all").not.toBe("0 / +0");
+    w.screen.destroy();
+  });
+
+  it("is cut short by a tap", async () => {
+    vi.useFakeTimers();
+    const w = watch();
+    const before = sig(w.state);
+    w.screen.start();
+    opened(w);
+    // The AI sits on its move for one to four seconds. Without the skip the opening would
+    // put another two and a bit on top of that, and this would still be the board it was.
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(sig(w.state), "the tap did not get the match going").not.toBe(before);
+    w.screen.destroy();
   });
 });

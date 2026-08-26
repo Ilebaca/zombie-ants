@@ -5,14 +5,16 @@
  * the engine's action functions and never mutates game state — the one-way dependency in
  * CLAUDE.md §3 is enforced by this file having no writes to `state`.
  */
-import type { Coord, EngineEvent, GameState, Player, SpeciesId } from "../engine";
+import { allTiles, nestTile } from "../engine";
+import type { Coord, EngineEvent, GameState, Player, SpeciesId, Tile } from "../engine";
 import { Layout } from "./layout";
 import { RevealTracker } from "./reveal";
 import { FxLayer } from "./fx";
 import { animate } from "./animate";
 import { floodDuration, floodFade, planFlood, type Flood } from "./flood";
+import { drawCanopy, introAt, introScale, introTotal, planIntro, type Intro } from "./intro";
 import { basicLook, type Look } from "./art";
-import { loadColors, setFactionColor } from "./palette";
+import { MAP, loadColors, setFactionColor } from "./palette";
 import {
   drawBackground, drawFillets, drawFlood, drawSelection, drawSurge, drawTile, drawTileBevels,
   drawTrails, seedMotes,
@@ -47,6 +49,8 @@ export class BoardRenderer {
   hideCounts = false;
   /** The winner's wash over the board once the match is decided. */
   private flood: Flood | null = null;
+  /** The camera coming down through the canopy at the start of a match. */
+  private intro: Intro | null = null;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -78,6 +82,7 @@ export class BoardRenderer {
     this.fx.clear();
     this.hideCounts = false;
     this.flood = null;
+    this.intro = null;
     this.selection = null;
     this.valid = [];
     this.resize();
@@ -131,6 +136,57 @@ export class BoardRenderer {
   }
 
   /**
+   * THE OPENING: the camera drops through the canopy onto the map (intro.ts).
+   *
+   * Returns how long the caller should hold the turn for — the descent, and then the
+   * colonies filling in from their nests, which `land()` starts when the camera arrives.
+   */
+  playIntro(): number {
+    const intro = planIntro(performance.now(), this.reveal.reduced);
+    this.intro = intro;
+    // Scheduled NOW so the colonies are registered as unfilled from this frame, but with a
+    // front that does not set off until the camera lands. Without that they sit finished on
+    // the floor for the whole descent and then blink out to be revealed.
+    this.growColonies(intro.start + intro.dur);
+    return introTotal(intro);
+  }
+
+  /** True while the opening is still running, so a tap can cut it short. */
+  get introducing(): boolean { return this.intro !== null; }
+
+  /** Cut the opening short: the camera snaps home and the colonies fill in from here. */
+  endIntro(): void {
+    if (!this.intro) return;
+    this.intro = null;
+    this.reveal.clear();                 // the front was timed for a landing that never came
+    this.growColonies(performance.now());
+  }
+
+  /**
+   * The two colonies grow out of their nests rather than being there already — the reveal
+   * machinery is exactly the one a capture uses, run over the starting formation with each
+   * tile's slot set by how far it sits from the nest.
+   */
+  private growColonies(at: number): void {
+    for (const p of ["you", "ai"] as const) {
+      const nest = nestTile(this.state, p);
+      if (!nest) continue;
+      const held = allTiles(this.state).filter((t) => t.owner === p);
+      const slot = (t: Tile): number => Math.abs(t.c - nest.c) + Math.abs(t.r - nest.r);
+      held.sort((a, b) => slot(a) - slot(b));
+      this.reveal.begin(held.map((t) => ({
+        at: { c: t.c, r: t.r },
+        // Grow from the side facing the nest, so the colony unfolds outward from her.
+        edge: Math.abs(t.c - nest.c) >= Math.abs(t.r - nest.r)
+          ? (t.c >= nest.c ? "L" : "R")
+          : (t.r >= nest.r ? "U" : "D"),
+        prev: null,
+        slot: slot(t),
+      })), at);
+    }
+  }
+
+  /**
    * THE FINALE: the winner consumes the whole board (flood.ts).
    *
    * Returns how long the caller should wait before showing the result card. Nothing here
@@ -165,8 +221,28 @@ export class BoardRenderer {
     const ctx = this.ctx;
     if (!ctx) return;
     try {
-      this.reveal.step(performance.now());
+      const now = performance.now();
+      this.reveal.step(now);
       ctx.clearRect(0, 0, this.layout.width, this.layout.height);
+
+      // The opening is a camera: one transform around the whole frame, and the canopy over
+      // the top of it. The board underneath is drawn exactly as it always is.
+      const descent = this.intro ? introAt(this.intro, now) : 1;
+      if (descent >= 1) this.intro = null;
+      if (descent < 1) {
+        // The floor runs to every edge, so the frame outside the shrunken board is soil and
+        // not void — at this height the board does not fill the screen.
+        ctx.fillStyle = MAP.groundDark;
+        ctx.fillRect(0, 0, this.layout.width, this.layout.height);
+        const s = introScale(descent);
+        const cx = this.layout.ox + (this.layout.size * this.layout.ts) / 2;
+        const cy = this.layout.oy + (this.layout.size * this.layout.ts) / 2;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(s, s);
+        ctx.translate(-cx, -cy);
+      }
+
       drawBackground(ctx, this.layout, this.motes, this.startedAt);
 
       const scene: Scene = {
@@ -201,6 +277,13 @@ export class BoardRenderer {
       // Last, and over everything: "consumed" means the veins, the garrisons, the Hive, the
       // gem seams and the rocks all go under it.
       drawFlood(scene);
+
+      // Out of the camera, and then the leaves — they are between the lens and the floor,
+      // so they are not scaled by it.
+      if (descent < 1) {
+        ctx.restore();
+        drawCanopy(ctx, this.layout.width, this.layout.height, descent);
+      }
       this.fx.draw(ctx, this.layout);
     } catch (err) {
       // A bad frame must never kill the loop — recover on the next tick (e.g. mid-resize).

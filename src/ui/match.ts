@@ -92,6 +92,8 @@ export class MatchScreen {
   private aiTimer: number | null = null;
   /** Holds the result card back while the winner's wash plays. */
   private endTimer: number | null = null;
+  /** Holds the turn back while the camera comes down onto the board. */
+  private introTimer: number | null = null;
   /** finish() is reachable from several paths; the finale plays once. */
   private finishing = false;
   private surrenderArmed = false;
@@ -125,9 +127,21 @@ export class MatchScreen {
   start(): void {
     this.renderer.start();
     this.canvas.addEventListener("pointerdown", this.onPointerDown);
+    // The camera comes down through the canopy first, and the colonies fill in from their
+    // nests when it lands (render/intro.ts). The clock does not start until it is over.
+    this.introTimer = window.setTimeout(this.openMatch, this.renderer.playIntro());
+  }
+
+  /**
+   * The opening is finished — because it ran its course, or because the player tapped
+   * through it. Either way the turn begins exactly once.
+   */
+  private openMatch = (): void => {
+    if (this.introTimer) { clearTimeout(this.introTimer); this.introTimer = null; }
+    this.renderer.endIntro();
     this.beginTurn();
     if (this.opts.tutorial && this.opts.tour) this.startTour();
-  }
+  };
 
   /* ----------------------------------------------------------------------- TOUR */
 
@@ -451,6 +465,7 @@ export class MatchScreen {
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
     this.clearTimers();
     if (this.endTimer) { clearTimeout(this.endTimer); this.endTimer = null; }
+    if (this.introTimer) { clearTimeout(this.introTimer); this.introTimer = null; }
     this.root.remove();
   }
 
@@ -472,15 +487,24 @@ export class MatchScreen {
       bSurr: pick<HTMLButtonElement>("bSurr"),
     };
 
-    this.el.bMove.onclick = () => this.setMode("go");
-    this.el.bRally.onclick = () => this.setMode("rally");
+    // Every control skips the opening rather than acting through it. The footer is DOM, so
+    // it is live while the camera is still coming down — and End turn during the descent
+    // would hand the first turn over before the match had visibly started.
+    const acting = (): boolean => {
+      if (!this.introTimer) return true;
+      this.openMatch();
+      return false;
+    };
+    this.el.bMove.onclick = () => { if (acting()) this.setMode("go"); };
+    this.el.bRally.onclick = () => { if (acting()) this.setMode("rally"); };
     this.el.bEnd.onclick = () => {
+      if (!acting()) return;
       if (this.state.over || this.state.current !== "you") return;
       this.handOver();
     };
-    this.el.bSurr.onclick = () => this.onSurrender();
+    this.el.bSurr.onclick = () => { if (acting()) this.onSurrender(); };
 
-    this.el.bAbility.onclick = () => this.onAbility();
+    this.el.bAbility.onclick = () => { if (acting()) this.onAbility(); };
   }
 
   /**
@@ -626,6 +650,9 @@ export class MatchScreen {
   /* ----------------------------------------------------------------------- INPUT */
 
   private onPointerDown = (e: PointerEvent): void => {
+    // A tap during the opening skips it. Sitting through the same descent every match is
+    // the fastest way to make an animation hated.
+    if (this.introTimer) { this.openMatch(); return; }
     if (this.state.over || this.state.current !== "you") return;
     const at = this.renderer.hit(e.clientX, e.clientY);
     if (!at) return;
