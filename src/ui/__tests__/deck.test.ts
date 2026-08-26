@@ -26,13 +26,14 @@ const make = (): { deck: Deck<Id>; arrived: Id[] } => {
   return { deck, arrived };
 };
 
-/** One drag, in the pixels jsdom pretends the window is. */
-const drag = (deck: Deck<Id>, dx: number, dy = 0, ms = 400): void => {
+/** One drag, in the pixels jsdom pretends the window is. `from` is what it starts on. */
+const drag = (deck: Deck<Id>, dx: number, dy = 0, ms = 400, from?: Element): void => {
+  const on = from ?? deck.el;
   const at = (t: string, x: number, y: number, time: number): void => {
     const e = new MouseEvent(t, { clientX: x, clientY: y, bubbles: true });
     Object.defineProperty(e, "pointerId", { value: 1 });
     Object.defineProperty(e, "timeStamp", { value: time });
-    deck.el.dispatchEvent(e);
+    on.dispatchEvent(e);
   };
   at("pointerdown", 500, 400, 0);
   for (let i = 1; i <= 5; i++) at("pointermove", 500 + (dx * i) / 5, 400 + (dy * i) / 5, (ms * i) / 5);
@@ -102,5 +103,72 @@ describe("dragging the deck", () => {
 
     drag(deck, -600);
     expect(built, "the arriving screen was left as it was built").toBe(afterConstruction + 1);
+  });
+
+});
+
+/**
+ * A TAP THE DECK STOLE.
+ *
+ * A finger wobbles. Ten pixels of sideways drift is enough for the deck to claim the
+ * gesture — and claiming it kills the tap: `preventDefault` on the touchmove stops the
+ * browser synthesising the click, and the pointer capture retargets the rest of the
+ * sequence. The rail nudges, snaps back, and the button never hears about it. From the
+ * outside that is a dead button, on every one of the five screens: "I hit Play and
+ * nothing happens".
+ */
+describe("a tap the deck stole", () => {
+  /** A button on the screen that is showing, and how many times it was pressed. */
+  const button = (): { deck: Deck<Id>; el: HTMLButtonElement; hits: () => number } => {
+    let hits = 0;
+    const el = document.createElement("button");
+    el.onclick = () => { hits++; };
+    const deck = new Deck<Id>(IDS, (id) => {
+      const screen = document.createElement("div");
+      if (id === "a") screen.appendChild(el);
+      return screen;
+    }, () => {});
+    document.body.appendChild(deck.el);
+    return { deck, el, hits: () => hits };
+  };
+
+  it("gives the press back when the drag went nowhere", () => {
+    const { deck, el, hits } = button();
+    drag(deck, 14, 3, 260, el);
+    expect(hits(), "the button never heard about the tap").toBe(1);
+    expect(deck.at, "a wobble turned the page").toBe("a");
+  });
+
+  it("does not press anything when the drag turned the page", () => {
+    const { deck, el, hits } = button();
+    drag(deck, -600, 0, 400, el);
+    expect(deck.at).toBe("b");
+    expect(hits(), "a real swipe pressed what it started on").toBe(0);
+  });
+
+  /** A short deliberate swipe is a swipe, not a press on whatever it began over. */
+  it("does not press anything when the finger was going somewhere", () => {
+    const { deck, el, hits } = button();
+    drag(deck, -70, 0, 900, el);          // too far to be a wobble, too slow to commit
+    expect(deck.at).toBe("a");
+    expect(hits()).toBe(0);
+  });
+
+  /**
+   * A confident press is a FAST one, and it wobbles as far as a slow one. Guarding on
+   * speed rather than distance ate exactly those — the decisive taps.
+   */
+  it("gives back a fast press as readily as a slow one", () => {
+    const { deck, el, hits } = button();
+    drag(deck, -14, 0, 20, el);
+    expect(hits()).toBe(1);
+    expect(deck.at).toBe("a");
+  });
+
+  /** Vertical scrolling was never the deck's, so there is nothing to give back. */
+  it("stays out of the way of a drag it never claimed", () => {
+    const { deck, el, hits } = button();
+    drag(deck, -4, -300, 400, el);
+    expect(hits(), "the deck pressed a button during a scroll").toBe(0);
   });
 });

@@ -575,6 +575,24 @@ screens, the species page — is still a page shown on top, and hides the deck w
   the left edge, cancelled the pointer stream mid-drag, and navigated the app away to a
   blank page. `overscroll-behavior-x: none` on the root is needed too, and neither alone
   was enough.
+- **A press that goes down on one element and up on another does not click either.** The
+  browser fires `click` on their nearest common ANCESTOR, and a finger wobbles: ten pixels
+  of drift is all it takes. That one rule was two dead-button bugs at once, and both looked
+  identical from the outside — "I hit Play and nothing happens".
+  - The DECK claims a gesture at ten pixels of horizontal drift, and claiming it kills the
+    tap twice over: `preventDefault` on the touchmove stops the browser synthesising a click
+    at all, and the pointer capture retargets the rest of the sequence. The rail nudges,
+    snaps back, and the button never hears about it — on every one of the five screens. A
+    claimed gesture that ends without turning the page and went nowhere is handed back to
+    what it came down on (`giveBackTheTap`). DISTANCE decides that, never speed: a confident
+    press is a FAST one and wobbles just as far, so a speed guard ate exactly the decisive
+    taps.
+  - The TOUR's shade panels are hit targets, so the same wobble takes the pointer UP on a
+    panel. The tour's own handler still saw the press and marched to the next step, leaving
+    the app where it was — a tour asking for a screen that never opened, with nothing but
+    Skip. A press that passed the gate on the way DOWN now makes the panels inert for the
+    rest of that press (`.tourpass`), so it can finish on what it started on.
+
 - **A `pointercancel` is not a finished drag.** It arrives with no useful position
   (Chromium reports 0), so treating it like a `pointerup` read as a full-width swipe in the
   wrong direction and jumped a screen. It snaps back instead.

@@ -21,6 +21,13 @@ const COMMIT = 0.22;
 const FLICK = 0.45;
 /** Resistance when dragging past either end, where there is nothing to show. */
 const RUBBER = 0.35;
+/**
+ * How far a claimed gesture may have travelled and still be a TAP the deck stole.
+ *
+ * Well under COMMIT: past this the finger was going somewhere, even if it did not get far
+ * enough to turn the page.
+ */
+const TAP_SLOP = 24;
 
 export class Deck<T extends string> {
   readonly el: HTMLElement;
@@ -34,6 +41,8 @@ export class Deck<T extends string> {
   private startAt = 0;
   private axis: "x" | "y" | null = null;
   private pointer: number | null = null;
+  /** What the finger came down on, so a stolen tap can be given back to it. */
+  private downOn: Element | null = null;
 
   constructor(
     private ids: readonly T[],
@@ -118,6 +127,7 @@ export class Deck<T extends string> {
     this.startY = e.clientY;
     this.startAt = e.timeStamp;
     this.axis = null;
+    this.downOn = e.target instanceof Element ? e.target : null;
   };
 
   private onTouchMove = (e: TouchEvent): void => {
@@ -154,6 +164,8 @@ export class Deck<T extends string> {
   private onUp = (e: PointerEvent): void => {
     if (this.pointer !== e.pointerId) return;
     this.pointer = null;
+    const on = this.downOn;
+    this.downOn = null;
     if (this.axis !== "x") { this.axis = null; return; }
     this.axis = null;
 
@@ -170,8 +182,38 @@ export class Deck<T extends string> {
     const changed = next !== this.index;
     this.index = next;
     this.place(true);
-    if (changed) this.arrive();
+    if (changed) { this.arrive(); return; }
+    this.giveBackTheTap(on, dx);
   };
+
+  /**
+   * A TAP THE DECK STOLE.
+   *
+   * A finger on a phone is not a mouse: it wobbles. Ten pixels of sideways drift on the
+   * way down and the deck claims the gesture — and claiming it is what kills the tap,
+   * twice over. `preventDefault` on the touchmove tells the browser not to synthesise the
+   * click at all, and the pointer capture that keeps a real drag alive retargets the rest
+   * of the sequence away from whatever was under the finger. So the rail nudges a few
+   * pixels, snaps back, and the button the player pressed never hears about it.
+   *
+   * From the outside that is a dead button, and it is every button on all five deck
+   * screens — which is exactly how it was reported: "I hit Play and nothing happens".
+   *
+   * So when a claimed gesture ends without turning the page and went nowhere at all, it was
+   * a tap: hand it back to what it landed on.
+   *
+   * DISTANCE decides it, not speed. Speed was the first guard and it was wrong: a quick,
+   * decisive press wobbles just as far as a slow one and covers the ground in a few
+   * milliseconds, which reads as a flick — so the fastest taps, the confident ones, were
+   * exactly the ones still being eaten. Under the slop nothing else can happen anyway; the
+   * real choice is between pressing what the finger was on and doing nothing at all, and
+   * doing nothing is the bug.
+   */
+  private giveBackTheTap(on: Element | null, dx: number): void {
+    if (!on || !on.isConnected) return;              // the screen was rebuilt under it
+    if (Math.abs(dx) > TAP_SLOP) return;
+    on.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+  }
 
   /**
    * The browser took the gesture over — a swipe that starts within its edge-back region
@@ -183,6 +225,7 @@ export class Deck<T extends string> {
     if (this.pointer !== e.pointerId) return;
     this.pointer = null;
     this.axis = null;
+    this.downOn = null;
     this.place(true);
   };
 

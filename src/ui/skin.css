@@ -1594,6 +1594,10 @@ html, body { overscroll-behavior-x: none; }
 /* A "look at this screen" step: the screen is lit through the hole, and this pane
    over it swallows the taps that would otherwise navigate out from under the tour. */
 .tourglass { position: fixed; background: transparent; pointer-events: auto; }
+/* For the rest of a press that began inside the hole: see `endPass` in tour.ts. The dark
+   stays exactly as dark — it just stops being a hit target while a finger is already down
+   on the thing it was framing. */
+.tourwrap.tourpass .tourshade { pointer-events: none; }
 
 /* Raised out of the dark for one step — visible, and inert while it is up. The bottom
    bar uses this so the tab being explained can be seen lit under its own screen. */

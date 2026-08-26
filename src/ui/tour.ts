@@ -141,6 +141,8 @@ export class Tour {
     this.drop();
     if (this.timer !== null) { clearInterval(this.timer); this.timer = null; }
     window.removeEventListener("pointerdown", this.onPointerDown, true);
+    window.removeEventListener("pointerup", this.endPass, true);
+    window.removeEventListener("pointercancel", this.endPass, true);
     this.wrap?.remove();
     this.wrap = null;
     this.shades = [];
@@ -288,6 +290,24 @@ export class Tour {
     // has no way to know the tour is holding the interface until it gets what it asked
     // for. Point at the thing being asked for instead.
     if (!this.hole || !inside(this.hole, e.clientX, e.clientY)) { this.nudge(); return; }
+
+    /*
+     * THE PRESS STARTED IN THE HOLE, SO LET IT FINISH THERE.
+     *
+     * A finger wobbles. Move a few pixels off the lit thing and the pointer comes UP on a
+     * shade panel instead — and a browser fires `click` on the nearest common ancestor of
+     * where a press went down and where it came up, not on what it started on. So the
+     * button under the hole never heard the tap, while this handler did: the tour marched
+     * on to the next step and the app stayed exactly where it was. That is what "I hit
+     * Play and nothing happens" was.
+     *
+     * The dark is still the gate (§10a) — the panels go inert only for the rest of THIS
+     * press, which already passed the gate on the way down.
+     */
+    this.wrap?.classList.add("tourpass");
+    window.addEventListener("pointerup", this.endPass, { capture: true, once: true });
+    window.addEventListener("pointercancel", this.endPass, { capture: true, once: true });
+
     if ((step.advance ?? "next") !== "tap") return;
     // The app's own handler has not run yet — it is behind this one in the capture phase,
     // and it may navigate. Advancing on the next tick lets the tap do its job first, which
@@ -296,6 +316,9 @@ export class Tour {
     const tapped = step.id;
     window.setTimeout(() => { if (this.step?.id === tapped) this.next(); }, 0);
   };
+
+  /** The press is over: the panels swallow taps again. */
+  private endPass = (): void => { this.wrap?.classList.remove("tourpass"); };
 
   /**
    * Put the hole where the step's target is now.
