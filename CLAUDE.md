@@ -398,6 +398,12 @@ Each of these cost a debugging round. Do not repeat them.
   colony's boundary into real loops so one dash offset carries the whole way round. Stroking
   each boundary edge separately is far simpler and looks wrong: every edge restarts the dash
   pattern, so the marks sit still at corners and march in contradictory directions.
+- **A rule hung on the wrong class does nothing where it was meant to and something
+  where it was not.** The home artwork's vignette was written as `.hillwrap::after` — and
+  `.hillwrap` is the ANTHILL's scroller. So it darkened the top and bottom of the chamber
+  list for months and never touched the screen it was for, which had its own `#home::after`
+  added later. Both screens looked "slightly off" and neither looked broken.
+
 - **Reveal progress must never live on a tile.** The legacy build stored `t.rv`/`t.rvDir` on
   the tile, which put view state inside the engine where snapshot/restore would copy it. It
   lives in `RevealTracker`, keyed by coordinate.
@@ -576,6 +582,22 @@ How to check a screen really matches, without being able to see it:
    margins inline (`secthead`), and those do not live in the stylesheet.
 
 ### Deliberate deviations
+
+- **No gradients, and corners a step tighter.** Every surface was a vertical gradient —
+  lighter along its top edge, darker along the bottom. On one card that reads as a lit face;
+  stacked down a screen it reads as a shadow falling out from under everything, which is
+  how it was reported. One rule does the removing (`*:not(#home), *::before, *::after
+  { background-image: none !important }`), because a gradient cannot be selected for and
+  there is no way to flatten everything element by element without missing some; `#home` is
+  exempt because the artwork is a background image. Every radius came down one step with it
+  (`--r-lg` 20→14, `--r-md` 14→10, and the literals with them); pills stay pills.
+  - **The restores sit near the TOP of `skin.css`, not the end.** Each legacy rule whose
+    gradient the blanket nulls needs its colour back, but at the end of the file that block
+    outranks every considered decision made in between: the first version put the gold
+    square back under the active tab and turned the Antarium's quiet "Upgrade & Customize"
+    bar solid gold with green text on it. Early, it is a floor; anything later still wins.
+  - Our OWN gradient rules were flattened in place rather than overridden, so their
+    ordering against later rules is unchanged.
 
 - **No drop shadows, and one 3D object.** Every panel, button and chip in the legacy build
   sits on a hard ledge (`0 4px 0`) and presses by dropping onto it. Stacked down a screen

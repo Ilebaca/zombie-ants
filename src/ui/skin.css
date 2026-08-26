@@ -87,10 +87,10 @@
   --hive-dim: #5f4a7d;
 
   /* --------------------------------------------------------------- FORM */
-  --r-sm: 10px;
-  --r-md: 14px;
-  --r-lg: 20px;
-  --r-xl: 26px;
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 18px;
   --r-pill: 999px;
   /* The one and only shadow language: a solid band below, plus a soft ground
      shade far enough down that it never reads as a blur around the edge. */
@@ -104,17 +104,52 @@
    A deep plum field with the reference's scattered squares, quiet enough
    to read as texture rather than pattern.
    ====================================================================== */
+/* ======================================================================
+   ==  FLAT: NO GRADIENTS  ==============================================
+   ======================================================================
+
+   Every surface in the app was a vertical gradient — lighter along its
+   top edge, darker along the bottom. On one card that reads as a lit
+   face; stacked down a screen it reads as a shadow falling out from
+   under everything, which is exactly how it was reported. The shadows
+   themselves went earlier (§10); this is the other half of the same
+   decision, and every surface is now one flat colour.
+
+   The removing is done by ONE rule, because a gradient cannot be
+   selected for and there is no way to say "flatten everything" element
+   by element without missing some. The only background IMAGE in the app
+   that must survive is the home artwork, hence the exemption.
+
+   Everything under it restores the colour a legacy-stylesheet rule was
+   carrying in a gradient the blanket has just nulled — and it sits HERE,
+   near the top, rather than at the end of the file ON PURPOSE. At the
+   end it would outrank every considered colour decision made in between:
+   the first version of it put the gold square back under the active tab
+   and turned the Antarium's quiet "Upgrade & Customize" bar solid gold
+   with green text on it. Early, it is only a floor, and anything later
+   in this file still wins.
+   ====================================================================== */
+*:not(#home), *::before, *::after { background-image: none !important; }
+
+/* Surfaces the legacy sheet fills with a gradient and this file does not
+   otherwise dress. */
+.ccard, .spellcard, .heroslide, .hatchreveal { background-color: var(--panel); }
+.crest, .avatar, .avatarbig, .herocrest, .qhero .qbadge, .sc-img,
+.shopitem-art { background-color: var(--bg2); }
+.turnbanner span { background-color: rgba(0, 0, 0, .55); }
+.ac-chip.ready, .antcta.locked, .achfill, .buybar.soft, .hbuy, .hatchbtn,
+.roadchapter.reached::before, .rcolC.reached::before { background-color: var(--gold); }
+
 body {
   /* Light falling from the top of the page, the way it falls on the artwork. */
-  background:
-    radial-gradient(120% 80% at 50% 0%, #1e3423 0%, #142318 45%, #0b150f 100%);
+  background: #0b150f;
   color: var(--ink);
 }
 
 .screen {
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%23a8e08a' fill-opacity='.035'%3E%3Crect x='10' y='14' width='16' height='16' rx='5'/%3E%3Crect x='42' y='60' width='11' height='11' rx='3.5'/%3E%3Crect x='86' y='26' width='14' height='14' rx='4.5'/%3E%3Crect x='66' y='96' width='9' height='9' rx='3'/%3E%3Crect x='16' y='84' width='12' height='12' rx='4'/%3E%3C/g%3E%3C/svg%3E"),
-    radial-gradient(125% 85% at 50% 12%, #1f3625 0%, #142318 52%, #0b150f 100%);
+    #0b150f;
 }
 
 /* ======================================================================
@@ -198,12 +233,12 @@ body {
 #begin,
 .cta.begin,
 .challplay {
-  background: linear-gradient(180deg, var(--grass-glow), var(--grass));
+  background: var(--grass);
   color: #06280c;
   box-shadow: 0 5px 0 var(--grass-edge), var(--lift);
 }
 .cta {
-  background: linear-gradient(180deg, var(--gold-glow), var(--gold));
+  background: var(--gold);
   color: #3a2600;
   box-shadow: 0 5px 0 var(--gold-edge);
 }
@@ -216,13 +251,13 @@ body {
 .buybar,
 .passbuy,
 .claimchip {
-  background: linear-gradient(180deg, var(--gold-glow), var(--gold));
+  background: var(--gold);
   color: #3a2600;
   box-shadow: 0 4px 0 var(--gold-edge);
 }
 .qbtn.ready,
 .buybar.free {
-  background: linear-gradient(180deg, #7ee06a, #3fae42);
+  background: var(--grass);
   color: #06280c;
   box-shadow: 0 4px 0 #2a7d2c;
 }
@@ -287,7 +322,7 @@ body {
 
 /* section rules: a soft plum line, never a hard grey one */
 .sechead .l,
-.tierhead .tline { background: linear-gradient(90deg, transparent, var(--line), transparent); }
+.tierhead .tline { background: var(--line); }
 .secthead,
 .sechead h3 { color: var(--ink); }
 
@@ -317,7 +352,7 @@ body {
 .mycelchip b { color: var(--gold); }
 
 .tn-plus {
-  background: linear-gradient(180deg, #7ee06a, #3fae42);
+  background: var(--grass);
   color: #06280c;
   box-shadow: 0 2px 0 #2a7d2c;
 }
@@ -328,11 +363,11 @@ body {
   box-shadow: var(--bevel-sm);
 }
 .troadbar .tr-bar { background: rgba(45, 70, 35, .16); border-radius: var(--r-pill); }
-.troadbar .tr-fill { background: linear-gradient(90deg, var(--gold), var(--gold-glow)); }
+.troadbar .tr-fill { background: var(--gold); }
 
 .topnav {
   border: none;
-  background: linear-gradient(180deg, var(--panel), var(--bg1));
+  background: var(--bg1);
   box-shadow: 0 3px 0 var(--panel-edge);
 }
 .tn-av { background: var(--panel-hi); box-shadow: inset 0 0 0 2px var(--hive-dim); }
@@ -341,14 +376,14 @@ body {
    BOTTOM NAV — a slab with a rounded-square active tile
    ====================================================================== */
 .homenav {
-  background: linear-gradient(180deg, var(--panel), var(--bg1));
+  background: var(--bg1);
   border: none;
   box-shadow: 0 -3px 0 var(--panel-edge);
 }
 .navitem { color: var(--ink-soft); border-radius: var(--r-md); }
 .navitem.active {
   color: #3a2600;
-  background: linear-gradient(180deg, var(--gold-glow), var(--gold));
+  background: var(--gold);
   box-shadow: 0 3px 0 var(--gold-edge);
 }
 
@@ -361,7 +396,7 @@ body {
   overflow: hidden;
 }
 .qbar i, .qp i, .cbar i {
-  background: linear-gradient(90deg, var(--gold), var(--gold-glow));
+  background: var(--gold);
   border-radius: var(--r-pill);
 }
 .troadbar {
@@ -372,10 +407,10 @@ body {
 }
 .troadbar:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--panel-edge); }
 .troadbar .tr-bar { background: rgba(45, 70, 35, .16); border-radius: var(--r-pill); }
-.troadbar .tr-fill { background: linear-gradient(90deg, var(--gold), var(--gold-glow)); }
+.troadbar .tr-fill { background: var(--gold); }
 
 .pip { background: rgba(255, 255, 255, .12); border-radius: var(--r-pill); }
-.pip.on { background: linear-gradient(180deg, var(--gold-glow), var(--gold)); }
+.pip.on { background: var(--gold); }
 
 /* ======================================================================
    COLLECTION CARDS — the tier colour does the work, not a border
@@ -411,7 +446,7 @@ body {
    THE MATCH HUD — the board's frame
    ====================================================================== */
 header {
-  background: linear-gradient(180deg, var(--bg1), rgba(198, 212, 179, 0));
+  background: var(--bg1);
 }
 .stat, .hivechip {
   border: none;
@@ -432,7 +467,7 @@ header {
 }
 .timebar i { border-radius: var(--r-pill); }
 
-footer { background: linear-gradient(0deg, var(--bg1), rgba(198, 212, 179, 0)); }
+footer { background: var(--bg1); }
 .btn {
   border: none;
   background: var(--panel);
@@ -456,7 +491,7 @@ footer { background: linear-gradient(0deg, var(--bg1), rgba(198, 212, 179, 0)); 
 }
 .dailyfab {
   border: none;
-  background: linear-gradient(180deg, var(--gold-glow), var(--gold));
+  background: var(--gold);
   color: #3a2600;
   border-radius: var(--r-md);
   box-shadow: 0 4px 0 var(--gold-edge), var(--lift);
@@ -486,7 +521,7 @@ footer { background: linear-gradient(0deg, var(--bg1), rgba(198, 212, 179, 0)); 
    ====================================================================== */
 .roadchap { border-radius: var(--r-xl); }
 .roadcell { border: none; background: var(--panel); border-radius: var(--r-md); box-shadow: var(--bevel-sm); }
-.roadcell.ready { background: linear-gradient(180deg, var(--gold-glow), var(--gold)); color: #3a2600; box-shadow: 0 4px 0 var(--gold-edge); }
+.roadcell.ready { background: var(--gold); color: #3a2600; box-shadow: 0 4px 0 var(--gold-edge); }
 .roadcell.ready .rc-btn { color: #5a3a00; }
 .roadcell.empty { background: rgba(255, 255, 255, .03); box-shadow: none; }
 .rnode {
@@ -495,7 +530,7 @@ footer { background: linear-gradient(0deg, var(--bg1), rgba(198, 212, 179, 0)); 
   color: var(--muted);
   box-shadow: var(--bevel-sm);
 }
-.rnode.done { background: linear-gradient(180deg, var(--gold-glow), var(--gold)); color: #3a2600; box-shadow: 0 3px 0 var(--gold-edge); }
+.rnode.done { background: var(--gold); color: #3a2600; box-shadow: 0 3px 0 var(--gold-edge); }
 
 /* WHERE YOU ARE HEADED.
    Every stop looked identical, so the road was a wall of dim cards with no way to read
@@ -594,7 +629,7 @@ footer { background: linear-gradient(0deg, var(--bg1), rgba(198, 212, 179, 0)); 
 /* Green = go. `.challplay` also carries `.cta`, and the gold `.cta` rule comes later in
    this file, so it needs the extra class to win. */
 .cta.challplay {
-  background: linear-gradient(180deg, var(--grass-glow), var(--grass));
+  background: var(--grass);
   color: #06280c;
   box-shadow: 0 4px 0 var(--grass-edge);
 }
@@ -728,9 +763,9 @@ footer { background: linear-gradient(0deg, var(--bg1), rgba(198, 212, 179, 0)); 
 .homelogo .hl-z { color: var(--grass-glow); }
 
 /* The match chrome fades into the page rather than banding across it. */
-header { background: linear-gradient(180deg, var(--bg1), rgba(20, 35, 24, 0)); }
+header { background: var(--bg1); }
 .timeband { background: var(--bg1); box-shadow: 0 3px 0 var(--panel-edge); }
-footer { background: linear-gradient(0deg, var(--bg1), rgba(20, 35, 24, 0)); }
+footer { background: var(--bg1); }
 
 .overlay { background: rgba(4, 10, 6, .74); }
 .screenh { text-shadow: 0 3px 0 rgba(0, 0, 0, .45); }
@@ -815,8 +850,7 @@ footer { background: linear-gradient(0deg, var(--bg1), rgba(20, 35, 24, 0)); }
    screenshots. A single soft pool of light at the top does the work. */
 body,
 .screen {
-  background:
-    radial-gradient(150% 60% at 50% -10%, #21382a 0%, #16261a 45%, #0c160f 100%);
+  background: var(--bg0);
 }
 
 /* --------------------------------------------------------------- PANELS
@@ -825,8 +859,8 @@ body,
 .card, .metacard, .chcard, .dcard, .qcard, .qhero, .challcard, .dailycard,
 .stile, .luckycard, .rbanner, .dhero, .hillcut, .antcell, .lbbanner, .lbrow,
 .menudraw, .setrow, .roadhead {
-  background: linear-gradient(180deg, var(--panel-hi) 0%, var(--panel) 62%);
-  border-radius: 18px;
+  background: var(--panel);
+  border-radius: 13pxpx;
   box-shadow: var(--bevel);
 }
 
@@ -862,7 +896,7 @@ body,
   padding: 0;
   color: var(--ink-soft);
   background: var(--panel);
-  border-radius: 12px;
+  border-radius: 9pxpx;
 }
 .screentop .backbtn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--panel-edge); }
 
@@ -909,7 +943,7 @@ body,
 .sechead .l, .tierhead .tline {
   flex: 1 1 auto;
   height: 1px;
-  background: linear-gradient(90deg, var(--line), transparent);
+  background: var(--line);
 }
 .sechead .l:first-child { display: none; }
 
@@ -917,7 +951,7 @@ body,
    A quiet tray. The active tab is told by colour, weight and a short bar
    above it — gold means SPEND everywhere else in this app. */
 .homenav {
-  background: linear-gradient(180deg, rgba(30, 50, 37, .96), var(--bg1));
+  background: var(--bg1);
   box-shadow: 0 -1px 0 var(--line), 0 -12px 24px rgba(0, 0, 0, .35);
   padding-top: 6px;
 }
@@ -925,7 +959,7 @@ body,
   position: relative;
   color: var(--muted);
   background: none;
-  border-radius: 12px;
+  border-radius: 9pxpx;
   font-size: 10.5px;
   font-weight: 800;
   letter-spacing: .2px;
@@ -1019,21 +1053,18 @@ body,
 .troadbar .tr-ic { color: var(--gold); font-size: 0; display: grid; place-items: center; }
 .troadbar .tr-rew { color: #ff8f6d; font-size: 0; display: grid; place-items: center; }
 .troadbar .tr-bar { height: 6px; background: rgba(0, 0, 0, .4); border-radius: 3px; }
-.troadbar .tr-fill { background: linear-gradient(90deg, var(--gold), var(--gold-glow)); }
+.troadbar .tr-fill { background: var(--gold); }
 
 /* ----------------------------------------------------------------- HOME
-   The artwork is the whole screen, so it gets a vignette to sit the
-   controls on, a wordmark at the top, and the two floating buttons made
-   into one family instead of a dark square beside a gold one. */
-.hillwrap::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(180deg, rgba(12, 22, 15, .55) 0%, rgba(12, 22, 15, 0) 26%),
-    linear-gradient(0deg, rgba(12, 22, 15, .88) 0%, rgba(12, 22, 15, .35) 24%, rgba(12, 22, 15, 0) 46%);
-}
+   The artwork is the whole screen, so it gets a wordmark at the top and
+   the two floating buttons made into one family instead of a dark square
+   beside a gold one.
+
+   The vignette that used to be written here was hung on `.hillwrap` — and
+   `.hillwrap` is the ANTHILL's scroller, not the home artwork. So it was
+   darkening the top and bottom of the chamber list and doing nothing at
+   all on home, which is the screen it was for. `#home::after` below is the
+   rule that actually does the job. */
 .hilltag {
   font-size: 11px;
   font-weight: 900;
@@ -1047,14 +1078,14 @@ body,
   width: 50px;
   padding: 8px 0 7px;
   gap: 2px;
-  border-radius: 15px;
-  background: linear-gradient(180deg, var(--gold-glow), var(--gold));
+  border-radius: 11pxpx;
+  background: var(--gold);
   color: #3a2600;
   box-shadow: 0 3px 0 var(--gold-edge), 0 8px 18px rgba(0, 0, 0, .5), var(--sheen);
 }
 .settingsfab {
   padding: 0;
-  border-radius: 15px;
+  border-radius: 11pxpx;
   background: rgba(16, 28, 19, .86);
   color: var(--ink-soft);
   box-shadow: 0 3px 0 rgba(0, 0, 0, .5), 0 8px 18px rgba(0, 0, 0, .45), var(--sheen);
@@ -1064,7 +1095,7 @@ body,
    One green, one shape, one place. The play button is the only thing on
    the home screen that is allowed to be this bright. */
 .playbtn, #begin, .cta.begin, .challplay {
-  border-radius: 16px;
+  border-radius: 12pxpx;
   letter-spacing: .6px;
 }
 .playbtn {
@@ -1090,14 +1121,14 @@ body,
   place-items: center;
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: 9pxpx;
   background: rgba(0, 0, 0, .26);
   box-shadow: var(--sheen);
 }
 
 /* ------------------------------------------------------------- BUTTONS */
 .cta, .buybtn, .qbtn, .passbuy, .buybar, .setbtn, .claimchip, .antcta, .hbuy {
-  border-radius: 14px;
+  border-radius: 10pxpx;
   font-weight: 900;
   letter-spacing: .3px;
 }
@@ -1109,7 +1140,7 @@ body,
 .shopnote, .testnote, .demo-note {
   border: none;
   background: rgba(79, 184, 240, .1);
-  border-radius: 14px;
+  border-radius: 10pxpx;
   color: var(--ink-soft);
   box-shadow: var(--sheen);
 }
@@ -1130,9 +1161,9 @@ body,
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background:
-    linear-gradient(180deg, rgba(10, 18, 12, .72) 0%, rgba(10, 18, 12, 0) 22%),
-    linear-gradient(0deg, rgba(10, 18, 12, .92) 0%, rgba(10, 18, 12, .55) 22%, rgba(10, 18, 12, 0) 48%);
+  /* One flat wash over the artwork: the wordmark, the tagline and the two
+     floating buttons still need ground, and a fade is what is being removed. */
+  background: rgba(10, 18, 12, .34);
 }
 /* Lift the content above the wash — WITHOUT touching `position`, which the two floating
    buttons rely on being `absolute`. Setting it on every child put them back in the flow
@@ -1189,7 +1220,7 @@ body,
    the panel rather than floating on the artwork underneath it. */
 .tophead {
   gap: 0;
-  background: linear-gradient(180deg, var(--panel) 0%, var(--bg1) 100%);
+  background: var(--bg1);
   padding-bottom: 10px;
   box-shadow: 0 1px 0 rgba(0, 0, 0, .35);
 }
@@ -1220,7 +1251,7 @@ body,
 .chic, .ri {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: 9pxpx;
   background: rgba(0, 0, 0, .26);
   box-shadow: var(--sheen);
   color: var(--grass-glow);
@@ -1260,7 +1291,7 @@ body,
   gap: 10px;
   border: none;
   background: rgba(79, 184, 240, .09);
-  border-radius: 14px;
+  border-radius: 10pxpx;
   color: var(--ink-soft);
   box-shadow: var(--sheen);
   font-size: 12.5px;
@@ -1279,7 +1310,7 @@ body,
   width: 54px;
   height: 54px;
   margin: 0 auto 8px;
-  border-radius: 16px;
+  border-radius: 12pxpx;
   background: rgba(0, 0, 0, .28);
   box-shadow: var(--sheen);
   color: var(--gold-glow);
@@ -1335,7 +1366,7 @@ body,
 .sstep.on { width: 30px; background: var(--grass-glow); }
 
 #mapNext, #toFormation {
-  background: linear-gradient(180deg, var(--grass-glow), var(--grass));
+  background: var(--grass);
   color: #10300c;
   box-shadow: 0 4px 0 var(--grass-edge), var(--sheen);
   font-size: 17px;
@@ -1361,13 +1392,13 @@ body,
    The drawer floated straight on the artwork with nothing behind it, and
    its seven entries were seven emoji from seven sets. */
 .menuwrap { background: rgba(8, 15, 10, .6); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
-.menudraw { padding: 8px; border-radius: 20px 0 0 20px; }
+.menudraw { padding: 8px; border-radius: 14pxpx 0 0 20px; }
 .menuitem {
   display: flex;
   align-items: center;
   gap: 12px;
   border: none;
-  border-radius: 14px;
+  border-radius: 10pxpx;
   background: none;
   color: var(--ink);
   font-weight: 800;
@@ -1378,7 +1409,7 @@ body,
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: 11px;
+  border-radius: 8pxpx;
   background: rgba(0, 0, 0, .26);
   box-shadow: var(--sheen);
   color: var(--grass-glow);
@@ -1390,14 +1421,14 @@ body,
 .qic, .lbbadge {
   display: grid;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 9pxpx;
   background: rgba(0, 0, 0, .26);
   box-shadow: var(--sheen);
   color: var(--grass-glow);
   font-size: 0;
 }
 .qic { width: 40px; height: 40px; }
-.lbbadge { width: 48px; height: 48px; border-radius: 14px; color: var(--gold-glow); }
+.lbbadge { width: 48px; height: 48px; border-radius: 10pxpx; color: var(--gold-glow); }
 .qstreak { color: var(--gold-glow); font-weight: 800; letter-spacing: .3px; }
 
 /* ======================================================================
@@ -1437,7 +1468,7 @@ body,
   position: fixed;
   width: min(330px, calc(100vw - 24px));
   pointer-events: auto;
-  background: linear-gradient(180deg, var(--panel-hi), var(--panel));
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   box-shadow: var(--bevel), var(--lift);
@@ -1489,7 +1520,7 @@ body,
   font-weight: 900;
   letter-spacing: .3px;
   color: #06210a;
-  background: linear-gradient(180deg, var(--grass-glow), var(--grass));
+  background: var(--grass);
   border: 0;
   border-radius: var(--r-pill);
   box-shadow: 0 3px 0 var(--grass-edge);
@@ -1705,7 +1736,7 @@ button:not(.playbtn):active,
   padding-bottom: 0;
 }
 .topnav {
-  background: linear-gradient(180deg, var(--panel) 0%, var(--bg1) 100%);
+  background: var(--bg1);
   border-bottom: none;
   box-shadow: 0 1px 0 rgba(0, 0, 0, .35);
 }
@@ -1746,7 +1777,7 @@ button:not(.playbtn):active,
   width: 54px;
   height: 54px;
   margin: 0 auto 8px;
-  border-radius: 16px;
+  border-radius: 12pxpx;
   background: rgba(0, 0, 0, .28);
   box-shadow: var(--sheen);
   color: var(--gold-glow);
@@ -1966,7 +1997,7 @@ button:not(.playbtn):active,
   margin-bottom: 12px;
   padding: 9px 14px;
   border-radius: var(--r-md);
-  background: linear-gradient(180deg, var(--gold-glow), var(--gold));
+  background: var(--gold);
   color: #3a2600;
   font-size: 13.5px;
   font-weight: 900;
@@ -2075,7 +2106,7 @@ button:not(.playbtn):active,
   display: block;
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, var(--grass), var(--grass-glow));
+  background: var(--grass);
   transition: width .35s ease;
 }
 
@@ -2149,7 +2180,7 @@ button:not(.playbtn):active,
 .chlv {
   flex: 0 0 auto;
   padding: 4px 8px;
-  border-radius: 8px;
+  border-radius: 6pxpx;
   background: rgba(0, 0, 0, .28);
   font-size: 10.5px;
   letter-spacing: .8px;
@@ -2170,7 +2201,7 @@ button:not(.playbtn):active,
 .cheff {
   margin: 0 0 14px;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: 9pxpx;
   /* A well cut into the card face. The app clears every box-shadow (§10), so
      the depth is the darker fill alone — which is enough on this ground. */
   background: rgba(0, 0, 0, .24);
@@ -2211,3 +2242,4 @@ button:not(.playbtn):active,
   background: rgba(0, 0, 0, .34);
 }
 .chfoot .pip.on { background: var(--grass); }
+

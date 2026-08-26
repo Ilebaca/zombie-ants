@@ -363,13 +363,21 @@ describe("colony screen", () => {
     expect(root.querySelectorAll(".qbtn.claimed").length).toBe(1);
   });
 
+  /**
+   * The day's three roll from the day NUMBER (§12), so this has to hold whatever today
+   * rolled. It used to take quest one and step it once — and on a day whose first quest
+   * takes a single step, one step CLAIMS it, so the first in-progress button on the screen
+   * belonged to a different quest and read 0/5. Pick a quest that cannot be finished in one.
+   */
   it("shows progress on the button while a quest is unfinished", () => {
     const s = store();
-    const first = s.dailyQuests()[0]!;
-    const def = questDef(first.id)!;
-    s.questProgress(def.kind, 1);
+    const def = s.dailyQuests().map((q) => questDef(q.id)!).find((d) => d.goal > 1);
+    expect(def, "no daily quest today takes more than one step").toBeTruthy();
+    s.questProgress(def!.kind, 1);
     const root = buildQuests(s, () => {});
-    expect(root.querySelector(".qbtn.wip")?.textContent).toBe(`1/${def.goal}`);
+    // Two quests can share a kind, so one step can move more than one button.
+    const labels = Array.from(root.querySelectorAll(".qbtn.wip")).map((b) => b.textContent);
+    expect(labels).toContain(`1/${def!.goal}`);
   });
 
   it("offers a level reward to claim once one is reached", () => {
