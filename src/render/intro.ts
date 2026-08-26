@@ -1,25 +1,28 @@
 /**
- * THE OPENING: the camera comes down through the canopy.
+ * THE OPENING: the camera drops onto the map.
  *
- * A match used to begin with the board simply being there. It starts above the trees now:
- * leaves rush past at three depths as the camera drops between them, the forest floor grows
- * up to meet it and locks, and only then do the two colonies fill in from their nests.
+ * A match used to begin with the board simply being there. It starts high above it now: the
+ * clearing is small in a frame of undergrowth, the floor grows up to meet the lens and
+ * locks, and only then do the two colonies grow out of their nests.
  *
  * Like the finale (flood.ts) this is a VIEW and nothing else. The board it descends onto is
- * the board the engine already built — the camera is one transform around the frame, and
- * the canopy is drawn over the top of it. Nothing here can change a tile (CLAUDE.md §3).
+ * the board the engine already built — the camera is one transform around the frame.
+ * Nothing here can change a tile (CLAUDE.md §3).
  *
- * The layers are what sells it. One sheet of leaves scaling up reads as a texture being
- * zoomed; three at different rates read as depth, because that difference is the only cue
- * a flat canvas has for "between". Each is seeded, so the same board opens the same way
- * rather than reshuffling on a resize, exactly as the scenery does (terrain.ts).
+ * THE FRAME MUST BE FULL. The board's own scenery is painted to the edges of the canvas and
+ * no further, so the moment the camera pulls back there is a border of nothing around it and
+ * the map reads as a picture floating on a colour. The bushes fill that border: they live in
+ * the same space as the board, so they slide off the edges as it grows rather than sitting
+ * over it, and they overlap its rim a little so there is no hard rectangle where the scenery
+ * stops. Placement is seeded — the same board opens the same way rather than reshuffling on
+ * a resize, exactly as the scenery does (terrain.ts).
  */
 import { MAP } from "./palette";
 
 const TAU = 6.283185307;
 
-/** The descent: above the canopy to locked on the map. */
-export const INTRO_MS = 1400;
+/** The descent: high above the clearing to locked on it. */
+export const INTRO_MS = 1150;
 
 /**
  * ...and then the colonies fill in from their nests.
@@ -30,29 +33,17 @@ export const INTRO_MS = 1400;
  */
 export const INTRO_FILL_MS = 820;
 
-/** How far above the floor the camera starts, as a share of the final framing. */
-const FROM = 0.58;
-
 /**
- * One sheet of leaves, and how fast it rushes past.
+ * How big the floor is when the descent starts, as a share of its final framing.
  *
- * `rush` is where the layer has grown to by the time the camera lands: the nearest sheet
- * blows past the edges of the screen early, the furthest is still only twice its size at
- * the end. `until` is when it has gone; `tone` is how much of the light it still catches —
- * a leaf ABOVE the camera is backlit, so the closer it is the darker it reads.
+ * Deliberately not far out. Past about this the clearing stops being the subject and starts
+ * being a stamp in the middle of a screen of undergrowth, and the zoom stops reading as a
+ * camera coming down and starts reading as a picture being scaled.
  */
-interface Sheet {
-  rush: number;
-  until: number;
-  tone: number;
-  leaves: number;
-}
+const FROM = 0.66;
 
-const SHEETS: readonly Sheet[] = [
-  { rush: 9.0, until: 0.42, tone: 0.30, leaves: 7 },
-  { rush: 4.2, until: 0.70, tone: 0.58, leaves: 11 },
-  { rush: 2.1, until: 1.00, tone: 1.00, leaves: 16 },
-];
+/** How far past the board's edge the bushes are scattered, as a share of its width. */
+const RING = 0.55;
 
 export interface Intro {
   start: number;
@@ -70,7 +61,7 @@ export function introAt(intro: Intro, now: number): number {
   return p <= 0 ? 0 : (p >= 1 ? 1 : p);
 }
 
-/** Everything the caller has to wait for: down through the trees, then the colonies. */
+/** Everything the caller has to wait for: the descent, then the colonies. */
 export const introTotal = (intro: Intro): number =>
   intro.dur + (intro.dur > 1 ? INTRO_FILL_MS : 0);
 
@@ -95,102 +86,91 @@ function seeded(seed: number): () => number {
   };
 }
 
-interface Blade { x: number; y: number; r: number; a: number; dark: boolean }
+interface Bush { x: number; y: number; r: number; lobes: number; a: number; dark: boolean }
 
-/** Leaves are placed once per screen size, not per frame. */
-let cached: { key: string; sheets: Blade[][] } | null = null;
+/** Bushes are placed once per screen size, not per frame. */
+let cached: { key: string; bushes: Bush[] } | null = null;
 
-function sheetsFor(w: number, h: number): Blade[][] {
+function bushesFor(w: number, h: number): Bush[] {
   const key = `${Math.round(w)}x${Math.round(h)}`;
-  if (cached && cached.key === key) return cached.sheets;
+  if (cached && cached.key === key) return cached.bushes;
   const rand = seeded(0x5eed1eaf);
+  const band = w * RING;
   const span = Math.max(w, h);
-  const sheets = SHEETS.map((sheet) => {
-    const out: Blade[] = [];
-    for (let i = 0; i < sheet.leaves; i++) {
+  const out: Bush[] = [];
+
+  // Around the outside, and a little way in over the rim: the overlap is what stops the
+  // scenery ending on a straight line.
+  const edge = (n: number, place: (t: number) => { x: number; y: number }): void => {
+    for (let i = 0; i < n; i++) {
+      const at = place((i + rand() * 0.9) / n);
       out.push({
-        // Spread beyond the frame: a sheet that only covers the middle parts like a
-        // curtain instead of opening around the camera.
-        x: w / 2 + (rand() - 0.5) * w * 1.5,
-        y: h / 2 + (rand() - 0.5) * h * 1.5,
-        r: span * (0.07 + rand() * 0.11),
+        x: at.x, y: at.y,
+        r: span * (0.10 + rand() * 0.13),
+        lobes: 4 + Math.floor(rand() * 3),
         a: rand() * TAU,
-        dark: rand() < 0.42,
+        dark: rand() < 0.68,
       });
     }
-    return out;
-  });
-  cached = { key, sheets };
-  return sheets;
+  };
+  const over = span * 0.05;                        // how far a bush may lean onto the board
+  // Biased toward the rim rather than spread evenly through the band: a thin scatter at the
+  // edge of the clearing leaves gaps for the board's own scenery to end on a straight line,
+  // which is the thing the bushes are here to hide.
+  const inward = (): number => Math.sqrt(rand()) * (band + over);
+  edge(12, (t) => ({ x: -band + t * (w + band * 2), y: -band + (band + over) - inward() }));
+  edge(12, (t) => ({ x: -band + t * (w + band * 2), y: h + band - inward() }));
+  edge(10, (t) => ({ x: -band + (band + over) - inward(), y: -band + t * (h + band * 2) }));
+  edge(10, (t) => ({ x: w + band - inward(), y: -band + t * (h + band * 2) }));
+
+  cached = { key, bushes: out };
+  return out;
 }
 
-/** Drop the cached canopy — used by tests. */
-export function resetCanopy(): void { cached = null; }
+/** Drop the cached bushes — used by tests. */
+export function resetSurround(): void { cached = null; }
 
 /**
- * The canopy, over everything: it is between the camera and the floor.
+ * The undergrowth around the clearing, drawn INSIDE the camera so it belongs to the ground.
  *
- * Each sheet grows from its own middle outward, which is what a camera moving straight down
- * through it does. They are drawn far-first so the nearest is on top right up to the moment
- * it clears the frame.
+ * It fades over the last part of the descent rather than only sliding away: a bush leaning
+ * over the board's rim would otherwise still be sitting on the playfield at the moment the
+ * camera locks, and the first thing the player looks at must be the board.
  */
-export function drawCanopy(
+export function drawSurround(
   ctx: CanvasRenderingContext2D, w: number, h: number, p: number,
 ): void {
   if (p >= 1) return;
-  const sheets = sheetsFor(w, h);
+  // Gone a beat BEFORE the lock, not exactly on it: the last frames of the descent should
+  // be the board and nothing else, which is what the camera is arriving at.
+  const alpha = p < 0.66 ? 1 : 1 - (p - 0.66) / 0.28;
+  if (alpha <= 0) return;
 
-  // Under the trees is shade. It lifts as the last leaves clear, so the board arrives at
-  // its own colours rather than at a tinted version of them — and once it is down to
-  // nothing it stops being drawn, rather than costing a full-screen fill for no ink.
-  const shadeA = (1 - p) ** 2 * 0.55;
-  if (shadeA > 0.01) {
-    ctx.save();
-    ctx.globalAlpha = shadeA;
-    ctx.fillStyle = "#0b1a0d";
-    ctx.fillRect(0, 0, w, h);
-    ctx.restore();
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  for (const b of bushesFor(w, h)) {
+    // A shadow pooled under it, then the clump, then one lit crown — the same three-layer
+    // build every raised thing on this board uses. Undergrowth in a forest is SHADED, so
+    // the body is the dark green and the crown is a hint rather than a highlight.
+    ctx.fillStyle = MAP.groundShade;
+    blob(ctx, b, b.r * 0.94, b.r * 0.16);
+    ctx.fillStyle = b.dark ? "#2b4720" : MAP.leafDark;
+    blob(ctx, b, b.r, 0);
+    ctx.globalAlpha = alpha * 0.34;
+    ctx.fillStyle = MAP.leaf;
+    blob(ctx, b, b.r * 0.55, -b.r * 0.20);
+    ctx.globalAlpha = alpha;
   }
-
-  for (let i = SHEETS.length - 1; i >= 0; i--) {
-    const sheet = SHEETS[i] as Sheet;
-    if (p >= sheet.until) continue;
-    const t = p / sheet.until;                       // this sheet's own 0..1
-    const scale = 1 + (sheet.rush - 1) * t * t;      // accelerating toward the lens
-    const alpha = t < 0.6 ? 1 : 1 - (t - 0.6) / 0.4;
-
-    ctx.save();
-    ctx.globalAlpha = Math.max(0, alpha);
-    ctx.translate(w / 2, h / 2);
-    ctx.scale(scale, scale);
-    ctx.translate(-w / 2, -h / 2);
-    for (const b of sheets[i] as Blade[]) {
-      ctx.save();
-      ctx.translate(b.x, b.y);
-      ctx.rotate(b.a);
-      ctx.fillStyle = shade(b.dark ? MAP.leafDark : MAP.leaf, sheet.tone);
-      ctx.beginPath();
-      ctx.ellipse(0, 0, b.r, b.r * 0.42, 0, 0, TAU);
-      ctx.fill();
-      // The midrib, so a blob reads as a leaf.
-      ctx.strokeStyle = shade(MAP.leafDark, sheet.tone * 0.8);
-      ctx.lineWidth = Math.max(1, b.r * 0.045);
-      ctx.beginPath();
-      ctx.moveTo(-b.r, 0);
-      ctx.lineTo(b.r, 0);
-      ctx.stroke();
-      ctx.restore();
-    }
-    ctx.restore();
-  }
+  ctx.restore();
 }
 
-/** Mix a hex colour toward black. A leaf between the camera and the sun is a silhouette. */
-function shade(hex: string, tone: number): string {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return hex;
-  const v = parseInt(m[1] as string, 16);
-  const f = Math.max(0, Math.min(1, tone));
-  return `rgb(${Math.round(((v >> 16) & 255) * f)},`
-    + `${Math.round(((v >> 8) & 255) * f)},${Math.round((v & 255) * f)})`;
+/** A clump: overlapping circles around a centre, so it reads as foliage and not a ball. */
+function blob(ctx: CanvasRenderingContext2D, b: Bush, r: number, dy: number): void {
+  ctx.beginPath();
+  for (let i = 0; i < b.lobes; i++) {
+    const a = b.a + (i / b.lobes) * TAU;
+    ctx.moveTo(b.x + Math.cos(a) * r * 0.5 + r * 0.55, b.y + dy + Math.sin(a) * r * 0.42);
+    ctx.arc(b.x + Math.cos(a) * r * 0.5, b.y + dy + Math.sin(a) * r * 0.42, r * 0.55, 0, TAU);
+  }
+  ctx.fill();
 }

@@ -12,7 +12,7 @@ import { RevealTracker } from "./reveal";
 import { FxLayer } from "./fx";
 import { animate } from "./animate";
 import { floodDuration, floodFade, planFlood, type Flood } from "./flood";
-import { drawCanopy, introAt, introScale, introTotal, planIntro, type Intro } from "./intro";
+import { drawSurround, introAt, introScale, introTotal, planIntro, type Intro } from "./intro";
 import { basicLook, type Look } from "./art";
 import { MAP, loadColors, setFactionColor } from "./palette";
 import {
@@ -278,11 +278,11 @@ export class BoardRenderer {
       // gem seams and the rocks all go under it.
       drawFlood(scene);
 
-      // Out of the camera, and then the leaves — they are between the lens and the floor,
-      // so they are not scaled by it.
+      // The undergrowth around the clearing is drawn INSIDE the camera: it is on the ground,
+      // so it slides off the edges as the board grows rather than sitting over it.
       if (descent < 1) {
+        drawSurround(ctx, this.layout.width, this.layout.height, descent);
         ctx.restore();
-        drawCanopy(ctx, this.layout.width, this.layout.height, descent);
       }
       this.fx.draw(ctx, this.layout);
     } catch (err) {

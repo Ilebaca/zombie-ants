@@ -372,16 +372,22 @@ Each of these cost a debugging round. Do not repeat them.
   figure-eight and the dashes run between the two as though there were ground there. Taking
   the sharpest RIGHT turn at every junction keeps them apart, because the trace is wound
   clockwise per cell. Everywhere else there is only one edge to take, so the rule is free.
-- **The opening is a VIEW too.** A match begins above the trees: leaves rush past at three
-  depths as the camera drops between them, the floor grows up and locks, and only then do
-  the two colonies grow out of their nests (`render/intro.ts`). Like the finale it is one
-  transform around the frame plus a wash over the top — the board underneath is the one the
-  engine built, and the layout is untouched, or a tap would land on the wrong cell.
-  - **Three sheets, not one.** One sheet of leaves scaling up reads as a texture being
-    zoomed; the difference in rate between three is the only cue a flat canvas has for
-    "between the trees".
-  - **The floor has to run to every edge.** At the top of the descent the board does not
-    fill the screen, so without a soil fill under the camera the map floated on void.
+- **The opening is a VIEW too.** A match begins high above the board: the clearing sits
+  small in a frame of undergrowth, the floor grows up to the lens and locks, and only then
+  do the two colonies grow out of their nests (`render/intro.ts`). Like the finale it is one
+  transform around the frame — the board underneath is the one the engine built, and the
+  layout is untouched, or a tap would land on the wrong cell.
+  - **The frame has to be FULL.** The board's scenery is painted to the edges of the canvas
+    and no further, so the moment the camera pulls back there is a border of nothing around
+    it and the map reads as a picture floating on a colour. Bushes fill that border. They
+    are drawn INSIDE the camera, so they slide off the edges as the board grows rather than
+    sitting over it, and they are biased toward the rim and lean over it — a thin even
+    scatter leaves gaps for the scenery to end on a straight line, which is the thing they
+    are there to hide. They clear a beat BEFORE the lock, so the last frames of the descent
+    are the board and nothing else.
+  - **Not far out.** Past about a third the clearing stops being the subject and becomes a
+    stamp in a screen of undergrowth, and the zoom stops reading as a camera coming down and
+    starts reading as a picture being scaled.
   - **The colonies are scheduled at the START and set off at the landing.** `RevealTracker.
     begin` takes a future `at` for exactly this: registering the tiles immediately is what
     makes them draw UNFILLED during the descent. Beginning the reveal on arrival instead
