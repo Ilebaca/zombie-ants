@@ -137,6 +137,17 @@ describe("anthill screen", () => {
     expect(card?.className).toContain("maxed");
   });
 
+  /**
+   * The word "MYCEL" after the figure named the currency its own mark already names, and it
+   * was the widest thing in the header — which pushed the centred title off the middle.
+   */
+  it("shows the currency as a mark and a figure, not a word", () => {
+    const chip = buildAnthill(store()).querySelector(".mycelchip");
+    // The mark is an SVG, so the chip's text is the figure and nothing else.
+    expect(chip?.textContent?.trim()).toBe("0");
+    expect(chip?.querySelector("svg"), "the mark went with the word").not.toBeNull();
+  });
+
   /** Nav tabs carry no back arrow — the bottom nav is the way out (legacy behaviour). */
   it("carries no back button, being a bottom-nav tab", () => {
     expect(buildAnthill(store()).querySelector(".backbtn")).toBeNull();

@@ -583,6 +583,19 @@ How to check a screen really matches, without being able to see it:
 
 ### Deliberate deviations
 
+- **One content column, and the currency chip is a mark and a figure.** Four different
+  insets were in play at once: the screen carries a 16px gutter, and then the Anthill's and
+  the Challenges' cards carried another 16 of their own — so those boxes ran 326px wide
+  inside a body that was 358, while the Antarium's ran 358 and the Shop's ran 356 starting a
+  pixel further in. The result card had the rule that was wanted, so it is now the page's:
+  `.screentop, .screenbody, .overModalWrap { width: min(100%, var(--page)); margin-inline:
+  auto }` with `--page: 360px`. A phone gets edge-to-edge, a wide screen gets a readable
+  measure instead of a stretched one, and nothing inside the column insets itself again —
+  the header's own side padding goes too, or the back button and the currency chip sit
+  sixteen pixels inside the cards below them.
+  The chip is the mark and the number. "MYCEL" after the figure named the currency its own
+  icon already names, and it was the widest thing in the header.
+
 - **No gradients, and corners a step tighter.** Every surface was a vertical gradient —
   lighter along its top edge, darker along the bottom. On one card that reads as a lit face;
   stacked down a screen it reads as a shadow falling out from under everything, which is

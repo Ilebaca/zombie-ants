@@ -268,7 +268,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     /* Research */
     const res = el("div", "dcard");
     const rh = el("div", "ch");
-    const purse = el("span");
+    const purse = el("span", "purse");
     purse.append(iconMark("mycel", 13), el("span", undefined, String(profile.mycel)));
     rh.append(el("span", undefined, "Research"), purse);
     res.appendChild(rh);

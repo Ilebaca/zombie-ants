@@ -1899,7 +1899,8 @@ button:not(.playbtn):active,
   position: sticky;
   bottom: 0;
   z-index: 2;
-  margin: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  /* On the column's own edges, like everything else. */
+  margin: 10px 0 calc(10px + env(safe-area-inset-bottom));
   background: var(--panel);
 }
 
@@ -2243,3 +2244,50 @@ button:not(.playbtn):active,
 }
 .chfoot .pip.on { background: var(--grass); }
 
+
+/* ======================================================================
+   ==  ONE CONTENT COLUMN  ==============================================
+   ======================================================================
+
+   Four different insets were in play at once. The screen carries a 16px
+   gutter, and then the Anthill's and the Challenges' cards each carried
+   ANOTHER 16 of their own — so those boxes ran 326px wide inside a body
+   that was 358, while the Antarium's ran the full 358 and the Shop's ran
+   356 starting one pixel further in. Stacked down a screen that reads as
+   nothing lining up with anything, which is what it is.
+
+   The result card had the rule that was wanted: a column that fills the
+   width up to a cap and centres itself, so a phone gets edge-to-edge and
+   a wide screen gets a readable measure instead of a stretched one. That
+   rule is now the page's, and everything sits inside it — so the header,
+   the section labels, the cards and the modal all share two edges.
+   ====================================================================== */
+:root { --page: 360px; }
+
+.screentop, .screenbody, .overModalWrap { width: min(100%, var(--page)); margin-inline: auto; }
+
+/* The header IS the column now, so it must not inset itself inside it — the
+   back button and the currency chip belong on the same two edges as the
+   cards under them. */
+.screentop,
+.screentop:has(.backbtn),
+.screentop:has(.mycelchip) { padding-left: 0; padding-right: 0; }
+
+/* ...and nothing inside the column insets itself again. */
+.chcard, .dcard, .challcard, .setrow, .lbrow, .qcard {
+  margin-left: 0;
+  margin-right: 0;
+}
+.hillcut { margin: 0 0 4px; }
+.sechead, .tierhead, .secthead { margin-left: 0; margin-right: 0; }
+.troadbar { margin-left: 0; margin-right: 0; }
+/* The shop body's own 1px of side padding started its boxes half a pixel
+   off every other screen's. */
+.screenbody.shopbody { padding-left: 0; padding-right: 0; }
+/* A chapter is an invisible grouping, so its padding only moved the reward
+   cells eight pixels in from where every other card on every other screen
+   starts. */
+.roadchap { padding-left: 0; padding-right: 0; }
+
+/* The mark and the figure were touching. */
+.dcard .ch .purse { display: inline-flex; align-items: center; gap: 5px; }

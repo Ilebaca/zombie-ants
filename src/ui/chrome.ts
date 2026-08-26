@@ -63,10 +63,16 @@ export function screenHeader(parent: HTMLElement, opts: HeaderOptions): void {
   parent.appendChild(top);
 }
 
-/** Mycelium chip pinned to the top-right of a screen header. */
+/**
+ * Mycelium chip pinned to the top-right of a screen header.
+ *
+ * Mark and number only. The word "MYCEL" after the figure was naming the currency its own
+ * icon already names, and it was the widest thing in the header — which pushed the centred
+ * title off the middle of the screen to make room for a label nobody reads twice.
+ */
 export function mycelChip(mycel: number): HTMLElement {
   const chip = el("div", "mycelchip");
-  chip.append(icon("mycel", 18), el("b", "mycelv", String(mycel)), el("small", undefined, "mycel"));
+  chip.append(icon("mycel", 18), el("b", "mycelv", String(mycel)));
   return chip;
 }
 
