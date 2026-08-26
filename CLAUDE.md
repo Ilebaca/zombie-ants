@@ -372,6 +372,24 @@ Each of these cost a debugging round. Do not repeat them.
   figure-eight and the dashes run between the two as though there were ground there. Taking
   the sharpest RIGHT turn at every junction keeps them apart, because the trace is wound
   clockwise per cell. Everywhere else there is only one edge to take, so the rule is free.
+- **The finale is a VIEW, not a set of moves.** When a match is decided the winner's colour
+  sweeps out from their nest and consumes the whole board — enemy ground, veins, wild
+  garrisons, the Hive and the rocks — before the result card comes up (`render/flood.ts`).
+  It draws OVER the board and never touches it, which is the only way it can work: the card
+  reports the armies and the ground as they actually stood when the queen fell, and that is
+  what the player was playing for. Three things it cost to get right:
+  - **Stopping at the rocks left four grey holes** in the finished board, which read as the
+    colour failing to paint rather than as a colony overrunning the map. Everything goes.
+  - **The slab needs its own under-band.** A colony's band hangs BELOW its cells, so without
+    one the wash left a sliver of the loser's colour along the bottom edge of the board.
+  - **"No numbers" means all of them.** Only the colonies' own counts were gated on
+    `hideCounts`; a wild garrison's shield and the Hive's guard sat there through the whole
+    finale. The colonies' dashed outlines dissolve over the first third of the wash rather
+    than popping out on the winning frame.
+  `MatchScreen.finish()` holds the card back for the wash and latches, because it is
+  reachable from a queen falling, a surrender and a challenge objective — and `destroy()`
+  cancels the pending card, so a screen torn down mid-wash never hands one out.
+
 - **A destroyed tile has to outlive the engine.** The rules clear it the instant it dies, so
   without the `crumble` effect a venom hit that eats a four-tile trail leaves no trace at
   all — the biggest thing that can happen on a turn, invisible. The effect draws over ground

@@ -90,6 +90,10 @@ export class MatchScreen {
   private timeLeft = MOVE_SECONDS;
   private timerId: number | null = null;
   private aiTimer: number | null = null;
+  /** Holds the result card back while the winner's wash plays. */
+  private endTimer: number | null = null;
+  /** finish() is reachable from several paths; the finale plays once. */
+  private finishing = false;
   private surrenderArmed = false;
   private surrenderTimer: number | null = null;
   /** Why the match ended. Only the engine's gameOver event carries it. */
@@ -446,6 +450,7 @@ export class MatchScreen {
     this.renderer.stop();
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
     this.clearTimers();
+    if (this.endTimer) { clearTimeout(this.endTimer); this.endTimer = null; }
     this.root.remove();
   }
 
@@ -591,12 +596,31 @@ export class MatchScreen {
     this.aiTimer = window.setTimeout(() => this.handOver(), events.length ? 700 : 200);
   }
 
+  /**
+   * The match is over.
+   *
+   * The winner takes the whole board before the card comes up (render/flood.ts). A popup
+   * over a board frozen mid-fight told the player it was over without ever showing it; the
+   * wash is the showing, and the card waits for it.
+   *
+   * Reachable from several paths — a queen falling, a surrender, a challenge objective — and
+   * more than once from some of them, so it latches. Without that a second call would start
+   * a second wash and queue a second card.
+   */
   private finish(): void {
+    if (this.finishing) return;
+    this.finishing = true;
     this.clearTimers();
     this.renderer.setSelection(null, []);
     const winner = this.state.winner;
     this.updateTimerUI();
-    this.opts.onExit?.(winner, this.endReason);
+
+    const wait = winner ? this.renderer.floodWin(winner) : 0;
+    // `destroy()` cancels this, so a screen torn down mid-wash never hands out a card.
+    this.endTimer = window.setTimeout(() => {
+      this.endTimer = null;
+      this.opts.onExit?.(winner, this.endReason);
+    }, wait);
   }
 
   /* ----------------------------------------------------------------------- INPUT */

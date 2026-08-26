@@ -24,7 +24,9 @@ afterEach(() => { vi.useRealTimers(); });
 
 const sig = (s: GameState): string => JSON.stringify(snapshot(s).tiles);
 
-interface Watch { host: HTMLElement; screen: MatchScreen; state: GameState; log: string[] }
+interface Watch {
+  host: HTMLElement; screen: MatchScreen; state: GameState; log: string[]; exits: number;
+}
 
 /** A match sitting on the AI's turn, with the board sampled on every observation. */
 function watch(): Watch {
@@ -33,6 +35,8 @@ function watch(): Watch {
   const host = document.createElement("div");
   document.body.appendChild(host);
   const log: string[] = [];
+  // `screen` is filled in the moment the constructor returns; onExit cannot fire before.
+  const w: Partial<Watch> & Omit<Watch, "screen"> = { host, state, log, exits: 0 };
   const screen = new MatchScreen(host, {
     state,
     mods: { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } },
@@ -42,8 +46,10 @@ function watch(): Watch {
     onEvents: (events: readonly EngineEvent[]) => {
       if (events.length) log.push("events");
     },
+    onExit: () => { w.exits++; },
   });
-  return { host, screen, state, log };
+  w.screen = screen;
+  return w as Watch;
 }
 
 describe("the AI's turn", () => {
@@ -94,5 +100,51 @@ describe("the AI's turn", () => {
     await vi.advanceTimersByTimeAsync(6000);
     w.screen.destroy();
     expect(sig(w.state), "the AI stood still").not.toBe(before);
+  });
+});
+
+/** Ends the match the way the player does: surrender takes two taps. */
+const quit = (w: Watch): void => {
+  const button = w.host.querySelector<HTMLButtonElement>("#bSurr");
+  button?.click();
+  button?.click();
+};
+
+/**
+ * THE FINALE HOLDS THE CARD BACK.
+ *
+ * A popup over a board frozen mid-fight told the player it was over without ever showing
+ * it. The winner takes the whole board first (render/flood.ts), and the result card waits
+ * for that — so `onExit` must not fire in the same tick the match ends.
+ */
+describe("the end of a match", () => {
+  it("plays the winner's wash before the result card", async () => {
+    vi.useFakeTimers();
+    const w = watch();
+    w.state.current = "you";
+    w.screen.start();
+
+    quit(w);
+    expect(w.state.over, "the surrender did not take").toBe(true);
+    expect(w.exits, "the card came up over a board still mid-fight").toBe(0);
+
+    await vi.advanceTimersByTimeAsync(400);
+    expect(w.exits, "the wash was not given time to play").toBe(0);
+
+    await vi.advanceTimersByTimeAsync(4000);
+    expect(w.exits, "the card never came up").toBe(1);
+    w.screen.destroy();
+  });
+
+  /** The screen going away mid-wash must not hand a card to a match nobody is watching. */
+  it("drops the card if the screen is torn down mid-wash", async () => {
+    vi.useFakeTimers();
+    const w = watch();
+    w.state.current = "you";
+    w.screen.start();
+    quit(w);
+    w.screen.destroy();
+    await vi.advanceTimersByTimeAsync(4000);
+    expect(w.exits).toBe(0);
   });
 });

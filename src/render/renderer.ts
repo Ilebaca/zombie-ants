@@ -10,11 +10,12 @@ import { Layout } from "./layout";
 import { RevealTracker } from "./reveal";
 import { FxLayer } from "./fx";
 import { animate } from "./animate";
+import { floodDuration, floodFade, planFlood, type Flood } from "./flood";
 import { basicLook, type Look } from "./art";
 import { loadColors, setFactionColor } from "./palette";
 import {
-  drawBackground, drawFillets, drawSelection, drawSurge, drawTile, drawTileBevels, drawTrails,
-  seedMotes,
+  drawBackground, drawFillets, drawFlood, drawSelection, drawSurge, drawTile, drawTileBevels,
+  drawTrails, seedMotes,
   type Mote, type Scene,
 } from "./board";
 
@@ -44,6 +45,8 @@ export class BoardRenderer {
 
   /** Set during the win-flood finale to hide every soldier count. */
   hideCounts = false;
+  /** The winner's wash over the board once the match is decided. */
+  private flood: Flood | null = null;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -74,6 +77,7 @@ export class BoardRenderer {
     this.reveal.clear();
     this.fx.clear();
     this.hideCounts = false;
+    this.flood = null;
     this.selection = null;
     this.valid = [];
     this.resize();
@@ -126,6 +130,20 @@ export class BoardRenderer {
     animate(events, { reveal: this.reveal, fx: this.fx });
   }
 
+  /**
+   * THE FINALE: the winner consumes the whole board (flood.ts).
+   *
+   * Returns how long the caller should wait before showing the result card. Nothing here
+   * touches the game state — the card still reports the position the match ended in.
+   */
+  floodWin(winner: Player): number {
+    this.hideCounts = true;
+    this.selection = null;
+    this.valid = [];
+    this.flood = planFlood(this.state, winner, performance.now(), this.reveal.reduced);
+    return floodDuration(this.flood);
+  }
+
   setSelection(selection: Coord | null, valid: readonly Coord[] = []): void {
     this.selection = selection;
     this.valid = valid;
@@ -158,6 +176,7 @@ export class BoardRenderer {
         reveal: this.reveal,
         looks: this.looks,
         hideCounts: this.hideCounts,
+        flood: this.flood,
         selection: this.selection,
         valid: this.valid,
         current: this.state.current,
@@ -168,9 +187,20 @@ export class BoardRenderer {
       drawTileBevels(scene);
       for (const row of this.state.grid) for (const t of row) drawTile(scene, t);
       drawFillets(scene);
-      drawSurge(scene);
-      drawTrails(scene);
-      drawSelection(scene);
+      // The colonies' own markings dissolve as the wash starts — a dashed border stroked
+      // half outside a flooded cell would otherwise be left showing at its edge.
+      const fade = this.flood ? floodFade(this.flood, performance.now()) : 1;
+      if (fade > 0) {
+        ctx.save();
+        ctx.globalAlpha = fade;
+        drawSurge(scene);
+        drawTrails(scene);
+        drawSelection(scene);
+        ctx.restore();
+      }
+      // Last, and over everything: "consumed" means the veins, the garrisons, the Hive, the
+      // gem seams and the rocks all go under it.
+      drawFlood(scene);
       this.fx.draw(ctx, this.layout);
     } catch (err) {
       // A bad frame must never kill the loop — recover on the next tick (e.g. mid-resize).

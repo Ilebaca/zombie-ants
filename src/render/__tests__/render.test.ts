@@ -23,6 +23,7 @@ function scene(state: GameState, over: Partial<Scene> = {}): { s: Scene; rec: Re
     reveal: new RevealTracker(),
     looks: { you: basicLook("fire"), ai: basicLook("leafcutter") },
     hideCounts: false,
+    flood: null,
     selection: null,
     valid: [],
     current: "you",

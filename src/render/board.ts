@@ -14,6 +14,7 @@ import { nestArt } from "./art";
 import { COL, MAP, hexA, ownerCol } from "./palette";
 import { capturedCorners, filletPath, rrect, rrectC } from "./shapes";
 import { drawTerrain } from "./terrain";
+import { floodAt, type Flood } from "./flood";
 import { colonyTrails, drawTrail, drawVeinTrail } from "./trails";
 
 const TAU = 6.283;
@@ -40,6 +41,8 @@ export interface Scene {
   looks: Record<Player, Look>;
   /** The win-flood finale hides every soldier count. */
   hideCounts: boolean;
+  /** The winner's wash over the whole board, once the match is decided. */
+  flood: Flood | null;
   /** Currently selected source tile, if any. */
   selection: Coord | null;
   /** Legal targets for the current selection/mode. */
@@ -378,7 +381,7 @@ export function drawTile(scene: Scene, t: Tile): void {
   if (hive) drawHiveTile(scene, t);
 
   // wild neutral garrison — a defended tile you must fight through
-  if (!t.owner && t.guard > 0) {
+  if (!t.owner && t.guard > 0 && !scene.hideCounts) {
     countBadge(scene, {
       text: "🛡" + t.guard,
       cx: layout.cx(t.c),
@@ -603,7 +606,8 @@ export function drawHiveTile(scene: Scene, t: Tile): void {
   ctx.fillStyle = hexA(glow, awake ? 0.9 : 0.4);
   ctx.beginPath(); ctx.arc(x, y, R * 0.34, 0, TAU); ctx.fill();
 
-  if (t.owner === null) {
+  // The finale takes every number off the board at once, the Hive's garrison included.
+  if (t.owner === null && !scene.hideCounts) {
     ctx.font = `900 ${Math.max(10, ts * 0.22)}px var(--font),sans-serif`;
     ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText("🛡" + t.soldiers, x, y + R * 1.25);
@@ -674,6 +678,90 @@ export function drawSurge(scene: Scene): void {
       rrectC(ctx, layout.x0(t.c), layout.y0(t.r), ts, ts, tl, tr, br, bl);
     }
     ctx.fill();
+  }
+  ctx.restore();
+}
+
+/**
+ * THE FINALE: one colour eating the board (flood.ts).
+ *
+ * Drawn last and over everything, because "consumed" is exactly that — the veins, the
+ * garrisons, the Hive and the gem seams all go under it. Doing it as a pass rather than by
+ * lying to `drawTile` about who owns what is also what keeps it honest: the board beneath
+ * is unchanged, so the result card still reports the position the match actually ended in.
+ *
+ * A cell blooms from its middle as the front reaches it and then settles edge to edge with
+ * only its OUTER corners rounded — the same corner suppression every colony uses, so what
+ * closes over the board reads as one slab rather than a grid of lozenges arriving.
+ */
+export function drawFlood(scene: Scene): void {
+  const { ctx, layout, state, flood } = scene;
+  if (!flood) return;
+
+  const now = performance.now();
+  const ts = layout.ts;
+  const radius = Math.max(3, ts * 0.20);
+  const drop = Math.max(3, ts * 0.13);
+  const base = ownerCol(flood.owner);
+  const light = ownerCol(flood.owner, "glow");
+  const under = shade(base, 0.42);
+
+  // A cell is "taken" only once it has finished, so the fused silhouette grows with the
+  // front instead of the whole wave being drawn as one slab from the first frame.
+  const taken = (c: number, r: number): boolean => floodAt(flood, c, r, now) >= 1;
+  const corners = (t: Tile): [number, number, number, number] => [
+    taken(t.c - 1, t.r) || taken(t.c, t.r - 1) ? 0 : radius,
+    taken(t.c + 1, t.r) || taken(t.c, t.r - 1) ? 0 : radius,
+    taken(t.c + 1, t.r) || taken(t.c, t.r + 1) ? 0 : radius,
+    taken(t.c - 1, t.r) || taken(t.c, t.r + 1) ? 0 : radius,
+  ];
+
+  ctx.save();
+
+  /*
+   * The slab's own under-band, first and underneath, exactly as a colony gets one
+   * (drawTileBevels). It is not only for depth: a colony's band hangs BELOW its cells, so
+   * without one of its own the wash left a sliver of the loser's colour showing along the
+   * bottom edge of the finished board.
+   */
+  ctx.fillStyle = under;
+  for (const row of state.grid) {
+    for (const t of row) {
+      if (!taken(t.c, t.r)) continue;
+      const [tl, tr, br, bl] = corners(t);
+      rrectC(ctx, layout.x0(t.c), layout.y0(t.r) + drop, ts, ts, tl, tr, br, bl);
+      ctx.fill();
+    }
+  }
+
+  for (const row of state.grid) {
+    for (const t of row) {
+      const p = floodAt(flood, t.c, t.r, now);
+      if (p <= 0) continue;
+      const X = layout.x0(t.c), Y = layout.y0(t.r);
+
+      if (p >= 1) {
+        const [tl, tr, br, bl] = corners(t);
+        ctx.fillStyle = base;
+        rrectC(ctx, X, Y, ts, ts, tl, tr, br, bl);
+        ctx.fill();
+        continue;
+      }
+
+      // Arriving: a square swelling out of the middle, brightest as it lands, so the front
+      // itself is visible rather than the wave being a hard edge of flat colour.
+      const e = 1 - (1 - p) * (1 - p);
+      const size = ts * (0.45 + 0.55 * e);
+      const off = (ts - size) / 2;
+      ctx.globalAlpha = e;
+      ctx.fillStyle = base;
+      rrect(ctx, X + off, Y + off, size, size, radius);
+      ctx.fill();
+      ctx.globalAlpha = e * (1 - p) * 0.85;
+      ctx.fillStyle = light;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
   }
   ctx.restore();
 }
