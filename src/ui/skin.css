@@ -2280,7 +2280,18 @@ button:not(.playbtn):active,
 }
 .hillcut { margin: 0 0 4px; }
 .sechead, .tierhead, .secthead { margin-left: 0; margin-right: 0; }
-.troadbar { margin-left: 0; margin-right: 0; }
+/*
+ * ...EXCEPT the trophy rail, which is the one block that is not inside the column: it
+ * lives in the home screen's top head, beside the currency bar, and its own margins ARE
+ * its gutter. Zeroing them with the rest took it edge to edge while everything under it
+ * stayed inset.
+ */
+.troadbar { margin-left: 16px; margin-right: 16px; }
+/* The top bar's own 12px was the last inset left over: the avatar and the currency chips
+   sat four pixels wider than the rail below them and the PLAY button below that. */
+.topnav { padding-left: 16px; padding-right: 16px; }
+/* The two floating buttons are positioned, not laid out, so they need telling too. */
+.settingsfab, .dailyfab { right: 16px; }
 /* The shop body's own 1px of side padding started its boxes half a pixel
    off every other screen's. */
 .screenbody.shopbody { padding-left: 0; padding-right: 0; }
