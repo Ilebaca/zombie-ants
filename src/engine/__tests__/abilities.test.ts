@@ -200,6 +200,21 @@ describe("swarm (Army Ant)", () => {
     expect(t.owner, "the swarm walked off with the hive").toBeNull();
   });
 
+  /**
+   * The bite is a balance number, so it gets a test rather than living only in a `desc`
+   * string: a quarter of the garrison, before the caster's research scales it.
+   */
+  it("devours a quarter of a bordering garrison", () => {
+    const s = withSpecies("army");
+    put(s, 1, 1, { owner: "you", struct: "stable", soldiers: 20 });
+    const prey = put(s, 2, 1, { owner: "ai", struct: "stable", soldiers: 20 });
+    recomputeConnectivity(s);
+
+    activateAbility(s, "you", mods());
+    expect(prey.soldiers).toBe(15);
+    expect(tile(s, 1, 1).soldiers, "what it took did not arrive").toBe(25);
+  });
+
   it("never bites a nest", () => {
     const s = withSpecies("army");
     put(s, 1, 1, { owner: "you", struct: "stable", soldiers: 20 });

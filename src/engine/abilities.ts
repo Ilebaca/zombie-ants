@@ -22,6 +22,9 @@ import type {
 } from "./types";
 import { blockedByEnemyLeaf, checkWipe, keepOn, promote } from "./actions";
 
+/** The share of a bordering garrison the Army Ant devours per cast, before research. */
+export const SWARM_BITE = 0.25;
+
 /* ------------------------------------------------------- RESEARCH SCALING */
 
 /** Exocrine Reservoir level. The AI always passes NEUTRAL_MODS, so it scales at zero. */
@@ -313,7 +316,7 @@ function castSwarm(state: GameState, p: Player, mods: PlayerMods, events: Engine
     // "Is this a hive tile?" nearly always means "is this the NEUTRAL hive?" (CLAUDE.md §5a).
     const wildHive = !from.owner && isHiveTerrain(from);
     const had = garrisonOf(from);
-    const bite = Math.max(1, Math.round(had * Math.min(0.50, 0.15 * power(mods))));
+    const bite = Math.max(1, Math.round(had * Math.min(0.50, SWARM_BITE * power(mods))));
     const hit = strike(from, bite);
 
     if (previous && !hit.lost && hit.wiped) {                        // a vein: nothing to eat

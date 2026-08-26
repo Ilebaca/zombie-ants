@@ -30,7 +30,7 @@ export const SPECIES: Record<SpeciesId, Species> = {
     id: "fire", name: "Fire Ant", atk: 0.86, def: 0.87, prod: 1.05,
     blurb: "Balanced & territorial. The honest fighter.",
     trait: "Swarm response — scorched-earth defender.",
-    ability: { name: "Wildfire", kind: "fire", cooldown: 6,
+    ability: { name: "Wildfire", kind: "fire", cooldown: 7,
       desc: "Your colony's borders ignite for 3 turns; enemies on fire lose 30% each turn and any vein caught in it burns away. Detached tiles don't ignite." },
   },
   army: {
@@ -38,7 +38,7 @@ export const SPECIES: Record<SpeciesId, Species> = {
     blurb: "Nomadic raider. Lives to attack.",
     trait: "Bivouac — a devouring column.",
     ability: { name: "Feeding Swarm", kind: "swarm", cooldown: 6,
-      desc: "Bordering tiles lose 15% of their troops — devoured and added to your colony. Enemy veins are destroyed, wild garrisons and the Hive are eaten too. Only tiles touching your colony at cast time." },
+      desc: "Bordering tiles lose 25% of their troops — devoured and added to your colony. Enemy veins are destroyed, wild garrisons and the Hive are eaten too. Only tiles touching your colony at cast time." },
   },
   weaver: {
     id: "weaver", name: "Weaver Ant", atk: 1.07, def: 1.04, prod: 1.0,

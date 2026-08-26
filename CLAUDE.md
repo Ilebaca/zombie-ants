@@ -497,6 +497,9 @@ provisional and say so if asked.
 - Production/turn: nest 2, stable 1, resource stable 3 (up to 6 with Fungal Cultivation)
 - Flat defence: nest +6, stable +1, resource stable +2, wild guard +1, vein 0, hive 0
 - Species multipliers span 0.70–1.25 — deliberately narrow. Species change *how* you win.
+- Ability cooldowns are 5–7 turns. Wildfire is the one on 7: it is the only ability that
+  keeps working after the turn it is cast on, so its cost is the wait rather than the cast.
+  The Army Ant's bite is a quarter of each bordering garrison (`SWARM_BITE`).
 - **Moving first is worth roughly two to one.** Same difficulty, same species, both sides:
   the bottom-left corner (the player's) wins about 8 of 12 on the small board. The maps
   are 180°-symmetric and tested to be — so this is the move order, not the ground. Whether

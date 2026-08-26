@@ -271,10 +271,13 @@ describe("species page", () => {
     const cooldown = (): string | undefined =>
       Array.from(openPage(s).querySelectorAll(".srow")).find((r) => r.textContent?.startsWith("Ability"))
         ?.querySelector(".sv")?.textContent ?? undefined;
+    // Read the base off the species rather than writing it in: this is testing the RULE,
+    // and a balance tweak to one ability should not fail it.
+    const base = SPECIES.fire.ability.cooldown;
     for (let i = 0; i < RESEARCH_MAX - 1; i++) s.buyResearch("fire", "reservoir");
-    expect(cooldown()).toContain("6t");
+    expect(cooldown()).toContain(`${base}t`);
     s.buyResearch("fire", "reservoir");
-    expect(cooldown()).toContain("5t");
+    expect(cooldown()).toContain(`${base - 1}t`);
   });
 
   it("keeps research per species — levelling Fire leaves Ghost alone", () => {
