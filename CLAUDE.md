@@ -387,9 +387,17 @@ Each of these cost a debugging round. Do not repeat them.
     picture is changing; one that slides out of frame says the camera is coming down past
     it. Each is given its exit direction and the exact distance to clear the frame AT
     PLACEMENT, because the surround stops being drawn the instant the camera lands and
-    anything still inside the picture then pops out of existence. A clump on a diagonal
-    goes last, so the corners hold the frame longest — a corner is off the playfield, and
-    forest carrying on past it reads better than a curtain whipping away.
+    anything still inside the picture then pops out of existence. The corners hold the
+    frame longest by GEOMETRY — a diagonal is the longer way out — not by a timing of
+    their own: a corner is off the playfield, and forest carrying on past it reads better
+    than a curtain whipping away.
+  - **One movement, ONE curve.** The ring opening and the floor growing are the same camera,
+    so they start together, end together and are shaped the same (`descent`). They were not:
+    the floor eased OUT while the ring eased IN, held back so it would keep the frame full
+    late, and it read as two things happening at once rather than one lens coming down.
+    Coverage is bought with DENSITY instead — enough clumps that most of the board's straight
+    rim is still hidden at a third of the way down, which is the last point the border is
+    wide enough to notice. `intro.test.ts` measures that rim in screen space and holds it.
   - **The lock has to be STILL.** There was a hair of overshoot on the scale, meant to read
     as a camera locking on. It did the opposite: the bump returned to zero at the end but
     its SLOPE did not, so the last drawn frame was still moving and the next one, with the

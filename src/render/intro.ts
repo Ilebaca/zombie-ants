@@ -16,8 +16,10 @@
  * little so there is no hard rectangle where the scenery stops. They then get out of the way
  * by MOVING — straight out from the middle as the camera drops — rather than by fading:
  * a bush that dissolves says the picture is changing, a bush that slides out of frame says
- * the camera is coming down past it. Placement is seeded, so the same board opens the same
- * way rather than reshuffling on a resize, exactly as the scenery does (terrain.ts).
+ * the camera is coming down past it. They move on the camera's OWN curve (`descent`), start
+ * to finish, because the ring opening and the floor growing are one movement and reading as
+ * two was the whole complaint. Placement is seeded, so the same board opens the same way
+ * rather than reshuffling on a resize, exactly as the scenery does (terrain.ts).
  */
 import { MAP } from "./palette";
 
@@ -68,36 +70,35 @@ export const introTotal = (intro: Intro): number =>
   intro.dur + (intro.dur > 1 ? INTRO_FILL_MS : 0);
 
 /**
- * How big the floor is at this point in the descent.
+ * THE ONE CURVE. Everything in the opening moves on it — the floor coming up and the
+ * undergrowth opening out are one camera movement, so they cannot be on two curves. They
+ * were, once: the floor eased out (fast, then settling) while the ring eased in (held, then
+ * rushing), which read as two things happening rather than as one lens descending.
  *
- * Eased out, and eased out ALL THE WAY: the curve's speed is zero when it reaches the end,
- * so the camera comes to rest on the framing rather than arriving at it with speed left.
- *
- * There was a hair of overshoot here, meant to read as a lock. It did the opposite. The
- * bump was a sine that returns to zero at the end — but its SLOPE at that moment is not
- * zero, so the last drawn frame was still moving and the next one, with the camera gone
- * entirely, was not. A jolt on the one frame the whole descent is aiming at.
+ * Eased out ALL THE WAY: its speed is zero when it reaches the end, so the camera comes to
+ * rest on the framing rather than arriving at it with speed left. There was a hair of
+ * overshoot here once, meant to read as a lock, and it did the opposite — the bump was a
+ * sine that returns to zero at the end, but its SLOPE at that moment is not zero, so the
+ * last drawn frame was still moving and the next one, with the camera gone entirely, was
+ * not. A jolt on the one frame the whole descent is aiming at.
  */
+export const descent = (p: number): number => 1 - (1 - p) ** 3;
+
+/** How big the floor is at this point in the descent. */
 export function introScale(p: number): number {
-  return FROM + (1 - FROM) * (1 - (1 - p) ** 3);
+  return FROM + (1 - FROM) * descent(p);
 }
 
 /**
- * How far along its exit a clump is, 0..1.
+ * How far along its exit a clump is, 0..1 — the SAME curve, so the ring opens in step with
+ * the floor growing rather than against it.
  *
- * It moves rather than fading. A bush that dissolves says the picture is changing; a bush
+ * It moves rather than fading: a bush that dissolves says the picture is changing, a bush
  * that slides out of frame says the camera is coming down past it, which is the thing being
- * shown. Held back early, so the ring keeps the frame full while the board is still small
- * and only opens once there is board to see.
- *
- * `corner` (0 straight out from an edge, 1 exactly along a diagonal) steepens the curve: a
- * clump on a diagonal hardly moves until the end, so the corners are the last thing left in
- * frame. A corner is off the playfield, and forest carrying on past it reads better than a
- * curtain that whipped away.
+ * shown. The corners still hold the frame longest without any timing of their own, because
+ * a clump leaving on a diagonal has further to go before it is out of the picture.
  */
-export function surroundEase(p: number, corner = 0): number {
-  return p ** (2 + 2.6 * corner);
-}
+export const surroundEase = descent;
 
 /** A tiny deterministic generator. The engine's rng is off-limits to the renderer. */
 function seeded(seed: number): () => number {
@@ -110,8 +111,8 @@ function seeded(seed: number): () => number {
 
 interface Bush {
   x: number; y: number; r: number; lobes: number; a: number; dark: boolean;
-  /** Unit direction out of frame, how far it has to go, and how late it goes. */
-  nx: number; ny: number; travel: number; corner: number;
+  /** Unit direction out of frame, and how far it has to go to be gone. */
+  nx: number; ny: number; travel: number;
 }
 
 /**
@@ -124,7 +125,7 @@ interface Bush {
  */
 function exit(
   x: number, y: number, r: number, w: number, h: number,
-): { nx: number; ny: number; travel: number; corner: number } {
+): { nx: number; ny: number; travel: number } {
   const dx = x - w / 2, dy = y - h / 2;
   const len = Math.hypot(dx, dy) || 1;
   const nx = dx / len, ny = dy / len;
@@ -138,11 +139,7 @@ function exit(
   if (ny > 0.01) reach.push((h + clear - y) / ny);
   if (ny < -0.01) reach.push((-clear - y) / ny);
 
-  return {
-    nx, ny,
-    travel: Math.max(0, Math.min(...reach, span2(w, h) * 2)),
-    corner: Math.min(Math.abs(nx), Math.abs(ny)) * 2,
-  };
+  return { nx, ny, travel: Math.max(0, Math.min(...reach, span2(w, h) * 2)) };
 }
 
 const span2 = (w: number, h: number): number => Math.max(w, h);
@@ -174,14 +171,18 @@ function bushesFor(w: number, h: number): Bush[] {
     }
   };
   const over = span * 0.05;                        // how far a bush may lean onto the board
+  // Enough of them to keep the rim hidden while it is still worth hiding. The ring opens on
+  // the camera's own curve, so it is already well out by a third of the way down — density
+  // is what buys the coverage back, since holding the clumps still for longer is exactly
+  // the two-curve opening this replaced.
   // Biased toward the rim rather than spread evenly through the band: a thin scatter at the
   // edge of the clearing leaves gaps for the board's own scenery to end on a straight line,
   // which is the thing the bushes are here to hide.
   const inward = (): number => Math.sqrt(rand()) * (band + over);
-  edge(12, (t) => ({ x: -band + t * (w + band * 2), y: -band + (band + over) - inward() }));
-  edge(12, (t) => ({ x: -band + t * (w + band * 2), y: h + band - inward() }));
-  edge(10, (t) => ({ x: -band + (band + over) - inward(), y: -band + t * (h + band * 2) }));
-  edge(10, (t) => ({ x: w + band - inward(), y: -band + t * (h + band * 2) }));
+  edge(18, (t) => ({ x: -band + t * (w + band * 2), y: -band + (band + over) - inward() }));
+  edge(18, (t) => ({ x: -band + t * (w + band * 2), y: h + band - inward() }));
+  edge(15, (t) => ({ x: -band + (band + over) - inward(), y: -band + t * (h + band * 2) }));
+  edge(15, (t) => ({ x: w + band - inward(), y: -band + t * (h + band * 2) }));
 
   cached = { key, bushes: out };
   return out;
@@ -206,9 +207,10 @@ export function drawSurround(
 
   ctx.save();
   for (const b of bushesFor(w, h)) {
-    // Straight out from the middle: a clump on the rim leaves across the nearest edge, one
-    // in a corner leaves diagonally — and later, so the corners hold the frame longest.
-    const out = b.travel * surroundEase(p, b.corner);
+    // Straight out from the middle, on the camera's own curve: a clump on the rim leaves
+    // across the nearest edge, one in a corner leaves diagonally — and a diagonal is the
+    // longer way out, so the corners hold the frame longest without being timed to.
+    const out = b.travel * surroundEase(p);
     const x = b.x + b.nx * out;
     const y = b.y + b.ny * out;
 

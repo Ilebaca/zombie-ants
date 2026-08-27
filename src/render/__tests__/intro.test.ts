@@ -9,7 +9,7 @@
 import { describe, expect, it } from "vitest";
 import { Layout } from "../layout";
 import {
-  INTRO_FILL_MS, INTRO_MS, drawSurround, introAt, introScale, introTotal, planIntro,
+  INTRO_FILL_MS, INTRO_MS, descent, drawSurround, introAt, introScale, introTotal, planIntro,
   resetSurround, surroundEase,
 } from "../intro";
 import { makeRecorder } from "./recorder";
@@ -116,21 +116,48 @@ describe("the undergrowth around the clearing", () => {
     }
   });
 
-  it("holds them early and sends them out at the end", () => {
+  /**
+   * ONE MOVEMENT, ONE CURVE. The ring opening and the floor growing are the same camera
+   * coming down, so they start together, end together and are shaped the same. They were
+   * not: the floor eased out while the ring eased in, and it read as two things happening
+   * at once rather than as one lens descending.
+   */
+  it("opens on exactly the curve the floor grows on", () => {
     expect(surroundEase(0)).toBe(0);
     expect(surroundEase(1)).toBe(1);
-    expect(surroundEase(0.6)).toBeGreaterThan(surroundEase(0.3));
-    // The frame has to stay full while the board is still small in it.
-    expect(surroundEase(0.3), "the ring opened too early").toBeLessThan(0.2);
+    for (const p of [0.15, 0.3, 0.5, 0.75, 0.9]) {
+      // The scale is the same curve mapped onto FROM..1, so undoing that mapping has to
+      // land back on the ring's own progress — to the last decimal, not merely close.
+      const floor = (introScale(p) - introScale(0)) / (1 - introScale(0));
+      expect(floor, `the ring and the floor parted company at ${p}`)
+        .toBeCloseTo(surroundEase(p), 10);
+    }
   });
 
-  /** The corners hold the frame longest — they are off the playfield, so they can. */
-  it("sends a clump on a diagonal later than one on an edge", () => {
-    for (const p of [0.3, 0.6, 0.9]) {
-      expect(surroundEase(p, 1), `at ${p}`).toBeLessThan(surroundEase(p, 0));
+  /**
+   * The corners still hold the frame longest, but they do it by GEOMETRY — a clump leaving
+   * on a diagonal has further to go — rather than by a timing of their own, which would put
+   * them back on a second curve.
+   */
+  it("gives every clump the same timing", () => {
+    expect(surroundEase).toBe(descent);
+    expect(descent(0.4)).toBeGreaterThan(descent(0.2));
+  });
+
+  /**
+   * THE STRAIGHT EDGE IS THE THING BEING HIDDEN. The board's own scenery stops at the edge
+   * of the canvas, so while the camera is still high there is a rim of flat ground around
+   * it and the map reads as a picture laid on a colour. The ring opens on the camera's
+   * curve — it is well out by a third of the way down — so there have to be enough clumps
+   * that most of that rim is still covered while it is wide enough to notice.
+   */
+  it("keeps the board's rim hidden while there is a rim to see", () => {
+    for (const p of [0, 0.1, 0.2]) {
+      expect(rimHidden(p), `the rim showed at ${p}`).toBeGreaterThan(0.75);
     }
-    // ...but gone by the end, or it would pop out when the surround stops being drawn.
-    expect(surroundEase(1, 1)).toBe(1);
+    // By here the floor has grown to within a few pixels of the canvas: there is no longer
+    // a border to hide, which is why the clumps are allowed to be gone.
+    expect(introScale(0.5)).toBeGreaterThan(0.95);
   });
 
   it("places the same bushes every time, so a resize does not reshuffle them", () => {
@@ -145,7 +172,9 @@ describe("the undergrowth around the clearing", () => {
    * scenery ending on a straight line.
    */
   it("rings the board on all four sides and leans over its edge", () => {
-    const at = around(0.2).of("arc")
+    // Measured where they are PLACED. The ring opens on the camera's curve now, so by a
+    // fifth of the way down it has already carried the clumps out past the rim.
+    const at = around(0).of("arc")
       .map((c) => ({ x: c.args[0] as number, y: c.args[1] as number }));
     expect(at.some((a) => a.x < 0), "nothing off the left").toBe(true);
     expect(at.some((a) => a.x > 400), "nothing off the right").toBe(true);
@@ -155,6 +184,30 @@ describe("the undergrowth around the clearing", () => {
       "nothing leaning over the rim").toBe(true);
   });
 });
+
+/**
+ * How much of the board's own edge is behind a clump, 0..1.
+ *
+ * The surround is drawn INSIDE the camera, so both the board's rim and the bushes are
+ * scaled about the middle of the frame — the check has to be made in the same space the
+ * player sees, not in the space the clumps are placed in.
+ */
+function rimHidden(p: number): number {
+  const s = introScale(p);
+  const cx = 400 / 2, cy = 800 / 2;
+  const blobs = around(p).of("arc").map((c) => ({
+    x: cx + s * ((c.args[0] as number) - cx),
+    y: cy + s * ((c.args[1] as number) - cy),
+    r: s * (c.args[2] as number),
+  }));
+  const left = cx - s * cx, right = cx + s * cx, top = cy - s * cy, bottom = cy + s * cy;
+  const rim: [number, number][] = [];
+  for (let x = left; x <= right; x += 2) rim.push([x, top], [x, bottom]);
+  for (let y = top; y <= bottom; y += 2) rim.push([left, y], [right, y]);
+  const hidden = rim.filter(([x, y]) =>
+    blobs.some((b) => (b.x - x) ** 2 + (b.y - y) ** 2 <= b.r * b.r)).length;
+  return hidden / rim.length;
+}
 
 describe("the camera is only a camera", () => {
   /**
