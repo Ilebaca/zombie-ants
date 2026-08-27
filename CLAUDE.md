@@ -377,12 +377,17 @@ Each of these cost a debugging round. Do not repeat them.
   do the two colonies grow out of their nests (`render/intro.ts`). Like the finale it is one
   transform around the frame — the board underneath is the one the engine built, and the
   layout is untouched, or a tap would land on the wrong cell.
-  - **The frame has to be FULL.** The board's scenery is painted to the edges of the canvas
-    and no further, so the moment the camera pulls back there is a border of nothing around
-    it and the map reads as a picture floating on a colour. Bushes fill that border. They
-    are drawn INSIDE the camera, so they belong to the ground, and they are biased toward
-    the rim and lean over it — a thin even scatter leaves gaps for the scenery to end on a
-    straight line, which is the thing they are there to hide.
+  - **The frame has to be FULL, and it is ONE plate that fills it.** The scenery used to be
+    baked to the edges of the canvas and no further, so the moment the camera pulled back
+    there was a border of nothing around it — and the bushes that filled that border were a
+    different background from the rocks and sticks underneath, which is exactly how it was
+    reported: "different backgrounds, some rocks and sticks are moved". `terrainBleed`
+    (terrain.ts) sizes the bake off the height the camera STARTS at, so the same ground
+    covers the frame from the first frame of the descent to the last. Extended, never
+    stretched: the overhang is more ground carrying more scenery at the same density, and
+    the counts scale with the area for exactly that reason.
+  - **The bushes are foliage to come down past, not the fill.** They are drawn INSIDE the
+    camera so they belong to the ground, biased toward the rim and leaning over it.
   - **They get out of the way by MOVING, never by fading.** A bush that dissolves says the
     picture is changing; one that slides out of frame says the camera is coming down past
     it. Each is given its exit direction and the exact distance to clear the frame AT
@@ -395,9 +400,10 @@ Each of these cost a debugging round. Do not repeat them.
     so they start together, end together and are shaped the same (`descent`). They were not:
     the floor eased OUT while the ring eased IN, held back so it would keep the frame full
     late, and it read as two things happening at once rather than one lens coming down.
-    Coverage is bought with DENSITY instead — enough clumps that most of the board's straight
-    rim is still hidden at a third of the way down, which is the last point the border is
-    wide enough to notice. `intro.test.ts` measures that rim in screen space and holds it.
+    Opening early would have cost the rim its cover, which is why the ground plate had to
+    grow: it is what hides the rim now, at every height, so the ring is free to move with
+    the camera. `intro.test.ts` holds the plate against what the lens can see at the top of
+    the descent.
   - **The lock has to be STILL.** There was a hair of overshoot on the scale, meant to read
     as a camera locking on. It did the opposite: the bump returned to zero at the end but
     its SLOPE did not, so the last drawn frame was still moving and the next one, with the

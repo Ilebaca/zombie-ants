@@ -13,8 +13,17 @@
  *
  * Placement is seeded, not random: the same board always grows the same scenery, so it
  * does not reshuffle itself on a resize or when the tab comes back.
+ *
+ * IT IS BAKED BIGGER THAN THE SCREEN. The opening (intro.ts) pulls the camera back, and a
+ * plate cut to the canvas leaves a border of bare colour around itself the moment it does —
+ * so the match began on one background and settled onto another, with the rocks and sticks
+ * appearing to shift as the plate grew into place. The bleed is sized off the height the
+ * camera starts at, so the SAME ground covers the frame from the first frame of the descent
+ * to the last. It is extended, never stretched: the extra is more ground with more scenery
+ * scattered on it at the same density, not the same picture blown up.
  */
 import { MAP } from "./palette";
+import { INTRO_FROM } from "./intro";
 import type { Layout } from "./layout";
 import { rrect } from "./shapes";
 
@@ -39,30 +48,52 @@ let cache: Cached | null = null;
 const sceneKey = (layout: Layout): string =>
   `${Math.round(layout.width)}x${Math.round(layout.height)}:${layout.size}:${layout.ts}:${layout.ox},${layout.oy}`;
 
+/**
+ * How far past each edge of the canvas the ground is painted.
+ *
+ * The camera starts at `INTRO_FROM` of its final framing and scales about the middle of the
+ * BOARD, which is not always the middle of the canvas — so the furthest the lens can see in
+ * any direction is set by the longer of the two sides of the board's centre. Anything less
+ * and the plate's own edge comes into shot during the descent, which is the hard rectangle
+ * the whole thing exists to avoid.
+ */
+export function terrainBleed(layout: Layout): number {
+  const cx = layout.ox + (layout.size * layout.ts) / 2;
+  const cy = layout.oy + (layout.size * layout.ts) / 2;
+  const reach = Math.max(cx, layout.width - cx, cy, layout.height - cy);
+  return Math.ceil(reach * (1 / INTRO_FROM - 1)) + 2;
+}
+
 export function drawTerrain(ctx: CanvasRenderingContext2D, layout: Layout): void {
   // No DOM (a node test, a worker) means no offscreen canvas to bake into. Draw nothing
   // rather than throwing: the scenery is decoration, and everything that matters is drawn
   // by the passes after this one.
   if (typeof document === "undefined") return;
-  const key = sceneKey(layout);
-  if (!cache || cache.key !== key) cache = bake(layout, key);
-  if (cache) ctx.drawImage(cache.canvas, 0, 0, layout.width, layout.height);
+  const bleed = terrainBleed(layout);
+  const key = `${sceneKey(layout)}:${bleed}`;
+  if (!cache || cache.key !== key) cache = bake(layout, key, bleed);
+  // Blitted 1:1 and hung off the top-left corner, so the overhang falls outside the canvas
+  // and is simply clipped away until the camera pulls back far enough to want it.
+  if (cache) ctx.drawImage(cache.canvas, -bleed, -bleed);
 }
 
 /** Throw the cached scenery away — used by tests and on a species recolour. */
 export function resetTerrain(): void { cache = null; }
 
-function bake(layout: Layout, key: string): Cached | null {
+function bake(layout: Layout, key: string, bleed: number): Cached | null {
   const w = Math.max(1, Math.round(layout.width));
   const h = Math.max(1, Math.round(layout.height));
   const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
+  canvas.width = w + bleed * 2;
+  canvas.height = h + bleed * 2;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
-  paintGround(ctx, layout, w, h);
-  paintScenery(ctx, layout, w, h);
+  // Everything below is written in CANVAS coordinates — the same ones the board is drawn
+  // in — so the overhang is just negative space off the top and left of them.
+  ctx.translate(bleed, bleed);
+  paintGround(ctx, layout, w, h, bleed);
+  paintScenery(ctx, layout, w, h, bleed);
   return { canvas, key };
 }
 
@@ -72,17 +103,23 @@ function bake(layout: Layout, key: string): Cached | null {
  * The checker squares fade toward the edge of the grid so the playfield has no border —
  * it simply stops being chequered and carries on being ground.
  */
-function paintGround(ctx: CanvasRenderingContext2D, layout: Layout, w: number, h: number): void {
+function paintGround(
+  ctx: CanvasRenderingContext2D, layout: Layout, w: number, h: number, bleed: number,
+): void {
   const n = layout.size, ts = layout.ts;
   const bx = layout.ox, by = layout.oy, bw = ts * n, bh = ts * n;
+  const W = w + bleed * 2, H = h + bleed * 2;
 
   ctx.fillStyle = MAP.groundB;
-  ctx.fillRect(0, 0, w, h);
+  ctx.fillRect(-bleed, -bleed, W, H);
 
-  // Broad tonal drift, so the bare soil is never a flat colour.
+  // Broad tonal drift, so the bare soil is never a flat colour. Counted by AREA, so the
+  // overhang is more of the same ground rather than the same ground spread thinner.
   const rand = seeded(0x5eed1);
-  for (let i = 0; i < 26; i++) {
-    const x = rand() * w, y = rand() * h, rad = (0.10 + rand() * 0.22) * Math.max(w, h);
+  const drifts = Math.round(26 * (W * H) / (w * h));
+  for (let i = 0; i < drifts; i++) {
+    const x = -bleed + rand() * W, y = -bleed + rand() * H;
+    const rad = (0.10 + rand() * 0.22) * Math.max(w, h);
     const g = ctx.createRadialGradient(x, y, 0, x, y, rad);
     g.addColorStop(0, rand() > 0.5 ? MAP.groundA : MAP.groundDark);
     g.addColorStop(1, "rgba(0,0,0,0)");
@@ -123,28 +160,37 @@ const clearOfBoard = (layout: Layout, x: number, y: number, pad: number): boolea
   return x < bx || x > bx + bw || y < by || y > by + bh;
 };
 
-function paintScenery(ctx: CanvasRenderingContext2D, layout: Layout, w: number, h: number): void {
+function paintScenery(
+  ctx: CanvasRenderingContext2D, layout: Layout, w: number, h: number, bleed: number,
+): void {
   const rand = seeded(0xa27c01);
   const ts = layout.ts;
   const margin = Math.max(10, ts * 0.35);
+  // The overhang carries the same DENSITY of scenery, not the same number of props spread
+  // over a bigger area — extended, not stretched.
+  const spread = ((w + bleed * 2) * (h + bleed * 2)) / (w * h);
+  const many = (n: number): number => Math.round(n * spread);
+  const at = { w, h, bleed, margin };
 
   // Big things first, so small things settle in front of them.
-  place(ctx, layout, rand, w, h, margin, 8, ts * 1.15, (x, y, s, rr) => rockCluster(ctx, x, y, s, rr));
-  place(ctx, layout, rand, w, h, margin, 4, ts * 1.15, (x, y, s, rr) => fallenLog(ctx, x, y, s, rr));
-  place(ctx, layout, rand, w, h, margin, 18, ts * 0.8, (x, y, s, rr) => fern(ctx, x, y, s, rr));
-  place(ctx, layout, rand, w, h, margin, 34, ts * 0.45, (x, y, s, rr) => tuft(ctx, x, y, s, rr));
-  place(ctx, layout, rand, w, h, margin, 30, ts * 0.28, (x, y, s) => pebble(ctx, x, y, s));
+  place(ctx, layout, rand, at, many(8), ts * 1.15, (x, y, s, rr) => rockCluster(ctx, x, y, s, rr));
+  place(ctx, layout, rand, at, many(4), ts * 1.15, (x, y, s, rr) => fallenLog(ctx, x, y, s, rr));
+  place(ctx, layout, rand, at, many(18), ts * 0.8, (x, y, s, rr) => fern(ctx, x, y, s, rr));
+  place(ctx, layout, rand, at, many(34), ts * 0.45, (x, y, s, rr) => tuft(ctx, x, y, s, rr));
+  place(ctx, layout, rand, at, many(30), ts * 0.28, (x, y, s) => pebble(ctx, x, y, s));
 }
 
-/** Scatter `count` props into the margin, rejecting anything that lands on the board. */
+/** Scatter `count` props over the plate, rejecting anything that lands on the board. */
 function place(
   ctx: CanvasRenderingContext2D, layout: Layout, rand: () => number,
-  w: number, h: number, margin: number, count: number, size: number,
+  at: { w: number; h: number; bleed: number; margin: number },
+  count: number, size: number,
   draw: (x: number, y: number, s: number, rand: () => number) => void,
 ): void {
+  const W = at.w + at.bleed * 2, H = at.h + at.bleed * 2;
   for (let i = 0, tries = 0; i < count && tries < count * 24; tries++) {
-    const x = rand() * w, y = rand() * h;
-    if (!clearOfBoard(layout, x, y, margin + size * 0.5)) continue;
+    const x = -at.bleed + rand() * W, y = -at.bleed + rand() * H;
+    if (!clearOfBoard(layout, x, y, at.margin + size * 0.5)) continue;
     draw(x, y, size * (0.7 + rand() * 0.6), rand);
     i++;
   }

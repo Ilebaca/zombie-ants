@@ -9,11 +9,11 @@
  * the board the engine already built — the camera is one transform around the frame.
  * Nothing here can change a tile (CLAUDE.md §3).
  *
- * THE FRAME MUST BE FULL. The board's own scenery is painted to the edges of the canvas and
- * no further, so the moment the camera pulls back there is a border of nothing around it and
- * the map reads as a picture floating on a colour. The bushes fill that border: they live in
- * the same space as the board, so they belong to the ground, and they overlap its rim a
- * little so there is no hard rectangle where the scenery stops. They then get out of the way
+ * THE FRAME IS FULL OF GROUND, and that is the TERRAIN's job, not this file's — the plate is
+ * baked bigger than the canvas so the same ground covers the frame from the top of the
+ * descent (terrain.ts, `terrainBleed`). These bushes are foliage over it: they live in the
+ * same space as the board, and they overlap its rim so the eye has something to come down
+ * PAST rather than a clearing that was always in full view. They get out of the way
  * by MOVING — straight out from the middle as the camera drops — rather than by fading:
  * a bush that dissolves says the picture is changing, a bush that slides out of frame says
  * the camera is coming down past it. They move on the camera's OWN curve (`descent`), start
@@ -44,7 +44,8 @@ export const INTRO_FILL_MS = 820;
  * being a stamp in the middle of a screen of undergrowth, and the zoom stops reading as a
  * camera coming down and starts reading as a picture being scaled.
  */
-const FROM = 0.66;
+export const INTRO_FROM = 0.66;
+const FROM = INTRO_FROM;
 
 /** How far past the board's edge the bushes are scattered, as a share of its width. */
 const RING = 0.55;
@@ -171,18 +172,14 @@ function bushesFor(w: number, h: number): Bush[] {
     }
   };
   const over = span * 0.05;                        // how far a bush may lean onto the board
-  // Enough of them to keep the rim hidden while it is still worth hiding. The ring opens on
-  // the camera's own curve, so it is already well out by a third of the way down — density
-  // is what buys the coverage back, since holding the clumps still for longer is exactly
-  // the two-curve opening this replaced.
   // Biased toward the rim rather than spread evenly through the band: a thin scatter at the
   // edge of the clearing leaves gaps for the board's own scenery to end on a straight line,
   // which is the thing the bushes are here to hide.
   const inward = (): number => Math.sqrt(rand()) * (band + over);
-  edge(18, (t) => ({ x: -band + t * (w + band * 2), y: -band + (band + over) - inward() }));
-  edge(18, (t) => ({ x: -band + t * (w + band * 2), y: h + band - inward() }));
-  edge(15, (t) => ({ x: -band + (band + over) - inward(), y: -band + t * (h + band * 2) }));
-  edge(15, (t) => ({ x: w + band - inward(), y: -band + t * (h + band * 2) }));
+  edge(12, (t) => ({ x: -band + t * (w + band * 2), y: -band + (band + over) - inward() }));
+  edge(12, (t) => ({ x: -band + t * (w + band * 2), y: h + band - inward() }));
+  edge(10, (t) => ({ x: -band + (band + over) - inward(), y: -band + t * (h + band * 2) }));
+  edge(10, (t) => ({ x: w + band - inward(), y: -band + t * (h + band * 2) }));
 
   cached = { key, bushes: out };
   return out;

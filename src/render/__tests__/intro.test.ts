@@ -12,6 +12,7 @@ import {
   INTRO_FILL_MS, INTRO_MS, descent, drawSurround, introAt, introScale, introTotal, planIntro,
   resetSurround, surroundEase,
 } from "../intro";
+import { terrainBleed } from "../terrain";
 import { makeRecorder } from "./recorder";
 
 const around = (p: number): ReturnType<typeof makeRecorder> => {
@@ -145,19 +146,39 @@ describe("the undergrowth around the clearing", () => {
   });
 
   /**
-   * THE STRAIGHT EDGE IS THE THING BEING HIDDEN. The board's own scenery stops at the edge
-   * of the canvas, so while the camera is still high there is a rim of flat ground around
-   * it and the map reads as a picture laid on a colour. The ring opens on the camera's
-   * curve — it is well out by a third of the way down — so there have to be enough clumps
-   * that most of that rim is still covered while it is wide enough to notice.
+   * THE GROUND UNDER THEM IS ONE PLATE. The bushes used to be what hid the board's straight
+   * rim while the camera was high, which meant the match opened on a ring of foliage and
+   * settled onto rocks and sticks — two different backgrounds, with the scenery appearing
+   * to shift as the plate grew into place. The terrain is baked past the canvas now
+   * (`terrainBleed`) and the bushes are only foliage to come down past.
    */
-  it("keeps the board's rim hidden while there is a rim to see", () => {
-    for (const p of [0, 0.1, 0.2]) {
-      expect(rimHidden(p), `the rim showed at ${p}`).toBeGreaterThan(0.75);
+  it("is backed by ground that already covers the frame the camera starts in", () => {
+    for (const [size, w, h] of [[7, 400, 800], [9, 390, 640], [13, 1024, 700]] as const) {
+      const layout = new Layout(size);
+      layout.width = w; layout.height = h;
+      layout.ts = Math.floor(Math.min(w, h) / size);
+      layout.ox = Math.round((w - layout.ts * size) / 2);
+      layout.oy = Math.round((h - layout.ts * size) / 2);
+
+      // What the lens can see at the top of the descent: the canvas, blown up about the
+      // middle of the BOARD — which is not always the middle of the canvas.
+      const s = introScale(0);
+      const cx = layout.ox + (layout.size * layout.ts) / 2;
+      const cy = layout.oy + (layout.size * layout.ts) / 2;
+      const bleed = terrainBleed(layout);
+      const seen = {
+        l: cx - cx / s, r: cx + (w - cx) / s,
+        t: cy - cy / s, b: cy + (h - cy) / s,
+      };
+      expect(seen.l, `left edge of the plate came into shot on ${size}`)
+        .toBeGreaterThanOrEqual(-bleed);
+      expect(seen.t, `top edge of the plate came into shot on ${size}`)
+        .toBeGreaterThanOrEqual(-bleed);
+      expect(seen.r, `right edge of the plate came into shot on ${size}`)
+        .toBeLessThanOrEqual(w + bleed);
+      expect(seen.b, `bottom edge of the plate came into shot on ${size}`)
+        .toBeLessThanOrEqual(h + bleed);
     }
-    // By here the floor has grown to within a few pixels of the canvas: there is no longer
-    // a border to hide, which is why the clumps are allowed to be gone.
-    expect(introScale(0.5)).toBeGreaterThan(0.95);
   });
 
   it("places the same bushes every time, so a resize does not reshuffle them", () => {
@@ -184,30 +205,6 @@ describe("the undergrowth around the clearing", () => {
       "nothing leaning over the rim").toBe(true);
   });
 });
-
-/**
- * How much of the board's own edge is behind a clump, 0..1.
- *
- * The surround is drawn INSIDE the camera, so both the board's rim and the bushes are
- * scaled about the middle of the frame — the check has to be made in the same space the
- * player sees, not in the space the clumps are placed in.
- */
-function rimHidden(p: number): number {
-  const s = introScale(p);
-  const cx = 400 / 2, cy = 800 / 2;
-  const blobs = around(p).of("arc").map((c) => ({
-    x: cx + s * ((c.args[0] as number) - cx),
-    y: cy + s * ((c.args[1] as number) - cy),
-    r: s * (c.args[2] as number),
-  }));
-  const left = cx - s * cx, right = cx + s * cx, top = cy - s * cy, bottom = cy + s * cy;
-  const rim: [number, number][] = [];
-  for (let x = left; x <= right; x += 2) rim.push([x, top], [x, bottom]);
-  for (let y = top; y <= bottom; y += 2) rim.push([left, y], [right, y]);
-  const hidden = rim.filter(([x, y]) =>
-    blobs.some((b) => (b.x - x) ** 2 + (b.y - y) ** 2 <= b.r * b.r)).length;
-  return hidden / rim.length;
-}
 
 describe("the camera is only a camera", () => {
   /**
