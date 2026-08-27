@@ -127,6 +127,13 @@ export class MatchScreen {
   start(): void {
     this.renderer.start();
     this.canvas.addEventListener("pointerdown", this.onPointerDown);
+    // THE FOOTER HAS TO BE ITS FINAL SIZE BEFORE THE FIRST FRAME. The ability button's
+    // label is two lines once it names the ability and its cooldown, and one line in the
+    // static markup — so filling it in at the first turn grew the footer by five pixels,
+    // which shrank the canvas, which fired the ResizeObserver, which re-measured the board
+    // and re-baked the scenery. A blink at the exact moment the opening handed over, with
+    // different rocks and sticks on the other side of it.
+    this.refreshHUD();
     // The camera comes down through the canopy first, and the colonies fill in from their
     // nests when it lands (render/intro.ts). The clock does not start until it is over.
     this.introTimer = window.setTimeout(this.openMatch, this.renderer.playIntro());

@@ -416,6 +416,19 @@ Each of these cost a debugging round. Do not repeat them.
     begin` takes a future `at` for exactly this: registering the tiles immediately is what
     makes them draw UNFILLED during the descent. Beginning the reveal on arrival instead
     left them sitting finished on the floor the whole way down and then blinking out.
+  - **Nothing may RESIZE at the hand-over.** The ability button's label is one line in the
+    markup and two once it names the ability and its cooldown, so filling it in at the first
+    turn grew the footer five pixels, shrank the canvas, fired the ResizeObserver,
+    re-measured the board and re-baked the scenery — a blink exactly as the opening handed
+    over, with different ground on the other side of it. `start()` dresses the HUD BEFORE
+    `playIntro()`. Anything else that writes into the chrome has the same trap.
+  - **And the scenery must survive a resize anyway.** Every prop is placed from its OWN
+    seeded generator, keyed on its index: with one shared sequence a prop rejected for
+    landing on the board consumed a different number of draws than one that was kept, so a
+    few pixels of relayout reshuffled every prop after the first difference. Counts are
+    given per SCREENFUL and scaled by the plate's FREE ground, not its area — props never
+    land on the playfield, which is a large hole in the canvas and barely a dent in the
+    plate, so scaling by area emptied the ring around the tiles.
   - **Every control skips it**, canvas and footer alike. The footer is DOM and stays live
     under the animation — End turn during the descent handed the first turn over before the
     match had visibly started — and sitting through the same descent every match is the

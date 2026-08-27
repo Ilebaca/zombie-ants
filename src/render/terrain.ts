@@ -163,37 +163,82 @@ const clearOfBoard = (layout: Layout, x: number, y: number, pad: number): boolea
 function paintScenery(
   ctx: CanvasRenderingContext2D, layout: Layout, w: number, h: number, bleed: number,
 ): void {
-  const rand = seeded(0xa27c01);
   const ts = layout.ts;
-  const margin = Math.max(10, ts * 0.35);
-  // The overhang carries the same DENSITY of scenery, not the same number of props spread
-  // over a bigger area — extended, not stretched.
-  const spread = ((w + bleed * 2) * (h + bleed * 2)) / (w * h);
-  const many = (n: number): number => Math.round(n * spread);
-  const at = { w, h, bleed, margin };
+  const at: Plate = { w, h, bleed, margin: Math.max(10, ts * 0.35) };
 
   // Big things first, so small things settle in front of them.
-  place(ctx, layout, rand, at, many(8), ts * 1.15, (x, y, s, rr) => rockCluster(ctx, x, y, s, rr));
-  place(ctx, layout, rand, at, many(4), ts * 1.15, (x, y, s, rr) => fallenLog(ctx, x, y, s, rr));
-  place(ctx, layout, rand, at, many(18), ts * 0.8, (x, y, s, rr) => fern(ctx, x, y, s, rr));
-  place(ctx, layout, rand, at, many(34), ts * 0.45, (x, y, s, rr) => tuft(ctx, x, y, s, rr));
-  place(ctx, layout, rand, at, many(30), ts * 0.28, (x, y, s) => pebble(ctx, x, y, s));
+  place(layout, 0xa27c01, at, 8, ts * 1.15, (x, y, s, rr) => rockCluster(ctx, x, y, s, rr));
+  place(layout, 0x10cb17, at, 4, ts * 1.15, (x, y, s, rr) => fallenLog(ctx, x, y, s, rr));
+  place(layout, 0xfe271d, at, 18, ts * 0.8, (x, y, s, rr) => fern(ctx, x, y, s, rr));
+  place(layout, 0x7f4a11, at, 34, ts * 0.45, (x, y, s, rr) => tuft(ctx, x, y, s, rr));
+  place(layout, 0x9b0b1e, at, 30, ts * 0.28, (x, y, s) => pebble(ctx, x, y, s));
 }
 
-/** Scatter `count` props over the plate, rejecting anything that lands on the board. */
+export interface Plate { w: number; h: number; bleed: number; margin: number }
+
+/** The plate a layout bakes onto: the canvas, its overhang, and the board's clearance. */
+export const plateFor = (layout: Layout): Plate => ({
+  w: Math.max(1, Math.round(layout.width)),
+  h: Math.max(1, Math.round(layout.height)),
+  bleed: terrainBleed(layout),
+  margin: Math.max(10, layout.ts * 0.35),
+});
+
+/**
+ * How many times more scattering ground the plate has than the canvas alone.
+ *
+ * Counts are given per SCREEN, so the overhang has to be paid for or the scenery thins out
+ * — which is what happened when the plate first grew: scaling the count by total area
+ * looked right and was not, because props never land on the playfield. The board is a
+ * large hole in the middle of the canvas and barely a dent in the plate, so the free ground
+ * grew by much more than the area did and the ring around the tiles emptied out.
+ */
+function spread(layout: Layout, at: Plate, pad: number): number {
+  const board = layout.ts * layout.size + pad * 2;
+  const bx = layout.ox - pad, by = layout.oy - pad;
+  const overlap = Math.max(0, Math.min(bx + board, at.w) - Math.max(bx, 0))
+    * Math.max(0, Math.min(by + board, at.h) - Math.max(by, 0));
+  const canvasFree = at.w * at.h - overlap;
+  if (canvasFree < at.w * at.h * 0.05) return 1;   // the board fills the screen: leave it be
+  const plateFree = (at.w + at.bleed * 2) * (at.h + at.bleed * 2) - board * board;
+  return Math.max(1, plateFree / canvasFree);
+}
+
+/** One prop, with the generator that placed it left ready for its own detail. */
+export interface Prop { x: number; y: number; s: number; rand: () => number }
+
+/**
+ * Where one kind of prop goes. `per` is the count for a SCREENFUL of free ground; the plate
+ * gets as many as its own free ground is worth.
+ *
+ * Each prop has its OWN generator, keyed on its index. It reads like an indulgence and is
+ * not: with one shared sequence, a prop rejected for landing on the board consumed a
+ * different number of draws than one that was kept, so five pixels of resize reshuffled
+ * every prop after the first difference — the whole scene rearranging itself over a
+ * relayout it should not have noticed.
+ */
+export function scatter(
+  layout: Layout, at: Plate, seed: number, per: number, size: number,
+): Prop[] {
+  const W = at.w + at.bleed * 2, H = at.h + at.bleed * 2;
+  const pad = at.margin + size * 0.5;
+  const count = Math.round(per * spread(layout, at, pad));
+  const out: Prop[] = [];
+  for (let i = 0; i < count; i++) {
+    const rand = seeded(seed + i * 0x9e3779b1);
+    const x = -at.bleed + rand() * W, y = -at.bleed + rand() * H;
+    const s = size * (0.7 + rand() * 0.6);
+    if (clearOfBoard(layout, x, y, pad)) out.push({ x, y, s, rand });
+  }
+  return out;
+}
+
+/** Draw one kind of prop wherever `scatter` put it. */
 function place(
-  ctx: CanvasRenderingContext2D, layout: Layout, rand: () => number,
-  at: { w: number; h: number; bleed: number; margin: number },
-  count: number, size: number,
+  layout: Layout, seed: number, at: Plate, per: number, size: number,
   draw: (x: number, y: number, s: number, rand: () => number) => void,
 ): void {
-  const W = at.w + at.bleed * 2, H = at.h + at.bleed * 2;
-  for (let i = 0, tries = 0; i < count && tries < count * 24; tries++) {
-    const x = -at.bleed + rand() * W, y = -at.bleed + rand() * H;
-    if (!clearOfBoard(layout, x, y, at.margin + size * 0.5)) continue;
-    draw(x, y, size * (0.7 + rand() * 0.6), rand);
-    i++;
-  }
+  for (const p of scatter(layout, at, seed, per, size)) draw(p.x, p.y, p.s, p.rand);
 }
 
 function rockCluster(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, rand: () => number): void {

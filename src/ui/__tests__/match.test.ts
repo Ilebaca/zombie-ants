@@ -173,22 +173,40 @@ describe("the end of a match", () => {
 describe("the opening", () => {
   /**
    * The AI's own pause is one to four seconds, so a still board proves nothing inside the
-   * opening. The HUD does: it carries the markup's zeros until `beginTurn` fills it in, and
-   * that is the first thing the match does.
+   * opening. The turn CLOCK does: it only starts ticking at `beginTurn`, so the bar sits at
+   * a full width for the whole descent and can be at nothing else afterwards.
    */
-  const army = (w: Watch): string => w.host.querySelector("#youArmy")?.textContent ?? "";
+  const clock = (w: Watch): string =>
+    (w.host.querySelector("#timeFill") as HTMLElement | null)?.style.transform ?? "";
 
   it("holds the turn until the camera has landed", async () => {
     vi.useFakeTimers();
     const w = watch();
     w.screen.start();
-    expect(army(w), "the match began before the descent did").toBe("0 / +0");
+    expect(clock(w), "the clock was running before the descent was").toBe("scaleX(1)");
 
     await vi.advanceTimersByTimeAsync(1200);            // still coming down
-    expect(army(w), "the match began under the canopy").toBe("0 / +0");
+    expect(clock(w), "the match began under the canopy").toBe("scaleX(1)");
 
     await vi.advanceTimersByTimeAsync(4000);
-    expect(army(w), "the match never began at all").not.toBe("0 / +0");
+    expect(clock(w), "the match never began at all").not.toBe("scaleX(1)");
+    w.screen.destroy();
+  });
+
+  /**
+   * THE FOOTER HAS TO BE ITS FINAL SIZE BEFORE THE FIRST FRAME IS DRAWN. The ability
+   * button's label is one line in the markup and two once it names the ability and its
+   * cooldown — so filling it in at the first turn grew the footer, which shrank the canvas,
+   * which fired the ResizeObserver, which re-measured the board and re-baked its scenery.
+   * A blink at the exact moment the opening handed over, with different ground behind it.
+   */
+  it("dresses the controls before the camera comes down, not after", () => {
+    vi.useFakeTimers();
+    const w = watch();
+    w.screen.start();
+    const label = w.host.querySelector("#bAbility .lb")?.textContent ?? "";
+    expect(label, "the ability button was still wearing its placeholder").not.toBe("Ability");
+    expect(label.length, "the label grew after the opening had started").toBeGreaterThan(6);
     w.screen.destroy();
   });
 
