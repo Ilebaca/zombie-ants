@@ -380,11 +380,21 @@ Each of these cost a debugging round. Do not repeat them.
   - **The frame has to be FULL.** The board's scenery is painted to the edges of the canvas
     and no further, so the moment the camera pulls back there is a border of nothing around
     it and the map reads as a picture floating on a colour. Bushes fill that border. They
-    are drawn INSIDE the camera, so they slide off the edges as the board grows rather than
-    sitting over it, and they are biased toward the rim and lean over it — a thin even
-    scatter leaves gaps for the scenery to end on a straight line, which is the thing they
-    are there to hide. They clear a beat BEFORE the lock, so the last frames of the descent
-    are the board and nothing else.
+    are drawn INSIDE the camera, so they belong to the ground, and they are biased toward
+    the rim and lean over it — a thin even scatter leaves gaps for the scenery to end on a
+    straight line, which is the thing they are there to hide.
+  - **They get out of the way by MOVING, never by fading.** A bush that dissolves says the
+    picture is changing; one that slides out of frame says the camera is coming down past
+    it. Each is given its exit direction and the exact distance to clear the frame AT
+    PLACEMENT, because the surround stops being drawn the instant the camera lands and
+    anything still inside the picture then pops out of existence. A clump on a diagonal
+    goes last, so the corners hold the frame longest — a corner is off the playfield, and
+    forest carrying on past it reads better than a curtain whipping away.
+  - **The lock has to be STILL.** There was a hair of overshoot on the scale, meant to read
+    as a camera locking on. It did the opposite: the bump returned to zero at the end but
+    its SLOPE did not, so the last drawn frame was still moving and the next one, with the
+    camera gone entirely, was not — a jolt on the one frame the whole descent is aiming at.
+    The ease now arrives with zero speed.
   - **Not far out.** Past about a third the clearing stops being the subject and becomes a
     stamp in a screen of undergrowth, and the zoom stops reading as a camera coming down and
     starts reading as a picture being scaled.

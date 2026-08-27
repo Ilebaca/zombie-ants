@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 import { Layout } from "../layout";
 import {
   INTRO_FILL_MS, INTRO_MS, drawSurround, introAt, introScale, introTotal, planIntro,
-  resetSurround,
+  resetSurround, surroundEase,
 } from "../intro";
 import { makeRecorder } from "./recorder";
 
@@ -38,12 +38,24 @@ describe("the descent", () => {
     expect(introScale(0.5)).toBeGreaterThan(introScale(0));
   });
 
-  /** The last settle back is what reads as a LOCK rather than a drift to a halt. */
-  it("overshoots a hair before it settles", () => {
-    let over = 0;
-    for (let p = 0.82; p < 1; p += 0.01) over = Math.max(over, introScale(p));
-    expect(over).toBeGreaterThan(1);
-    expect(over, "the camera bounced").toBeLessThan(1.05);
+  /**
+   * THE LOCK HAS TO BE STILL.
+   *
+   * There was a hair of overshoot here, meant to read as a lock. It did the opposite: the
+   * bump returned to zero at the end but its SLOPE did not, so the last drawn frame was
+   * still moving and the next one, with the camera gone, was not — a jolt on the one frame
+   * the whole descent is aiming at.
+   */
+  it("comes to rest rather than arriving with speed left", () => {
+    const step = 0.001;
+    const last = (introScale(1) - introScale(1 - step)) / step;
+    const middle = (introScale(0.5) - introScale(0.5 - step)) / step;
+    expect(Math.abs(last), "the camera was still moving when it stopped").toBeLessThan(0.01);
+    expect(middle, "the camera was not moving in the middle either").toBeGreaterThan(0.1);
+  });
+
+  it("never goes past the framing it is landing on", () => {
+    for (let p = 0; p <= 1; p += 0.01) expect(introScale(p)).toBeLessThanOrEqual(1);
   });
 
   it("waits for the colonies as well as the camera", () => {
@@ -70,18 +82,55 @@ describe("the undergrowth around the clearing", () => {
     expect(around(0.1).of("fill").length).toBeGreaterThan(0);
   });
 
-  it("is gone before the camera locks", () => {
-    expect(around(1).calls.length, "a bush was left on the playfield").toBe(0);
-    // The last frames of the descent are the board and nothing else.
-    expect(around(0.96).calls.length).toBe(0);
+  /**
+   * It gets out of the way by MOVING, not by fading. What is left in a corner can stay —
+   * a corner is off the playfield anyway, and something still in frame reads as forest
+   * rather than as a curtain that failed to close.
+   */
+  it("clears the playfield without fading out", () => {
+    const late = around(0.99);
+    expect(late.calls.length, "the bushes were faded away rather than moved").toBeGreaterThan(0);
+    expect(late.num("globalAlpha"), "a fade crept back in").toBe(1);
+
+    // Nothing left over the middle of the board, where the player is about to be looking.
+    const over = late.of("arc").filter((c) => {
+      const x = c.args[0] as number, y = c.args[1] as number;
+      return x > 400 * 0.2 && x < 400 * 0.8 && y > 800 * 0.2 && y < 800 * 0.8;
+    });
+    expect(over.length, "a bush was left sitting on the playfield").toBe(0);
   });
 
-  /** It thins out as the board grows into the frame rather than cutting off. */
-  it("clears over the end of the descent", () => {
-    const full = around(0.2).num("globalAlpha");
-    const going = around(0.8).num("globalAlpha");
-    expect(full).toBeGreaterThan(going);
-    expect(going).toBeGreaterThan(0);
+  /**
+   * The surround stops being drawn the moment the camera lands, so anything still inside
+   * the frame at that instant pops out of existence — which is exactly the kind of jolt the
+   * whole descent is aiming to avoid.
+   */
+  it("is outside the frame by the time it stops being drawn", () => {
+    const last = around(0.999).of("arc");
+    expect(last.length, "nothing was drawn to check").toBeGreaterThan(0);
+    for (const c of last) {
+      const x = c.args[0] as number, y = c.args[1] as number, r = c.args[2] as number;
+      const inside = x + r > 0 && x - r < 400 && y + r > 0 && y - r < 800;
+      expect(inside, `a clump was still in frame at ${Math.round(x)},${Math.round(y)}`)
+        .toBe(false);
+    }
+  });
+
+  it("holds them early and sends them out at the end", () => {
+    expect(surroundEase(0)).toBe(0);
+    expect(surroundEase(1)).toBe(1);
+    expect(surroundEase(0.6)).toBeGreaterThan(surroundEase(0.3));
+    // The frame has to stay full while the board is still small in it.
+    expect(surroundEase(0.3), "the ring opened too early").toBeLessThan(0.2);
+  });
+
+  /** The corners hold the frame longest — they are off the playfield, so they can. */
+  it("sends a clump on a diagonal later than one on an edge", () => {
+    for (const p of [0.3, 0.6, 0.9]) {
+      expect(surroundEase(p, 1), `at ${p}`).toBeLessThan(surroundEase(p, 0));
+    }
+    // ...but gone by the end, or it would pop out when the surround stops being drawn.
+    expect(surroundEase(1, 1)).toBe(1);
   });
 
   it("places the same bushes every time, so a resize does not reshuffle them", () => {
