@@ -40,8 +40,8 @@ function watch(): Watch {
   const screen = new MatchScreen(host, {
     state,
     plates: {
-      you: { name: "Milan", species: "fire", colony: 1_284_000 },
-      ai: { name: "Formica42", species: "leafcutter", colony: 1_100_000 },
+      you: { name: "Milan", colony: 1_284_000 },
+      ai: { name: "Formica42", colony: 1_100_000 },
     },
     mods: { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } },
     ctx: defaultContext(),
@@ -276,38 +276,7 @@ describe("the opening", () => {
     w.screen.destroy();
   });
 
-  /**
-   * WHO IS PLAYING, on the board rather than on the menus. The header counted two armies
-   * and called them "You" and "Enemy"; the colony — the number the whole game is played
-   * for — was never once in front of the player while they were playing for it.
-   */
-  it("shows both colonies above and below the board", () => {
-    vi.useFakeTimers();
-    const w = watch();
-    const foe = w.host.querySelector(".plate.foe");
-    const mine = w.host.querySelector(".plate.mine");
-    expect(foe?.textContent).toBe("Formica421.1M");
-    expect(mine?.textContent).toBe("Milan1.2M");
-    // A head each, drawn from the species that side is fielding.
-    expect(foe?.querySelector("canvas.pl-ic")).toBeTruthy();
-    expect(mine?.querySelector("canvas.pl-ic")).toBeTruthy();
-    w.screen.destroy();
-  });
-
-  /*
-   * The renderer measures the canvas's PARENT. Sized against the whole playfield the board
-   * would be laid out straight over the two strips, so the canvas keeps its own box.
-   */
-  it("gives the board a box of its own, between the two plates", () => {
-    vi.useFakeTimers();
-    const w = watch();
-    const main = w.host.querySelector("main");
-    const kids = Array.from(main?.children ?? []).map((k) => k.className.split(" ")[0]);
-    expect(kids.slice(0, 3)).toEqual(["plate", "boardwrap", "plate"]);
-    expect(w.host.querySelector("#cv")?.parentElement?.className).toBe("boardwrap");
-    w.screen.destroy();
-  });
-
+  /** A match with nobody named draws no names, rather than throwing. */
   it("survives a match with nobody named", () => {
     vi.useFakeTimers();
     const state = createGame({ map: "small", species: { you: "fire", ai: "fire" }, seed: 3 });
@@ -317,7 +286,7 @@ describe("the opening", () => {
       state, mods: { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } },
       ctx: defaultContext(), difficulty: "normal", map: "small",
     });
-    expect(host.querySelector(".plate.mine")?.textContent).toBe("");
+    expect(() => screen.start()).not.toThrow();
     screen.destroy();
   });
 });

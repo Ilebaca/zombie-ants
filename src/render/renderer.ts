@@ -18,6 +18,7 @@ import {
 } from "./intro";
 import { basicLook, type Look } from "./art";
 import { MAP, loadColors, ownerCol, setFactionColor } from "./palette";
+import { drawPlates, type Plate } from "./plates";
 import {
   drawBackground, drawFillets, drawFlood, drawSelection, drawSurge, drawTile, drawTileBevels,
   drawTrails, seedMotes,
@@ -29,6 +30,13 @@ export interface RendererOptions {
   species: Record<Player, SpeciesId>;
   /** Cosmetic look per side. Defaults to each species' basic look. */
   looks?: Partial<Record<Player, Look>>;
+  /**
+   * Who is playing, drawn on the ground beside each side's own base (plates.ts). Omitted
+   * for a board with nobody named — a test, or a scenario preview.
+   */
+  plates?: Partial<Record<Player, Plate>>;
+  /** How a colony size is written. Passed in: the renderer reads no progression code. */
+  colonySize?: (n: number) => string;
 }
 
 export class BoardRenderer {
@@ -68,7 +76,7 @@ export class BoardRenderer {
   constructor(
     private canvas: HTMLCanvasElement,
     private state: GameState,
-    opts: RendererOptions,
+    private opts: RendererOptions,
   ) {
     this.layout = new Layout(state.size);
     loadColors();
@@ -348,6 +356,14 @@ export class BoardRenderer {
         drawSelection(scene);
         ctx.restore();
       }
+      // On the ground beside each base, and BEFORE the wash: "consumed" takes the whole
+      // board, and a name left standing on flooded ground would be the one thing the
+      // winner's colour did not reach.
+      if (this.opts.plates) {
+        drawPlates(ctx, this.layout, this.opts.plates,
+          this.opts.colonySize ?? String, this.flood ? fade : 1);
+      }
+
       // Last, and over everything: "consumed" means the veins, the garrisons, the Hive, the
       // gem seams and the rocks all go under it.
       drawFlood(scene);

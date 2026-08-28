@@ -831,8 +831,8 @@ export class App {
       state,
       mods,
       plates: {
-        you: { name: me.name, species: this.choices.species, colony: me.colony },
-        ai: { name: foe.name, species: aiSpecies, colony: foe.colony },
+        you: { name: me.name, colony: me.colony },
+        ai: { name: foe.name, colony: foe.colony },
       },
       // The same mods must drive combat, or Mandible/Cuticle research would show up in the
       // income readout but do nothing in a fight.

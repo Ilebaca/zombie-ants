@@ -548,20 +548,24 @@ research, each a count with a bar and a way in), so another thing to collect is 
   credits a capture the profile does not is two numbers disagreeing on screen. The fastest
   win ignores a loss and an untimed match — a zero would win every comparison for ever.
 
-**WHO IS PLAYING is on the board, not only on the menus.** The header counted two armies
+**WHO IS PLAYING is ON THE GROUND** (`render/plates.ts`). The header counted two armies
 and called them "You" and "Enemy" — a scoreboard, not an opponent — and the colony, the
 number the whole game is played for (§8a), was never once in front of the player while they
-were playing for it. Two strips inside the playfield now: the enemy directly above the
-board and the player directly below it, which is the end of the board each of their nests
-sits on, centred on the screen because the board is. Name, that colony's own head, and its
-size.
-- **The canvas needs its own box.** `BoardRenderer` measures the canvas's PARENT, so with
-  the plates as its siblings the board was laid out over them.
-- **A nameplate is not a control** — `pointer-events: none`, or the portrait canvas inside
-  it swallows a tap meant for the board or for skipping the opening.
-- **They are dressed in the constructor and never again.** Everything on them is settled
-  for the length of the match, and writing into the chrome later is what resizes the canvas
-  mid-animation (the ability-label blink, above).
+were playing for it. A mark and two words on the forest floor: the colony's own head, the
+name, and its size.
+- **It is drawn, not laid out.** Two DOM strips above and below the board was two more
+  pieces of chrome stacked on a screen that already has a header, a turn bar and an action
+  row — and the canvas had to be given its own box, because `BoardRenderer` measures the
+  canvas's PARENT and would otherwise lay the board straight over them. On the soil there
+  is nothing to measure, nothing to swallow a tap, and no band eating the playfield.
+- **Each row is aligned to its OWN base**, not to the screen: the player's nest is in the
+  bottom-left corner so their name sits under the board's LEFT edge, and the enemy's is
+  top-right so theirs sits over the RIGHT edge. Centred, both would point at the middle of
+  the board rather than at the corner they are about.
+- **It goes under the finale.** Drawn before `drawFlood`, and faded with the outlines, or a
+  name left standing would be the one thing the winner's colour did not reach.
+- **The renderer is handed the figure's formatter, never the progression layer.** `plates`
+  and `colonySize` are options; `render/` still imports nothing from `platform/`.
 - **The opponent is generated** (`platform/rival.ts`), because there is no server yet — a
   name from the same pool the Leaderboard draws its rivals from, and a colony near the
   player's own, which is what a ranked ladder would serve them. Keyed by the match seed, so
