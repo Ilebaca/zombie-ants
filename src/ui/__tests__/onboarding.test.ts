@@ -26,6 +26,64 @@ const mount = (): HTMLElement => {
   return host;
 };
 
+/** Walk the meta tour to the step with this id, pressing whatever each one offers. */
+function walkTo(host: HTMLElement, id: string): string {
+  for (let i = 0; i < 20; i++) {
+    const count = host.querySelector(".tourcount")?.textContent ?? "";
+    const text = host.querySelector(".tourbubble")?.textContent ?? "";
+    if (text.includes(id)) return count;
+    const next = host.querySelector<HTMLButtonElement>("#tourNext");
+    if (!next) return count;
+    next.click();
+  }
+  return "";
+}
+
+describe("counting the whole tutorial", () => {
+  /**
+   * ONE WALK, COUNTED THROUGH. The tutorial is two runs — the meta screens, then the first
+   * turn — and each counting from one said they were two different tutorials, with the
+   * first ending on "12 / 12" at the button that starts the second.
+   */
+  it("counts the match half in from the start", () => {
+    const host = mount();
+    new App(host, new ProfileStore(new MemoryStore())).start();
+    const total = Number((host.querySelector(".tourcount")?.textContent ?? "").split("/")[1]);
+    expect(host.querySelector(".tourcount")?.textContent?.trim()).toBe(`1 / ${total}`);
+    expect(total, "the counter stopped at the meta walk")
+      .toBeGreaterThan(MatchScreen.TOUR_STEPS + 1);
+  });
+});
+
+describe("the button that starts the setup flow", () => {
+  /**
+   * A SIGNAL, NOT A TAP. Advancing on the tap itself marched the tour on to "pick a board"
+   * whether or not the button had actually opened one — and when it had not, the tutorial
+   * sat asking for a screen that was never coming, with nothing but Skip.
+   */
+  it("waits for the screen to open, not for the press", () => {
+    const host = mount();
+    new App(host, new ProfileStore(new MemoryStore())).start();
+    const at = walkTo(host, "Into a match");
+    expect(at, "never reached the PLAY step").not.toBe("");
+
+    // A press the app did not act on: the tour must be exactly where it was.
+    const play = host.querySelector<HTMLButtonElement>("#goPlay") as HTMLButtonElement;
+    const real = play.onclick;
+    play.onclick = null;
+    play.click();
+    expect(host.querySelector(".tourcount")?.textContent, "the tour walked off without the app")
+      .toBe(at);
+
+    // ...and the real press moves it on, because the setup screen actually opened.
+    play.onclick = real;
+    play.click();
+    expect(host.querySelector(".tourcount")?.textContent, "the tour did not follow the app")
+      .not.toBe(at);
+    expect(host.querySelector("#mapsel"), "the setup flow never opened").not.toBeNull();
+  });
+});
+
 describe("the first-run tour", () => {
   it("opens on a fresh profile", () => {
     const host = mount();
@@ -117,6 +175,37 @@ describe("a match with the tour up", () => {
   const opened = (host: HTMLElement): void => {
     host.querySelector("canvas")?.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
   };
+
+  /**
+   * `MatchScreen.TOUR_STEPS` is what the meta half puts on its counter before this screen
+   * exists, so it has to match the list this screen actually builds — for every species,
+   * since the ability step is a different step for a digging colony.
+   */
+  it("has as many steps as the meta walk was told to expect", () => {
+    for (const you of ["fire", "carpenter"] as const) {
+      const host = mount();
+      const tour = new Tour(host);
+      const state = createGame({ map: "small", species: { you, ai: "fire" }, seed: 7 });
+      arrangeTutorial(state);
+      const screen = new MatchScreen(host, {
+        state,
+        mods: { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } },
+        ctx: defaultContext(),
+        difficulty: "easy",
+        map: "small",
+        tutorial: true,
+        tour,
+        tourFrom: 12,
+      });
+      screen.start();
+      opened(host);
+      expect(tour.length, `the match walk is a different length on ${you}`)
+        .toBe(MatchScreen.TOUR_STEPS);
+      expect(host.querySelector(".tourcount")?.textContent?.trim(), `on ${you}`)
+        .toBe(`13 / ${12 + MatchScreen.TOUR_STEPS}`);
+      screen.destroy();
+    }
+  });
 
   it("holds the turn while a step is showing", async () => {
     vi.useFakeTimers();

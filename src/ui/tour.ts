@@ -74,6 +74,14 @@ export interface TourOptions {
   onSkip?: () => void;
   /** Fired as each step opens, so the app can pause a clock or arm a listener. */
   onStep?: (step: TourStep, index: number) => void;
+  /**
+   * ONE WALK, COUNTED THROUGH. The tutorial is two runs — the meta screens, then the first
+   * turn — and each counting from one said they were two different tutorials, with the
+   * first ending at "12 / 12" on the button that starts the second. `done` is how many
+   * steps came before this run and `total` how many there are altogether.
+   */
+  done?: number;
+  total?: number;
 }
 
 /** How often the spotlight re-measures. Fast enough to track a screen change, cheap. */
@@ -87,6 +95,9 @@ const EDGE = 12;
 export class Tour {
   private steps: readonly TourStep[] = [];
   private index = 0;
+  /** Steps walked before this run, and the length of the whole tutorial. */
+  private done = 0;
+  private total = 0;
   private wrap: HTMLElement | null = null;
   private shades: HTMLElement[] = [];
   private ring: HTMLElement | null = null;
@@ -107,11 +118,15 @@ export class Tour {
 
   get running(): boolean { return this.wrap !== null; }
   get step(): TourStep | null { return this.steps[this.index] ?? null; }
+  /** How many steps this run has — the match half is counted against a promised total. */
+  get length(): number { return this.steps.length; }
 
   start(steps: readonly TourStep[], opts: TourOptions = {}): void {
     this.stop();
     if (!steps.length) { opts.onDone?.(); return; }
     this.steps = steps;
+    this.done = opts.done ?? 0;
+    this.total = opts.total ?? steps.length;
     this.opts = opts;
     this.index = 0;
     this.build();
@@ -254,7 +269,7 @@ export class Tour {
 
     const count = document.createElement("span");
     count.className = "tourcount";
-    count.textContent = `${this.index + 1} / ${this.steps.length}`;
+    count.textContent = `${this.done + this.index + 1} / ${this.total}`;
     row.appendChild(count);
 
     const right = document.createElement("div");

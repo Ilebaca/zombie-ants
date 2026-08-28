@@ -130,7 +130,11 @@ export class App {
    */
   private startTour(): void {
     this.show("home");
-    this.tour.start(this.metaSteps(), {
+    const steps = this.metaSteps();
+    this.tour.start(steps, {
+      // One tutorial, counted straight through into the match (see MatchScreen.TOUR_STEPS).
+      done: 0,
+      total: steps.length + MatchScreen.TOUR_STEPS,
       // Skipping is a decision about the whole tutorial, not this screen: it is not shown
       // again. Finishing the meta walk is NOT the end — the match tour still has to run.
       onSkip: () => this.tutorialSeen(),
@@ -208,7 +212,11 @@ export class App {
         text: "That is the colony. Tap PLAY and let's take some ground.",
         enter: () => this.slideTo("home", true),
         find: find("#goPlay"),
-        advance: "tap",
+        // A SIGNAL, not a tap. Advancing on the tap itself marched the tour on to "pick a
+        // board" whether or not the button had actually opened one — and when it had not,
+        // the tutorial sat there asking for a screen that was never coming, with nothing
+        // but Skip. The router says when the setup flow really opened.
+        advance: "signal",
       },
       // One step per setup screen, lighting the WHOLE box. Lighting only the Next button
       // asked the player to "pick the one you want" with the picker itself in the dark;
@@ -249,7 +257,8 @@ export class App {
     // The setup steps end when the player LEAVES the screen they are about, so the whole
     // screen can stay live under the tour rather than only its Next button.
     if (this.tour.running) {
-      if (id === "start") this.tour.signal("map");
+      if (id === "mapsel") this.tour.signal("play");
+      else if (id === "start") this.tour.signal("map");
       else if (id === "formation") this.tour.signal("species");
     }
     this.clearMatch();
@@ -795,6 +804,7 @@ export class App {
       // up and finishes it. A player who skipped has `tourSeen` written already.
       tutorial,
       tour: this.tour,
+      tourFrom: this.metaSteps().length,
       onTutorialDone: () => this.tutorialSeen(),
       onAbilityCast: (kind) => {
         this.profile.update((p) => {

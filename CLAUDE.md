@@ -847,6 +847,16 @@ second overlay and the meta walk runs straight into the match one.
   button in the bubble) or `signal` — the app confirms the deed afterwards. The match's
   "move into that tile" step is a `signal`, so a tap the engine refused leaves the step
   standing rather than marching the tutorial on without the player.
+  - **And so is PLAY.** It was a `tap`, which advanced on the press whether or not the
+    setup flow had actually opened — so a press the app did not act on left the tutorial
+    asking for a screen that was never coming, with nothing but Skip. `show()` signals it
+    when the router really reaches `mapsel`. Any step whose whole point is that the app
+    moves belongs on a signal, never on the press.
+- **It is ONE walk, counted through.** The meta half and the match half are two `start`
+  calls, and each counting from one said they were two different tutorials — the first
+  ending on "12 / 12" at the button that begins the second. `start` takes `done` and
+  `total`; `MatchScreen.TOUR_STEPS` is what lets the meta half put the whole length on the
+  counter before the match screen exists, and a test holds the two together.
 - **A tap in the dark POINTS.** It used to do nothing at all, which is indistinguishable
   from a broken button — and that is exactly how it came back: "I hit Play and nothing
   happens". The ring and the bubble pulse instead, so a blocked tap reads as the tour

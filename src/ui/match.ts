@@ -66,6 +66,8 @@ export interface MatchOptions {
    */
   tutorial?: boolean;
   tour?: Tour;
+  /** Steps the meta walk already showed, so this half's counter carries on from it. */
+  tourFrom?: number;
   /** The last step was finished or skipped: the tutorial is over for good. */
   onTutorialDone?: () => void;
 }
@@ -167,7 +169,14 @@ export class MatchScreen {
       // The clock was held for the whole walk; the turn starts properly now.
       this.startTimer();
     };
-    tour.start(this.tourSteps(), { onDone: done, onSkip: done });
+    // The counter carries on from the meta walk rather than restarting: it is one
+    // tutorial, and "1 / 13" right after "12 / 25" reads as a second one starting.
+    tour.start(this.tourSteps(), {
+      onDone: done,
+      onSkip: done,
+      done: this.opts.tourFrom ?? 0,
+      total: (this.opts.tourFrom ?? 0) + MatchScreen.TOUR_STEPS,
+    });
   }
 
   private get touring(): boolean {
@@ -320,6 +329,15 @@ export class MatchScreen {
     if (!deeds.length) return;
     queueMicrotask(() => { for (const deed of deeds) tour.signal(deed); });
   }
+
+  /**
+   * How many steps the match half of the tutorial has.
+   *
+   * Fixed whichever species is fielded — the ability step is one step either way — so the
+   * meta half can put the whole tutorial's length on its counter before this screen
+   * exists. `match.test.ts` holds the two in step.
+   */
+  static readonly TOUR_STEPS = 13;
 
   private tourSteps(): TourStep[] {
     const ability = speciesOf(this.state.species.you).ability;
