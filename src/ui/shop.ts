@@ -1,7 +1,7 @@
 /**
  * The shop.
  *
- * Sells only what the game can actually give: mycelium, pheromone, the Trophy Pass and the
+ * Sells only what the game can actually give: mycelium, pheromone, the Colony Pass and the
  * one premium colony. The legacy build also sells larva and cosmetic rolls; neither the
  * lucky hatch nor the cosmetics pool is ported, so those tiles are not here rather than
  * taking money against a feature that does not exist.
@@ -175,7 +175,7 @@ function describe(product: Product): string {
   const parts = [
     product.grant.mycel ? `+${product.grant.mycel} 🍄` : "",
     product.grant.pheromone ? `+${product.grant.pheromone} 🧪` : "",
-    product.grant.pass ? "Trophy Pass unlocked" : "",
+    product.grant.pass ? "Colony Pass unlocked" : "",
     product.grant.species ? `${product.title ?? "Colony"} unlocked` : "",
   ].filter(Boolean);
   return parts.join("  ");

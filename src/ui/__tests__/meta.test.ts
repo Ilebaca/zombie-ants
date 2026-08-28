@@ -8,7 +8,9 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { CHAMBER_MAX, RESEARCH_MAX, SPECIES, chamberCost, researchCost } from "../../engine";
 import type { SpeciesId } from "../../engine";
-import { MemoryStore, ProfileStore, SPECIES_UNLOCK, roadKey } from "../../platform";
+import {
+  COLONY_START, MemoryStore, ProfileStore, SPECIES_UNLOCK, compact, roadKey, stopColony,
+} from "../../platform";
 import { buildAnthill } from "../anthill";
 import { buildProfile } from "../profile";
 import { clockOf } from "../chrome";
@@ -17,15 +19,15 @@ import type { EngineEvent } from "../../engine";
 import { dayIndex, questDef } from "../../platform";
 import { scoreQuestEvents } from "../app";
 import { buildQuests } from "../quests";
-import { buildTrophyRoad } from "../road";
+import { buildColonyRoad } from "../road";
 
 /**
  * A profile with exactly the balances a test asks for. Set explicitly rather than topped
  * up, because a new profile arrives with a starting grant of mycelium.
  */
-const store = (mycel = 0, pheromone = 0, trophies = 0): ProfileStore => {
+const store = (mycel = 0, pheromone = 0, colony = COLONY_START): ProfileStore => {
   const s = new ProfileStore(new MemoryStore());
-  s.update((p) => { p.mycel = mycel; p.pheromone = pheromone; p.trophies = trophies; });
+  s.update((p) => { p.mycel = mycel; p.pheromone = pheromone; p.colony = colony; });
   return s;
 };
 
@@ -426,21 +428,29 @@ describe("species page", () => {
   });
 });
 
-describe("trophy road screen", () => {
+describe("colony road screen", () => {
+  /*
+   * Rungs are named by INDEX and sized geometrically, so every case here asks the road what
+   * a rung is worth rather than hard-coding a number a retune would move. Rung 2 is the
+   * first that pays on the free track (one free reward a chapter, two rungs to a chapter).
+   */
+  const RUNG = 2;
+  const atRung = (n: number, mycel = 0): ProfileStore => store(mycel, 0, stopColony(n));
+
   it("claims a reached free reward once and banks the currency", () => {
-    const s = store(0, 0, 600);
-    const root = buildTrophyRoad(s, () => {}, () => {});
+    const s = atRung(RUNG);
+    const root = buildColonyRoad(s, () => {}, () => {});
     const ready = root.querySelectorAll<HTMLButtonElement>(".roadcell.ready");
     expect(ready.length).toBeGreaterThan(0);
     click(ready[0]);
     expect(s.get().mycel + s.get().pheromone).toBeGreaterThan(0);
-    expect(s.get().roadClaimed).toContain(roadKey("free", 500));
+    expect(s.get().roadClaimed).toContain(roadKey("free", RUNG));
     expect(root.querySelectorAll(".roadcell.got").length).toBe(1);
   });
 
   it("locks the pass track until the pass is owned", () => {
-    const s = store(0, 0, 600);
-    const root = buildTrophyRoad(s, () => {}, () => {});
+    const s = atRung(RUNG);
+    const root = buildColonyRoad(s, () => {}, () => {});
     expect(root.querySelectorAll(".roadcell.passlock").length).toBeGreaterThan(0);
     for (const cell of Array.from(root.querySelectorAll<HTMLButtonElement>(".roadcell.passlock"))) {
       click(cell);
@@ -448,20 +458,30 @@ describe("trophy road screen", () => {
     expect(s.get().roadClaimed.length).toBe(0);
 
     s.grantPass();
-    const withPass = buildTrophyRoad(s, () => {}, () => {});
+    const withPass = buildColonyRoad(s, () => {}, () => {});
     expect(withPass.querySelectorAll(".roadcell.passlock").length).toBe(0);
-    expect(withPass.textContent).toContain("PASS ✓");
+    expect(withPass.textContent).toContain("PASS \u2713");
   });
 
-  it("offers nothing to a player with no trophies", () => {
-    const root = buildTrophyRoad(store(), () => {}, () => {});
+  it("offers nothing to a colony that has not reached the first rung", () => {
+    const root = buildColonyRoad(store(), () => {}, () => {});
     expect(root.querySelectorAll(".roadcell.ready").length).toBe(0);
     expect(root.querySelectorAll(".rnode.done").length).toBe(0);
   });
 
   it("marks reached stops as done", () => {
-    const root = buildTrophyRoad(store(0, 0, 1000), () => {}, () => {});
-    expect(root.querySelectorAll(".rnode.done").length).toBe(4);      // 250, 500, 750, 1000
+    const root = buildColonyRoad(atRung(4), () => {}, () => {});
+    expect(root.querySelectorAll(".rnode.done").length).toBe(4);
+  });
+
+  /** The figure on an unreached rung is the compact one — a road of 1,047,382 is unreadable. */
+  it("writes the rungs the way the rest of the game writes the colony", () => {
+    const root = buildColonyRoad(store(), () => {}, () => {});
+    const nodes = Array.from(root.querySelectorAll(".rnode:not(.done) b"));
+    expect(nodes.length).toBeGreaterThan(0);
+    expect(nodes.some((n) => n.textContent === compact(stopColony(1)))).toBe(true);
+    // The road has to still be there at the sizes a compounding colony reaches.
+    expect(nodes.some((n) => /[MB]$/.test(n.textContent ?? ""))).toBe(true);
   });
 
   /**
@@ -469,21 +489,26 @@ describe("trophy road screen", () => {
    * own position off it. Exactly one stop — the first one out of reach — is the target.
    */
   it("marks the stop the player is working towards, and only that one", () => {
-    const fresh = buildTrophyRoad(store(), () => {}, () => {});
+    const fresh = buildColonyRoad(store(), () => {}, () => {});
     const next = fresh.querySelectorAll(".roadrow.next");
     expect(next.length).toBe(1);
-    expect(next[0]?.textContent).toContain("250");
+    expect(next[0]?.textContent).toContain(compact(stopColony(1)));
 
     // The marker moves along with the player rather than staying on the first stop.
-    const later = buildTrophyRoad(store(0, 0, 600), () => {}, () => {});
+    const later = buildColonyRoad(atRung(3), () => {}, () => {});
     const moved = later.querySelectorAll(".roadrow.next");
     expect(moved.length).toBe(1);
-    expect(moved[0]?.textContent).toContain("750");
+    expect(moved[0]?.textContent).toContain(compact(stopColony(4)));
+  });
+
+  it("shows the player their own colony in troops", () => {
+    const root = buildColonyRoad(store(0, 0, 23_000), () => {}, () => {});
+    expect(root.querySelector(".roadt")?.textContent).toBe("23K troops");
   });
 
   it("sends Get Pass to the shop, which is what sells it", () => {
     let wentToShop = false;
-    const root = buildTrophyRoad(store(), () => {}, () => { wentToShop = true; });
+    const root = buildColonyRoad(store(), () => {}, () => { wentToShop = true; });
     click(root.querySelector(".passbuy"));
     expect(wentToShop).toBe(true);
   });
@@ -668,8 +693,8 @@ describe("legacy markup parity", () => {
     expect(root.querySelector("#questBody")).toBeTruthy();
   });
 
-  it("keeps the Trophy Road's road2 → roadchap → roadrow skeleton", () => {
-    const root = buildTrophyRoad(store(), () => {}, () => {});
+  it("keeps the Colony Road's road2 → roadchap → roadrow skeleton", () => {
+    const root = buildColonyRoad(store(), () => {}, () => {});
     expect(root.id).toBe("achievements");
     expect(root.querySelector(".screenbody")?.id).toBe("achBody");
     for (const cls of ["road2", "roadchap", "roadchapter", "roadrow", "rcolL", "rcolC",

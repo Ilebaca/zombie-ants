@@ -77,6 +77,3 @@ export const chamberCost = (level: number): number => 60 + level * 55;
 /** Cost of the NEXT research level, given the level already held. */
 export const researchCost = (level: number): number => 40 + level * 35;
 
-/** Trophies drive the Trophy Road. Floored at zero elsewhere. */
-export const TROPHY_WIN = 30;
-export const TROPHY_LOSS = -15;

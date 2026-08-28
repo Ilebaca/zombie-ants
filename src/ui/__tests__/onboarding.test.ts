@@ -91,22 +91,46 @@ describe("the button that starts the setup flow", () => {
  * fact the player does not otherwise have.
  */
 describe("the result card", () => {
-  it("reports the match clock where the enemy's army used to be", () => {
+  const card = (recap: Record<string, unknown>): HTMLElement => {
     const host = mount();
     const app = new App(host, new ProfileStore(new MemoryStore()));
     (app as unknown as {
       showResult: (w: string, r: Record<string, unknown>) => void;
-    }).showResult("you", {
+    }).showResult(recap.won === false ? "ai" : "you", {
       challenge: null, turns: 12, played: 187_000, youArmy: 44, species: "fire",
-      xpGained: 30, trophies: 30, trophyDelta: 30, mycel: 40, leveledTo: null, reason: null,
+      xpGained: 30, colony: 1_284_000, colonyDelta: 158_000, mycel: 40,
+      leveledTo: null, reason: null, ...recap,
     });
+    return host;
+  };
 
+  it("reports the match clock where the enemy's army used to be", () => {
+    const host = card({});
     const facts = host.querySelector("#overRecap");
     expect(facts, "no recap on the card").not.toBeNull();
     expect(facts?.textContent).toContain("Time");
     expect(facts?.textContent, "the clock was not on the card").toContain("3:07");
     expect(facts?.textContent, "the enemy's army is still being reported")
       .not.toContain("Enemy");
+  });
+
+  /**
+   * THE COLONY LEADS THE CARD, because it is what the match was played for — written the
+   * way it is written everywhere else, and against the size it has now rather than alone.
+   */
+  it("leads with what the match did to the colony", () => {
+    const cell = card({}).querySelector(".pay-colony");
+    expect(cell, "the colony is not on the card").not.toBeNull();
+    expect(cell?.textContent).toContain("+158K");
+    expect(cell?.textContent).toContain("1.2M troops");
+  });
+
+  /** A defeat COSTS troops, and must not print the figure in the colour of gaining them. */
+  it("marks a loss as a loss", () => {
+    const cell = card({ won: false, colonyDelta: -64_000, colony: 1_220_000 })
+      .querySelector(".pay-colony");
+    expect(cell?.textContent).toContain("\u2212" + "64K");
+    expect(cell?.classList.contains("down"), "a loss was dressed as a gain").toBe(true);
   });
 });
 

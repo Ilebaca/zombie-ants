@@ -356,15 +356,6 @@ body {
   color: #06280c;
   box-shadow: 0 2px 0 #2a7d2c;
 }
-.troadbar {
-  border: none;
-  background: var(--panel);
-  border-radius: var(--r-pill);
-  box-shadow: var(--bevel-sm);
-}
-.troadbar .tr-bar { background: rgba(45, 70, 35, .16); border-radius: var(--r-pill); }
-.troadbar .tr-fill { background: var(--gold); }
-
 .topnav {
   border: none;
   background: var(--bg1);
@@ -399,16 +390,6 @@ body {
   background: var(--gold);
   border-radius: var(--r-pill);
 }
-.troadbar {
-  border: none;
-  background: var(--panel);
-  border-radius: var(--r-pill);
-  box-shadow: var(--bevel-sm);
-}
-.troadbar:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--panel-edge); }
-.troadbar .tr-bar { background: rgba(45, 70, 35, .16); border-radius: var(--r-pill); }
-.troadbar .tr-fill { background: var(--gold); }
-
 .pip { background: rgba(255, 255, 255, .12); border-radius: var(--r-pill); }
 .pip.on { background: var(--gold); }
 
@@ -778,8 +759,7 @@ footer { background: var(--bg1); }
 
 /* Wells and tracks are a shadow cut into the surface. */
 .pip { background: rgba(0, 0, 0, .3); }
-.qbar, .qp, .cbar, .sb, .lbbar,
-.troadbar .tr-bar { background: rgba(0, 0, 0, .34); }
+.qbar, .qp, .cbar, .sb, .lbbar { background: rgba(0, 0, 0, .34); }
 .dcard .rtrack, .hcrow { background: none; }
 .roadcell.empty { background: rgba(255, 255, 255, .04); }
 .ccard .cveil { background: rgba(6, 14, 9, .62); }
@@ -1037,24 +1017,6 @@ body,
 .mycelchip b { color: var(--ink); font-size: 13px; }
 .mycelchip small { color: var(--muted); font-size: 9.5px; letter-spacing: .8px; }
 
-/* --------------------------------------------------------- TROPHY STRIP
-   It used to be a slab of chrome laid across the top of the artwork. It
-   is a thin rail now, the same family as the coins above it. */
-.troadbar {
-  gap: 10px;
-  padding: 0 12px;
-  min-height: 38px;
-  background: rgba(0, 0, 0, .3);
-  border: none;
-  border-radius: var(--r-pill);
-  box-shadow: var(--sheen);
-  margin: 8px 16px 0;
-}
-.troadbar .tr-ic { color: var(--gold); font-size: 0; display: grid; place-items: center; }
-.troadbar .tr-rew { color: #ff8f6d; font-size: 0; display: grid; place-items: center; }
-.troadbar .tr-bar { height: 6px; background: rgba(0, 0, 0, .4); border-radius: 3px; }
-.troadbar .tr-fill { background: var(--gold); }
-
 /* ----------------------------------------------------------------- HOME
    The artwork is the whole screen, so it gets a wordmark at the top and
    the two floating buttons made into one family instead of a dark square
@@ -1220,8 +1182,8 @@ body,
 }
 .howtolink:active { background: none; opacity: .6; }
 
-/* The top bar and the trophy rail are one block of chrome, so the rail sits on
-   the panel rather than floating on the artwork underneath it. */
+/* The top bar and the colony banner are one block of chrome, so the banner sits
+   on the panel rather than floating on the artwork underneath it. */
 .tophead {
   gap: 0;
   background: var(--bg1);
@@ -1229,7 +1191,6 @@ body,
   box-shadow: 0 1px 0 rgba(0, 0, 0, .35);
 }
 .topnav { background: none; border-bottom: none; }
-.troadbar { margin: 2px 14px 0; background: rgba(0, 0, 0, .32); }
 
 .dailyfab small { font-size: 8.5px; font-weight: 900; letter-spacing: .4px; }
 
@@ -1673,7 +1634,6 @@ button:not(.playbtn):active,
 .setbtn,
 .ghostbtn,
 .backbtn,
-.troadbar,
 .btn {
   box-shadow: none;
 }
@@ -1730,14 +1690,10 @@ button:not(.playbtn):active,
 .tn-plus svg { width: 14px; height: 14px; display: block; }
 .tn-plus:active { background: none; color: var(--ink); }
 
-/* The trophy strip's own marks lose their discs for the same reason. */
-.troadbar .ri,
-.troadbar .rmark { background: none; box-shadow: none; }
-
-/* ------------------------------------------------------------- THE RAIL
-   The trophy bar was part of the top panel, which made the chrome a
+/* ------------------------------------------------------------ THE BANNER
+   The colony banner was part of the top panel, which made the chrome a
    two-storey block. It belongs to the artwork: the panel ends with the
-   currency row and the rail floats on the picture underneath. */
+   currency row and the banner sits on the picture underneath. */
 .tophead {
   background: none;
   box-shadow: none;
@@ -1748,12 +1704,6 @@ button:not(.playbtn):active,
   border-bottom: none;
   box-shadow: 0 1px 0 rgba(0, 0, 0, .35);
 }
-.troadbar {
-  background: none;
-  margin: 8px 14px 0;
-}
-/* Floating on the artwork, the track has to carry its own contrast. */
-.troadbar .tr-bar { background: rgba(0, 0, 0, .45); }
 
 /* ---------------------------------------------------------- PAGE HEADERS
    The title sat against the back button, which read as a label on the
@@ -1854,19 +1804,6 @@ button:not(.playbtn):active,
 }
 .settingsfab:active { background: var(--panel-hi); }
 
-/* The rail keeps its OWN wrapper — a dark pill on the artwork — it is only
-   the panel band behind it that had to go. Without the wrapper the icons
-   and the track sat loose on the picture with nothing holding them
-   together. */
-.troadbar {
-  background: rgba(0, 0, 0, .34);
-  border-radius: var(--r-pill);
-  padding: 0 14px;
-  min-height: 38px;
-  margin: 8px 14px 0;
-}
-.troadbar .tr-bar { background: rgba(255, 255, 255, .14); }
-
 /* ======================================================================
    NO SCROLLBARS
    Several panels scroll — the shop, the anthill, the antarium, the trophy
@@ -1912,10 +1849,6 @@ button:not(.playbtn):active,
   background: var(--panel);
 }
 
-/* The rail's track was see-through, so an empty bar showed the artwork
-   through it and read as a hole rather than as nothing earned yet. */
-.troadbar .tr-bar { background: var(--panel-edge); }
-
 /* ---------------------------------------------------------- WHAT IS PICKED
    Every picker marked its choice with an inset shadow, and clearing the
    shadows cleared the marks with them: the map and formation cards had
@@ -1932,13 +1865,6 @@ button:not(.playbtn):active,
    take the accent that means "chosen" everywhere else in the app. */
 .mp.on { background: rgba(88, 201, 76, .1); }
 .shp.on { background: rgba(88, 201, 76, .1); }
-
-/* The rail itself was a translucent black pill, so the artwork came through
-   it and the whole strip read as half-there. Solid dark green, like every
-   other panel; the groove inside it stays darker so an empty bar still
-   reads as a bar rather than as a gap. */
-.troadbar { background: var(--panel); }
-.troadbar .tr-bar { background: var(--panel-edge); }
 
 /* ======================================================================
    THE RESULT CARD
@@ -1994,7 +1920,10 @@ button:not(.playbtn):active,
   text-transform: uppercase;
 }
 
-.pay-trophy svg { color: var(--gold-glow); }
+/* The colony cell leads the card, in the colour the colony wears everywhere else — and a
+   match that COST troops must not be printed in the colour of gaining them. */
+.pay-colony svg, .pay-colony b { color: var(--grass-glow); }
+.pay-colony.down svg, .pay-colony.down b { color: var(--danger); }
 .pay-mycel svg { color: #ff9a7a; }
 .pay-xp svg { color: var(--sky); }
 
@@ -2411,12 +2340,11 @@ button:not(.playbtn):active,
 .hillcut { margin: 0 0 4px; }
 .sechead, .tierhead, .secthead { margin-left: 0; margin-right: 0; }
 /*
- * ...EXCEPT the trophy rail, which is the one block that is not inside the column: it
- * lives in the home screen's top head, beside the currency bar, and its own margins ARE
- * its gutter. Zeroing them with the rest took it edge to edge while everything under it
- * stayed inset.
+ * ...EXCEPT the colony banner, which is the one block that is not inside the column: it
+ * lives in the home screen's top head, under the currency bar, and its own margins ARE
+ * its gutter (see THE COLONY, below). Zeroing them with the rest would take it edge to
+ * edge while everything under it stayed inset.
  */
-.troadbar { margin-left: 16px; margin-right: 16px; }
 /* The top bar's own 12px was the last inset left over: the avatar and the currency chips
    sat four pixels wider than the rail below them and the PLAY button below that. */
 .topnav { padding-left: 16px; padding-right: 16px; }
@@ -2591,3 +2519,117 @@ button:not(.playbtn):active,
 
 /* The one row that is a door and not a count. */
 .pf-row-go { grid-template-columns: 34px 1fr 14px; }
+
+/* ======================================================================
+   ==  THE COLONY  ======================================================
+   ======================================================================
+
+   The ladder was a trophy count, and it sat on the home screen as a coin
+   in a row of three — the same size as the mycelium a player spends on a
+   chamber, which said it was worth about as much.
+
+   It is the number the whole game is played for: troops won and lost a
+   match at a time, compounding, with no ceiling. So on the home screen it
+   is the biggest thing under the bar, with the road's next rung running
+   underneath it, and on the profile it leads the record rather than
+   sitting in the grid with the rest.
+   ====================================================================== */
+
+/* ------------------------------------------------------ ON THE HOME SCREEN */
+.colhero {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 16px 0;
+  padding: 10px 14px;
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.col-ic {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(96, 170, 88, .16);
+  color: var(--grass-glow);
+}
+.col-mid { min-width: 0; display: grid; gap: 3px; }
+.col-t {
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.col-line { display: flex; align-items: baseline; gap: 6px; }
+/* The figure, and it is allowed to be loud. */
+.col-n {
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -.6px;
+  color: var(--grass-glow);
+  font-variant-numeric: tabular-nums;
+}
+.col-k {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .6px;
+  color: var(--ink-soft);
+}
+/* The next rung is part of the same object, not a second bar under it. */
+.col-rail { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.col-rail .tr-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, .34);
+  overflow: hidden;
+}
+.col-rail .tr-fill {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--grass);
+}
+.col-rail .tr-rew { display: inline-flex; align-items: center; gap: 4px; color: var(--gold); }
+.col-next {
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: .2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------- ON THE PROFILE */
+.pf-colony {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  margin-bottom: 12px;
+  padding: 16px 14px 18px;
+  border-radius: var(--r-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.pf-colony-k,
+.pf-colony-s {
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.pf-colony-n {
+  font-size: 42px;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -1.4px;
+  color: var(--grass-glow);
+  font-variant-numeric: tabular-nums;
+}

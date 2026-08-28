@@ -21,7 +21,7 @@ import type { SpeciesId } from "../engine";
 export interface Grant {
   mycel?: number;
   pheromone?: number;
-  /** Unlocks the Trophy Road's pass track. */
+  /** Unlocks the Colony Road's pass track. */
   pass?: boolean;
   species?: SpeciesId;
 }
@@ -47,7 +47,7 @@ export interface Product {
  * The catalogue.
  *
  * Deliberately narrower than the legacy build's: it sells only what a player can actually
- * spend today — mycelium, pheromone, the Trophy Pass and the one premium colony. Larva
+ * spend today — mycelium, pheromone, the Colony Pass and the one premium colony. Larva
  * packs and cosmetic rolls are left out rather than sold against a feature that does not
  * exist yet.
  */
@@ -86,7 +86,7 @@ export const SHOP_PRODUCTS: readonly Product[] = [
   // ---- the things that are not currency ---------------------------------------------
   {
     id: "pass.trophy", kind: "pass", price: "€3.99", icon: "star",
-    title: "Trophy Pass", sub: "The road's second track",
+    title: "Colony Pass", sub: "The road's second track",
     grant: { pass: true },
   },
   {

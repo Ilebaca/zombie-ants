@@ -11,7 +11,9 @@ import {
 import type { EngineEvent, GameOverReason, MapId, Player, SpeciesId } from "../engine";
 import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
-import { DEFAULT_SPECIES, DemoGateway, ProfileStore, SPECIES_ORDER, TOUR_VERSION } from "../platform";
+import {
+  DEFAULT_SPECIES, DemoGateway, ProfileStore, SPECIES_ORDER, TOUR_VERSION, compact,
+} from "../platform";
 import type { PurchaseGateway } from "../platform";
 import { SPECIES_COL, antHead, basicLook, hexA, setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
@@ -29,7 +31,7 @@ import { buildLeaderboard } from "./leaderboard";
 import { buildShop } from "./shop";
 import { buildQuests } from "./quests";
 import { buildComingSoon, buildMenu, buildRules, buildSettings } from "./screens-simple";
-import { buildTrophyRoad } from "./road";
+import { buildColonyRoad } from "./road";
 import { Deck } from "./deck";
 import { Tour } from "./tour";
 import type { TourStep } from "./tour";
@@ -183,7 +185,7 @@ export class App {
       },
       {
         id: "road",
-        title: "Trophy Road",
+        title: "Colony Road",
         text: "Every win pushes this bar along. Reach a marker and the reward is yours "
           + "to claim.",
         find: find(".troadbar"),
@@ -197,7 +199,7 @@ export class App {
         pad: 2,
       },
       deckStep("shop", ".shopwrap", "The Shop",
-        "Mycelium and pheromone in bulk, the Trophy Pass, and the premium colony. "
+        "Mycelium and pheromone in bulk, the Colony Pass, and the premium colony. "
         + "Nothing here is needed to win — it is a shortcut, not a wall."),
       deckStep("anthill", ".hillwrap", "The Anthill",
         "Chambers upgrade your whole colony: more income, tougher soldiers, a longer "
@@ -401,7 +403,7 @@ export class App {
     }
     if (id === "formation") return this.buildFormationSelect();
     if (id === "anthill") return buildAnthill(this.profile);
-    if (id === "achievements") return buildTrophyRoad(this.profile, () => this.show("home"), () => this.show("shop"));
+    if (id === "achievements") return buildColonyRoad(this.profile, () => this.show("home"), () => this.show("shop"));
     if (id === "quests") return buildQuests(this.profile, () => this.show("profile"));
     if (id === "profile") {
       return buildProfile(this.profile, {
@@ -416,7 +418,7 @@ export class App {
     if (id === "rules") return buildRules();
     if (id === "shop") return buildShop(this.profile, this.purchases, () => this.show("home"));
     if (id === "leaderboard") {
-      return buildLeaderboard(this.profile.get().trophies, () => this.show("home"));
+      return buildLeaderboard(this.profile.get().colony, () => this.show("home"));
     }
     if (id === "challenges") return buildChallenges((i) => this.startChallenge(i));
     if (id === "daily") return buildDaily((i) => this.startChallenge(i, true), () => this.show("home"));
@@ -516,7 +518,7 @@ export class App {
 
     root.appendChild(topBar(this.profile.get(), {
       onProfile: () => this.show("profile"),
-      onTrophyRoad: () => this.show("achievements"),
+      onColonyRoad: () => this.show("achievements"),
       onShop: () => this.show("shop"),
     }));
 
@@ -858,7 +860,7 @@ export class App {
         // Snapshot before recording, so the card can report what this match actually paid.
         const before = this.profile.get();
         const beforeXp = before.xp;
-        const beforeTrophies = before.trophies;
+        const beforeColony = before.colony;
         const beforeMycel = before.mycel;
         const beforeLevel = this.profile.level().level;
         this.profile.recordResult(winner === "you", this.choices.species, state.turn, {
@@ -888,8 +890,8 @@ export class App {
           youArmy: armyOf(state, "you"),
           species: this.choices.species,
           xpGained: after.xp - beforeXp,
-          trophies: after.trophies,
-          trophyDelta: after.trophies - beforeTrophies,
+          colony: after.colony,
+          colonyDelta: after.colony - beforeColony,
           mycel: after.mycel - beforeMycel,
           leveledTo: level > beforeLevel ? level : null,
           reason,
@@ -912,12 +914,12 @@ export class App {
    * Three blocks, in the order the player cares about them: what happened, what it PAID,
    * and what the match looked like. The rewards came first only after the card was seen on
    * a phone — the old one led with four cramped facts and mentioned XP last, while the two
-   * numbers that actually move the player forward, trophies and mycelium, were not on it
+   * numbers that actually move the player forward, the colony and mycelium, were not on it
    * at all.
    */
   private showResult(winner: Player | null, recap: {
     turns: number; played: number; youArmy: number; species: SpeciesId;
-    xpGained: number; trophies: number; trophyDelta: number; mycel: number;
+    xpGained: number; colony: number; colonyDelta: number; mycel: number;
     leveledTo: number | null; reason: GameOverReason | null;
     challenge: Challenge | null;
   }): void {
@@ -950,7 +952,10 @@ export class App {
       return cell;
     };
     rewards.append(
-      reward("trophy", signed(recap.trophyDelta), `${recap.trophies} total`, "trophy"),
+      // The colony leads the card, because it is what the match was played for. A loss is
+      // marked as one: the figure carries the colony's own green only when it went UP.
+      reward("antarium", `${recap.colonyDelta >= 0 ? "+" : "−"}${compact(Math.abs(recap.colonyDelta))}`,
+        `${compact(recap.colony)} troops`, recap.colonyDelta >= 0 ? "colony" : "colony down"),
       reward("mycel", signed(recap.mycel), "mycelium", "mycel"),
       reward("star", `+${recap.xpGained}`, "colony XP", "xp"),
     );

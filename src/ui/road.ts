@@ -1,6 +1,11 @@
 /**
- * The Trophy Road: a vertical ladder of rewards, pass track on the left, free track on the
- * right, a chapter every 500 trophies.
+ * The Colony Road: a vertical ladder of rewards, pass track on the left, free track on the
+ * right, a chapter every two rungs.
+ *
+ * The rungs are GEOMETRIC (platform/road.ts) — each one a fixed multiple of the last — so
+ * the ladder keeps pace with a colony that compounds, and its hundred stops run from a
+ * hundred troops to past a trillion. A stop is named by its index for that reason: "is
+ * this a multiple of five hundred" only answers on a ladder with even rungs.
  *
  * Markup and running order are the legacy build's (road2 → roadchap → roadrow), including
  * where the header strip sits: after the ladder, so the screen opens on it when scrolled to
@@ -9,11 +14,11 @@
  * The whole table comes from platform/road.ts, so this file decides nothing about what a
  * reward is worth — it renders stops and asks the store to pay out.
  */
-import { ROAD_CHAPTER, ROAD_STEP, rewardText, roadKey, roadStops } from "../platform";
+import { compact, rewardText, roadKey, roadStops } from "../platform";
 import type { ProfileStore, RoadReward, RoadStop } from "../platform";
 import { el, screenEl, screenHeader, toast } from "./chrome";
 
-export function buildTrophyRoad(store: ProfileStore, onBack: () => void, onShop: () => void): HTMLElement {
+export function buildColonyRoad(store: ProfileStore, onBack: () => void, onShop: () => void): HTMLElement {
   const root = screenEl("achievements");
   /** Kept across renders so claiming a reward does not throw the player back to the top. */
   let scrollTop: number | null = null;
@@ -21,7 +26,7 @@ export function buildTrophyRoad(store: ProfileStore, onBack: () => void, onShop:
   const render = (): void => {
     const profile = store.get();
     root.replaceChildren();
-    screenHeader(root, { title: "Trophy Road", sub: "Earn trophies · claim rewards", onBack });
+    screenHeader(root, { title: "Colony Road", sub: "Grow the colony · claim rewards", onBack });
 
     const body = el("div", "screenbody achbody");
     body.id = "achBody";
@@ -34,19 +39,20 @@ export function buildTrophyRoad(store: ProfileStore, onBack: () => void, onShop:
     // the difference between a ladder you can read at a glance and a wall of identical
     // dim cards.
     const stops = roadStops();
-    const nextStop = stops.find((x) => profile.trophies < x.trophies)?.trophies ?? -1;
+    const nextStop = stops.find((x) => profile.colony < x.colony)?.index ?? -1;
 
     for (const stop of stops) {
       if (stop.chapter !== chapter) {
         chapter = stop.chapter;
         section = el("section", "roadchap");
+        const first = stops.find((x) => x.chapter === chapter);
         const label = el("div",
-          "roadchapter" + (profile.trophies >= (chapter - 1) * ROAD_CHAPTER ? " reached" : ""));
+          "roadchapter" + (first && profile.colony >= first.colony ? " reached" : ""));
         label.appendChild(el("span", undefined, `Chapter ${chapter}`));
         section.appendChild(label);
         ladder.appendChild(section);
       }
-      section?.appendChild(roadRow(stop, profile.trophies, stop.trophies === nextStop));
+      section?.appendChild(roadRow(stop, profile.colony, stop.index === nextStop));
     }
     body.appendChild(ladder);
     body.appendChild(head());
@@ -65,9 +71,9 @@ export function buildTrophyRoad(store: ProfileStore, onBack: () => void, onShop:
     const box = el("div", "roadhead");
     const left = el("div", "roadhl");
     left.append(
-      el("div", "roadt", `${profile.trophies} trophies`),
+      el("div", "roadt", `${compact(profile.colony)} troops`),
       el("div", "roadsub",
-        `Free reward every ${ROAD_CHAPTER} · Pass reward every ${ROAD_STEP} · New chapter every ${ROAD_CHAPTER}`),
+        "Every rung is bigger than the last · Free reward each chapter · Pass pays every rung"),
     );
     box.appendChild(left);
     if (profile.pass) {
@@ -81,20 +87,20 @@ export function buildTrophyRoad(store: ProfileStore, onBack: () => void, onShop:
     return box;
   };
 
-  const roadRow = (stop: RoadStop, trophies: number, isNext: boolean): HTMLElement => {
-    const reached = trophies >= stop.trophies;
+  const roadRow = (stop: RoadStop, colony: number, isNext: boolean): HTMLElement => {
+    const reached = colony >= stop.colony;
     const row = el("div", "roadrow" + (isNext ? " next" : ""));
 
-    row.appendChild(sideCell(stop.pass, roadKey("pass", stop.trophies), "pass"));
+    row.appendChild(sideCell(stop.pass, roadKey("pass", stop.index), "pass"));
 
     const centre = el("div", "rcolC" + (reached ? " reached" : ""));
     const node = el("div", "rnode" + (reached ? " done" : ""));
     if (reached) node.textContent = "✓";
-    else node.appendChild(el("b", undefined, String(stop.trophies)));
+    else node.appendChild(el("b", undefined, compact(stop.colony)));
     centre.appendChild(node);
     row.appendChild(centre);
 
-    row.appendChild(sideCell(stop.free, roadKey("free", stop.trophies), "free"));
+    row.appendChild(sideCell(stop.free, roadKey("free", stop.index), "free"));
     return row;
   };
 

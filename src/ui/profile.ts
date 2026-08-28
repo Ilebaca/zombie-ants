@@ -25,7 +25,9 @@
  */
 import { CHAMBER_MAX, SPECIES } from "../engine";
 import type { SpeciesId } from "../engine";
-import { CHAMBERS, RESEARCH_TOTAL_MAX, SPECIES_ORDER, levelReward } from "../platform";
+import {
+  CHAMBERS, RESEARCH_TOTAL_MAX, SPECIES_ORDER, compact, exact, levelReward,
+} from "../platform";
 import type { ProfileStore } from "../platform";
 import { SPECIES_COL, antHead, basicLook } from "../render";
 import { clockOf, el, screenEl, screenHeader, toast } from "./chrome";
@@ -69,8 +71,15 @@ export function buildProfile(store: ProfileStore, opts: ProfileOptions): HTMLEle
      */
     const lost = Math.max(0, s.games - s.wins);
     const rate = s.games ? Math.round((s.wins / s.games) * 100) : 0;
+    // THE COLONY LEADS. It is what every match is played for and the only number in the
+    // game with no ceiling, so it is a line of its own rather than a cell in a grid.
+    const size = el("div", "pf-colony");
+    size.title = `${exact(profile.colony)} troops`;
+    const fig = el("div", "pf-colony-n", compact(profile.colony));
+    size.append(el("div", "pf-colony-k", "Colony"), fig, el("div", "pf-colony-s", "troops"));
+    scroll.append(el("div", "secthead", "Record"), size);
+
     scroll.append(
-      el("div", "secthead", "Record"),
       cells([
         ["Played", String(s.games)],
         ["Won", String(s.wins)],

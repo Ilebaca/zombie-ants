@@ -8,7 +8,7 @@
  * Everything is built with DOM calls rather than innerHTML — the profile carries a
  * player-chosen name, and a template string would happily inject it as markup.
  */
-import { ROAD_STEP, freeReward, passReward } from "../platform";
+import { compact, freeReward, passReward, stopColony, stopReached } from "../platform";
 import type { Profile } from "../platform";
 import { icon } from "./icons";
 
@@ -79,15 +79,15 @@ export function mycelChip(mycel: number): HTMLElement {
 /* ------------------------------------------------------------------- TOP BAR */
 
 export interface TopBarOptions {
-  /** Tapping the avatar opens the colony/quests screen, as it does in the legacy build. */
+  /** Tapping the avatar opens the profile. */
   onProfile: () => void;
-  onTrophyRoad: () => void;
+  onColonyRoad: () => void;
   onShop: () => void;
 }
 
 /**
- * The home screen's top bar: avatar, the three currencies, and the trophy-road progress
- * strip beneath them.
+ * The home screen's top bar: avatar, the two spendable currencies, and the colony banner
+ * beneath them — the number the game is played for, not a coin in the row.
  */
 export function topBar(profile: Readonly<Profile>, opts: TopBarOptions): HTMLElement {
   const head = el("div", "tophead");
@@ -108,17 +108,62 @@ export function topBar(profile: Readonly<Profile>, opts: TopBarOptions): HTMLEle
 
   const cur = el("div", "tn-cur");
   cur.append(
-    // Trophies cannot be bought, so their "+" is a hidden spacer that keeps the three
-    // coins on the same grid.
-    coin("trophy", "lb-pts", profile.trophies, null),
     coin("mycel", "ophio-pts", profile.mycel, { label: "Get mycel", onClick: opts.onShop }),
     coin("pheromone", "pher-pts", profile.pheromone, { label: "Get pheromone", onClick: opts.onShop }),
   );
   nav.appendChild(cur);
   head.appendChild(nav);
 
-  head.appendChild(trophyBar(profile.trophies, opts.onTrophyRoad));
+  head.appendChild(colonyBanner(profile.colony, opts.onColonyRoad));
   return head;
+}
+
+/**
+ * THE COLONY, and it is the biggest thing on the screen for a reason.
+ *
+ * It is the number the whole game is played for: troops won and lost a match at a time,
+ * compounding, with no ceiling — and one day, a world ranking of the biggest colony there
+ * is. It was a coin in a row of three, the same size as the mycelium a player spends on a
+ * chamber, which said it was worth about as much.
+ *
+ * The figure is compact (23K, 1.2M, 4.8B) because that is how a number this big is read,
+ * and the road progress runs under it so the next rung is part of the same object.
+ */
+export function colonyBanner(colony: number, onClick: () => void): HTMLElement {
+  const box = el("button", "colhero");
+  box.id = "colonyHero";
+  box.title = "Colony Road";
+
+  const mark = el("span", "col-ic");
+  mark.appendChild(icon("antarium", 22));
+
+  const mid = el("div", "col-mid");
+  const line = el("div", "col-line");
+  line.append(el("b", "col-n", compact(colony)), el("span", "col-k", "troops"));
+  mid.append(el("div", "col-t", "Your colony"), line);
+
+  const reached = stopReached(colony);
+  const from = reached ? stopColony(reached) : 0;
+  const next = stopColony(reached + 1);
+  const pct = next > from ? Math.max(0, Math.min(1, (colony - from) / (next - from))) : 1;
+
+  const track = el("span", "tr-bar");
+  const fill = el("i", "tr-fill");
+  fill.style.width = `${Math.round(pct * 100)}%`;
+  track.appendChild(fill);
+
+  const reward = freeReward(reached + 1) ?? passReward(reached + 1);
+  const pay = el("span", "tr-rew");
+  pay.appendChild(icon(reward?.pheromone ? "pheromone" : "mycel", 15));
+  pay.appendChild(el("span", "col-next", compact(next)));
+
+  const rail = el("div", "col-rail");
+  rail.append(track, pay);
+  mid.appendChild(rail);
+
+  box.append(mark, mid);
+  box.onclick = onClick;
+  return box;
 }
 
 function coin(
@@ -142,30 +187,6 @@ function coin(
     box.appendChild(ghost);
   }
   return box;
-}
-
-/** Progress toward the next Trophy Road stop, and the icon of what it pays. */
-export function trophyBar(trophies: number, onClick: () => void): HTMLElement {
-  const bar = el("button", "troadbar");
-  bar.title = "Trophy Road";
-
-  const previous = Math.floor(trophies / ROAD_STEP) * ROAD_STEP;
-  const next = previous + ROAD_STEP;
-  const pct = Math.max(0, Math.min(1, (trophies - previous) / ROAD_STEP));
-
-  const track = el("span", "tr-bar");
-  const fill = el("i", "tr-fill");
-  fill.style.width = `${Math.round(pct * 100)}%`;
-  track.appendChild(fill);
-
-  const reward = freeReward(next) ?? passReward(next);
-  const lead = el("span", "tr-ic");
-  lead.appendChild(icon("trophy", 16));
-  const pay = el("span", "tr-rew");
-  pay.appendChild(icon(reward?.pheromone ? "pheromone" : "mycel", 16));
-  bar.append(lead, track, pay);
-  bar.onclick = onClick;
-  return bar;
 }
 
 /** The little worker drawn in the avatar chip — three blobs and two eyes, as in legacy. */

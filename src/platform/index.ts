@@ -14,9 +14,13 @@ export {
 } from "./catalogue";
 export type { ChamberDef, ResearchDef, ResearchTrack, Tier } from "./catalogue";
 export {
-  ROAD_CHAPTER, ROAD_CHAPTERS, ROAD_MAX, ROAD_STEP, freeReward, isPassKey, passReward,
-  rewardFor, rewardText, roadKey, roadStops, roadTrophies,
+  ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, ROAD_FIRST, ROAD_GROWTH, ROAD_LAST, ROAD_STOPS,
+  freeReward, isPassKey, passReward, rewardFor, rewardText, roadColony, roadKey, roadStops,
+  stopColony, stopReached,
 } from "./road";
+export {
+  COLONY_FLOOR, COLONY_LOSS, COLONY_START, COLONY_WIN, compact, exact, grownColony,
+} from "./colony";
 export type { RoadReward, RoadStop, RoadTrack } from "./road";
 export { DemoGateway, SHOP_PRODUCTS, productById } from "./purchases";
 export type { Grant, Product, ProductKind, PurchaseGateway, PurchaseResult } from "./purchases";

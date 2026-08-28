@@ -5,7 +5,8 @@ import { MemoryStore } from "../storage";
 import { ProfileStore, normalise } from "../profile";
 import { CHAMBERS, RESEARCH_TRACKS, SPECIES_ORDER, SPECIES_UNLOCK } from "../catalogue";
 import {
-  ROAD_CHAPTER, ROAD_MAX, ROAD_STEP, freeReward, passReward, rewardFor, roadKey, roadStops,
+  ROAD_CHAPTER_STOPS, ROAD_FIRST, ROAD_LAST, ROAD_STOPS, freeReward, passReward, rewardFor,
+  roadColony, roadKey, roadStops, stopColony, stopReached,
 } from "../road";
 
 /** A profile with nothing banked — the starting grant would mask "cannot afford" cases. */
@@ -142,17 +143,39 @@ describe("species unlocks", () => {
   });
 });
 
-describe("trophy road layout", () => {
-  it("runs from the first step to the last with no gaps", () => {
+/**
+ * THE ROAD COMPOUNDS, because the colony does. It used to be a hundred rungs two hundred
+ * and fifty trophies apart — even spacing for an even ladder — and a colony that multiplies
+ * would clear the whole thing in a few dozen matches and then have nowhere to go.
+ */
+describe("colony road layout", () => {
+  it("runs from the first rung to the last, every one bigger than the last", () => {
     const stops = roadStops();
-    expect(stops[0]?.trophies).toBe(ROAD_STEP);
-    expect(stops[stops.length - 1]?.trophies).toBe(ROAD_MAX);
-    stops.forEach((s, i) => expect(s.trophies).toBe((i + 1) * ROAD_STEP));
+    expect(stops.length).toBe(ROAD_STOPS);
+    expect(stops[0]?.colony).toBe(ROAD_FIRST);
+    // Rounded to three significant figures, so the last rung lands near rather than on.
+    expect(stops[stops.length - 1]?.colony).toBeCloseTo(ROAD_LAST, -10);
+    stops.forEach((stop, i) => {
+      expect(stop.index).toBe(i + 1);
+      if (i > 0) {
+        expect(stop.colony, `rung ${i + 1} is not past rung ${i}`)
+          .toBeGreaterThan((stops[i - 1] as { colony: number }).colony);
+      }
+    });
   });
 
-  it("pays the free track once per chapter and the pass track every step", () => {
+  /** The point of the shape: the road has to still be there at a billion troops. */
+  it("reaches the sizes a colony that compounds actually gets to", () => {
+    const last = roadStops()[ROAD_STOPS - 1] as { colony: number };
+    expect(last.colony, "the road stops before a trillion").toBeGreaterThan(1e12);
+    expect(stopReached(50), "a new colony is already on a rung").toBe(0);
+    expect(stopReached(ROAD_FIRST)).toBe(1);
+    expect(stopReached(1e15), "a colony past the end is not on the last rung").toBe(ROAD_STOPS);
+  });
+
+  it("pays the free track once per chapter and the pass track every rung", () => {
     for (const stop of roadStops()) {
-      expect(!!stop.free).toBe(stop.trophies % ROAD_CHAPTER === 0);
+      expect(!!stop.free).toBe(stop.index % ROAD_CHAPTER_STOPS === 0);
       expect(!!stop.pass).toBe(true);
     }
   });
@@ -166,27 +189,35 @@ describe("trophy road layout", () => {
     }
   });
 
+  /**
+   * A rung is named by its INDEX, not its size. On a geometric ladder the size is a
+   * rounded number that a retune would move, and a claim key has to outlive that.
+   */
   it("resolves a claim key back to the same reward the road showed", () => {
     for (const stop of roadStops().slice(0, 20)) {
-      expect(rewardFor(roadKey("pass", stop.trophies))).toEqual(passReward(stop.trophies));
-      expect(rewardFor(roadKey("free", stop.trophies))).toEqual(freeReward(stop.trophies));
+      expect(rewardFor(roadKey("pass", stop.index))).toEqual(passReward(stop.index));
+      expect(rewardFor(roadKey("free", stop.index))).toEqual(freeReward(stop.index));
+      expect(roadColony(roadKey("free", stop.index))).toBe(stopColony(stop.index));
     }
-    for (const junk of ["", "x100", "f", "fNaN", "f-250", "f7"]) {
-      expect(rewardFor(junk)).toBeNull();
+    for (const junk of ["", "x100", "f", "fNaN", "f-250", "f0", "f999"]) {
+      expect(rewardFor(junk), `"${junk}" paid something`).toBeNull();
     }
   });
 });
 
-describe("claiming trophy road rewards", () => {
-  const withTrophies = (n: number, pass = false): ProfileStore => {
+describe("claiming colony road rewards", () => {
+  const withColony = (n: number, pass = false): ProfileStore => {
     const s = store();
-    s.update((p) => { p.trophies = n; p.pass = pass; });
+    s.update((p) => { p.colony = n; p.pass = pass; });
     return s;
   };
+  /** Rung 4 is the first that pays on BOTH tracks, so one size serves every case here. */
+  const RUNG = 4;
+  const REACHED = stopColony(RUNG);
 
   it("pays a reached free reward exactly once", () => {
-    const s = withTrophies(600);
-    const key = roadKey("free", 500);
+    const s = withColony(REACHED);
+    const key = roadKey("free", RUNG);
     expect(s.canClaimRoad(key)).toBe(true);
     expect(s.claimRoad(key)).toBe(true);
     expect(s.get().mycel + s.get().pheromone).toBeGreaterThan(0);
@@ -196,41 +227,41 @@ describe("claiming trophy road rewards", () => {
   });
 
   it("will not pay a reward the player has not reached", () => {
-    const s = withTrophies(400);
-    expect(s.claimRoad(roadKey("free", 500))).toBe(false);
+    const s = withColony(REACHED - 1);
+    expect(s.claimRoad(roadKey("free", RUNG))).toBe(false);
     expect(s.get().mycel).toBe(0);
   });
 
   it("locks the pass track until the pass is owned", () => {
-    const s = withTrophies(600);
-    const key = roadKey("pass", 500);
+    const s = withColony(REACHED);
+    const key = roadKey("pass", RUNG);
     expect(s.claimRoad(key)).toBe(false);
     s.grantPass();
     expect(s.claimRoad(key)).toBe(true);
   });
 
-  /** Trophies fall on a loss. A reward already banked must not be revoked or re-payable. */
-  it("keeps a claim after the trophies that earned it are lost", () => {
-    const s = withTrophies(600);
-    const key = roadKey("free", 500);
+  /** The colony shrinks on a loss. A banked reward must not be revoked or re-payable. */
+  it("keeps a claim after the colony that earned it is lost", () => {
+    const s = withColony(REACHED);
+    const key = roadKey("free", RUNG);
     s.claimRoad(key);
     const banked = s.get().mycel + s.get().pheromone;
-    s.update((p) => { p.trophies = 0; });
+    s.update((p) => { p.colony = 0; });
     expect(s.get().roadClaimed).toContain(key);
     expect(s.claimRoad(key)).toBe(false);
     expect(s.get().mycel + s.get().pheromone).toBe(banked);
   });
 
   it("survives a save carrying junk claim keys", () => {
-    const p = normalise({ roadClaimed: ["f500", "f500", "nonsense", 7, null, "p250"] });
-    expect(p.roadClaimed).toEqual(["f500", "p250"]);
+    const p = normalise({ roadClaimed: ["f4", "f4", "nonsense", 7, null, "p4"] });
+    expect(p.roadClaimed).toEqual(["f4", "p4"]);
   });
 
   it("persists claims across a reload", () => {
     const kv = new MemoryStore();
     const first = new ProfileStore(kv);
-    first.update((p) => { p.trophies = 600; });
-    first.claimRoad(roadKey("free", 500));
-    expect(new ProfileStore(kv).get().roadClaimed).toContain("f500");
+    first.update((p) => { p.colony = REACHED; });
+    first.claimRoad(roadKey("free", RUNG));
+    expect(new ProfileStore(kv).get().roadClaimed).toContain(roadKey("free", RUNG));
   });
 });

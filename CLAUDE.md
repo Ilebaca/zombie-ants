@@ -48,7 +48,7 @@ src/engine/    PURE game rules. No DOM, no canvas, no animation, no I/O, and no 
                beyond the seeded generator on GameState (§4.1) — never Math.random().
 src/ai/        Search + evaluation. Consumes the engine only.
 src/render/    Canvas board. Consumes engine EVENTS and draws them.
-src/ui/        Meta screens (home, trophy road, anthill, shop...).
+src/ui/        Meta screens (home, colony road, anthill, shop...).
 src/platform/  Storage, Capacitor, purchases.
 ```
 
@@ -603,9 +603,46 @@ provisional and say so if asked.
   are 180°-symmetric and tested to be — so this is the move order, not the ground. Whether
   to compensate the second player is an open design question; note that the AI always plays
   second, so every match a player sees is one the AI starts behind in.
-- Trophies: +30 win / −15 loss, floored at 0
+- The colony: **+14% of itself on a win** (at least +8), **−5% on a loss**, never below
+  its starting 40 (§8a). It compounds rather than adding, so it is not comparable to the
+  flat +30/−15 trophy count it replaced.
 - Maps: Skirmish 7×7 (wake 10, expected 32), Corridor 9×9 (14/45), Gauntlet 13×13 (18/80).
   The turn figure is an expectation, not a limit — nothing happens when it passes (§4.8).
+
+## 8a. The colony — the number the game is played for
+
+The ladder was a trophy count: +30 a win, −15 a loss, a fifty-chapter road ending at
+twenty-five thousand. That is a RATING, and a rating is a number about the player. This
+game is about a colony, and a colony GROWS — so the ladder counts troops, it compounds
+(`platform/colony.ts`), and the interesting part is that it runs off the end of what a
+person reads comfortably: thousands, then millions, then billions. The eventual point is a
+world ranking of the biggest colony there is, which is why the number has no ceiling.
+
+- **It compounds, and that is the whole design.** A flat +30 means the hundredth win is
+  worth exactly what the first was. A percentage means a colony of a million gains a
+  hundred and forty thousand. From forty, a win-heavy career reaches its first thousand in
+  about twenty-five wins, a million in seventy-seven, a trillion at around a hundred and
+  eighty.
+- **A win floor carries the opening matches.** Fourteen percent of forty is five and a
+  half, and a first win that moves the number by five reads as nothing happening.
+- **`compact()` is the only way a figure this big is readable**: 940, 23K, 1.2M, 4.8B, 6T.
+  One decimal only under ten of a unit — 457.3K is three characters of noise — and the
+  shown digit is TRUNCATED, so 999,900 reads as 999K and never as the 1000K that would
+  follow 999K on the screen above it. `exact()` writes it out where there is room.
+- **The road had to compound with it.** Every rung is a fixed multiple of the last, and a
+  hundred of them run from a hundred troops to past a trillion. So a rung is named by its
+  INDEX, not its size: "is this a multiple of five hundred?" only answers on an even
+  ladder, and a claim key has to outlive a retune of the table.
+- **A save from the trophy build converts, and its road claims convert with it.** The
+  trophy count becomes troops — the player earned it — and claims keyed by trophy amount
+  ("f500") would otherwise read as rung five hundred, which is past the end of the road.
+  `roadClaims` recognises a legacy save by exactly that and re-marks everything at or
+  below the converted colony as already paid, or a returning player collects the whole
+  lower road a second time.
+- **It is the biggest thing under the top bar, not a coin in the row.** It was one of three
+  coins the same size as the mycelium a player spends on a chamber, which said it was worth
+  about as much. It leads the profile's record and leads the result card too — and a defeat
+  is printed in the losing colour, because it costs troops.
 
 ## 9. Roadmap
 
@@ -619,7 +656,7 @@ provisional and say so if asked.
    The shop is built and sells through `platform/purchases.ts`: a `PurchaseGateway`
    interface with a `DemoGateway` that grants without charging. Swapping in RevenueCat is
    one new implementation of that interface — the screen and the grant code do not change.
-   It deliberately sells only what the game can spend (mycelium, pheromone, the Trophy Pass,
+   It deliberately sells only what the game can spend (mycelium, pheromone, the Colony Pass,
    the premium colony); the lucky hatch needs the larva currency and a cosmetics pool,
    neither of which exists yet, which is why larva rewards are paid in pheromone (§10).
 4. Capacitor wrap → Android build
@@ -638,10 +675,11 @@ goal), because the Antarium can sell them.
 The progression layer sits in three files, and none of them is reachable from the engine:
 - `platform/catalogue.ts` — prices and player-facing copy. The engine still owns what a
   chamber or research level *does*; this owns what it costs and what it says.
-- `platform/road.ts` — Trophy Road reward table, pure functions of a trophy count.
+- `platform/colony.ts` — how the colony grows, and how a figure that big is written.
+- `platform/road.ts` — Colony Road reward table, pure functions of a colony size.
 - `platform/quests.ts` — the daily pool and a day-seeded roll.
 
-A new player starts with nothing — no mycelium, no pheromone, no trophies. The legacy
+A new player starts with nothing — no mycelium, no pheromone, a colony of forty. The legacy
 build's 120-mycelium welcome grant is deliberately gone: it bought the first chamber
 before the player knew what a chamber was.
 
@@ -806,7 +844,7 @@ These differ from the legacy build **on purpose**. Anything else that differs is
   scanned, and the glyph was the only thing telling two currencies apart.
 
 - **Larva.** The lucky-hatch currency is not ported, so rewards paid in larva pay pheromone
-  instead (50 each). Affects the Trophy Road tables, two quests and the trophy-strip icon.
+  instead (50 each). Affects the Colony Road tables and two quests.
 - **Daily quest roll.** Legacy rolls with `Math.random` and stores the result; this build
   derives the day's three from the day number (§11), so a reload cannot reroll.
 - **Formation thumbnails.** Legacy draws them once at boot and never redraws, so they keep
@@ -821,7 +859,7 @@ These differ from the legacy build **on purpose**. Anything else that differs is
 ## 10a. The guided tour
 
 `src/ui/tour.ts` is the first-run walkthrough, and it is one component doing both halves:
-twelve steps across the meta screens — the currencies, the trophy road, the bar, each of the
+twelve steps across the meta screens — the currencies, the colony road, the bar, each of the
 four other deck screens in turn, then one step per setup choice — ending on the button that
 starts a match, and twelve more inside it, which play the first five turns: a move, a long
 send, a rally, an attack and the Hive queen, with the enemy answering in between.

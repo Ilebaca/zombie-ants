@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { CHAMBER_MAX, RESEARCH_MAX, TROPHY_LOSS, TROPHY_WIN, chamberCost } from "../../engine";
+import { CHAMBER_MAX, RESEARCH_MAX, chamberCost } from "../../engine";
 import { MemoryStore } from "../storage";
 import { ProfileStore, defaultProfile, modsFrom, normalise } from "../profile";
+import { ROAD_CHAPTER_STOPS, ROAD_STOPS, stopColony } from "../road";
+import { COLONY_FLOOR, COLONY_LOSS, COLONY_START, COLONY_WIN, grownColony } from "../colony";
 
 const store = (): ProfileStore => new ProfileStore(new MemoryStore());
 
@@ -26,7 +28,7 @@ describe("profile persistence", () => {
     for (const junk of [null, 42, "text", [], { unlocked: "nope" }, { stats: 5 }]) {
       const p = normalise(junk);
       expect(p.unlocked.length).toBeGreaterThan(0);
-      expect(Number.isFinite(p.trophies)).toBe(true);
+      expect(Number.isFinite(p.colony)).toBe(true);
       expect(Number.isFinite(p.stats.games)).toBe(true);
     }
   });
@@ -73,16 +75,33 @@ describe("mods", () => {
 });
 
 describe("progression", () => {
-  it("awards and deducts trophies, floored at zero", () => {
+  it("grows the colony on a win and shrinks it on a loss, never below the start", () => {
     const s = store();
+    expect(s.get().colony).toBe(COLONY_START);
+
     s.recordResult(true, "fire");
-    expect(s.get().trophies).toBe(TROPHY_WIN);
+    // The floor carries the opening matches: 14% of the starting size is under it.
+    expect(s.get().colony).toBe(COLONY_START + COLONY_FLOOR);
     expect(s.get().stats.wins).toBe(1);
 
-    for (let i = 0; i < 5; i++) s.recordResult(false, "fire");
-    expect(s.get().trophies).toBe(0);                 // never negative
-    expect(s.get().stats.games).toBe(6);
-    void TROPHY_LOSS;
+    for (let i = 0; i < 20; i++) s.recordResult(false, "fire");
+    expect(s.get().colony).toBe(COLONY_START);        // a colony is never smaller than this
+    expect(s.get().stats.games).toBe(21);
+  });
+
+  /** The whole point of the number: it COMPOUNDS, so a big colony gains more per win. */
+  it("pays a percentage once the colony is past the floor", () => {
+    const big = 100_000;
+    expect(grownColony(big, true)).toBe(Math.round(big * (1 + COLONY_WIN)));
+    expect(grownColony(big, false)).toBe(Math.round(big * (1 - COLONY_LOSS)));
+    expect(grownColony(big, true) - big).toBeGreaterThan(COLONY_FLOOR);
+  });
+
+  /** A win-heavy career has to actually reach the sizes the road and the ladder show. */
+  it("runs away to millions over a career", () => {
+    let colony = COLONY_START;
+    for (let i = 0; i < 100; i++) colony = grownColony(colony, true);
+    expect(colony).toBeGreaterThan(1e6);
   });
 
   /**
@@ -169,10 +188,34 @@ describe("a brand-new profile", () => {
     const base = defaultProfile();
     const fresh = normalise({});
     const fields = [
-      "name", "trophies", "mycel", "pheromone", "xp", "tourSeen",
+      "name", "colony", "mycel", "pheromone", "xp", "tourSeen",
       "lastSpecies", "lastMap", "lastShape", "difficulty", "pass",
     ] as const;
     for (const key of fields) expect(fresh[key], key).toEqual(base[key]);
+  });
+
+  /**
+   * A SAVE OUTLIVES THE LADDER IT WAS WRITTEN ON. Players on the live build have a trophy
+   * count and road claims keyed by trophy amount ("f500"); both have to land somewhere
+   * sensible, because a save that converts badly is a career that reads as wiped.
+   */
+  it("converts a save from the trophy ladder", () => {
+    const old = normalise({ trophies: 600, roadClaimed: ["f500", "p750"] });
+    // The trophy count becomes troops rather than being thrown away.
+    expect(old.colony).toBe(600);
+    // ...and the claims come back as rung indices, so nothing on the lower road pays twice.
+    expect(old.roadClaimed.every((k) => Number(k.slice(1)) <= ROAD_STOPS)).toBe(true);
+    expect(old.roadClaimed).toContain(`f${ROAD_CHAPTER_STOPS}`);
+    expect(old.roadClaimed.length).toBeGreaterThan(0);
+    // Everything marked claimed is ground the converted colony has actually reached.
+    for (const key of old.roadClaimed) {
+      expect(stopColony(Number(key.slice(1))), key).toBeLessThanOrEqual(old.colony);
+    }
+  });
+
+  it("keeps index-keyed claims from a save written after the rebrand", () => {
+    expect(normalise({ colony: 5000, roadClaimed: ["f2", "p3"] }).roadClaimed)
+      .toEqual(["f2", "p3"]);
   });
 
   it("still takes a saved balance over the default", () => {

@@ -118,7 +118,7 @@ export const MENU_ENTRIES: readonly MenuEntry[] = [
   { id: "support", icon: "support", label: "Support" },
   { id: "luckyhatch", icon: "brood", label: "Lucky hatch" },
   { id: "leaderboard", icon: "star", label: "Leaderboard" },
-  { id: "achievements", icon: "trophy", label: "Trophy Road" },
+  { id: "achievements", icon: "trophy", label: "Colony Road" },
 ];
 
 export function buildMenu(onPick: (id: string) => void, onDismiss: () => void): HTMLElement {

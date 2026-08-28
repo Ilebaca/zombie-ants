@@ -9,15 +9,18 @@
  * keeps simulation from writing stats or currencies (CLAUDE.md §5).
  */
 import {
-  CHAMBER_MAX, RESEARCH_MAX, SPECIES, TROPHY_LOSS, TROPHY_WIN, chamberCost, researchCost,
+  CHAMBER_MAX, RESEARCH_MAX, SPECIES, chamberCost, researchCost,
 } from "../engine";
+import { COLONY_START, grownColony } from "./colony";
 import type { MapId, Player, PlayerMods, SpeciesId } from "../engine";
 import { SPECIES_UNLOCK, type ResearchTrack } from "./catalogue";
 import {
   QUEST_SWEEP_BONUS, dayIndex, isClaimable, levelProgress, levelReward, questDef, rollQuests,
   unclaimedLevels, type QuestKind, type QuestState,
 } from "./quests";
-import { isPassKey, rewardFor, roadTrophies } from "./road";
+import {
+  ROAD_STOPS, freeReward, isPassKey, passReward, rewardFor, roadColony, stopReached,
+} from "./road";
 import type { Grant } from "./purchases";
 import { defaultStore, readJson, writeJson, type KeyValueStore } from "./storage";
 
@@ -76,7 +79,14 @@ export interface MatchFacts {
 export interface Profile {
   v: number;
   name: string;
-  trophies: number;
+  /**
+   * THE COLONY: how many troops the player commands, across their whole career.
+   *
+   * It replaced a trophy rating. A rating is a number about the player; this is a number
+   * about the colony, and a colony compounds (colony.ts) — which is what lets it run from
+   * a few dozen to billions and makes "biggest colony" worth competing over.
+   */
+  colony: number;
   /** Soft currency (mycelium) and research currency (pheromone). */
   mycel: number;
   pheromone: number;
@@ -87,7 +97,7 @@ export interface Profile {
   equip: Partial<Record<SpeciesId, Equipped>>;
   /** How often each colony has been fielded, for the "favourite species" readout. */
   fav: Partial<Record<SpeciesId, number>>;
-  /** Trophy Road: the reward keys already paid out, and whether the pass is owned. */
+  /** Colony Road: the reward keys already paid out, and whether the pass is owned. */
   roadClaimed: string[];
   pass: boolean;
   /** When the shop's daily gift was last taken. */
@@ -129,7 +139,7 @@ export function defaultProfile(): Profile {
   return {
     v: VERSION,
     name: "Commander",
-    trophies: 0,
+    colony: COLONY_START,
     // A new colony starts with nothing. The legacy build handed out 120 mycelium so the
     // Anthill had something to do on the first visit; earning the first chamber from a
     // match instead is what gives that visit a point.
@@ -169,6 +179,44 @@ export function defaultProfile(): Profile {
  * Saves outlive code. A field that was removed, renamed or corrupted must degrade to its
  * default rather than produce NaN levels that silently distort combat maths.
  */
+/**
+ * The colony a save carries, before the profile around it is built.
+ *
+ * Needed twice — for the field itself and for the road-claim migration — and both have to
+ * agree, or a converted save would be handed a road that does not match its own size.
+ */
+function colonyOf(p: { colony?: unknown; trophies?: unknown }, fallback: number): number {
+  const num = (v: unknown): number | null =>
+    typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.min(v, 1e15) : null;
+  return Math.max(COLONY_START, Math.round(num(p.colony) ?? num(p.trophies) ?? fallback));
+}
+
+/**
+ * WHAT A SAVE FROM THE TROPHY ROAD IS OWED.
+ *
+ * Claims used to be keyed by trophy amount ("f500"), and are keyed by rung index now, so
+ * an old save's keys are numbers on a ladder that no longer exists — "f500" would read as
+ * rung five hundred, which is past the end of the road.
+ *
+ * A save is treated as legacy the moment it holds a key past the last rung. Everything at
+ * or below the colony it converts to is marked claimed: a player who was collecting as
+ * they went has already been paid for that ground, and leaving it unclaimed would hand
+ * them the whole lower road a second time.
+ */
+function roadClaims(raw: unknown, colony: number): string[] {
+  if (!Array.isArray(raw)) return [];
+  const keys = raw.filter((k): k is string => typeof k === "string");
+  const legacy = keys.some((k) => Number(k.slice(1)) > ROAD_STOPS);
+  if (!legacy) return [...new Set(keys.filter((k) => !!rewardFor(k)))];
+
+  const out: string[] = [];
+  for (let i = 1; i <= stopReached(colony); i++) {
+    if (freeReward(i)) out.push(`f${i}`);
+    if (passReward(i)) out.push(`p${i}`);
+  }
+  return out;
+}
+
 export function normalise(raw: unknown): Profile {
   const base = defaultProfile();
   // Junk falls through as an empty object rather than returning early, so EVERY profile
@@ -188,7 +236,10 @@ export function normalise(raw: unknown): Profile {
     name: typeof p.name === "string" && p.name.trim() ? p.name.slice(0, 18) : base.name,
     // Fallbacks are the DEFAULT profile's values, not zero: a brand-new save has no mycel
     // field at all, and falling back to 0 quietly cancelled the starting grant.
-    trophies: int(p.trophies, 0, 1e9, base.trophies),
+    // A save from before the rebrand carries a trophy count and no colony. It becomes the
+    // colony's starting size rather than being thrown away — the player earned it, and the
+    // two ladders start at roughly the same place (`roadClaims` handles the road).
+    colony: colonyOf(p, base.colony),
     mycel: int(p.mycel, 0, 1e9, base.mycel),
     pheromone: int(p.pheromone, 0, 1e9, base.pheromone),
     stats: {
@@ -213,9 +264,7 @@ export function normalise(raw: unknown): Profile {
     fav: {},
     // Unknown keys are dropped rather than kept: a claim key that no longer pays anything
     // would sit on the road forever showing "claimed" against an empty cell.
-    roadClaimed: Array.isArray(p.roadClaimed)
-      ? [...new Set(p.roadClaimed.filter((k): k is string => typeof k === "string" && !!rewardFor(k)))]
-      : [],
+    roadClaimed: roadClaims(p.roadClaimed, colonyOf(p, base.colony)),
     pass: p.pass === true,
     freeAt: int(p.freeAt, 0, 1e15, 0),
     // A quest id that no longer exists in the pool is dropped rather than kept at zero
@@ -315,7 +364,7 @@ export class ProfileStore {
   }
 
   /**
-   * Record a finished match: trophies (floored at zero, CLAUDE.md §8), mycelium, the
+   * Record a finished match: the colony (which compounds — colony.ts), mycelium, the
    * favourite-species tally, the win streak, and XP toward the colony level.
    *
    * XP is a base for playing, a bonus for winning and a little for a longer game — the
@@ -339,7 +388,7 @@ export class ProfileStore {
       } else {
         p.stats.winStreak = 0;
       }
-      p.trophies = Math.max(0, p.trophies + (won ? TROPHY_WIN : TROPHY_LOSS));
+      p.colony = grownColony(p.colony, won);
       p.mycel += won ? MATCH_MYCEL.win : MATCH_MYCEL.loss;
       p.fav[species] = (p.fav[species] ?? 0) + 1;
       p.xp += matchXp(won, turns);
@@ -418,11 +467,11 @@ export class ProfileStore {
     if (this.profile.roadClaimed.includes(key)) return false;
     if (!rewardFor(key)) return false;
     if (isPassKey(key) && !this.profile.pass) return false;
-    return this.profile.trophies >= roadTrophies(key);
+    return this.profile.colony >= roadColony(key);
   }
 
   /**
-   * Pay out one Trophy Road reward. Claims are keyed and recorded, so trophies lost to a
+   * Pay out one Colony Road reward. Claims are keyed and recorded, so troops lost to a
    * later defeat never claw back a reward the player already banked.
    */
   claimRoad(key: string): boolean {
@@ -437,7 +486,7 @@ export class ProfileStore {
     return true;
   }
 
-  /** The Trophy Pass. Bought in the shop, or granted by a bundle. */
+  /** The Colony Pass. Bought in the shop, or granted by a bundle. */
   grantPass(): void {
     if (this.profile.pass) return;
     this.update((p) => { p.pass = true; });
@@ -560,7 +609,7 @@ export class ProfileStore {
 
 /**
  * Match payout, the legacy build's numbers. Mycelium buys everything on the colony screens
- * — chambers, research and species. Pheromone comes from quests and the Trophy Road only,
+ * — chambers, research and species. Pheromone comes from quests and the Colony Road only,
  * which is why a match pays none of it.
  */
 export const MATCH_MYCEL = { win: 25, loss: 8 } as const;
