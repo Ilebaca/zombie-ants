@@ -205,9 +205,14 @@ describe("profile screen", () => {
   it("reports the career, including what the save could never show", () => {
     const text = buildProfile(played(), nowhere).textContent ?? "";
     for (const said of ["Played", "10", "Won", "6", "Lost", "4", "Win rate", "60%",
-      "Ground taken", "120", "Queens taken", "Nests cracked", "Tunnels dug",
+      "Ground taken", "120", "Queens taken",
       "Turns played", "Time at the board", "30:00", "Fastest win", "3:34"]) {
       expect(text, `the profile never said "${said}"`).toContain(said);
+    }
+    // Still counted into the save, deliberately not reported: both are things one species
+    // or one kind of win does, and they read as footnotes beside ground taken and turns.
+    for (const gone of ["Tunnels dug", "Nests cracked"]) {
+      expect(text, `"${gone}" came back onto the profile`).not.toContain(gone);
     }
   });
 

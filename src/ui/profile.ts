@@ -10,7 +10,7 @@
  *
  *  1. WHO. Name, colony level, the XP bar and any level reward still to collect.
  *  2. RECORD. What has actually happened: played, won, win rate, streaks, and the field
- *     numbers — ground taken, queens, nests, abilities, tunnels, time at the board.
+ *     numbers — ground taken, queens, abilities, turns, time at the board.
  *  3. COLLECTION. Colonies, chambers and research as three filled bars, each opening the
  *     screen that fills it. This is the block with room in it: anything the game starts
  *     collecting later — cosmetics, trophies, a lucky hatch — is another row here.
@@ -60,7 +60,11 @@ export function buildProfile(store: ProfileStore, opts: ProfileOptions): HTMLEle
      *
      * The first six are the ones a player checks — how many, how many won, how often, and
      * whether they are on a run. The rest are what they DID, and they belong under their
-     * own heading: one grid of fourteen cells is a spreadsheet.
+     * own heading: one grid of a dozen cells is a spreadsheet.
+     *
+     * Tunnels dug and nests cracked are still counted into the save; they are simply not
+     * reported here. Both are things one species or one kind of win does, so they read as
+     * a footnote next to ground taken and turns played.
      */
     const lost = Math.max(0, s.games - s.wins);
     const rate = s.games ? Math.round((s.wins / s.games) * 100) : 0;
@@ -78,9 +82,7 @@ export function buildProfile(store: ProfileStore, opts: ProfileOptions): HTMLEle
       cells([
         ["Ground taken", String(s.conquered)],
         ["Queens taken", String(s.queens)],
-        ["Nests cracked", String(s.nests)],
         ["Abilities cast", String(s.abilities)],
-        ["Tunnels dug", String(s.tunnels)],
         ["Turns played", String(s.turns)],
         ["Time at the board", clockOf(s.playedMs)],
         // A dash, not 0:00: a record that has never been set is not a time of nothing.
