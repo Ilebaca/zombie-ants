@@ -26,7 +26,12 @@ export interface Division {
 }
 
 /**
- * Seven bands, each roughly two orders of magnitude wide at the top.
+ * Seven bands spanning the range a career actually covers.
+ *
+ * They are pinned to the ROAD, not to round powers of ten for their own sake: the road
+ * ends at five million troops (platform/road.ts), so Supercolony is the band a player is
+ * in as they finish it and Continental is what lies past it. Bands sized for the old
+ * trillion-troop road left the top three empty for everyone.
  *
  * Every mark is from the icon family — the legacy build put a compass, crossed swords, a
  * medal and a crown in this row, four glyphs from four illustrators (CLAUDE.md §10).
@@ -35,10 +40,10 @@ export const DIVISIONS: readonly Division[] = [
   { name: "Forager", min: 0, max: 1e3, icon: "antarium", col: "#c08457" },
   { name: "Scout", min: 1e3, max: 1e4, icon: "next", col: "#9fb0c8" },
   { name: "Raider", min: 1e4, max: 1e5, icon: "attack", col: "#e7b53a" },
-  { name: "Garrison", min: 1e5, max: 1e6, icon: "defence", col: "#27d3bd" },
-  { name: "Warren", min: 1e6, max: 1e8, icon: "anthill", col: "#4a9eff" },
-  { name: "Supercolony", min: 1e8, max: 1e10, icon: "brood", col: "#b14de0" },
-  { name: "Continental", min: 1e10, max: Infinity, icon: "crown", col: "#f24fc8" },
+  { name: "Garrison", min: 1e5, max: 5e5, icon: "defence", col: "#27d3bd" },
+  { name: "Warren", min: 5e5, max: 2e6, icon: "anthill", col: "#4a9eff" },
+  { name: "Supercolony", min: 2e6, max: 1e7, icon: "brood", col: "#b14de0" },
+  { name: "Continental", min: 1e7, max: Infinity, icon: "crown", col: "#f24fc8" },
 ];
 
 const NAMES = [

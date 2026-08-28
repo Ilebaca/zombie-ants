@@ -19,7 +19,8 @@ export {
   stopColony, stopReached,
 } from "./road";
 export {
-  COLONY_FLOOR, COLONY_LOSS, COLONY_START, COLONY_WIN, compact, exact, grownColony,
+  COLONY_FLOOR, COLONY_LOSS_SHARE, COLONY_START, COLONY_TAPER, COLONY_WIN, compact, exact,
+  grownColony, losses, winnings,
 } from "./colony";
 export type { RoadReward, RoadStop, RoadTrack } from "./road";
 export { DemoGateway, SHOP_PRODUCTS, productById } from "./purchases";

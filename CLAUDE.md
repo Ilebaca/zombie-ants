@@ -603,9 +603,10 @@ provisional and say so if asked.
   are 180°-symmetric and tested to be — so this is the move order, not the ground. Whether
   to compensate the second player is an open design question; note that the AI always plays
   second, so every match a player sees is one the AI starts behind in.
-- The colony: **+14% of itself on a win** (at least +8), **−5% on a loss**, never below
-  its starting 40 (§8a). It compounds rather than adding, so it is not comparable to the
-  flat +30/−15 trophy count it replaced.
+- The colony: a win pays **a share of itself that tapers as it grows** — 13% of a young
+  colony down to 3% of five million (at least +8) — and a loss costs **36% of what a win
+  there pays**. Never below its starting 40 (§8a). Not comparable to the flat +30/−15
+  trophy count it replaced.
 - Maps: Skirmish 7×7 (wake 10, expected 32), Corridor 9×9 (14/45), Gauntlet 13×13 (18/80).
   The turn figure is an expectation, not a limit — nothing happens when it passes (§4.8).
 
@@ -613,25 +614,40 @@ provisional and say so if asked.
 
 The ladder was a trophy count: +30 a win, −15 a loss, a fifty-chapter road ending at
 twenty-five thousand. That is a RATING, and a rating is a number about the player. This
-game is about a colony, and a colony GROWS — so the ladder counts troops, it compounds
-(`platform/colony.ts`), and the interesting part is that it runs off the end of what a
-person reads comfortably: thousands, then millions, then billions. The eventual point is a
-world ranking of the biggest colony there is, which is why the number has no ceiling.
+game is about a colony, and a colony GROWS — so the ladder counts troops, a win pays a
+share of what you already hold (`platform/colony.ts`), and the figure runs off the end of
+what a person reads comfortably: hundreds, then thousands, then millions. The eventual
+point is a world ranking of the biggest colony there is, which is why the number has no
+ceiling — only a curve that flattens.
 
-- **It compounds, and that is the whole design.** A flat +30 means the hundredth win is
-  worth exactly what the first was. A percentage means a colony of a million gains a
-  hundred and forty thousand. From forty, a win-heavy career reaches its first thousand in
-  about twenty-five wins, a million in seventy-seven, a trillion at around a hundred and
-  eighty.
+- **A win pays a SHARE of what you already have**, which is what makes the hundredth win
+  worth more than the first — a flat +30 does not. But the share SHRINKS as the colony
+  grows, and that taper is the whole of the tuning. A flat fourteen percent compounds, and
+  compounding ran away from a road with a hundred rungs on it: the last chapter paid a
+  hundred and thirty-six BILLION troops for one victory, which is not a reward, it is a
+  number that has stopped meaning anything. Raising the colony to a power below one
+  (`COLONY_TAPER`, 0.87) makes the growth polynomial instead: a win pays 13% of a young
+  colony, 9% of a thousand, 5% of a hundred thousand and 3% of five million. That is the
+  one number to turn if the late road feels wrong, and it moves the whole curve rather
+  than one end of it.
+- **A loss costs a share of the WIN, not of the colony** (`COLONY_LOSS_SHARE`). With a
+  flat percentage off for a defeat, a colony big enough for the win share to have tapered
+  below it would shrink on an even record. Tying the two together keeps the break-even
+  win rate identical at forty troops and at five million.
 - **A win floor carries the opening matches.** Fourteen percent of forty is five and a
   half, and a first win that moves the number by five reads as nothing happening.
+- **A career is two hundred-odd wins long.** From forty: a thousand troops in about thirty
+  wins, ten thousand in sixty, a hundred thousand in a hundred, and the road's last rung —
+  five million — in a little over two hundred. There is still no ceiling; past the road the
+  colony walks rather than sprints, which is why `compact()` keeps its B and T.
 - **`compact()` is the only way a figure this big is readable**: 940, 23K, 1.2M, 4.8B, 6T.
   One decimal only under ten of a unit — 457.3K is three characters of noise — and the
   shown digit is TRUNCATED, so 999,900 reads as 999K and never as the 1000K that would
   follow 999K on the screen above it. `exact()` writes it out where there is room.
-- **The road had to compound with it.** Every rung is a fixed multiple of the last, and a
-  hundred of them run from a hundred troops to past a trillion. So a rung is named by its
-  INDEX, not its size: "is this a multiple of five hundred?" only answers on an even
+- **The road grows with it.** Every rung is a fixed multiple of the last, and a hundred of
+  them run from a hundred troops to five million — the top came down from two trillion
+  with the taper, because a road is only worth having where a career actually goes. A rung
+  is named by its INDEX, not its size: "is this a multiple of five hundred?" only answers on an even
   ladder, and a claim key has to outlive a retune of the table.
 - **A save from the trophy build converts, and its road claims convert with it.** The
   trophy count becomes troops — the player earned it — and claims keyed by trophy amount
@@ -639,12 +655,6 @@ world ranking of the biggest colony there is, which is why the number has no cei
   `roadClaims` recognises a legacy save by exactly that and re-marks everything at or
   below the converted colony as already paid, or a returning player collects the whole
   lower road a second time.
-- **A win pays more the bigger the colony, which is the point.** Fourteen percent of
-  itself means a chapter-1 colony gains 14 troops a win and a chapter-49 colony gains a
-  hundred and thirty-six billion. The road's rungs are a fixed multiple apart, so troops
-  per victory multiply chapter by chapter by that same factor — the growth is already
-  exponential in the colony, and a second multiplier on top of it compounds a compounding
-  number.
 - **It is the biggest thing under the top bar, not a coin in the row.** It was one of three
   coins the same size as the mycelium a player spends on a chamber, which said it was worth
   about as much. It leads the profile's record and leads the result card too — and a defeat

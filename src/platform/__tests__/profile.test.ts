@@ -3,7 +3,7 @@ import { CHAMBER_MAX, RESEARCH_MAX, chamberCost } from "../../engine";
 import { MemoryStore } from "../storage";
 import { ProfileStore, defaultProfile, modsFrom, normalise } from "../profile";
 import { ROAD_CHAPTER_STOPS, ROAD_STOPS, stopColony } from "../road";
-import { COLONY_FLOOR, COLONY_LOSS, COLONY_START, COLONY_WIN, grownColony } from "../colony";
+import { COLONY_FLOOR, COLONY_START, grownColony, losses, winnings } from "../colony";
 
 const store = (): ProfileStore => new ProfileStore(new MemoryStore());
 
@@ -89,19 +89,19 @@ describe("progression", () => {
     expect(s.get().stats.games).toBe(21);
   });
 
-  /** The whole point of the number: it COMPOUNDS, so a big colony gains more per win. */
-  it("pays a percentage once the colony is past the floor", () => {
+  /** Past the floor a match moves the colony by what colony.ts prices it at. */
+  it("pays a share of the colony once it is past the floor", () => {
     const big = 100_000;
-    expect(grownColony(big, true)).toBe(Math.round(big * (1 + COLONY_WIN)));
-    expect(grownColony(big, false)).toBe(Math.round(big * (1 - COLONY_LOSS)));
-    expect(grownColony(big, true) - big).toBeGreaterThan(COLONY_FLOOR);
+    expect(grownColony(big, true)).toBe(big + winnings(big));
+    expect(grownColony(big, false)).toBe(big - losses(big));
+    expect(winnings(big)).toBeGreaterThan(COLONY_FLOOR);
   });
 
   /** A win-heavy career has to actually reach the sizes the road and the ladder show. */
-  it("runs away to millions over a career", () => {
+  it("climbs into six figures over a career", () => {
     let colony = COLONY_START;
     for (let i = 0; i < 100; i++) colony = grownColony(colony, true);
-    expect(colony).toBeGreaterThan(1e6);
+    expect(colony).toBeGreaterThan(1e5);
   });
 
   /**

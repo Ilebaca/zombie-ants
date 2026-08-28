@@ -8,8 +8,10 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-  COLONY_FLOOR, COLONY_LOSS, COLONY_START, COLONY_WIN, compact, exact, grownColony,
+  COLONY_FLOOR, COLONY_LOSS_SHARE, COLONY_START, COLONY_WIN, compact, exact, grownColony,
+  losses, winnings,
 } from "../colony";
+import { ROAD_LAST } from "../road";
 
 describe("colony growth", () => {
   it("never falls below the starting size", () => {
@@ -24,15 +26,55 @@ describe("colony growth", () => {
     expect(grownColony(COLONY_START, true)).toBe(COLONY_START + COLONY_FLOOR);
   });
 
-  it("compounds once the colony is big", () => {
-    expect(grownColony(1e6, true)).toBe(Math.round(1e6 * (1 + COLONY_WIN)));
-    expect(grownColony(1e6, false)).toBe(Math.round(1e6 * (1 - COLONY_LOSS)));
+  it("pays and charges what winnings() and losses() say", () => {
+    expect(grownColony(1e6, true)).toBe(1e6 + winnings(1e6));
+    expect(grownColony(1e6, false)).toBe(1e6 - losses(1e6));
+    expect(losses(1e6)).toBe(Math.round(winnings(1e6) * COLONY_LOSS_SHARE));
   });
 
-  /** A win is worth more than a loss costs, or the ladder could not climb at all. */
-  it("recovers a loss with a win", () => {
-    const before = 250_000;
-    expect(grownColony(grownColony(before, false), true)).toBeGreaterThan(before);
+  /**
+   * THE SHARE SHRINKS. A flat percentage compounds, and compounding ran away from the
+   * road: chapter 50 paid a hundred and thirty-six billion troops for one win.
+   */
+  it("pays a smaller share the bigger the colony gets", () => {
+    const share = (c: number): number => winnings(c) / c;
+    const sizes = [1e3, 1e4, 1e5, 1e6, 5e6];
+    sizes.forEach((c, i) => {
+      if (i > 0) {
+        expect(share(c), `${c} pays no less of itself than ${sizes[i - 1]}`)
+          .toBeLessThan(share(sizes[i - 1] as number));
+      }
+    });
+    // ...but the colony still GROWS: a smaller share of a bigger number is more troops.
+    expect(winnings(5e6)).toBeGreaterThan(winnings(1e6));
+  });
+
+  /** The end of the road is a reward a player can read, not a wall of digits. */
+  it("keeps the biggest win on the road under a million troops", () => {
+    expect(winnings(ROAD_LAST)).toBeLessThan(1e6);
+    expect(winnings(ROAD_LAST), "the last chapter pays pocket change")
+      .toBeGreaterThan(10_000);
+  });
+
+  /**
+   * A loss costs a share of the WIN, not of the colony, so the break-even win rate is the
+   * same at forty troops as at five million. With a flat percentage off, a colony big
+   * enough for the win share to have tapered below it would shrink on an even record.
+   */
+  it("recovers a loss with a win at every size", () => {
+    for (const before of [100, 10_000, 250_000, 5e6]) {
+      expect(grownColony(grownColony(before, false), true),
+        `a colony of ${before} cannot win back a defeat`).toBeGreaterThan(before);
+    }
+  });
+
+  /** Two hundred-odd wins to the end of the road — a career, not an afternoon. */
+  it("takes a long career to climb the road", () => {
+    let colony = COLONY_START;
+    let wins = 0;
+    while (colony < ROAD_LAST && wins < 5000) { colony = grownColony(colony, true); wins++; }
+    expect(wins).toBeGreaterThan(120);
+    expect(wins).toBeLessThan(320);
   });
 });
 

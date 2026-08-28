@@ -26,9 +26,17 @@ export const ROAD_CHAPTER_STOPS = 2;
 export const ROAD_CHAPTERS = 50;
 export const ROAD_STOPS = ROAD_CHAPTERS * ROAD_CHAPTER_STOPS;
 
-/** The first rung, and the last. A hundred stops from a small colony to past a trillion. */
+/**
+ * The first rung, and the last: a hundred stops from a young colony to five million troops.
+ *
+ * The last rung used to be two trillion, which is what a flat compounding win rate reaches
+ * — and a chapter-50 victory paid a hundred and thirty-six billion troops, a number that
+ * has stopped meaning anything. The win share tapers now (colony.ts), and the road's top
+ * comes down to meet it: five million is about two hundred wins of climbing, and a victory
+ * there pays a hundred and fifty thousand.
+ */
 export const ROAD_FIRST = 100;
-export const ROAD_LAST = 2e12;
+export const ROAD_LAST = 5e6;
 
 /**
  * What each rung multiplies the one before it by.

@@ -1,18 +1,22 @@
 /**
  * THE COLONY NUMBER: how big your colony is, and how it is written down.
  *
- * The ladder used to be a trophy count — thirty for a win, fifteen off for a loss, capped
- * by a fifty-chapter road at twenty-five thousand. That is a rating, and a rating is a
- * number about the PLAYER. The thing this game is about is a colony, and a colony grows:
- * it starts as a queen and a few dozen workers and it does not stop. So the ladder counts
- * TROOPS, it compounds rather than adds, and the interesting part is that it runs off the
- * end of what a person reads comfortably — thousands, then millions, then billions.
+ * The ladder used to be a trophy count — thirty for a win, fifteen off for a loss. That is
+ * a rating, and a rating is a number about the PLAYER. The thing this game is about is a
+ * colony, and a colony grows: it starts as a queen and a few dozen workers and it does not
+ * stop. So the ladder counts TROOPS, a win pays a SHARE of what you already have, and the
+ * figure runs off the end of what a person reads comfortably.
  *
- * Compounding is the whole design. A flat thirty per win means the hundredth win is worth
- * exactly what the first was; a percentage means a colony of a million grows by a hundred
- * and forty thousand, which is what makes the number run away. From the starting size a
- * win-heavy career reaches its first thousand in about twenty-five wins, its first million
- * in seventy-seven, and a trillion at around a hundred and eighty.
+ * THE SHARE SHRINKS AS THE COLONY GROWS, and that is the whole of the tuning. A flat
+ * fourteen percent compounds, and compounding runs away from a road with a hundred rungs on
+ * it: the last chapter paid a hundred and thirty-six BILLION troops for one win, which is
+ * not a reward, it is a number that has stopped meaning anything. Raising the colony to a
+ * power below one instead makes the growth polynomial — a win pays 13% of a young colony,
+ * 5% of a hundred thousand and 3% of five million — so the road's rungs stay a few wins
+ * apart the whole way up instead of a fraction of one.
+ *
+ * There is still no ceiling. A career long enough carries on past the road; it just walks
+ * rather than sprinting.
  *
  * Pure arithmetic — no storage, no DOM. `ProfileStore` is the only thing that writes it.
  */
@@ -20,24 +24,51 @@
 /** A colony that has never won anything. Small, and never smaller than this. */
 export const COLONY_START = 40;
 
-/** A win grows the colony by this share of itself; a loss costs this share. */
+/** The share of itself a colony THIS SIZE gains on a win. The share falls from here. */
 export const COLONY_WIN = 0.14;
-export const COLONY_LOSS = 0.05;
+
+/**
+ * How fast the share falls — the power the colony is raised to.
+ *
+ * Exactly 1 would be the flat percentage that ran away; below 1 is what bends the curve
+ * over. It is the one number to turn if the late road feels too fast or too slow, and
+ * it moves the whole shape rather than one end of it.
+ */
+export const COLONY_TAPER = 0.87;
 
 /**
  * ...but a win always grows it by at least this many troops.
  *
  * Fourteen percent of forty is five and a half, and a first win that moves the number by
- * five reads as nothing happening. The floor is what carries the opening matches until the
- * percentage is worth more than it is.
+ * five reads as nothing happening.
  */
 export const COLONY_FLOOR = 8;
+
+/**
+ * A loss costs this much of what a win at the same size PAYS — not a share of the colony.
+ *
+ * Tying the two together is what keeps the ladder climbable at every size: with a flat
+ * percentage off for a defeat, a colony big enough for the win share to have tapered below
+ * it would shrink on a even record. This way the break-even win rate is the same at forty
+ * troops as at five million.
+ */
+export const COLONY_LOSS_SHARE = 0.36;
+
+/** What a win pays a colony this size. */
+export function winnings(colony: number): number {
+  const from = Math.max(COLONY_START, Math.round(colony));
+  const paid = COLONY_WIN * COLONY_START * (from / COLONY_START) ** COLONY_TAPER;
+  return Math.max(COLONY_FLOOR, Math.round(paid));
+}
+
+/** What a defeat costs a colony this size. */
+export const losses = (colony: number): number =>
+  Math.round(winnings(colony) * COLONY_LOSS_SHARE);
 
 /** The colony after a match. Never below the starting size — you always have a colony. */
 export function grownColony(colony: number, won: boolean): number {
   const from = Math.max(COLONY_START, Math.round(colony));
-  if (!won) return Math.max(COLONY_START, Math.round(from * (1 - COLONY_LOSS)));
-  return Math.round(from + Math.max(COLONY_FLOOR, from * COLONY_WIN));
+  return won ? from + winnings(from) : Math.max(COLONY_START, from - losses(from));
 }
 
 const UNITS = [

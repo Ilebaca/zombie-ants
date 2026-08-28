@@ -154,7 +154,7 @@ describe("colony road layout", () => {
     expect(stops.length).toBe(ROAD_STOPS);
     expect(stops[0]?.colony).toBe(ROAD_FIRST);
     // Rounded to three significant figures, so the last rung lands near rather than on.
-    expect(stops[stops.length - 1]?.colony).toBeCloseTo(ROAD_LAST, -10);
+    expect(stops[stops.length - 1]?.colony).toBeCloseTo(ROAD_LAST, -4);
     stops.forEach((stop, i) => {
       expect(stop.index).toBe(i + 1);
       if (i > 0) {
@@ -164,10 +164,15 @@ describe("colony road layout", () => {
     });
   });
 
-  /** The point of the shape: the road has to still be there at a billion troops. */
-  it("reaches the sizes a colony that compounds actually gets to", () => {
+  /**
+   * The road has to end where a real career ends. It used to run to two trillion — the
+   * shape of a flat compounding win rate — and the last chapter paid a hundred and
+   * thirty-six billion troops for one victory (§8a).
+   */
+  it("ends at a size a career actually reaches", () => {
     const last = roadStops()[ROAD_STOPS - 1] as { colony: number };
-    expect(last.colony, "the road stops before a trillion").toBeGreaterThan(1e12);
+    expect(last.colony).toBeGreaterThan(1e6);
+    expect(last.colony, "the last rung is past what a career climbs to").toBeLessThan(5e7);
     expect(stopReached(50), "a new colony is already on a rung").toBe(0);
     expect(stopReached(ROAD_FIRST)).toBe(1);
     expect(stopReached(1e15), "a colony past the end is not on the last rung").toBe(ROAD_STOPS);
