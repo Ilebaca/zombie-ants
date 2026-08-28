@@ -792,29 +792,48 @@ These differ from the legacy build **on purpose**. Anything else that differs is
 `src/ui/tour.ts` is the first-run walkthrough, and it is one component doing both halves:
 twelve steps across the meta screens — the currencies, the trophy road, the bar, each of the
 four other deck screens in turn, then one step per setup choice — ending on the button that
-starts a match, and thirteen more inside it, which walk the player through every action the
-game has: select, move onto empty ground, attack, the long send, rally, the species ability,
-cracking a hive guard, taking the queen, and ending the turn.
+starts a match, and twelve more inside it, which play the first five turns: a move, a long
+send, a rally, an attack and the Hive queen, with the enemy answering in between.
 
 **The match tour is played on an ARRANGED board** (`src/engine/tutorial.ts`). A first match
 played straight cannot teach the game: the Hive sleeps for ten turns, the enemy is a dozen
 tiles away, and five tiles of three soldiers cannot crack anything, so the walkthrough could
-only ever demonstrate "move onto empty ground". `arrangeTutorial` puts a spearhead beside the
-Hive with soldiers enough to take a guard AND the queen behind her, a supply line holding it
-to the colony, and an enemy outpost within reach — on whatever map the player picked, so it
-never contradicts their choice. It changes no rules; it decides where things START, the way a
-formation does. `src/engine/__tests__/tutorial.test.ts` plays the whole walkthrough on every
-map and each ability shape, because a step asking for something the board cannot deliver
-leaves the tutorial stuck with nothing but Skip.
+only ever demonstrate "move onto empty ground". `arrangeTutorial` runs a supply line from the
+colony to a camp beside the Hive and puts an ENEMY TILE ON THE GUARD in front of the queen —
+on whatever map the player picked, so it never contradicts their choice. It changes no rules;
+it decides where things START, the way a formation does. `src/engine/__tests__/tutorial.test.
+ts` plays the whole walkthrough on every map as all nine species, because a step asking for
+something the board cannot deliver leaves the tutorial stuck with nothing but Skip.
 
-- **The spearhead is the one stack that can crack the queen**, so every earlier step works
-  around it: `moveSource`, `assaultSource` and `travelSource` all exclude it, and the rally
-  step gathers ONTO it. An early step that spends it strands the last two.
-- **A signal is delivered on a microtask, not inside the batch.** A step's `enter` picks a
-  tile up for the player, and the step opens the moment the previous deed resolves — in the
-  middle of the handler that resolved it. `onAbility` clears the selection after consuming
-  its events, and a rally puts the mode back the same way, so a step opened inside the batch
-  had the tile taken straight back out of its hand.
+- **The enemy stands on the guard because the queen has no doorstep.** Her only neighbours
+  are her four guards, so there is no square she can be attacked from — "attack the enemy,
+  then take the queen" needs the enemy standing exactly there. A captured hive tile becomes
+  an ordinary stable (§5), so this is a board the game produces by itself.
+- **Five lessons, each on its own turn, each in TWO taps.** Move, long send, rally, attack,
+  queen — and every one is "pick the tile up, then say where", because that is how the
+  player will act for the rest of their life in this game. An earlier walk did the first tap
+  for them on every step but the first, which taught half a control.
+- **The enemy answers between the lessons, from a script.** `tutorialAiMove` takes one tile
+  of empty ground beside the enemy's own colony and nothing else. A turn handed over is half
+  of how the game works and a walkthrough where the board never replies teaches a solitaire —
+  but it must not be the real search, or the board the next step is about is not the board
+  the step was written for. `MatchScreen.enemyReplies` runs it from the FOLLOWING step's
+  `enter`, so the move animates under the instruction being read rather than in a pause.
+  Its events are muted (`scripted`) or a scripted capture would answer the step on screen.
+- **The first match is played on EASY**, whatever Settings says, and the real opponent takes
+  over the moment the walk ends — the last step hands the turn over, which is the hand-over
+  the whole walk has been rehearsing.
+- **A deed is read off the whole BATCH, not one event at a time.** Walking onto empty ground
+  is a `capture`, not a `move` (`move` is reinforcing a tile you already hold), and a capture
+  is also what a won fight and the end of a long send produce. "Took ground" is a capture
+  with no fight and no march anywhere in the batch. Getting this wrong is silent: the action
+  happens and the step just never advances.
+- **A signal is delivered on a microtask, not inside the batch.** A step opens the moment the
+  previous deed resolves — in the middle of the handler that resolved it — and its `enter`
+  may hand the turn over. Opening it inside the batch changes the board under it.
+- **The bubble is pinned to the top on the setup steps.** They light a whole PICKER, which
+  leaves no room beside the hole, so the bubble settles in the middle — on top of the very
+  cards the player is being asked to choose between.
 
 The app owns the `Tour` and hands the same instance to `MatchScreen`, so there is never a
 second overlay and the meta walk runs straight into the match one.

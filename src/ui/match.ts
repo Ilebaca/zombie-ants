@@ -10,7 +10,7 @@ import {
   rally, speciesOf, surrender, tileAt, travel, distance, isConnected,
   abilityReady, abilitySpendsTurn, activateAbility, sparePool, tunnelTargets,
   endByObjective, nestTile,
-  tilesOwnedBy, allTiles, neighbours,
+  tilesOwnedBy, allTiles, neighbours, tutorialAiMove, furthestTravel,
 } from "../engine";
 import type {
   AbilityKind, ActionContext, Coord, EngineEvent, GameOverReason, GameState, MapId, Player,
@@ -164,20 +164,27 @@ export class MatchScreen {
     const tour = this.opts.tour;
     if (!tour) return;
     this.stopTimer();
-    const done = (): void => {
+    const done = (over: boolean) => (): void => {
       this.opts.onTutorialDone?.();
-      // The clock was held for the whole walk; the turn starts properly now.
-      this.startTimer();
+      // Taking the queen was a real action on a real turn, so the turn passes and the REAL
+      // opponent takes it from here — that is the hand-over the walk has been rehearsing.
+      // A skip is different: the player may not have acted at all, and taking their turn
+      // away for pressing Skip would be a strange thank-you.
+      if (over && !this.state.over && this.state.current === "you") this.handOver();
+      else this.startTimer();
     };
     // The counter carries on from the meta walk rather than restarting: it is one
     // tutorial, and "1 / 13" right after "12 / 25" reads as a second one starting.
     tour.start(this.tourSteps(), {
-      onDone: done,
-      onSkip: done,
+      onDone: done(true),
+      onSkip: done(false),
       done: this.opts.tourFrom ?? 0,
       total: (this.opts.tourFrom ?? 0) + MatchScreen.TOUR_STEPS,
     });
   }
+
+  /** True while the walkthrough is playing the enemy's turn for it. */
+  private scripted = false;
 
   private get touring(): boolean {
     return this.opts.tour?.running === true;
@@ -195,24 +202,45 @@ export class MatchScreen {
     };
   }
 
-  /**
-   * The spearhead: the tutorial board's fat garrison, standing beside the Hive.
-   *
-   * Every other step deliberately works around it. Moving it, attacking with it or
-   * travelling it away spends the one stack that can crack the queen, and the walkthrough
-   * ends on cracking the queen.
-   */
-  private spear(): Tile | null {
-    const mine = tilesOwnedBy(this.state, "you");
-    if (!mine.length) return null;
-    return mine.reduce((best, t) => (t.soldiers > best.soldiers ? t : best));
+  /* ------------------------------------------------------ THE WALKTHROUGH'S TILES
+
+     Every one of these reads the board as it stands rather than remembering a coordinate.
+     A step opens turns after the list was written, with the enemy having moved in between,
+     so a captured coordinate would be pointing at history. */
+
+  /** Home, and the camp the arrangement puts beside the enemy tile (engine/tutorial.ts). */
+  private home(): Tile | null { return nestTile(this.state, "you"); }
+
+  /** The enemy tile: an AI colony standing on the Hive guard in front of the queen. */
+  private foeCell(): Tile | null {
+    return allTiles(this.state).find((t) => t.owner === "ai" && t.terrain === "hiveG") ?? null;
   }
 
-  /** A tile to teach a plain move with — anything but the spearhead. */
+  private camp(): Tile | null {
+    const foe = this.foeCell();
+    if (foe) {
+      const beside = neighbours(this.state, foe).find((n) => n.owner === "you");
+      if (beside) return beside;
+    }
+    // Once the enemy tile is taken the camp IS that tile: the fist moved onto it.
+    const queen = this.queenCell();
+    const q = queen ? tileAt(this.state, queen.c, queen.r) : null;
+    return q ? neighbours(this.state, q).find((n) => n.owner === "you") ?? null : null;
+  }
+
+  /**
+   * A tile to teach with — never the nest and never the camp.
+   *
+   * The nest is the army the rally is going to gather, and the camp is where it gathers;
+   * spending either on a demonstration takes the last two steps away.
+   */
+  private spare(t: Tile): boolean {
+    return t !== this.home() && t !== this.camp();
+  }
+
   private moveSource(): Tile | null {
-    const spear = this.spear();
     return tilesOwnedBy(this.state, "you").find(
-      (t) => t !== spear && canActFrom(this.state, t) && this.freeNeighbour(t) !== null,
+      (t) => this.spare(t) && canActFrom(this.state, t) && this.freeNeighbour(t) !== null,
     ) ?? null;
   }
 
@@ -227,46 +255,20 @@ export class MatchScreen {
     return null;
   }
 
-  /** The enemy outpost the tutorial board puts within reach, and who can take it. */
-  private foeCell(): Tile | null {
-    return tilesOwnedBy(this.state, "ai").find(
-      (t) => neighbours(this.state, t).some((n) => n.owner === "you" && n !== this.spear()),
-    ) ?? null;
-  }
-
-  private assaultSource(): Tile | null {
-    const foe = this.foeCell();
-    if (!foe) return null;
-    const spear = this.spear();
-    return neighbours(this.state, foe).find(
-      (n) => n.owner === "you" && n !== spear && canActFrom(this.state, n),
-    ) ?? null;
-  }
-
-  /** A tile with somewhere far to send troops, and the tile to send them to. */
   private travelSource(): Tile | null {
-    const spear = this.spear();
     return tilesOwnedBy(this.state, "you").find(
-      (t) => t !== spear && canActFrom(this.state, t) && this.travelTarget(t) !== null,
+      (t) => this.spare(t) && canActFrom(this.state, t) && this.travelTarget(t) !== null,
     ) ?? null;
   }
 
+  /** The furthest a long send reaches — the engine owns the rule (engine/tutorial.ts). */
   private travelTarget(from: Tile | null): Coord | null {
-    if (!from) return null;
-    return actionTargets(this.state, from).find((at) => distance(from, at) > 1) ?? null;
+    return from ? furthestTravel(this.state, from) : null;
   }
 
-  /** The Hive queen's tile, and the guard standing between the spearhead and her. */
   private queenCell(): Coord | null {
     const t = allTiles(this.state).find((x) => x.terrain === "hiveQ");
     return t ? { c: t.c, r: t.r } : null;
-  }
-
-  private guardCell(): Coord | null {
-    const spear = this.spear();
-    if (!spear) return null;
-    const guard = neighbours(this.state, spear).find((n) => n.terrain === "hiveG" && n.owner !== "you");
-    return guard ? { c: guard.c, r: guard.r } : null;
   }
 
   /** A hive tile the player has taken — the doorstep the queen is attacked from. */
@@ -277,25 +279,38 @@ export class MatchScreen {
     return q ? neighbours(this.state, q).find((n) => n.owner === "you" && canActFrom(this.state, n)) ?? null : null;
   }
 
-  private enemyNest(): Coord | null {
-    const nest = nestTile(this.state, "ai");
-    return nest ? { c: nest.c, r: nest.r } : null;
-  }
-
   private at(t: Tile | null): Coord | null {
     return t ? { c: t.c, r: t.r } : null;
   }
 
   /**
-   * Pick a tile up on the player's behalf as a step opens.
+   * THE ENEMY ANSWERS, between one lesson and the next.
    *
-   * The walkthrough teaches selection ONCE. Making the player re-select a source before
-   * every later lesson would be six taps of nothing, and each one is a chance to select
-   * the wrong tile and strand the step.
+   * A turn handed over is half of how this game works, and a walkthrough where the enemy
+   * never moves teaches a solitaire. It is NOT the real AI: the reply is decided in the
+   * engine (`tutorialAiMove`) so the board the next step is about is the board the step was
+   * written for. The real opponent takes over the moment the walk ends.
+   *
+   * Called from the following step's `enter`, so the enemy's move animates under the
+   * instruction the player is reading rather than in a pause with nothing on screen.
    */
-  private preselect(t: Tile | null): void {
-    if (this.mode !== "go") this.setMode("go");
-    if (t) this.select({ c: t.c, r: t.r });
+  private enemyReplies(): void {
+    if (!this.touring || this.state.over || this.state.current !== "you") return;
+    this.clearSelection();
+    // Everything in here is the enemy's doing, and none of it answers the step the player
+    // is looking at — a scripted capture would otherwise complete a "take ground" step
+    // that the player had not taken.
+    this.scripted = true;
+    try {
+      this.consume(endTurn(this.state, this.opts.mods));
+      if (this.state.over) return;
+      this.consume(tutorialAiMove(this.state, this.opts.ctx));
+      if (this.state.over) return;
+      this.consume(endTurn(this.state, this.opts.mods));
+    } finally {
+      this.scripted = false;
+    }
+    this.refreshHUD();
   }
 
   /**
@@ -304,28 +319,36 @@ export class MatchScreen {
    * The steps wait for what actually RESOLVED rather than for the tap that started it, so
    * a move the engine refused leaves the step standing.
    *
+   * The deeds are read off the whole BATCH, not one event at a time, because the events do
+   * not map one-to-one onto lessons. Walking onto empty ground is a `capture` and not a
+   * `move` — `move` is reinforcing a tile you already hold — and a capture is also what a
+   * won fight and the end of a long send produce. So "took ground" is a capture with no
+   * fight and no march anywhere in the batch.
+   *
    * The signal is deferred to a microtask, and that is not decoration: it opens the next
-   * step, whose `enter` may select a tile for the player — and the caller we are inside is
-   * not finished. `onAbility` clears the selection after consuming its events, and a rally
-   * puts the mode back the same way, so a step opened DURING the batch had the tile taken
-   * straight back out of its hand.
+   * step, whose `enter` may hand the turn over — and the caller we are inside is not
+   * finished. A step opened DURING the batch had the board changed under it.
    */
   private tourSignals(events: readonly EngineEvent[]): void {
     const tour = this.opts.tour;
-    if (!tour) return;
+    // The enemy's scripted reply is not an answer to the step on screen.
+    if (!tour || this.scripted) return;
+
+    const kinds = new Set(events.map((e) => e.type));
     const deeds: string[] = [];
+    if (kinds.has("hiveCaptured")) deeds.push("queen");
+    if (kinds.has("travel")) deeds.push("travel");
+    if (kinds.has("rally")) deeds.push("rally");
+    if (kinds.has("abilityCast")) deeds.push("ability");
     for (const e of events) {
-      if (e.type === "hiveCaptured") deeds.push("queen");
-      else if (e.type === "combat") {
-        const t = tileAt(this.state, e.at.c, e.at.r);
-        // The queen's own capture is announced by hiveCaptured; this is the guard in front.
-        if (t?.terrain === "hiveG") deeds.push("guard");
-        else if (t?.terrain !== "hiveQ") deeds.push("attack");
-      } else if (e.type === "travel") deeds.push("travel");
-      else if (e.type === "rally") deeds.push("rally");
-      else if (e.type === "abilityCast") deeds.push("ability");
-      else if (e.type === "move") deeds.push("move");
+      if (e.type !== "combat") continue;
+      // The queen's own capture is announced by hiveCaptured; anything else fought for is
+      // an attack, wherever it was standing.
+      if (tileAt(this.state, e.at.c, e.at.r)?.terrain !== "hiveQ") deeds.push("attack");
     }
+    if (!kinds.has("travel") && !kinds.has("combat")
+      && (kinds.has("move") || kinds.has("capture"))) deeds.push("move");
+
     if (!deeds.length) return;
     queueMicrotask(() => { for (const deed of deeds) tour.signal(deed); });
   }
@@ -333,153 +356,142 @@ export class MatchScreen {
   /**
    * How many steps the match half of the tutorial has.
    *
-   * Fixed whichever species is fielded — the ability step is one step either way — so the
-   * meta half can put the whole tutorial's length on its counter before this screen
-   * exists. `match.test.ts` holds the two in step.
+   * The same for every colony, so the meta half can put the whole tutorial's length on its
+   * counter before this screen exists. `onboarding.test.ts` holds the two in step.
    */
-  static readonly TOUR_STEPS = 13;
+  static readonly TOUR_STEPS = 12;
 
   private tourSteps(): TourStep[] {
-    const ability = speciesOf(this.state.species.you).ability;
-    const steps: TourStep[] = [
+    /* FIVE THINGS, EACH ON ITS OWN TURN, EACH IN TWO TAPS.
+     *
+     * Move, long send, rally, attack, queen — and every one of them is "pick the tile up,
+     * then say where it goes", because that is how the player will do it for the rest of
+     * their life in this game. Teaching the second tap without the first would leave them
+     * with a board they cannot start. The enemy answers between them (`enemyReplies`), and
+     * the dark does the rest: the only tap that can land is the one being asked for, so
+     * nothing here is real free play until the walk is over. */
+    return [
       {
         id: "nest",
         title: "Your nest",
-        text: "The corner tile is your queen. Every tile you hold has to trace a path back "
-          + "to her, and if she falls the match is over.",
-        rect: () => this.cellRect(this.at(nestTile(this.state, "you"))),
+        text: "The corner tile is your queen, and your whole army is sitting in her. Every "
+          + "tile you hold has to trace a path back to her; if she falls the match is over.",
+        rect: () => this.cellRect(this.at(this.home())),
         pad: 4,
       },
       {
-        id: "select",
+        id: "pickMove",
         title: "Pick a tile up",
-        text: "Tap this one. A tile can act when it has two or more soldiers — one always "
-          + "stays behind to hold the ground.",
+        text: "Every move is two taps: the tile you are moving FROM, then where it goes. "
+          + "Tap this one. A tile can act with two or more soldiers — one always stays "
+          + "behind to hold the ground.",
         rect: () => this.cellRect(this.at(this.moveSource())),
         pad: 4,
         advance: "signal",
+        awaits: "select",
       },
       {
         id: "move",
         title: "Take ground",
-        text: "The lit tiles are where those soldiers can go. Tap this one: empty ground is "
-          + "claimed just by walking onto it.",
+        text: "The lit tiles are where those soldiers can go. Tap this one — empty ground "
+          + "is claimed just by walking onto it.",
         rect: () => this.cellRect(this.freeNeighbour(this.moveSource())),
         pad: 4,
         advance: "signal",
+        awaits: "move",
       },
       {
-        id: "attack",
-        title: "Attack",
-        text: "An enemy tile is taken by force. Attack and defence are pure arithmetic — no "
-          + "dice — so you can count it out first. Win and the garrison is destroyed and "
-          + "the tile is yours; lose and your attackers are gone instead.",
-        enter: () => this.preselect(this.assaultSource()),
-        rect: () => this.cellRect(this.at(this.foeCell())),
+        id: "pickSend",
+        title: "The long send",
+        text: "That was your turn, and the enemy has just taken theirs. Now something "
+          + "further away: tap this tile.",
+        enter: () => this.enemyReplies(),
+        rect: () => this.cellRect(this.at(this.travelSource())),
         pad: 4,
         advance: "signal",
+        awaits: "select",
       },
       {
-        id: "travel",
-        title: "The long send",
-        text: "Further than one tile, your soldiers march instead — laying a vein behind "
-          + "them. Veins carry supply and can be cut, but they produce nothing.",
-        enter: () => this.preselect(this.travelSource()),
+        id: "send",
+        title: "March, and lay a vein",
+        text: "Tap the far tile. Beyond a neighbour your soldiers march instead, laying a "
+          + "vein behind them — it carries supply and can be cut, but it produces nothing.",
         rect: () => this.cellRect(this.travelTarget(this.travelSource())),
         pad: 4,
         advance: "signal",
+        awaits: "travel",
       },
       {
         id: "rallybtn",
         title: "Make a fist",
-        text: "Rally pulls every spare soldier in the colony onto one tile. Tap it.",
+        text: "The Hive is in the middle of the board, and there is an enemy colony sitting "
+          + "on the guard in front of her. Time to gather. Tap Rally.",
+        enter: () => this.enemyReplies(),
         find: () => this.root.querySelector("#bRally"),
-        advance: "tap",
+        advance: "signal",
+        awaits: "mode:rally",
       },
       {
         id: "rally",
-        text: "Now tap the tile beside the Hive. Everything you can spare marches to it — "
-          + "and everywhere else is left holding one soldier, so this is a commitment.",
-        rect: () => this.cellRect(this.at(this.spear())),
+        title: "All of it, onto one tile",
+        text: "Tap your camp beside the Hive. Every spare soldier in the colony marches to "
+          + "it, and everywhere else is left holding one — so this is a commitment.",
+        rect: () => this.cellRect(this.at(this.camp())),
         pad: 4,
         advance: "signal",
+        awaits: "rally",
       },
-    ];
-
-    // The ability is free — the turn continues after it — but tunnelling needs a target,
-    // so for a digging colony the cast takes two taps rather than one.
-    if (ability.kind === "tunnel") {
-      steps.push({
-        id: "abilitybtn",
-        title: "Your species ability",
-        text: `${ability.name}: ${ability.desc} Tap it, then choose where to dig.`,
-        find: () => this.root.querySelector("#bAbility"),
-        advance: "tap",
-      }, {
-        id: "ability",
-        text: "Tap one of the lit tiles to dig through to it.",
-        rect: () => this.cellRect(this.valid[0] ?? null),
-        pad: 4,
-        advance: "signal",
-      });
-    } else {
-      steps.push({
-        id: "ability",
-        title: "Your species ability",
-        text: `${ability.name}: ${ability.desc} It is free — you still get your move — and `
-          + "then it recharges for a few turns. Tap it.",
-        find: () => this.root.querySelector("#bAbility"),
-        advance: "signal",
-      });
-    }
-
-    steps.push(
       {
-        id: "guard",
-        title: "The Hive",
-        text: "A wild queen sleeps in the middle, infected with the fungus this game is "
-          + "named after. Her four guards ring her, so she cannot be reached until one of "
-          + "them falls. Take this one.",
-        enter: () => this.preselect(this.spear()),
-        rect: () => this.cellRect(this.guardCell()),
+        id: "pickAttack",
+        title: "Pick the fist up",
+        text: "Same two taps as before. Tap the tile your army is standing on.",
+        enter: () => this.enemyReplies(),
+        rect: () => this.cellRect(this.at(this.camp())),
         pad: 4,
         advance: "signal",
+        awaits: "select",
+      },
+      {
+        id: "attack",
+        title: "Attack",
+        text: "Tap the enemy tile. Attack and defence are pure arithmetic — no dice — so "
+          + "you can count it out first. Win and their garrison is destroyed and the tile "
+          + "is yours; lose and your attackers are the ones who are gone.",
+        rect: () => this.cellRect(this.at(this.foeCell())),
+        pad: 4,
+        advance: "signal",
+        awaits: "attack",
+      },
+      {
+        id: "pickQueen",
+        title: "One tile from her",
+        text: "Your army moved onto the ground it took, and that ground was the queen's "
+          + "guard — so she is next door now. Pick the tile up.",
+        enter: () => this.enemyReplies(),
+        rect: () => this.cellRect(this.at(this.doorstep())),
+        pad: 4,
+        advance: "signal",
+        awaits: "select",
       },
       {
         id: "queen",
         title: "Take the queen",
-        text: "Now she is next door. Taking HER tile — not just her guards — hands your "
-          + "whole colony a growth surge for a few turns.",
-        enter: () => this.preselect(this.doorstep()),
+        text: "Tap her. Taking the QUEEN — not just her guards — hands your whole colony a "
+          + "growth surge for a few turns.",
         rect: () => this.cellRect(this.queenCell()),
         pad: 4,
         advance: "signal",
+        awaits: "queen",
       },
       {
-        id: "enemy",
-        title: "How it ends",
-        text: "That far corner is the enemy queen. Take it and the match is yours; lose "
-          + "your own and it is theirs. There is no timer on the match itself.",
-        rect: () => this.cellRect(this.enemyNest()),
-        pad: 4,
-      },
-      {
-        id: "hud",
-        title: "The count that matters",
-        text: "Your army and what it earns each turn, against the enemy's. The chip on the "
-          + "right tracks the Hive.",
+        id: "done",
+        title: "The rest is yours",
+        text: "That is the whole game: spread, surround, consume. Take the enemy nest in "
+          + "the far corner and the match is yours. Off you go.",
         find: () => this.root.querySelector("header"),
         pad: 2,
       },
-      {
-        id: "end",
-        text: "That is the whole game: spread, surround, consume. Tap End turn and the "
-          + "enemy colony moves.",
-        find: () => this.root.querySelector("#bEnd"),
-        advance: "tap",
-      },
-    );
-    return steps;
+    ];
   }
 
   destroy(): void {
@@ -746,10 +758,10 @@ export class MatchScreen {
       if (events.length) {
         this.consume(events);
         this.refreshHUD();
-        // The tour's move step waits for the move to RESOLVE, so a tap the engine refused
-        // leaves the step standing. It also holds the turn: handing over mid-walkthrough
-        // would put the enemy on the board before the player has been told there is one.
-        this.opts.tour?.signal("move");
+        // The step waits for the deed to RESOLVE — `tourSignals`, from the events — so a
+        // tap the engine refused leaves it standing, and a long send does not answer the
+        // step that asked for a move. The turn is handed over by the walkthrough itself,
+        // between one lesson and the next (`enemyReplies`).
         if (!this.touring) this.handOver();
       }
       return;
@@ -778,6 +790,10 @@ export class MatchScreen {
   private setMode(m: Mode): void {
     this.mode = m;
     this.clearSelection();
+    // The walkthrough's Rally step waits for the mode to actually change rather than for
+    // the press — same rule as everywhere else here: a tap the app did not act on must
+    // leave the step standing rather than march the tutorial on without the player.
+    this.opts.tour?.signal("mode:" + m);
     if (m === "tunnel") {
       // highlight every diggable tile, since there is no source to select first
       this.valid = tunnelTargets(this.state, "you");

@@ -41,6 +41,13 @@ export interface TourStep {
   rect?: () => SpotRect | null;
   /** How the step ends. Defaults to "next". */
   advance?: "next" | "tap" | "signal";
+  /**
+   * The deed a `signal` step is waiting for, when it is not the step's own id.
+   *
+   * Several steps ask for the same deed — every action in the match walkthrough is "pick a
+   * tile up, then say where" — so the deed and the step's name cannot be the same string.
+   */
+  awaits?: string;
   /** Extra room around the hole, in pixels. */
   pad?: number;
   /** Label on the button of a `next` step. */
@@ -65,6 +72,15 @@ export interface TourStep {
    * still be seen lit while the screen itself is what the hole is around.
    */
   lift?: () => Element | null | undefined;
+  /**
+   * Pin the bubble to an edge instead of letting it settle beside the hole.
+   *
+   * A step that lights a whole PICKER has no room beside it, so the bubble lands in the
+   * middle — on top of the very thing the player is being asked to look at and choose
+   * from. Pinned to the top it covers the screen's own heading, which is the one part of
+   * that screen the step is already saying out loud.
+   */
+  bubble?: "top" | "bottom";
 }
 
 export interface TourOptions {
@@ -141,7 +157,8 @@ export class Tour {
    */
   signal(id: string): void {
     const step = this.step;
-    if (!step || step.id !== id || step.advance !== "signal") return;
+    if (!step || step.advance !== "signal") return;
+    if ((step.awaits ?? step.id) !== id) return;
     this.next();
   }
 
@@ -401,9 +418,14 @@ export class Tour {
       return;
     }
 
+    const pin = this.step?.bubble;
     const below = spot.top + spot.height + BUBBLE_GAP;
     const above = spot.top - BUBBLE_GAP - bh;
-    const top = below + bh + EDGE <= h ? below : above >= EDGE ? above : Math.max(EDGE, (h - bh) / 2);
+    const top = pin === "top" ? EDGE
+      : pin === "bottom" ? Math.max(EDGE, h - bh - EDGE)
+      : below + bh + EDGE <= h ? below
+      : above >= EDGE ? above
+      : Math.max(EDGE, (h - bh) / 2);
     const wanted = spot.left + spot.width / 2 - bw / 2;
     const left = Math.min(Math.max(EDGE, wanted), Math.max(EDGE, w - bw - EDGE));
     bubble.style.left = Math.round(left) + "px";

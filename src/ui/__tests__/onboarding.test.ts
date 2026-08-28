@@ -84,6 +84,35 @@ describe("the button that starts the setup flow", () => {
   });
 });
 
+describe("the first match", () => {
+  /**
+   * A FIRST MATCH IS PLAYED ON EASY, whatever the setting says. The walk hands the turn
+   * over four times and the enemy answers each one from a script; the moment it ends the
+   * real opponent takes over, and the first one a new player meets should not be the one
+   * that beats `normal` 96% of the time.
+   */
+  it("puts the enemy on easy however the settings are set", () => {
+    const host = mount();
+    const profile = new ProfileStore(new MemoryStore());
+    profile.update((p) => { p.difficulty = "hard"; });
+    const app = new App(host, profile);
+    app.start();
+
+    walkTo(host, "Into a match");
+    host.querySelector<HTMLButtonElement>("#goPlay")?.click();
+    host.querySelector<HTMLButtonElement>("#mapNext")?.click();
+    host.querySelector<HTMLButtonElement>("#toFormation")?.click();
+    host.querySelector<HTMLButtonElement>("#begin")?.click();
+
+    const match = (app as unknown as {
+      match: { opts: { difficulty: string }; destroy: () => void };
+    }).match;
+    expect(match, "the match never started").toBeTruthy();
+    expect(match.opts.difficulty, "a new player was handed the hard opponent").toBe("easy");
+    match.destroy();
+  });
+});
+
 describe("the first-run tour", () => {
   it("opens on a fresh profile", () => {
     const host = mount();
@@ -207,6 +236,64 @@ describe("a match with the tour up", () => {
     }
   });
 
+  /**
+   * EVERY ACTION IS TWO TAPS, and the walkthrough teaches it that way every time.
+   *
+   * Picking a tile up and saying where it goes is how the player will act for the rest of
+   * their life in this game. An earlier walk did the first tap FOR them on every step but
+   * the first, which taught half a control and left them holding a board they could not
+   * start.
+   */
+  it("asks for the tile and then the destination, every time", () => {
+    const { screen, host } = running();
+    screen.start();
+    opened(host);
+    const tour = (screen as unknown as { opts: { tour: Tour } }).opts.tour;
+    host.querySelector<HTMLButtonElement>("#tourNext")?.click();   // past the opening line
+
+    // Walk the whole thing, answering each step with the deed it names.
+    const seen: string[] = [];
+    for (let i = 0; i < 40 && tour.running; i++) {
+      const step = tour.step;
+      if (!step) break;
+      seen.push(step.id);
+      const wants = step.awaits ?? step.id;
+      if ((step.advance ?? "next") === "signal") tour.signal(wants);
+      else host.querySelector<HTMLButtonElement>("#tourNext")?.click();
+      if (tour.step === step) break;                                // refused to move on
+    }
+
+    // Each of the five lessons is a pick-up followed by a destination.
+    for (const [pick, deed] of [["pickMove", "move"], ["pickSend", "send"],
+      ["pickAttack", "attack"], ["pickQueen", "queen"]] as const) {
+      expect(seen.indexOf(pick), `${pick} was never asked for`).toBeGreaterThan(-1);
+      expect(seen.indexOf(deed), `${deed} did not follow ${pick}`)
+        .toBe(seen.indexOf(pick) + 1);
+    }
+    expect(seen[seen.length - 1], "the walk did not run to the end").toBe("done");
+    screen.destroy();
+  });
+
+  /**
+   * THE ENEMY ANSWERS BETWEEN THE LESSONS. A walkthrough where the board never replies
+   * teaches a solitaire — and the hand-over is half of how the game works.
+   */
+  it("gives the enemy a turn between one lesson and the next", () => {
+    const { state, screen, host } = running();
+    screen.start();
+    opened(host);
+    const tour = (screen as unknown as { opts: { tour: Tour } }).opts.tour;
+    expect(state.turn, "the match had already moved on").toBe(1);
+
+    host.querySelector<HTMLButtonElement>("#tourNext")?.click();
+    tour.signal("select");
+    tour.signal("move");
+    expect(tour.step?.id, "expected the long send next").toBe("pickSend");
+    expect(state.turn, "the enemy never got a turn").toBe(2);
+    expect(state.current, "the turn did not come back to the player").toBe("you");
+    screen.destroy();
+  });
+
   it("holds the turn while a step is showing", async () => {
     vi.useFakeTimers();
     const { state, screen, host } = running();
@@ -239,6 +326,7 @@ describe("a match with the tour up", () => {
     host.querySelector<HTMLButtonElement>("#tourNext")?.click();   // past the opening line
     tour.signal("select");
     expect(tour.step?.id, "expected to be waiting on a move").toBe("move");
+    // The step after it hands the turn over, which is the batch this is about.
 
     (screen as unknown as { consume: (e: unknown[]) => void }).consume(
       [{ type: "move", from: { c: 0, r: 0 }, to: { c: 0, r: 1 }, owner: "you", count: 2 }],
@@ -246,7 +334,7 @@ describe("a match with the tour up", () => {
     expect(tour.step?.id, "the step advanced inside the batch that ended it").toBe("move");
 
     return Promise.resolve().then(() => {
-      expect(tour.step?.id, "the step never advanced at all").toBe("attack");
+      expect(tour.step?.id, "the step never advanced at all").toBe("pickSend");
       screen.destroy();
     });
   });

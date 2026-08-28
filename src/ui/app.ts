@@ -229,6 +229,10 @@ export class App {
         find: find("#mapsel .setupbox"),
         advance: "signal",
         pad: 4,
+        // A whole picker has no room beside it, so the bubble settles in the MIDDLE — on
+        // top of the very cards the step is asking the player to choose between. Pinned to
+        // the top it covers the screen's own heading, which the step is already saying.
+        bubble: "top",
       },
       {
         id: "species",
@@ -238,6 +242,7 @@ export class App {
         find: find("#start .setupbox"),
         advance: "signal",
         pad: 4,
+        bubble: "top",
       },
       {
         id: "shape",
@@ -247,6 +252,7 @@ export class App {
         find: find("#formation .setupbox"),
         advance: "signal",
         pad: 4,
+        bubble: "top",
       },
     ];
   }
@@ -698,7 +704,9 @@ export class App {
     root.appendChild(body);
 
     // open on the species already fielded
-    requestAnimationFrame(() => selectedCard?.scrollIntoView({ inline: "center", block: "nearest" }));
+    // Guarded: jsdom has no scrollIntoView, and a screen must survive a DOM that is
+    // missing a convenience exactly as it survives a canvas with no context.
+    requestAnimationFrame(() => selectedCard?.scrollIntoView?.({ inline: "center", block: "nearest" }));
     return root;
   }
 
@@ -798,7 +806,11 @@ export class App {
       // The same mods must drive combat, or Mandible/Cuticle research would show up in the
       // income readout but do nothing in a fight.
       ctx: { mods },
-      difficulty: this.difficulty,
+      // A FIRST MATCH IS PLAYED ON EASY, whatever the setting says. The walkthrough hands
+      // the turn over four times and the enemy answers each one from a script; the moment
+      // it ends the real opponent takes over, and the first one a new player meets should
+      // not be the one that beats `normal` 96% of the time.
+      difficulty: tutorial ? "easy" : this.difficulty,
       map: this.choices.map,
       // The meta walk ends on the button that got us here, so the match picks the tutorial
       // up and finishes it. A player who skipped has `tourSeen` written already.
