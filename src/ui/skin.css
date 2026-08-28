@@ -2538,7 +2538,8 @@ button:not(.playbtn):active,
 /* ------------------------------------------------------ ON THE HOME SCREEN */
 .colhero {
   display: grid;
-  grid-template-columns: 44px 1fr;
+  /* The figure's own column, sized by the figure (see .col-n), not by a fixed plate. */
+  grid-template-columns: auto 1fr;
   align-items: center;
   gap: 12px;
   margin: 8px 16px 0;
@@ -2550,16 +2551,9 @@ button:not(.playbtn):active,
   text-align: left;
   cursor: pointer;
 }
-.col-ic {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: rgba(96, 170, 88, .16);
-  color: var(--grass-glow);
-}
-.col-mid { min-width: 0; display: grid; gap: 3px; }
+/* The figure and its unit, stacked, in the slot the ant mark used to hold. */
+.col-size { display: grid; justify-items: center; gap: 1px; }
+.col-mid { min-width: 0; display: grid; gap: 5px; }
 .col-t {
   font-size: 9.5px;
   font-weight: 900;
@@ -2567,10 +2561,18 @@ button:not(.playbtn):active,
   text-transform: uppercase;
   color: var(--muted);
 }
-.col-line { display: flex; align-items: baseline; gap: 6px; }
-/* The figure, and it is allowed to be loud. */
+/*
+ * The figure leads the banner, and it is allowed to be loud — but it holds a FIXED column,
+ * or the label and the bar beside it would shuffle sideways every time the colony crossed
+ * a unit. Four glyphs is the widest a compact size gets, and `ch` is a DIGIT: tabular
+ * numerals equalise the digits but the unit letter is wider than one, so "999M" needs
+ * closer to five.
+ */
 .col-n {
-  font-size: 26px;
+  display: block;
+  min-width: 4.7ch;
+  text-align: center;
+  font-size: 27px;
   font-weight: 900;
   line-height: 1;
   letter-spacing: -.6px;
@@ -2578,10 +2580,11 @@ button:not(.playbtn):active,
   font-variant-numeric: tabular-nums;
 }
 .col-k {
-  font-size: 11px;
+  font-size: 8.5px;
   font-weight: 900;
-  letter-spacing: .6px;
-  color: var(--ink-soft);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 /* The next rung is part of the same object, not a second bar under it. */
 .col-rail { display: flex; align-items: center; gap: 8px; margin-top: 4px; }

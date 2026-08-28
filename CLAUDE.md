@@ -639,6 +639,12 @@ world ranking of the biggest colony there is, which is why the number has no cei
   `roadClaims` recognises a legacy save by exactly that and re-marks everything at or
   below the converted colony as already paid, or a returning player collects the whole
   lower road a second time.
+- **A win pays more the bigger the colony, which is the point.** Fourteen percent of
+  itself means a chapter-1 colony gains 14 troops a win and a chapter-49 colony gains a
+  hundred and thirty-six billion. The road's rungs are a fixed multiple apart, so troops
+  per victory multiply chapter by chapter by that same factor — the growth is already
+  exponential in the colony, and a second multiplier on top of it compounds a compounding
+  number.
 - **It is the biggest thing under the top bar, not a coin in the row.** It was one of three
   coins the same size as the mycelium a player spends on a chamber, which said it was worth
   about as much. It leads the profile's record and leads the result card too — and a defeat

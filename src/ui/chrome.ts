@@ -134,13 +134,11 @@ export function colonyBanner(colony: number, onClick: () => void): HTMLElement {
   box.id = "colonyHero";
   box.title = "Colony Road";
 
-  const mark = el("span", "col-ic");
-  mark.appendChild(icon("antarium", 22));
-
-  const mid = el("div", "col-mid");
-  const line = el("div", "col-line");
-  line.append(el("b", "col-n", compact(colony)), el("span", "col-k", "troops"));
-  mid.append(el("div", "col-t", "Your colony"), line);
+  // THE FIGURE STANDS WHERE THE MARK DID. The left plate carried an ant, which said what
+  // the banner was about to a player who could already read "Your colony" beside it — and
+  // put a picture in the one slot the eye lands on first. The size goes there instead.
+  const size = el("div", "col-size");
+  size.append(el("b", "col-n", compact(colony)), el("span", "col-k", "troops"));
 
   const reached = stopReached(colony);
   const from = reached ? stopColony(reached) : 0;
@@ -157,9 +155,11 @@ export function colonyBanner(colony: number, onClick: () => void): HTMLElement {
   // left the one number the bar is about sharing the space with a picture.
   const rail = el("div", "col-rail");
   rail.append(track, el("span", "col-next", compact(next)));
-  mid.appendChild(rail);
 
-  box.append(mark, mid);
+  const mid = el("div", "col-mid");
+  mid.append(el("div", "col-t", "Your colony"), rail);
+
+  box.append(size, mid);
   box.onclick = onClick;
   return box;
 }
