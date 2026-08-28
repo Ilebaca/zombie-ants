@@ -518,6 +518,22 @@ was looking for turned up at once:
 The lesson worth keeping: three of the four were the hive's terrain outliving its ownership.
 Anything that asks "is this a hive tile?" almost always means "is this the NEUTRAL hive?".
 
+**The Profile is the career, and the room for a collection** (`src/ui/profile.ts`). The
+avatar used to open the Colony screen — a level badge and today's three quests — so the one
+place a player goes to look at THEMSELVES showed a to-do list, while every number the game
+kept about their career sat in the save and on no screen at all. Who, then what has
+happened, then what has been collected; the last is a list of doors (colonies, chambers,
+research, each a count with a bar and a way in), so another thing to collect is another row.
+- **Every class on it is prefixed `pf-`, and that is not tidiness.** The legacy stylesheet
+  already owns `.pname` — the name INPUT, a bordered text field — so borrowing it drew a box
+  round the player's name; and `.qbar` carries a height only inside `.qhero`, so the XP bar
+  came out as a track with none. Both were silent (§10: those strings are styling).
+- **The career is counted from what a match DID.** `recordResult` takes the turns, the
+  clock, the queens and whether the win was a nest capture; `scoreQuestEvents` credits the
+  quest AND the career total off one count, in one tested function, because a quest that
+  credits a capture the profile does not is two numbers disagreeing on screen. The fastest
+  win ignores a loss and an untimed match — a zero would win every comparison for ever.
+
 **The match clock is the SCREEN's, never the engine's.** Wall time from the moment the
 opening hands over to the moment the match is decided, latched there so a result card
 sitting on screen does not keep counting, and reported to the app through `onExit`. It

@@ -39,15 +39,38 @@ export interface Equipped {
   effect: string | null;
 }
 
+/**
+ * A career, in numbers. Everything here is counted from what a match actually DID — the
+ * engine knows nothing about any of it, and opening a screen can never move one.
+ */
 export interface Stats {
   games: number;
   wins: number;
+  /** Enemy and neutral ground taken, across every match. */
   conquered: number;
   abilities: number;
   tunnels: number;
-  /** Current and best run of wins, for the profile card. */
+  /** Current and best run of wins. */
   winStreak: number;
   bestStreak: number;
+  /** Turns played, and wall time at the board — the two ways to say "how much". */
+  turns: number;
+  playedMs: number;
+  /** The fastest win, in milliseconds. Zero until there is one. */
+  bestMs: number;
+  /** Hive queens taken, and enemy nests cracked. */
+  queens: number;
+  nests: number;
+}
+
+/** What a finished match reports about itself, beyond who won and how long it ran. */
+export interface MatchFacts {
+  /** Wall time at the board, in milliseconds. */
+  playedMs?: number;
+  /** Hive queens the player took during it. */
+  queens?: number;
+  /** Won by capturing the enemy nest, rather than by surrender or an objective. */
+  byNest?: boolean;
 }
 
 export interface Profile {
@@ -112,7 +135,10 @@ export function defaultProfile(): Profile {
     // match instead is what gives that visit a point.
     mycel: 0,
     pheromone: 0,
-    stats: { games: 0, wins: 0, conquered: 0, abilities: 0, tunnels: 0, winStreak: 0, bestStreak: 0 },
+    stats: {
+      games: 0, wins: 0, conquered: 0, abilities: 0, tunnels: 0,
+      winStreak: 0, bestStreak: 0, turns: 0, playedMs: 0, bestMs: 0, queens: 0, nests: 0,
+    },
     unlocked: [...STARTER_SPECIES],
     research: {},
     hill: {},
@@ -173,6 +199,12 @@ export function normalise(raw: unknown): Profile {
       tunnels: int(p.stats?.tunnels, 0, 1e9, 0),
       winStreak: int(p.stats?.winStreak, 0, 1e9, 0),
       bestStreak: int(p.stats?.bestStreak, 0, 1e9, 0),
+      turns: int(p.stats?.turns, 0, 1e9, 0),
+      // Milliseconds, so the ceiling is generous: a thousand hours of play is 3.6e9.
+      playedMs: int(p.stats?.playedMs, 0, 1e12, 0),
+      bestMs: int(p.stats?.bestMs, 0, 1e12, 0),
+      queens: int(p.stats?.queens, 0, 1e9, 0),
+      nests: int(p.stats?.nests, 0, 1e9, 0),
     },
     unlocked: Array.isArray(p.unlocked) ? p.unlocked.filter(isSpecies) : [...STARTER_SPECIES],
     research: {},
@@ -277,6 +309,11 @@ export class ProfileStore {
 
   isUnlocked(id: SpeciesId): boolean { return this.profile.unlocked.includes(id); }
 
+  /** Ground taken during a match, folded in once rather than a write per capture. */
+  recordCaptures(n: number): void {
+    if (n > 0) this.update((p) => { p.stats.conquered += n; });
+  }
+
   /**
    * Record a finished match: trophies (floored at zero, CLAUDE.md §8), mycelium, the
    * favourite-species tally, the win streak, and XP toward the colony level.
@@ -284,13 +321,21 @@ export class ProfileStore {
    * XP is a base for playing, a bonus for winning and a little for a longer game — the
    * legacy formula, so both builds level at the same rate.
    */
-  recordResult(won: boolean, species: SpeciesId, turns = 0): Readonly<Profile> {
+  recordResult(won: boolean, species: SpeciesId, turns = 0, match: MatchFacts = {}): Readonly<Profile> {
     return this.update((p) => {
       p.stats.games++;
+      p.stats.turns += Math.max(0, Math.round(turns));
+      p.stats.playedMs += Math.max(0, Math.round(match.playedMs ?? 0));
+      p.stats.queens += Math.max(0, Math.round(match.queens ?? 0));
       if (won) {
         p.stats.wins++;
         p.stats.winStreak++;
         p.stats.bestStreak = Math.max(p.stats.bestStreak, p.stats.winStreak);
+        if (match.byNest) p.stats.nests++;
+        // The fastest win only counts a win that was actually timed: a zero would win
+        // every comparison for ever, and a match with no clock is not a record.
+        const ms = Math.round(match.playedMs ?? 0);
+        if (ms > 0 && (p.stats.bestMs === 0 || ms < p.stats.bestMs)) p.stats.bestMs = ms;
       } else {
         p.stats.winStreak = 0;
       }

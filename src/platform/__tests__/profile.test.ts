@@ -85,6 +85,47 @@ describe("progression", () => {
     void TROPHY_LOSS;
   });
 
+  /**
+   * A CAREER IS COUNTED FROM WHAT A MATCH DID. Every one of these was in the save shape and
+   * nothing wrote it, so the profile screen would have reported a career of zeroes.
+   */
+  it("records the turns, the clock, the queens and the nests", () => {
+    const s = store();
+    s.recordResult(true, "fire", 40, { playedMs: 240_000, queens: 2, byNest: true });
+    s.recordResult(false, "fire", 25, { playedMs: 120_000, queens: 1, byNest: false });
+
+    const stats = s.get().stats;
+    expect(stats.turns, "turns are not accumulated").toBe(65);
+    expect(stats.playedMs, "the clock is not accumulated").toBe(360_000);
+    expect(stats.queens).toBe(3);
+    expect(stats.nests, "a nest was credited for a match that was not won by one").toBe(1);
+  });
+
+  /** Ground taken is counted as it happens, not at the end: a match is many captures. */
+  it("folds captures into the career total", () => {
+    const s = store();
+    s.recordCaptures(4);
+    s.recordCaptures(3);
+    s.recordCaptures(0);
+    expect(s.get().stats.conquered).toBe(7);
+  });
+
+  it("keeps the fastest WIN, and never a loss or an untimed match", () => {
+    const s = store();
+    s.recordResult(false, "fire", 10, { playedMs: 5_000 });
+    expect(s.get().stats.bestMs, "a loss set the record").toBe(0);
+
+    s.recordResult(true, "fire", 10, { playedMs: 0 });
+    expect(s.get().stats.bestMs, "a match with no clock set the record").toBe(0);
+
+    s.recordResult(true, "fire", 10, { playedMs: 300_000 });
+    expect(s.get().stats.bestMs).toBe(300_000);
+    s.recordResult(true, "fire", 10, { playedMs: 400_000 });
+    expect(s.get().stats.bestMs, "a slower win took the record").toBe(300_000);
+    s.recordResult(true, "fire", 10, { playedMs: 90_000 });
+    expect(s.get().stats.bestMs).toBe(90_000);
+  });
+
   it("buys a chamber only when affordable and uncapped", () => {
     const s = store();
     s.update((p) => { p.mycel = 0; });                // broke, which is where a profile starts

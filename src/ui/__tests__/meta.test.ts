@@ -10,6 +10,7 @@ import { CHAMBER_MAX, RESEARCH_MAX, SPECIES, chamberCost, researchCost } from ".
 import type { SpeciesId } from "../../engine";
 import { MemoryStore, ProfileStore, SPECIES_UNLOCK, roadKey } from "../../platform";
 import { buildAnthill } from "../anthill";
+import { buildProfile } from "../profile";
 import { clockOf } from "../chrome";
 import { buildAntarium, buildSpeciesPage } from "../antarium";
 import type { EngineEvent } from "../../engine";
@@ -182,6 +183,94 @@ describe("anthill screen", () => {
 });
 
 /** A stopwatch reads the same width whatever it says, which is why seconds pad. */
+/**
+ * THE PROFILE. The avatar used to open the Colony screen — a level badge and today's three
+ * quests — so the one place a player goes to look at THEMSELVES showed a to-do list, while
+ * every number the game kept about their career sat in the save and on no screen at all.
+ */
+describe("profile screen", () => {
+  const nowhere = { onBack: () => {}, onColonies: () => {}, onChambers: () => {}, onQuests: () => {} };
+  const played = (over: Partial<Record<string, number>> = {}): ProfileStore => {
+    const s = store();
+    s.update((p) => {
+      Object.assign(p.stats, {
+        games: 10, wins: 6, conquered: 120, abilities: 30, tunnels: 4,
+        winStreak: 2, bestStreak: 5, turns: 300, playedMs: 1_800_000, bestMs: 214_000,
+        queens: 3, nests: 2, ...over,
+      });
+    });
+    return s;
+  };
+
+  it("reports the career, including what the save could never show", () => {
+    const text = buildProfile(played(), nowhere).textContent ?? "";
+    for (const said of ["Played", "10", "Won", "6", "Lost", "4", "Win rate", "60%",
+      "Ground taken", "120", "Queens taken", "Nests cracked", "Tunnels dug",
+      "Turns played", "Time at the board", "30:00", "Fastest win", "3:34"]) {
+      expect(text, `the profile never said "${said}"`).toContain(said);
+    }
+  });
+
+  it("says nothing rather than zero for a win that has never happened", () => {
+    const root = buildProfile(played({ bestMs: 0 }), nowhere);
+    const cell = Array.from(root.querySelectorAll<HTMLElement>(".pf-stat"))
+      .find((c) => c.querySelector(".pf-k")?.textContent === "Fastest win");
+    expect(cell, "the fastest win is not reported at all").toBeTruthy();
+    expect(cell?.querySelector(".pf-v")?.textContent,
+      "a win that never happened was reported as a time").toBe("—");
+  });
+
+  it("counts a fresh player's record honestly", () => {
+    const text = buildProfile(store(), nowhere).textContent ?? "";
+    expect(text).toContain("Win rate");
+    expect(text, "a rate out of no games").toContain("0%");
+  });
+
+  /** The collection block is the one with room in it: another thing to collect is a row. */
+  it("shows the collection as counts against what there is to collect", () => {
+    const s = store(100000);
+    s.buyChamber("royal");
+    const root = buildProfile(s, nowhere);
+    const rows = Array.from(root.querySelectorAll<HTMLElement>(".pf-row-coll"));
+    expect(rows.length, "the collection block is not there").toBe(3);
+    expect(rows[0]?.textContent).toContain("Colonies");
+    expect(rows[0]?.textContent).toContain(`/ ${Object.keys(SPECIES).length}`);
+    expect(rows[1]?.textContent).toContain("Nest chambers");
+    expect(rows[1]?.textContent, "the chamber just bought is not counted").toContain("1 / ");
+    expect(rows[2]?.textContent).toContain("Research levels");
+    // One head per colony, so the row says WHICH rather than only how many.
+    expect(root.querySelectorAll(".pf-head").length).toBe(Object.keys(SPECIES).length);
+  });
+
+  it("opens the screen that fills each row", () => {
+    const seen: string[] = [];
+    const root = buildProfile(store(), {
+      onBack: () => seen.push("back"),
+      onColonies: () => seen.push("colonies"),
+      onChambers: () => seen.push("chambers"),
+      onQuests: () => seen.push("quests"),
+    });
+    const rows = Array.from(root.querySelectorAll<HTMLButtonElement>(".pf-row"));
+    for (const r of rows) r.click();
+    expect(seen).toEqual(["colonies", "chambers", "colonies", "quests"]);
+  });
+
+  /**
+   * `.pname` is the legacy build's name INPUT — a bordered text field. Borrowing it drew a
+   * box round the player's name, and `.qbar` has a height only inside `.qhero`, so the XP
+   * bar was a track with none. Everything on this screen is prefixed for that reason.
+   */
+  it("uses its own class names, not the legacy sheet's", () => {
+    const root = buildProfile(store(), nowhere);
+    const classes = new Set(Array.from(root.querySelectorAll("*"))
+      .flatMap((e) => Array.from(e.classList)));
+    for (const legacy of ["pname", "qbar", "pk", "pv", "prow"]) {
+      expect(classes.has(legacy), `.${legacy} belongs to the legacy stylesheet`).toBe(false);
+    }
+    expect(classes.has("pf-name"), "the profile lost its own name class").toBe(true);
+  });
+});
+
 describe("the match clock", () => {
   it("reads like a clock, and keeps its width", () => {
     expect(clockOf(0)).toBe("0:00");
@@ -484,6 +573,9 @@ describe("scoring quests from engine events", () => {
     ];
     scoreQuestEvents(s, events);
     expect(s.get().quests.find((q) => q.id === "conq30")?.progress).toBe(2);
+    // The same count feeds the career total, from the same call: a quest that credits a
+    // capture the profile does not is a pair of numbers that disagree on screen.
+    expect(s.get().stats.conquered, "the career total was not credited").toBe(2);
   });
 
   it("ignores captures made by the AI", () => {
@@ -493,6 +585,7 @@ describe("scoring quests from engine events", () => {
       { type: "capture", at, owner: "ai", from: "R", previous: null },
     ]);
     expect(s.get().quests.find((q) => q.id === "conq30")?.progress).toBe(0);
+    expect(s.get().stats.conquered, "the enemy's captures fed the player's record").toBe(0);
   });
 
   it("does nothing for a batch with no player captures in it", () => {

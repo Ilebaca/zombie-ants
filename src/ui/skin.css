@@ -2449,3 +2449,145 @@ button:not(.playbtn):active,
      nothing drawn round it any more, it is just the column. */
   width: 100%;
 }
+
+/* ======================================================================
+   ==  THE PROFILE  =====================================================
+   ======================================================================
+
+   The avatar used to open the Colony screen — a level badge and today's
+   three quests — so the one place a player would go to look at THEMSELVES
+   showed a to-do list. Meanwhile every number the game had been keeping
+   about their career was in the save and on no screen at all.
+
+   Who, then what has happened, then what has been collected. The last of
+   those is the block with room in it: another thing to collect is another
+   row, and it already reads as a list of doors rather than a summary.
+   ====================================================================== */
+
+/* -------------------------------------------------------------- WHO */
+.pf-hero {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  margin-bottom: 4px;
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.pf-face { position: relative; width: 76px; height: 76px; }
+.pf-face canvas { display: block; width: 76px; height: 76px; }
+/* The level rides the portrait rather than sitting beside it: one object,
+   and the number is the thing that changes. */
+.pf-level {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  min-width: 24px;
+  padding: 2px 6px;
+  border-radius: 99px;
+  background: var(--grass);
+  color: #06210c;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+}
+.pf-who { min-width: 0; display: grid; gap: 4px; }
+.pf-name { font-size: 17px; font-weight: 900; letter-spacing: .2px; }
+.pf-sub { font-size: 11px; font-weight: 800; letter-spacing: .3px; color: var(--muted); }
+.pf-xp { font-size: 10.5px; font-weight: 800; letter-spacing: .3px; color: var(--ink-soft); }
+/* Its OWN bar. The legacy sheet gives `.qbar` a height only inside `.qhero`, so borrowing
+   that class here drew a track with no height at all — invisible, and silently so. */
+.pf-bar {
+  height: 10px;
+  border-radius: var(--r-pill);
+  background: rgba(0, 0, 0, .34);
+  overflow: hidden;
+}
+.pf-bar i { display: block; height: 100%; border-radius: var(--r-pill); background: var(--gold); }
+/* Gold is the XP bar, because gold is what a level pays. A collection is ground already
+   held, which is the colony's own green everywhere else in the app. */
+.pf-row .pf-bar i { background: var(--grass); }
+.pf-hero .claimrow { grid-column: 1 / -1; }
+
+/* ----------------------------------------------------------- RECORD
+   Two columns. A career reads as pairs — played against won, streak
+   against best — and a single column of eleven rows is a receipt. */
+.pf-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin-bottom: 12px;
+  border-radius: var(--r-md);
+  background: var(--line);
+  overflow: hidden;
+}
+.pf-stat {
+  display: grid;
+  gap: 3px;
+  padding: 11px 13px;
+  background: var(--panel);
+}
+.pf-k {
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.pf-v {
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -.2px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------- COLLECTION */
+.pf-coll { display: grid; gap: var(--gap); margin-bottom: var(--gap); }
+
+/* A row is a mark, what it is, how far along, and the way in. */
+.pf-row {
+  display: grid;
+  grid-template-columns: 34px 1fr 14px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.pf-row-i {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, .26);
+  color: var(--grass-glow);
+}
+.pf-row-mid { min-width: 0; display: grid; gap: 7px; }
+.pf-row-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.pf-row-t { font-size: 13px; font-weight: 900; letter-spacing: .1px; }
+.pf-row-c {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.pf-row > svg { color: var(--muted); }
+
+/* The nine colonies, so the row says which ones rather than only how many. Sized to fit
+   on ONE line: a strip that wraps stops reading as a set and starts reading as a list. */
+.pf-faces { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+.pf-head { display: block; width: 22px; height: 22px; }
+.pf-head canvas { display: block; width: 22px; height: 22px; }
+.pf-head.off { opacity: .26; filter: grayscale(1); }
+
+/* The one row that is a door and not a count. */
+.pf-row-go { grid-template-columns: 34px 1fr 14px; }

@@ -16,6 +16,7 @@ import type { PurchaseGateway } from "../platform";
 import { SPECIES_COL, antHead, basicLook, hexA, setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
 import { buildAntarium, buildSpeciesPage } from "./antarium";
+import { buildProfile } from "./profile";
 import { icon } from "./icons";
 import { NAV_SCREENS, bottomNav, clockOf, el, setupSteps, toast, topBar } from "./chrome";
 import type { NavId } from "./chrome";
@@ -41,7 +42,7 @@ import "./skin.css";   // the look, layered over the structure
  */
 type ScreenId =
   | "home" | "mapsel" | "start" | "formation"
-  | "anthill" | "antarium" | "antup" | "achievements" | "quests"
+  | "anthill" | "antarium" | "antup" | "achievements" | "quests" | "profile"
   | "challenges" | "daily" | "rules" | "settings" | "news" | "friends" | "support"
   | "leaderboard" | "shop";
 
@@ -401,7 +402,17 @@ export class App {
     if (id === "formation") return this.buildFormationSelect();
     if (id === "anthill") return buildAnthill(this.profile);
     if (id === "achievements") return buildTrophyRoad(this.profile, () => this.show("home"), () => this.show("shop"));
-    if (id === "quests") return buildQuests(this.profile, () => this.show("home"));
+    if (id === "quests") return buildQuests(this.profile, () => this.show("profile"));
+    if (id === "profile") {
+      return buildProfile(this.profile, {
+        onBack: () => this.show("home"),
+        // `show`, not `slideTo`: the profile is a page ON TOP of the deck, and only the
+        // router puts it away again before the deck comes up.
+        onColonies: () => this.show("antarium"),
+        onChambers: () => this.show("anthill"),
+        onQuests: () => this.show("quests"),
+      });
+    }
     if (id === "rules") return buildRules();
     if (id === "shop") return buildShop(this.profile, this.purchases, () => this.show("home"));
     if (id === "leaderboard") {
@@ -504,7 +515,7 @@ export class App {
     const root = this.screen("home");
 
     root.appendChild(topBar(this.profile.get(), {
-      onProfile: () => this.show("quests"),
+      onProfile: () => this.show("profile"),
       onTrophyRoad: () => this.show("achievements"),
       onShop: () => this.show("shop"),
     }));
@@ -775,6 +786,9 @@ export class App {
 
     // Anthill and research come from the profile; the AI always gets the neutral set.
     const mods = this.profile.modsFor(this.choices.species);
+    // Counted as the match runs: by the time it ends the surge may have lapsed and the
+    // hive handed its tiles back, so the board can no longer say it happened.
+    let queensTaken = 0;
 
     const state = createGame({
       map: this.choices.map,
@@ -825,7 +839,13 @@ export class App {
         });
         this.profile.questProgress("ability");
       },
-      onEvents: (events) => scoreQuestEvents(this.profile, events),
+      onEvents: (events) => {
+        scoreQuestEvents(this.profile, events);
+        // The Hive is taken during a match, not at the end of one, so it has to be counted
+        // as it happens — by the time the card is up the surge may already have lapsed.
+        queensTaken += events.filter(
+          (e) => e.type === "hiveCaptured" && e.owner === "you").length;
+      },
       // "Strike the enemy before they strike you" is settled by the first attack of the
       // match, whoever lands it. Every other objective is decided the ordinary way.
       judge: (events) => {
@@ -841,7 +861,11 @@ export class App {
         const beforeTrophies = before.trophies;
         const beforeMycel = before.mycel;
         const beforeLevel = this.profile.level().level;
-        this.profile.recordResult(winner === "you", this.choices.species, state.turn);
+        this.profile.recordResult(winner === "you", this.choices.species, state.turn, {
+          playedMs: played,
+          queens: queensTaken,
+          byNest: reason === "nest",
+        });
         this.profile.questProgress("play");
         if (winner === "you") this.profile.questProgress("win");
         // A challenge pays on top of the usual match reward, once.
@@ -1099,7 +1123,11 @@ function shapeThumb(cells: ReadonlyArray<readonly [number, number]>): HTMLCanvas
 }
 
 /**
- * Turn a batch of engine events into quest progress ("Conquer N enemy tiles").
+ * Turn a batch of engine events into progress: today's quest, and the career total.
+ *
+ * Both come off the same count, and they are counted HERE rather than at two call sites so
+ * one tested function owns the translation — a quest that credits a capture the profile
+ * does not is a pair of numbers that disagree with each other on screen.
  *
  * Only the player's own captures count — the AI taking a tile is not progress — and the
  * whole batch is folded into one call so a Spread that claims six tiles does not write six
@@ -1108,7 +1136,9 @@ function shapeThumb(cells: ReadonlyArray<readonly [number, number]>): HTMLCanvas
 export function scoreQuestEvents(profile: ProfileStore, events: readonly EngineEvent[]): void {
   let captured = 0;
   for (const e of events) if (e.type === "capture" && e.owner === "you") captured++;
-  if (captured) profile.questProgress("conquered", captured);
+  if (!captured) return;
+  profile.questProgress("conquered", captured);
+  profile.recordCaptures(captured);
 }
 
 /** The enemy's formation, chosen at setup time — the engine itself stays free of randomness. */
