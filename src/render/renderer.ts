@@ -51,6 +51,14 @@ export class BoardRenderer {
   private flood: Flood | null = null;
   /** The camera coming down through the canopy at the start of a match. */
   private intro: Intro | null = null;
+  /**
+   * Where each colony STARTED, for the finale to wash out from.
+   *
+   * Taken while the board is still untouched. A match is usually won by capturing the
+   * loser's nest, and by then the winner owns two — so the board itself can no longer say
+   * which one was theirs.
+   */
+  private home: Partial<Record<Player, Coord>> = {};
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -66,6 +74,7 @@ export class BoardRenderer {
       ai: opts.looks?.ai ?? basicLook(opts.species.ai),
     };
     this.motes = seedMotes(this.reveal.reduced);
+    this.rememberHomes();
   }
 
   /** Point the renderer at a new match without rebuilding the canvas. */
@@ -85,7 +94,17 @@ export class BoardRenderer {
     this.intro = null;
     this.selection = null;
     this.valid = [];
+    this.rememberHomes();
     this.resize();
+  }
+
+  /** Snapshot both nests while the board is still the one the match started on. */
+  private rememberHomes(): void {
+    this.home = {};
+    for (const p of ["you", "ai"] as const) {
+      const nest = nestTile(this.state, p);
+      if (nest) this.home[p] = { c: nest.c, r: nest.r };
+    }
   }
 
   start(): void {
@@ -196,7 +215,9 @@ export class BoardRenderer {
     this.hideCounts = true;
     this.selection = null;
     this.valid = [];
-    this.flood = planFlood(this.state, winner, performance.now(), this.reveal.reduced);
+    this.flood = planFlood(
+      this.state, winner, performance.now(), this.reveal.reduced, this.home[winner] ?? null,
+    );
     return floodDuration(this.flood);
   }
 

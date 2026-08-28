@@ -21,7 +21,7 @@
  * quiet is the first sign the player gets that it is over.
  */
 import { key, nestTile } from "../engine";
-import type { GameState, Player } from "../engine";
+import type { Coord, GameState, Player } from "../engine";
 
 /**
  * How fast the front crosses the board, in tiles per second.
@@ -53,11 +53,16 @@ export interface Flood {
  * travel, since the point of the setting is that nothing moves.
  */
 export function planFlood(
-  state: GameState, owner: Player, now: number, instant = false,
+  state: GameState, owner: Player, now: number, instant = false, from: Coord | null = null,
 ): Flood {
-  // The winner's own nest. If they won BY taking the enemy's, either nest is theirs and
-  // either is a fair place for it to start from; `nestTile` returns one of them.
-  const home = nestTile(state, owner);
+  // THE WINNER'S OWN BASE, and it has to be passed in.
+  //
+  // A match is usually won by TAKING the loser's nest, and at that moment the winner owns
+  // two of them — so `nestTile`, which returns the first one it finds in grid order,
+  // washed the board out from the nest that had just fallen. The colour spreading from the
+  // ground you lost is exactly backwards. The renderer remembers where each side started
+  // and hands it over; the search below is only a fallback for a board with no history.
+  const home = from ?? nestTile(state, owner);
   const origin = home ?? { c: (state.size - 1) / 2, r: (state.size - 1) / 2 };
 
   const rings = new Map<string, number>();

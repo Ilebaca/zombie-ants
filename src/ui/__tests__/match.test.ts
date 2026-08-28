@@ -174,14 +174,20 @@ describe("the opening", () => {
   /**
    * The AI's own pause is one to four seconds, so a still board proves nothing inside the
    * opening. The turn CLOCK does: it only starts ticking at `beginTurn`, so the bar sits at
-   * a full width for the whole descent and can be at nothing else afterwards.
+   * full width for the whole descent and can be at nothing else a few seconds later.
+   *
+   * Watched on the PLAYER's turn, deliberately. The bar snaps back to full at every
+   * hand-over, so on the AI's turn a move landing inside the window resets it and the test
+   * reads "never started" — flaky on the AI's own random pause, which is nothing to do with
+   * what is being checked here.
    */
   const clock = (w: Watch): string =>
-    (w.host.querySelector("#timeFill") as HTMLElement | null)?.style.transform ?? "";
+    (w.host.querySelector<HTMLElement>("#timeFill"))?.style.transform ?? "";
 
   it("holds the turn until the camera has landed", async () => {
     vi.useFakeTimers();
     const w = watch();
+    w.state.current = "you";
     w.screen.start();
     expect(clock(w), "the clock was running before the descent was").toBe("scaleX(1)");
 
@@ -204,7 +210,10 @@ describe("the opening", () => {
     vi.useFakeTimers();
     const w = watch();
     w.screen.start();
-    const label = w.host.querySelector("#bAbility .lb")?.textContent ?? "";
+    // Two steps, not "#bAbility .lb": a scoped descendant query off an id is answered from
+    // the DOCUMENT's id map, so a torn-down screen still sitting in the body can win it.
+    const button = w.host.querySelector<HTMLElement>("#bAbility");
+    const label = button?.querySelector(".lb")?.textContent ?? "";
     expect(label, "the ability button was still wearing its placeholder").not.toBe("Ability");
     expect(label.length, "the label grew after the opening had started").toBeGreaterThan(6);
     w.screen.destroy();

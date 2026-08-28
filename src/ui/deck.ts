@@ -56,14 +56,12 @@ export class Deck<T extends string> {
 
     this.rail = document.createElement("div");
     this.rail.className = "deckrail";
-    this.rail.style.width = `${ids.length * 100}%`;
     this.el.appendChild(this.rail);
 
     for (const id of ids) {
       const slot = document.createElement("div");
       slot.className = "slide";
       slot.dataset.slide = id;
-      slot.style.width = `${100 / ids.length}%`;
       slot.appendChild(build(id));
       this.slots.set(id, slot);
       this.rail.appendChild(slot);
@@ -79,7 +77,8 @@ export class Deck<T extends string> {
     this.el.addEventListener("pointermove", this.onMove);
     this.el.addEventListener("pointerup", this.onUp);
     this.el.addEventListener("pointercancel", this.onCancel);
-    window.addEventListener("resize", () => this.place(false));
+    window.addEventListener("resize", () => { this.measure(); this.place(false); });
+    this.measure();
     this.place(false);
   }
 
@@ -107,8 +106,22 @@ export class Deck<T extends string> {
     this.onArrive(this.at);
   }
 
+  /**
+   * A slide is exactly as wide as the deck, in the SAME number the rail is moved by.
+   *
+   * It used to be a percentage — five slides of 20% inside a rail of 500% — and the rail
+   * was moved by `clientWidth`, which is rounded to a whole pixel. On a viewport that is
+   * not a whole number of pixels (a scaled display, a browser at anything but 100%) the two
+   * disagree by a fraction, and the screen next door shows as a sliver down the edge.
+   */
+  private measure(): void {
+    const w = this.width();
+    this.rail.style.width = `${this.ids.length * w}px`;
+    for (const slot of this.slots.values()) slot.style.width = `${w}px`;
+  }
+
   private width(): number {
-    return this.el.clientWidth || window.innerWidth || 1;
+    return this.el.getBoundingClientRect().width || window.innerWidth || 1;
   }
 
   /** Put the rail where the current index says, plus any drag in progress. */

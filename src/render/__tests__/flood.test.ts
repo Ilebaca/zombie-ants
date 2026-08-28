@@ -7,7 +7,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import { blankGame, put } from "../../engine/__tests__/helpers";
-import { hiveCells, recomputeConnectivity, snapshot, tile } from "../../engine";
+import { hiveCells, nestTile, recomputeConnectivity, snapshot, tile } from "../../engine";
 import type { GameState, Tile } from "../../engine";
 import { Layout } from "../layout";
 import { RevealTracker } from "../reveal";
@@ -115,6 +115,36 @@ describe("planning the wash", () => {
   it("collapses to the finished board when motion is reduced", () => {
     const flood = planFlood(busyBoard(), "you", 0, true);
     expect(floodAt(flood, 5, 5, 1)).toBe(1);
+  });
+
+  /**
+   * THE WASH STARTS FROM THE WINNER'S OWN BASE. A match is usually won by TAKING the
+   * loser's nest, and at that moment the winner owns two — so a search of the board finds
+   * whichever comes first in grid order, which may well be the nest that just fell. The
+   * colour spreading out from the ground you lost is exactly backwards, so the caller
+   * (which remembers where each colony started) says where it begins.
+   */
+  it("washes out from the base it is told to, whoever owns what by then", () => {
+    const state = busyBoard();
+    // 5,5 was the enemy nest and has just been captured: both nests are "you" now.
+    put(state, 5, 5, { owner: "you", struct: "nest", soldiers: 9 });
+    recomputeConnectivity(state);
+
+    const mine = planFlood(state, "you", 0, false, { c: 1, r: 1 });
+    expect(mine.rings.get("1,1"), "the front did not start where it was told").toBe(0);
+    expect(mine.rings.get("5,5")).toBe(8);
+
+    // The other way round, to prove it is the instruction doing the work.
+    const theirs = planFlood(state, "you", 0, false, { c: 5, r: 5 });
+    expect(theirs.rings.get("5,5")).toBe(0);
+    expect(theirs.rings.get("1,1")).toBe(8);
+  });
+
+  it("falls back to a nest on the board when nobody says where", () => {
+    const state = busyBoard();
+    const home = nestTile(state, "you");
+    const flood = planFlood(state, "you", 0);
+    expect(flood.rings.get(`${home?.c},${home?.r}`)).toBe(0);
   });
 
   it("still runs when the winner's nest is gone", () => {

@@ -161,13 +161,17 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
         `${(species.def * (1 + research.cuticle * 0.05)).toFixed(2)}`),
     );
 
-    if (owned) {
+    // The research bar only appears once there IS research. At level nothing it is an
+    // empty grey rule under the two numbers, which reads as a divider nobody drew on
+    // purpose — and the card already says "LV 0" a line above it.
+    if (owned && total > 0) {
       const bar = el("span", "cbar");
       const fill = el("i");
       fill.style.width = `${Math.round((total / RESEARCH_TOTAL_MAX) * 100)}%`;
       bar.appendChild(fill);
       card.appendChild(bar);
-    } else {
+    }
+    if (!owned) {
       const veil = el("div", "cveil");
       const shut = el("span", "cl");
       shut.appendChild(iconMark("lock", 18));

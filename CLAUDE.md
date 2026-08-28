@@ -448,6 +448,12 @@ Each of these cost a debugging round. Do not repeat them.
     `hideCounts`; a wild garrison's shield and the Hive's guard sat there through the whole
     finale. The colonies' dashed outlines dissolve over the first third of the wash rather
     than popping out on the winning frame.
+  - **It starts from the winner's OWN base, and the renderer has to say where that is.**
+    A match is usually won by TAKING the loser's nest, and at that moment the winner owns
+    two — so searching the board for "their nest" returns whichever comes first in grid
+    order, and the colour washed out from the ground that had just fallen. `BoardRenderer`
+    snapshots both nests while the board is still untouched (`rememberHomes`) and passes
+    the winner's to `planFlood`; the search is only a fallback for a board with no history.
   `MatchScreen.finish()` holds the card back for the wash and latches, because it is
   reachable from a queen falling, a surrender and a challenge objective — and `destroy()`
   cancels the pending card, so a screen torn down mid-wash never hands one out.
@@ -655,6 +661,11 @@ screens, the species page — is still a page shown on top, and hides the deck w
     Skip. A press that passed the gate on the way DOWN now makes the panels inert for the
     rest of that press (`.tourpass`), so it can finish on what it started on.
 
+- **A slide is sized in the pixels the rail travels in, not in percent.** Five slides of
+  20% inside a rail of 500%, moved by `clientWidth` — which is rounded to a whole pixel.
+  On a viewport that is not a whole number of pixels the two disagree by a fraction and the
+  screen next door shows as a sliver down the edge. Both come off one fractional
+  `getBoundingClientRect().width` now.
 - **A `pointercancel` is not a finished drag.** It arrives with no useful position
   (Chromium reports 0), so treating it like a `pointerup` read as a full-width swipe in the
   wrong direction and jumped a screen. It snaps back instead.

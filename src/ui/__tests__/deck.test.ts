@@ -117,6 +117,32 @@ describe("dragging the deck", () => {
  * outside that is a dead button, on every one of the five screens: "I hit Play and
  * nothing happens".
  */
+describe("where the slides sit", () => {
+  /**
+   * A SLIDE IS EXACTLY AS WIDE AS THE RAIL IS MOVED.
+   *
+   * They were percentages — five slides of 20% inside a rail of 500% — while the rail was
+   * moved by `clientWidth`, which is a whole number. On a viewport that is not a whole
+   * number of pixels the two disagree by a fraction and the screen next door shows as a
+   * sliver down the edge, which is exactly how it was reported.
+   */
+  it("sizes every slide in the same pixels the rail travels in", () => {
+    const { deck } = make();
+    const rail = deck.el.querySelector(".deckrail") as HTMLElement;
+    const slides = Array.from(deck.el.querySelectorAll<HTMLElement>(".slide"));
+    const step = Number(/translate3d\((-?[\d.]+)px/.exec(
+      (deck.goTo("b", false), rail.style.transform))?.[1] ?? NaN);
+
+    expect(slides.length).toBe(IDS.length);
+    for (const s of slides) {
+      expect(s.style.width, "a slide was still sized as a percentage").toMatch(/px$/);
+      expect(parseFloat(s.style.width), "a slide is not the width the rail moves by")
+        .toBeCloseTo(Math.abs(step), 6);
+    }
+    expect(parseFloat(rail.style.width)).toBeCloseTo(Math.abs(step) * IDS.length, 6);
+  });
+});
+
 describe("a tap the deck stole", () => {
   /** A button on the screen that is showing, and how many times it was pressed. */
   const button = (): { deck: Deck<Id>; el: HTMLButtonElement; hits: () => number } => {

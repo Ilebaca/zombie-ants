@@ -2306,3 +2306,20 @@ button:not(.playbtn):active,
 
 /* The mark and the figure were touching. */
 .dcard .ch .purse { display: inline-flex; align-items: center; gap: 5px; }
+
+/* ============================================================================
+   HOW TO PLAY IS TEXT, AND ONLY TEXT
+
+   The rules were a panel on a screen with nothing else on it: a box drawn round
+   a single block of copy is a container with nothing to contain. The card goes
+   entirely, so the lines sit on the page and start on the same left edge as the
+   heading above them.
+   ============================================================================ */
+#rules .card {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  /* The card sized itself to 94vw, wider than every other block in the app. With
+     nothing drawn round it any more, it is just the column. */
+  width: 100%;
+}
