@@ -17,7 +17,7 @@ import { SPECIES_COL, antHead, basicLook, hexA, setFactionColor } from "../rende
 import { buildAnthill } from "./anthill";
 import { buildAntarium, buildSpeciesPage } from "./antarium";
 import { icon } from "./icons";
-import { NAV_SCREENS, bottomNav, el, setupSteps, toast, topBar } from "./chrome";
+import { NAV_SCREENS, bottomNav, clockOf, el, setupSteps, toast, topBar } from "./chrome";
 import type { NavId } from "./chrome";
 import { MatchScreen } from "./match";
 import {
@@ -834,7 +834,7 @@ export class App {
         const attack = events.find((e) => e.type === "combat");
         return attack && attack.type === "combat" ? attack.attacker : null;
       },
-      onExit: (winner, reason) => {
+      onExit: (winner, reason, played) => {
         // Snapshot before recording, so the card can report what this match actually paid.
         const before = this.profile.get();
         const beforeXp = before.xp;
@@ -860,8 +860,8 @@ export class App {
         this.showResult(winner, {
           challenge: this.challenge ? CHALLENGES[this.challenge.index] ?? null : null,
           turns: state.turn,
+          played,
           youArmy: armyOf(state, "you"),
-          aiArmy: armyOf(state, "ai"),
           species: this.choices.species,
           xpGained: after.xp - beforeXp,
           trophies: after.trophies,
@@ -892,7 +892,7 @@ export class App {
    * at all.
    */
   private showResult(winner: Player | null, recap: {
-    turns: number; youArmy: number; aiArmy: number; species: SpeciesId;
+    turns: number; played: number; youArmy: number; species: SpeciesId;
     xpGained: number; trophies: number; trophyDelta: number; mycel: number;
     leveledTo: number | null; reason: GameOverReason | null;
     challenge: Challenge | null;
@@ -952,7 +952,11 @@ export class App {
       fact("Turns", recap.turns),
       fact("Colony", SPECIES[recap.species].name.split(" ")[0] ?? ""),
       fact("Your army", recap.youArmy),
-      fact("Enemy army", recap.aiArmy),
+      // NOT the enemy's army. By the time this card is up their colony has been overrun —
+      // the finale has just washed the whole board in one colour — so a number for what
+      // they had is a number for something that is not there. How long it took is the fact
+      // the player does not otherwise have.
+      fact("Time", clockOf(recap.played)),
     );
     card.appendChild(facts);
 

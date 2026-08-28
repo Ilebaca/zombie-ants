@@ -10,6 +10,7 @@ import { CHAMBER_MAX, RESEARCH_MAX, SPECIES, chamberCost, researchCost } from ".
 import type { SpeciesId } from "../../engine";
 import { MemoryStore, ProfileStore, SPECIES_UNLOCK, roadKey } from "../../platform";
 import { buildAnthill } from "../anthill";
+import { clockOf } from "../chrome";
 import { buildAntarium, buildSpeciesPage } from "../antarium";
 import type { EngineEvent } from "../../engine";
 import { dayIndex, questDef } from "../../platform";
@@ -177,6 +178,24 @@ describe("anthill screen", () => {
   it("carries no back button, being a bottom-nav tab", () => {
     expect(buildAnthill(store()).querySelector(".backbtn")).toBeNull();
     expect(buildAntarium(store(), { onOpenSpecies: () => {} }).querySelector(".backbtn")).toBeNull();
+  });
+});
+
+/** A stopwatch reads the same width whatever it says, which is why seconds pad. */
+describe("the match clock", () => {
+  it("reads like a clock, and keeps its width", () => {
+    expect(clockOf(0)).toBe("0:00");
+    expect(clockOf(7_000)).toBe("0:07");
+    expect(clockOf(67_000)).toBe("1:07");
+    expect(clockOf(600_000)).toBe("10:00");
+    // Past an hour the minutes pad too, or "1:2:03" is not a time.
+    expect(clockOf(3_723_000)).toBe("1:02:03");
+  });
+
+  it("rounds to the nearest second and never goes backwards", () => {
+    expect(clockOf(1_400)).toBe("0:01");
+    expect(clockOf(1_600)).toBe("0:02");
+    expect(clockOf(-500), "a negative clock").toBe("0:00");
   });
 });
 

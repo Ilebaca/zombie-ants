@@ -46,7 +46,8 @@ export interface MatchOptions {
   ctx: ActionContext;
   difficulty: Difficulty;
   map: MapId;
-  onExit?: (winner: Player | null, reason: GameOverReason | null) => void;
+  /** `played` is the wall clock: how long the match was playable, in milliseconds. */
+  onExit?: (winner: Player | null, reason: GameOverReason | null, played: number) => void;
   /** Fired when the player casts, so the shell can record the stat. */
   onAbilityCast?: (kind: AbilityKind) => void;
   /**
@@ -97,6 +98,21 @@ export class MatchScreen {
   /** Holds the turn back while the camera comes down onto the board. */
   private introTimer: number | null = null;
   /** finish() is reachable from several paths; the finale plays once. */
+  /**
+   * THE MATCH CLOCK. Wall time from the moment the opening hands over to the moment the
+   * match is decided, latched there so a card that sits on screen does not keep counting.
+   *
+   * It lives here rather than in the engine, and it has to: the engine is pure and seeded,
+   * so the same moves must replay identically (CLAUDE.md §4.1) — and a real clock is the
+   * one input that never does. Nothing about the game reads it; it is a fact ABOUT the
+   * match, reported when it is over.
+   *
+   * The descent is not counted. It plays the same length every time and the player cannot
+   * act during it, so charging them for it would put the same two seconds on every match.
+   */
+  private startedAt = 0;
+  private endedAt = 0;
+
   private finishing = false;
   private surrenderArmed = false;
   private surrenderTimer: number | null = null;
@@ -147,6 +163,7 @@ export class MatchScreen {
    */
   private openMatch = (): void => {
     if (this.introTimer) { clearTimeout(this.introTimer); this.introTimer = null; }
+    if (!this.startedAt) this.startedAt = performance.now();
     this.renderer.endIntro();
     this.beginTurn();
     if (this.opts.tutorial && this.opts.tour) this.startTour();
@@ -668,9 +685,16 @@ export class MatchScreen {
    * more than once from some of them, so it latches. Without that a second call would start
    * a second wash and queue a second card.
    */
+  /** How long the match has been playable, in milliseconds. Latched once it is over. */
+  get playedMs(): number {
+    if (!this.startedAt) return 0;
+    return (this.endedAt || performance.now()) - this.startedAt;
+  }
+
   private finish(): void {
     if (this.finishing) return;
     this.finishing = true;
+    this.endedAt = performance.now();
     this.clearTimers();
     this.renderer.setSelection(null, []);
     const winner = this.state.winner;
@@ -680,7 +704,7 @@ export class MatchScreen {
     // `destroy()` cancels this, so a screen torn down mid-wash never hands out a card.
     this.endTimer = window.setTimeout(() => {
       this.endTimer = null;
-      this.opts.onExit?.(winner, this.endReason);
+      this.opts.onExit?.(winner, this.endReason, this.playedMs);
     }, wait);
   }
 

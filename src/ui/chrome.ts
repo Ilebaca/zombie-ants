@@ -263,6 +263,20 @@ export function buyButton(opts: BuyOptions): HTMLButtonElement {
   return b;
 }
 
+/**
+ * How long a match took, the way a player reads a clock: 4:07, and 1:02:11 once it has run
+ * past an hour. Seconds are always two digits so the figure does not change width as it
+ * counts, which is the whole reason a stopwatch reads the way it does.
+ */
+export function clockOf(ms: number): string {
+  const total = Math.max(0, Math.round(ms / 1000));
+  const s = total % 60;
+  const m = Math.floor(total / 60) % 60;
+  const h = Math.floor(total / 3600);
+  const mm = h ? String(m).padStart(2, "0") : String(m);
+  return `${h ? `${h}:` : ""}${mm}:${String(s).padStart(2, "0")}`;
+}
+
 export type ToastKind = "good" | "bad" | "warn" | "hive";
 
 /** Transient message. Mounts into the screen so it dies with it. */

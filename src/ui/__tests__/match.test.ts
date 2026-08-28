@@ -128,6 +128,44 @@ const quit = (w: Watch): void => {
  * it. The winner takes the whole board first (render/flood.ts), and the result card waits
  * for that — so `onExit` must not fire in the same tick the match ends.
  */
+/**
+ * THE MATCH CLOCK. It lives in the screen and not the engine, and it has to: the engine is
+ * pure and seeded so the same moves replay identically, and a real clock is the one input
+ * that never does. It is a fact ABOUT the match, reported when it is over.
+ */
+describe("how long the match took", () => {
+  it("counts from the hand-over to the moment it is decided, and stops", async () => {
+    vi.useFakeTimers();
+    const now = vi.spyOn(performance, "now");
+    const w = watch();
+    w.state.current = "you";
+
+    now.mockReturnValue(1000);
+    w.screen.start();
+    // The descent is not counted: it plays the same length every match and nothing can be
+    // done during it, so charging the player for it puts the same seconds on every card.
+    // Time has to have PASSED for that to mean anything, hence the second reading.
+    now.mockReturnValue(4000);
+    expect(w.screen.playedMs, "the clock ran before the turn did").toBe(0);
+
+    await vi.advanceTimersByTimeAsync(3000);          // through the opening
+    now.mockReturnValue(9000);
+    expect(w.screen.playedMs, "the clock did not start").toBeGreaterThan(0);
+
+    let reported = -1;
+    (w.screen as unknown as { opts: { onExit: (a: unknown, b: unknown, c: number) => void } })
+      .opts.onExit = (_a, _b, played) => { reported = played; };
+
+    quit(w);
+    now.mockReturnValue(60_000);                      // the card sits on screen a while
+    await vi.advanceTimersByTimeAsync(6000);
+    expect(reported, "the clock was still running with the match over").toBeLessThan(20_000);
+    expect(reported, "nothing was reported at all").toBeGreaterThan(0);
+    w.screen.destroy();
+    now.mockRestore();
+  });
+});
+
 describe("the end of a match", () => {
   it("plays the winner's wash before the result card", async () => {
     vi.useFakeTimers();

@@ -518,6 +518,17 @@ was looking for turned up at once:
 The lesson worth keeping: three of the four were the hive's terrain outliving its ownership.
 Anything that asks "is this a hive tile?" almost always means "is this the NEUTRAL hive?".
 
+**The match clock is the SCREEN's, never the engine's.** Wall time from the moment the
+opening hands over to the moment the match is decided, latched there so a result card
+sitting on screen does not keep counting, and reported to the app through `onExit`. It
+cannot live in the engine: the engine is pure and seeded so the same moves replay
+identically (§4.1), and a real clock is the one input that never does. Nothing about the
+game reads it — it is a fact ABOUT the match. The descent is not counted; it plays the same
+length every time and nothing can be done during it, so charging for it would put the same
+seconds on every card. It stands where the ENEMY'S ARMY used to: by the time the card is up
+their colony has been overrun by the finale, so a number for what they had is a number for
+something that is not there.
+
 **Settings shows the build it is running** (`src/platform/build.ts`, stamped by
 `vite.config.ts` from the commit). Milan tests the deployed build on a phone, where a stale
 cached page and a real bug look identical from the outside; reading the commit off the

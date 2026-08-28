@@ -84,6 +84,32 @@ describe("the button that starts the setup flow", () => {
   });
 });
 
+/**
+ * WHAT THE CARD REPORTS. The enemy's army is not on it: by the time it is up their colony
+ * has been overrun — the finale has just washed the whole board in one colour — so a number
+ * for what they had is a number for something that is not there. How long it took is the
+ * fact the player does not otherwise have.
+ */
+describe("the result card", () => {
+  it("reports the match clock where the enemy's army used to be", () => {
+    const host = mount();
+    const app = new App(host, new ProfileStore(new MemoryStore()));
+    (app as unknown as {
+      showResult: (w: string, r: Record<string, unknown>) => void;
+    }).showResult("you", {
+      challenge: null, turns: 12, played: 187_000, youArmy: 44, species: "fire",
+      xpGained: 30, trophies: 30, trophyDelta: 30, mycel: 40, leveledTo: null, reason: null,
+    });
+
+    const facts = host.querySelector("#overRecap");
+    expect(facts, "no recap on the card").not.toBeNull();
+    expect(facts?.textContent).toContain("Time");
+    expect(facts?.textContent, "the clock was not on the card").toContain("3:07");
+    expect(facts?.textContent, "the enemy's army is still being reported")
+      .not.toContain("Enemy");
+  });
+});
+
 describe("the first match", () => {
   /**
    * A FIRST MATCH IS PLAYED ON EASY, whatever the setting says. The walk hands the turn
