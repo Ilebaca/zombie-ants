@@ -1,25 +1,19 @@
 /**
- * The Anthill: buy chamber levels with mycelium.
+ * The Anthill: a cross-section of the nest, dug one chamber at a time.
  *
- * The skeleton is still the legacy build's (hillwrap → hillcut → hillgrid, `.chcard` with
- * `.chtop`/`.chdesc`/`.cheff`/`.chfoot`), because the stylesheet driving it is that build's
- * verbatim — those class names are styling, not labels (CLAUDE.md §10). What sits INSIDE
- * them is this build's, and `src/ui/skin.css` dresses it.
+ * It was a list. Five cards down a page, each naming a chamber and stating a number — an
+ * honest table of upgrades and nothing whatever to do with an ant colony. The nest is the
+ * one thing on this screen that is a PLACE, so the screen is a picture of it: a shaft going
+ * down from the surface with a chamber hollowed out at each level, alternating sides the
+ * way a real one branches. Tapping a chamber opens it in place; buying digs it deeper.
  *
- * Two things were wrong with the screen it replaces, and both were structural:
+ * The picture is DOM, not canvas, for two reasons. Each chamber is a real button, so it
+ * takes a tap and a focus ring without any hit-testing of our own; and the whole screen can
+ * be driven and asserted on in a jsdom test (CLAUDE.md §11), which a canvas cannot.
  *
- *  - **It listed every chamber twice.** A summary table at the top named all five and their
- *    effects, then five cards named all five and their effects again. Half a screen of
- *    scrolling to be told the same thing. The digest now shows only what the colony
- *    actually HAS — the effects, not the names, because "+2 soldiers in your base at match
- *    start" is already the name of what it does — and the cards do the shopping.
- *  - **"Now: X → Y" printed the same sentence twice on one line**, so the only thing that
- *    changed (a number) was the hardest thing to find. NOW and NEXT are two labelled rows
- *    on a shared left edge instead: the sentences line up and the eye lands on the diff.
- *
- * Chambers are the account-wide half of progression — they apply to whatever species the
- * player fields. The screen only ever *asks* ProfileStore to spend; it never touches the
- * numbers itself, so an unaffordable tap is a no-op rather than a half-finished purchase.
+ * Chambers are the account-wide half of progression — they apply to whatever species is
+ * fielded. The screen only ever *asks* ProfileStore to spend; it never touches the numbers
+ * itself, so an unaffordable tap is a no-op rather than a half-finished purchase.
  */
 import { chamberCost } from "../engine";
 import { CHAMBERS } from "../platform";
@@ -29,6 +23,9 @@ import { icon } from "./icons";
 
 export function buildAnthill(store: ProfileStore): HTMLElement {
   const root = screenEl("anthill");
+  // Which chamber is standing open. It survives a re-render — buying a level must not
+  // close the room the player is in the middle of digging.
+  let open: string = CHAMBERS[0]?.id ?? "";
 
   const render = (): void => {
     const profile = store.get();
@@ -44,20 +41,28 @@ export function buildAnthill(store: ProfileStore): HTMLElement {
 
     const body = el("div", "screenbody sb-top");
     const wrap = el("div", "hillwrap");
-    wrap.append(digest(CHAMBERS, levelOf), el("div", "secthead", "Chambers"));
 
-    const grid = el("div", "hillgrid");
-    grid.id = "hillGrid";
-    for (const ch of CHAMBERS) {
-      grid.appendChild(chamberCard(ch, levelOf(ch), profile.mycel, () => {
-        const was = levelOf(ch);
-        if (!store.buyChamber(ch.id)) return;
-        render();
-        toast(root, `${ch.name} → Lv ${was + 1}`, "hive");
+    const dug = CHAMBERS.reduce((n, ch) => n + levelOf(ch), 0);
+    const total = CHAMBERS.reduce((n, ch) => n + ch.max, 0);
+    wrap.appendChild(surface(dug, total));
+
+    const nest = el("div", "nest");
+    CHAMBERS.forEach((ch, i) => {
+      nest.appendChild(level(ch, i, levelOf(ch), profile.mycel, open === ch.id, {
+        onOpen: () => { open = ch.id; render(); },
+        onBuy: () => {
+          const was = levelOf(ch);
+          if (!store.buyChamber(ch.id)) return;
+          // `open` is deliberately not touched: the only buy button on the screen is the
+          // one inside the chamber that is already standing open, and re-rendering must
+          // leave the player where they were rather than shutting the room they just dug.
+          render();
+          toast(root, `${ch.name} → Lv ${was + 1}`, "hive");
+        },
       }));
-    }
+    });
+    wrap.appendChild(nest);
 
-    wrap.appendChild(grid);
     body.appendChild(wrap);
     root.appendChild(body);
   };
@@ -67,107 +72,103 @@ export function buildAnthill(store: ProfileStore): HTMLElement {
 }
 
 /**
- * What the colony carries into a match, in one glance.
+ * The ground, and the way in.
  *
- * Only chambers the player has dug appear. A row of five "—"s is not a summary of anything;
- * it is the shopping list below, greyed out. The bar gives the screen the one thing it had
- * no way to say: how far along the whole nest is.
+ * The shaft has to start somewhere or the first chamber floats: this is the mound and the
+ * entrance hole the tunnel drops from, with the one figure the screen could never say
+ * before — how far along the whole nest is.
  */
-function digest(chambers: readonly ChamberDef[], levelOf: (ch: ChamberDef) => number): HTMLElement {
-  const cut = el("div", "hillcut");
-  cut.id = "hillCut";
+function surface(dug: number, total: number): HTMLElement {
+  const top = el("div", "nest-top");
 
-  const dug = chambers.reduce((n, ch) => n + levelOf(ch), 0);
-  const total = chambers.reduce((n, ch) => n + ch.max, 0);
+  const sky = el("div", "nest-sky");
+  sky.append(el("span", "nest-mound"), el("span", "nest-mouth"));
+  top.appendChild(sky);
 
-  const head = el("div", "secthead");
-  head.append(el("span", "hl-t", "In every match"), el("span", "hl-c", `${dug} / ${total}`));
-  cut.appendChild(head);
-
+  const sum = el("div", "nest-sum");
+  sum.append(
+    el("span", "nest-sum-k", "Excavated"),
+    el("span", "nest-sum-v", `${dug} / ${total}`),
+  );
   const track = el("div", "hl-track");
   const fill = el("span", "hl-fill");
   fill.style.width = `${Math.round((dug / total) * 100)}%`;
   track.appendChild(fill);
-  cut.appendChild(track);
-
-  const active = chambers.filter((ch) => levelOf(ch) > 0);
-  if (!active.length) {
-    const row = el("div", "hcrow dim");
-    row.append(
-      iconSlot("hci", "anthill", 18),
-      el("span", "hcn", "Nothing excavated yet. Every level you dig here joins every match, "
-        + "whichever colony you field."),
-      el("span", "hce", ""),
-    );
-    cut.appendChild(row);
-    return cut;
-  }
-
-  for (const ch of active) {
-    const level = levelOf(ch);
-    const row = el("div", "hcrow");
-    row.append(
-      iconSlot("hci", ch.icon, 18),
-      el("span", "hcn", ch.effect(level)),
-      el("span", "hce", `LV ${level}`),
-    );
-    cut.appendChild(row);
-  }
-  return cut;
+  sum.appendChild(track);
+  top.appendChild(sum);
+  return top;
 }
 
-/** One chamber: what it is, what it does now, what the next level buys. */
-function chamberCard(ch: ChamberDef, level: number, purse: number, onBuy: () => void): HTMLElement {
-  const maxed = level >= ch.max;
-  const cost = chamberCost(level);
+interface RoomHandlers { onOpen: () => void; onBuy: () => void }
 
-  const card = el("div", "chcard" + (level ? "" : " fresh") + (maxed ? " maxed" : ""));
+/**
+ * One level of the nest: the shaft passing through it, and the chamber hollowed out beside.
+ *
+ * The side alternates so the shaft reads as a tunnel branching rather than a list with an
+ * indent, and the open chamber's detail spans the whole width underneath it — a half-column
+ * of comparison text would be a paragraph in a gutter.
+ */
+function level(
+  ch: ChamberDef, index: number, lv: number, purse: number, open: boolean, on: RoomHandlers,
+): HTMLElement {
+  const maxed = lv >= ch.max;
+  const side = index % 2 === 0 ? "left" : "right";
+  const row = el("div", `nest-lvl ${side}`
+    + (lv ? " dug" : " fresh") + (maxed ? " maxed" : "") + (open ? " open" : ""));
+  row.dataset.chamber = ch.id;
+
+  const spine = el("div", "nest-spine");
+  spine.append(el("span", "nest-line"), el("span", "nest-node"),
+    el("span", "nest-depth", String(index + 1)));
+
+  const room = el("button", "room");
+  room.type = "button";
+  room.setAttribute("aria-expanded", String(open));
+  const pocket = el("span", "room-pocket");
+  pocket.appendChild(icon(ch.icon, 22));
+  const label = el("span", "room-txt");
+  label.append(
+    el("b", "room-nm", ch.name),
+    el("span", "room-lv", maxed ? "MAX" : `LV ${lv}/${ch.max}`),
+  );
+  room.append(pocket, label);
+  room.onclick = on.onOpen;
+
+  row.append(spine, room);
+  if (open) row.appendChild(detail(ch, lv, purse, maxed, on.onBuy));
+  return row;
+}
+
+/** What this chamber is, what it does now, what the next level buys, and the price. */
+function detail(
+  ch: ChamberDef, lv: number, purse: number, maxed: boolean, onBuy: () => void,
+): HTMLElement {
+  const cost = chamberCost(lv);
+  const box = el("div", "room-open");
+  box.appendChild(el("div", "chdesc", ch.desc));
 
   /*
-   * The mark sits in a gutter of its own rather than inside the title row, so the name, the
-   * description, the comparison and the footer all begin on ONE left edge — the same edge
-   * the digest's rows above use. A card whose every block starts somewhere different is the
-   * thing that reads as unconsidered, however carefully each block is spaced.
-   */
-  const top = el("div", "chtop");
-  top.append(el("span", "chnm", ch.name), el("span", "chlv", `Lv ${level}/${ch.max}`));
-  card.append(iconSlot("chic", ch.icon, 22), top, el("div", "chdesc", ch.desc));
-
-  /*
-   * The reason to spend, stated as a comparison rather than a sentence. Both rows carry the
-   * whole phrase deliberately: they sit on one left edge, so the repetition is what makes
-   * the single word that changed impossible to miss.
+   * The reason to spend, stated as a comparison rather than a sentence. Both rows carry
+   * the whole phrase deliberately: they sit on one left edge, so the repetition is what
+   * makes the single word that changed impossible to miss.
    */
   const eff = el("div", "cheff");
-  eff.appendChild(effectRow("now", "Now", level ? ch.effect(level) : "Not excavated"));
-  if (!maxed) eff.appendChild(effectRow("next", "Next", ch.effect(level + 1)));
-  card.appendChild(eff);
+  eff.appendChild(effectRow("now", "Now", lv ? ch.effect(lv) : "Not excavated"));
+  if (!maxed) eff.appendChild(effectRow("next", "Next", ch.effect(lv + 1)));
+  box.appendChild(eff);
 
   const foot = el("div", "chfoot");
   foot.append(
-    pips(level, ch.max),
-    buyButton({
-      icon: "🍄",
-      cost,
-      maxed,
-      affordable: purse >= cost,
-      onBuy,
-    }),
+    pips(lv, ch.max),
+    buyButton({ icon: "🍄", cost, maxed, affordable: purse >= cost, onBuy }),
   );
-  card.appendChild(foot);
-  return card;
+  box.appendChild(foot);
+  return box;
 }
 
-/** A labelled value on the card's shared left edge. */
+/** A labelled value on the panel's shared left edge. */
 function effectRow(kind: "now" | "next", label: string, value: string): HTMLElement {
   const row = el("div", "che-row che-" + kind);
   row.append(el("span", "che-k", label), el("span", "che-v", value));
   return row;
-}
-
-/** A mark from the icon family in a span the stylesheet already positions. */
-function iconSlot(cls: string, name: string, size: number): HTMLElement {
-  const box = el("span", cls);
-  box.appendChild(icon(name, size));
-  return box;
 }

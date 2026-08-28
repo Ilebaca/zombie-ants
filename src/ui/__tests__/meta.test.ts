@@ -32,11 +32,6 @@ const click = (el: Element | null | undefined): void => {
   (el as HTMLElement).click();
 };
 
-/** The card whose title matches. */
-const cardFor = (root: HTMLElement, selector: string, name: string): HTMLElement | null =>
-  Array.from(root.querySelectorAll<HTMLElement>(selector))
-    .find((cell) => cell.textContent?.includes(name)) ?? null;
-
 /** The buy button on the card whose title matches. */
 const buyIn = (root: HTMLElement, selector: string, name: string): HTMLButtonElement | null => {
   for (const cell of Array.from(root.querySelectorAll(selector))) {
@@ -51,29 +46,80 @@ HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getC
 
 beforeEach(() => { document.body.replaceChildren(); });
 
+/** Open the chamber whose room button names it, and hand back its level row. */
+const openRoom = (root: HTMLElement, name: string): HTMLElement | null => {
+  for (const lvl of Array.from(root.querySelectorAll<HTMLElement>(".nest-lvl"))) {
+    if (!lvl.querySelector(".room-nm")?.textContent?.includes(name)) continue;
+    click(lvl.querySelector<HTMLButtonElement>(".room"));
+    break;
+  }
+  return Array.from(root.querySelectorAll<HTMLElement>(".nest-lvl"))
+    .find((l) => l.querySelector(".room-nm")?.textContent?.includes(name)) ?? null;
+};
+
+/**
+ * THE ANTHILL IS A PLACE, so the screen is a picture of one.
+ *
+ * It was five cards down a page — an honest table of upgrades with nothing whatever to do
+ * with an ant colony. It is a cross-section now: a shaft from the surface with a chamber
+ * hollowed out at each level, opening where it sits.
+ */
 describe("anthill screen", () => {
-  it("lists every chamber with its level", () => {
-    const s = store();
-    const root = buildAnthill(s);
-    expect(root.querySelectorAll(".chcard").length).toBe(Object.keys(CHAMBER_MAX).length);
+  it("digs one level of the nest per chamber, in order", () => {
+    const root = buildAnthill(store());
+    const rooms = Array.from(root.querySelectorAll<HTMLElement>(".nest-lvl"));
+    expect(rooms.length).toBe(Object.keys(CHAMBER_MAX).length);
+    expect(rooms[0]?.dataset.chamber).toBe("royal");
     expect(root.textContent).toContain("Royal Chamber");
-    expect(root.textContent).toContain("Lv 0/5");
+    expect(root.textContent).toContain("LV 0/5");
+    // Alternating sides, so the shaft reads as a tunnel branching rather than a list.
+    expect(rooms.map((r) => (r.classList.contains("left") ? "L" : "R")).join(""))
+      .toBe("LRLRL");
+  });
+
+  /** Unbroken earth on one side, a hollowed-out room on the other. */
+  it("tells a dug chamber from ground nobody has touched", () => {
+    const s = store(100000);
+    s.buyChamber("royal");
+    const root = buildAnthill(s);
+    const rooms = Array.from(root.querySelectorAll<HTMLElement>(".nest-lvl"));
+    expect(rooms[0]?.className, "a dug chamber still read as earth").toContain("dug");
+    expect(rooms[1]?.className, "untouched ground read as a room").toContain("fresh");
+  });
+
+  it("opens the chamber that is tapped, and only that one", () => {
+    const root = buildAnthill(store());
+    const gland = openRoom(root, "Metapleural Gland");
+    expect(gland?.className, "the tapped chamber did not open").toContain("open");
+    expect(gland?.querySelector(".room-open"), "nothing was in it").not.toBeNull();
+    expect(root.querySelectorAll(".nest-lvl.open").length, "two chambers stood open").toBe(1);
+    expect(gland?.querySelector(".room")?.getAttribute("aria-expanded")).toBe("true");
   });
 
   it("buys a level and re-renders with the new one", () => {
     const s = store(chamberCost(0));
     const root = buildAnthill(s);
-    click(buyIn(root, ".chcard", "Royal Chamber"));
+    click(buyIn(root, ".nest-lvl", "Royal Chamber"));
     expect(s.get().hill.royal).toBe(1);
-    expect(root.textContent).toContain("Lv 1/5");
+    expect(root.textContent).toContain("LV 1/5");
     // Spent down to nothing, so the button must now be dead rather than merely wrong.
-    expect(buyIn(root, ".chcard", "Royal Chamber")?.disabled).toBe(true);
+    expect(buyIn(root, ".nest-lvl", "Royal Chamber")?.disabled).toBe(true);
+  });
+
+  /** Digging must not close the chamber the player is standing in. */
+  it("leaves the chamber open after buying a level of it", () => {
+    const s = store(100000);
+    const root = buildAnthill(s);
+    openRoom(root, "Brood Nursery");
+    click(buyIn(root, ".nest-lvl", "Brood Nursery"));
+    const open = root.querySelector<HTMLElement>(".nest-lvl.open");
+    expect(open?.dataset.chamber, "the screen shut the room it just dug").toBe("brood");
   });
 
   it("does not spend when the player cannot afford the level", () => {
     const s = store(chamberCost(0) - 1);
     const root = buildAnthill(s);
-    const btn = buyIn(root, ".chcard", "Royal Chamber");
+    const btn = buyIn(root, ".nest-lvl", "Royal Chamber");
     expect(btn?.disabled).toBe(true);
     click(btn);                                  // a disabled button still takes the tap
     expect(s.get().hill.royal ?? 0).toBe(0);
@@ -84,57 +130,36 @@ describe("anthill screen", () => {
     const s = store(100000);
     for (let i = 0; i < CHAMBER_MAX.royal; i++) s.buyChamber("royal");
     const root = buildAnthill(s);
-    expect(buyIn(root, ".chcard", "Royal Chamber")?.textContent).toBe("MAX");
+    expect(buyIn(root, ".nest-lvl", "Royal Chamber")?.textContent).toBe("MAX");
+    expect(root.querySelector(".nest-lvl")?.className).toContain("maxed");
   });
 
-  /**
-   * The digest used to list all five chambers whether or not the player had them, which
-   * made the screen say everything twice: a table of five names and effects, then five
-   * cards with the same five names and effects.
-   */
-  it("digests only the chambers the player actually has", () => {
-    const s = store(100000);
-    s.buyChamber("royal");
-    const rows = Array.from(buildAnthill(s).querySelectorAll("#hillCut .hcrow"));
-    expect(rows.length).toBe(1);
-    expect(rows[0]?.textContent).toContain("+1 soldier in your base at match start");
-    expect(rows[0]?.textContent, "the digest repeated the chamber's name").not.toContain("Royal Chamber");
-  });
-
-  it("says what the screen is for when nothing has been dug", () => {
-    const root = buildAnthill(store());
-    const rows = Array.from(root.querySelectorAll("#hillCut .hcrow"));
-    expect(rows.length).toBe(1);
-    expect(rows[0]?.className).toContain("dim");
-    expect(rows[0]?.textContent).toContain("Nothing excavated");
-  });
-
-  /** The whole nest's progress, which the screen had no way to say before. */
+  /** The whole nest's progress, which the list could never say. */
   it("counts every level dug against every level there is", () => {
     const s = store(100000);
     s.buyChamber("royal");
     s.buyChamber("gland");
     const total = Object.values(CHAMBER_MAX).reduce((a, b) => a + b, 0);
-    expect(buildAnthill(s).querySelector(".hl-c")?.textContent).toBe(`2 / ${total}`);
+    expect(buildAnthill(s).querySelector(".nest-sum-v")?.textContent).toBe(`2 / ${total}`);
   });
 
   /** "Now: X → Y" put the same sentence twice on one line. Two rows, one left edge. */
   it("states the level you have and the one you would buy as two rows", () => {
     const s = store(100000);
     s.buyChamber("royal");
-    const card = cardFor(buildAnthill(s), ".chcard", "Royal Chamber");
-    expect(card?.querySelector(".che-now .che-v")?.textContent)
+    const room = openRoom(buildAnthill(s), "Royal Chamber");
+    expect(room?.querySelector(".che-now .che-v")?.textContent)
       .toBe("+1 soldier in your base at match start");
-    expect(card?.querySelector(".che-next .che-v")?.textContent)
+    expect(room?.querySelector(".che-next .che-v")?.textContent)
       .toBe("+2 soldiers in your base at match start");
   });
 
   it("offers nothing to buy on a chamber that is finished", () => {
     const s = store(100000);
     for (let i = 0; i < CHAMBER_MAX.royal; i++) s.buyChamber("royal");
-    const card = cardFor(buildAnthill(s), ".chcard", "Royal Chamber");
-    expect(card?.querySelector(".che-next")).toBeNull();
-    expect(card?.className).toContain("maxed");
+    const room = openRoom(buildAnthill(s), "Royal Chamber");
+    expect(room?.querySelector(".che-next")).toBeNull();
+    expect(room?.className).toContain("maxed");
   });
 
   /**
@@ -475,16 +500,16 @@ describe("legacy markup parity", () => {
     Array.from(root.querySelectorAll<HTMLElement>("*"))
       .flatMap((e) => Array.from(e.classList));
 
-  it("keeps the Anthill's hillwrap → hillcut → hillgrid skeleton", () => {
+  /**
+   * The Anthill is a DELIBERATE deviation (CLAUDE.md §10): it is a cross-section of the
+   * nest rather than the legacy build's list, so its insides are ours and dressed by
+   * `skin.css`. `.hillwrap` stays, because that one IS the legacy scroller.
+   */
+  it("keeps the Anthill inside the legacy scroller and the page's column", () => {
     const root = buildAnthill(store());
     expect(root.id).toBe("anthill");
     expect(root.querySelector(".screenbody")?.className).toBe("screenbody sb-top");
-    for (const cls of ["hillwrap", "hillcut", "secthead", "hcrow", "hci", "hcn", "hce",
-      "hillgrid", "chcard", "chtop", "chic", "chnm", "chlv", "chdesc", "cheff", "chfoot"]) {
-      expect(landmarks(root), `.${cls} missing`).toContain(cls);
-    }
-    expect(root.querySelector("#hillCut")).toBeTruthy();
-    expect(root.querySelector("#hillGrid")).toBeTruthy();
+    expect(landmarks(root), "the legacy scroller went with the redesign").toContain("hillwrap");
     expect(root.querySelector(".mycelchip .mycelv")?.textContent).toBe("0");
   });
 

@@ -2060,52 +2060,99 @@ button:not(.playbtn):active,
    ==  THE ANTHILL  =====================================================
    ======================================================================
 
-   The screen had every chamber on it twice — a summary table naming all
-   five, then five cards naming all five again — and inside each card the
-   reason to spend was one long line that said the same sentence twice
-   ("Now: +2 soldiers in your base at match start → +3 soldiers in your
-   base at match start"), so the only thing that changed was the hardest
-   thing to find.
+   It was a list: five cards down a page, each naming a chamber and stating
+   a number. An honest table of upgrades, and nothing whatever to do with
+   an ant colony.
 
-   Three moves:
+   The nest is the one thing on this screen that is a PLACE, so the screen
+   is a picture of it — a shaft going down from the surface with a chamber
+   hollowed out at each level, alternating sides the way a real nest
+   branches. Tapping one opens it where it sits; buying digs it deeper.
 
-   1. THE DIGEST SHOWS WHAT YOU HAVE, not what exists. Effects only, no
-      names — the effect line already says what the chamber is — plus one
-      bar for how far the whole nest has come, which is the one thing the
-      screen could never say before.
-   2. NOW AND NEXT ARE A COMPARISON. Two labelled rows on one left edge in
-      a well cut into the card. The sentences line up, so the eye lands on
-      the word that differs, and the colour says which is which: mint is
-      what you have, gold is what you are buying, which is the colour of
-      the button that buys it.
-   3. CONTRAST. The description was `--muted` on the panel's lit top edge,
-      which is 3.7:1 — under AA for text this size. It reads at ink-soft
-      (6:1), and `--muted` is left doing what it is for: micro-labels.
+   Everything here is flat colour and border. The app clears every gradient
+   and every shadow (§10), so depth is carried by tone alone: the ground is
+   darker than the page, a dug chamber is lighter than the ground it was
+   cut out of, and unbroken earth is only an outline.
    ====================================================================== */
-
-/* ----------------------------------------------------------- THE DIGEST */
-.hillcut {
-  padding: 14px 16px 6px;
-  margin: 0 16px 4px;
+:root {
+  --soil: #1a1409;
+  --soil-cut: #251d10;
+  --soil-line: rgba(255, 255, 255, .1);
 }
-/* The section label lives inside this card, so it cannot carry the page
-   margins the standalone ones do. */
-.hillcut .secthead { margin: 0 0 10px; }
-.hillcut .secthead .hl-t { flex: 1; }
+
+.hillwrap { padding-bottom: 18px; }
+
+/* ------------------------------------------------------------ THE SURFACE
+   The shaft has to start somewhere or the first chamber floats. */
+.nest-top {
+  border: 1px solid var(--soil-line);
+  border-bottom: none;
+  border-radius: var(--r-md) var(--r-md) 0 0;
+  background: var(--soil);
+  overflow: hidden;
+}
+/* Above the ground line: leaf litter, with the colony's mound pushed up through it. */
+.nest-sky {
+  position: relative;
+  display: block;
+  height: 46px;
+  background: rgba(96, 170, 88, .13);
+  border-bottom: 2px solid rgba(96, 170, 88, .3);
+}
+/* The mound: a low heap of turned earth with the entrance at its peak. */
+.nest-mound {
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  width: 104px;
+  height: 26px;
+  margin-left: -52px;
+  border-radius: 52px 52px 0 0;
+  /* The same earth as below it, so it reads as ground pushed UP rather than a
+     lighter shape sitting on the grass. The green line is the turf it broke. */
+  background: var(--soil);
+  border: 2px solid rgba(96, 170, 88, .3);
+  border-bottom: none;
+}
+.nest-mouth {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 14px;
+  height: 11px;
+  margin-left: -7px;
+  border-radius: 7px 7px 0 0;
+  background: #000;
+}
+
+.nest-sum {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 12px 16px 14px;
+}
+.nest-sum-k {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
 /* The count is a figure, not a label: gold, tabular, and not shouted. */
-.hillcut .secthead .hl-c {
-  letter-spacing: .2px;
+.nest-sum-v {
   font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .2px;
   color: var(--gold);
   font-variant-numeric: tabular-nums;
 }
-
+.nest-sum .hl-track { grid-column: 1 / -1; margin: 2px 0 0; }
 .hl-track {
   height: 6px;
   border-radius: 99px;
-  background: rgba(0, 0, 0, .34);
+  background: rgba(0, 0, 0, .38);
   overflow: hidden;
-  margin-bottom: 6px;
 }
 .hl-fill {
   display: block;
@@ -2115,101 +2162,179 @@ button:not(.playbtn):active,
   transition: width .35s ease;
 }
 
-/* A row is an effect and how deep the chamber that gives it is. The gap
-   matches the cards' column gap exactly: 40 + 12 puts this text on the
-   same left edge as every chamber title below. */
-.hcrow {
-  align-items: flex-start;
-  gap: 12px;
-  padding: 9px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, .05);
+/* --------------------------------------------------------------- THE DIG */
+.nest {
+  background: var(--soil);
+  border: 1px solid var(--soil-line);
+  border-top: none;
+  border-radius: 0 0 var(--r-md) var(--r-md);
+  padding-bottom: 12px;
+  overflow: hidden;
 }
-.hcrow:last-child { border-bottom: none; }
-/* The gutter is the chamber cards' 40px icon column, so every mark on the
-   screen shares a centre line and every line of text shares a left edge. */
-.hcrow .hci {
-  width: 40px;
-  height: 20px;
-  margin-top: 1px;
-  color: var(--grass-glow);
+
+/* One level: the shaft down the middle, the chamber off to one side, and
+   the open chamber's detail spanning the full width beneath it. A half
+   column of comparison text would be a paragraph in a gutter. */
+.nest-lvl {
+  display: grid;
+  grid-template-columns: 1fr 34px 1fr;
+  align-items: start;
+  column-gap: 0;
 }
-.hcrow .hcn {
-  font-size: 12.5px;
-  font-weight: 700;
-  line-height: 1.45;
-  color: var(--ink);
+/* EVERY PIECE PLACED EXPLICITLY. Left to auto-placement the shaft is laid down
+   first and the cursor has already passed column 1, so the room drops to a row
+   of its own and hangs a hundred pixels below the branch it comes off. */
+.nest-lvl.left  .room { grid-column: 1; grid-row: 1; justify-self: end; }
+.nest-lvl.right .room { grid-column: 3; grid-row: 1; justify-self: start; }
+.nest-lvl .nest-spine { grid-column: 2; grid-row: 1; }
+.nest-lvl .room-open { grid-column: 1 / -1; grid-row: 2; }
+
+/* The shaft. It runs the full height of every level so the tunnel is
+   continuous from the entrance to the deepest chamber. */
+.nest-spine {
+  position: relative;
+  align-self: stretch;
+  min-height: 66px;
+}
+.nest-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  margin-left: -2px;
+  background: var(--soil-cut);
+  border-left: 1px solid var(--soil-line);
+  border-right: 1px solid var(--soil-line);
+}
+/* Where this level's chamber branches off. */
+/* Where this level's chamber branches off, with the stub of tunnel that reaches it. */
+.nest-node {
+  position: absolute;
+  left: 50%;
+  top: 38px;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 99px;
+  background: var(--soil-cut);
+  border: 2px solid var(--soil-line);
+}
+.nest-node::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 26px;
+  height: 4px;
+  margin-top: -2px;
+  background: var(--soil-cut);
+  border-top: 1px solid var(--soil-line);
+  border-bottom: 1px solid var(--soil-line);
+}
+.nest-lvl.left  .nest-node::after { right: 100%; }
+.nest-lvl.right .nest-node::after { left: 100%; }
+.nest-lvl.dug .nest-node { background: var(--grass); border-color: var(--grass); }
+.nest-lvl.maxed .nest-node { background: var(--gold); border-color: var(--gold); }
+/* How deep we are. Small, quiet, and out of the way of the tunnel. */
+.nest-depth {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .6px;
+  color: var(--muted);
+}
+
+/* --------------------------------------------------------- THE CHAMBERS
+   A dug chamber is ground that has been HOLLOWED OUT, so it is lighter
+   than the soil around it. Unbroken earth is an outline and nothing else. */
+.room {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  align-items: center;
+  gap: 10px;
+  width: calc(100% - 14px);
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--soil-line);
+  border-radius: 14px 14px 14px 14px;
+  background: var(--soil-cut);
   text-align: left;
+  color: var(--ink);
+  cursor: pointer;
 }
-.hcrow .hce {
-  flex: 0 0 auto;
-  min-width: 46px;
-  text-align: center;
-  margin-top: 1px;
-  padding: 2px 7px;
-  border-radius: 7px;
-  background: rgba(0, 0, 0, .28);
+/* The tunnel stub from the shaft to the room, drawn as the room's own edge
+   reaching toward it. */
+.nest-lvl.left  .room { border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
+.nest-lvl.right .room { border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
+
+.room-pocket {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, .34);
+  color: var(--muted);
+}
+.nest-lvl.dug .room-pocket { background: rgba(96, 170, 88, .16); color: var(--grass-glow); }
+.nest-lvl.maxed .room-pocket { background: rgba(240, 184, 60, .16); color: var(--gold); }
+
+.room-txt { display: grid; gap: 3px; min-width: 0; }
+.room-nm {
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: .1px;
+}
+.room-lv {
   font-size: 10px;
   font-weight: 900;
-  letter-spacing: .8px;
-  color: var(--ink-soft);
-}
-/* Nothing dug yet: one quiet line that says what this screen is for. */
-.hcrow.dim .hci { color: var(--muted); }
-.hcrow.dim .hcn { font-weight: 600; color: var(--ink-soft); }
-.hcrow.dim .hce { display: none; }
-
-/* --------------------------------------------------------- THE CHAMBERS */
-/* One content column, with the mark hanging in a gutter beside it. Title,
-   description, comparison and footer all start on the same left edge —
-   and it is the same edge the digest's rows use, so the whole screen has
-   one line down it instead of one per block. */
-.chcard {
-  display: grid;
-  grid-template-columns: 40px 1fr;
-  column-gap: 12px;
-  padding: 14px 16px 16px;
-}
-.chcard > .chic { grid-column: 1; grid-row: 1; }
-.chcard > .chtop,
-.chcard > .chdesc,
-.chcard > .cheff,
-.chcard > .chfoot { grid-column: 2; }
-
-.chtop { gap: 12px; min-height: 40px; }
-.chnm {
-  font-size: 15px;
-  line-height: 1.2;
-  letter-spacing: .2px;
-}
-/* The level is a state, so it sits on a plate rather than floating as text. */
-.chlv {
-  flex: 0 0 auto;
-  padding: 4px 8px;
-  border-radius: 6pxpx;
-  background: rgba(0, 0, 0, .28);
-  font-size: 10.5px;
-  letter-spacing: .8px;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  color: var(--ink-soft);
+  color: var(--muted);
 }
-.chcard.maxed .chlv { color: var(--gold); }
+.nest-lvl.dug .room-lv { color: var(--grass-glow); }
+.nest-lvl.maxed .room-lv { color: var(--gold); }
 
-.chdesc {
-  margin: 10px 0 12px;
+/* Undug: earth, not a room. Dashed, and the name is all it offers. */
+.nest-lvl.fresh .room {
+  background: transparent;
+  border-style: dashed;
+}
+.nest-lvl.fresh .room-nm { color: var(--ink-soft); }
+
+/* Open: the one the player is standing in. */
+.nest-lvl.open .room { border-color: var(--grass); background: rgba(96, 170, 88, .1); }
+.nest-lvl.open.maxed .room { border-color: var(--gold); }
+
+/* ------------------------------------------------------- THE OPEN CHAMBER */
+.room-open {
+  margin: 10px 12px 4px;
+  padding: 12px 14px 14px;
+  border-radius: var(--r-md);
+  background: rgba(0, 0, 0, .3);
+  border: 1px solid var(--soil-line);
+}
+.room-open .chdesc {
+  margin: 0 0 12px;
   font-size: 12px;
   font-weight: 500;
   line-height: 1.5;
+  /* `--muted` on this ground is 3.7:1 — under AA for text this size. */
   color: var(--ink-soft);
 }
 
-/* The comparison, in a well cut into the card face. */
+/* NOW and NEXT are a comparison: two labelled rows on one left edge, so the
+   sentences line up and the eye lands on the word that differs. Mint is what
+   you have, gold is what you are buying — the colour of the button below. */
 .cheff {
-  margin: 0 0 14px;
+  margin: 0 0 12px;
   padding: 10px 12px;
-  border-radius: 9pxpx;
-  /* A well cut into the card face. The app clears every box-shadow (§10), so
-     the depth is the darker fill alone — which is enough on this ground. */
-  background: rgba(0, 0, 0, .24);
+  border-radius: 9px;
+  background: rgba(0, 0, 0, .3);
 }
 .che-row {
   display: grid;
@@ -2227,27 +2352,24 @@ button:not(.playbtn):active,
 }
 .che-v {
   font-size: 12.5px;
-  /* A shade lighter than the chamber's name above it: the name leads the card,
-     the values answer it. At 900 the wrapped gold line outshouted the title. */
   font-weight: 700;
   line-height: 1.4;
 }
 .che-now .che-v { color: var(--grass-glow); }
-/* Gold is SPEND everywhere in this app, and this line is what the gold
-   button below it buys. */
 .che-next .che-v { color: var(--gold); }
-/* Nothing here yet, so there is no value to state in the "have" colour. */
-.chcard.fresh .che-now .che-v { color: var(--muted); font-weight: 700; }
+.nest-lvl.fresh .che-now .che-v { color: var(--muted); }
 
-.chfoot { gap: 12px; }
-.chfoot .pips { gap: 5px; }
+.chfoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.chfoot .pips { display: flex; gap: 5px; flex: 1; }
 .chfoot .pip {
+  flex: 1;
+  max-width: 22px;
   height: 5px;
   border-radius: 99px;
-  background: rgba(0, 0, 0, .34);
+  background: rgba(0, 0, 0, .4);
 }
 .chfoot .pip.on { background: var(--grass); }
-
+.nest-lvl.maxed .chfoot .pip.on { background: var(--gold); }
 
 /* ======================================================================
    ==  ONE CONTENT COLUMN  ==============================================

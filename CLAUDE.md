@@ -738,27 +738,31 @@ How to check a screen really matches, without being able to see it:
   to be redrawn because they were built OUT of shadows rather than merely wearing one: the
   tour's spotlight ring (a border now) and the selected-colony marks (outlines).
 
-- **The Anthill is redesigned, not ported.** The legacy screen listed all five chambers in a
-  summary table and then again as five cards — every name and every effect twice, half a
-  screen of scrolling to be told the same thing — and inside each card the reason to spend
-  was one line that printed the same sentence twice ("Now: +2 soldiers in your base at match
-  start → +3 soldiers in your base at match start"), so the only thing that changed was the
-  hardest thing to find. Now: the digest carries only what the player HAS (effects, not
-  names — the effect line already says what the chamber is) plus a bar for the whole nest's
-  progress, and each card states NOW and NEXT as two labelled rows on one left edge, mint
-  for what you have and gold for what you are buying. The skeleton class names are unchanged
-  because they are styling (`hillwrap`/`hillcut`/`hcrow`/`chcard`/`cheff`/…); everything
-  inside them is ours, dressed at the end of `skin.css`.
-  - **One left edge.** The mark hangs in a 40px gutter and title, description, comparison and
-    footer all begin at the same x — and the digest's rows use the same gutter, so the whole
-    screen has one line down it. Its rows' gap has to MATCH the cards' column gap or the two
-    columns land two pixels apart, which is exactly what it looks like.
-  - Descriptions read at `--ink-soft`, not `--muted`: muted on the panel's lit top edge is
-    3.7:1, under AA for text that size. `--muted` is left doing micro-labels.
-  - `.buybtn.max` is mint rather than the Hive's purple, which it inherited from the legacy
-    sheet. Purple means FUNGUS everywhere else in this app; a finished track is something you
-    HAVE, and what you have is green. It is a border, not an inset shadow — the app-wide rule
-    above would eat the shadow.
+- **The Anthill is a PICTURE OF THE NEST, not a list.** The legacy screen listed all five
+  chambers in a summary table and then again as five cards — every name and every effect
+  twice — and the reason to spend was one line that printed the same sentence twice ("Now:
+  +2 soldiers in your base at match start → +3 soldiers in your base at match start"), so
+  the only thing that changed was the hardest thing to find. The rebuild that followed
+  fixed the words and was still a list of five cards: an honest table of upgrades with
+  nothing whatever to do with an ant colony.
+  It is a cross-section now (`src/ui/anthill.ts`): a mound and an entrance at the top, a
+  shaft going down, and a chamber hollowed out at each level, alternating sides the way a
+  real nest branches. Tapping one opens it where it sits; buying digs it deeper.
+  - **It is DOM, not canvas.** Each chamber is a real button, so it takes a tap and a focus
+    ring with no hit-testing of our own — and the whole screen can be driven and asserted on
+    in jsdom (§11), which a canvas cannot.
+  - **Every grid item is placed EXPLICITLY.** Left to auto-placement the shaft is laid down
+    first and the cursor has already passed column 1, so a left-hand chamber drops into a
+    row of its own and hangs a hundred pixels below the branch it comes off.
+  - **Depth is carried by tone alone**, because the app clears every gradient and every
+    shadow (§10): the ground is darker than the page, a dug chamber is lighter than the
+    earth it was cut from, and untouched ground is only a dashed outline.
+  - **NOW and NEXT are a comparison** — two labelled rows on one left edge, mint for what
+    you have and gold for what you are buying, which is the colour of the button that buys
+    it. The description reads at `--ink-soft`, not `--muted`: muted on this ground is
+    3.7:1, under AA for text that size.
+  - The class names inside are OURS. `.hillwrap` stays because that one is the legacy
+    scroller; everything else is dressed at the end of `skin.css`.
 
 These differ from the legacy build **on purpose**. Anything else that differs is a bug.
 
