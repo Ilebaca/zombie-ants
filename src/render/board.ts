@@ -13,7 +13,7 @@ import type { Look } from "./art";
 import { nestArt } from "./art";
 import { COL, MAP, hexA, ownerCol } from "./palette";
 import { capturedCorners, filletPath, rrect, rrectC } from "./shapes";
-import { drawTerrain } from "./terrain";
+import { drawTerrain, type Rect } from "./terrain";
 import { floodAt, type Flood } from "./flood";
 import { colonyTrails, drawTrail, drawVeinTrail } from "./trails";
 
@@ -79,9 +79,12 @@ export function seedMotes(reduced: boolean): Mote[] {
  */
 export function drawBackground(
   ctx: CanvasRenderingContext2D, layout: Layout, motes: Mote[], startedAt: number,
+  reserve: readonly Rect[] = [],
 ): void {
-  // The ground and everything growing on it, baked once and blitted (terrain.ts).
-  drawTerrain(ctx, layout);
+  // The ground and everything growing on it, baked once and blitted (terrain.ts). The
+  // reserved boxes are where the nameplates are written: scenery baked under one reads as
+  // clutter over the text, so those props are dropped and no others.
+  drawTerrain(ctx, layout, reserve);
 
   const w = layout.width, h = layout.height;
   const t = (performance.now() - startedAt) / 1000;

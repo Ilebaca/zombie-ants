@@ -64,14 +64,23 @@ export function terrainBleed(layout: Layout): number {
   return Math.ceil(reach * (1 / INTRO_FROM - 1)) + 2;
 }
 
-export function drawTerrain(ctx: CanvasRenderingContext2D, layout: Layout): void {
+/**
+ * Rectangles the scenery must leave alone, over and above the playfield itself.
+ *
+ * The nameplates are written on the soil (plates.ts), and a fern or a fallen log baked
+ * under one reads as clutter over the text. ONLY what actually overlaps goes: the boxes are
+ * the measured rows and nothing wider, so the ring around the tiles keeps its density.
+ */
+export function drawTerrain(
+  ctx: CanvasRenderingContext2D, layout: Layout, reserve: readonly Rect[] = [],
+): void {
   // No DOM (a node test, a worker) means no offscreen canvas to bake into. Draw nothing
   // rather than throwing: the scenery is decoration, and everything that matters is drawn
   // by the passes after this one.
   if (typeof document === "undefined") return;
   const bleed = terrainBleed(layout);
-  const key = `${sceneKey(layout)}:${bleed}`;
-  if (!cache || cache.key !== key) cache = bake(layout, key, bleed);
+  const key = `${sceneKey(layout)}:${bleed}:${reserveKey(reserve)}`;
+  if (!cache || cache.key !== key) cache = bake(layout, key, bleed, reserve);
   // Blitted 1:1 and hung off the top-left corner, so the overhang falls outside the canvas
   // and is simply clipped away until the camera pulls back far enough to want it.
   if (cache) ctx.drawImage(cache.canvas, -bleed, -bleed);
@@ -80,7 +89,14 @@ export function drawTerrain(ctx: CanvasRenderingContext2D, layout: Layout): void
 /** Throw the cached scenery away — used by tests and on a species recolour. */
 export function resetTerrain(): void { cache = null; }
 
-function bake(layout: Layout, key: string, bleed: number): Cached | null {
+export interface Rect { x: number; y: number; w: number; h: number }
+
+const reserveKey = (reserve: readonly Rect[]): string =>
+  reserve.map((r) => `${Math.round(r.x)},${Math.round(r.y)},${Math.round(r.w)}`).join("|");
+
+function bake(
+  layout: Layout, key: string, bleed: number, reserve: readonly Rect[],
+): Cached | null {
   const w = Math.max(1, Math.round(layout.width));
   const h = Math.max(1, Math.round(layout.height));
   const canvas = document.createElement("canvas");
@@ -93,7 +109,7 @@ function bake(layout: Layout, key: string, bleed: number): Cached | null {
   // in — so the overhang is just negative space off the top and left of them.
   ctx.translate(bleed, bleed);
   paintGround(ctx, layout, w, h, bleed);
-  paintScenery(ctx, layout, w, h, bleed);
+  paintScenery(ctx, layout, w, h, bleed, reserve);
   return { canvas, key };
 }
 
@@ -160,11 +176,24 @@ const clearOfBoard = (layout: Layout, x: number, y: number, pad: number): boolea
   return x < bx || x > bx + bw || y < by || y > by + bh;
 };
 
+/**
+ * ...and clear of anything drawn on the soil over it.
+ *
+ * The prop's own size is what is tested, not its centre: a fern placed just outside a name
+ * still has half its fronds across it. `pad` already carries half the prop's width, which
+ * is the same allowance the board gets.
+ */
+const clearOfReserved = (
+  reserve: readonly Rect[], x: number, y: number, pad: number,
+): boolean => reserve.every((r) =>
+  x < r.x - pad || x > r.x + r.w + pad || y < r.y - pad || y > r.y + r.h + pad);
+
 function paintScenery(
   ctx: CanvasRenderingContext2D, layout: Layout, w: number, h: number, bleed: number,
+  reserve: readonly Rect[],
 ): void {
   const ts = layout.ts;
-  const at: Plate = { w, h, bleed, margin: Math.max(10, ts * 0.35) };
+  const at: Plate = { w, h, bleed, margin: Math.max(10, ts * 0.35), reserve };
 
   // Big things first, so small things settle in front of them.
   place(layout, 0xa27c01, at, 8, ts * 1.15, (x, y, s, rr) => rockCluster(ctx, x, y, s, rr));
@@ -174,7 +203,11 @@ function paintScenery(
   place(layout, 0x9b0b1e, at, 30, ts * 0.28, (x, y, s) => pebble(ctx, x, y, s));
 }
 
-export interface Plate { w: number; h: number; bleed: number; margin: number }
+export interface Plate {
+  w: number; h: number; bleed: number; margin: number;
+  /** Boxes on the soil the scenery must not grow over (the nameplates). */
+  reserve?: readonly Rect[];
+}
 
 /** The plate a layout bakes onto: the canvas, its overhang, and the board's clearance. */
 export const plateFor = (layout: Layout): Plate => ({
@@ -228,7 +261,11 @@ export function scatter(
     const rand = seeded(seed + i * 0x9e3779b1);
     const x = -at.bleed + rand() * W, y = -at.bleed + rand() * H;
     const s = size * (0.7 + rand() * 0.6);
-    if (clearOfBoard(layout, x, y, pad)) out.push({ x, y, s, rand });
+    // A prop dropped for landing on the board — or under a name — is dropped, not moved:
+    // its generator is its own (below), so the ones that were kept do not shift.
+    if (clearOfBoard(layout, x, y, pad) && clearOfReserved(at.reserve ?? [], x, y, pad)) {
+      out.push({ x, y, s, rand });
+    }
   }
   return out;
 }

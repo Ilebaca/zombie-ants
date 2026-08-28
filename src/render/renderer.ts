@@ -18,7 +18,7 @@ import {
 } from "./intro";
 import { basicLook, type Look } from "./art";
 import { MAP, loadColors, ownerCol, setFactionColor } from "./palette";
-import { drawPlates, type Plate } from "./plates";
+import { drawPlates, rowsOf, type Plate } from "./plates";
 import {
   drawBackground, drawFillets, drawFlood, drawSelection, drawSurge, drawTile, drawTileBevels,
   drawTrails, seedMotes,
@@ -215,6 +215,13 @@ export class BoardRenderer {
     return { x0: cx - hw, y0: cy - hh, x1: cx + hw, y1: cy + hh };
   }
 
+  /** Where the nameplates are written, for the scenery to leave clear. */
+  private plateBoxes(ctx: CanvasRenderingContext2D): { x: number; y: number; w: number; h: number }[] {
+    if (!this.opts.plates) return [];
+    return rowsOf(ctx, this.layout, this.opts.plates, this.opts.colonySize ?? String)
+      .map((r) => ({ x: r.x, y: r.y, w: r.w, h: r.h }));
+  }
+
   private drawSupplyLines(ctx: CanvasRenderingContext2D, now: number, descent: number): void {
     const supply = this.supply;
     if (!supply) return;
@@ -322,7 +329,10 @@ export class BoardRenderer {
         ctx.translate(-cx, -cy);
       }
 
-      drawBackground(ctx, this.layout, this.motes, this.startedAt);
+      // The scenery is baked around the names as well as around the board: a fern grown
+      // where a name is written reads as clutter over the text. Measured here rather than
+      // guessed, so only the props that actually overlap are dropped.
+      drawBackground(ctx, this.layout, this.motes, this.startedAt, this.plateBoxes(ctx));
       // UNDER the tiles: a colony's nest sits ON the end of its line, which is what makes
       // the five tiles in the corner read as connected to something past the clearing.
       this.drawSupplyLines(ctx, now, descent);

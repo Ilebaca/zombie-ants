@@ -564,6 +564,11 @@ name, and its size.
   the board rather than at the corner they are about.
 - **It goes under the finale.** Drawn before `drawFlood`, and faded with the outlines, or a
   name left standing would be the one thing the winner's colour did not reach.
+- **The scenery is baked around the names too.** A fern or a fallen log grown where a name
+  is written reads as clutter over the text, so `rowsOf` measures the rows and `terrain.ts`
+  keeps exactly those boxes clear — and only those, or one name would thin the whole ring.
+  A dropped prop is DROPPED, never moved: each is placed from its own seeded generator
+  (§5), so removing one cannot shift the next.
 - **The renderer is handed the figure's formatter, never the progression layer.** `plates`
   and `colonySize` are options; `render/` still imports nothing from `platform/`.
 - **The opponent is generated** (`platform/rival.ts`), because there is no server yet — a

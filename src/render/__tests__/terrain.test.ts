@@ -8,6 +8,7 @@
 import { describe, expect, it } from "vitest";
 import { Layout } from "../layout";
 import { plateFor, scatter, terrainBleed } from "../terrain";
+import type { Rect } from "../terrain";
 
 /** A phone-shaped board, laid out the way `measure` lays one out. */
 function phone(height = 844): Layout {
@@ -82,5 +83,58 @@ describe("staying put", () => {
   /** The bake has to reach past the canvas, or the camera sees the plate's own edge. */
   it("overhangs the canvas on every side", () => {
     expect(terrainBleed(phone())).toBeGreaterThan(100);
+  });
+});
+
+/**
+ * THE NAMES ARE WRITTEN ON THE SOIL (plates.ts), and a fern or a fallen log baked where one
+ * goes reads as clutter over the text. The scenery drops what overlaps — and ONLY what
+ * overlaps: everything else is exactly where it grew, or a name would thin the whole ring.
+ */
+describe("scenery around the names", () => {
+  const SIZE = 40;
+  /** A box on the soil under the board, the shape a nameplate row is. */
+  const row = (layout: Layout): Rect => ({
+    x: layout.ox, y: layout.oy + layout.ts * 7 + 16, w: 140, h: 20,
+  });
+
+  const props = (layout: Layout, reserve: Rect[]): { x: number; y: number }[] =>
+    scatter(layout, { ...plateFor(layout), reserve }, 0xfe271d, 18, SIZE)
+      .map((p) => ({ x: p.x, y: p.y }));
+
+  it("drops the props that land where a name is written", () => {
+    const layout = phone();
+    const box = row(layout);
+    const pad = plateFor(layout).margin + SIZE * 0.5;
+    for (const p of props(layout, [box])) {
+      const over = p.x > box.x - pad && p.x < box.x + box.w + pad
+        && p.y > box.y - pad && p.y < box.y + box.h + pad;
+      expect(over, `a prop at ${Math.round(p.x)},${Math.round(p.y)} is under the name`)
+        .toBe(false);
+    }
+  });
+
+  /**
+   * Every prop is placed from its OWN generator, keyed on its index, so one being dropped
+   * cannot shift the next. Without that, reserving a box would reshuffle the whole scene.
+   */
+  it("leaves every other prop exactly where it was", () => {
+    const layout = phone();
+    const box = row(layout);
+    const before = props(layout, []);
+    const after = props(layout, [box]);
+    expect(after.length, "the box removed nothing at all").toBeLessThan(before.length);
+    // What survives is a SUBSET, in order, at the same coordinates.
+    const kept = before.filter((p) => after.some((q) => q.x === p.x && q.y === p.y));
+    expect(kept.length).toBe(after.length);
+    expect(before.length - after.length, "a name emptied the whole ring")
+      .toBeLessThan(before.length / 2);
+  });
+
+  it("changes nothing when nobody is named", () => {
+    const layout = phone();
+    expect(props(layout, [])).toEqual(
+      scatter(layout, plateFor(layout), 0xfe271d, 18, SIZE).map((p) => ({ x: p.x, y: p.y })),
+    );
   });
 });
