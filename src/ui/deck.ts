@@ -107,21 +107,31 @@ export class Deck<T extends string> {
   }
 
   /**
-   * A slide is exactly as wide as the deck, in the SAME number the rail is moved by.
+   * ONE WHOLE-PIXEL STEP, used for the slide's width AND for the rail's travel.
    *
-   * It used to be a percentage — five slides of 20% inside a rail of 500% — and the rail
-   * was moved by `clientWidth`, which is rounded to a whole pixel. On a viewport that is
-   * not a whole number of pixels (a scaled display, a browser at anything but 100%) the two
-   * disagree by a fraction, and the screen next door shows as a sliver down the edge.
+   * It used to be a percentage — five slides of 20% inside a rail of 500% — while the rail
+   * was moved by `clientWidth`, a whole number. On a viewport that is not a whole number of
+   * pixels those two disagree by a fraction and the screen next door shows as a sliver down
+   * the edge.
+   *
+   * Sizing the slides in that same fraction did not fix it, it moved the sliver to the
+   * other side: the browser LAYS OUT a flex item at a rounded position, so the slides drift
+   * left of an exact fractional multiple while the transform does not. The only way the two
+   * can agree is for neither to carry a fraction — and the step rounds UP, so the slide on
+   * show is always at least as wide as the viewport rather than half a pixel short of it.
+   * The overhang falls outside the deck, which clips.
    */
+  private step = 0;
+
   private measure(): void {
-    const w = this.width();
-    this.rail.style.width = `${this.ids.length * w}px`;
-    for (const slot of this.slots.values()) slot.style.width = `${w}px`;
+    const rect = this.el.getBoundingClientRect().width || window.innerWidth || 1;
+    this.step = Math.ceil(rect);
+    this.rail.style.width = `${this.ids.length * this.step}px`;
+    for (const slot of this.slots.values()) slot.style.width = `${this.step}px`;
   }
 
   private width(): number {
-    return this.el.getBoundingClientRect().width || window.innerWidth || 1;
+    return this.step || Math.ceil(this.el.getBoundingClientRect().width) || window.innerWidth || 1;
   }
 
   /** Put the rail where the current index says, plus any drag in progress. */

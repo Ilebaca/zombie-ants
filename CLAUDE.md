@@ -661,11 +661,14 @@ screens, the species page — is still a page shown on top, and hides the deck w
     Skip. A press that passed the gate on the way DOWN now makes the panels inert for the
     rest of that press (`.tourpass`), so it can finish on what it started on.
 
-- **A slide is sized in the pixels the rail travels in, not in percent.** Five slides of
-  20% inside a rail of 500%, moved by `clientWidth` — which is rounded to a whole pixel.
-  On a viewport that is not a whole number of pixels the two disagree by a fraction and the
-  screen next door shows as a sliver down the edge. Both come off one fractional
-  `getBoundingClientRect().width` now.
+- **One WHOLE-pixel step sizes a slide and moves the rail.** Slides were 20% of a 500%
+  rail while the rail travelled by `clientWidth`, a whole number — so on a viewport that is
+  not a whole number of pixels the two disagreed by a fraction and the screen next door
+  showed as a sliver down the edge. Sizing the slides in that same fraction moved the
+  sliver to the OTHER side rather than removing it: a flex item is LAID OUT at a rounded
+  position, so the slides drift left of an exact fractional multiple while a transform does
+  not. Neither may carry a fraction, and the step rounds UP so the slide on show is never
+  half a pixel short of the viewport; the overhang falls outside the deck, which clips.
 - **A `pointercancel` is not a finished drag.** It arrives with no useful position
   (Chromium reports 0), so treating it like a `pointerup` read as a full-width swipe in the
   wrong direction and jumped a screen. It snaps back instead.

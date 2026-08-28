@@ -119,27 +119,43 @@ describe("dragging the deck", () => {
  */
 describe("where the slides sit", () => {
   /**
-   * A SLIDE IS EXACTLY AS WIDE AS THE RAIL IS MOVED.
+   * ONE WHOLE-PIXEL STEP FOR BOTH THE WIDTH AND THE TRAVEL.
    *
-   * They were percentages — five slides of 20% inside a rail of 500% — while the rail was
-   * moved by `clientWidth`, which is a whole number. On a viewport that is not a whole
-   * number of pixels the two disagree by a fraction and the screen next door shows as a
-   * sliver down the edge, which is exactly how it was reported.
+   * They were percentages while the rail moved by `clientWidth`, a whole number — so on a
+   * viewport that is not a whole number of pixels wide the two disagreed by a fraction and
+   * the screen next door showed as a sliver down the edge. Sizing the slides in the same
+   * fraction moved the sliver to the OTHER side rather than removing it: a flex item is
+   * laid out at a rounded position, so the slides drift left of an exact fractional
+   * multiple while a transform does not. Neither may carry a fraction, and the step rounds
+   * UP so the slide on show is never narrower than the viewport.
    */
-  it("sizes every slide in the same pixels the rail travels in", () => {
-    const { deck } = make();
-    const rail = deck.el.querySelector(".deckrail") as HTMLElement;
-    const slides = Array.from(deck.el.querySelectorAll<HTMLElement>(".slide"));
-    const step = Number(/translate3d\((-?[\d.]+)px/.exec(
-      (deck.goTo("b", false), rail.style.transform))?.[1] ?? NaN);
+  it("gives the slides a whole-pixel width the rail travels by exactly", () => {
+    const viewport = 390.5;
+    const real = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function (this: Element): DOMRect {
+      return this.classList.contains("deck")
+        ? ({ width: viewport, height: 800, left: 0, top: 0 } as DOMRect)
+        : real.call(this);
+    };
+    try {
+      const { deck } = make();
+      const rail = deck.el.querySelector(".deckrail") as HTMLElement;
+      deck.goTo("b", false);
+      const step = Math.abs(Number(
+        /translate3d\((-?[\d.]+)px/.exec(rail.style.transform)?.[1] ?? NaN));
 
-    expect(slides.length).toBe(IDS.length);
-    for (const s of slides) {
-      expect(s.style.width, "a slide was still sized as a percentage").toMatch(/px$/);
-      expect(parseFloat(s.style.width), "a slide is not the width the rail moves by")
-        .toBeCloseTo(Math.abs(step), 6);
+      expect(Number.isInteger(step), `the rail travelled a fraction: ${step}`).toBe(true);
+      expect(step, "a slide is narrower than the screen it has to cover")
+        .toBeGreaterThanOrEqual(viewport);
+      for (const slide of Array.from(deck.el.querySelectorAll<HTMLElement>(".slide"))) {
+        expect(slide.style.width, "a slide was still sized as a percentage").toMatch(/px$/);
+        expect(parseFloat(slide.style.width), "a slide is not the width the rail moves by")
+          .toBe(step);
+      }
+      expect(parseFloat(rail.style.width)).toBe(step * IDS.length);
+    } finally {
+      Element.prototype.getBoundingClientRect = real;
     }
-    expect(parseFloat(rail.style.width)).toBeCloseTo(Math.abs(step) * IDS.length, 6);
   });
 });
 
