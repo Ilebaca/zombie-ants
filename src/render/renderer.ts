@@ -12,9 +12,12 @@ import { RevealTracker } from "./reveal";
 import { FxLayer } from "./fx";
 import { animate } from "./animate";
 import { floodDuration, floodFade, planFlood, type Flood } from "./flood";
-import { drawSurround, introAt, introScale, introTotal, planIntro, type Intro } from "./intro";
+import {
+  INTRO_FROM, drawSupply, drawSurround, introAt, introScale, introTotal, planIntro,
+  supplyFade, type Frame, type Intro, type Supply,
+} from "./intro";
 import { basicLook, type Look } from "./art";
-import { MAP, loadColors, setFactionColor } from "./palette";
+import { MAP, loadColors, ownerCol, setFactionColor } from "./palette";
 import {
   drawBackground, drawFillets, drawFlood, drawSelection, drawSurge, drawTile, drawTileBevels,
   drawTrails, seedMotes,
@@ -32,6 +35,8 @@ export class BoardRenderer {
   readonly layout: Layout;
   private ctx: CanvasRenderingContext2D | null = null;
   private reveal = new RevealTracker();
+  /** The opening's supply lines: when they started, and how long the whole opening runs. */
+  private supply: { start: number; dur: number } | null = null;
   private fx = new FxLayer();
   private motes: Mote[] = [];
   private raf = 0;
@@ -163,6 +168,10 @@ export class BoardRenderer {
   playIntro(): number {
     const intro = planIntro(performance.now(), this.reveal.reduced);
     this.intro = intro;
+    // The supply lines run in from off the frame and reach the nests exactly as the camera
+    // lands, then hold while the colonies unfold and go. They outlive `intro` by the fill,
+    // which is why they carry their own clock.
+    this.supply = { start: intro.start, dur: introTotal(intro) };
     // Scheduled NOW so the colonies are registered as unfilled from this frame, but with a
     // front that does not set off until the camera lands. Without that they sit finished on
     // the floor for the whole descent and then blink out to be revealed.
@@ -177,8 +186,49 @@ export class BoardRenderer {
   endIntro(): void {
     if (!this.intro) return;
     this.intro = null;
+    // A player who skipped the opening asked for the board, not for the rest of the show.
+    this.supply = null;
     this.reveal.clear();                 // the front was timed for a landing that never came
     this.growColonies(performance.now());
+  }
+
+  /**
+   * The frame the camera can see at the TOP of the descent.
+   *
+   * Not the canvas: the opening is drawn inside a transform scaled about the board's
+   * middle, so a line starting at the canvas edge would already be inside the picture on
+   * the first frame and would appear to sprout rather than to arrive.
+   */
+  private introFrame(): Frame {
+    const cx = this.layout.ox + (this.layout.size * this.layout.ts) / 2;
+    const cy = this.layout.oy + (this.layout.size * this.layout.ts) / 2;
+    const hw = this.layout.width / 2 / INTRO_FROM;
+    const hh = this.layout.height / 2 / INTRO_FROM;
+    return { x0: cx - hw, y0: cy - hh, x1: cx + hw, y1: cy + hh };
+  }
+
+  private drawSupplyLines(ctx: CanvasRenderingContext2D, now: number, descent: number): void {
+    const supply = this.supply;
+    if (!supply) return;
+    const p = (now - supply.start) / supply.dur;
+    if (p >= 1) { this.supply = null; return; }
+
+    const lines: Supply[] = [];
+    for (const who of ["you", "ai"] as const) {
+      const nest = nestTile(this.state, who);
+      if (nest) {
+        lines.push({
+          x: this.layout.cx(nest.c), y: this.layout.cy(nest.r), colour: ownerCol(who),
+        });
+      }
+    }
+    // Grown on the camera's OWN curve, so the front arrives at the nest on the frame the
+    // camera locks and the colonies begin to grow. Once it has landed it simply stays put.
+    const grow = descent < 1 ? descent : 1;
+    // A trail on the board is a bar a fifth of a tile wide (board.ts). This is the same
+    // trail, so it is the same width.
+    const screen: Frame = { x0: 0, y0: 0, x1: this.layout.width, y1: this.layout.height };
+    drawSupply(ctx, this.introFrame(), screen, lines, grow, supplyFade(p), this.layout.ts * 0.2);
   }
 
   /**
@@ -265,6 +315,9 @@ export class BoardRenderer {
       }
 
       drawBackground(ctx, this.layout, this.motes, this.startedAt);
+      // UNDER the tiles: a colony's nest sits ON the end of its line, which is what makes
+      // the five tiles in the corner read as connected to something past the clearing.
+      this.drawSupplyLines(ctx, now, descent);
 
       const scene: Scene = {
         ctx,

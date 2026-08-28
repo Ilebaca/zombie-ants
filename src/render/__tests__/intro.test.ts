@@ -9,9 +9,11 @@
 import { describe, expect, it } from "vitest";
 import { Layout } from "../layout";
 import {
-  INTRO_FILL_MS, INTRO_MS, descent, drawSurround, introAt, introScale, introTotal, planIntro,
-  resetSurround, surroundEase,
+  INTRO_FILL_MS, INTRO_FROM, INTRO_MS, descent, drawSupply, drawSurround, introAt,
+  edgePoint, introScale, introTotal, planIntro, resetSurround, supplyEdge, supplyFade,
+  surroundEase,
 } from "../intro";
+import type { Frame, Supply } from "../intro";
 import { terrainBleed } from "../terrain";
 import { makeRecorder } from "./recorder";
 
@@ -217,5 +219,98 @@ describe("the camera is only a camera", () => {
     const before = JSON.stringify([layout.ts, layout.ox, layout.oy, layout.size]);
     around(0.4);
     expect(JSON.stringify([layout.ts, layout.ox, layout.oy, layout.size])).toBe(before);
+  });
+});
+
+/**
+ * THE SUPPLY LINES. Each colony's nest is reached by a vein running in from off the frame,
+ * so five tiles in a corner read as a detachment of something carrying on past the clearing
+ * rather than as a colony that begins and ends there.
+ */
+describe("the colonies arrive from somewhere", () => {
+  // What the camera sees at the top of the descent, around a board centred on a 400x800.
+  const FRAME: Frame = {
+    x0: 200 - 200 / INTRO_FROM, x1: 200 + 200 / INTRO_FROM,
+    y0: 400 - 400 / INTRO_FROM, y1: 400 + 400 / INTRO_FROM,
+  };
+  const you: Supply = { x: 80, y: 700, colour: "#5c6" };
+  const ai: Supply = { x: 320, y: 100, colour: "#e64" };
+  // A nest nearest the TOP of the frame comes in vertically. Both of the two above happen
+  // to run horizontally, and a test with only those cannot tell a bar from a rectangle.
+  const above: Supply = { x: 200, y: 40, colour: "#48f" };
+
+  /** Where the camera ends up: the canvas itself. */
+  const SCREEN: Frame = { x0: 0, y0: 0, x1: 400, y1: 800 };
+
+  const drawn = (grow: number): ReturnType<typeof makeRecorder> => {
+    const rec = makeRecorder();
+    drawSupply(rec.ctx, FRAME, SCREEN, [you, ai], grow, 1, 8);
+    return rec;
+  };
+
+  /** Nothing in this game moves diagonally, and no vein on the board is drawn that way. */
+  it("runs along one axis, never a diagonal", () => {
+    const rec = makeRecorder();
+    drawSupply(rec.ctx, FRAME, SCREEN, [you, ai, above], 0.5, 1, 8);
+    const bars = rec.of("fillRect");
+    expect(bars.length).toBe(3);
+    const axes = new Set<string>();
+    for (const bar of bars) {
+      const [, , w = 0, h = 0] = bar.args as number[];
+      // EXACTLY one axis is the bar's thickness, and the other is a real run: a diagonal
+      // is long in both, and a bar drawn along the wrong axis has no length at all.
+      expect(w === 8 !== (h === 8), `a bar ${w}x${h} is not a line`).toBe(true);
+      expect(Math.max(w, h), `a bar ${w}x${h} has no length`).toBeGreaterThan(8);
+      axes.add(w === 8 ? "vertical" : "horizontal");
+    }
+    expect(axes.has("vertical"), "no vertical case was exercised").toBe(true);
+    expect(axes.has("horizontal"), "no horizontal case was exercised").toBe(true);
+  });
+
+  /*
+   * THE TAIL IS OFF THE PICTURE AND THE FRONT IS ON IT. Both measured from the outer frame,
+   * the front spends most of the descent outside the canvas and the line shows as a
+   * two-pixel nub at the rim until the last moment — which is exactly what it did.
+   */
+  it("runs in from off the picture, visible from the first frame", () => {
+    const edge = supplyEdge(you, FRAME);
+    const tail = edgePoint(you, FRAME, edge);
+    const front = edgePoint(you, SCREEN, edge);
+    expect(tail.x <= FRAME.x0 || tail.x >= FRAME.x1
+      || tail.y <= FRAME.y0 || tail.y >= FRAME.y1, "the tail is inside the picture").toBe(true);
+    // The front starts on the edge the camera lands on, so there is a line to see at once.
+    const bars = drawn(0).of("fillRect").map((c) => c.args as number[]);
+    expect(bars.some((b) => (b[2] ?? 0) > 20 || (b[3] ?? 0) > 20),
+      "nothing visible on the first frame").toBe(true);
+    // Both ends sit on the nest's own row or column: the run never turns a corner.
+    expect(tail.y === you.y && front.y === you.y).toBe(true);
+  });
+
+  it("reaches the nest exactly as the camera lands, and not before", () => {
+    const reaches = (grow: number, at: Supply): boolean =>
+      drawn(grow).of("fillRect").some((bar) => {
+        const [x = 0, y = 0, w = 0, h = 0] = bar.args as number[];
+        return x <= at.x + 4 && x + w >= at.x - 4 && y <= at.y + 4 && y + h >= at.y - 4;
+      });
+    expect(reaches(1, you), "the line never got there").toBe(true);
+    expect(reaches(1, ai), "only one colony was connected").toBe(true);
+    expect(reaches(0.4, you), "the line arrived before the camera did").toBe(false);
+  });
+
+  it("draws each colony in its own colour", () => {
+    const rec = drawn(1);
+    expect(rec.fills()).toContain(you.colour);
+    expect(rec.fills()).toContain(ai.colour);
+  });
+
+  /** A mark that outlives the opening is a lie about the position: the board has no tile there. */
+  it("holds through the opening and is gone by the end of it", () => {
+    expect(supplyFade(0)).toBe(1);
+    expect(supplyFade(0.6), "faded while the camera was still coming down").toBe(1);
+    expect(supplyFade(1)).toBe(0);
+    expect(drawn(1).of("fillRect").length).toBeGreaterThan(0);
+    const rec = makeRecorder();
+    drawSupply(rec.ctx, FRAME, SCREEN, [you, ai], 1, 0, 8);
+    expect(rec.of("fillRect").length, "still drawn at zero alpha").toBe(0);
   });
 });

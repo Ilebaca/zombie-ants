@@ -13,6 +13,7 @@ import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
 import {
   DEFAULT_SPECIES, DemoGateway, ProfileStore, SPECIES_ORDER, TOUR_VERSION, compact,
+  rivalFor,
 } from "../platform";
 import type { PurchaseGateway } from "../platform";
 import { SPECIES_COL, antHead, basicLook, hexA, setFactionColor } from "../render";
@@ -792,6 +793,9 @@ export class App {
     // hive handed its tiles back, so the board can no longer say it happened.
     let queensTaken = 0;
 
+    // Held rather than inlined: the opponent's nameplate is drawn from it too, and the
+    // state's own `rng` has moved on by the time the board is built.
+    const seed = (Date.now() ^ (Math.random() * 0xffffffff)) | 0;
     const state = createGame({
       map: this.choices.map,
       species: { you: this.choices.species, ai: aiSpecies },
@@ -800,7 +804,7 @@ export class App {
       // your own corner. Both sides still get exactly five tiles and identical income.
       aiShape: START_SHAPES[rollShape()],
       mods,
-      seed: (Date.now() ^ (Math.random() * 0xffffffff)) | 0,
+      seed,
     });
 
     // A first match played straight cannot teach the game: the Hive sleeps for ten turns
@@ -816,9 +820,20 @@ export class App {
 
     for (const el of this.screens.values()) el.classList.add("hidden");
 
+    // WHO IS ACROSS THE BOARD. There is no server yet, so the opponent's name and colony
+    // are generated near the player's own (platform/rival.ts) — which is what a ranked
+    // ladder would serve them, and it is decided by the match's seed so the plate does not
+    // change under them mid-match.
+    const me = this.profile.get();
+    const foe = rivalFor(me.colony, seed);
+
     this.match = new MatchScreen(this.host, {
       state,
       mods,
+      plates: {
+        you: { name: me.name, species: this.choices.species, colony: me.colony },
+        ai: { name: foe.name, species: aiSpecies, colony: foe.colony },
+      },
       // The same mods must drive combat, or Mandible/Cuticle research would show up in the
       // income readout but do nothing in a fight.
       ctx: { mods },

@@ -13,7 +13,7 @@
  *
  * Markup is the legacy build's (lbchips → lbbanner → lblist).
  */
-import { compact, exact } from "../platform";
+import { RIVAL_NAMES, compact, exact } from "../platform";
 import { el, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 
@@ -46,12 +46,6 @@ export const DIVISIONS: readonly Division[] = [
   { name: "Continental", min: 1e7, max: Infinity, icon: "crown", col: "#f24fc8" },
 ];
 
-const NAMES = [
-  "Mandible", "Pheromone", "SixLegs", "Formica", "Stinger", "Myrmidon", "TunnelKing",
-  "Brood", "Crawler", "AphidLord", "HiveMind", "Antenna", "Chitin", "Swarmlord", "Pincer",
-  "Velvet", "Mound", "Drone", "Carapace", "Skitter",
-];
-
 export interface LadderRow {
   name: string;
   points: number;
@@ -78,7 +72,7 @@ export function standings(divisionIndex: number, colony: number): LadderRow[] {
   for (let i = 0; i < 15; i++) {
     const spread = ((i * 53 + 17) % 100) / 100;
     rows.push({
-      name: (NAMES[(i + divisionIndex * 5) % NAMES.length] as string)
+      name: (RIVAL_NAMES[(i + divisionIndex * 5) % RIVAL_NAMES.length] as string)
         + (((i * 7 + divisionIndex * 3) % 89) + 11),
       points: Math.round(low * (high / low) ** spread),
       you: false,

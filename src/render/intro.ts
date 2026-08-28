@@ -101,6 +101,100 @@ export function introScale(p: number): number {
  */
 export const surroundEase = descent;
 
+/* ------------------------------------------------------- THE SUPPLY LINES */
+
+/**
+ * THE COLONIES ARRIVE FROM SOMEWHERE.
+ *
+ * Before either one grows out of its nest, a vein runs in from off the frame and reaches
+ * it — the same bar a trail on the board is drawn as, in that colony's own colour. It says
+ * the five tiles in the corner are a detachment of something much larger that is carrying
+ * on past the edge of the clearing, rather than a colony that begins and ends here.
+ *
+ * It is part of the SAME movement, on the same curve as everything else in the opening, and
+ * it lands exactly when the camera does — so the front arrives at the nest on the frame the
+ * colonies start growing out of it, and one thing hands over to the next.
+ *
+ * ORTHOGONAL, never diagonal. Nothing in this game moves diagonally and no vein on the
+ * board is drawn that way; a line cutting in at an angle from a corner would be the one
+ * mark on screen that does not obey the grid.
+ */
+export interface Supply {
+  /** The nest's centre, in CSS pixels — where the line ends. */
+  x: number;
+  y: number;
+  colour: string;
+}
+
+export interface Frame {
+  x0: number; y0: number; x1: number; y1: number;
+}
+
+export type SupplyEdge = "L" | "R" | "U" | "D";
+
+/** Which side of the frame a colony's line comes in from: the one its nest is nearest. */
+export function supplyEdge(s: Supply, f: Frame): SupplyEdge {
+  const gaps: { d: number; e: SupplyEdge }[] = [
+    { d: s.x - f.x0, e: "L" }, { d: f.x1 - s.x, e: "R" },
+    { d: s.y - f.y0, e: "U" }, { d: f.y1 - s.y, e: "D" },
+  ];
+  return gaps.reduce((a, b) => (b.d < a.d ? b : a)).e;
+}
+
+/** Where that side of a given frame sits, on the nest's own row or column. */
+export function edgePoint(s: Supply, f: Frame, e: SupplyEdge): { x: number; y: number } {
+  if (e === "L") return { x: f.x0, y: s.y };
+  if (e === "R") return { x: f.x1, y: s.y };
+  return { x: s.x, y: e === "U" ? f.y0 : f.y1 };
+}
+
+/**
+ * How solid the lines are at this point in the opening.
+ *
+ * They hold while the camera is coming down and while the colony is still unfolding, then
+ * go: the board the engine built has no tile out there, and a mark that outlives the
+ * opening is a lie about the position. `p` runs 0..1 across the WHOLE opening.
+ */
+export function supplyFade(p: number): number {
+  const HOLD = 0.72;
+  return p <= HOLD ? 1 : Math.max(0, 1 - (p - HOLD) / (1 - HOLD));
+}
+
+/**
+ * Draw each line: a bar from off the picture to a front that runs in to the nest.
+ *
+ * TWO frames, and the difference between them is the whole reason this reads at all.
+ * `outer` is what the camera can see at the top of the descent — the TAIL sits there, so
+ * the line always runs off the edge of the picture and is never a bar floating in the
+ * middle of the ground. `screen` is where the camera ends, and the FRONT starts on that
+ * edge: measured from the outer frame instead, the front spends most of the descent
+ * outside the picture and the line shows as a couple of pixels of nub at the rim until the
+ * last moment, which is what it did.
+ */
+export function drawSupply(
+  ctx: CanvasRenderingContext2D, outer: Frame, screen: Frame, lines: readonly Supply[],
+  grow: number, alpha: number, thick: number,
+): void {
+  if (alpha <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  const half = thick / 2;
+  for (const line of lines) {
+    const edge = supplyEdge(line, outer);
+    const tail = edgePoint(line, outer, edge);
+    const from = edgePoint(line, screen, edge);
+    const x = from.x + (line.x - from.x) * grow;
+    const y = from.y + (line.y - from.y) * grow;
+    ctx.fillStyle = line.colour;
+    if (edge === "L" || edge === "R") {
+      ctx.fillRect(Math.min(tail.x, x), y - half, Math.abs(x - tail.x), thick);
+    } else {
+      ctx.fillRect(x - half, Math.min(tail.y, y), thick, Math.abs(y - tail.y));
+    }
+  }
+  ctx.restore();
+}
+
 /** A tiny deterministic generator. The engine's rng is off-limits to the renderer. */
 function seeded(seed: number): () => number {
   let s = seed >>> 0;

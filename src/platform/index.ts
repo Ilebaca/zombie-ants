@@ -23,6 +23,8 @@ export {
   grownColony, losses, winnings,
 } from "./colony";
 export type { RoadReward, RoadStop, RoadTrack } from "./road";
+export { RIVAL_NAMES, rivalFor } from "./rival";
+export type { Rival } from "./rival";
 export { DemoGateway, SHOP_PRODUCTS, productById } from "./purchases";
 export type { Grant, Product, ProductKind, PurchaseGateway, PurchaseResult } from "./purchases";
 export {

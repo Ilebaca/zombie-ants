@@ -39,6 +39,10 @@ function watch(): Watch {
   const w: Partial<Watch> & Omit<Watch, "screen"> = { host, state, log, exits: 0 };
   const screen = new MatchScreen(host, {
     state,
+    plates: {
+      you: { name: "Milan", species: "fire", colony: 1_284_000 },
+      ai: { name: "Formica42", species: "leafcutter", colony: 1_100_000 },
+    },
     mods: { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } },
     ctx: defaultContext(),
     difficulty: "normal",
@@ -111,7 +115,9 @@ describe("the AI's turn", () => {
  * cuts it short, which is what a player does — and it keeps these tests about the AI.
  */
 const opened = (w: Watch): void => {
-  w.host.querySelector("canvas")?.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+  // #cv, not "canvas": the nameplates draw a head onto a canvas of their own, and the
+  // first one in the tree is the enemy's portrait rather than the board.
+  w.host.querySelector("#cv")?.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
 };
 
 /** Ends the match the way the player does: surrender takes two taps. */
@@ -268,5 +274,50 @@ describe("the opening", () => {
     await vi.advanceTimersByTimeAsync(5000);
     expect(sig(w.state), "the tap did not get the match going").not.toBe(before);
     w.screen.destroy();
+  });
+
+  /**
+   * WHO IS PLAYING, on the board rather than on the menus. The header counted two armies
+   * and called them "You" and "Enemy"; the colony — the number the whole game is played
+   * for — was never once in front of the player while they were playing for it.
+   */
+  it("shows both colonies above and below the board", () => {
+    vi.useFakeTimers();
+    const w = watch();
+    const foe = w.host.querySelector(".plate.foe");
+    const mine = w.host.querySelector(".plate.mine");
+    expect(foe?.textContent).toBe("Formica421.1M");
+    expect(mine?.textContent).toBe("Milan1.2M");
+    // A head each, drawn from the species that side is fielding.
+    expect(foe?.querySelector("canvas.pl-ic")).toBeTruthy();
+    expect(mine?.querySelector("canvas.pl-ic")).toBeTruthy();
+    w.screen.destroy();
+  });
+
+  /*
+   * The renderer measures the canvas's PARENT. Sized against the whole playfield the board
+   * would be laid out straight over the two strips, so the canvas keeps its own box.
+   */
+  it("gives the board a box of its own, between the two plates", () => {
+    vi.useFakeTimers();
+    const w = watch();
+    const main = w.host.querySelector("main");
+    const kids = Array.from(main?.children ?? []).map((k) => k.className.split(" ")[0]);
+    expect(kids.slice(0, 3)).toEqual(["plate", "boardwrap", "plate"]);
+    expect(w.host.querySelector("#cv")?.parentElement?.className).toBe("boardwrap");
+    w.screen.destroy();
+  });
+
+  it("survives a match with nobody named", () => {
+    vi.useFakeTimers();
+    const state = createGame({ map: "small", species: { you: "fire", ai: "fire" }, seed: 3 });
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const screen = new MatchScreen(host, {
+      state, mods: { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } },
+      ctx: defaultContext(), difficulty: "normal", map: "small",
+    });
+    expect(host.querySelector(".plate.mine")?.textContent).toBe("");
+    screen.destroy();
   });
 });

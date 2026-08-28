@@ -19,7 +19,10 @@ import type {
 import { Thinker, adopt } from "../ai/thinker";
 import type { Thought } from "../ai/thinker";
 import type { Difficulty } from "../ai/search";
-import { BoardRenderer } from "../render";
+import { BoardRenderer, SPECIES_COL, antHead, basicLook } from "../render";
+// The colony figure is written the way it is written everywhere else. A pure formatter —
+// the match reads nothing else from the progression layer and writes nothing to it.
+import { compact } from "../platform";
 import type { SpotRect, Tour, TourStep } from "./tour";
 
 /** Seconds a player gets per move before the turn passes automatically. */
@@ -39,6 +42,14 @@ const AI_THINK_MIN_MS = 1000;
 const AI_THINK_MAX_MS = 4000;
 
 type Mode = "go" | "rally" | "tunnel";
+
+/** One side's identity, shown on the strip above or below the board. */
+export interface Nameplate {
+  name: string;
+  species: SpeciesId;
+  /** Troops. Fixed for the length of the match — a colony is settled when it ends. */
+  colony: number;
+}
 
 export interface MatchOptions {
   state: GameState;
@@ -67,6 +78,11 @@ export interface MatchOptions {
    */
   tutorial?: boolean;
   tour?: Tour;
+  /**
+   * Who is playing, on both sides. The match shows them and nothing else: it does not read
+   * the profile (that is the shell's job) and nothing here can change a colony.
+   */
+  plates?: Record<Player, Nameplate>;
   /** Steps the meta walk already showed, so this half's counter carries on from it. */
   tourFrom?: number;
   /** The last step was finished or skipped: the tutorial is over for good. */
@@ -523,6 +539,30 @@ export class MatchScreen {
     this.root.remove();
   }
 
+  /**
+   * WHO IS PLAYING, above the board and below it.
+   *
+   * The enemy sits at the top and the player at the bottom, which is where each of their
+   * nests is — the strip reads as the two ends of the board rather than as a scoreboard.
+   * Name, the colony's own head, and the size of the colony behind them; the colony is the
+   * number the whole game is played for (CLAUDE.md §8a), so it belongs where the game is
+   * actually played and not only on the menus.
+   *
+   * A match with no plates given (a test, a scenario) simply shows none.
+   */
+  private dressPlates(foe: HTMLElement, mine: HTMLElement): void {
+    const plates = this.opts.plates;
+    if (!plates) return;
+    for (const [box, who] of [[foe, "ai"], [mine, "you"]] as const) {
+      const p = plates[who];
+      box.append(
+        head(p.species, 26),
+        el("span", "pl-name", p.name),
+        el("span", "pl-n", compact(p.colony)),
+      );
+    }
+  }
+
   /* ------------------------------------------------------------------ DOM WIRING */
 
   private bind(): void {
@@ -532,6 +572,10 @@ export class MatchScreen {
       return el;
     };
     this.canvas = pick<HTMLCanvasElement>("cv");
+    // The plates are dressed HERE, in the constructor, and never again. Everything on them
+    // is settled for the length of the match, and writing into the chrome later is what
+    // resizes the canvas mid-animation (see start()).
+    this.dressPlates(pick("plateAI"), pick("plateYou"));
     this.el = {
       youArmy: pick("youArmy"), aiArmy: pick("aiArmy"),
       hiveChip: pick("hiveChip"), hiveK: pick("hiveK"), hiveV: pick("hiveV"),
@@ -977,6 +1021,24 @@ export class MatchScreen {
 
 }
 
+/** A small element, and one colony's head drawn onto a canvas. */
+function el(tag: string, cls: string, text: string): HTMLElement {
+  const node = document.createElement(tag);
+  node.className = cls;
+  node.textContent = text;
+  return node;
+}
+
+function head(id: SpeciesId, size: number): HTMLCanvasElement {
+  const cv = document.createElement("canvas");
+  cv.width = size; cv.height = size;
+  cv.className = "pl-ic";
+  const g = cv.getContext("2d");
+  // jsdom has no canvas, and a screen has to survive a context it cannot draw into.
+  if (g) antHead(g, size / 2, size / 2, size * 0.46, SPECIES_COL[id], basicLook(id));
+  return cv;
+}
+
 const escapeHtml = (s: string): string =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -991,7 +1053,9 @@ const MARKUP = `
     <div class="timelabel" id="timeLabel">Your turn · Turn 1</div>
   </div>
   <main>
-    <canvas id="cv"></canvas>
+    <div class="plate foe" id="plateAI"></div>
+    <div class="boardwrap"><canvas id="cv"></canvas></div>
+    <div class="plate mine" id="plateYou"></div>
     <div class="hint" id="hint">Tap one of your cells, then tap where to act.</div>
   </main>
   <footer>

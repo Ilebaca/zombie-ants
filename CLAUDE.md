@@ -412,6 +412,20 @@ Each of these cost a debugging round. Do not repeat them.
   - **Not far out.** Past about a third the clearing stops being the subject and becomes a
     stamp in a screen of undergrowth, and the zoom stops reading as a camera coming down and
     starts reading as a picture being scaled.
+  - **The colonies ARRIVE from somewhere.** Before either grows out of its nest, a vein
+    runs in from off the frame and reaches it — the same bar a trail on the board is drawn
+    as, in that colony's own colour, so the five tiles in the corner read as a detachment
+    of something carrying on past the clearing rather than a colony that begins and ends
+    there. It lands on the frame the camera does, which is the frame the colonies start
+    growing on, so one thing hands over to the next. Two rules make it read:
+    ORTHOGONAL, never diagonal — nothing in this game moves diagonally and no vein on the
+    board is drawn that way, so an angled line from a corner would be the one mark on
+    screen not obeying the grid. And its TAIL sits on the frame the camera opens on while
+    its FRONT starts on the frame the camera lands on: measured from the outer frame at
+    both ends, the front spends most of the descent outside the canvas and the line shows
+    as two pixels of nub at the rim until the last moment. It fades over the last of the
+    fill, because the board the engine built has no tile out there and a mark that
+    outlives the opening is a lie about the position.
   - **The colonies are scheduled at the START and set off at the landing.** `RevealTracker.
     begin` takes a future `at` for exactly this: registering the tiles immediately is what
     makes them draw UNFILLED during the descent. Beginning the reveal on arrival instead
@@ -533,6 +547,25 @@ research, each a count with a bar and a way in), so another thing to collect is 
   quest AND the career total off one count, in one tested function, because a quest that
   credits a capture the profile does not is two numbers disagreeing on screen. The fastest
   win ignores a loss and an untimed match — a zero would win every comparison for ever.
+
+**WHO IS PLAYING is on the board, not only on the menus.** The header counted two armies
+and called them "You" and "Enemy" — a scoreboard, not an opponent — and the colony, the
+number the whole game is played for (§8a), was never once in front of the player while they
+were playing for it. Two strips inside the playfield now: the enemy directly above the
+board and the player directly below it, which is the end of the board each of their nests
+sits on, centred on the screen because the board is. Name, that colony's own head, and its
+size.
+- **The canvas needs its own box.** `BoardRenderer` measures the canvas's PARENT, so with
+  the plates as its siblings the board was laid out over them.
+- **A nameplate is not a control** — `pointer-events: none`, or the portrait canvas inside
+  it swallows a tap meant for the board or for skipping the opening.
+- **They are dressed in the constructor and never again.** Everything on them is settled
+  for the length of the match, and writing into the chrome later is what resizes the canvas
+  mid-animation (the ability-label blink, above).
+- **The opponent is generated** (`platform/rival.ts`), because there is no server yet — a
+  name from the same pool the Leaderboard draws its rivals from, and a colony near the
+  player's own, which is what a ranked ladder would serve them. Keyed by the match seed, so
+  it does not change under the player mid-match.
 
 **The match clock is the SCREEN's, never the engine's.** Wall time from the moment the
 opening hands over to the moment the match is decided, latched there so a result card
