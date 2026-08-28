@@ -9,8 +9,8 @@ import { describe, expect, it, beforeEach } from "vitest";
 import { CHAMBER_MAX, RESEARCH_MAX, SPECIES, chamberCost, researchCost } from "../../engine";
 import type { SpeciesId } from "../../engine";
 import {
-  COLONY_START, MemoryStore, ProfileStore, SPECIES_UNLOCK, compact, roadKey, stopColony,
-  stopReached,
+  COLONY_START, MemoryStore, ProfileStore, ROAD_CHAPTER_STOPS, SPECIES_UNLOCK, compact,
+  roadKey, stopColony,
 } from "../../platform";
 import { buildAnthill } from "../anthill";
 import { buildProfile } from "../profile";
@@ -430,28 +430,38 @@ describe("species page", () => {
 });
 
 /**
- * THE COLONY BANNER is the biggest thing under the top bar, and the bar inside it is a
- * distance to the next rung of the road — so what stands at the end of that bar is how many
- * troops fill it, and nothing else.
+ * THE COLONY BANNER is the biggest thing under the top bar. It carries ONE number — the
+ * colony — and everything beside it says where that number stands on the road: which
+ * chapter, how far into it, and what filling the bar pays.
  */
 describe("the colony banner", () => {
   const banner = (colony: number): HTMLElement => colonyBanner(colony, () => {});
 
-  it("writes the colony and the rung it is working towards, both compact", () => {
-    const box = banner(1_284_000);
-    expect(box.querySelector(".col-n")?.textContent).toBe("1.2M");
-    expect(box.querySelector(".col-next")?.textContent)
-      .toBe(compact(stopColony(stopReached(1_284_000) + 1)));
+  it("leads with the colony, compact", () => {
+    expect(banner(1_284_000).querySelector(".col-n")?.textContent).toBe("1.2M");
+    expect(banner(940).querySelector(".col-n")?.textContent).toBe("940");
   });
 
   /*
-   * The figure REPLACED a currency mark, which named a prize the road already lists and
-   * left the one number the bar is about sharing its space with a picture.
+   * The label names WHERE ON THE ROAD the player stands. "Your colony" named the thing the
+   * figure beside it already is, and a chapter is what the road itself is divided into.
    */
-  it("ends the bar with the figure and no icon beside it", () => {
+  it("names the chapter it is working through, not the thing it is showing", () => {
+    const label = (colony: number): string | undefined =>
+      banner(colony).querySelector(".col-t")?.textContent ?? undefined;
+    expect(label(COLONY_START), "a new colony is not yet in chapter 1").toBe("Chapter 1");
+    expect(label(stopColony(ROAD_CHAPTER_STOPS))).toBe("Chapter 2");
+    expect(label(stopColony(ROAD_CHAPTER_STOPS * 4))).toBe("Chapter 5");
+  });
+
+  /*
+   * The bar ends in the REWARD, not in the size of the rung: a second big figure beside
+   * the one the banner leads with read as a sum of the two.
+   */
+  it("ends the bar with what filling it pays", () => {
     const rail = banner(1_284_000).querySelector(".col-rail");
-    expect(rail?.querySelector("svg"), "the rail still carries a mark").toBeNull();
-    expect(rail?.lastElementChild?.className).toBe("col-next");
+    expect(rail?.querySelector(".col-pay svg"), "no reward mark on the bar").toBeTruthy();
+    expect(rail?.textContent, "the rung's size is still printed there").toBe("");
   });
 
   it("fills the bar by how far between the two rungs the colony stands", () => {

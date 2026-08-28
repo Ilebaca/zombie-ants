@@ -8,7 +8,9 @@
  * Everything is built with DOM calls rather than innerHTML — the profile carries a
  * player-chosen name, and a template string would happily inject it as markup.
  */
-import { compact, stopColony, stopReached } from "../platform";
+import {
+  ROAD_CHAPTER_STOPS, compact, freeReward, passReward, stopColony, stopReached,
+} from "../platform";
 import type { Profile } from "../platform";
 import { icon } from "./icons";
 
@@ -135,8 +137,8 @@ export function colonyBanner(colony: number, onClick: () => void): HTMLElement {
   box.title = "Colony Road";
 
   // THE FIGURE STANDS WHERE THE MARK DID. The left plate carried an ant, which said what
-  // the banner was about to a player who could already read "Your colony" beside it — and
-  // put a picture in the one slot the eye lands on first. The size goes there instead.
+  // the banner was about to a player who could already read the label beside it — and put
+  // a picture in the one slot the eye lands on first. The size goes there instead.
   const size = el("div", "col-size");
   size.append(el("b", "col-n", compact(colony)), el("span", "col-k", "troops"));
 
@@ -150,14 +152,18 @@ export function colonyBanner(colony: number, onClick: () => void): HTMLElement {
   fill.style.width = `${Math.round(pct * 100)}%`;
   track.appendChild(fill);
 
-  // The end of the bar says how many troops it takes to fill it. It used to carry the
-  // reward's currency mark as well, which named a prize the Colony Road already lists and
-  // left the one number the bar is about sharing the space with a picture.
+  // WHAT FILLING THE BAR PAYS, not how many troops it takes. The size the rung asks for
+  // was a second big number beside the one the banner already leads with, and the two read
+  // as a sum; the currency mark says what is waiting there in one glyph.
+  const reward = freeReward(reached + 1) ?? passReward(reached + 1);
   const rail = el("div", "col-rail");
-  rail.append(track, el("span", "col-next", compact(next)));
+  rail.append(track, iconSlot("col-pay", reward?.pheromone ? "pheromone" : "mycel", 16));
 
+  // The label names WHERE ON THE ROAD the player is standing. "Your colony" named the
+  // thing the figure beside it already is.
+  const chapter = Math.ceil((reached + 1) / ROAD_CHAPTER_STOPS);
   const mid = el("div", "col-mid");
-  mid.append(el("div", "col-t", "Your colony"), rail);
+  mid.append(el("div", "col-t", `Chapter ${chapter}`), rail);
 
   box.append(size, mid);
   box.onclick = onClick;
@@ -329,4 +335,11 @@ export function setupSteps(current: number): HTMLElement {
     row.appendChild(el("span", "sstep" + (i === current ? " on" : i < current ? " done" : "")));
   }
   return row;
+}
+
+/** A mark in a wrapper, so the flex row can size it without the SVG shrinking. */
+function iconSlot(cls: string, mark: string, size: number): HTMLElement {
+  const box = el("span", cls);
+  box.appendChild(icon(mark, size));
+  return box;
 }
