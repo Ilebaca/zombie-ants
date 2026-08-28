@@ -10,10 +10,11 @@ import { CHAMBER_MAX, RESEARCH_MAX, SPECIES, chamberCost, researchCost } from ".
 import type { SpeciesId } from "../../engine";
 import {
   COLONY_START, MemoryStore, ProfileStore, SPECIES_UNLOCK, compact, roadKey, stopColony,
+  stopReached,
 } from "../../platform";
 import { buildAnthill } from "../anthill";
 import { buildProfile } from "../profile";
-import { clockOf } from "../chrome";
+import { clockOf, colonyBanner } from "../chrome";
 import { buildAntarium, buildSpeciesPage } from "../antarium";
 import type { EngineEvent } from "../../engine";
 import { dayIndex, questDef } from "../../platform";
@@ -425,6 +426,41 @@ describe("species page", () => {
     const s = store(100000);
     s.buyResearch("fire", "cuticle");
     expect(openPage(s, "ghost").textContent).toContain("RESEARCH LV 0 / 15");
+  });
+});
+
+/**
+ * THE COLONY BANNER is the biggest thing under the top bar, and the bar inside it is a
+ * distance to the next rung of the road — so what stands at the end of that bar is how many
+ * troops fill it, and nothing else.
+ */
+describe("the colony banner", () => {
+  const banner = (colony: number): HTMLElement => colonyBanner(colony, () => {});
+
+  it("writes the colony and the rung it is working towards, both compact", () => {
+    const box = banner(1_284_000);
+    expect(box.querySelector(".col-n")?.textContent).toBe("1.2M");
+    expect(box.querySelector(".col-next")?.textContent)
+      .toBe(compact(stopColony(stopReached(1_284_000) + 1)));
+  });
+
+  /*
+   * The figure REPLACED a currency mark, which named a prize the road already lists and
+   * left the one number the bar is about sharing its space with a picture.
+   */
+  it("ends the bar with the figure and no icon beside it", () => {
+    const rail = banner(1_284_000).querySelector(".col-rail");
+    expect(rail?.querySelector("svg"), "the rail still carries a mark").toBeNull();
+    expect(rail?.lastElementChild?.className).toBe("col-next");
+  });
+
+  it("fills the bar by how far between the two rungs the colony stands", () => {
+    const from = stopColony(6);
+    const to = stopColony(7);
+    const half = (el: HTMLElement): string =>
+      (el.querySelector(".tr-fill") as HTMLElement).style.width;
+    expect(half(banner(from))).toBe("0%");
+    expect(half(banner(Math.round((from + to) / 2)))).toBe("50%");
   });
 });
 

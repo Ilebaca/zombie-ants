@@ -2598,11 +2598,23 @@ button:not(.playbtn):active,
   border-radius: 99px;
   background: var(--grass);
 }
-.col-rail .tr-rew { display: inline-flex; align-items: center; gap: 4px; color: var(--gold); }
+/*
+ * The figure at the end of the bar is the only thing there, and it holds a FIXED column.
+ * A compact size is at most four glyphs ("999B", "1.2M"), and letting it size itself moved
+ * the end of the track every time the number changed width — the bar would shorten as the
+ * next rung went from 999K to 1M, which reads as progress going backwards.
+ */
 .col-next {
-  font-size: 10.5px;
+  flex: 0 0 auto;
+  /* Four glyphs, and `ch` is a DIGIT: tabular numerals make the digits equal width but
+     the unit letter is wider than one, so 4ch leaves "999M" — the widest a compact figure
+     gets — half a character over and the track still shifts. */
+  min-width: 4.7ch;
+  text-align: right;
+  font-size: 11.5px;
   font-weight: 900;
   letter-spacing: .2px;
+  color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
 

@@ -8,7 +8,7 @@
  * Everything is built with DOM calls rather than innerHTML — the profile carries a
  * player-chosen name, and a template string would happily inject it as markup.
  */
-import { compact, freeReward, passReward, stopColony, stopReached } from "../platform";
+import { compact, stopColony, stopReached } from "../platform";
 import type { Profile } from "../platform";
 import { icon } from "./icons";
 
@@ -152,13 +152,11 @@ export function colonyBanner(colony: number, onClick: () => void): HTMLElement {
   fill.style.width = `${Math.round(pct * 100)}%`;
   track.appendChild(fill);
 
-  const reward = freeReward(reached + 1) ?? passReward(reached + 1);
-  const pay = el("span", "tr-rew");
-  pay.appendChild(icon(reward?.pheromone ? "pheromone" : "mycel", 15));
-  pay.appendChild(el("span", "col-next", compact(next)));
-
+  // The end of the bar says how many troops it takes to fill it. It used to carry the
+  // reward's currency mark as well, which named a prize the Colony Road already lists and
+  // left the one number the bar is about sharing the space with a picture.
   const rail = el("div", "col-rail");
-  rail.append(track, pay);
+  rail.append(track, el("span", "col-next", compact(next)));
   mid.appendChild(rail);
 
   box.append(mark, mid);
