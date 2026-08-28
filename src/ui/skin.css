@@ -1200,21 +1200,25 @@ body,
 }
 .homeplay { gap: 14px; padding-bottom: 10px; }
 
+/* NO FILL AT ALL. It was a pill under the PLAY button, which put two things
+   shaped like buttons on a screen that offers one action — and the quiet one
+   read as the second choice rather than as a way out to a page of text. It is
+   the words and the mark, and the press dims them. */
 .howtolink {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   margin: 2px auto 0;
   padding: 9px 16px;
-  border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, .08);
+  border: none;
+  background: none;
   color: var(--ink-soft);
   font-size: 12.5px;
   font-weight: 800;
   letter-spacing: .3px;
   text-decoration: none;
 }
-.howtolink:active { background: rgba(255, 255, 255, .16); }
+.howtolink:active { background: none; opacity: .6; }
 
 /* The top bar and the trophy rail are one block of chrome, so the rail sits on
    the panel rather than floating on the artwork underneath it. */
