@@ -81,7 +81,7 @@ export function buildMapSelect(o: SetupOptions): HTMLElement {
   const next = document.createElement("button");
   next.className = "cta";
   next.id = "mapNext";
-  next.textContent = "Next →";
+  next.textContent = "Next";
   next.onclick = o.onNext;
 
   box.append(grid, next);
@@ -185,7 +185,7 @@ export function buildSpeciesSelect(o: SetupOptions): HTMLElement {
   const next = document.createElement("button");
   next.className = "cta";
   next.id = "toFormation";
-  next.textContent = "Next →";
+  next.textContent = "Next";
   next.onclick = o.onNext;
 
   box.append(slider, next);
@@ -238,7 +238,7 @@ export function buildFormationSelect(o: SetupOptions): HTMLElement {
   const begin = document.createElement("button");
   begin.className = "cta";
   begin.id = "begin";
-  begin.textContent = "Begin the spread →";
+  begin.textContent = "Begin the spread";
   begin.onclick = o.onBegin;
 
   box.append(grid, begin);

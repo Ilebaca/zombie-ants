@@ -103,7 +103,7 @@ export function buildDaily(onPlay: (index: number) => void, onBack: () => void,
   card.appendChild(el("div", "dailyreward",
     `Reward · ${DAILY_BONUS_PHEROMONE} pheromone + ${CHALLENGE_REWARD} mycelium`));
 
-  const play = el("button", "cta challplay", "Play daily →");
+  const play = el("button", "cta challplay", "Play daily");
   play.onclick = () => onPlay(index);
   card.appendChild(play);
 
@@ -126,7 +126,7 @@ function challengeCard(c: Challenge, index: number, onPlay: () => void): HTMLEle
   );
   card.append(top, el("div", "challdesc", c.desc));
 
-  const play = el("button", "cta challplay", "Play →");
+  const play = el("button", "cta challplay", "Play");
   play.onclick = onPlay;
   card.appendChild(play);
   return card;
