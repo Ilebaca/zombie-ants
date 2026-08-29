@@ -32,7 +32,11 @@ jobs:
 
       - run: npm ci
 
-      # Tests gate the deploy: a red build must never reach the public URL.
+      # All three gate the deploy: a red build must never reach the public URL. Lint is
+      # here for the architecture rules it carries (eslint.config.js) as much as the style
+      # ones — a layer violation is a design bug, and it should fail like one.
+      - run: npm run typecheck
+      - run: npm run lint
       - run: npm test
 
       - run: npm run build

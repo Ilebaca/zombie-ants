@@ -8,7 +8,7 @@
  * cannot get a context from.
  */
 import { describe, expect, it } from "vitest";
-import { createGame, recomputeConnectivity, tile } from "../../engine";
+import { clearBoard, createGame, recomputeConnectivity, tile } from "../../engine";
 import type { GameState } from "../../engine";
 import { drawSnapshot } from "../snapshot";
 import { makeRecorder } from "./recorder";
@@ -23,12 +23,9 @@ function canvasOf(rec: ReturnType<typeof makeRecorder>): HTMLCanvasElement {
 }
 
 const board = (): GameState => {
-  const s = createGame({ map: "tiny", species: { you: "fire", ai: "leafcutter" }, seed: 3 });
-  for (const row of s.grid) {
-    for (const t of row) {
-      t.owner = null; t.struct = null; t.soldiers = 0; t.guard = 0; t.terrain = "ground";
-    }
-  }
+  const s = clearBoard(
+    createGame({ map: "tiny", species: { you: "fire", ai: "leafcutter" }, seed: 3 }),
+  );
   const t = tile(s, 1, 1);
   t.owner = "you"; t.struct = "nest"; t.soldiers = 10;
   recomputeConnectivity(s);

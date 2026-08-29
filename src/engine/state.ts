@@ -1,6 +1,8 @@
 import { MAPS, START_SOLDIERS } from "./config";
 import type { MapId } from "./config";
-import { allTiles, makeGrid, nestTile, otherPlayer, tileAt } from "./board";
+import {
+  allTiles, isHiveTerrain, makeGrid, nestTile, otherPlayer, razeTile, tileAt,
+} from "./board";
 import { pruneAllVeins, recomputeConnectivity } from "./connectivity";
 import { setHiveDefence, hiveTick } from "./hive";
 import { runProduction } from "./production";
@@ -346,3 +348,28 @@ export function restore(state: GameState, snap: Snapshot): void {
 }
 
 export { nestTile };
+
+/**
+ * Strip a board back to bare ground: no colonies, no wild garrisons, no effects.
+ *
+ * For arranging a POSITION rather than playing one — the manual's figures (ui/rules.ts) and
+ * the rule tests both want a board they can place four tiles on and reason about exactly.
+ * `arrangeTutorial` is the same idea with a script attached.
+ *
+ * The hive's terrain is cleared with everything else unless it is asked for. It sits in the
+ * middle of every map, so a figure about supply lines would otherwise have five purple
+ * squares in it that the figure is not about.
+ */
+export function clearBoard(state: GameState, keepHive = false): GameState {
+  for (const row of state.grid) {
+    for (const t of row) {
+      razeTile(t);
+      t.guard = 0;
+      t.prodAcc = 0;
+      if (!keepHive || !isHiveTerrain(t)) t.terrain = "ground";
+    }
+  }
+  state.effects = [];
+  recomputeConnectivity(state);
+  return state;
+}

@@ -1,4 +1,4 @@
-import { isHiveTerrain, otherPlayer, tileAt } from "./board";
+import { isHiveTerrain, otherPlayer, razeTile, tileAt } from "./board";
 import { recomputeConnectivity } from "./connectivity";
 import { PERMANENT } from "./types";
 import type { EngineEvent, GameState, Player, PlayerMods, Tile, TileEffect } from "./types";
@@ -55,7 +55,7 @@ export interface Hit {
  */
 export function strike(t: Tile, amount: number): Hit {
   if (t.owner && t.struct === "vein") {
-    t.owner = null; t.struct = null; t.soldiers = 0; t.tunnel = false;
+    razeTile(t);
     return { lost: 0, wiped: true };
   }
   if (amount <= 0) return { lost: 0, wiped: false };
@@ -64,7 +64,7 @@ export function strike(t: Tile, amount: number): Hit {
     const before = t.soldiers;
     t.soldiers = Math.max(0, t.soldiers - amount);
     const wiped = t.soldiers <= 0;
-    if (wiped) { t.owner = null; t.struct = null; t.tunnel = false; }
+    if (wiped) razeTile(t);
     return { lost: before - t.soldiers, wiped };
   }
   if (t.guard > 0) {

@@ -45,7 +45,7 @@ const bonus = (mods: PlayerMods): number => Math.floor(abilityLevel(mods) / 3);
  * TOTAL permanent leaf walls this player may ever hold — not per cast (CLAUDE.md §5).
  * Leafcutter only, and only from Reservoir level 2 upward: 1/2/3.
  */
-export function permanentLeafCap(state: GameState, p: Player, mods: PlayerMods): number {
+function permanentLeafCap(state: GameState, p: Player, mods: PlayerMods): number {
   if (speciesOf(state.species[p]).ability.kind !== "leaf") return 0;
   return Math.min(3, Math.max(0, abilityLevel(mods) - 1));
 }
@@ -99,7 +99,7 @@ export function sparePool(state: GameState, p: Player): number {
  * Muster `n` workers from the colony, largest garrisons first.
  * Nothing is created from nothing: if the colony cannot pay, nothing is taken.
  */
-export function payWorkers(state: GameState, p: Player, n: number): boolean {
+function payWorkers(state: GameState, p: Player, n: number): boolean {
   if (sparePool(state, p) < n) return false;
   const tiles = allTiles(state).filter((t) => t.owner === p && isConnected(state, t));
   let need = n;

@@ -4,3 +4,4 @@ dist/
 *.local
 android/
 ios/
+dist-old/

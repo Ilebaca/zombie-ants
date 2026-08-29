@@ -48,9 +48,18 @@ src/engine/    PURE game rules. No DOM, no canvas, no animation, no I/O, and no 
                beyond the seeded generator on GameState (§4.1) — never Math.random().
 src/ai/        Search + evaluation. Consumes the engine only.
 src/render/    Canvas board. Consumes engine EVENTS and draws them.
-src/ui/        Meta screens (home, colony road, anthill, shop...).
+src/ui/        Screens. `app.ts` is the shell and router ONLY: the setup flow is
+               `setup.ts`, the result card is `result.ts`, the match is `match.ts`, and
+               every meta screen is its own file. It was a 1,200-line file that did all
+               four, which is the shape every one of these files is kept out of.
 src/platform/  Storage, Capacitor, purchases.
 ```
+
+**And the layering is ENFORCED, not remembered.** `eslint.config.js` carries a
+`no-restricted-imports` rule per layer, so an import across a boundary fails `npm run lint`
+— which CI runs before the tests. It also forbids `Math.random` inside `src/engine/`. Both
+were held by review alone for months; a design rule nothing checks is a design rule that
+erodes. `npm run check` is typecheck + lint + tests, and is what the deploy gates on.
 
 **The engine never triggers animation.** Actions return an `EngineEvent[]` describing what
 happened; the renderer decides how to dramatise it. This is not stylistic — it is why the AI
@@ -647,6 +656,10 @@ Do not claim a visual change is correct. You cannot see it. Say it needs checkin
   does so through explicit action functions that also return events.
 - Small named functions over clever one-liners. Milan reads this code occasionally.
 - Comment the *why*, not the *what*, especially for the rules in §4.
+- **One function owns a rule.** `strike()` is the model (§4.4); `razeTile()` is the same
+  idea for what a destroyed tile keeps — it was written out by hand at the three places
+  that raze one, which is three chances to leave a stale gallery flag behind. If two places
+  spell out the same rule, that is the bug, not the duplication.
 - Keep commits small and focused; the ability to roll back one change matters here.
 
 ## 8. Balance snapshot

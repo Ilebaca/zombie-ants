@@ -1,19 +1,12 @@
-import { createGame, recomputeConnectivity, tile } from "../index";
+import { clearBoard, createGame, tile } from "../index";
 import type { GameState, Player, SpeciesId, Structure, Terrain } from "../index";
 import type { MapId } from "../config";
 
 /** A blank board with no colonies placed, for precise rule tests. */
 export function blankGame(map: MapId = "mid", species: Record<Player, SpeciesId> = { you: "fire", ai: "fire" }): GameState {
-  const state = createGame({ map, species });
-  for (const row of state.grid) {
-    for (const t of row) {
-      t.owner = null; t.struct = null; t.soldiers = 0; t.guard = 0; t.tunnel = false; t.prodAcc = 0;
-      if (t.terrain !== "hiveQ" && t.terrain !== "hiveG") t.terrain = "ground";
-    }
-  }
-  state.effects = [];
-  recomputeConnectivity(state);
-  return state;
+  // The hive's terrain stays: most rule tests want the middle of the map to be what the
+  // real map has there, and the ones that do not clear it themselves.
+  return clearBoard(createGame({ map, species }), true);
 }
 
 export interface PlaceOpts {

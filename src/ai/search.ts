@@ -103,11 +103,6 @@ export const PROFILES: Record<Difficulty, Profile> = {
   },
 };
 
-/** Kept for the tests and callers that still speak in depths. */
-export const DEPTH: Record<Difficulty, number> = {
-  easy: PROFILES.easy.depth, normal: PROFILES.normal.depth, hard: PROFILES.hard.depth,
-};
-
 /* ------------------------------------------------------------------ EVALUATION */
 
 /** Score the board from the AI's perspective, with the full weight set. */

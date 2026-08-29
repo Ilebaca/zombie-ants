@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SPECIES, START_SHAPES } from "../../engine";
 import type { SpeciesId } from "../../engine";
-import { rollAISpecies } from "../app";
+import { rollAISpecies } from "../setup";
 
 describe("AI species roll", () => {
   const ids = Object.keys(SPECIES) as SpeciesId[];

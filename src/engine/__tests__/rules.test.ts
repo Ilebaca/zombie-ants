@@ -9,8 +9,9 @@
 import { describe, expect, it } from "vitest";
 import { blankGame, put } from "./helpers";
 import {
-  DEF, NEUTRAL_MODS, TRAVEL_RANGE, allTiles, createGame, endTurn, flatDefence, guardDefence,
-  moveOrAttack, recomputeConnectivity, tile, travel,
+  DEF, NEUTRAL_MODS, TRAVEL_RANGE, allTiles, clearBoard, createGame, endTurn, flatDefence,
+  guardDefence, moveOrAttack, pruneAllVeins, razeTile, recomputeConnectivity, strike, tile,
+  travel,
 } from "../index";
 import type { GameState, PlayerMods } from "../index";
 
@@ -176,5 +177,76 @@ describe("how a match ends", () => {
     expect(s.over).toBe(true);
     expect(s.winner).toBe("you");
     expect(events.find((e) => e.type === "gameOver")).toMatchObject({ reason: "nest" });
+  });
+});
+
+/**
+ * WHAT "RAZED" MEANS, in one place.
+ *
+ * A venom hit, a burnt vein and a pruned trail all clear a tile, and all three used to
+ * write out what that clears by hand. Three copies of a rule are three chances for one of
+ * them to leave something behind — the gallery flag being the expensive one, because a
+ * tile with a stale `tunnel` is a root that can never be cut off (§4.2).
+ */
+describe("a razed tile", () => {
+  it("keeps its terrain and loses everything else", () => {
+    const s = blankGame();
+    const t = put(s, 3, 3, {
+      owner: "you", struct: "stable", soldiers: 9, terrain: "resource",
+    });
+    t.tunnel = true;
+    razeTile(t);
+
+    expect(t.owner).toBeNull();
+    expect(t.struct).toBeNull();
+    expect(t.soldiers).toBe(0);
+    expect(t.tunnel, "a razed tile kept its gallery").toBe(false);
+    // Ground, gem seams and hive squares outlive whoever held them (§5a).
+    expect(t.terrain).toBe("resource");
+  });
+
+  /** And the three callers all go through it, so none can drift from the other two. */
+  it("is what a pruned vein and a burnt vein both leave behind", () => {
+    const s = blankGame();
+    put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
+    const vein = put(s, 2, 1, { owner: "you", struct: "vein" });
+    vein.tunnel = true;
+    recomputeConnectivity(s);
+    pruneAllVeins(s);
+    expect(vein.owner).toBeNull();
+    expect(vein.tunnel, "the pruner left a gallery standing").toBe(false);
+
+    const burnt = put(s, 4, 4, { owner: "ai", struct: "vein" });
+    burnt.tunnel = true;
+    strike(burnt, 3);
+    expect(burnt.owner).toBeNull();
+    expect(burnt.tunnel, "a burnt vein left a gallery standing").toBe(false);
+  });
+});
+
+/**
+ * A BLANK BOARD is bare ground. The manual's figures and these tests both arrange a
+ * position on one, so it has to leave nothing of the map behind but the map.
+ */
+describe("clearing a board", () => {
+  it("strips the colonies, the wild garrisons and the effects", () => {
+    const played = createGame({ map: "tiny", species: { you: "fire", ai: "fire" }, seed: 1 });
+    played.effects.push({ c: 0, r: 0, kind: "leaf", owner: "you", left: 3 });
+    clearBoard(played);
+
+    expect(allTiles(played).some((t) => t.owner)).toBe(false);
+    expect(allTiles(played).some((t) => t.guard > 0)).toBe(false);
+    expect(allTiles(played).every((t) => t.terrain === "ground")).toBe(true);
+    expect(played.effects.length).toBe(0);
+  });
+
+  /** The hive is in the middle of every map, so a figure that is not about it says so. */
+  it("keeps the hive only when it is asked to", () => {
+    const hive = (s: GameState): number =>
+      allTiles(s).filter((t) => t.terrain === "hiveQ" || t.terrain === "hiveG").length;
+    const fresh = (): GameState =>
+      createGame({ map: "tiny", species: { you: "fire", ai: "fire" }, seed: 1 });
+    expect(hive(clearBoard(fresh(), true))).toBe(5);
+    expect(hive(clearBoard(fresh()))).toBe(0);
   });
 });

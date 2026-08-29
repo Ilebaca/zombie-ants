@@ -35,9 +35,9 @@ export const queenIsTakeable = (state: GameState): boolean =>
  * one, so the swing she pays out has to grow with her — and the gap before she returns has
  * to grow too, or the board spends more and more of the match with a surge running on it.
  */
-export const surgeTurns = (state: GameState): number =>
+const surgeTurns = (state: GameState): number =>
   state.limits.buffTurns + (state.hive.level - 1);
-export const surgeCooldown = (state: GameState): number =>
+const surgeCooldown = (state: GameState): number =>
   HIVE_COOLDOWN + (state.hive.level - 1);
 
 export function hiveCells(state: GameState): Tile[] {

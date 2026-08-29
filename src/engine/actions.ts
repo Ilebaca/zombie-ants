@@ -173,7 +173,7 @@ export function moveOrAttack(
  * Neighbours a selected tile may move into or attack.
  * Rocks and enemy leaf walls are excluded; hive guards and the queen are always valid.
  */
-export function moveTargets(state: GameState, src: Tile): Coord[] {
+function moveTargets(state: GameState, src: Tile): Coord[] {
   const owner = src.owner;
   if (!owner) return [];
   return neighbours(state, src)

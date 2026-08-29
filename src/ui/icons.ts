@@ -105,4 +105,3 @@ export function icon(name: keyof typeof PATHS | string, size = 20): SVGSVGElemen
 }
 
 /** Is there a mark for this name? Lets a caller fall back to its own artwork. */
-export const hasIcon = (name: string): boolean => name in PATHS;

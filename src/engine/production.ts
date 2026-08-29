@@ -6,7 +6,7 @@ import { speciesOf } from "./species";
 import type { EngineEvent, GameState, Player, PlayerMods, Tile } from "./types";
 
 /** Tiles that generate soldiers. Veins are infrastructure and produce NOTHING. */
-export function producers(state: GameState, p: Player): Tile[] {
+function producers(state: GameState, p: Player): Tile[] {
   return allTiles(state).filter((t) => t.owner === p && (t.struct === "stable" || t.struct === "nest"));
 }
 

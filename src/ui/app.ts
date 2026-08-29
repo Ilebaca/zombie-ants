@@ -5,34 +5,34 @@
  * match — a match is created from the choices, handed to MatchScreen, and reported back
  * through `onExit`.
  */
-import {
-  MAPS, SPECIES, START_SHAPES, armyOf, arrangeTutorial, createGame,
-} from "../engine";
-import type { EngineEvent, GameOverReason, MapId, Player, SpeciesId } from "../engine";
+import { START_SHAPES, armyOf, arrangeTutorial, createGame } from "../engine";
+import type { MapId, Player, SpeciesId } from "../engine";
 import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
 import {
-  DEFAULT_SPECIES, DemoGateway, ProfileStore, SPECIES_ORDER, TOUR_VERSION, compact,
-  rivalFor,
+  DEFAULT_SPECIES, DemoGateway, ProfileStore, TOUR_VERSION, rivalFor, scoreQuestEvents,
 } from "../platform";
 import type { PurchaseGateway } from "../platform";
-import { SPECIES_COL, antHead, basicLook, hexA, setFactionColor } from "../render";
+import { setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
 import { buildAntarium, buildSpeciesPage } from "./antarium";
 import { buildProfile } from "./profile";
 import { icon } from "./icons";
-import { NAV_SCREENS, bottomNav, clockOf, el, setupSteps, toast, topBar } from "./chrome";
+import { NAV_SCREENS, bottomNav, el, screenEl, topBar } from "./chrome";
 import type { NavId } from "./chrome";
 import { MatchScreen } from "./match";
 import {
-  CHALLENGES, CHALLENGE_REWARD, DAILY_BONUS_PHEROMONE, GOAL_TEXT, buildChallenges, buildDaily,
+  CHALLENGES, CHALLENGE_REWARD, DAILY_BONUS_PHEROMONE, buildChallenges, buildDaily,
 } from "./challenges";
-import type { Challenge } from "./challenges";
 import { buildLeaderboard } from "./leaderboard";
 import { buildShop } from "./shop";
 import { buildQuests } from "./quests";
 import { buildComingSoon, buildMenu, buildSettings } from "./screens-simple";
 import { buildRules } from "./rules";
+import { buildFormationSelect, buildMapSelect, buildSpeciesSelect, rollAISpecies, rollShape } from "./setup";
+import type { Choices, SetupOptions } from "./setup";
+import { buildResultCard } from "./result";
+import type { Recap } from "./result";
 import { buildColonyRoad } from "./road";
 import { Deck } from "./deck";
 import { Tour } from "./tour";
@@ -58,19 +58,13 @@ const DECK = ["shop", "anthill", "home", "antarium", "challenges"] as const;
 type DeckId = (typeof DECK)[number];
 const isDeck = (id: string): id is DeckId => (DECK as readonly string[]).includes(id);
 
-const MAP_ORDER: readonly MapId[] = ["tiny", "small", "mid"];
-
 /** Short names for the settings screen, as the legacy build labels them. */
 const MAP_LABEL: Record<MapId, string> = { tiny: "Skirmish", small: "Corridor", mid: "Gauntlet" };
+/** The three maps, in the order Settings cycles through them. */
+const MAP_ORDER: readonly MapId[] = ["tiny", "small", "mid"];
 const DIFFICULTY_LABEL: Record<Difficulty, string> = { easy: "Easy", normal: "Normal", hard: "Hard" };
 
 /** Setup choices that survive between matches. */
-interface Choices {
-  map: MapId;
-  species: SpeciesId;
-  shape: ShapeId;
-}
-
 export class App {
   private screens = new Map<ScreenId, HTMLElement>();
   private match: MatchScreen | null = null;
@@ -395,15 +389,17 @@ export class App {
 
   private build(id: ScreenId): HTMLElement {
     if (id === "home") return this.buildHome();
-    if (id === "mapsel") return this.buildMapSelect();
+    if (id === "mapsel") return buildMapSelect(this.setup(() => this.show("home"), "start"));
     if (id === "start") {
       // Every new play opens on the first colony by rarity, exactly as the legacy build
       // does — the picker is a fresh choice each time, not a memory of the last match.
       this.choices.species = DEFAULT_SPECIES;
       setFactionColor("you", this.choices.species);
-      return this.buildSpeciesSelect();
+      return buildSpeciesSelect(this.setup(() => this.show("mapsel"), "formation"));
     }
-    if (id === "formation") return this.buildFormationSelect();
+    if (id === "formation") {
+      return buildFormationSelect(this.setup(() => this.show("start"), "formation"));
+    }
     if (id === "anthill") return buildAnthill(this.profile);
     if (id === "achievements") return buildColonyRoad(this.profile, () => this.show("home"), () => this.show("shop"));
     if (id === "quests") return buildQuests(this.profile, () => this.show("profile"));
@@ -478,45 +474,10 @@ export class App {
    * verbatim, and several of its rules are keyed by id (#home's artwork, the bottom-nav
    * padding shared by #antarium/#anthill/...), so the id is styling, not a label.
    */
-  private screen(id: string): HTMLDivElement {
-    const el = document.createElement("div");
-    el.className = "screen";
-    el.id = id;
-    return el;
-  }
-
-  private header(
-    parent: HTMLElement, title: string, sub?: string,
-    back?: () => void, backId?: string,
-  ): void {
-    const top = document.createElement("div");
-    top.className = "screentop";
-    if (back) {
-      const b = document.createElement("button");
-      b.className = "backbtn";
-      b.setAttribute("aria-label", "Back");
-      b.appendChild(icon("back", 20));
-      if (backId) b.id = backId;
-      b.onclick = back;
-      top.appendChild(b);
-    }
-    const h = document.createElement("div");
-    h.className = "screenh";
-    h.textContent = title;
-    top.appendChild(h);
-    if (sub) {
-      const s = document.createElement("div");
-      s.className = "screensub";
-      s.textContent = sub;
-      top.appendChild(s);
-    }
-    parent.appendChild(top);
-  }
-
   /* ----------------------------------------------------------------------- HOME */
 
   private buildHome(): HTMLElement {
-    const root = this.screen("home");
+    const root = screenEl("home");
 
     root.appendChild(topBar(this.profile.get(), {
       onProfile: () => this.show("profile"),
@@ -564,213 +525,19 @@ export class App {
     return root;
   }
 
-  /* ----------------------------------------------------------------- MAP SELECT */
-
-  private buildMapSelect(): HTMLElement {
-    const el = this.screen("mapsel");
-    this.header(el, "Choose your map", undefined, () => this.show("home"), "mapBack");
-    el.appendChild(setupSteps(0));
-
-    const body = document.createElement("div");
-    body.className = "screenbody";
-    const box = document.createElement("div");
-    box.className = "setupbox";
-    const grid = document.createElement("div");
-    grid.className = "mappick";
-    grid.id = "mapPick";
-
-    for (const id of MAP_ORDER) {
-      const def = MAPS[id];
-      const card = document.createElement("div");
-      card.className = "mp" + (id === this.choices.map ? " on" : "");
-      card.appendChild(mapThumb(def.size));
-      const words = document.createElement("div");
-      words.className = "mpwords";
-      const nm = document.createElement("div");
-      nm.className = "snm";
-      nm.textContent = def.name;
-      // The card said only how big the board is. What a player actually chooses between is
-      // how long the match runs and when the Hive wakes up in it.
-      const meta = document.createElement("div");
-      meta.className = "mpmeta";
-      meta.textContent = `Hive wakes turn ${def.awakenTurn} · about ${def.turnLimit} turns`;
-      words.append(nm, meta);
-      card.appendChild(words);
-      card.onclick = () => {
-        grid.querySelectorAll(".mp").forEach((x) => x.classList.remove("on"));
-        card.classList.add("on");
-        this.choices.map = id;
-      };
-      grid.appendChild(card);
-    }
-
-    const next = document.createElement("button");
-    next.className = "cta";
-    next.id = "mapNext";
-    next.textContent = "Next →";
-    next.onclick = () => this.show("start");
-
-    box.append(grid, next);
-    body.appendChild(box);
-    el.appendChild(body);
-    return el;
-  }
-
-  /* ------------------------------------------------------------- SPECIES SELECT */
-
-  private buildSpeciesSelect(): HTMLElement {
-    const root = this.screen("start");
-    this.header(root, "Choose your species", undefined, () => this.show("mapsel"), "specBack");
-    root.appendChild(setupSteps(1));
-
-    const body = document.createElement("div");
-    body.className = "screenbody";
-    const box = document.createElement("div");
-    box.className = "setupbox";
-    const slider = document.createElement("div");
-    slider.className = "pickslider";
-    slider.id = "pick";
-
-    let selectedCard: HTMLElement | null = null;
-
-    for (const id of SPECIES_ORDER) {
-      const s = SPECIES[id];
-      const pal = SPECIES_COL[id];
-      // Locked colonies stay on the slider so the player can read what they are working
-      // toward — they just cannot be fielded until the Antarium sells them.
-      const owned = this.profile.isUnlocked(id);
-      const card = document.createElement("div");
-      const chosen = id === this.choices.species;
-      card.className = "sp" + (chosen ? " on" : "") + (owned ? "" : " splock");
-
-      const face = document.createElement("div");
-      face.className = "face";
-      const fc = document.createElement("canvas");
-      fc.width = 96; fc.height = 96;
-      const fx = fc.getContext("2d");
-      if (fx) antHead(fx, 48, 48, 44, pal, basicLook(id));
-      face.appendChild(fc);
-
-      const nm = document.createElement("div");
-      nm.className = "nm";
-      nm.style.color = pal[1];
-      nm.textContent = s.name;
-      if (s.premium) {
-        const prem = document.createElement("span");
-        prem.className = "prem";
-        prem.textContent = "PREMIUM";
-        nm.appendChild(prem);
-      }
-
-      const mods = document.createElement("div");
-      mods.className = "mods";
-      mods.textContent = `⚔ ${s.atk.toFixed(1)} · 🛡 ${s.def.toFixed(1)}`;
-
-      const ds = document.createElement("div");
-      ds.className = "ds";
-      ds.textContent = s.blurb;
-
-      const tr = document.createElement("div");
-      tr.className = "tr";
-      tr.style.color = pal[1];
-      tr.textContent = s.trait;
-
-      card.append(face, nm, mods, ds, tr);
-      if (!owned) {
-        const lock = document.createElement("div");
-        lock.className = "splockmsg";
-        lock.textContent = "🔒 Unlock in the Antarium";
-        card.appendChild(lock);
-      }
-
-      const highlight = (on: boolean): void => {
-        card.classList.toggle("on", on);
-        card.style.borderColor = on ? pal[0] : "";
-        card.style.boxShadow = on ? `0 0 0 1px ${pal[0]} inset, 0 0 22px ${hexA(pal[1], 0.30)}` : "";
-      };
-      if (chosen) { highlight(true); selectedCard = card; }
-
-      card.onclick = () => {
-        if (!owned) {
-          toast(root, `${s.name} is locked — unlock it in the Antarium.`, "bad");
-          return;
-        }
-        slider.querySelectorAll(".sp").forEach((x) => {
-          x.classList.remove("on");
-          (x as HTMLElement).style.borderColor = "";
-          (x as HTMLElement).style.boxShadow = "";
-        });
-        highlight(true);
-        this.choices.species = id;
-        setFactionColor("you", id);          // the whole UI takes the species' colours
-        card.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
-      };
-      slider.appendChild(card);
-    }
-
-    const next = document.createElement("button");
-    next.className = "cta";
-    next.id = "toFormation";
-    next.textContent = "Next →";
-    next.onclick = () => this.show("formation");
-
-    box.append(slider, next);
-    body.appendChild(box);
-    root.appendChild(body);
-
-    // open on the species already fielded
-    // Guarded: jsdom has no scrollIntoView, and a screen must survive a DOM that is
-    // missing a convenience exactly as it survives a canvas with no context.
-    requestAnimationFrame(() => selectedCard?.scrollIntoView?.({ inline: "center", block: "nearest" }));
-    return root;
-  }
-
-  /* ----------------------------------------------------------- FORMATION SELECT */
-
-  private buildFormationSelect(): HTMLElement {
-    const el = this.screen("formation");
-    this.header(el, "Choose your formation", undefined, () => this.show("start"), "formBack");
-    el.appendChild(setupSteps(2));
-
-    const body = document.createElement("div");
-    body.className = "screenbody";
-    const box = document.createElement("div");
-    box.className = "setupbox";
-    const grid = document.createElement("div");
-    grid.className = "shapepick";
-    grid.id = "shapePick";
-
-    // The legacy picker always opens on the first formation rather than the saved one.
-    const first = (Object.keys(START_SHAPES) as ShapeId[])[0] as ShapeId;
-    this.choices.shape = first;
-    for (const id of Object.keys(START_SHAPES) as ShapeId[]) {
-      const cellWrap = document.createElement("div");
-      cellWrap.className = "shpcell";
-      const card = document.createElement("div");
-      card.className = "shp" + (id === first ? " on" : "");
-      card.appendChild(shapeThumb(START_SHAPES[id]));
-      const nm = document.createElement("div");
-      nm.className = "snm";
-      nm.textContent = id.charAt(0).toUpperCase() + id.slice(1);
-      card.onclick = () => {
-        grid.querySelectorAll(".shp").forEach((x) => x.classList.remove("on"));
-        card.classList.add("on");
-        this.choices.shape = id;
-      };
-      cellWrap.append(card, nm);
-      grid.appendChild(cellWrap);
-    }
-
-    const begin = document.createElement("button");
-    begin.className = "cta";
-    begin.id = "begin";
-    begin.textContent = "Begin the spread →";
-    begin.onclick = () => { this.challenge = null; this.startMatch(); };
-
-    box.append(grid, begin);
-    body.appendChild(box);
-    el.appendChild(body);
-    return el;
+  /**
+   * What the setup screens need: the choices to write into, and where their two buttons go.
+   * The flow is three screens in a row, so the shell decides the row and they decide
+   * nothing about it (ui/setup.ts).
+   */
+  private setup(onBack: () => void, next: ScreenId): SetupOptions {
+    return {
+      choices: this.choices,
+      profile: this.profile,
+      onBack,
+      onNext: () => this.show(next),
+      onBegin: () => { this.challenge = null; this.startMatch(); },
+    };
   }
 
   /* ---------------------------------------------------------------------- MATCH */
@@ -933,98 +700,16 @@ export class App {
    * numbers that actually move the player forward, the colony and mycelium, were not on it
    * at all.
    */
-  private showResult(winner: Player | null, recap: {
-    turns: number; played: number; youArmy: number; species: SpeciesId;
-    xpGained: number; colony: number; colonyDelta: number; mycel: number;
-    leveledTo: number | null; reason: GameOverReason | null;
-    challenge: Challenge | null;
-  }): void {
-    const won = winner === "you";
-    const ov = el("div", "overlay");
-    ov.id = "over";
-    const wrap = el("div", "overModalWrap");
-
-    const card = el("div", "card result " + (won ? "win" : "lose"));
-    card.id = "overCard";
-
-    const h1 = el("h1", undefined,
-      recap.challenge ? (won ? "Challenge complete!" : "Challenge failed.") : (won ? "Victory" : "Defeat"));
-    h1.id = "overTitle";
-    const tag = el("div", "tag", recap.challenge
-      ? `${recap.challenge.name} — ${GOAL_TEXT[recap.challenge.goal]}  ${won ? "✓" : "✗"}`
-      : resultFlavour(won, recap.reason, recap.turns));
-    tag.id = "overSub";
-    card.append(h1, tag);
-
-    // WHAT IT PAID. Three cells, equal width, each one a currency the player recognises
-    // from the top bar — the same marks, so the card reads as the bar being fed.
-    const rewards = el("div", "payouts");
-    rewards.id = "overRewards";
-    const reward = (mark: string, value: string, note: string, kind: string): HTMLElement => {
-      const cell = el("div", `payout pay-${kind}`);
-      const head = el("div", "payv");
-      head.append(icon(mark, 17), el("b", undefined, value));
-      cell.append(head, el("small", undefined, note));
-      return cell;
-    };
-    rewards.append(
-      // The colony leads the card, because it is what the match was played for. A loss is
-      // marked as one: the figure carries the colony's own green only when it went UP.
-      reward("antarium", `${recap.colonyDelta >= 0 ? "+" : "−"}${compact(Math.abs(recap.colonyDelta))}`,
-        `${compact(recap.colony)} troops`, recap.colonyDelta >= 0 ? "colony" : "colony down"),
-      reward("mycel", signed(recap.mycel), "mycelium", "mycel"),
-      reward("star", `+${recap.xpGained}`, "colony XP", "xp"),
-    );
-    card.appendChild(rewards);
-
-    // A level-up is the one thing worth its own line — it is why the XP cell matters.
-    if (recap.leveledTo !== null) {
-      const banner = el("div", "levelup");
-      banner.append(icon("star", 16), el("b", undefined, `Colony level ${recap.leveledTo}`));
-      card.appendChild(banner);
-    }
-
-    // WHAT THE MATCH LOOKED LIKE. Quieter, and on a grid: four facts in a row across a
-    // phone gave four different column widths and a fifth cell stranded underneath.
-    const facts = el("div", "facts");
-    facts.id = "overRecap";
-    const fact = (k: string, v: string | number): HTMLElement => {
-      const d = el("div", "fact");
-      d.append(el("span", "fk", k), el("span", "fv", String(v)));
-      return d;
-    };
-    facts.append(
-      fact("Turns", recap.turns),
-      fact("Colony", SPECIES[recap.species].name.split(" ")[0] ?? ""),
-      fact("Your army", recap.youArmy),
-      // NOT the enemy's army. By the time this card is up their colony has been overrun —
-      // the finale has just washed the whole board in one colour — so a number for what
-      // they had is a number for something that is not there. How long it took is the fact
-      // the player does not otherwise have.
-      fact("Time", clockOf(recap.played)),
-    );
-    card.appendChild(facts);
-
-    const acts = el("div", "resultacts");
-    const again = el("button", "cta begin", "Play again");
-    again.id = "again";
-    again.onclick = () => { this.clearOverlay(); this.startMatch(); };
-
-    const minor = el("div", "resultminor");
-    const reSpecies = el("button", "ghostbtn", "Change colony");
-    reSpecies.id = "reSpecies";
-    reSpecies.onclick = () => { this.clearOverlay(); this.show("start"); };
-
-    const home = el("button", "ghostbtn", "Home");
-    home.id = "overHome";
-    home.onclick = () => { this.clearOverlay(); this.show("home"); };
-
-    minor.append(reSpecies, home);
-    acts.append(again, minor);
-    card.appendChild(acts);
-
-    wrap.appendChild(card);
-    ov.appendChild(wrap);
+  /**
+   * Put the result card up. The card is built elsewhere (ui/result.ts); the shell owns
+   * where it goes and what its buttons do, which is the only part that is the shell's.
+   */
+  private showResult(winner: Player | null, recap: Recap): void {
+    const ov = buildResultCard(winner, recap, {
+      onAgain: () => { this.clearOverlay(); this.startMatch(); },
+      onChangeColony: () => { this.clearOverlay(); this.show("start"); },
+      onHome: () => { this.clearOverlay(); this.show("home"); },
+    });
     this.host.appendChild(ov);
     this.overlay = ov;
   }
@@ -1045,7 +730,6 @@ export class App {
  * yet — skip rather than pin them to 0 (CLAUDE.md §5).
  */
 /** A delta the way a scoreboard writes one: the sign is part of the number. */
-const signed = (n: number): string => (n >= 0 ? `+${n}` : String(n));
 
 function syncFabs(home: HTMLElement): void {
   const daily = home.querySelector<HTMLElement>(".dailyfab");
@@ -1067,122 +751,8 @@ function syncFabs(home: HTMLElement): void {
  * The line under the result title. The legacy build words each ending differently, and the
  * wording is the only place the *reason* a match ended is ever stated.
  */
-function resultFlavour(won: boolean, reason: GameOverReason | null, turns: number): string {
-  if (reason === "surrender") {
-    return `You surrendered on turn ${turns}. The hollow falls silent.`;
-  }
-  return won
-    ? `Enemy nest captured on turn ${turns}. The fungus spreads.`
-    : `The enemy reached your queen on turn ${turns}.`;
-}
 
 /* ----------------------------------------------------------------------- THUMBS */
 
-const cssVar = (n: string): string =>
-  getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-
 /** Board thumbnail: a checkerboard with each colony's starting corner marked. */
-function mapThumb(n: number): HTMLCanvasElement {
-  const SZ = 58;
-  const cv = document.createElement("canvas");
-  cv.width = SZ; cv.height = SZ;
-  const g = cv.getContext("2d");
-  if (!g) return cv;
-  const cell = SZ / n;
 
-  g.fillStyle = "rgba(255,255,255,.04)";
-  g.fillRect(0, 0, SZ, SZ);
-  g.fillStyle = cssVar("--line");
-  for (let r = 0; r < n; r++) {
-    for (let c = 0; c < n; c++) {
-      if ((r + c) % 2 === 0) { g.globalAlpha = 0.6; g.fillRect(c * cell, r * cell, cell, cell); }
-    }
-  }
-  g.globalAlpha = 1;
-
-  // Gauntlet's two water bites, so the thumbnail shows why that map plays differently.
-  if (n === 13) {
-    g.fillStyle = "#2f6fb0";
-    for (let r = 0; r < n; r++) {
-      for (let c = 0; c < n; c++) {
-        const left = c * c + (r - 6) * (r - 6);
-        const right = (c - (n - 1)) * (c - (n - 1)) + (r - 6) * (r - 6);
-        if (left <= 9 || right <= 9) g.fillRect(c * cell, r * cell, cell, cell);
-      }
-    }
-  }
-
-  const b = Math.max(cell * 2, 8);
-  g.fillStyle = cssVar("--you-glow"); g.fillRect(0, SZ - b, b, b);        // your corner
-  g.fillStyle = cssVar("--ai-glow"); g.fillRect(SZ - b, 0, b, b);         // enemy corner
-  return cv;
-}
-
-/** Formation thumbnail, drawn hugging the bottom-left as it sits in the player's corner. */
-function shapeThumb(cells: ReadonlyArray<readonly [number, number]>): HTMLCanvasElement {
-  const SZ = 72;
-  const cv = document.createElement("canvas");
-  cv.width = SZ; cv.height = SZ;
-  const g = cv.getContext("2d");
-  if (!g) return cv;
-  const cell = SZ / 5, r = 3;
-
-  cells.forEach(([lc, lr], idx) => {
-    const x = lc * cell, y = (SZ - cell) - lr * cell;
-    g.fillStyle = idx === 0 ? cssVar("--you-glow") : cssVar("--you");   // cell 0 is the nest
-    g.globalAlpha = idx === 0 ? 1 : 0.85;
-    g.beginPath();
-    g.moveTo(x + r, y);
-    g.arcTo(x + cell, y, x + cell, y + cell, r);
-    g.arcTo(x + cell, y + cell, x, y + cell, r);
-    g.arcTo(x, y + cell, x, y, r);
-    g.arcTo(x, y, x + cell, y, r);
-    g.closePath(); g.fill();
-    g.globalAlpha = 1;
-  });
-  return cv;
-}
-
-/**
- * Turn a batch of engine events into progress: today's quest, and the career total.
- *
- * Both come off the same count, and they are counted HERE rather than at two call sites so
- * one tested function owns the translation — a quest that credits a capture the profile
- * does not is a pair of numbers that disagree with each other on screen.
- *
- * Only the player's own captures count — the AI taking a tile is not progress — and the
- * whole batch is folded into one call so a Spread that claims six tiles does not write six
- * times. Exported so the translation is testable without a running match.
- */
-export function scoreQuestEvents(profile: ProfileStore, events: readonly EngineEvent[]): void {
-  let captured = 0;
-  for (const e of events) if (e.type === "capture" && e.owner === "you") captured++;
-  if (!captured) return;
-  profile.questProgress("conquered", captured);
-  profile.recordCaptures(captured);
-}
-
-/** The enemy's formation, chosen at setup time — the engine itself stays free of randomness. */
-export function rollShape(rng: () => number = Math.random): ShapeId {
-  const keys = Object.keys(START_SHAPES) as ShapeId[];
-  return keys[Math.floor(rng() * keys.length)] ?? "wedge";
-}
-
-/**
- * The AI fields a species different from yours, weighted toward combat power so it stays a
- * consistent threat — but every non-premium species can still turn up. Setup-time only:
- * the engine itself stays free of randomness (CLAUDE.md §4.1).
- */
-export function rollAISpecies(yours: SpeciesId, rng: () => number = Math.random): SpeciesId {
-  const pool = (Object.keys(SPECIES) as SpeciesId[])
-    .filter((k) => k !== yours && !SPECIES[k].premium);
-  if (!pool.length) return yours;
-  const weight = (k: SpeciesId): number => 0.5 + SPECIES[k].atk * SPECIES[k].def;
-  const total = pool.reduce((s, k) => s + weight(k), 0);
-  let roll = rng() * total;
-  for (const k of pool) {
-    roll -= weight(k);
-    if (roll <= 0) return k;
-  }
-  return pool[pool.length - 1] as SpeciesId;
-}

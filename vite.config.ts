@@ -1,5 +1,8 @@
 import { execSync } from "node:child_process";
-import { defineConfig } from "vite";
+// vitest/config, not vite: it is the one that also types the `test` block below, so the
+// config needs no `as any` cast to carry both halves.
+import { defineConfig } from "vitest/config";
+import type { PluginContext } from "rollup";
 
 /**
  * A stamp of what is actually running, shown on the Settings screen.
@@ -29,7 +32,7 @@ export default defineConfig({
     // device can sit on the previous bundle for minutes after a deploy; this is what lets
     // the app notice and take the new one (src/platform/freshness.ts).
     name: "zombie-ants:version-file",
-    generateBundle() {
+    generateBundle(this: PluginContext) {
       this.emitFile({
         type: "asset",
         fileName: "version.json",
@@ -46,4 +49,4 @@ export default defineConfig({
     environment: "node",
     environmentMatchGlobs: [["src/ui/**", "jsdom"]],
   },
-} as any);
+});

@@ -21,6 +21,25 @@ export function tile(state: GameState, c: number, r: number): Tile {
  *  per call rather than two. */
 const DELTAS: ReadonlyArray<readonly [number, number]> = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
+/**
+ * A tile loses everything it was holding: no owner, no structure, no garrison, no gallery.
+ *
+ * ONE function, for the same reason `strike` is one (CLAUDE.md §4.4): "razed" is a rule
+ * about what survives, and it was written out by hand at each of the three places that
+ * raze a tile — a venom hit, a burnt vein, and a pruned trail. Three copies of a rule are
+ * three chances for one of them to keep a stale gallery flag.
+ *
+ * TERRAIN is not touched. Ground, a gem seam or a hive square outlive whoever held them —
+ * the hive's terrain outliving its ownership is the single most expensive lesson in this
+ * codebase (§5a).
+ */
+export function razeTile(t: Tile): void {
+  t.owner = null;
+  t.struct = null;
+  t.soldiers = 0;
+  t.tunnel = false;
+}
+
 export function neighbours(state: GameState, t: Tile): Tile[] {
   const out: Tile[] = [];
   for (const [dc, dr] of DELTAS) {

@@ -18,7 +18,7 @@
  */
 import {
   DEF, HIVE_COOLDOWN, HIVE_GROW_EVERY, KEEP_NORMAL, KEEP_TUNNEL, MAPS, PROD, SPECIES,
-  TRAVEL_RANGE, createGame, hiveTick, recomputeConnectivity, tile,
+  TRAVEL_RANGE, clearBoard, createGame, hiveTick, recomputeConnectivity, tile,
 } from "../engine";
 import type { GameState, Player, Structure, Terrain } from "../engine";
 import { drawSnapshot } from "../render";
@@ -83,17 +83,10 @@ interface Section { title: string; blocks: Block[] }
  * of a picture about supply lines are five things to wonder about.
  */
 function blank(keepHive = false): GameState {
-  const s = createGame({
-    map: "tiny", species: { you: "leafcutter", ai: "fire" }, seed: 7,
-  });
-  for (const row of s.grid) {
-    for (const t of row) {
-      t.owner = null; t.struct = null; t.soldiers = 0; t.guard = 0; t.tunnel = false;
-      if (!keepHive || (t.terrain !== "hiveQ" && t.terrain !== "hiveG")) t.terrain = "ground";
-    }
-  }
-  s.effects = [];
-  return s;
+  return clearBoard(
+    createGame({ map: "tiny", species: { you: "leafcutter", ai: "fire" }, seed: 7 }),
+    keepHive,
+  );
 }
 
 interface Put {

@@ -21,7 +21,7 @@ import { clockOf, colonyBanner } from "../chrome";
 import { buildAntarium, buildSpeciesPage } from "../antarium";
 import type { EngineEvent } from "../../engine";
 import { dayIndex, questDef } from "../../platform";
-import { scoreQuestEvents } from "../app";
+import { scoreQuestEvents } from "../../platform";
 import { buildQuests } from "../quests";
 import { buildColonyRoad } from "../road";
 import { buildRules } from "../rules";

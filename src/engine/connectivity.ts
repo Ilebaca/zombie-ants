@@ -1,4 +1,4 @@
-import { allTiles, isHiveTerrain, neighbours, nestTile } from "./board";
+import { allTiles, isHiveTerrain, neighbours, nestTile, razeTile } from "./board";
 import { key } from "./types";
 import type { EngineEvent, GameState, Player, Tile } from "./types";
 
@@ -81,7 +81,7 @@ export function isConnected(state: GameState, t: Tile): boolean {
 export function pruneVeins(state: GameState, owner: Player, events: EngineEvent[] = []): EngineEvent[] {
   const destroy = (t: Tile): void => {
     events.push({ type: "veinPruned", at: { c: t.c, r: t.r }, owner });
-    t.owner = null; t.struct = null; t.soldiers = 0; t.tunnel = false;
+    razeTile(t);
   };
 
   let changed = true;

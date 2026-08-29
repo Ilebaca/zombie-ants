@@ -72,7 +72,7 @@ export function screenHeader(parent: HTMLElement, opts: HeaderOptions): void {
  * icon already names, and it was the widest thing in the header — which pushed the centred
  * title off the middle of the screen to make room for a label nobody reads twice.
  */
-export function mycelChip(mycel: number): HTMLElement {
+function mycelChip(mycel: number): HTMLElement {
   const chip = el("div", "mycelchip");
   chip.append(icon("mycel", 18), el("b", "mycelv", String(mycel)));
   return chip;
@@ -194,7 +194,7 @@ function coin(
 }
 
 /** The little worker drawn in the avatar chip — three blobs and two eyes, as in legacy. */
-export function drawAvatar(canvas: HTMLCanvasElement): void {
+function drawAvatar(canvas: HTMLCanvasElement): void {
   const g = canvas.getContext("2d");
   if (!g) return;                       // jsdom, or a context the browser refused
   const W = canvas.width;

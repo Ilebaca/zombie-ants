@@ -33,7 +33,7 @@ import type { Coord, EngineEvent, GameState, Player, Tile } from "./types";
  * queen behind it — with the weakest attack multiplier in the game against the strongest
  * defence, since the player picked their colony and we do not get to choose.
  */
-export const TUTORIAL_ARMY = 170;
+const TUTORIAL_ARMY = 170;
 /** What the supply line and the camp stand at: enough to act, not enough to matter. */
 const SUPPLY = 6;
 /** The enemy holding the guard. Small: the lesson is the arithmetic, not the odds. */
