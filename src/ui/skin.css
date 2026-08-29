@@ -2883,3 +2883,119 @@ button:not(.playbtn):active,
   .mmk-reel { filter: blur(3.5px); }
   .mmk-half { transition-duration: 1ms; }
 }
+
+/* ============================================================================
+   ==  THE MAP PICKER IS THE MAP  =============================================
+   ============================================================================
+
+   Three cards with a thumbnail of coloured squares told a player nothing: a
+   diagram of a board rather than a board. What is being chosen is a PLACE, and
+   the game can draw it — every slide is a real opening position rendered by the
+   board's own code, so the gems, rocks, water, the Hive and both colonies are
+   where they will actually be.
+
+   The picture fills the screen and the controls float on it. Choosing is
+   dragging from one map to the next.
+   ============================================================================ */
+.mapstage { position: absolute; inset: 0; overflow: hidden; }
+
+/* The picker's own strip, under the chrome rather than over the whole app. */
+.deck.mapdeck { position: absolute; z-index: 0; }
+
+.mapshot {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--bg2);
+}
+/* Centred and allowed to bleed off the short edge: a background with margins is
+   a card again. The canvas is sized in JS off the LONGER side of the viewport. */
+.mapshot canvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: none;
+}
+
+/*
+   THE CHROME FLOATS. One layer over the picture: the header at the top, the
+   name and the button at the bottom, and nothing between them — the middle of
+   the screen is the map, which is the thing being chosen.
+
+   It does not take the pointer except where there is something to press, or the
+   layer would swallow the drag that turns the page.
+*/
+.mapchrome {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.mapchrome > * { pointer-events: none; }
+.mapchrome button,
+.mapchrome .backbtn { pointer-events: auto; }
+
+/* The board is behind the text at both ends, so both ends carry a wash — an
+   unreadable name over a lit tile is the one thing this screen must not do.
+   One wash on the block, not one per child, or the two overlap and band. */
+.maptop {
+  padding-bottom: 22px;
+  background: linear-gradient(180deg, rgba(6, 12, 8, .92) 34%, rgba(6, 12, 8, 0));
+}
+.mapchrome .screentop { padding-top: calc(env(safe-area-inset-top) + 10px); }
+.mapchrome .setupsteps { margin: 0 auto; }
+.mapfoot {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 42px 16px calc(env(safe-area-inset-bottom) + 18px);
+  background: linear-gradient(0deg, rgba(6, 12, 8, .94) 42%, rgba(6, 12, 8, 0));
+}
+.mapname {
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -.3px;
+  color: var(--ink);
+}
+.mapmeta {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  color: var(--muted);
+}
+/* Which of the three, and how many there are — the one thing a swipeable row
+   cannot say for itself. */
+.mapdots { display: flex; gap: 7px; margin: 6px 0 10px; }
+.mapdots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: var(--panel-edge);
+  transition: background 160ms linear, width 160ms ease;
+}
+.mapdots i.on { width: 20px; background: var(--grass-glow); }
+.mapfoot .cta { width: min(100%, var(--page)); margin: 0; }
+
+/* ---------------------------------------------------------- THE FORMATIONS
+   Same change, same reason: five rounded squares on a 72px canvas is a diagram
+   of a shape. Each is a real opening position now, windowed onto the player's
+   own corner, so the picture is what the board will show. */
+/* THREE across, not four. At four the picture is seventy pixels of a five-tile
+   board and the nest's mound is a smudge; at three it is half again as big and
+   the twelve still fit the screen in four rows. */
+.shapepick { grid-template-columns: repeat(3, 1fr); align-items: start; gap: 12px; }
+/* The card hugs its picture. The grid used to stretch its rows, which left a
+   square formation floating in a tall box of empty ground. */
+.shp { aspect-ratio: 1; padding: 6px; }
+.shp canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-md);
+}

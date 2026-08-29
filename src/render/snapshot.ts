@@ -23,6 +23,30 @@ import { basicLook } from "./art";
 import type { Look } from "./art";
 
 export interface SnapshotOptions {
+  /**
+   * Paint the soil and the feathered clearing under the board, the way the real ground
+   * does (terrain.ts). Off for the manual's figures — a two-inch picture of a rule wants
+   * flat ground, not scenery — and on for a full-screen preview of a map, where a board
+   * ending on a flat rectangle reads as a card rather than a place.
+   */
+  ground?: boolean;
+  /**
+   * Extra soil around the board, in TILES.
+   *
+   * The clearing is a feathered radial (terrain.ts) and it needs room to reach nothing: a
+   * canvas cropped to the board cuts the gradient off mid-fade, and that crop is a visible
+   * horizontal line across the picture. Two tiles of margin is enough for it to finish.
+   */
+  padTiles?: number;
+  /**
+   * Leave the canvas's CSS size to the stylesheet.
+   *
+   * By default the canvas is given its exact pixel size inline, which is what a figure in
+   * the manual wants. In a grid of cards the card decides the width — and an inline height
+   * then fights it: `max-width: 100%` squeezed the width while the inline height stood, so
+   * a square picture came out as a tall thin one.
+   */
+  fluid?: boolean;
   /** Pixels per tile. The canvas is sized from this and the window. */
   tile?: number;
   looks?: Partial<Record<Player, Look>>;
@@ -47,14 +71,16 @@ export function drawSnapshot(
   canvas: HTMLCanvasElement, state: GameState, opts: SnapshotOptions = {},
 ): boolean {
   const ts = opts.tile ?? 34;
-  const pad = Math.round(ts * 0.18);
+  const pad = opts.padTiles ? Math.round(ts * opts.padTiles) : Math.round(ts * 0.18);
   const view = opts.view ?? { c: 0, r: 0, cols: state.size, rows: state.size };
   const w = ts * view.cols + pad * 2;
   const h = ts * view.rows + pad * 2;
 
   const dpr = Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, 2);
-  canvas.style.width = `${w}px`;
-  canvas.style.height = `${h}px`;
+  if (!opts.fluid) {
+    canvas.style.width = `${w}px`;
+    canvas.style.height = `${h}px`;
+  }
   canvas.width = Math.max(1, Math.round(w * dpr));
   canvas.height = Math.max(1, Math.round(h * dpr));
 
@@ -73,8 +99,22 @@ export function drawSnapshot(
   layout.width = w;
   layout.height = h;
 
-  ctx.fillStyle = MAP.clearing;
-  ctx.fillRect(0, 0, w, h);
+  if (opts.ground) {
+    // The same two coats the board itself gets: soil everywhere, then the cleared patch
+    // lit over it with a feathered edge, so the playfield has no hard border.
+    const bw = ts * state.size;
+    const cx = layout.ox + bw / 2, cy = layout.oy + bw / 2;
+    ctx.fillStyle = MAP.groundDark;
+    ctx.fillRect(0, 0, w, h);
+    const clear = ctx.createRadialGradient(cx, cy, bw * 0.30, cx, cy, bw * 0.82);
+    clear.addColorStop(0, MAP.clearing);
+    clear.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = clear;
+    ctx.fillRect(0, 0, w, h);
+  } else {
+    ctx.fillStyle = MAP.clearing;
+    ctx.fillRect(0, 0, w, h);
+  }
 
   const scene: Scene = {
     ctx,

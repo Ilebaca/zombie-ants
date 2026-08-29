@@ -10,12 +10,15 @@
  * app's, the screens are its editors, and the tour walks the player through them one tap at
  * a time — a copy handed back at the end would lose a choice the moment a step navigated.
  */
-import { MAPS, SPECIES, START_SHAPES } from "../engine";
+import { MAPS, SPECIES, START_SHAPES, createGame, razeTile } from "../engine";
 import type { MapId, ShapeId, SpeciesId } from "../engine";
 import { SPECIES_ORDER } from "../platform";
 import type { ProfileStore } from "../platform";
-import { SPECIES_COL, antHead, basicLook, hexA, setFactionColor } from "../render";
+import {
+  MAP, SPECIES_COL, antHead, basicLook, drawSnapshot, hexA, setFactionColor,
+} from "../render";
 import { screenEl, screenHeader, setupSteps, toast } from "./chrome";
+import { Deck } from "./deck";
 
 /** What a match is built from. The setup screens are the only things that write it. */
 export interface Choices {
@@ -40,54 +43,125 @@ const MAP_ORDER: readonly MapId[] = ["tiny", "small", "mid"];
 
 /* ----------------------------------------------------------------- MAP SELECT */
 
+/**
+ * THE MAP PICKER IS THE MAP.
+ *
+ * It was three cards on a page, each with a thumbnail of coloured squares — a diagram of a
+ * board rather than a board. What a player is choosing between is a PLACE, and the game can
+ * already draw it: every slide here is a real `GameState` for that map, at its opening
+ * position, drawn by the board's own code (render/snapshot.ts). The gems, the rocks, the
+ * water, the Hive and both colonies are where they will actually be.
+ *
+ * So the picture fills the screen and everything else floats on it, and choosing is
+ * dragging from one map to the next — the same strip the home screens ride (ui/deck.ts),
+ * because the gesture handling there is the expensive part and this is the same object.
+ */
 export function buildMapSelect(o: SetupOptions): HTMLElement {
   const el = screenEl("mapsel");
-  screenHeader(el, { title: "Choose your map", onBack: o.onBack, backId: "mapBack" });
-  el.appendChild(setupSteps(0));
+  const stage = document.createElement("div");
+  stage.className = "mapstage";
 
-  const body = document.createElement("div");
-  body.className = "screenbody";
-  const box = document.createElement("div");
-  box.className = "setupbox";
-  const grid = document.createElement("div");
-  grid.className = "mappick";
-  grid.id = "mapPick";
+  const name = document.createElement("div");
+  name.className = "mapname";
+  const meta = document.createElement("div");
+  meta.className = "mapmeta";
+  const dots = document.createElement("div");
+  dots.className = "mapdots";
+  const pips = MAP_ORDER.map(() => {
+    const pip = document.createElement("i");
+    dots.appendChild(pip);
+    return pip;
+  });
 
-  for (const id of MAP_ORDER) {
+  const show = (id: MapId): void => {
     const def = MAPS[id];
-    const card = document.createElement("div");
-    card.className = "mp" + (id === o.choices.map ? " on" : "");
-    card.appendChild(mapThumb(def.size));
-    const words = document.createElement("div");
-    words.className = "mpwords";
-    const nm = document.createElement("div");
-    nm.className = "snm";
-    nm.textContent = def.name;
-    // The card said only how big the board is. What a player actually chooses between is
-    // how long the match runs and when the Hive wakes up in it.
-    const meta = document.createElement("div");
-    meta.className = "mpmeta";
+    o.choices.map = id;
+    name.textContent = def.name;
+    // Not how big the board is — what a player actually chooses between is how long the
+    // match runs and when the Hive wakes up in it.
     meta.textContent = `Hive wakes turn ${def.awakenTurn} · about ${def.turnLimit} turns`;
-    words.append(nm, meta);
-    card.appendChild(words);
-    card.onclick = () => {
-      grid.querySelectorAll(".mp").forEach((x) => x.classList.remove("on"));
-      card.classList.add("on");
-      o.choices.map = id;
-    };
-    grid.appendChild(card);
-  }
+    pips.forEach((pip, i) => pip.classList.toggle("on", MAP_ORDER[i] === id));
+  };
 
+  const deck = new Deck<MapId>(
+    MAP_ORDER,
+    (id) => mapSlide(id, o.choices.species),
+    show,
+    { className: "mapdeck", id: "mapDeck" },
+  );
+  stage.appendChild(deck.el);
+
+  // EVERYTHING ELSE FLOATS. One layer over the picture, so the map is the screen and the
+  // controls are on it rather than beside it.
+  const chrome = document.createElement("div");
+  chrome.className = "mapchrome";
+  // Header and step dots are ONE block at the top. Left as separate children of a
+  // space-between column they were three things spread down the screen, which put the
+  // three dots across the middle of the map.
+  const top = document.createElement("div");
+  top.className = "maptop";
+  screenHeader(top, { title: "Choose your map", onBack: o.onBack, backId: "mapBack" });
+  top.appendChild(setupSteps(0));
+  chrome.appendChild(top);
+
+  const foot = document.createElement("div");
+  foot.className = "mapfoot";
   const next = document.createElement("button");
   next.className = "cta";
   next.id = "mapNext";
   next.textContent = "Next";
   next.onclick = o.onNext;
+  foot.append(name, meta, dots, next);
+  chrome.appendChild(foot);
 
-  box.append(grid, next);
-  body.appendChild(box);
-  el.appendChild(body);
+  stage.appendChild(chrome);
+  el.appendChild(stage);
+
+  deck.goTo(MAP_ORDER.includes(o.choices.map) ? o.choices.map : "tiny", false);
   return el;
+}
+
+/**
+ * One map, drawn as the game will draw it, whole.
+ *
+ * FIT, not cover. Sizing the tile off the longer side filled the screen with the middle of
+ * a 13×13 board — which is a texture, not a map, and the player is choosing between the
+ * shapes of three places. The board is fitted to the screen's narrow side instead, so all
+ * of it is there, and the soil it sits on carries on to the edges behind it.
+ *
+ * A bigger map therefore draws SMALLER tiles, which is the honest comparison: Gauntlet
+ * really is thirteen squares of the same board Skirmish gets seven of.
+ */
+function mapSlide(id: MapId, species: SpeciesId): HTMLElement {
+  const slide = document.createElement("div");
+  slide.className = "mapshot";
+  // The soil continues past the board rather than ending on a panel colour: the picture is
+  // a place, and a place does not stop at the edge of the playfield. The canvas paints the
+  // same soil under its own clearing, so the two meet without a seam.
+  slide.style.background = MAP.groundDark;
+  const canvas = document.createElement("canvas");
+
+  const w = window.innerWidth || 390;
+  const h = window.innerHeight || 780;
+  const size = MAPS[id].size;
+  // The opening position of a real match on this map: both colonies placed, the terrain
+  // generated, the Hive where it will be. Seeded on the map so it is the same every time.
+  const state = createGame({
+    map: id,
+    species: { you: species, ai: species === "fire" ? "ghost" : "fire" },
+    seed: 0x5eed ^ size,
+  });
+  // The chrome sits over the top and bottom, so the clear middle is what a board has to
+  // fit inside — a hair under the width, and well inside the gap between the two washes.
+  drawSnapshot(canvas, state, {
+    tile: Math.floor(Math.min(w, h * 0.56) / size),
+    ground: true,
+    // Soil around it, so the clearing's feathered edge finishes inside the picture rather
+    // than being cropped into a line. The overhang bleeds off the sides; the slide clips.
+    padTiles: 2,
+  });
+  slide.appendChild(canvas);
+  return slide;
 }
 
 /* ------------------------------------------------------------- SPECIES SELECT */
@@ -222,7 +296,7 @@ export function buildFormationSelect(o: SetupOptions): HTMLElement {
     cellWrap.className = "shpcell";
     const card = document.createElement("div");
     card.className = "shp" + (id === first ? " on" : "");
-    card.appendChild(shapeThumb(START_SHAPES[id]));
+    card.appendChild(shapePreview(id, o.choices.species));
     const nm = document.createElement("div");
     nm.className = "snm";
     nm.textContent = id.charAt(0).toUpperCase() + id.slice(1);
@@ -272,66 +346,40 @@ export function rollAISpecies(yours: SpeciesId, rng: () => number = Math.random)
   return pool[pool.length - 1] as SpeciesId;
 }
 
-const cssVar = (n: string): string =>
-  getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-
-function mapThumb(n: number): HTMLCanvasElement {
-  const SZ = 58;
-  const cv = document.createElement("canvas");
-  cv.width = SZ; cv.height = SZ;
-  const g = cv.getContext("2d");
-  if (!g) return cv;
-  const cell = SZ / n;
-
-  g.fillStyle = "rgba(255,255,255,.04)";
-  g.fillRect(0, 0, SZ, SZ);
-  g.fillStyle = cssVar("--line");
-  for (let r = 0; r < n; r++) {
-    for (let c = 0; c < n; c++) {
-      if ((r + c) % 2 === 0) { g.globalAlpha = 0.6; g.fillRect(c * cell, r * cell, cell, cell); }
-    }
-  }
-  g.globalAlpha = 1;
-
-  // Gauntlet's two water bites, so the thumbnail shows why that map plays differently.
-  if (n === 13) {
-    g.fillStyle = "#2f6fb0";
-    for (let r = 0; r < n; r++) {
-      for (let c = 0; c < n; c++) {
-        const left = c * c + (r - 6) * (r - 6);
-        const right = (c - (n - 1)) * (c - (n - 1)) + (r - 6) * (r - 6);
-        if (left <= 9 || right <= 9) g.fillRect(c * cell, r * cell, cell, cell);
-      }
-    }
-  }
-
-  const b = Math.max(cell * 2, 8);
-  g.fillStyle = cssVar("--you-glow"); g.fillRect(0, SZ - b, b, b);        // your corner
-  g.fillStyle = cssVar("--ai-glow"); g.fillRect(SZ - b, 0, b, b);         // enemy corner
-  return cv;
-}
-
-/** Formation thumbnail, drawn hugging the bottom-left as it sits in the player's corner. */
-function shapeThumb(cells: ReadonlyArray<readonly [number, number]>): HTMLCanvasElement {
-  const SZ = 72;
-  const cv = document.createElement("canvas");
-  cv.width = SZ; cv.height = SZ;
-  const g = cv.getContext("2d");
-  if (!g) return cv;
-  const cell = SZ / 5, r = 3;
-
-  cells.forEach(([lc, lr], idx) => {
-    const x = lc * cell, y = (SZ - cell) - lr * cell;
-    g.fillStyle = idx === 0 ? cssVar("--you-glow") : cssVar("--you");   // cell 0 is the nest
-    g.globalAlpha = idx === 0 ? 1 : 0.85;
-    g.beginPath();
-    g.moveTo(x + r, y);
-    g.arcTo(x + cell, y, x + cell, y + cell, r);
-    g.arcTo(x + cell, y + cell, x, y + cell, r);
-    g.arcTo(x, y + cell, x, y, r);
-    g.arcTo(x, y, x + cell, y, r);
-    g.closePath(); g.fill();
-    g.globalAlpha = 1;
+/**
+ * A FORMATION, as the board will actually show it.
+ *
+ * It was five rounded squares on a 72px canvas — a diagram of a shape, which told a player
+ * nothing about what they were about to look at. This builds a real game with that
+ * formation and windows onto the player's own corner, so the picture has the nest, the
+ * garrison counts, the outline and the ground exactly as the match will draw them.
+ */
+function shapePreview(id: ShapeId, species: SpeciesId): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  const state = createGame({
+    map: "tiny",
+    species: { you: species, ai: species },
+    shape: START_SHAPES[id],
+    seed: 0xf0f,
   });
-  return cv;
+  // ONLY the formation. A real map puts the Hive in the middle, wild garrisons about and
+  // rocks wherever the generator liked, and a two-inch picture of five tiles with all of
+  // that behind it is a picture of the map. Everything that is not the player's own colony
+  // goes, so the twelve cards differ by the only thing being chosen.
+  for (const row of state.grid) {
+    for (const t of row) {
+      if (t.owner === "you") continue;
+      razeTile(t);
+      t.guard = 0;
+      t.terrain = "ground";
+    }
+  }
+  // The player's corner is the bottom-left, and no formation reaches more than five tiles
+  // from it — so a five-square window holds every one of the twelve.
+  const size = state.size;
+  // The card decides the width; the picture is square, so the stylesheet sizes it.
+  drawSnapshot(canvas, state, {
+    tile: 26, view: { c: 0, r: size - 5, cols: 5, rows: 5 }, fluid: true,
+  });
+  return canvas;
 }

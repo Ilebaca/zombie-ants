@@ -49,10 +49,18 @@ export class Deck<T extends string> {
     private build: (id: T) => HTMLElement,
     /** Fired when a screen becomes the one on show, however it got there. */
     private onArrive: (id: T) => void,
+    /**
+     * An extra class and id, for a second strip that is not the home deck.
+     *
+     * The map picker is the same object — a row of full-screen pages the player drags
+     * between — and the gesture handling here is the expensive part to get right (§9a).
+     * It needs its own styling hook rather than its own copy of all of that.
+     */
+    opts: { className?: string; id?: string } = {},
   ) {
     this.el = document.createElement("div");
-    this.el.className = "deck";
-    this.el.id = "deck";
+    this.el.className = opts.className ? `deck ${opts.className}` : "deck";
+    this.el.id = opts.id ?? "deck";
 
     this.rail = document.createElement("div");
     this.rail.className = "deckrail";

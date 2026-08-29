@@ -557,6 +557,29 @@ research, each a count with a bar and a way in), so another thing to collect is 
   credits a capture the profile does not is two numbers disagreeing on screen. The fastest
   win ignores a loss and an untimed match — a zero would win every comparison for ever.
 
+**THE PICKERS SHOW THE GAME, NOT A DIAGRAM OF IT** (`ui/setup.ts`). The map picker was
+three cards with a thumbnail of coloured squares and the formation picker was five rounded
+squares on a 72px canvas. Both are `render/snapshot.ts` over a REAL `GameState` now — the
+same drawing code the board uses — so the gems, rocks, water, the Hive and both colonies
+are where they will actually be, and a change to how a nest is drawn reaches the pickers on
+the same commit.
+- **The map picker IS the map.** Full screen, everything floating on it, and choosing is
+  dragging from one to the next — the same `Deck` the home screens ride, because the
+  gesture handling there is the expensive part (§9a) and this is the same object. It takes
+  a class and id so it can be styled apart from the home strip.
+- **FIT, not cover.** Sizing the tile off the longer side filled the screen with the middle
+  of a 13×13 board, which is a texture rather than a map. Fitted to the narrow side, all of
+  it is there — and a bigger map honestly draws smaller tiles.
+- **A preview needs soil around it** (`padTiles`). The clearing is a feathered radial, and
+  a canvas cropped to the board cuts that gradient off mid-fade — a visible line straight
+  across the picture.
+- **A formation preview is the formation ONLY.** A real map puts the Hive in the middle and
+  wild garrisons about; twelve two-inch cards with all of that behind them are twelve
+  pictures of the map. Everything that is not the player's own colony is razed first.
+- **A card in a grid sizes its own canvas** (`fluid`). `drawSnapshot` writes the exact
+  pixel size inline, which is right for a figure and wrong in a grid: `max-width: 100%`
+  squeezed the width while the inline height stood, and a square picture came out tall.
+
 **HOW TO PLAY IS A MANUAL** (`src/ui/rules.ts`). It was seven lines of prose, which cannot
 carry a game with deterministic combat a player is meant to count out, supply lines that
 freeze a colony that ignores them, veins with rules of their own and a Hive on a clock.
