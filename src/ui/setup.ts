@@ -15,7 +15,7 @@ import type { MapId, ShapeId, SpeciesId } from "../engine";
 import { SPECIES_ORDER } from "../platform";
 import type { ProfileStore } from "../platform";
 import {
-  MAP, SPECIES_COL, antHead, basicLook, drawSnapshot, hexA, setFactionColor,
+  SPECIES_COL, antHead, basicLook, drawSnapshot, hexA, setFactionColor,
 } from "../render";
 import { screenEl, screenHeader, setupSteps, toast } from "./chrome";
 import { Deck } from "./deck";
@@ -106,12 +106,17 @@ export function buildMapSelect(o: SetupOptions): HTMLElement {
 
   const foot = document.createElement("div");
   foot.className = "mapfoot";
+  // The dots say there are three; nothing on the screen says how to reach the other two.
+  // A strip you drag has no affordance of its own, so it is written down once.
+  const hint = document.createElement("div");
+  hint.className = "maphint";
+  hint.textContent = "Swipe to choose your map";
   const next = document.createElement("button");
   next.className = "cta";
   next.id = "mapNext";
   next.textContent = "Next";
   next.onclick = o.onNext;
-  foot.append(name, meta, dots, next);
+  foot.append(name, meta, dots, hint, next);
   chrome.appendChild(foot);
 
   stage.appendChild(chrome);
@@ -121,13 +126,20 @@ export function buildMapSelect(o: SetupOptions): HTMLElement {
   return el;
 }
 
+/** Soil left around the playfield, in tiles. Enough for the clearing's feathered edge to
+ *  finish inside the picture — cropped at the last tile it ends on a hard line. */
+export const MAP_PAD_TILES = 0.9;
+
 /**
- * One map, drawn as the game will draw it, whole.
+ * One map, drawn as the game will draw it: the PLAYFIELD, and a hair of ground round it.
  *
  * FIT, not cover. Sizing the tile off the longer side filled the screen with the middle of
  * a 13×13 board — which is a texture, not a map, and the player is choosing between the
- * shapes of three places. The board is fitted to the screen's narrow side instead, so all
- * of it is there, and the soil it sits on carries on to the edges behind it.
+ * shapes of three places.
+ *
+ * And the picture stops just outside the tiles rather than bleeding to the edges. Ground
+ * carried to the corners of the screen made every map the same picture of undergrowth with
+ * a different board somewhere in it; a plate the size of the board is the board.
  *
  * A bigger map therefore draws SMALLER tiles, which is the honest comparison: Gauntlet
  * really is thirteen squares of the same board Skirmish gets seven of.
@@ -135,10 +147,6 @@ export function buildMapSelect(o: SetupOptions): HTMLElement {
 function mapSlide(id: MapId, species: SpeciesId): HTMLElement {
   const slide = document.createElement("div");
   slide.className = "mapshot";
-  // The soil continues past the board rather than ending on a panel colour: the picture is
-  // a place, and a place does not stop at the edge of the playfield. The canvas paints the
-  // same soil under its own scenery, so the two meet without a seam.
-  slide.style.background = MAP.groundB;
   const canvas = document.createElement("canvas");
 
   const w = window.innerWidth || 390;
@@ -151,18 +159,16 @@ function mapSlide(id: MapId, species: SpeciesId): HTMLElement {
     species: { you: species, ai: species === "fire" ? "ghost" : "fire" },
     seed: 0x5eed ^ size,
   });
-  // The chrome sits over the top and bottom, so the clear middle is what a board has to
-  // fit inside — a hair under the width, and well inside the gap between the two washes.
-  const tile = Math.floor(Math.min(w, h * 0.56) / size);
+  // The chrome sits over the top and bottom, so the clear middle is what the WHOLE picture
+  // has to fit inside — padding included, or a padded 13×13 runs under the footer wash.
+  const across = size + 2 * MAP_PAD_TILES;
+  const tile = Math.floor(Math.min(w - 40, h * 0.5) / across);
   drawSnapshot(canvas, state, {
     tile,
     // The REAL ground, scenery and all — this is meant to read as a screenshot of the map,
     // and the grass, stones and logs are most of what one map looks like next to another.
     terrain: true,
-    // Enough ground around the board to COVER THE SCREEN. Anything less and the picture
-    // ends on a line partway down, with flat colour above and below it — the one thing a
-    // full-bleed screenshot must not have. The overhang is clipped by the slide.
-    padTiles: Math.ceil((Math.max(w, h) / tile - size) / 2),
+    padTiles: MAP_PAD_TILES,
   });
   slide.appendChild(canvas);
   return slide;
