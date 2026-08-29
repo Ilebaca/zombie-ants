@@ -6,7 +6,10 @@
  * hidden tab (CLAUDE.md §10). Everything asserted here is structure and state, never looks.
  */
 import { describe, expect, it, beforeEach } from "vitest";
-import { CHAMBER_MAX, RESEARCH_MAX, SPECIES, chamberCost, researchCost } from "../../engine";
+import {
+  CHAMBER_MAX, DEF, HIVE_COOLDOWN, HIVE_GROW_EVERY, KEEP_NORMAL, MAPS, PROD, RESEARCH_MAX,
+  SPECIES, TRAVEL_RANGE, chamberCost, researchCost,
+} from "../../engine";
 import type { SpeciesId } from "../../engine";
 import {
   COLONY_START, MemoryStore, ProfileStore, ROAD_CHAPTER_STOPS, SPECIES_UNLOCK, compact,
@@ -21,6 +24,7 @@ import { dayIndex, questDef } from "../../platform";
 import { scoreQuestEvents } from "../app";
 import { buildQuests } from "../quests";
 import { buildColonyRoad } from "../road";
+import { buildRules } from "../rules";
 
 /**
  * A profile with exactly the balances a test asks for. Set explicitly rather than topped
@@ -751,5 +755,68 @@ describe("legacy markup parity", () => {
     // The header strip is rendered last, which is what puts it at the foot of the ladder.
     const body = root.querySelector(".screenbody");
     expect(body?.lastElementChild?.className).toBe("roadhead");
+  });
+});
+
+/**
+ * HOW TO PLAY — the manual.
+ *
+ * It was seven lines. The value of the rebuild is not its length: it is that the numbers on
+ * it are READ FROM THE ENGINE and the pictures are drawn by the board's own code, so a
+ * balance change cannot leave the manual quietly lying about the game.
+ */
+describe("the manual", () => {
+  const text = (): string => buildRules().textContent ?? "";
+
+  it("covers every rule a player has to be told rather than discover", () => {
+    const said = text();
+    for (const heading of [
+      "How a match is won", "A turn", "Moving and attacking", "What the tiles are worth",
+      "Travel and veins", "Supply lines", "Rally and Advance", "The Hive", "Leaf walls",
+      "Nine colonies", "What you play for",
+    ]) {
+      expect(said, `nothing about "${heading}"`).toContain(heading);
+    }
+  });
+
+  /*
+   * Every figure on the screen is read from engine/config.ts. Hard-coding one is the whole
+   * failure this guards: the manual would keep saying "+6 defence" long after it was +5.
+   */
+  it("quotes the engine's own numbers, never its own copy of them", () => {
+    const said = text();
+    expect(said).toContain(`${PROD.nest} troops a turn, +${DEF.nest} defence`);
+    expect(said).toContain(`${PROD.stable} a turn, +${DEF.stable} defence`);
+    expect(said).toContain(`${PROD.resourceStable} a turn, +${DEF.resourceOwned} defence`);
+    expect(said).toContain(`${TRAVEL_RANGE} tiles`);
+    expect(said).toContain(`turn ${MAPS.tiny.awakenTurn}`);
+    expect(said).toContain(`every ${HIVE_GROW_EVERY} turns`);
+    expect(said).toContain(`gone for ${HIVE_COOLDOWN} turns`);
+    expect(said).toContain(`${KEEP_NORMAL} soldier`);
+  });
+
+  /** The nine colonies are listed from the species table, not retyped beside it. */
+  it("lists every colony and its ability", () => {
+    const said = text();
+    for (const sp of Object.values(SPECIES)) {
+      expect(said, `${sp.name} is missing`).toContain(sp.name);
+      expect(said, `${sp.name}'s ability is missing`).toContain(sp.ability.name);
+    }
+  });
+
+  /**
+   * The pictures are real positions drawn by the board's own code. jsdom has no 2D
+   * context, so they draw nothing — and the screen has to come out whole anyway (§6).
+   */
+  it("puts a picture beside the rules that need one, and survives having no canvas", () => {
+    const root = buildRules();
+    const figures = root.querySelectorAll(".ru-fig");
+    expect(figures.length).toBeGreaterThanOrEqual(6);
+    for (const fig of Array.from(figures)) {
+      expect(fig.querySelector("canvas"), "a figure with no picture in it").toBeTruthy();
+      expect(fig.querySelector(".ru-cap")?.textContent, "a picture with no caption")
+        .toBeTruthy();
+    }
+    expect(root.id).toBe("rules");
   });
 });

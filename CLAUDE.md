@@ -548,6 +548,26 @@ research, each a count with a bar and a way in), so another thing to collect is 
   credits a capture the profile does not is two numbers disagreeing on screen. The fastest
   win ignores a loss and an untimed match — a zero would win every comparison for ever.
 
+**HOW TO PLAY IS A MANUAL** (`src/ui/rules.ts`). It was seven lines of prose, which cannot
+carry a game with deterministic combat a player is meant to count out, supply lines that
+freeze a colony that ignores them, veins with rules of their own and a Hive on a clock.
+Eleven sections now, with a picture beside the rules that need one.
+- **The pictures are NOT screenshots.** Each is a real `GameState` drawn by the board's own
+  code (`render/snapshot.ts`), so a change to how a vein or a wild garrison is drawn reaches
+  the manual on the same commit, and no figure can illustrate a rule the engine no longer
+  has. There is no image file to keep in step.
+- **The numbers are read from `engine/config.ts`**, never typed out — production, flat
+  defence, the one-soldier floor, travel range, when the Hive wakes. A balance change cannot
+  leave the manual quietly lying about the game, and a test holds the phrasing against the
+  constants.
+- **The Hive figure is TICKED, not drawn.** `hiveTick` sets her garrison, so the picture
+  shows the numbers the engine would actually put there.
+- **A figure's window is an ORIGIN, not a crop of the drawing.** Every tile is still drawn
+  and the ones outside land off the canvas, which is what keeps a colony's fillets and
+  trails correct at the edge of the picture.
+- **The hive terrain is cleared from every figure that is not about it.** It sits in the
+  middle of every map, which is inside most of these windows.
+
 **WHO IS PLAYING is ON THE GROUND** (`render/plates.ts`). The header counted two armies
 and called them "You" and "Enemy" — a scoreboard, not an opponent — and the colony, the
 number the whole game is played for (§8a), was never once in front of the player while they

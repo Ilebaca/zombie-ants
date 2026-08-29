@@ -2378,6 +2378,82 @@ button:not(.playbtn):active,
   width: 100%;
 }
 
+/* ============================================================================
+   ==  THE MANUAL  ============================================================
+   ============================================================================
+
+   Seven lines of prose could not carry this game: combat a player is meant to
+   count out, supply lines that freeze a colony that ignores them, veins with
+   rules of their own, a Hive on a clock. It is a manual now — sections, and a
+   picture beside the rules that need one.
+
+   The pictures are the BOARD'S OWN CODE over a real position (render/snapshot),
+   so they cannot drift from the game and there is no image to keep in step.
+   ============================================================================ */
+#rules .rules {
+  background: none;
+  border: 0;
+  padding: 0;
+  line-height: 1.62;
+}
+/* A section heading, not a card: the rule under it is the thing, and a box round
+   every one of eleven sections is eleven boxes down a page of text. */
+.ru-h {
+  margin: 26px 0 8px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--grass-glow);
+}
+.ru-h:first-child { margin-top: 4px; }
+.ru-p { margin: 0 0 10px; }
+.ru-l {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 7px;
+}
+/* A dash rather than a bullet disc: the discs were the only round marks on a
+   page of square ones, and a rule is a line of text, not an item in a basket. */
+.ru-l li {
+  position: relative;
+  padding-left: 14px;
+}
+.ru-l li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: .74em;
+  width: 7px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--grass);
+}
+
+/* A figure is the picture and one line saying what to look at. Centred on the
+   column, because a board is a square and a square left-aligned in a text
+   column reads as an indent that went wrong. */
+.ru-fig {
+  margin: 4px 0 16px;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+.ru-shot {
+  display: block;
+  max-width: 100%;
+  border-radius: var(--r-md);
+}
+.ru-cap {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .1px;
+  color: var(--muted);
+  text-align: center;
+}
+
 /* ======================================================================
    ==  THE PROFILE  =====================================================
    ======================================================================

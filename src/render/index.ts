@@ -8,3 +8,5 @@ export {
 } from "./art";
 export type { Look, HillStyle, SkinStyle } from "./art";
 export { COL, MAP, SPECIES_COL, hexA, loadColors, ownerCol, setFactionColor } from "./palette";
+export { drawSnapshot } from "./snapshot";
+export type { SnapshotOptions } from "./snapshot";
