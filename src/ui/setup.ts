@@ -137,8 +137,8 @@ function mapSlide(id: MapId, species: SpeciesId): HTMLElement {
   slide.className = "mapshot";
   // The soil continues past the board rather than ending on a panel colour: the picture is
   // a place, and a place does not stop at the edge of the playfield. The canvas paints the
-  // same soil under its own clearing, so the two meet without a seam.
-  slide.style.background = MAP.groundDark;
+  // same soil under its own scenery, so the two meet without a seam.
+  slide.style.background = MAP.groundB;
   const canvas = document.createElement("canvas");
 
   const w = window.innerWidth || 390;
@@ -153,12 +153,16 @@ function mapSlide(id: MapId, species: SpeciesId): HTMLElement {
   });
   // The chrome sits over the top and bottom, so the clear middle is what a board has to
   // fit inside — a hair under the width, and well inside the gap between the two washes.
+  const tile = Math.floor(Math.min(w, h * 0.56) / size);
   drawSnapshot(canvas, state, {
-    tile: Math.floor(Math.min(w, h * 0.56) / size),
-    ground: true,
-    // Soil around it, so the clearing's feathered edge finishes inside the picture rather
-    // than being cropped into a line. The overhang bleeds off the sides; the slide clips.
-    padTiles: 2,
+    tile,
+    // The REAL ground, scenery and all — this is meant to read as a screenshot of the map,
+    // and the grass, stones and logs are most of what one map looks like next to another.
+    terrain: true,
+    // Enough ground around the board to COVER THE SCREEN. Anything less and the picture
+    // ends on a line partway down, with flat colour above and below it — the one thing a
+    // full-bleed screenshot must not have. The overhang is clipped by the slide.
+    padTiles: Math.ceil((Math.max(w, h) / tile - size) / 2),
   });
   slide.appendChild(canvas);
   return slide;

@@ -19,17 +19,25 @@ import {
 import type { Scene } from "./board";
 import { RevealTracker } from "./reveal";
 import { MAP } from "./palette";
+import { drawTerrain } from "./terrain";
 import { basicLook } from "./art";
 import type { Look } from "./art";
 
 export interface SnapshotOptions {
   /**
    * Paint the soil and the feathered clearing under the board, the way the real ground
-   * does (terrain.ts). Off for the manual's figures — a two-inch picture of a rule wants
-   * flat ground, not scenery — and on for a full-screen preview of a map, where a board
-   * ending on a flat rectangle reads as a card rather than a place.
+   * does (terrain.ts) — but no scenery. Between flat and `terrain`.
    */
   ground?: boolean;
+  /**
+   * THE REAL GROUND: the baked plate, with every rock, log, fern, tuft and pebble on it.
+   *
+   * This is what makes a preview a SCREENSHOT rather than a drawing of a board. The
+   * manual's figures do not want it — a fallen log across a two-inch picture of a rule is
+   * clutter — but a full-screen map preview does, because the scenery is most of what one
+   * map looks like next to another.
+   */
+  terrain?: boolean;
   /**
    * Extra soil around the board, in TILES.
    *
@@ -99,7 +107,11 @@ export function drawSnapshot(
   layout.width = w;
   layout.height = h;
 
-  if (opts.ground) {
+  if (opts.terrain) {
+    // Exactly what the board paints under itself: soil, drift, the feathered clearing, the
+    // chequer, and the scenery baked around the playfield.
+    drawTerrain(ctx, layout);
+  } else if (opts.ground) {
     // The same two coats the board itself gets: soil everywhere, then the cleared patch
     // lit over it with a feathered edge, so the playfield has no hard border.
     const bw = ts * state.size;

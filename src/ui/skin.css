@@ -2944,9 +2944,12 @@ button:not(.playbtn):active,
 /* The board is behind the text at both ends, so both ends carry a wash — an
    unreadable name over a lit tile is the one thing this screen must not do.
    One wash on the block, not one per child, or the two overlap and band. */
+/* Deeper than a wash needs to be over a flat panel: the ground under it is a
+   real screenshot now — lit soil, grass, pale stones — and a title has to hold
+   whatever the generator happened to put behind it. */
 .maptop {
-  padding-bottom: 22px;
-  background: linear-gradient(180deg, rgba(6, 12, 8, .92) 34%, rgba(6, 12, 8, 0));
+  padding-bottom: 34px;
+  background: linear-gradient(180deg, rgba(4, 9, 6, .96) 42%, rgba(4, 9, 6, 0));
 }
 .mapchrome .screentop { padding-top: calc(env(safe-area-inset-top) + 10px); }
 .mapchrome .setupsteps { margin: 0 auto; }
@@ -2954,8 +2957,8 @@ button:not(.playbtn):active,
   display: grid;
   justify-items: center;
   gap: 6px;
-  padding: 42px 16px calc(env(safe-area-inset-bottom) + 18px);
-  background: linear-gradient(0deg, rgba(6, 12, 8, .94) 42%, rgba(6, 12, 8, 0));
+  padding: 62px 16px calc(env(safe-area-inset-bottom) + 18px);
+  background: linear-gradient(0deg, rgba(4, 9, 6, .97) 52%, rgba(4, 9, 6, 0));
 }
 .mapname {
   font-size: 21px;
