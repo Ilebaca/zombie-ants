@@ -2737,3 +2737,125 @@ button:not(.playbtn):active,
   color: var(--grass-glow);
   font-variant-numeric: tabular-nums;
 }
+
+/* ============================================================================
+   ==  FINDING AN OPPONENT  ===================================================
+   ============================================================================
+
+   A vertical split: you on the left, the seat across the board on the right.
+   While the search runs the right half REELS — profiles scrolling past under
+   motion blur, too fast to read — because the one thing a search screen has to
+   say is that it is looking at people and has not settled on one.
+
+   Then the halves PART and the board is already underneath with the camera
+   coming down onto it, so the reveal and the opening are one movement.
+   ============================================================================ */
+.mmk {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+  /* No background of its own: the two halves ARE the screen, so parting them is
+     what reveals the board rather than fading a sheet away over it. */
+  background: none;
+  pointer-events: auto;
+}
+
+.mmk-half {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--bg1);
+  transition: transform 520ms cubic-bezier(.6, 0, .35, 1);
+}
+/* THE SEAM, so the screen reads as two halves before they move. Half of it on
+   each side: one border on one half would belong to that half, and the join has
+   to belong to neither — it is where the screen is about to come apart. */
+.mmk-you { border-right: 1px solid var(--line); }
+.mmk-foe { border-left: 1px solid var(--line); }
+/* THE PART. Straight out to the sides, on one curve — a lid opening, not two
+   panels animating. */
+.mmk.split .mmk-you { transform: translateX(-101%); }
+.mmk.split .mmk-foe { transform: translateX(101%); }
+.mmk.split .mmk-status { opacity: 0; transition: opacity 160ms linear; }
+
+.mmk-card {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  text-align: center;
+  max-width: 100%;
+}
+.mmk-head { display: block; width: 108px; height: 108px; }
+/* The name is the biggest thing on the card: it is who you are about to play. */
+.mmk-name {
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -.2px;
+  color: var(--ink);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mmk-colony {
+  font-size: 12.5px;
+  font-weight: 900;
+  letter-spacing: .3px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+   THE REEL. Motion blur is the whole point: a legible name scrolling past says
+   "here is a list", and a smear says "we are still looking". It is a real blur
+   on the strip rather than a fade, because a fade would leave the text readable
+   at rest between steps.
+*/
+.mmk-reel {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  filter: blur(6px);
+  opacity: .8;
+  animation: mmk-reel 90ms linear infinite;
+}
+@keyframes mmk-reel {
+  from { transform: translateY(26%); }
+  to { transform: translateY(-26%); }
+}
+/* A reeling card is a shape, not a profile: nine colonies' colours flickering past
+   at eleven a second is a strobe, so the reel is one tone under the blur. */
+.mmk-reel .mmk-colony { color: var(--muted) !important; }
+
+/* THE STOP is hard. A card that eases in reads as an animation finishing; one
+   that is simply THERE reads as the search having hit something. */
+.mmk-found {
+  position: relative;
+  opacity: 0;
+}
+.mmk-found.on { opacity: 1; }
+
+.mmk-status {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 34px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.mmk.found .mmk-status { color: var(--grass-glow); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mmk-reel { animation: none; filter: blur(6px); }
+  .mmk-half { transition-duration: 1ms; }
+}

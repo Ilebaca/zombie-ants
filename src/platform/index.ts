@@ -23,9 +23,12 @@ export {
   grownColony, losses, winnings,
 } from "./colony";
 export type { RoadReward, RoadStop, RoadTrack } from "./road";
-export { RIVAL_NAMES, rivalFor } from "./rival";
+export { RIVAL_NAMES } from "./rival";
+export {
+  BOTS_PER_CHAPTER, LocalMatchmaker, SEARCH_MS, botsForChapter, chapterOf,
+} from "./matchmaking";
+export type { Matchmaker, Opponent } from "./matchmaking";
 export { scoreQuestEvents } from "./scoring";
-export type { Rival } from "./rival";
 export { DemoGateway, SHOP_PRODUCTS, productById } from "./purchases";
 export type { Grant, Product, ProductKind, PurchaseGateway, PurchaseResult } from "./purchases";
 export {

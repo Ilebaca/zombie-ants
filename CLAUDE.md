@@ -580,6 +580,36 @@ Ten numbered sections now, with a picture beside the rules that need one.
 - **The hive terrain is cleared from every figure that is not about it.** It sits in the
   middle of every map, which is inside most of these windows.
 
+**FINDING AN OPPONENT is a screen, and the seam is real** (`platform/matchmaking.ts`,
+`ui/matchmaking.ts`). It sits between the formation pick and the board: a vertical split,
+you on the left, the seat across the board on the right, and the right half REELS —
+profiles scrolling past under motion blur — until somebody is seated, then stops DEAD on
+them and the halves part onto the board.
+- **Nobody is ever found, and that is an implementation detail.** `Matchmaker` is an
+  interface with one method and `LocalMatchmaker` is the offline one; a server-backed
+  finder is a new class and one line in `App`, the same seam `PurchaseGateway` uses. The
+  search really waits `SEARCH_MS` (5s) — five seconds of decoration would have to be
+  rewritten the day it is real.
+- **When nobody answers it seats a BOT, and the bot plays `hard`.** A bot stands in for a
+  person, and a person who folds is worse than no opponent: the player would see it was
+  not real. Settings' difficulty still drives a challenge, which is a scenario rather than
+  an opponent.
+- **The rosters are generated, not typed.** Twenty per chapter across fifty chapters is a
+  thousand names, and a table that long is a thousand chances to leave one stale when the
+  road is retuned. Seeded on the CHAPTER, so a chapter always fields the same twenty (a
+  familiar ladder, not noise) and climbing meets new names rather than the same ones
+  resized.
+- **The one it stops on is the one that turns up.** The board is dressed in that
+  opponent's species and their name goes on the nameplate — the head the reel stopped on
+  has to be the colony across the board, or the search was showing something it did not
+  mean.
+- **The match starts UNDER the parting halves**, not after them, so the camera's descent
+  plays through the widening gap and the reveal is one movement.
+- **The search begins on `start()`, never in the constructor.** The caller's search closure
+  wants the screen (it hands over the abort signal), so a constructor that searched at once
+  ran that closure while the caller's binding was still in its temporal dead zone: the
+  throw was swallowed and the reel turned for ever with nobody seated.
+
 **WHO IS PLAYING is ON THE GROUND** (`render/plates.ts`). The header counted two armies
 and called them "You" and "Enemy" — a scoreboard, not an opponent — and the colony, the
 number the whole game is played for (§8a), was never once in front of the player while they

@@ -10,9 +10,10 @@ import type { MapId, Player, SpeciesId } from "../engine";
 import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
 import {
-  DEFAULT_SPECIES, DemoGateway, ProfileStore, TOUR_VERSION, rivalFor, scoreQuestEvents,
+  DEFAULT_SPECIES, DemoGateway, LocalMatchmaker, ProfileStore, TOUR_VERSION, botsForChapter,
+  chapterOf, scoreQuestEvents,
 } from "../platform";
-import type { PurchaseGateway } from "../platform";
+import type { Matchmaker, Opponent, PurchaseGateway } from "../platform";
 import { setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
 import { buildAntarium, buildSpeciesPage } from "./antarium";
@@ -32,6 +33,7 @@ import { buildRules } from "./rules";
 import { buildFormationSelect, buildMapSelect, buildSpeciesSelect, rollAISpecies, rollShape } from "./setup";
 import type { Choices, SetupOptions } from "./setup";
 import { buildResultCard } from "./result";
+import { MatchmakingScreen } from "./matchmaking";
 import type { Recap } from "./result";
 import { buildColonyRoad } from "./road";
 import { Deck } from "./deck";
@@ -82,6 +84,12 @@ export class App {
    * build can do; the Capacitor build swaps in RevenueCat behind the same interface.
    */
   private purchases: PurchaseGateway = new DemoGateway();
+  /**
+   * Who the player is put against. Offline it always ends in a bot, but the seam is the
+   * real one: a server-backed finder is a new class here and nothing else moves.
+   */
+  private matchmaker: Matchmaker = new LocalMatchmaker();
+  private matchmaking: MatchmakingScreen | null = null;
   /** The challenge being played, if this match is one. */
   private challenge: { index: number; done: boolean; daily: boolean } | null = null;
 
@@ -267,6 +275,9 @@ export class App {
       else if (id === "formation") this.tour.signal("species");
     }
     this.clearMatch();
+    // Navigating away abandons a search in flight — the finder is told, so a promise that
+    // resolves after the player left cannot start a match behind the screen they went to.
+    this.clearMatchmaking();
     this.clearOverlay();
     this.closeMenu();
     this.syncNav(id);
@@ -536,13 +547,52 @@ export class App {
       profile: this.profile,
       onBack,
       onNext: () => this.show(next),
-      onBegin: () => { this.challenge = null; this.startMatch(); },
+      onBegin: () => { this.challenge = null; this.findOpponent(); },
     };
+  }
+
+  /* -------------------------------------------------------------- MATCHMAKING */
+
+  /**
+   * The search, and the screen that shows it.
+   *
+   * Only the ordinary play flow comes through here. A challenge is a scenario against the
+   * board rather than against a person, and the first match is a walkthrough — putting
+   * either behind a search for an opponent would be a lie about what is happening.
+   */
+  private findOpponent(): void {
+    if (this.tour.running) this.tour.signal("shape");
+    // The tutorial goes straight to its arranged board: there is nobody to find.
+    if (this.profile.get().tourSeen < TOUR_VERSION) { this.startMatch(); return; }
+
+    const me = this.profile.get();
+    this.clearMatchmaking();
+    this.syncNav(null);
+    for (const el of this.screens.values()) el.classList.add("hidden");
+
+    const screen: MatchmakingScreen = new MatchmakingScreen(this.host, {
+      you: { name: me.name, colony: me.colony, species: this.choices.species },
+      // The reel shows the chapter the player is actually in, so the faces going past are
+      // the ones they could plausibly be seated against.
+      roster: botsForChapter(chapterOf(me.colony)),
+      search: () => this.matchmaker.find(me.colony, screen.signal),
+      // The halves are still parting: the match starts under them, so the camera's descent
+      // plays through the widening gap rather than after it.
+      onFound: (foe) => { this.matchmaking = null; this.startMatch(foe); },
+    });
+    this.matchmaking = screen;
+    // Started here, not in the constructor: `search` above closes over `screen`.
+    screen.start();
+  }
+
+  private clearMatchmaking(): void {
+    this.matchmaking?.destroy();
+    this.matchmaking = null;
   }
 
   /* ---------------------------------------------------------------------- MATCH */
 
-  private startMatch(): void {
+  private startMatch(foe?: Opponent): void {
     if (this.tour.running) this.tour.signal("shape");
     // Whether this match is the tutorial one, decided once: the board is arranged for it
     // and the match screen runs the walkthrough on it.
@@ -551,7 +601,10 @@ export class App {
     // its render loop and timers keep running behind the new one.
     this.clearMatch();
     this.syncNav(null);          // the nav is hidden during a match
-    const aiSpecies = rollAISpecies(this.choices.species);
+    // A matchmade opponent is fielded as the colony their profile showed: the head on the
+    // matchmaking screen has to be the colony that turns up on the board, or the search was
+    // showing something it did not mean. Only a match with nobody found rolls one.
+    const aiSpecies = foe?.species ?? rollAISpecies(this.choices.species);
     setFactionColor("you", this.choices.species);
     setFactionColor("ai", aiSpecies);
 
@@ -588,28 +641,32 @@ export class App {
 
     for (const el of this.screens.values()) el.classList.add("hidden");
 
-    // WHO IS ACROSS THE BOARD. There is no server yet, so the opponent's name and colony
-    // are generated near the player's own (platform/rival.ts) — which is what a ranked
-    // ladder would serve them, and it is decided by the match's seed so the plate does not
-    // change under them mid-match.
     const me = this.profile.get();
-    const foe = rivalFor(me.colony, seed);
 
     this.match = new MatchScreen(this.host, {
       state,
       mods,
-      plates: {
+      // WHO IS ACROSS THE BOARD — the one the search seated, so the plate on the soil is
+      // the profile the player just watched the reel stop on. A match with nobody found
+      // (the tutorial, a challenge) names no one.
+      plates: foe && {
         you: { name: me.name, colony: me.colony },
         ai: { name: foe.name, colony: foe.colony },
       },
       // The same mods must drive combat, or Mandible/Cuticle research would show up in the
       // income readout but do nothing in a fight.
       ctx: { mods },
-      // A FIRST MATCH IS PLAYED ON EASY, whatever the setting says. The walkthrough hands
-      // the turn over four times and the enemy answers each one from a script; the moment
-      // it ends the real opponent takes over, and the first one a new player meets should
-      // not be the one that beats `normal` 96% of the time.
-      difficulty: tutorial ? "easy" : this.difficulty,
+      /*
+       * A FIRST MATCH IS PLAYED ON EASY, whatever the setting says. The walkthrough hands
+       * the turn over four times and the enemy answers each one from a script; the moment
+       * it ends the real opponent takes over, and the first one a new player meets should
+       * not be the one that beats `normal` 96% of the time.
+       *
+       * A MATCHMADE OPPONENT PLAYS HARD. The bot is standing in for a person, and a person
+       * who folds is worse than no opponent at all — the search would be seating someone
+       * the player can see is not real. Settings' difficulty still drives a challenge.
+       */
+      difficulty: tutorial ? "easy" : foe ? "hard" : this.difficulty,
       map: this.choices.map,
       // The meta walk ends on the button that got us here, so the match picks the tutorial
       // up and finishes it. A player who skipped has `tourSeen` written already.
@@ -706,7 +763,9 @@ export class App {
    */
   private showResult(winner: Player | null, recap: Recap): void {
     const ov = buildResultCard(winner, recap, {
-      onAgain: () => { this.clearOverlay(); this.startMatch(); },
+      // Another match is another opponent: "play again" goes back through the search
+      // rather than re-seating whoever was just beaten.
+      onAgain: () => { this.clearOverlay(); this.findOpponent(); },
       onChangeColony: () => { this.clearOverlay(); this.show("start"); },
       onHome: () => { this.clearOverlay(); this.show("home"); },
     });

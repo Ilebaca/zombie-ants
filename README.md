@@ -40,7 +40,7 @@ npm run check      # typecheck + lint + tests — what CI gates the deploy on
 | `src/ai/` | Lookahead search + evaluation. Consumes the engine only. |
 | `src/render/` | Canvas board. Consumes engine EVENTS and draws them. |
 | `src/ui/` | Screens: the shell, the match, and every meta screen. |
-| `src/platform/` | Storage, progression, purchases. Never reached from the engine. |
+| `src/platform/` | Storage, progression, matchmaking, purchases. Never reached from the engine. |
 | `tools/` | AI measurement scripts — the ladder, arenas, weight sweeps. |
 | `docs/GDD.html` | Design document — accurate to shipped rules. |
 | `legacy/` | The original single-file build. Still playable; behavioural reference. |
