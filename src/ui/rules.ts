@@ -34,10 +34,14 @@ export function buildRules(): HTMLElement {
   const page = el("div", "rules");
   page.style.marginTop = "0";
 
-  for (const section of SECTIONS) {
-    page.appendChild(el("h3", "ru-h", section.title));
+  SECTIONS.forEach((section, i) => {
+    // A numbered rule before each heading. Eleven sections down one scroll need a mark
+    // that says "a new one starts here" without a box round every one of them.
+    const sep = el("div", "ru-sep");
+    sep.append(el("span", "ru-no", String(i + 1).padStart(2, "0")), el("i"));
+    page.append(sep, el("h3", "ru-h", section.title));
     for (const block of section.blocks) page.appendChild(render(block));
-  }
+  });
 
   card.appendChild(page);
   body.appendChild(card);
@@ -329,34 +333,6 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: "Leaf walls",
-    blocks: [
-      { p: [
-        "A leaf wall blocks ", { b: "everything" }, " — moves, attacks, long sends, and ",
-        "surfacing from a tunnel. It is not a tile to fight through; it is a tile that ",
-        "cannot be entered until it withers.",
-      ] },
-      { p: [
-        "A gallery dug past the army in front of a wall is fair. A gallery through the wall ",
-        "is not, and the game does not allow it.",
-      ] },
-      { figure: {
-        build: (s) => {
-          put(s, 0, 1, { owner: "you", struct: "nest", soldiers: 10 });
-          put(s, 1, 1, { owner: "you", struct: "stable", soldiers: 5 });
-          for (const r of [0, 1, 2]) {
-            put(s, 2, r, { owner: "you", struct: "stable", soldiers: 1 });
-            s.effects.push({ c: 2, r, kind: "leaf", owner: "you", left: 4 });
-          }
-          put(s, 4, 1, { owner: "ai", struct: "stable", soldiers: 12 });
-          recomputeConnectivity(s);
-        },
-        view: { c: 0, r: 0, cols: 5, rows: 3 },
-        caption: "A wall of leaves. Nothing gets through it while it stands.",
-      } },
-    ],
-  },
-  {
     title: "Nine colonies",
     blocks: [
       { p: [
@@ -364,12 +340,11 @@ const SECTIONS: Section[] = [
         "attack, defence and production ratings span a deliberately narrow band: a colony ",
         "changes ", { b: "how" }, " you win, not whether you can.",
       ] },
-      { list: Object.values(SPECIES).map((sp) => [
-        { b: sp.name }, ` — ${sp.ability.name}. ${sp.blurb}`,
-      ]) },
+      { list: Object.values(SPECIES).map((sp) => [{ b: sp.name }, ` — ${sp.blurb}`]) },
       { p: [
-        "An ability comes off cooldown on its own clock and costs nothing to cast. Research ",
-        "in the Antarium shortens that clock.",
+        "An ability comes off cooldown on its own clock and costs nothing to cast. What each ",
+        "colony's ability actually does is on its page in the ", { b: "Antarium" }, ", beside ",
+        "the research that shortens its cooldown — so it is written once, where you pick.",
       ] },
     ],
   },

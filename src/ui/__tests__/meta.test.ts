@@ -772,11 +772,20 @@ describe("the manual", () => {
     const said = text();
     for (const heading of [
       "How a match is won", "A turn", "Moving and attacking", "What the tiles are worth",
-      "Travel and veins", "Supply lines", "Rally and Advance", "The Hive", "Leaf walls",
+      "Travel and veins", "Supply lines", "Rally and Advance", "The Hive",
       "Nine colonies", "What you play for",
     ]) {
       expect(said, `nothing about "${heading}"`).toContain(heading);
     }
+  });
+
+  /** Ten sections down one scroll: each is numbered, so a reader can see where they are. */
+  it("numbers the sections", () => {
+    const root = buildRules();
+    const marks = Array.from(root.querySelectorAll(".ru-no")).map((n) => n.textContent);
+    expect(marks.length).toBe(root.querySelectorAll(".ru-h").length);
+    expect(marks[0]).toBe("01");
+    expect(marks[marks.length - 1]).toBe(String(marks.length).padStart(2, "0"));
   });
 
   /*
@@ -795,13 +804,19 @@ describe("the manual", () => {
     expect(said).toContain(`${KEEP_NORMAL} soldier`);
   });
 
-  /** The nine colonies are listed from the species table, not retyped beside it. */
-  it("lists every colony and its ability", () => {
+  /**
+   * The nine colonies are listed from the species table, not retyped beside it — but the
+   * manual does NOT repeat what each ability does. That is written on the colony's own page
+   * in the Antarium, where the player is choosing, and twice is twice to keep in step.
+   */
+  it("names every colony and leaves the abilities to the Antarium", () => {
     const said = text();
     for (const sp of Object.values(SPECIES)) {
       expect(said, `${sp.name} is missing`).toContain(sp.name);
-      expect(said, `${sp.name}'s ability is missing`).toContain(sp.ability.name);
+      expect(said, `${sp.name}'s ability is spelled out here too`)
+        .not.toContain(sp.ability.name);
     }
+    expect(said).toContain("Antarium");
   });
 
   /**

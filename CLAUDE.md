@@ -551,7 +551,10 @@ research, each a count with a bar and a way in), so another thing to collect is 
 **HOW TO PLAY IS A MANUAL** (`src/ui/rules.ts`). It was seven lines of prose, which cannot
 carry a game with deterministic combat a player is meant to count out, supply lines that
 freeze a colony that ignores them, veins with rules of their own and a Hive on a clock.
-Eleven sections now, with a picture beside the rules that need one.
+Ten numbered sections now, with a picture beside the rules that need one.
+- **It does NOT explain the abilities.** Each colony's ability is written on its own page
+  in the Antarium, where the player is choosing one — writing it twice is two places to
+  keep in step, and the manual is about the rules everyone plays by.
 - **The pictures are NOT screenshots.** Each is a real `GameState` drawn by the board's own
   code (`render/snapshot.ts`), so a change to how a vein or a wild garrison is drawn reaches
   the manual on the same commit, and no figure can illustrate a rule the engine no longer

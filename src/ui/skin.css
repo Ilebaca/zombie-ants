@@ -2396,17 +2396,42 @@ button:not(.playbtn):active,
   padding: 0;
   line-height: 1.62;
 }
-/* A section heading, not a card: the rule under it is the thing, and a box round
-   every one of eleven sections is eleven boxes down a page of text. */
-.ru-h {
-  margin: 26px 0 8px;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--grass-glow);
+/* A numbered rule, then the heading. Ten sections down one scroll need a mark
+   saying "a new one starts here" — and a box round every one of them would be
+   ten boxes on a page of text, which is the thing this screen already fixed. */
+.ru-sep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 30px 0 6px;
 }
-.ru-h:first-child { margin-top: 4px; }
+.ru-sep:first-child { margin-top: 2px; }
+.ru-sep i {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+/* The number carries the accent so the title itself can be plain ink: two loud
+   things on one line is neither of them being the heading. */
+.ru-no {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1.4px;
+  color: var(--grass-glow);
+  font-variant-numeric: tabular-nums;
+}
+.ru-h {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: -.2px;
+  /* Sentence case, not caps: an 18px heading in caps is a shout, and these are
+     the names of rules rather than labels on a control. */
+  text-transform: none;
+  color: var(--ink);
+}
 .ru-p { margin: 0 0 10px; }
 .ru-l {
   margin: 0 0 12px;
