@@ -2812,22 +2812,45 @@ button:not(.playbtn):active,
 
 /*
    THE REEL. Motion blur is the whole point: a legible name scrolling past says
-   "here is a list", and a smear says "we are still looking". It is a real blur
-   on the strip rather than a fade, because a fade would leave the text readable
-   at rest between steps.
+   "here is a list", and a smear says "we are still looking".
+
+   It is ONE STRIP drifting continuously, not a card swapped on a timer. A swap
+   is a hard cut however short the interval, and no amount of blur hides a jump
+   — the motion has to be continuous for the blur to read as speed rather than
+   as a flicker. The roster is laid down twice and the strip travels exactly
+   half its own height, so the wrap is showing what it was already showing.
 */
+/* A SHORT WINDOW in the middle of the half, not the whole column. Running the
+   full height shows four profiles at once travelling a screen's worth of
+   distance, which reads as a feed pouring past; a band the height of one card
+   reads as a reel turning in the place the found profile will land. */
 .mmk-reel {
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 232px;
+  transform: translateY(-50%);
+  overflow: hidden;
   display: grid;
-  place-items: center;
-  filter: blur(6px);
-  opacity: .8;
-  animation: mmk-reel 90ms linear infinite;
+  align-content: center;
+  filter: blur(5px);
+  opacity: .72;
+  /* The band's own ends fade, so a card is never cut off flat against an edge. */
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 26%, #000 74%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 26%, #000 74%, transparent);
 }
+.mmk-strip {
+  display: grid;
+  gap: 46px;
+  animation-name: mmk-reel;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+/* Exactly half: the second copy is under the first, so the reset is invisible. */
 @keyframes mmk-reel {
-  from { transform: translateY(26%); }
-  to { transform: translateY(-26%); }
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
 }
 /* A reeling card is a shape, not a profile: nine colonies' colours flickering past
    at eleven a second is a strobe, so the reel is one tone under the blur. */
@@ -2856,6 +2879,7 @@ button:not(.playbtn):active,
 .mmk.found .mmk-status { color: var(--grass-glow); }
 
 @media (prefers-reduced-motion: reduce) {
-  .mmk-reel { animation: none; filter: blur(6px); }
+  .mmk-strip { animation: none; }
+  .mmk-reel { filter: blur(3.5px); }
   .mmk-half { transition-duration: 1ms; }
 }

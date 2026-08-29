@@ -44,8 +44,14 @@ export interface MatchmakingOptions {
 const HOLD_MS = 900;
 /** How long the split takes. Quick: it is a reveal, not a transition. */
 const SPLIT_MS = 520;
-/** One reel step. Fast enough that a name is a smear rather than a word. */
-const REEL_MS = 90;
+/**
+ * How long the strip takes to travel its own length, in milliseconds per card.
+ *
+ * Slow enough to read as a list being looked THROUGH rather than shuffled. The reel used
+ * to swap one card every 90ms and jitter it up and down, which is two hard motions a
+ * second and reads as aggression; this is one continuous drift.
+ */
+const REEL_MS_PER_CARD = 780;
 
 export class MatchmakingScreen {
   private root: HTMLElement;
@@ -53,7 +59,6 @@ export class MatchmakingScreen {
   private foeCard: HTMLElement;
   private status: HTMLElement;
   private timers: number[] = [];
-  private reelTimer: number | null = null;
   private abort = new AbortController();
   private done = false;
 
@@ -92,17 +97,22 @@ export class MatchmakingScreen {
     void this.run();
   }
 
-  /** The reel: a strip of profiles, stepped fast enough to blur into a smear. */
+  /**
+   * The reel: one long strip of profiles, drifting continuously.
+   *
+   * A STRIP, not a card being swapped. Replacing one card on a timer is a hard cut every
+   * step however short the step is, and no amount of blur hides a jump — the motion has to
+   * be continuous for the blur to read as speed rather than as a flicker. The roster is
+   * laid down TWICE and the strip travels exactly half its height, so the moment it wraps
+   * is showing the same thing it was: the loop has no seam to see.
+   */
   private spin(): void {
     const roster = this.opts.roster;
     if (!roster.length) return;
-    let at = 0;
-    const step = (): void => {
-      this.reel.replaceChildren(seatCard(roster[at % roster.length] as Seat));
-      at++;
-    };
-    step();
-    this.reelTimer = window.setInterval(step, REEL_MS);
+    const strip = el("div", "mmk-strip");
+    for (const seat of [...roster, ...roster]) strip.appendChild(seatCard(seat));
+    strip.style.animationDuration = `${roster.length * REEL_MS_PER_CARD}ms`;
+    this.reel.appendChild(strip);
   }
 
   private async run(): Promise<void> {
@@ -118,7 +128,6 @@ export class MatchmakingScreen {
 
   /** Somebody is seated: stop dead, show them, hold, then part. */
   private land(foe: Opponent): void {
-    if (this.reelTimer !== null) { clearInterval(this.reelTimer); this.reelTimer = null; }
     this.reel.remove();
     this.foeCard.appendChild(seatCard(foe));
     this.foeCard.classList.add("on");
@@ -143,7 +152,6 @@ export class MatchmakingScreen {
     if (this.done) return;
     this.done = true;
     this.abort.abort();
-    if (this.reelTimer !== null) clearInterval(this.reelTimer);
     for (const t of this.timers) clearTimeout(t);
     this.timers = [];
     this.root.remove();

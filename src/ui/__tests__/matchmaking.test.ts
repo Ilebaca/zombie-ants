@@ -49,16 +49,28 @@ describe("searching for an opponent", () => {
     screen.destroy();
   });
 
-  /** The reel has to MOVE. A still card behind a blur is a screen that has stopped. */
-  it("reels through the roster while it looks", () => {
+  /**
+   * The reel is ONE STRIP that drifts, not a card swapped on a timer: a swap is a hard cut
+   * however short the interval, and no blur hides a jump. The roster is laid down TWICE and
+   * the strip travels exactly half its height, so the wrap shows what it was already
+   * showing — the loop has no seam. Both halves are what this holds.
+   */
+  it("reels one continuous strip, with a seamless loop", () => {
     vi.useFakeTimers();
     const { host, screen } = open();
-    const shown = new Set<string>();
-    for (let i = 0; i < 8; i++) {
-      shown.add(host.querySelector(".mmk-reel .mmk-name")?.textContent ?? "");
-      vi.advanceTimersByTime(100);
-    }
-    expect(shown.size, "the reel showed one profile and stopped").toBeGreaterThan(3);
+    const strip = host.querySelector(".mmk-strip");
+    expect(strip, "the reel is not a strip").toBeTruthy();
+
+    const names = Array.from(strip?.querySelectorAll(".mmk-name") ?? [])
+      .map((n) => n.textContent);
+    // Every profile in the roster is on it, so there is a list to scroll...
+    expect(new Set(names).size).toBe(ROSTER.length);
+    // ...and exactly twice, which is what makes the wrap invisible.
+    expect(names.length).toBe(ROSTER.length * 2);
+    expect(names.slice(0, ROSTER.length)).toEqual(names.slice(ROSTER.length));
+
+    // It takes its pace from how many there are, so a longer roster is not faster.
+    expect((strip as HTMLElement).style.animationDuration).toMatch(/^\d+ms$/);
     screen.destroy();
   });
 
