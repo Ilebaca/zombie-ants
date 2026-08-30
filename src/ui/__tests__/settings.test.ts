@@ -1,0 +1,131 @@
+/**
+ * SETTINGS.
+ *
+ * It was one card of six identical rows, two of them dead switches over nothing. What is
+ * tested here is what the rebuild is FOR: that every row on the screen does something,
+ * that the three new ones really reach the store, and that the one which cannot be undone
+ * asks twice.
+ */
+import { describe, expect, it } from "vitest";
+import { BUILD, MemoryStore, ProfileStore } from "../../platform";
+import { buildSettings } from "../settings";
+
+HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
+
+interface Spy { rules: number; tour: number; reset: number; board: number; diff: number }
+
+const build = (store = new ProfileStore(new MemoryStore())): {
+  root: HTMLElement; store: ProfileStore; spy: Spy;
+} => {
+  const spy: Spy = { rules: 0, tour: 0, reset: 0, board: 0, diff: 0 };
+  const root = buildSettings({
+    profile: store,
+    onBack: () => {},
+    board: "Corridor (9×9)",
+    difficulty: "Normal",
+    onCycleBoard: () => { spy.board++; },
+    onCycleDifficulty: () => { spy.diff++; },
+    onHowToPlay: () => { spy.rules++; },
+    onReplayTutorial: () => { spy.tour++; },
+    onReset: () => { spy.reset++; },
+  });
+  document.body.replaceChildren(root);
+  return { root, store, spy };
+};
+
+const press = (root: HTMLElement, id: string): void => {
+  const btn = root.querySelector<HTMLElement>(`#${id}`);
+  expect(btn, `no control #${id}`).toBeTruthy();
+  btn?.click();
+};
+
+describe("the settings screen", () => {
+  /**
+   * A switch over something that does not exist is worse than no switch. This build has
+   * no audio and no haptics, and both rows were disabled buttons reading "On" — which is
+   * a screen telling the player something untrue about itself.
+   */
+  it("offers no control that does nothing", () => {
+    const { root } = build();
+    const dead = Array.from(root.querySelectorAll<HTMLButtonElement>("button"))
+      .filter((b) => b.disabled);
+    expect(dead.map((b) => b.textContent)).toEqual([]);
+    expect(root.textContent).not.toContain("Vibration");
+    expect(root.textContent).not.toContain("Sound");
+  });
+
+  it("wires every row it does show", () => {
+    const { root, spy } = build();
+    press(root, "setBoard");
+    press(root, "setDiff");
+    press(root, "setRules");
+    press(root, "setTutorial");
+    expect(spy).toMatchObject({ board: 1, diff: 1, rules: 1, tour: 1 });
+  });
+
+  it("shows the current board and difficulty as the value of their rows", () => {
+    const { root } = build();
+    expect(root.querySelector("#setBoard")?.textContent).toBe("Corridor (9×9)");
+    expect(root.querySelector("#setDiff")?.textContent).toBe("Normal");
+  });
+
+  // Every row says what it affects. That is the whole difference between a screen and a
+  // list of labels, and it is the reason the rebuild happened.
+  it("says what each setting is for, not only what it is called", () => {
+    const { root } = build();
+    const rows = Array.from(root.querySelectorAll<HTMLElement>(".setrow2"));
+    expect(rows.length).toBeGreaterThanOrEqual(5);
+    for (const row of rows) {
+      expect(row.querySelector(".setrow-t")?.textContent, "a row with no name").toBeTruthy();
+      const desc = row.querySelector(".setrow-d")?.textContent ?? "";
+      expect(desc.length, `"${row.querySelector(".setrow-t")?.textContent}" explains nothing`)
+        .toBeGreaterThan(20);
+    }
+  });
+
+  /* ------------------------------------------------------------------- THE NAME */
+
+  it("writes the name through to the profile", () => {
+    const { root, store } = build();
+    const field = root.querySelector<HTMLInputElement>("#setName");
+    expect(field?.value).toBe(store.get().name);
+    field!.value = "Ilebaca";
+    field!.dispatchEvent(new Event("blur"));
+    expect(store.get().name).toBe("Ilebaca");
+  });
+
+  // The store is the authority: it refuses an empty name, so the field has to be put back
+  // to what was actually kept rather than left showing what was typed.
+  it("refuses an empty name and puts the field back", () => {
+    const { root, store } = build();
+    const was = store.get().name;
+    const field = root.querySelector<HTMLInputElement>("#setName");
+    field!.value = "   ";
+    field!.dispatchEvent(new Event("blur"));
+    expect(store.get().name).toBe(was);
+    expect(field!.value).toBe(was);
+  });
+
+  /* ------------------------------------------------------------------ THE RESET */
+
+  it("asks twice before erasing everything", () => {
+    const { root, spy } = build();
+    press(root, "setReset");
+    expect(spy.reset, "erased the save on the first tap").toBe(0);
+    expect(root.querySelector("#setReset")?.textContent).toContain("confirm");
+    press(root, "setReset");
+    expect(spy.reset).toBe(1);
+  });
+
+  /* ------------------------------------------------------------------ THE BUILD */
+
+  // Not a setting, and no longer sitting in the list pretending to be one — but it has to
+  // stay readable, or a stale cached page and a real bug look identical on a phone.
+  it("prints the build at the foot rather than as a row", () => {
+    const { root } = build();
+    const foot = root.querySelector("#setBuild");
+    expect(foot?.textContent).toContain(BUILD);
+    expect(foot?.classList.contains("setrow2")).toBe(false);
+    expect(foot?.querySelector("button"), "the build is not a control").toBeNull();
+  });
+});

@@ -30,7 +30,8 @@ import {
 import { buildLeaderboard } from "./leaderboard";
 import { buildShop } from "./shop";
 import { buildQuests } from "./quests";
-import { buildComingSoon, buildMenu, buildSettings } from "./screens-simple";
+import { buildComingSoon, buildMenu } from "./screens-simple";
+import { buildSettings } from "./settings";
 import { buildRules } from "./rules";
 import { buildFormationSelect, buildMapSelect, buildSpeciesSelect, rollAISpecies, rollShape } from "./setup";
 import type { Choices, SetupOptions } from "./setup";
@@ -444,6 +445,7 @@ export class App {
     }
     if (id === "settings") {
       return buildSettings({
+        profile: this.profile,
         onBack: () => this.show("home"),
         board: MAP_LABEL[this.choices.map],
         difficulty: DIFFICULTY_LABEL[this.difficulty],
@@ -459,9 +461,19 @@ export class App {
           this.profile.update((p) => { p.difficulty = this.difficulty; });
           this.show("settings");
         },
+        onHowToPlay: () => this.show("rules"),
         onReplayTutorial: () => {
           this.profile.update((p) => { p.tourSeen = 0; });
           this.startTour();
+        },
+        // Everything erased. The screen asks twice before this is reached, and the app
+        // goes home rather than staying on a settings screen describing a colony that no
+        // longer exists.
+        onReset: () => {
+          this.profile.reset();
+          this.difficulty = this.profile.get().difficulty;
+          this.choices.map = this.profile.get().lastMap;
+          this.show("home");
         },
       });
     }

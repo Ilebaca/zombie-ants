@@ -56,6 +56,14 @@ const PATHS: Record<string, string | string[]> = {
   defence: "M12 1.8 3.6 4.9a1 1 0 0 0-.7 1v6.3c0 4.4 3.5 8.2 9.1 10 5.6-1.8 9.1-5.6 9.1-10V5.9a1 1 0 0 0-.7-1z",
   // A seed store: a domed roof over a squat bin. Harvester ants really do keep one, and it
   // is the one mark on this screen that has to read as a PLACE rather than an effect.
+  // A bin. The reset row wore a flask, which is the RESEARCH mark — a row about erasing
+  // everything should not be signed with the icon for buying an upgrade.
+  trash: ["M9.4 2h5.2a1.4 1.4 0 0 1 1.4 1.4V5h4a1 1 0 0 1 0 2h-.8l-1 12.7a2.4 2.4 0 0 1-2.4 2.3H8.2a2.4 2.4 0 0 1-2.4-2.3L4.8 7H4a1 1 0 0 1 0-2h4V3.4A1.4 1.4 0 0 1 9.4 2m.6 3h4V4h-4z",
+    "M10.4 9.4a.9.9 0 0 1 .9.9v7a.9.9 0 0 1-1.8 0v-7a.9.9 0 0 1 .9-.9m3.2 0a.9.9 0 0 1 .9.9v7a.9.9 0 0 1-1.8 0v-7a.9.9 0 0 1 .9-.9"],
+  // A board: four cells with a gap, which is what a map is. The anthill mound stood in
+  // for it and said "nest" on a row about where a match is played.
+  board: ["M3.4 3.4h7.2v7.2H3.4z", "M13.4 3.4h7.2v7.2h-7.2z",
+    "M3.4 13.4h7.2v7.2H3.4z", "M13.4 13.4h7.2v7.2h-7.2z"],
   granary: ["M12 2.6a1.4 1.4 0 0 1 .8.3l8.5 6.1a1.2 1.2 0 0 1-.7 2.2H3.4a1.2 1.2 0 0 1-.7-2.2l8.5-6.1a1.4 1.4 0 0 1 .8-.3",
     "M4.2 13.2h15.6v6.4A1.8 1.8 0 0 1 18 21.4H6a1.8 1.8 0 0 1-1.8-1.8z"],
   clock: "M12 1.9a10.1 10.1 0 1 0 0 20.2 10.1 10.1 0 0 0 0-20.2m1 4.4v5.3l3.9 2.4-1 1.7-4.9-3V6.3z",

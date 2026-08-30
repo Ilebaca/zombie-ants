@@ -3089,3 +3089,114 @@ button:not(.playbtn):active,
   letter-spacing: .3px;
   color: var(--muted);
 }
+
+/* ============================================================================
+   ==  SETTINGS  ==============================================================
+   ============================================================================
+
+   One card of six identical label/button rows, two of them dead. It reads as a
+   preferences dialog rather than a screen of this game.
+
+   It is the profile screen's row now — a mark, a name, a sentence and whatever
+   acts on the right — grouped under headings by what each thing affects, so
+   the screen says why a setting is there rather than only what it is called.
+   ============================================================================ */
+.setwrap { display: grid; gap: 8px; padding-bottom: 12px; }
+/* A heading needs air above it, but not above the FIRST one — that would push
+   the whole screen down away from its own title. */
+.setwrap .secthead { margin: 12px 0 2px; }
+.setwrap .secthead:first-child { margin-top: 0; }
+
+.setrow2 {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  text-align: left;
+}
+.setrow-go { cursor: pointer; }
+.setrow-go > svg:last-child { color: var(--muted); }
+.setrow-i {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, .26);
+  color: var(--grass-glow);
+}
+.setrow-mid { min-width: 0; display: grid; gap: 3px; }
+.setrow-t { font-size: 13px; font-weight: 900; letter-spacing: .1px; }
+/* --ink-soft, not --muted: muted at this size on this ground is under AA. */
+.setrow-d { font-size: 11px; font-weight: 700; line-height: 1.35; color: var(--ink-soft); }
+
+/* The value IS the control on a setting that cycles, so it is the thing that
+   looks pressable and the row around it does not. */
+.setval {
+  padding: 7px 13px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid var(--line);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .2px;
+  color: var(--grass-glow);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.setval:active { transform: translateY(1px); }
+/* The mark goes red with the button: an alarming control under a friendly green
+   icon is two rows disagreeing about what the row does. */
+.setrow-danger .setrow-i { color: var(--danger); }
+.setdanger { color: var(--danger); }
+/* Armed, it is the loudest thing on the screen — it is about to erase the save. */
+.setval.armed { background: var(--danger); border-color: var(--danger); color: #2a0a04; }
+
+/* The name is edited where it is read, so the field sits in the row rather than
+   opening a dialog for one line of text. */
+.setname {
+  width: 8.4em;
+  padding: 7px 12px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, .3);
+  border: 1px solid var(--line);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--ink);
+  text-align: right;
+}
+.setname:focus { outline: none; border-color: var(--grass); }
+
+/* The build is not a setting and no longer sits in the list pretending to be
+   one — but it has to stay readable, because a stale cached page and a real bug
+   look identical on a phone without it. */
+.setfoot {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  margin-top: 18px;
+  padding: 14px 0 4px;
+  border-top: 1px solid var(--line);
+}
+.setfoot-n {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.setfoot-b {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}

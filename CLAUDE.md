@@ -1060,6 +1060,28 @@ These differ from the legacy build **on purpose**. Anything else that differs is
 - **Venom Rain's description** says "10 troops/turn" in the legacy build, but both engines
   do 7. The text was copied verbatim, so the number is wrong in both — worth deciding.
 
+**SETTINGS IS A SCREEN, NOT A FORM** (`src/ui/settings.ts`). It was one card of six
+identical rows — a label, a bordered button — and two of them were dead: "Sound [On]" and
+"Vibration [On]", both disabled, both over nothing, because this build has no audio and no
+haptics. A switch for something that does not exist is a screen lying about itself; they
+are gone until there is something behind them.
+- **Rows are grouped by WHAT THEY AFFECT, and each says so.** It uses the profile screen's
+  row — a mark, a name, a sentence, then the value or a chevron — under four headings. A
+  test holds every row to having a description, because that sentence is the whole
+  difference between a screen and a list of labels.
+- **Three of the rows are things the app could already do and had nowhere to offer.** The
+  colony's NAME, printed beside the nest for the whole match (§ plates) and never editable
+  anywhere; HOW TO PLAY, reachable only from home; and `ProfileStore.reset`, which has
+  always existed and which nothing called.
+- **The reset asks twice, on the same button.** A confirm dialog would be a second overlay
+  for one control; the row re-labels itself and says what it is about to destroy instead.
+- **The build stamp is not a setting and no longer sits in the list pretending to be one.**
+  It is the foot of the screen — but it stays readable, because on a phone a stale cached
+  page and a real bug look identical without it (§ Settings shows the build).
+- **Enemy AI says what it actually governs.** A matchmade opponent always plays `hard`
+  (§ finding an opponent), so the setting drives challenges; the row states that, because
+  a setting that silently applies to less than its name suggests is worse than no setting.
+
 ## 10a. The guided tour
 
 `src/ui/tour.ts` is the first-run walkthrough, and it is one component doing both halves:
