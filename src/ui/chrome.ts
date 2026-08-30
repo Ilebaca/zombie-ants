@@ -12,6 +12,8 @@ import {
   ROAD_CHAPTER_STOPS, compact, freeReward, passReward, stopColony, stopReached,
 } from "../platform";
 import type { Profile, ProfileStore } from "../platform";
+import type { SpeciesId } from "../engine";
+import { SPECIES_COL, antHead, basicLook } from "../render";
 import { icon } from "./icons";
 
 /** Small element factory: `el("div", "cls", "text")`. */
@@ -388,6 +390,25 @@ export function setupSteps(current: number): HTMLElement {
 }
 
 /** A mark in a wrapper, so the flex row can size it without the SVG shrinking. */
+/**
+ * A species' head, drawn by the board's own code.
+ *
+ * One function, because four screens want the same picture — the profile, the Antarium,
+ * the opponent search and the ladder — and four copies of it is four places to fix when
+ * the drawing changes (CLAUDE.md §7). jsdom has no canvas and a screen must survive a
+ * context it cannot draw into (§6), so a null context returns a blank canvas rather than
+ * throwing.
+ */
+export function antPortrait(id: SpeciesId, size: number, cls?: string): HTMLCanvasElement {
+  const cv = document.createElement("canvas");
+  cv.width = size;
+  cv.height = size;
+  if (cls) cv.className = cls;
+  const g = cv.getContext("2d");
+  if (g) antHead(g, size / 2, size / 2, size * 0.46, SPECIES_COL[id], basicLook(id));
+  return cv;
+}
+
 function iconSlot(cls: string, mark: string, size: number): HTMLElement {
   const box = el("span", cls);
   box.appendChild(icon(mark, size));

@@ -3200,3 +3200,80 @@ button:not(.playbtn):active,
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+
+/* ============================================================================
+   ==  THE LADDER  ============================================================
+   ============================================================================
+
+   The whole body was one scroller, and the screen opened by scrolling the
+   player's own row into the middle of it — which pushed the division chips and
+   the banner off the top. A player arrived at a column of strangers' names with
+   nothing on screen saying what they were a ranking of.
+
+   Two boxes now: a fixed head, and a table that scrolls under it.
+   ============================================================================ */
+.screenbody.lbbody {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;             /* the TABLE scrolls, not the screen */
+  min-height: 0;
+}
+.lbtop { flex: none; }
+.lblist {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 8px;
+  /* The list runs under the fixed head as it scrolls; a hairline says so. */
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.lbtop .lbbanner { margin-bottom: 10px; }
+
+/* The banner carries three lines now, so it is a grid rather than a row: the
+   badge beside a block, not a badge beside two labels. */
+.lbbanner { align-items: start; }
+.lbmeta { min-width: 0; display: grid; gap: 3px; flex: 1; }
+/* Where the player stands, in words. A highlighted row says which one is
+   theirs; it never said what place that was. */
+.lbstand {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .1px;
+  color: var(--gold-glow);
+}
+.lbstand.past { color: var(--muted); }
+.lbtrack {
+  height: 6px;
+  margin-top: 3px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, .38);
+  overflow: hidden;
+}
+.lbtrack i { display: block; height: 100%; border-radius: 99px; background: var(--c); }
+.lbnext {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The division the player is actually in stays findable in a row of seven. */
+.lbchip.mine:not(.on) { border-color: var(--c); }
+
+/* A rival is a colony, not a string: every other screen in the game gives an
+   opponent a head, and this was the one that did not. */
+.lbface {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+}
+.lbface canvas { display: block; width: 30px; height: 30px; }
+
+/* The top three are the only ranks worth marking. Below that a number is a
+   number, and colouring all fifteen would mark none of them. */
+.lbrank.gold { color: var(--gold); }
+.lbrank.silver { color: #cfd8dc; }
+.lbrank.bronze { color: #cd8a52; }

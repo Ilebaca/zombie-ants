@@ -1,20 +1,32 @@
 /**
  * BIGGEST COLONIES: the ranking the whole game is played for.
  *
- * Tiers are bands of colony SIZE rather than rating brackets, and because a colony
- * compounds (platform/colony.ts) the bands are orders of magnitude apart — a thousand, ten
- * thousand, a million, a billion. That is the shape the number actually has, and it is why
- * the tier names are sizes of nest rather than military ranks.
+ * Divisions are bands of colony SIZE rather than rating brackets, and because a colony
+ * compounds (platform/colony.ts) the bands are orders of magnitude apart. That is the
+ * shape the number actually has, and it is why the names are sizes of nest rather than
+ * military ranks.
  *
- * The rival colonies are generated, not fetched: there is no server yet (roadmap — async
- * PvP and a real ladder come later). They are derived from the tier index so the same tier
+ * The rivals are generated, not fetched: there is no server yet (roadmap — async PvP and a
+ * real ladder come later). They are derived from the division index so the same division
  * always shows the same table, which reads as a standing ladder rather than reshuffling on
  * every open. When the server exists this file swaps its source and nothing else moves.
  *
- * Markup is the legacy build's (lbchips → lbbanner → lblist).
+ * THE TOP OF THE SCREEN DOES NOT SCROLL, and that is the fix this rebuild is mostly about.
+ * The whole body was one scroller, and it opened by scrolling the player's own row into
+ * the middle of it — which pushed the division chips and the banner off the top, so the
+ * screen a player arrived at was a column of strangers' names with nothing saying what
+ * they were a ranking OF. The chips and the banner are fixed now and only the table moves.
+ *
+ * Three other things the old table could not say, all of which a ladder exists to answer:
+ * WHERE the player stands (their rank, in words, not just a highlighted row), how far the
+ * next division is, and who a rival actually is — every other screen in the game gives an
+ * opponent a colony and a face (matchmaking.ts, render/plates.ts) and here they were bare
+ * strings.
  */
-import { RIVAL_NAMES, compact, exact } from "../platform";
-import { el, screenEl, screenHeader } from "./chrome";
+import { COLONY_START, RIVAL_NAMES, compact, exact } from "../platform";
+import type { SpeciesId } from "../engine";
+import { SPECIES } from "../engine";
+import { antPortrait, el, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 
 export interface Division {
@@ -49,7 +61,15 @@ export const DIVISIONS: readonly Division[] = [
 export interface LadderRow {
   name: string;
   points: number;
+  species: SpeciesId;
   you: boolean;
+}
+
+/** Who is looking at the ladder. Their own row is drawn from this, not invented. */
+export interface LadderYou {
+  name: string;
+  colony: number;
+  species: SpeciesId;
 }
 
 export const divisionOf = (colony: number): number => {
@@ -57,14 +77,22 @@ export const divisionOf = (colony: number): number => {
   return i < 0 ? DIVISIONS.length - 1 : i;
 };
 
+/** Non-premium colonies only: a rival is somebody playing the game, not a shop window. */
+const LADDER_SPECIES = (Object.keys(SPECIES) as SpeciesId[])
+  .filter((id) => !SPECIES[id].premium);
+
 /**
- * Fifteen rivals spread across the tier, plus the player when they belong in it.
+ * Fifteen rivals spread across the division, plus the player when they belong in it.
  *
- * Spread GEOMETRICALLY, not evenly: a tier runs from a million to a hundred million, and
- * fifteen colonies laid out at equal intervals across that would put fourteen of them in
- * the top tenth and read as a table of one number.
+ * Spread GEOMETRICALLY, not evenly: a division runs from a hundred thousand to five
+ * hundred thousand, and fifteen colonies laid out at equal intervals across that would put
+ * most of them in the top of the band and read as a table of one number.
+ *
+ * Each rival gets a colony of their own, seeded off their place in the table, because a
+ * ladder of names with no faces is the one screen in this game where an opponent is a
+ * string — the search, the nameplate and the result card all give them a head.
  */
-export function standings(divisionIndex: number, colony: number): LadderRow[] {
+export function standings(divisionIndex: number, you: LadderYou): LadderRow[] {
   const d = DIVISIONS[divisionIndex] as Division;
   const low = Math.max(1, d.min);
   const high = d.max === Infinity ? low * 100 : d.max;
@@ -75,17 +103,21 @@ export function standings(divisionIndex: number, colony: number): LadderRow[] {
       name: (RIVAL_NAMES[(i + divisionIndex * 5) % RIVAL_NAMES.length] as string)
         + (((i * 7 + divisionIndex * 3) % 89) + 11),
       points: Math.round(low * (high / low) ** spread),
+      species: LADDER_SPECIES[(i * 3 + divisionIndex) % LADDER_SPECIES.length] as SpeciesId,
       you: false,
     });
   }
-  if (divisionIndex === divisionOf(colony)) rows.push({ name: "You", points: colony, you: true });
+  if (divisionIndex === divisionOf(you.colony)) {
+    rows.push({ name: you.name, points: you.colony, species: you.species, you: true });
+  }
   return rows.sort((a, b) => b.points - a.points);
 }
 
-export function buildLeaderboard(colony: number, onBack: () => void): HTMLElement {
+export function buildLeaderboard(you: LadderYou, onBack: () => void): HTMLElement {
   const root = screenEl("leaderboard");
-  /** Which tier is on screen. Starts on the player's own. */
-  let selected = divisionOf(colony);
+  const home = divisionOf(you.colony);
+  /** Which division is on screen. Starts on the player's own. */
+  let selected = home;
 
   const render = (): void => {
     root.replaceChildren();
@@ -95,43 +127,36 @@ export function buildLeaderboard(colony: number, onBack: () => void): HTMLElemen
     body.id = "lbBody";
     const division = DIVISIONS[selected] as Division;
 
+    // FIXED: the chips and the banner say what the table below is a ranking of, so they
+    // cannot be the first thing scrolled away when the player's own row is brought up.
+    const top = el("div", "lbtop");
+
     const chips = el("div", "lbchips");
     DIVISIONS.forEach((d, i) => {
-      const chip = el("button", "lbchip" + (i === selected ? " on" : ""));
+      const chip = el("button", "lbchip" + (i === selected ? " on" : "")
+        + (i === home ? " mine" : ""));
       chip.style.setProperty("--c", d.col);
       chip.append(icon(d.icon, 14), document.createTextNode(d.name));
       chip.onclick = () => { selected = i; render(); };
       chips.appendChild(chip);
     });
-    body.appendChild(chips);
-
-    const banner = el("div", "lbbanner");
-    banner.style.setProperty("--c", division.col);
-    const badge = el("div", "lbbadge");
-    badge.appendChild(icon(division.icon, 26));
-    banner.appendChild(badge);
-    const text = el("div");
-    text.append(el("div", "lbname", division.name), el("div", "lbrange", range(division)));
-    banner.appendChild(text);
-    body.appendChild(banner);
+    top.appendChild(chips);
+    top.appendChild(banner(division, selected, home, you));
+    body.appendChild(top);
 
     const list = el("div", "lblist");
-    standings(selected, colony).forEach((row, i) => {
-      const line = el("div", "lbrow" + (row.you ? " you" : ""));
-      const troops = el("div", "lbpts", compact(row.points));
-      // The full figure is one long press away for the player's own row, where it means
-      // something: a colony of "1.2M" is a colony of exactly 1,238,441 troops.
-      if (row.you) troops.title = `${exact(row.points)} troops`;
-      line.append(el("div", "lbrank", medal(i + 1)), el("div", "lbpname", row.name), troops);
-      list.appendChild(line);
+    const table = standings(selected, you);
+    table.forEach((row, i) => {
+      list.appendChild(ladderRow(row, i + 1));
     });
     body.appendChild(list);
     root.appendChild(body);
 
-    // Open with the player's own tier in view, and their row if it is off screen.
+    // Only the TABLE scrolls, and only to the player's own row. The chips and the banner
+    // are outside it and stay where they are.
     requestAnimationFrame(() => {
-      body.querySelector(".lbchip.on")?.scrollIntoView?.({ inline: "center", block: "nearest" });
-      body.querySelector(".lbrow.you")?.scrollIntoView?.({ block: "center" });
+      chips.querySelector(".lbchip.on")?.scrollIntoView?.({ inline: "center", block: "nearest" });
+      list.querySelector(".lbrow.you")?.scrollIntoView?.({ block: "center" });
     });
   };
 
@@ -139,9 +164,97 @@ export function buildLeaderboard(colony: number, onBack: () => void): HTMLElemen
   return root;
 }
 
+/* ------------------------------------------------------------------ THE BANNER */
+
+/**
+ * The division, what it takes to be in it, and where the player stands against it.
+ *
+ * The third part is the one the old screen never answered. On the player's own division it
+ * is their rank and the distance to the next band; on any other it says whether that band
+ * is ahead of them or behind, which is what makes the chips worth tapping through.
+ */
+function banner(d: Division, index: number, home: number, you: LadderYou): HTMLElement {
+  const box = el("div", "lbbanner");
+  box.style.setProperty("--c", d.col);
+
+  const badge = el("div", "lbbadge");
+  badge.appendChild(icon(d.icon, 26));
+  box.appendChild(badge);
+
+  const text = el("div", "lbmeta");
+  text.append(el("div", "lbname", d.name), el("div", "lbrange", range(d)));
+
+  if (index === home) {
+    const rank = standings(index, you).findIndex((r) => r.you) + 1;
+    const total = standings(index, you).length;
+    text.appendChild(el("div", "lbstand", `You are ${ordinal(rank)} of ${total}`));
+
+    const track = el("div", "lbtrack");
+    const fill = el("i");
+    fill.style.width = `${Math.round(progress(d, you.colony) * 100)}%`;
+    track.appendChild(fill);
+    text.appendChild(track);
+
+    const next = DIVISIONS[index + 1];
+    // The top band has no ceiling, which is the point of it — the colony number has none
+    // either (CLAUDE.md §8a), so there is nothing to promise beyond it.
+    text.appendChild(el("div", "lbnext", next
+      ? `${compact(Math.max(0, d.max - you.colony))} troops to ${next.name}`
+      : "The largest colonies there are"));
+  } else {
+    text.appendChild(el("div", "lbstand" + (index < home ? " past" : ""), index < home
+      ? "You have outgrown this division"
+      : `${compact(Math.max(0, d.min - you.colony))} troops to reach it`));
+  }
+
+  box.appendChild(text);
+  return box;
+}
+
+/**
+ * How far through the band a colony is — on a LOG scale, because the bands are orders of
+ * magnitude wide. Linearly, a colony of a hundred thousand in a band running to five
+ * hundred thousand fills nothing, and the bar would sit near empty for most of a division.
+ */
+function progress(d: Division, colony: number): number {
+  const low = Math.max(COLONY_START, d.min);
+  const high = d.max === Infinity ? low * 100 : d.max;
+  if (colony <= low) return 0;
+  const pct = Math.log(colony / low) / Math.log(high / low);
+  return Math.max(0, Math.min(1, pct));
+}
+
+/* ------------------------------------------------------------------- THE TABLE */
+
+/** One colony on the ladder: its place, its face, its name and its size. */
+function ladderRow(row: LadderRow, rank: number): HTMLElement {
+  const line = el("div", "lbrow" + (row.you ? " you" : ""));
+  const place = el("div", "lbrank" + medalClass(rank), String(rank));
+  const face = el("div", "lbface");
+  // Drawn at twice the size it is shown at and scaled down by the stylesheet, the way the
+  // species page and the map picker do it: a 30px canvas on a phone is a 60px picture.
+  face.appendChild(antPortrait(row.species, 60));
+  const troops = el("div", "lbpts", compact(row.points));
+  // The full figure is one long press away on the player's own row, where it means
+  // something: a colony of "1.2M" is a colony of exactly 1,238,441 troops.
+  if (row.you) troops.title = `${exact(row.points)} troops`;
+  line.append(place, face, el("div", "lbpname", row.name), troops);
+  return line;
+}
+
+/** The top three are the only ranks worth marking; below that a number is a number. */
+const medalClass = (rank: number): string =>
+  rank === 1 ? " gold" : rank === 2 ? " silver" : rank === 3 ? " bronze" : "";
+
 const range = (d: Division): string =>
   d.max === Infinity
     ? `${compact(d.min)}+ troops`
     : `${compact(d.min)}–${compact(d.max - 1)} troops`;
 
-const medal = (rank: number): string => String(rank);
+/** 1st, 2nd, 3rd, 4th — a rank reads as a placing, not as a count. */
+export function ordinal(n: number): string {
+  const tens = n % 100;
+  if (tens >= 11 && tens <= 13) return `${n}th`;
+  const last = n % 10;
+  return `${n}${last === 1 ? "st" : last === 2 ? "nd" : last === 3 ? "rd" : "th"}`;
+}

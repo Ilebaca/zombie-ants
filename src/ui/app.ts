@@ -432,7 +432,11 @@ export class App {
     if (id === "rules") return buildRules();
     if (id === "shop") return buildShop(this.profile, this.purchases, () => this.show("home"));
     if (id === "leaderboard") {
-      return buildLeaderboard(this.profile.get().colony, () => this.show("home"));
+      const me = this.profile.get();
+      return buildLeaderboard(
+        { name: me.name, colony: me.colony, species: me.lastSpecies },
+        () => this.show("home"),
+      );
     }
     if (id === "challenges") return buildChallenges((i) => this.startChallenge(i));
     if (id === "daily") return buildDaily((i) => this.startChallenge(i, true), () => this.show("home"));

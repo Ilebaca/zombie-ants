@@ -20,8 +20,8 @@
 import type { Opponent } from "../platform";
 import { compact } from "../platform";
 import type { SpeciesId } from "../engine";
-import { SPECIES_COL, antHead, basicLook } from "../render";
-import { el } from "./chrome";
+import { SPECIES_COL } from "../render";
+import { antPortrait, el } from "./chrome";
 
 /** One side's card. The player's is fixed; the opponent's is what the reel lands on. */
 export interface Seat {
@@ -169,16 +169,7 @@ function seatCard(seat: Seat): HTMLElement {
   // faction colours are not set until the match is built, so at this point the enemy's is
   // still the last match's — and a player is their colony here, not a side.
   troops.style.color = (SPECIES_COL[seat.species] ?? SPECIES_COL.fire)[1] as string;
-  card.append(head(seat.species, 108), el("div", "mmk-name", seat.name), troops);
+  card.append(antPortrait(seat.species, 108, "mmk-head"), el("div", "mmk-name", seat.name), troops);
   return card;
 }
 
-function head(id: SpeciesId, size: number): HTMLCanvasElement {
-  const cv = document.createElement("canvas");
-  cv.width = size; cv.height = size;
-  cv.className = "mmk-head";
-  const g = cv.getContext("2d");
-  // jsdom has no canvas, and a screen must survive a context it cannot draw into (§6).
-  if (g) antHead(g, size / 2, size / 2, size * 0.44, SPECIES_COL[id], basicLook(id));
-  return cv;
-}

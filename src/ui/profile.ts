@@ -29,8 +29,7 @@ import {
   CHAMBERS, RESEARCH_TOTAL_MAX, SPECIES_ORDER, compact, exact, levelReward,
 } from "../platform";
 import type { ProfileStore } from "../platform";
-import { SPECIES_COL, antHead, basicLook } from "../render";
-import { clockOf, el, screenEl, screenHeader, toast } from "./chrome";
+import { antPortrait, clockOf, el, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 
 export interface ProfileOptions {
@@ -127,7 +126,7 @@ function who(store: ProfileStore, render: () => void, root: HTMLElement): HTMLEl
   const box = el("div", "pf-hero");
 
   const face = el("div", "pf-face");
-  face.appendChild(portrait(fav ?? profile.lastSpecies, 76));
+  face.appendChild(antPortrait(fav ?? profile.lastSpecies, 76));
   // The level rides the portrait rather than sitting beside it: one object, and the
   // number is the part that changes.
   face.appendChild(el("span", "pf-level", String(progress.level)));
@@ -231,7 +230,7 @@ function faces(store: ProfileStore): HTMLElement {
   for (const id of SPECIES_ORDER) {
     const cell = el("span", "pf-head" + (store.isUnlocked(id) ? "" : " off"));
     cell.title = SPECIES[id].name;
-    cell.appendChild(portrait(id, 22));
+    cell.appendChild(antPortrait(id, 22));
     strip.appendChild(cell);
   }
   return strip;
@@ -246,15 +245,6 @@ function favourite(store: ProfileStore): SpeciesId | null {
     if (n > 0 && (!best || n > best.n)) best = { id, n };
   }
   return best?.id ?? null;
-}
-
-function portrait(id: SpeciesId, size: number): HTMLCanvasElement {
-  const cv = document.createElement("canvas");
-  cv.width = size; cv.height = size;
-  const g = cv.getContext("2d");
-  if (!g) return cv;
-  antHead(g, size / 2, size / 2, size * 0.46, SPECIES_COL[id], basicLook(id));
-  return cv;
 }
 
 function iconSlot(cls: string, name: string, size: number): HTMLElement {

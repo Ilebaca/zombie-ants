@@ -611,6 +611,26 @@ Ten numbered sections now, with a picture beside the rules that need one.
 - **The hive terrain is cleared from every figure that is not about it.** It sits in the
   middle of every map, which is inside most of these windows.
 
+**THE LADDER'S HEAD DOES NOT SCROLL** (`src/ui/leaderboard.ts`). The body was one
+scroller and the screen opened by scrolling the player's own row into the middle of it,
+which took the division chips and the banner off the top with it — so a player arrived at a
+column of strangers' names with nothing on screen saying what they were a ranking OF. Two
+boxes now: a fixed head, and a table that scrolls under it.
+- **A ladder exists to say WHERE YOU STAND**, and a highlighted row never said what place
+  that was. The banner carries the rank in words, a bar through the division on a LOG scale
+  (the bands are orders of magnitude wide — linearly the bar sits near empty for most of
+  one), and the distance to the next band. The top band promises nothing beyond it, because
+  the colony number has no ceiling either (§8a).
+- **Every other chip says whether that division is ahead of the player or behind.** Without
+  it there is no reason to tap through six divisions the player is not in.
+- **A rival is a colony, not a string.** The search, the nameplate and the result card all
+  give an opponent a head; this was the one screen that did not. Rivals draw a non-premium
+  species seeded off their place in the table — a premium colony on the ladder is a shop
+  window, not a player.
+- **`antPortrait` in `chrome.ts` owns the picture.** It was written out four times, which
+  is four places to fix when the drawing changes (§7). A face drawn at twice the size it is
+  shown at and scaled by the stylesheet is what keeps it sharp on a phone.
+
 **FINDING AN OPPONENT is a screen, and the seam is real** (`platform/matchmaking.ts`,
 `ui/matchmaking.ts`). It sits between the formation pick and the board: a vertical split,
 you on the left, the seat across the board on the right, and the right half REELS —

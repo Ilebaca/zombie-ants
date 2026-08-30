@@ -18,8 +18,8 @@ import {
   RESEARCH_TRACKS, RESEARCH_TOTAL_MAX, SPECIES_NOTES, SPECIES_ORDER, SPECIES_UNLOCK, TIERS, tierOf,
 } from "../platform";
 import type { ProfileStore, Research, ResearchTrack } from "../platform";
-import { SPECIES_COL, antHead, basicLook } from "../render";
-import { buyButton, el, pips, screenEl, screenHeader, toast } from "./chrome";
+import { SPECIES_COL } from "../render";
+import { antPortrait, buyButton, el, pips, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 
 export interface AntariumOptions {
@@ -62,7 +62,7 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
     box.id = "antBanner";
     box.style.setProperty("--tc", tier.col);
     box.style.setProperty("--tglow", tier.glow);
-    box.appendChild(portrait(id, 128));
+    box.appendChild(antPortrait(id, 128));
 
     const info = el("div", "rb-info");
     info.appendChild(el("div", "rb-tier", species.premium ? "Mythic · Premium" : tier.name));
@@ -153,7 +153,7 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
     card.style.setProperty("--tglow", glow);
 
     if (owned) card.appendChild(el("span", "clv", `LV ${total}`));
-    card.appendChild(portrait(id, 112));
+    card.appendChild(antPortrait(id, 112));
     card.append(
       el("div", "cname", species.name),
       el("div", "cstat",
@@ -236,7 +236,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     const hero = el("div", "dhero");
     hero.style.setProperty("--tc", tier.col);
     hero.style.setProperty("--tglow", tier.glow);
-    const port = portrait(id, 160);
+    const port = antPortrait(id, 160);
     port.id = "aupPort";
     hero.appendChild(port);
     hero.appendChild(el("div", "dtier", species.premium ? "Mythic · Premium" : tier.name));
@@ -396,15 +396,6 @@ function abilityRow(level: number, cooldown: number, colour: string): HTMLElemen
 }
 
 /** Species portrait. Locked colonies are drawn as silhouettes by the stylesheet's veil. */
-function portrait(id: SpeciesId, size: number): HTMLCanvasElement {
-  const cv = document.createElement("canvas");
-  cv.width = size; cv.height = size;
-  const g = cv.getContext("2d");
-  if (!g) return cv;
-  antHead(g, size / 2, size / 2, size * 0.46, SPECIES_COL[id], basicLook(id));
-  return cv;
-}
-
 /** A mark from the icon family; `iconMark` because `icon` is a parameter name in here. */
 function iconMark(name: string, size: number): SVGSVGElement {
   return icon(name, size);
