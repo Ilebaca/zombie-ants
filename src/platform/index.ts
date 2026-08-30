@@ -9,6 +9,18 @@ export {
 } from "./profile";
 export type { ChamberId, Equipped, GranaryState, Profile, Research, Stats } from "./profile";
 export {
+  NEWS, agoOf, newsFeed, newsLatestAt, unreadNews,
+} from "./news";
+export type { NewsArt, NewsPost, NewsTag } from "./news";
+export {
+  FRIEND_MAX, FRIEND_RESULTS, LocalFriendService, directory, personId, seedRequests,
+} from "./friends";
+export type { Friend, FriendService, Person } from "./friends";
+export {
+  FAQ, LocalSupportGateway, SUPPORT_EMAIL, TICKET_KINDS, TICKET_MAX, mailLink,
+} from "./support";
+export type { FaqEntry, SupportGateway, Ticket, TicketKind } from "./support";
+export {
   CHAMBERS, DEFAULT_SPECIES, RESEARCH_TRACKS, RESEARCH_TOTAL_MAX, SPECIES_NOTES, SPECIES_ORDER,
   SPECIES_UNLOCK, TIERS, tierOf,
 } from "./catalogue";

@@ -10,10 +10,12 @@ import type { MapId, Player, SpeciesId } from "../engine";
 import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
 import {
-  DEFAULT_SPECIES, DemoGateway, LocalMatchmaker, ProfileStore, TOUR_VERSION, botsForChapter,
-  chapterOf, compact, scoreQuestEvents,
+  DEFAULT_SPECIES, DemoGateway, LocalFriendService, LocalMatchmaker, LocalSupportGateway,
+  ProfileStore, TOUR_VERSION, botsForChapter, chapterOf, compact, scoreQuestEvents,
 } from "../platform";
-import type { Matchmaker, Opponent, PurchaseGateway } from "../platform";
+import type {
+  FriendService, Matchmaker, Opponent, PurchaseGateway, SupportGateway,
+} from "../platform";
 import { setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
 import { buildAntarium, buildSpeciesPage } from "./antarium";
@@ -31,6 +33,9 @@ import { buildLeaderboard } from "./leaderboard";
 import { buildShop } from "./shop";
 import { buildQuests } from "./quests";
 import { buildComingSoon, buildMenu } from "./screens-simple";
+import { buildNews } from "./news";
+import { buildFriends } from "./friends";
+import { buildSupport } from "./support";
 import { buildSettings } from "./settings";
 import { buildRules } from "./rules";
 import { buildFormationSelect, buildMapSelect, buildSpeciesSelect, rollAISpecies, rollShape } from "./setup";
@@ -53,7 +58,7 @@ type ScreenId =
   | "home" | "mapsel" | "start" | "formation"
   | "anthill" | "antarium" | "antup" | "achievements" | "quests" | "profile"
   | "challenges" | "daily" | "rules" | "settings" | "news" | "friends" | "support"
-  | "leaderboard" | "shop";
+  | "luckyhatch" | "leaderboard" | "shop";
 
 /**
  * The five screens on the deck, in the order the bottom bar lists them. Home sits in the
@@ -93,6 +98,12 @@ export class App {
    */
   private matchmaker: Matchmaker = new LocalMatchmaker();
   private matchmaking: MatchmakingScreen | null = null;
+  /**
+   * The two other offline stand-ins, held the same way the matchmaker is: an interface
+   * each, so a server-backed implementation is one line here and nothing else moves.
+   */
+  private readonly friends: FriendService = new LocalFriendService();
+  private readonly support: SupportGateway = new LocalSupportGateway();
   /** Redraw the home top bar in place. Set when home is built; a no-op before that. */
   private rebuildHomeBar: () => void = () => {};
   /** The challenge being played, if this match is one. */
@@ -365,13 +376,15 @@ export class App {
 
   /** The slide-in drawer behind the hamburger. One element, reused. */
   private openMenu(): void {
-    if (!this.menu) {
-      this.menu = buildMenu(
-        (id) => { this.closeMenu(); this.show(id as ScreenId); },
-        () => this.closeMenu(),
-      );
-      this.host.appendChild(this.menu);
-    }
+    // REBUILT every time, not reused: the News entry carries how many posts are unread,
+    // and a drawer built once would still be advertising them after they had been read.
+    this.menu?.remove();
+    this.menu = buildMenu(
+      (id) => { this.closeMenu(); this.show(id as ScreenId); },
+      () => this.closeMenu(),
+      this.profile.unread(),
+    );
+    this.host.appendChild(this.menu);
     this.menu.classList.remove("hidden");
   }
 
@@ -440,12 +453,19 @@ export class App {
     }
     if (id === "challenges") return buildChallenges((i) => this.startChallenge(i));
     if (id === "daily") return buildDaily((i) => this.startChallenge(i, true), () => this.show("home"));
-    if (id === "news") return buildComingSoon("news", "News", "Latest updates", "📰", () => this.show("home"));
+    // The one menu entry that really is unbuilt (CLAUDE.md §9: the lucky hatch needs the
+    // larva currency and a cosmetics pool, neither of which exists). It fell through to
+    // the Antarium, so tapping it silently opened a different screen.
+    if (id === "luckyhatch") {
+      return buildComingSoon("luckyhatch", "Lucky hatch", "Colony cosmetics", "brood",
+        () => this.show("home"));
+    }
+    if (id === "news") return buildNews(this.profile, () => this.show("home"));
     if (id === "friends") {
-      return buildComingSoon("friends", "Friends", "Your colony allies", "👥", () => this.show("home"));
+      return buildFriends(this.profile, this.friends, () => this.show("home"));
     }
     if (id === "support") {
-      return buildComingSoon("support", "Support", "Help & contact", "🛟", () => this.show("home"));
+      return buildSupport(this.profile, this.support, () => this.show("home"));
     }
     if (id === "settings") {
       return buildSettings({

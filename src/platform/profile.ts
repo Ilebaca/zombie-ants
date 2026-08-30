@@ -18,6 +18,7 @@ import {
   QUEST_SWEEP_BONUS, dayIndex, isClaimable, levelProgress, levelReward, questDef, rollQuests,
   unclaimedLevels, type QuestKind, type QuestState,
 } from "./quests";
+import { newsLatestAt, unreadNews } from "./news";
 import {
   ROAD_STOPS, chapterOf, freeReward, isPassKey, passReward, rewardFor, roadColony, stopReached,
 } from "./road";
@@ -26,6 +27,9 @@ import {
   granaryStored,
 } from "./granary";
 import type { GranaryLevel } from "./granary";
+import { FRIEND_MAX, seedRequests } from "./friends";
+import type { Friend, Person } from "./friends";
+import type { SupportGateway, Ticket, TicketKind } from "./support";
 import type { Grant } from "./purchases";
 import { defaultStore, readJson, writeJson, type KeyValueStore } from "./storage";
 
@@ -119,6 +123,23 @@ export interface Profile {
    */
   granary: number;
   granaryAt: number;
+  /**
+   * The code a player quotes to support, and the id a friend request travels under.
+   *
+   * Filled in on first load rather than by `defaultProfile`, because it is the one field
+   * that has to be UNIQUE: a default profile is a constant, and `normalise` has to stay a
+   * pure function of what it is given (a test compares the two field by field). The store
+   * mints one when it finds this empty, which is exactly once per save.
+   */
+  playerId: string;
+  /** Friends, and requests either way. No server yet, so all three live here. */
+  friends: Friend[];
+  friendsIn: Person[];
+  friendsOut: Person[];
+  /** The newest post the player has read, as a stamp. Older than every post = all unread. */
+  newsSeen: number;
+  /** Messages sent to support, kept so nothing a player wrote is thrown away. */
+  tickets: Ticket[];
   /** Daily quests: today's three, the day they were rolled for, and the sweep streak. */
   quests: QuestState[];
   questDay: number;
@@ -176,6 +197,14 @@ export function defaultProfile(): Profile {
     freeAt: 0,
     granary: 1,
     granaryAt: 0,
+    playerId: "",
+    friends: [],
+    // A new colony arrives to two requests. Nothing can ever arrive on its own without a
+    // server, and accept/decline nobody can reach is a screen nobody can tell is finished.
+    friendsIn: seedRequests(),
+    friendsOut: [],
+    newsSeen: 0,
+    tickets: [],
     quests: [],
     questDay: 0,
     questStreak: 0,
@@ -290,6 +319,16 @@ export function normalise(raw: unknown): Profile {
     // from before the granary, and it starts on the first level like everyone else.
     granary: int(p.granary, 1, GRANARY_MAX, 1),
     granaryAt: int(p.granaryAt, 0, 1e15, 0),
+    playerId: typeof p.playerId === "string" && ID_SHAPE.test(p.playerId) ? p.playerId : "",
+    // Every list is rebuilt entry by entry rather than trusted: these are the only arrays
+    // on the profile whose contents reach a screen as text and as a species lookup, and a
+    // malformed one would put `undefined` on the page or a colour lookup off the end.
+    friends: people(p.friends, base.friends).slice(0, FRIEND_MAX)
+      .map((f, i) => ({ ...f, since: int((p.friends as Friend[])?.[i]?.since, 0, 1e15, 0) })),
+    friendsIn: people(p.friendsIn, base.friendsIn),
+    friendsOut: people(p.friendsOut, base.friendsOut),
+    newsSeen: int(p.newsSeen, 0, 1e15, 0),
+    tickets: tickets(p.tickets),
     // A quest id that no longer exists in the pool is dropped rather than kept at zero
     // progress, where it would be permanently unclaimable and block the daily sweep.
     quests: Array.isArray(p.quests)
@@ -346,6 +385,41 @@ export function normalise(raw: unknown): Profile {
   return out;
 }
 
+/** What a minted player code looks like, and what `normalise` will accept back. */
+const ID_SHAPE = /^ZA-[0-9A-Z]{4}-[0-9A-Z]{4}$/;
+const ID_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+/**
+ * A support code: ZA-7F3K-2QX9.
+ *
+ * Ambiguous characters are left out (no O/0, no I/1), because the whole point of this
+ * string is that somebody reads it off a screen and types it into an email.
+ */
+function mintPlayerId(rand: () => number = Math.random): string {
+  const block = (): string => Array.from({ length: 4 }, () =>
+    ID_CHARS[Math.floor(rand() * ID_CHARS.length)] ?? "Z").join("");
+  return `ZA-${block()}-${block()}`;
+}
+
+/** A stored list of colonies, rebuilt entry by entry. Anything malformed is dropped. */
+function people<T extends Person>(raw: unknown, fallback: T[]): T[] {
+  if (!Array.isArray(raw)) return fallback;
+  return raw.filter((p): p is T => !!p && typeof p === "object"
+    && typeof (p as Person).id === "string"
+    && typeof (p as Person).name === "string"
+    && typeof (p as Person).colony === "number" && Number.isFinite((p as Person).colony)
+    && typeof (p as Person).species === "string" && (p as Person).species in SPECIES)
+    .map((p) => ({ ...p, name: p.name.slice(0, 18), colony: Math.max(0, Math.round(p.colony)) }));
+}
+
+/** Sent messages. Kept so nothing a player wrote is thrown away by a bad save. */
+function tickets(raw: unknown): Ticket[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((t): t is Ticket => !!t && typeof t === "object"
+    && typeof (t as Ticket).id === "string" && typeof (t as Ticket).text === "string")
+    .slice(-30);
+}
+
 /** Everything the granary room and the home pill need, from one call. */
 export interface GranaryState {
   level: number;
@@ -383,6 +457,9 @@ export class ProfileStore {
 
   constructor(private store: KeyValueStore = defaultStore()) {
     this.profile = normalise(readJson<Profile>(store, KEY));
+    // Minted here rather than in `defaultProfile`, which is a constant, or in `normalise`,
+    // which has to stay a pure function of its input. Exactly once per save.
+    if (!this.profile.playerId) this.update((p) => { p.playerId = mintPlayerId(); });
   }
 
   get(): Readonly<Profile> { return this.profile; }
@@ -447,6 +524,98 @@ export class ProfileStore {
       p.xp += matchXp(won, turns);
       p.lastSpecies = species;
     });
+  }
+
+  /* -------------------------------------------------------------- FRIENDS */
+
+  /**
+   * Ask to be somebody's friend.
+   *
+   * Refused for yourself, for somebody already on the list, for a request already sent, and
+   * once the list is full — each returns false rather than throwing, so a screen can tap
+   * optimistically and re-render on the answer (the rule every purchase follows).
+   *
+   * A request that has already been sent TO you is accepted instead of sent back: two
+   * people tapping Add on each other should end up friends, not with a request each.
+   */
+  sendFriendRequest(person: Person): boolean {
+    const p = this.profile;
+    if (person.id === p.playerId) return false;
+    if (p.friends.some((f) => f.id === person.id)) return false;
+    if (p.friends.length >= FRIEND_MAX) return false;
+    if (p.friendsIn.some((f) => f.id === person.id)) return this.acceptFriend(person.id);
+    if (p.friendsOut.some((f) => f.id === person.id)) return false;
+    this.update((d) => { d.friendsOut = [...d.friendsOut, person]; });
+    return true;
+  }
+
+  /** Take back a request. The person is never told, because there is nobody to tell. */
+  cancelFriendRequest(id: string): boolean {
+    if (!this.profile.friendsOut.some((f) => f.id === id)) return false;
+    this.update((d) => { d.friendsOut = d.friendsOut.filter((f) => f.id !== id); });
+    return true;
+  }
+
+  /** Take somebody up on their request. `since` is when the friendship started. */
+  acceptFriend(id: string, now: number = Date.now()): boolean {
+    const person = this.profile.friendsIn.find((f) => f.id === id);
+    if (!person) return false;
+    if (this.profile.friends.length >= FRIEND_MAX) return false;
+    this.update((d) => {
+      d.friendsIn = d.friendsIn.filter((f) => f.id !== id);
+      d.friendsOut = d.friendsOut.filter((f) => f.id !== id);
+      d.friends = [...d.friends, { ...person, since: now }];
+    });
+    return true;
+  }
+
+  /** Turn a request down. It does not come back — there is nothing to send it again. */
+  declineFriend(id: string): boolean {
+    if (!this.profile.friendsIn.some((f) => f.id === id)) return false;
+    this.update((d) => { d.friendsIn = d.friendsIn.filter((f) => f.id !== id); });
+    return true;
+  }
+
+  removeFriend(id: string): boolean {
+    if (!this.profile.friends.some((f) => f.id === id)) return false;
+    this.update((d) => { d.friends = d.friends.filter((f) => f.id !== id); });
+    return true;
+  }
+
+  /** Where this person stands with you, which is what the button on their row says. */
+  friendship(id: string): "none" | "friend" | "sent" | "asked" | "you" {
+    const p = this.profile;
+    if (id === p.playerId) return "you";
+    if (p.friends.some((f) => f.id === id)) return "friend";
+    if (p.friendsOut.some((f) => f.id === id)) return "sent";
+    if (p.friendsIn.some((f) => f.id === id)) return "asked";
+    return "none";
+  }
+
+  /* ----------------------------------------------------------- NEWS & SUPPORT */
+
+  /** Posts landed since the player last opened the feed. */
+  unread(): number { return unreadNews(this.profile.newsSeen); }
+
+  /** Mark the feed read up to its newest post. */
+  markNewsRead(): void {
+    const at = newsLatestAt();
+    if (this.profile.newsSeen < at) this.update((p) => { p.newsSeen = at; });
+  }
+
+  /**
+   * Keep a message to support.
+   *
+   * Kept rather than posted, because there is no server — the screen opens a mail link
+   * from the same ticket. Storing it is what makes the Send button honest: the text is
+   * still there afterwards whether or not the mail app opened.
+   */
+  fileTicket(kind: TicketKind, text: string, gateway: SupportGateway): Ticket | null {
+    const body = text.trim();
+    if (!body) return null;
+    const ticket = gateway.send(kind, body, this.profile.playerId);
+    this.update((p) => { p.tickets = [...p.tickets, ticket].slice(-30); });
+    return ticket;
   }
 
   /* -------------------------------------------------------------- GRANARY */

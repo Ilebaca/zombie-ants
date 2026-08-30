@@ -44,7 +44,9 @@ export const MENU_ENTRIES: readonly MenuEntry[] = [
   { id: "achievements", icon: "trophy", label: "Colony Road" },
 ];
 
-export function buildMenu(onPick: (id: string) => void, onDismiss: () => void): HTMLElement {
+export function buildMenu(
+  onPick: (id: string) => void, onDismiss: () => void, unreadNews = 0,
+): HTMLElement {
   const wrap = el("div", "menuwrap");
   wrap.id = "menuPop";
   const draw = el("aside", "menudraw");
@@ -54,6 +56,11 @@ export function buildMenu(onPick: (id: string) => void, onDismiss: () => void): 
     const mark = el("span", "mi");
     mark.appendChild(iconMark(entry.icon, 20));
     item.append(mark, document.createTextNode(entry.label));
+    // The drawer is the only route to News, so the count has to be here or nothing in the
+    // app ever says a post has landed.
+    if (entry.id === "news" && unreadNews > 0) {
+      item.appendChild(el("span", "menudot", String(unreadNews)));
+    }
     item.onclick = () => onPick(entry.id);
     draw.appendChild(item);
   }

@@ -611,6 +611,42 @@ Ten numbered sections now, with a picture beside the rules that need one.
 - **The hive terrain is cleared from every figure that is not about it.** It sits in the
   middle of every map, which is inside most of these windows.
 
+**THE THREE DRAWER SCREENS ARE BUILT** — News, Friends and Support were "Coming soon"
+panels, which is what the legacy build ships. Each is an offline implementation behind an
+interface, the same seam `Matchmaker` and `PurchaseGateway` use, so a server is a new class
+and one line in `App`.
+- **News** (`platform/news.ts`, `ui/news.ts`) is a table in the app rather than something
+  fetched, which is honest rather than a placeholder: a build ships with the notes for what
+  is in it. **Every post's picture is DRAWN** — a real `GameState` through
+  `render/snapshot.ts`, or the mark of the screen the post is about on a plate of that
+  screen's colour. There is no image file to keep in step and no screenshot that can go
+  stale, the same rule the manual and the pickers follow. Posts open where they sit; the
+  newest stands open, because a feed that opens collapsed has said nothing. Opening the
+  screen marks it read — the badge is about posts not SEEN — and the count rides the
+  drawer's News entry, which is the only route to it.
+- **Friends** (`platform/friends.ts`, `ui/friends.ts`) is three tabs, because stacking them
+  buries the requests — the one part waiting on the player — under a list that only grows.
+  The directory is generated from `RIVAL_NAMES` and seeded per entry, so a colony's size
+  does not move between searches. **A new colony arrives to two requests**: nothing can ever
+  arrive on its own without a server, and accept/decline nobody can reach is a screen nobody
+  can tell is finished. Adding somebody who has already asked YOU accepts instead of sending
+  one back — two people tapping Add should end up friends, not with a request each. Removing
+  asks twice on the same button, as Settings' reset does.
+- **Support** (`platform/support.ts`, `ui/support.ts`) leads with the FAQ, because the
+  question a player has is usually one somebody has asked; then the composer; then the build
+  and the player's code, which whoever reads a message needs and should never have to ask
+  for. **Nothing is posted anywhere.** A Send button that throws the text away is worse than
+  none, so the message is KEPT on the device and a mail link carrying it, the build and the
+  code is opened — via a clicked `<a>`, never `location`, or a browser with no mail handler
+  lands on a blank page with the game gone. `SUPPORT_EMAIL` is a constant in one place and
+  is the one thing here that must change before release.
+- **The player code is minted in the store's constructor**, not in `defaultProfile` (a
+  constant) and not in `normalise` (which has to stay a pure function of its input — a test
+  compares the two field by field). Ambiguous characters are left out of it, because the
+  whole point of the string is that somebody reads it off a screen and types it.
+- **Lucky hatch is the one entry still unbuilt**, and it now says so. It fell through the
+  router to the Antarium, so tapping it silently opened a different screen.
+
 **THE LADDER'S HEAD DOES NOT SCROLL** (`src/ui/leaderboard.ts`). The body was one
 scroller and the screen opened by scrolling the player's own row into the middle of it,
 which took the division chips and the banner off the top with it — so a player arrived at a

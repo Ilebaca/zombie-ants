@@ -3277,3 +3277,319 @@ button:not(.playbtn):active,
 .lbrank.gold { color: var(--gold); }
 .lbrank.silver { color: #cfd8dc; }
 .lbrank.bronze { color: #cd8a52; }
+
+/* ============================================================================
+   ==  NEWS  ==================================================================
+   ============================================================================
+
+   Every post carries a picture and every picture is DRAWN — a board rendered by
+   the game's own code, or the mark of the screen the post is about on a plate of
+   that screen's colour. There is no image file to keep in step.
+
+   A post opens where it sits, the way a chamber does in the Anthill: one page of
+   every article in full is a wall, and a page per article is a page too many.
+   ============================================================================ */
+.newswrap { display: grid; gap: 10px; padding-bottom: 12px; }
+.newscard {
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.newscard.open { border-color: var(--grass); }
+.newshead {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+  padding: 0 14px 0 0;
+  background: none;
+  border: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.newshero {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  min-height: 84px;
+  overflow: hidden;
+  background: var(--bg1);
+}
+.newshero canvas { display: block; width: 84px; height: 84px; object-fit: cover; }
+/* A mark on a plate of the colour of whatever the post is about. */
+.newshero-mark { background: color-mix(in srgb, var(--c) 22%, var(--bg1)); color: var(--c); }
+.newstext { min-width: 0; display: grid; align-content: center; gap: 3px; padding: 12px 0; }
+.newsmeta { display: flex; align-items: center; gap: 8px; }
+.newstag {
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  background: rgba(0, 0, 0, .3);
+  color: var(--grass-glow);
+}
+.newstag.tag-coming { color: var(--sky); }
+.newstag.tag-balance { color: var(--gold); }
+/* How long ago, not a date: what a reader wants to know is whether it is new,
+   and "27 Aug" only answers that if they know today's date. */
+.newsage { font-size: 10.5px; font-weight: 800; color: var(--muted); }
+.newstitle { margin: 0; font-size: 15px; font-weight: 900; letter-spacing: -.2px; }
+.newslead { margin: 0; font-size: 12px; font-weight: 700; line-height: 1.35; color: var(--ink-soft); }
+.newsmore {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 14px 11px 96px;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--grass-glow);
+}
+.newsbody { padding: 2px 14px 14px; display: grid; gap: 9px; }
+.newsbody p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--ink-soft); }
+
+/* ============================================================================
+   ==  FRIENDS  ===============================================================
+   ============================================================================
+
+   Three tabs, because stacking them buries the requests — the one part of the
+   screen that is waiting on the player — under a list that only grows. The tab
+   with something waiting carries the count, so the screen says what it needs
+   before it is opened.
+   ============================================================================ */
+.frbody { min-height: 0; }
+.frtabs {
+  display: flex;
+  gap: 6px;
+  padding: 2px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, .3);
+  margin-bottom: 12px;
+}
+.frtab {
+  flex: 1;
+  position: relative;
+  padding: 8px 6px;
+  border: none;
+  border-radius: 99px;
+  background: none;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .2px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.frtab.on { background: var(--panel-hi); color: var(--ink); }
+.frbadge {
+  margin-left: 5px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: var(--grass);
+  color: #06210f;
+  font-size: 10px;
+  font-weight: 900;
+}
+.frpanel { display: grid; gap: 6px; padding-bottom: 12px; }
+.frpanel .secthead { margin: 8px 0 2px; }
+.frlist { display: grid; gap: 6px; }
+.frrow {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+/* Drawn at twice the size it is shown at, so it stays sharp on a phone. */
+.frface { display: grid; place-items: center; width: 36px; height: 36px; }
+.frface canvas { display: block; width: 36px; height: 36px; }
+.frmid { min-width: 0; display: grid; gap: 1px; }
+.frname {
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.frsub { font-size: 11px; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+.frpair { display: flex; gap: 6px; }
+.frbtn {
+  padding: 7px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--grass);
+  background: var(--grass);
+  font-family: var(--font);
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #06210f;
+  cursor: pointer;
+  white-space: nowrap;
+}
+/* The second choice on a row never competes with the first. */
+.frghost { background: none; border-color: var(--line); color: var(--ink-soft); }
+.frbtn.armed { background: var(--danger); border-color: var(--danger); color: #2a0a04; }
+.frstate { font-size: 11.5px; font-weight: 900; color: var(--muted); }
+.frsearch { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 4px; }
+.frfield {
+  padding: 10px 14px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, .3);
+  border: 1px solid var(--line);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.frfield:focus { outline: none; border-color: var(--grass); }
+.frgo {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  border-radius: 99px;
+  border: 1px solid var(--grass);
+  background: var(--grass);
+  color: #06210f;
+  cursor: pointer;
+}
+/* An empty panel says what would be in it. A blank one reads as broken. */
+.frhint {
+  margin: 10px 2px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+/* ============================================================================
+   ==  SUPPORT  ===============================================================
+   ============================================================================
+
+   The question a player has is usually one somebody has asked, so the answers
+   lead; failing that they want to tell you something, so the composer comes
+   next; and whoever reads it needs the build and the save's code, so those are
+   on the screen rather than asked for in a reply.
+   ============================================================================ */
+.spwrap { display: grid; gap: 6px; padding-bottom: 14px; }
+.spwrap .secthead { margin: 12px 0 2px; }
+.spwrap .secthead:first-child { margin-top: 0; }
+.spfaq { display: grid; gap: 5px; }
+.spq { border-radius: var(--r-md); background: var(--panel); border: 1px solid var(--line); }
+.spq.open { border-color: var(--grass); }
+.spqhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 13px;
+  background: none;
+  border: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.spqt { font-size: 12.5px; font-weight: 900; line-height: 1.35; }
+.spqhead svg { flex: none; color: var(--muted); transition: transform 140ms ease; }
+.spq.open .spqhead svg { transform: rotate(90deg); color: var(--grass-glow); }
+.spqa {
+  margin: 0;
+  padding: 0 13px 13px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+.spbox {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border-radius: var(--r-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.spkinds { display: flex; flex-wrap: wrap; gap: 6px; }
+.spkind {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, .28);
+  border: 1px solid var(--line);
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--muted);
+  cursor: pointer;
+}
+.spkind.on { border-color: var(--grass); color: var(--grass-glow); }
+.sptext {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: var(--r-sm);
+  background: rgba(0, 0, 0, .3);
+  border: 1px solid var(--line);
+  font-family: var(--font);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--ink);
+  resize: vertical;
+}
+.sptext:focus { outline: none; border-color: var(--grass); }
+.spsend { width: 100%; margin: 0; }
+/* Said plainly, because it is surprising: this build has nowhere to post to. */
+.spnote { margin: 0; font-size: 10.5px; font-weight: 700; line-height: 1.45; color: var(--muted); }
+.spsent { display: grid; gap: 5px; }
+.spmsg {
+  display: grid;
+  gap: 2px;
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.spmsg-k { font-size: 10px; font-weight: 900; letter-spacing: .4px; text-transform: uppercase; color: var(--muted); }
+.spmsg-t {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.spfact { display: grid; grid-template-columns: 26px auto 1fr; align-items: center; gap: 10px; }
+.spfact-i { display: grid; place-items: center; color: var(--grass-glow); }
+.spfact-k { font-size: 12px; font-weight: 900; }
+.spfact-v {
+  justify-self: end;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The drawer is the only route to News, so the unread count lives on its entry —
+   without it nothing in the app ever says a post has landed. */
+.menudot {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: var(--grass);
+  color: #06210f;
+  font-size: 10.5px;
+  font-weight: 900;
+  text-align: center;
+}
