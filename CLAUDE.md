@@ -791,6 +791,55 @@ ceiling — only a curve that flattens.
   about as much. It leads the profile's record and leads the result card too — and a defeat
   is printed in the losing colour, because it costs troops.
 
+## 8b. The granary — the colony grows while nobody is playing
+
+The colony is the number the game is played for and the number it will one day be ranked
+on (§8a), and until now the only thing that moved it was finishing a match. A colony that
+stops the moment the phone goes down is not a colony. `platform/granary.ts` is the passive
+half: harvester ants store seed underground, the brood eats whether or not the colony is at
+war, and the store is emptied into the colony from the home screen.
+
+- **The rate is TUNED in wins and SHOWN in troops.** A level says how many hours of
+  foraging add up to one victory at the same colony size — level 1 a day, level 7 twelve
+  hours — and the figure is `winnings(colony) / hours`. A flat "+40 an hour" is generous at
+  forty troops and invisible at five million, and would have to be retuned every time the
+  win curve moved; this way the taper in §8a is inherited for free. A test holds it at five
+  sizes across all seven levels.
+  **But that is OUR reference, and it never reaches the screen.** The player is told troops
+  per hour and what that adds up to in a day. Pricing one thing the game gives them in
+  another is not an explanation, and a test greps the whole room for the word.
+- **The store has a lid** (`GRANARY_CAP_HOURS`, 12). Without one a fortnight away pays
+  fourteen wins, which makes not playing the fastest way up the ladder.
+- **Levels are unlocked by CHAPTER as well as bought.** Mycelium alone can be saved up on
+  day one; the chapter gate is what stops the passive rate running ahead of the colony that
+  is meant to be earning it. The seven chapters are spread across the whole road (1, 6, 12,
+  20, 30, 40, 50) so the last level is still something to reach for at the end of it. A
+  gated level shows the CHAPTER, never a price — offering a number the screen would then
+  refuse is a lie about what is in the way.
+- **Digging empties the store first, at the OLD rate.** Hours already foraged belong to the
+  speed that was running when they were foraged.
+- **A store holding less than one whole troop is not stamped.** Rounding down to zero and
+  restarting the clock anyway would throw away every partial hour, so a young colony
+  foraging a third of a troop an hour would never bank anything at all.
+- **Two clock readings have to be handled or the number on screen is nonsense.** A stamp of
+  ZERO is a save that has never emptied it — a new profile, or one from a build with no
+  granary — and reads as FULL: that costs one payout, once, and is right for ever after. A
+  stamp in the FUTURE is a device clock that moved backwards, and reads as empty rather
+  than as a negative store.
+- **It is dug in the Anthill and collected on HOME.** The room belongs in the nest — it is
+  the first level down, and it is *not* a chamber, because a chamber changes a match and
+  this changes the colony between them. But a payout waiting behind two taps is a payout
+  nobody takes, so the pill sits directly under the figure it pays into. Collecting rebuilds
+  the top bar in place; rebuilding the screen would re-run the artwork and throw away the
+  deck's slide for one number.
+- **The pill always says something.** Full, it offers the store; filling, it states the
+  rate. A control that reads as blank when there is nothing to take looks broken rather
+  than patient — and a rate below one troop an hour is written as a fraction, or the first
+  level reads "+0/h".
+- **`chapterOf` lives in `road.ts`**, not beside the opponent search that first needed it.
+  It is a fact about the road, and the granary asks the same question; two copies of that
+  arithmetic would be two answers on one screen.
+
 ## 9. Roadmap
 
 1. Engine port + tests ✅ (all nine abilities implemented)

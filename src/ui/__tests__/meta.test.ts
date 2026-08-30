@@ -12,12 +12,12 @@ import {
 } from "../../engine";
 import type { SpeciesId } from "../../engine";
 import {
-  COLONY_START, MemoryStore, ProfileStore, ROAD_CHAPTER_STOPS, SPECIES_UNLOCK, compact,
-  roadKey, stopColony,
+  COLONY_START, GRANARY_LEVELS, GRANARY_MAX, MemoryStore, ProfileStore, ROAD_CHAPTER_STOPS,
+  SPECIES_UNLOCK, chapterOf, compact, granaryFull, roadKey, stopColony,
 } from "../../platform";
 import { buildAnthill } from "../anthill";
 import { buildProfile } from "../profile";
-import { clockOf, colonyBanner } from "../chrome";
+import { clockOf, colonyBanner, granaryPill } from "../chrome";
 import { buildAntarium, buildSpeciesPage } from "../antarium";
 import type { EngineEvent } from "../../engine";
 import { dayIndex, questDef } from "../../platform";
@@ -77,13 +77,16 @@ describe("anthill screen", () => {
   it("digs one level of the nest per chamber, in order", () => {
     const root = buildAnthill(store());
     const rooms = Array.from(root.querySelectorAll<HTMLElement>(".nest-lvl"));
-    expect(rooms.length).toBe(Object.keys(CHAMBER_MAX).length);
-    expect(rooms[0]?.dataset.chamber).toBe("royal");
+    // The granary is the first room down and is NOT a chamber: it changes the colony
+    // between matches rather than changing a match (platform/granary.ts).
+    expect(rooms.length).toBe(Object.keys(CHAMBER_MAX).length + 1);
+    expect(rooms[0]?.dataset.chamber).toBe("granary");
+    expect(rooms[1]?.dataset.chamber).toBe("royal");
     expect(root.textContent).toContain("Royal Chamber");
     expect(root.textContent).toContain("LV 0/5");
     // Alternating sides, so the shaft reads as a tunnel branching rather than a list.
     expect(rooms.map((r) => (r.classList.contains("left") ? "L" : "R")).join(""))
-      .toBe("LRLRL");
+      .toBe("LRLRLR");
   });
 
   /** Unbroken earth on one side, a hollowed-out room on the other. */
@@ -92,8 +95,8 @@ describe("anthill screen", () => {
     s.buyChamber("royal");
     const root = buildAnthill(s);
     const rooms = Array.from(root.querySelectorAll<HTMLElement>(".nest-lvl"));
-    expect(rooms[0]?.className, "a dug chamber still read as earth").toContain("dug");
-    expect(rooms[1]?.className, "untouched ground read as a room").toContain("fresh");
+    expect(rooms[1]?.className, "a dug chamber still read as earth").toContain("dug");
+    expect(rooms[2]?.className, "untouched ground read as a room").toContain("fresh");
   });
 
   it("opens the chamber that is tapped, and only that one", () => {
@@ -108,6 +111,9 @@ describe("anthill screen", () => {
   it("buys a level and re-renders with the new one", () => {
     const s = store(chamberCost(0));
     const root = buildAnthill(s);
+    // The granary stands open on arrival, so a chamber has to be opened to reach its
+    // price — only the open room carries a buy button.
+    openRoom(root, "Royal Chamber");
     click(buyIn(root, ".nest-lvl", "Royal Chamber"));
     expect(s.get().hill.royal).toBe(1);
     expect(root.textContent).toContain("LV 1/5");
@@ -128,6 +134,7 @@ describe("anthill screen", () => {
   it("does not spend when the player cannot afford the level", () => {
     const s = store(chamberCost(0) - 1);
     const root = buildAnthill(s);
+    openRoom(root, "Royal Chamber");
     const btn = buyIn(root, ".nest-lvl", "Royal Chamber");
     expect(btn?.disabled).toBe(true);
     click(btn);                                  // a disabled button still takes the tap
@@ -139,8 +146,9 @@ describe("anthill screen", () => {
     const s = store(100000);
     for (let i = 0; i < CHAMBER_MAX.royal; i++) s.buyChamber("royal");
     const root = buildAnthill(s);
+    openRoom(root, "Royal Chamber");
     expect(buyIn(root, ".nest-lvl", "Royal Chamber")?.textContent).toBe("MAX");
-    expect(root.querySelector(".nest-lvl")?.className).toContain("maxed");
+    expect(root.querySelector('[data-chamber="royal"]')?.className).toContain("maxed");
   });
 
   /** The whole nest's progress, which the list could never say. */
@@ -148,8 +156,64 @@ describe("anthill screen", () => {
     const s = store(100000);
     s.buyChamber("royal");
     s.buyChamber("gland");
-    const total = Object.values(CHAMBER_MAX).reduce((a, b) => a + b, 0);
-    expect(buildAnthill(s).querySelector(".nest-sum-v")?.textContent).toBe(`2 / ${total}`);
+    // The granary counts too — it is a room in the same nest, and it starts on level one.
+    const total = Object.values(CHAMBER_MAX).reduce((a, b) => a + b, GRANARY_MAX);
+    expect(buildAnthill(s).querySelector(".nest-sum-v")?.textContent).toBe(`3 / ${total}`);
+  });
+
+  /* -------------------------------------------------------------- THE GRANARY */
+
+  /**
+   * THE COLONY GROWS WHILE NOBODY IS PLAYING.
+   *
+   * The room is dug here; the store is emptied on the home screen. What the room has to
+   * get right is the gate — a level the road has not reached must say WHEN rather than
+   * offering a price it would refuse.
+   */
+  // The rate is derived from what a victory pays — that is how it stays honest at every
+  // colony size — but that is OUR reference. The player is told troops per hour and per
+  // day; pricing one thing in another is not an explanation.
+  it("opens on the granary, and states its rate in troops, never in wins", () => {
+    const s = store(0, 0, 10_000);
+    const root = buildAnthill(s);
+    const open = root.querySelector<HTMLElement>(".nest-lvl.open");
+    expect(open?.dataset.chamber).toBe("granary");
+    const now = open?.querySelector(".che-now .che-v")?.textContent ?? "";
+    const next = open?.querySelector(".che-next .che-v")?.textContent ?? "";
+    expect(now).toContain("troops/hour");
+    expect(now).toContain("a day");
+    expect(root.textContent?.toLowerCase(), "the granary priced itself in wins").not.toContain("win");
+    // The next level really is faster, or the comparison says nothing.
+    const rate = (txt: string): number => Number(/\+([\d.]+)/.exec(txt)?.[1] ?? 0);
+    expect(rate(next)).toBeGreaterThan(rate(now));
+  });
+
+  // A young colony forages a fraction of a troop an hour. Rounded to a whole number the
+  // first level reads "+0/h", which looks broken rather than slow.
+  it("writes a rate below one troop an hour as a fraction", () => {
+    const root = buildAnthill(store());
+    expect(root.querySelector(".che-now .che-v")?.textContent).toMatch(/\+\d\.\d troops\/hour/);
+  });
+
+  it("names the chapter that opens the next level instead of pricing it", () => {
+    const s = store(100000);
+    expect(chapterOf(s.get().colony)).toBeLessThan(GRANARY_LEVELS[1]!.chapter);
+    const root = buildAnthill(s);
+    const open = root.querySelector<HTMLElement>(".nest-lvl.open");
+    expect(open?.querySelector(".glock")?.textContent)
+      .toBe(`Chapter ${GRANARY_LEVELS[1]!.chapter}`);
+    expect(open?.querySelector(".buybtn"), "priced a level the road has not reached")
+      .toBeNull();
+  });
+
+  it("sells the next level once the chapter is open, and digs it", () => {
+    const s = store(100000);
+    s.update((p) => { p.colony = stopColony((GRANARY_LEVELS[1]!.chapter - 1) * ROAD_CHAPTER_STOPS + 1); });
+    const root = buildAnthill(s);
+    expect(root.querySelector(".glock"), "still gated with the chapter reached").toBeNull();
+    click(root.querySelector<HTMLButtonElement>(".nest-lvl.open .buybtn"));
+    expect(s.get().granary).toBe(2);
+    expect(root.querySelector(".nest-lvl.open")?.textContent).toContain(`LV 2/${GRANARY_MAX}`);
   });
 
   /** "Now: X → Y" put the same sentence twice on one line. Two rows, one left edge. */
@@ -833,5 +897,61 @@ describe("the manual", () => {
         .toBeTruthy();
     }
     expect(root.id).toBe("rules");
+  });
+});
+/**
+ * THE GRANARY PILL: where the passive troops are actually taken.
+ *
+ * The room is dug in the Anthill, but a payout waiting behind two taps is a payout nobody
+ * takes — so it is emptied on the home screen, under the figure it pays into. What it has
+ * to get right is that it always says SOMETHING: a control that reads as blank when the
+ * store is empty looks broken rather than patient.
+ */
+describe("the granary pill", () => {
+  const HOUR = 3_600_000;
+
+  it("offers the store when there is something in it", () => {
+    const s = store(0, 0, 10_000);
+    s.update((p) => { p.granaryAt = Date.now() - 6 * HOUR; });
+    const pill = granaryPill(s, () => {});
+    expect(pill.className).toContain("ready");
+    expect(pill.querySelector(".gp-go")?.textContent).toBe("Collect");
+    expect(pill.querySelector(".gp-n")?.textContent).toBe(`+${compact(s.granary().stored)}`);
+  });
+
+  // Empty, it says what it is DOING. A blank control reads as a broken one.
+  it("states the rate while the store is still filling", () => {
+    const s = store(0, 0, 10_000);
+    s.update((p) => { p.granaryAt = Date.now(); });
+    const pill = granaryPill(s, () => {});
+    expect(pill.className).not.toContain("ready");
+    expect(pill.textContent).toContain("/h");
+    expect(pill.textContent?.toLowerCase()).toContain("foraging");
+    expect(pill.querySelector(".gp-go"), "offered to collect an empty store").toBeNull();
+  });
+
+  it("pays the store into the colony and tells the screen what came in", () => {
+    const s = store(0, 0, 10_000);
+    s.update((p) => { p.granaryAt = Date.now() - 40 * HOUR; });
+    const before = s.get().colony;
+    let paid = 0;
+    const pill = granaryPill(s, (got) => { paid = got; });
+    pill.click();
+    expect(paid).toBe(granaryFull(before, 1));
+    expect(s.get().colony).toBe(before + paid);
+    // And it redraws itself: the store it just emptied must not still be on offer.
+    expect(pill.className).not.toContain("ready");
+  });
+
+  // Collecting nothing must not report a payout, and must not restart the clock.
+  it("does nothing at all when the store is empty", () => {
+    const s = store(0, 0, 10_000);
+    const stamp = Date.now();
+    s.update((p) => { p.granaryAt = stamp; });
+    let calls = 0;
+    granaryPill(s, () => { calls++; }).click();
+    expect(calls).toBe(0);
+    expect(s.get().granaryAt).toBe(stamp);
+    expect(s.get().colony).toBe(10_000);
   });
 });

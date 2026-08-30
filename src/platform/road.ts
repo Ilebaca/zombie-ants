@@ -146,6 +146,16 @@ export function stopReached(colony: number): number {
   return reached;
 }
 
+/**
+ * Which chapter of the road a colony this size is playing through.
+ *
+ * It lives here rather than beside the thing that first needed it (the opponent search):
+ * it is a fact about the road, and the granary asks the same question to decide which of
+ * its levels are open. Two copies of this arithmetic would be two answers on one screen.
+ */
+export const chapterOf = (colony: number): number =>
+  Math.min(ROAD_CHAPTERS, Math.max(1, Math.ceil((stopReached(colony) + 1) / ROAD_CHAPTER_STOPS)));
+
 export function rewardText(r: RoadReward): string {
   return [
     r.mycel ? `+${r.mycel} mycelium` : "",

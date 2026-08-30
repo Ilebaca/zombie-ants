@@ -19,8 +19,13 @@ import {
   unclaimedLevels, type QuestKind, type QuestState,
 } from "./quests";
 import {
-  ROAD_STOPS, freeReward, isPassKey, passReward, rewardFor, roadColony, stopReached,
+  ROAD_STOPS, chapterOf, freeReward, isPassKey, passReward, rewardFor, roadColony, stopReached,
 } from "./road";
+import {
+  GRANARY_MAX, granaryFillsIn, granaryFull, granaryLevel, granaryNext, granaryRate,
+  granaryStored,
+} from "./granary";
+import type { GranaryLevel } from "./granary";
 import type { Grant } from "./purchases";
 import { defaultStore, readJson, writeJson, type KeyValueStore } from "./storage";
 
@@ -102,6 +107,18 @@ export interface Profile {
   pass: boolean;
   /** When the shop's daily gift was last taken. */
   freeAt: number;
+  /**
+   * THE GRANARY: which level is dug, and when the store was last emptied.
+   *
+   * `granaryAt` is a wall-clock stamp, which is the one kind of number the engine may
+   * never hold (§4.1) — this is the meta layer, and it is the only thing the passive
+   * rate needs to know. Zero means it has never been emptied, and a store that has been
+   * filling since before the profile existed reads as full: a save from a build without
+   * a granary is owed the one payout that costs, and after the first tap the stamp is
+   * real for ever after.
+   */
+  granary: number;
+  granaryAt: number;
   /** Daily quests: today's three, the day they were rolled for, and the sweep streak. */
   quests: QuestState[];
   questDay: number;
@@ -157,6 +174,8 @@ export function defaultProfile(): Profile {
     roadClaimed: [],
     pass: false,
     freeAt: 0,
+    granary: 1,
+    granaryAt: 0,
     quests: [],
     questDay: 0,
     questStreak: 0,
@@ -267,6 +286,10 @@ export function normalise(raw: unknown): Profile {
     roadClaimed: roadClaims(p.roadClaimed, colonyOf(p, base.colony)),
     pass: p.pass === true,
     freeAt: int(p.freeAt, 0, 1e15, 0),
+    // There is no level zero: every colony forages. A save with nothing here is a save
+    // from before the granary, and it starts on the first level like everyone else.
+    granary: int(p.granary, 1, GRANARY_MAX, 1),
+    granaryAt: int(p.granaryAt, 0, 1e15, 0),
     // A quest id that no longer exists in the pool is dropped rather than kept at zero
     // progress, where it would be permanently unclaimable and block the daily sweep.
     quests: Array.isArray(p.quests)
@@ -321,6 +344,36 @@ export function normalise(raw: unknown): Profile {
     out.hill[key] = int(p.hill?.[key], 0, CHAMBER_MAX[key], 0);
   }
   return out;
+}
+
+/** Everything the granary room and the home pill need, from one call. */
+export interface GranaryState {
+  level: number;
+  def: GranaryLevel;
+  /** The level above, or null at the top. */
+  next: GranaryLevel | null;
+  /** Troops an hour at the colony's current size. A fraction, early on. */
+  rate: number;
+  stored: number;
+  full: number;
+  /** Milliseconds until the store stops filling. Zero once it has. */
+  fillsIn: number;
+  /** The chapter the colony is standing in, which is what opens the next level. */
+  chapter: number;
+}
+
+/**
+ * How long the store has been filling.
+ *
+ * Two readings have to be handled or the number on screen is nonsense. A stamp of ZERO is
+ * a save that has never emptied it — a fresh profile, or one from a build with no granary
+ * — and it reads as full, which costs one payout and is then correct for ever. A stamp in
+ * the FUTURE is a device clock that has moved backwards, and it reads as empty rather than
+ * as a negative store; the next collect stamps it back into the present.
+ */
+function granaryElapsed(since: number, now: number): number {
+  if (since <= 0) return Number.MAX_SAFE_INTEGER;
+  return Math.max(0, now - since);
 }
 
 /* ---------------------------------------------------------------- ACCESS */
@@ -394,6 +447,70 @@ export class ProfileStore {
       p.xp += matchXp(won, turns);
       p.lastSpecies = species;
     });
+  }
+
+  /* -------------------------------------------------------------- GRANARY */
+
+  /**
+   * What the granary is holding right now.
+   *
+   * `now` is a parameter rather than a call to the clock inside, so a test can walk time
+   * forward without touching the machine's — the same reason the match clock is the
+   * screen's and not the engine's.
+   */
+  granary(now: number = Date.now()): GranaryState {
+    const p = this.profile;
+    const level = p.granary;
+    const elapsed = granaryElapsed(p.granaryAt, now);
+    return {
+      level,
+      def: granaryLevel(level),
+      next: granaryNext(level),
+      rate: granaryRate(p.colony, level),
+      stored: granaryStored(p.colony, level, elapsed),
+      full: granaryFull(p.colony, level),
+      fillsIn: granaryFillsIn(elapsed),
+      // What the NEXT level needs, so one call answers everything the room has to show.
+      chapter: chapterOf(p.colony),
+    };
+  }
+
+  /**
+   * Empty the store into the colony. Returns what was carried in, 0 if there was nothing.
+   *
+   * A store holding less than a whole troop is deliberately NOT stamped: rounding down to
+   * zero and then restarting the clock would throw away every partial hour, so an early
+   * colony producing a third of a troop an hour would never bank anything at all.
+   */
+  collectGranary(now: number = Date.now()): number {
+    const got = this.granary(now).stored;
+    if (got < 1) return 0;
+    this.update((p) => {
+      p.colony += got;
+      p.granaryAt = now;
+    });
+    return got;
+  }
+
+  /**
+   * Dig the granary one level deeper. Refused if it is at the top, if the road has not
+   * reached the chapter that opens the level, or if the mycelium is not there.
+   *
+   * The store is emptied FIRST, at the old rate. Levelling up with troops still in it
+   * would pay for hours already foraged at a rate that was not running then.
+   */
+  buyGranary(now: number = Date.now()): boolean {
+    const next = granaryNext(this.profile.granary);
+    if (!next) return false;
+    if (chapterOf(this.profile.colony) < next.chapter) return false;
+    if (this.profile.mycel < next.cost) return false;
+    this.collectGranary(now);
+    this.update((p) => {
+      p.mycel -= next.cost;
+      p.granary = Math.min(GRANARY_MAX, p.granary + 1);
+      p.granaryAt = now;
+    });
+    return true;
   }
 
   /* ------------------------------------------------------------- SPENDING */

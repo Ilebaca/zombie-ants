@@ -11,7 +11,7 @@ import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
 import {
   DEFAULT_SPECIES, DemoGateway, LocalMatchmaker, ProfileStore, TOUR_VERSION, botsForChapter,
-  chapterOf, scoreQuestEvents,
+  chapterOf, compact, scoreQuestEvents,
 } from "../platform";
 import type { Matchmaker, Opponent, PurchaseGateway } from "../platform";
 import { setFactionColor } from "../render";
@@ -19,7 +19,9 @@ import { buildAnthill } from "./anthill";
 import { buildAntarium, buildSpeciesPage } from "./antarium";
 import { buildProfile } from "./profile";
 import { icon } from "./icons";
-import { NAV_SCREENS, bottomNav, el, screenEl, topBar } from "./chrome";
+import {
+  NAV_SCREENS, bottomNav, el, granaryPill, screenEl, toast, topBar,
+} from "./chrome";
 import type { NavId } from "./chrome";
 import { MatchScreen } from "./match";
 import {
@@ -90,6 +92,8 @@ export class App {
    */
   private matchmaker: Matchmaker = new LocalMatchmaker();
   private matchmaking: MatchmakingScreen | null = null;
+  /** Redraw the home top bar in place. Set when home is built; a no-op before that. */
+  private rebuildHomeBar: () => void = () => {};
   /** The challenge being played, if this match is one. */
   private challenge: { index: number; done: boolean; daily: boolean } | null = null;
 
@@ -490,11 +494,20 @@ export class App {
   private buildHome(): HTMLElement {
     const root = screenEl("home");
 
-    root.appendChild(topBar(this.profile.get(), {
-      onProfile: () => this.show("profile"),
-      onColonyRoad: () => this.show("achievements"),
-      onShop: () => this.show("shop"),
-    }));
+    /*
+     * The bar, and the granary emptied directly under the figure it pays into.
+     *
+     * Collecting changes the colony, so the bar has to be redrawn — but only the bar.
+     * Rebuilding the screen would re-run the artwork and throw away the deck's slide for
+     * one number, so the bar is rebuilt in place and the pill keeps its own state.
+     */
+    let bar = this.homeBar(root);
+    root.appendChild(bar);
+    this.rebuildHomeBar = (): void => {
+      const fresh = this.homeBar(root);
+      bar.replaceWith(fresh);
+      bar = fresh;
+    };
 
     // Two floating buttons down the right edge. The legacy build sizes and stacks them
     // against the top bar at runtime; syncFabs does the same measurement.
@@ -534,6 +547,25 @@ export class App {
     root.appendChild(play);
     requestAnimationFrame(() => syncFabs(root));
     return root;
+  }
+
+  /**
+   * The home screen's top bar, with the granary pill under it.
+   *
+   * Built through a method rather than inline because collecting rebuilds it: the pill
+   * pays into the colony, and the colony is the biggest figure on the bar above it.
+   */
+  private homeBar(root: HTMLElement): HTMLElement {
+    const bar = topBar(this.profile.get(), {
+      onProfile: () => this.show("profile"),
+      onColonyRoad: () => this.show("achievements"),
+      onShop: () => this.show("shop"),
+    });
+    bar.appendChild(granaryPill(this.profile, (got) => {
+      this.rebuildHomeBar();
+      toast(root, `Granary → +${compact(got)} troops`, "hive");
+    }));
+    return bar;
   }
 
   /**

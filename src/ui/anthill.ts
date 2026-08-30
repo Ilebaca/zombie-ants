@@ -16,8 +16,8 @@
  * itself, so an unaffordable tap is a no-op rather than a half-finished purchase.
  */
 import { chamberCost } from "../engine";
-import { CHAMBERS } from "../platform";
-import type { ChamberDef, ProfileStore } from "../platform";
+import { CHAMBERS, GRANARY_CAP_HOURS, GRANARY_MAX, compact } from "../platform";
+import type { ChamberDef, GranaryState, ProfileStore } from "../platform";
 import { buyButton, el, pips, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 
@@ -25,7 +25,7 @@ export function buildAnthill(store: ProfileStore): HTMLElement {
   const root = screenEl("anthill");
   // Which chamber is standing open. It survives a re-render — buying a level must not
   // close the room the player is in the middle of digging.
-  let open: string = CHAMBERS[0]?.id ?? "";
+  let open: string = GRANARY;
 
   const render = (): void => {
     const profile = store.get();
@@ -42,13 +42,26 @@ export function buildAnthill(store: ProfileStore): HTMLElement {
     const body = el("div", "screenbody sb-top");
     const wrap = el("div", "hillwrap");
 
-    const dug = CHAMBERS.reduce((n, ch) => n + levelOf(ch), 0);
-    const total = CHAMBERS.reduce((n, ch) => n + ch.max, 0);
+    const dug = CHAMBERS.reduce((n, ch) => n + levelOf(ch), profile.granary);
+    const total = CHAMBERS.reduce((n, ch) => n + ch.max, GRANARY_MAX);
     wrap.appendChild(surface(dug, total));
 
     const nest = el("div", "nest");
+    // THE GRANARY IS THE FIRST ROOM DOWN, and it is not a chamber: a chamber changes a
+    // match, and this one changes the colony between matches. It shares the picture
+    // because it is a room in the same nest — it just belongs to the meta layer, so it
+    // has its own level, its own price and its own gate (platform/granary.ts).
+    nest.appendChild(granaryRoom(store.granary(), 0, profile.mycel, open === GRANARY, {
+      onOpen: () => { open = GRANARY; render(); },
+      onBuy: () => {
+        if (!store.buyGranary()) return;
+        const lv = store.get().granary;
+        render();
+        toast(root, `Granary → Lv ${lv}`, "hive");
+      },
+    }));
     CHAMBERS.forEach((ch, i) => {
-      nest.appendChild(level(ch, i, levelOf(ch), profile.mycel, open === ch.id, {
+      nest.appendChild(level(ch, i + 1, levelOf(ch), profile.mycel, open === ch.id, {
         onOpen: () => { open = ch.id; render(); },
         onBuy: () => {
           const was = levelOf(ch);
@@ -171,4 +184,116 @@ function effectRow(kind: "now" | "next", label: string, value: string): HTMLElem
   const row = el("div", "che-row che-" + kind);
   row.append(el("span", "che-k", label), el("span", "che-v", value));
   return row;
+}
+
+/* ------------------------------------------------------------------ THE GRANARY */
+
+/** The open-state key for the granary. It has no ChamberId — it is not a chamber. */
+const GRANARY = "granary";
+
+const GRANARY_DESC =
+  "Harvester workers carry seed back around the clock and store it underground. "
+  + "The brood eats whether or not the colony is at war, so the colony grows between matches.";
+
+/**
+ * Troops an hour, at a size that runs from a third of one to thousands.
+ *
+ * A fraction has to survive being written down or the first level reads as "+0/h" and
+ * looks broken; past ten troops the decimal is noise and the figure needs compacting like
+ * every other colony number does.
+ */
+export const perHour = (rate: number): string =>
+  rate >= 10 ? compact(Math.round(rate)) : rate.toFixed(1);
+
+/**
+ * What a level is worth, in the player's own terms.
+ *
+ * The rate is DERIVED from what a victory pays (platform/granary.ts) — that is how it stays
+ * honest at every colony size — but that is our reference, not the player's. They are told
+ * what comes in per hour and what that adds up to in a day; a rate expressed in wins would
+ * be asking them to price one thing in another.
+ */
+const rateLine = (rate: number): string =>
+  `+${perHour(rate)} troops/hour · ${compact(Math.round(rate * 24))} a day`;
+
+/**
+ * The granary, drawn as a room in the same nest.
+ *
+ * It carries a chapter gate as well as a price, which no chamber does: mycelium alone
+ * could be saved on day one, and the passive rate must not run ahead of the colony that
+ * is meant to be earning it.
+ */
+function granaryRoom(
+  g: GranaryState, index: number, purse: number, open: boolean, on: RoomHandlers,
+): HTMLElement {
+  const maxed = !g.next;
+  const row = el("div", "nest-lvl left"
+    + " dug" + (maxed ? " maxed" : "") + (open ? " open" : ""));
+  row.dataset.chamber = GRANARY;
+
+  const spine = el("div", "nest-spine");
+  spine.append(el("span", "nest-line"), el("span", "nest-node"),
+    el("span", "nest-depth", String(index + 1)));
+
+  const room = el("button", "room");
+  room.type = "button";
+  room.setAttribute("aria-expanded", String(open));
+  const pocket = el("span", "room-pocket");
+  pocket.appendChild(icon("granary", 22));
+  const label = el("span", "room-txt");
+  label.append(
+    el("b", "room-nm", "Granary"),
+    el("span", "room-lv", maxed ? "MAX" : `LV ${g.level}/${GRANARY_MAX}`),
+  );
+  room.append(pocket, label);
+  room.onclick = on.onOpen;
+
+  row.append(spine, room);
+  if (open) row.appendChild(granaryDetail(g, purse, on.onBuy));
+  return row;
+}
+
+function granaryDetail(g: GranaryState, purse: number, onBuy: () => void): HTMLElement {
+  const box = el("div", "room-open");
+  box.appendChild(el("div", "chdesc", GRANARY_DESC));
+
+  const eff = el("div", "cheff");
+  eff.appendChild(effectRow("now", "Now", rateLine(g.rate)));
+  if (g.next) {
+    eff.appendChild(effectRow("next", "Next", rateLine(g.rate * (g.def.hours / g.next.hours))));
+  }
+  box.appendChild(eff);
+
+  // What is standing in the store, and the lid on it. The number is read-only here: it is
+  // collected on the home screen, which is the one screen a player always passes through.
+  const store = el("div", "gstore");
+  store.append(
+    el("span", "gstore-k", `Store · holds ${GRANARY_CAP_HOURS}h`),
+    el("span", "gstore-v", `${compact(g.stored)} / ${compact(g.full)}`),
+  );
+  const track = el("div", "hl-track");
+  const fill = el("span", "hl-fill");
+  fill.style.width = `${g.full > 0 ? Math.round(Math.min(1, g.stored / g.full) * 100) : 0}%`;
+  track.appendChild(fill);
+  store.appendChild(track);
+  box.appendChild(store);
+
+  const foot = el("div", "chfoot");
+  const locked = !!g.next && g.chapter < g.next.chapter;
+  foot.append(
+    pips(g.level, GRANARY_MAX),
+    // A level the road has not reached says WHEN, not "you cannot afford it": the price is
+    // not the thing standing in the way, and showing it as unaffordable would be a lie.
+    locked && g.next
+      ? el("span", "glock", `Chapter ${g.next.chapter}`)
+      : buyButton({
+        icon: "🍄",
+        cost: g.next?.cost ?? 0,
+        maxed: !g.next,
+        affordable: !!g.next && purse >= g.next.cost,
+        onBuy,
+      }),
+  );
+  box.appendChild(foot);
+  return box;
 }

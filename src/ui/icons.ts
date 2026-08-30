@@ -54,6 +54,10 @@ const PATHS: Record<string, string | string[]> = {
     "M10.6 19.8h2.8v2.4a1.4 1.4 0 0 1-2.8 0z",
   ],
   defence: "M12 1.8 3.6 4.9a1 1 0 0 0-.7 1v6.3c0 4.4 3.5 8.2 9.1 10 5.6-1.8 9.1-5.6 9.1-10V5.9a1 1 0 0 0-.7-1z",
+  // A seed store: a domed roof over a squat bin. Harvester ants really do keep one, and it
+  // is the one mark on this screen that has to read as a PLACE rather than an effect.
+  granary: ["M12 2.6a1.4 1.4 0 0 1 .8.3l8.5 6.1a1.2 1.2 0 0 1-.7 2.2H3.4a1.2 1.2 0 0 1-.7-2.2l8.5-6.1a1.4 1.4 0 0 1 .8-.3",
+    "M4.2 13.2h15.6v6.4A1.8 1.8 0 0 1 18 21.4H6a1.8 1.8 0 0 1-1.8-1.8z"],
   clock: "M12 1.9a10.1 10.1 0 1 0 0 20.2 10.1 10.1 0 0 0 0-20.2m1 4.4v5.3l3.9 2.4-1 1.7-4.9-3V6.3z",
   lock: "M12 1.9a4.9 4.9 0 0 0-4.9 4.9V9H6.4A2.4 2.4 0 0 0 4 11.4v8.2A2.4 2.4 0 0 0 6.4 22h11.2a2.4 2.4 0 0 0 2.4-2.4v-8.2A2.4 2.4 0 0 0 17.6 9h-.7V6.8A4.9 4.9 0 0 0 12 1.9m0 2.4a2.5 2.5 0 0 1 2.5 2.5V9h-5V6.8A2.5 2.5 0 0 1 12 4.3",
   star: "m12 1.9 3.1 6.3 7 1-5 4.9 1.2 6.9-6.3-3.3-6.3 3.3L6.9 14l-5-4.9 7-1z",

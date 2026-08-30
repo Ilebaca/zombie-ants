@@ -11,7 +11,7 @@
 import {
   ROAD_CHAPTER_STOPS, compact, freeReward, passReward, stopColony, stopReached,
 } from "../platform";
-import type { Profile } from "../platform";
+import type { Profile, ProfileStore } from "../platform";
 import { icon } from "./icons";
 
 /** Small element factory: `el("div", "cls", "text")`. */
@@ -169,6 +169,56 @@ export function colonyBanner(colony: number, onClick: () => void): HTMLElement {
   box.onclick = onClick;
   return box;
 }
+
+/* ------------------------------------------------------------------ THE GRANARY */
+
+/**
+ * WHERE THE PASSIVE TROOPS ARE COLLECTED, and it is the home screen for a reason.
+ *
+ * The store is dug and levelled in the Anthill, which is where a room in the nest belongs
+ * — but a payout waiting behind two taps is a payout nobody takes. Home is the one screen
+ * every session passes through, so the store is emptied from here, directly under the
+ * figure it pays into.
+ *
+ * It re-renders ITSELF rather than asking the app to rebuild the screen: collecting
+ * changes the colony, and rebuilding home to show that would throw away the deck's slide
+ * and re-run the artwork for one number. `onCollected` is what tells the top bar to catch
+ * up with it.
+ */
+export function granaryPill(
+  store: ProfileStore, onCollected: (got: number) => void,
+): HTMLElement {
+  const pill = el("button", "granpill");
+  pill.id = "granaryPill";
+
+  const draw = (): void => {
+    const g = store.granary();
+    pill.replaceChildren();
+    const ready = g.stored >= 1;
+    pill.classList.toggle("ready", ready);
+    pill.append(icon("granary", 18));
+    // Full, it says what is waiting; empty, it says what it is doing — never nothing, or a
+    // control that does nothing when tapped looks broken rather than patient.
+    pill.append(
+      el("b", "gp-n", ready ? `+${compact(g.stored)}` : `+${perHourLabel(g.rate)}/h`),
+      el("span", "gp-k", ready ? "troops" : "foraging"),
+    );
+    if (ready) pill.append(el("span", "gp-go", "Collect"));
+  };
+
+  pill.onclick = (): void => {
+    const got = store.collectGranary();
+    draw();
+    if (got > 0) onCollected(got);
+  };
+
+  draw();
+  return pill;
+}
+
+/** Troops an hour: a fraction survives being written down, a big number gets compacted. */
+const perHourLabel = (rate: number): string =>
+  rate >= 10 ? compact(Math.round(rate)) : rate.toFixed(1);
 
 function coin(
   mark: string, numClass: string, value: number,

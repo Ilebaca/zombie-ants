@@ -19,7 +19,7 @@
  */
 import { SPECIES_ORDER } from "./catalogue";
 import type { SpeciesId } from "../engine";
-import { ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, stopColony, stopReached } from "./road";
+import { ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, chapterOf, stopColony } from "./road";
 import { RIVAL_NAMES } from "./rival";
 
 /** Who is across the board: what the plate says, and what the board is dressed in. */
@@ -44,10 +44,6 @@ export interface Matchmaker {
    */
   find(colony: number, signal?: AbortSignal): Promise<Opponent>;
 }
-
-/** Which chapter of the road a colony this size is playing through. */
-export const chapterOf = (colony: number): number =>
-  Math.min(ROAD_CHAPTERS, Math.max(1, Math.ceil((stopReached(colony) + 1) / ROAD_CHAPTER_STOPS)));
 
 /** A tiny deterministic generator, so a chapter's roster is the same every time. */
 function seeded(seed: number): () => number {

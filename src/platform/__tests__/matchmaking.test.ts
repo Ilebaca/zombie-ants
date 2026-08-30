@@ -7,10 +7,10 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import {
-  BOTS_PER_CHAPTER, LocalMatchmaker, SEARCH_MS, botsForChapter, chapterOf,
+  BOTS_PER_CHAPTER, LocalMatchmaker, SEARCH_MS, botsForChapter,
 } from "../matchmaking";
 import { COLONY_START } from "../colony";
-import { ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, stopColony } from "../road";
+import { ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, chapterOf, stopColony } from "../road";
 import { SPECIES_ORDER } from "../catalogue";
 
 describe("the bot roster", () => {

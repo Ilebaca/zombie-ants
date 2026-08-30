@@ -3010,3 +3010,82 @@ button:not(.playbtn):active,
   height: 100%;
   border-radius: var(--r-md);
 }
+
+/* ============================================================================
+   ==  THE GRANARY  ===========================================================
+   ============================================================================
+
+   The colony grows while nobody is playing (platform/granary.ts). The room is
+   dug in the Anthill; the store is emptied on the home screen, directly under
+   the figure it pays into.
+   ============================================================================ */
+
+/* The pill sits under the colony banner and shares its column, so the two read
+   as one object: what you have, and what is coming in. */
+.granpill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  margin: 6px 16px 0;
+  padding: 7px 12px;
+  border-radius: 99px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+/* Waiting to be collected, it is a control. Filling, it is a readout — same
+   object either way, so nothing moves when it crosses over. */
+.granpill.ready {
+  border-color: var(--grass);
+  color: var(--ink);
+}
+.granpill .gp-n { font-size: 14px; font-weight: 900; letter-spacing: -.2px; }
+.granpill.ready .gp-n { color: var(--grass-glow); }
+.granpill .gp-k {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.granpill .gp-go {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--grass);
+  color: #06210f;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .3px;
+}
+
+/* What is standing in the store, inside the room that holds it. */
+.gstore {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: 10px;
+}
+.gstore-k {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.gstore-v { font-size: 12px; font-weight: 900; color: var(--ink); }
+.gstore .hl-track { grid-column: 1 / -1; }
+
+/* A level the road has not reached says WHEN, not a price it would refuse. */
+.glock {
+  padding: 6px 12px;
+  border-radius: 99px;
+  border: 1px dashed var(--line);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .3px;
+  color: var(--muted);
+}
