@@ -8,6 +8,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { MemoryStore, ProfileStore } from "../../platform";
+import { MAPS, SPECIES } from "../../engine";
 import {
   CHALLENGES, buildChallenges, buildDaily, challengeState, dailyIndex, dayNumber,
 } from "../challenges";
@@ -86,12 +87,25 @@ describe("the ladder", () => {
 });
 
 describe("the challenges screen", () => {
-  it("draws one card per position, with a picture of each", () => {
+  /**
+   * One card per position, and each says which position it IS.
+   *
+   * The cards carried a drawn preview of the board for a while. It was removed: at the
+   * size a list row allows, a corner of the board says only "this is the game", which
+   * every other card says too. The map, the colony and the difficulty are what tell one
+   * challenge from another, so a card is held to carrying all three.
+   */
+  it("draws one card per position, each naming its map, colony and difficulty", () => {
     const root = list(store());
     expect(cards(root).length).toBe(CHALLENGES.length);
-    for (const card of cards(root)) {
-      expect(card.querySelector(".chalshot canvas"), card.dataset.chal).toBeTruthy();
-    }
+    cards(root).forEach((card, i) => {
+      const c = CHALLENGES[i]!;
+      const chips = Array.from(card.querySelectorAll(".chalchip")).map((x) => x.textContent);
+      expect(chips.join(" "), c.id).toContain(MAPS[c.map].name);
+      expect(chips.join(" "), c.id).toContain(SPECIES[c.species].name);
+      expect(card.querySelectorAll(".chalstar.on").length, c.id).toBe(c.stars);
+      expect(card.querySelector(".chalshot"), "the preview came back").toBeNull();
+    });
   });
 
   it("says how far along the ladder is", () => {

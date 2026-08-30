@@ -80,6 +80,46 @@ describe("dragging the deck", () => {
     expect(arrived).toEqual([]);
   });
 
+  /**
+   * THE TIE GOES TO THE LIST.
+   *
+   * A thumb pivots as it flicks, so a gesture meant to scroll regularly starts off more
+   * across than down — and comparing the two magnitudes on that first sample handed it to
+   * the deck, whose `preventDefault` then killed the scroll for the rest of the touch. A
+   * screen taller than the viewport simply would not move.
+   *
+   * `preventDefault` is the observable: it is the thing that stops the page scrolling, so
+   * it is what a vertical gesture must never see.
+   */
+  describe("a gesture that starts across and then runs down", () => {
+    /** Touch, not pointer: `preventDefault` on touchmove is what blocks a scroll. */
+    const swipe = (deck: Deck<Id>, path: readonly (readonly [number, number])[]): boolean[] => {
+      const down = new MouseEvent("pointerdown", { clientX: 500, clientY: 400, bubbles: true });
+      Object.defineProperty(down, "pointerId", { value: 1 });
+      deck.el.dispatchEvent(down);
+      return path.map(([x, y]) => {
+        const e = new Event("touchmove", { bubbles: true, cancelable: true });
+        Object.defineProperty(e, "touches", { value: [{ clientX: 500 + x, clientY: 400 + y }] });
+        deck.el.dispatchEvent(e);
+        return e.defaultPrevented;
+      });
+    };
+
+    it("lets the screen under it scroll", () => {
+      const { deck } = make();
+      // Fourteen across before eight down — a pivoting thumb — and then straight down.
+      const blocked = swipe(deck, [[14, 8], [16, 60], [18, 200], [18, 420]]);
+      expect(blocked.some(Boolean), "the deck blocked a scroll").toBe(false);
+      expect(deck.at).toBe("a");
+    });
+
+    it("still takes a gesture that really is sideways", () => {
+      const { deck } = make();
+      const blocked = swipe(deck, [[-20, 4], [-120, 6], [-320, 8]]);
+      expect(blocked.some(Boolean), "the deck let a swipe through to the page").toBe(true);
+    });
+  });
+
   it("stops at both ends", () => {
     const { deck } = make();
     drag(deck, 600);                  // back past the first screen
@@ -174,9 +214,14 @@ describe("a tap the deck stole", () => {
     return { deck, el, hits: () => hits };
   };
 
+  /**
+   * Far enough across for the deck to have TAKEN the gesture, nowhere near far enough to
+   * turn the page. A smaller wobble than this the deck never claims at all, and the
+   * browser fires that click by itself — there is nothing to give back.
+   */
   it("gives the press back when the drag went nowhere", () => {
     const { deck, el, hits } = button();
-    drag(deck, 14, 3, 260, el);
+    drag(deck, 30, 3, 260, el);
     expect(hits(), "the button never heard about the tap").toBe(1);
     expect(deck.at, "a wobble turned the page").toBe("a");
   });
@@ -191,7 +236,7 @@ describe("a tap the deck stole", () => {
   /** A short deliberate swipe is a swipe, not a press on whatever it began over. */
   it("does not press anything when the finger was going somewhere", () => {
     const { deck, el, hits } = button();
-    drag(deck, -70, 0, 900, el);          // too far to be a wobble, too slow to commit
+    drag(deck, -90, 0, 900, el);          // too far to be a wobble, too slow to commit
     expect(deck.at).toBe("a");
     expect(hits()).toBe(0);
   });
@@ -202,7 +247,7 @@ describe("a tap the deck stole", () => {
    */
   it("gives back a fast press as readily as a slow one", () => {
     const { deck, el, hits } = button();
-    drag(deck, -14, 0, 20, el);
+    drag(deck, -30, 0, 20, el);
     expect(hits()).toBe(1);
     expect(deck.at).toBe("a");
   });

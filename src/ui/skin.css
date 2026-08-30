@@ -3783,27 +3783,18 @@ button:not(.playbtn):active,
 .challist { display: grid; gap: 8px; }
 .chalcard {
   display: grid;
-  gap: 9px;
+  gap: 8px;
   padding: 12px;
   border-radius: var(--r-lg);
   background: var(--panel);
   border: 1px solid var(--line);
 }
 .chalcard.beaten { border-color: color-mix(in srgb, var(--grass) 50%, var(--line)); }
-/* Dimmed, not hidden: the point of a locked rung is that you can see what is coming. */
-.chalcard.locked { opacity: .62; }
+/* Only just dimmed. The point of a shut rung is that you can READ what is coming —
+   a card faded to a smudge is the same as not listing it. */
+.chalcard.locked { opacity: .82; }
+.chalcard.locked .chalname { color: var(--ink-soft); }
 
-.chalhead { display: grid; grid-template-columns: 76px 1fr; align-items: center; gap: 12px; }
-/* The real position, drawn by the board's own code. */
-.chalshot {
-  width: 76px;
-  height: 76px;
-  border-radius: var(--r-md);
-  overflow: hidden;
-  background: var(--bg1);
-}
-.chalshot canvas { display: block; width: 76px; height: 76px; object-fit: cover; }
-.chalmeta { min-width: 0; display: grid; gap: 7px; }
 .chaltop { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .chalname { font-size: 14px; font-weight: 900; letter-spacing: -.2px; }
 

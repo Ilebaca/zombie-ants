@@ -625,10 +625,11 @@ position in the game, and the screen had no reason to be opened twice.
 - **Each rung opens when the one before it falls, and the lock is NAMED.** "Beat Hold the
   Line first" says what to do; a padlock says only that you cannot. A win out of order (a
   daily can draw any of them) counts as beaten without opening the ones below it.
-- **Every card draws the position it is about** through `render/snapshot.ts` — the real
-  map with the real formation in the corner, the same rule the map picker, the manual and
-  the news follow. `hideCounts` was added for it: at twenty-odd pixels a tile, the garrison
-  numbers are noise over the one thing the picture is for.
+- **The cards carried a drawn preview and it was REMOVED.** At the size a list row allows,
+  a corner of the board says only "this is the game", which every other card says too. The
+  map, the colony and the difficulty are what tell one challenge from another, so those are
+  what a card carries. (`drawSnapshot`'s `hideCounts` was added for those previews and is
+  kept — a thumbnail anywhere else wants it.)
 - **Where, who and what-to-do are three different KINDS of fact.** They were one grey
   sentence, which is most of why every card looked the same: the map and the colony are
   chips now and the objective is the line that gets read.
@@ -1012,6 +1013,17 @@ screens, the species page — is still a page shown on top, and hides the deck w
   forbids its ANCESTOR from panning sideways. Owning the gesture is the only way to have
   both, so the drag is claimed only once it is clearly horizontal and the list keeps
   everything else.
+- **THE TIE GOES TO THE LIST, and the two thresholds are not the same size.** A thumb
+  pivots as it flicks, so a gesture meant to scroll regularly puts ten or fifteen pixels
+  ACROSS the screen before it has put any DOWN it — and deciding the axis at the same
+  distance in both directions handed those to the deck, whose `preventDefault` then killed
+  the scroll for the rest of the touch. A screen taller than the viewport simply would not
+  move. A pivot's sideways drift is bounded and a swipe's is not, so the deck waits for
+  `SWIPE_LOCK` (24px) across while the list takes `AXIS_LOCK` (10px) down, and neither is
+  decided off the first few pixels. The two mistakes are not equal: a wrongly claimed swipe
+  reads as a broken screen, a wrongly released one just fails to turn the page.
+  `TAP_SLOP` must stay ABOVE `SWIPE_LOCK` or nothing the deck claims is ever inside it and
+  the give-back never runs; the flick guard is measured against it for the same reason.
 - **`preventDefault` on a non-passive `touchmove` is what stops the browser stealing it.**
   With only `touch-action: pan-y` on the rail, Chromium still took a swipe that began near
   the left edge, cancelled the pointer stream mid-drag, and navigated the app away to a

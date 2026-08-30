@@ -13,8 +13,24 @@
  * vertical is yours, horizontal is mine.
  */
 
-/** How far a drag must run before it is a swipe rather than a tap or a scroll. */
+/**
+ * How far DOWN a drag must run to be the list's. Small: a scroll should start at once.
+ */
 const AXIS_LOCK = 10;
+/**
+ * ...and how far ACROSS it must run to be the deck's. Deliberately more than twice as far.
+ *
+ * A thumb pivots as it flicks, so a gesture meant to scroll regularly puts ten or fifteen
+ * pixels across the screen before it has put any down it. Deciding at the same distance in
+ * both directions handed those to the deck, and `preventDefault` then killed the scroll
+ * for the rest of the touch — a screen taller than the viewport simply would not move.
+ *
+ * A pivot's sideways drift is BOUNDED; a swipe keeps going. So the deck waits until the
+ * drag has gone somewhere no pivot goes. The two mistakes are not equal: a wrongly claimed
+ * swipe stops the page scrolling, which reads as broken, while a wrongly released one just
+ * fails to turn the page — and the player swipes again.
+ */
+const SWIPE_LOCK = 24;
 /** Past this fraction of the screen, the finger has committed to the next screen. */
 const COMMIT = 0.22;
 /** ...or past this speed, in pixels per millisecond, however short the drag was. */
@@ -24,10 +40,12 @@ const RUBBER = 0.35;
 /**
  * How far a claimed gesture may have travelled and still be a TAP the deck stole.
  *
- * Well under COMMIT: past this the finger was going somewhere, even if it did not get far
- * enough to turn the page.
+ * Necessarily MORE than `SWIPE_LOCK`, or nothing the deck claims can ever be inside it and
+ * the give-back never runs at all. A press the deck did not claim needs no giving back —
+ * the browser fires that click itself — so this band is exactly the sloppy presses that
+ * went far enough to be taken and not far enough to have been going anywhere.
  */
-const TAP_SLOP = 24;
+const TAP_SLOP = 40;
 
 export class Deck<T extends string> {
   readonly el: HTMLElement;
@@ -168,11 +186,28 @@ export class Deck<T extends string> {
     if (this.axis === "x") e.preventDefault();
   };
 
-  /** Decide, once, whether this gesture is the deck's or the list's underneath. */
+  /**
+   * Decide, once, whether this gesture is the deck's or the list's underneath.
+   *
+   * THE TIE GOES TO THE LIST, and that is the whole of this function. A vertical flick on
+   * a phone almost never starts straight down — the thumb pivots, so the first sample past
+   * the threshold is regularly something like 12 across and 8 down. Comparing the two
+   * magnitudes claimed that gesture for the deck, `preventDefault` killed the scroll for
+   * the rest of the touch, and a screen taller than the viewport simply would not move.
+   *
+   * So horizontal has to be clearly dominant (`AXIS_BIAS`) to win, and vertical is taken
+   * the moment it crosses the threshold at all. The two mistakes are not equal: a wrongly
+   * claimed swipe stops the page scrolling, which reads as broken, while a wrongly
+   * released one just fails to turn the page — and the player swipes again.
+   */
   private lock(dx: number, dy: number): void {
     if (this.axis !== null) return;
-    if (Math.abs(dx) < AXIS_LOCK && Math.abs(dy) < AXIS_LOCK) return;
-    this.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+    const ax = Math.abs(dx), ay = Math.abs(dy);
+    // Across, far enough that no pivot got there, and still the larger of the two.
+    if (ax >= SWIPE_LOCK && ax > ay) { this.axis = "x"; return; }
+    // Down at all: the list's, immediately.
+    if (ay >= AXIS_LOCK) this.axis = "y";
+    // Neither yet — stay undecided rather than guessing off the first few pixels.
   }
 
   private onMove = (e: PointerEvent): void => {
@@ -204,7 +239,9 @@ export class Deck<T extends string> {
     const elapsed = Math.max(1, e.timeStamp - this.startAt);
     const speed = Math.abs(dx) / elapsed;
     const far = Math.abs(dx) > this.width() * COMMIT;
-    const flick = speed > FLICK && Math.abs(dx) > AXIS_LOCK * 2;
+    // A flick has to have gone further than a sloppy press, or the give-back below can
+    // never run: the two bands would overlap and every fast wobble would turn the page.
+    const flick = speed > FLICK && Math.abs(dx) > TAP_SLOP;
 
     let next = this.index;
     if (far || flick) next = dx < 0 ? this.index + 1 : this.index - 1;

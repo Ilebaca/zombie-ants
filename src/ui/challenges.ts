@@ -16,15 +16,14 @@
  *   - The daily is the repeatable half. It pays once a DAY rather than once ever, which is
  *     what the countdown on it was always implying.
  *
- * And every card shows the position it is about, drawn by the board's own code
- * (render/snapshot.ts) — the same rule the map picker, the manual and the news follow. A
- * challenge is a PLACE with a shape in the corner of it, and it was described in a sentence.
+ * Every card carried a drawn preview of its position for a while, and it was removed: at
+ * the size a list row allows, a corner of the board says only "this is the game", which
+ * every other card on the screen says too. The map, the colony and the difficulty are the
+ * facts that tell one challenge from another, so they are what the card carries.
  */
-import { START_SHAPES, createGame } from "../engine";
 import type { MapId, ShapeId, SpeciesId } from "../engine";
 import { MAPS, SPECIES } from "../engine";
 import type { ProfileStore } from "../platform";
-import { drawSnapshot } from "../render";
 import { el, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 
@@ -173,19 +172,13 @@ function challengeCard(c: Challenge, index: number, state: CardState): HTMLEleme
     + (state.beaten ? " beaten" : "") + (state.locked ? " locked" : ""));
   card.dataset.chal = c.id;
 
-  const head = el("div", "chalhead");
-  head.appendChild(preview(c));
-
-  const meta = el("div", "chalmeta");
   const top = el("div", "chaltop");
   top.append(el("b", "chalname", `${index + 1}. ${c.name}`), starRow(c.stars));
-  meta.appendChild(top);
+  card.appendChild(top);
 
   const chips = el("div", "chalchips");
   chips.append(chip("board", MAPS[c.map].name), chip("antarium", speciesName(c.species)));
-  meta.appendChild(chips);
-  head.appendChild(meta);
-  card.appendChild(head);
+  card.appendChild(chips);
 
   card.appendChild(el("p", "chalgoal", GOAL_TEXT[c.goal]));
 
@@ -234,17 +227,12 @@ export function buildDaily(
   const card = el("div", "chalcard daily" + (done ? " beaten" : ""));
   card.dataset.chal = challenge.id;
 
-  const head = el("div", "chalhead");
-  head.appendChild(preview(challenge));
-  const meta = el("div", "chalmeta");
   const top = el("div", "chaltop");
   top.append(el("b", "chalname", challenge.name), starRow(challenge.stars));
-  meta.appendChild(top);
+  card.appendChild(top);
   const chips = el("div", "chalchips");
   chips.append(chip("board", MAPS[challenge.map].name), chip("antarium", speciesName(challenge.species)));
-  meta.appendChild(chips);
-  head.appendChild(meta);
-  card.appendChild(head);
+  card.appendChild(chips);
 
   card.appendChild(el("p", "chalgoal", GOAL_TEXT[challenge.goal]));
 
@@ -287,38 +275,6 @@ export function buildDaily(
 }
 
 /* -------------------------------------------------------------------- THE PIECES */
-
-/**
- * The position itself, drawn by the board's own code.
- *
- * The real map, the real formation in the corner and the colony that will be fielded — so
- * a change to how a nest or a gem is drawn reaches this screen on the same commit, and no
- * card can illustrate a set-up the engine no longer produces.
- */
-function preview(c: Challenge): HTMLElement {
-  const box = el("div", "chalshot");
-  const canvas = document.createElement("canvas");
-  const state = createGame({
-    map: c.map,
-    species: { you: c.species, ai: c.species === "fire" ? "ghost" : "fire" },
-    shape: START_SHAPES[c.shape],
-    seed: 0xc4a11 ^ c.stars,
-  });
-  // The player's own corner, which is what a challenge is actually about — a whole 13x13
-  // board in a thumbnail is a texture.
-  drawSnapshot(canvas, state, {
-    tile: 26,
-    terrain: true,
-    view: { c: 0, r: state.size - 4, cols: 4, rows: 4 },
-    // No garrison numbers: at this size they are noise over the one thing the picture is
-    // for, which is the shape of the position.
-    hideCounts: true,
-    padTiles: 0.15,
-    fluid: true,
-  });
-  box.appendChild(canvas);
-  return box;
-}
 
 /** Difficulty as marks from the icon family, not as ★ and ☆ glyphs (CLAUDE.md §10). */
 function starRow(n: number): HTMLElement {
