@@ -238,9 +238,15 @@ describe("the ladder", () => {
     // plays whole games off a clock is a coin flip. Nodes make the same search happen
     // every run. Cut, so the suite stays quick, but not so far that the levels converge
     // on one ply and stop being distinguishable at all.
+    //
+    // AND NO SINGLE GAME MAY BLOCK THE THREAD FOR A MINUTE. The search is synchronous, so
+    // while a game runs the worker cannot answer the reporter — and vitest's RPC gives up
+    // at sixty seconds, which failed the whole suite on a slow CI box with every test
+    // passing. Two games at a sixteenth of the budget is seventeen seconds each here and
+    // decides the ladder exactly as the sixth did: hard took both games at either budget.
     for (const p of Object.values(PROFILES)) {
       p.timeBudgetMs = 60_000;
-      p.nodeBudget = Math.max(300, Math.round(p.nodeBudget / 6));
+      p.nodeBudget = Math.max(300, Math.round(p.nodeBudget / 16));
     }
     try {
       let hardWins = 0;
@@ -251,8 +257,14 @@ describe("the ladder", () => {
           500 + i, "small", { you: "fire", ai: "leafcutter" },
         );
         if (r.winner && (r.winner === "you") === hardIsYou) hardWins++;
+        // Hand the loop back between games so the worker can answer the reporter it could
+        // not answer while the search had the thread.
+        await new Promise(setImmediate);
       }
-      expect(hardWins, "hard lost to easy from both sides").toBeGreaterThanOrEqual(1);
+      // BOTH, not one of two. Combat is deterministic and the budget is nodes, so this is
+      // a fixed answer rather than a sample — and "at least one" was satisfied by an AI
+      // crippled to a single ply, which is exactly the regression the test is here for.
+      expect(hardWins, "hard did not beat easy from both sides").toBe(2);
     } finally {
       Object.values(PROFILES).forEach((p, i) => {
         const b = budgets[i] as readonly [number, number];

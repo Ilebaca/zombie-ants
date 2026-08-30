@@ -190,6 +190,14 @@ an army and never sees a tile hanging — the mistakes a beginner makes. Normal 
 plies with the full evaluation. Hard deepens iteratively to eight with quiescence, the whole
 action set, and its ability chosen by search.
 
+**The suite's ladder tripwire must not block the thread for a minute.** The search is
+synchronous, so while a self-play game runs the test worker cannot answer the reporter —
+and vitest's RPC gives up at sixty seconds, which failed a whole CI run with all 608 tests
+passing. Two games at a sixteenth of the node budget is the same verdict as a sixth (hard
+takes both games either way) in a third of the time, and the games hand the loop back
+between them. Anything added here that runs a minute of straight computation has the same
+trap.
+
 **Strength is measured, never assumed.** `npm run ladder [games] [map] [speed]` plays the
 levels against each other; `npm run arena <a> <b> [games]` plays two; `tools/eval-ab.ts`
 sweeps one evaluation weight. `speed` divides every level's node budget by the same factor
