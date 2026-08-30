@@ -611,6 +611,30 @@ Ten numbered sections now, with a picture beside the rules that need one.
 - **The hive terrain is cleared from every figure that is not about it.** It sits in the
   middle of every map, which is inside most of these windows.
 
+**A COLONY'S PAGE IS ABOUT RESEARCH** (`src/ui/species.ts`, split out of `antarium.ts`).
+It was four grey cards of the same shape — a hero box, a "combat profile", the research
+list, then the trait, the field notes and the ability in three more boxes — and it was the
+last screen in the app still wearing the legacy skeleton. A deliberate deviation now (§10).
+- **Research leads, and states NOW against NEXT.** It is what the screen is for, and a
+  price beside "+5% attack per level" never says which level you are on or what the next
+  one buys. It reuses the Anthill's comparison rows, so the two screens read as one app.
+- **`ResearchDef.at(level, species)` spells out what a level actually gives.** The
+  reservoir does FOUR things — potency, +1 turn or tile at level 3, −1 turn of cooldown at
+  max, and Leafcutter's permanent leaves — and the old one-line summary named one of them
+  while printing the leaf clause on every colony's page. The species argument is what keeps
+  a sentence about leaf walls off the Fire Ant.
+- **The stat bars are measured against the OTHER COLONIES**, read off `SPECIES` so a
+  balance change moves the track on the same commit. They were drawn against a made-up
+  ceiling of 1.7, so 0.90 filled half a bar and said nothing. The researched length is
+  drawn FIRST with the colony's own strength on top of it, so what shows past the end of
+  the base is exactly what the player added.
+- **The cooldown is stated once.** It was in the stat block, in a note beneath it and in
+  the ability card's header — and in one of those it read "7t → 7t", which is what an
+  unchanged number looks like printed with an arrow: only a maxed reservoir shortens one.
+- **The "Customize" tab is gone.** It sold skins from the lucky hatch, which is not built,
+  so it was a tab that could only ever raise a toast — the same thing Settings' Sound
+  switch was.
+
 **THE THREE DRAWER SCREENS ARE BUILT** — News, Friends and Support were "Coming soon"
 panels, which is what the legacy build ships. Each is an offline implementation behind an
 interface, the same seam `Matchmaker` and `PurchaseGateway` use, so a server is a new class

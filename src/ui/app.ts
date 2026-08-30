@@ -18,7 +18,8 @@ import type {
 } from "../platform";
 import { setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
-import { buildAntarium, buildSpeciesPage } from "./antarium";
+import { buildAntarium } from "./antarium";
+import { buildSpeciesPage } from "./species";
 import { buildProfile } from "./profile";
 import { icon } from "./icons";
 import {

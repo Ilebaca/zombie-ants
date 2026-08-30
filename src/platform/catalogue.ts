@@ -66,6 +66,15 @@ export interface ResearchDef {
   desc: string;
   /** Per-level effect summary. Shown once, not per level. */
   effect: string;
+  /**
+   * What LEVEL `l` gives, for THIS species, phrased for the player.
+   *
+   * The species matters: the reservoir's permanent-leaf cap is Leafcutter's alone, and
+   * writing it into every colony's page put a sentence about leaf walls on the Fire Ant.
+   * It exists so the screen can state what you have against what you would buy — a price
+   * beside "+5% attack per level" never says which level you are on.
+   */
+  at: (level: number, species: SpeciesId) => string;
 }
 
 /**
@@ -76,20 +85,42 @@ export interface ResearchDef {
 export const RESEARCH_TRACKS: readonly ResearchDef[] = [
   {
     id: "reservoir", icon: "flask", name: "Exocrine reservoir",
-    desc: "Larger gland reserves refill faster and dose harder. Leafcutter: one barrier wall stays permanent per cast, up to 1/2/3 total (Lv 2/3/4).",
+    desc: "Larger gland reserves refill faster and dose harder.",
     effect: "−1 turn cooldown at max (Leafcutter: +1 permanent leaf per cast, Lv 2–4)",
+    at: reservoirAt,
   },
   {
     id: "mandible", icon: "attack", name: "Mandible muscle",
     desc: "Thicker adductor muscle, harder bite.",
     effect: "+5% attack per level",
+    at: (l) => (l ? `+${l * 5}% attack` : "No bonus"),
   },
   {
     id: "cuticle", icon: "defence", name: "Sclerotised cuticle",
     desc: "Cross-linked chitin hardens the exoskeleton.",
     effect: "+5% defense per level",
+    at: (l) => (l ? `+${l * 5}% defense` : "No bonus"),
   },
 ];
+
+/**
+ * The reservoir does four different things, and the old one-line summary named one of them.
+ *
+ * Every number here comes from `engine/abilities.ts`: potency is 6% a level, a third level
+ * buys +1 turn or +1 tile, and only a MAXED reservoir shortens the cooldown. Leafcutter's
+ * permanent leaves start at level 2 and cap at three.
+ */
+function reservoirAt(level: number, species: SpeciesId): string {
+  if (level <= 0) return "No bonus";
+  const parts = [`Ability x${(1 + 0.06 * level).toFixed(2)}`];
+  if (Math.floor(level / 3) > 0) parts.push("+1 turn or tile");
+  if (level >= RESEARCH_MAX) parts.push("-1 turn cooldown");
+  if (SPECIES[species].ability.kind === "leaf") {
+    const leaves = Math.min(3, Math.max(0, level - 1));
+    if (leaves > 0) parts.push(`${leaves} permanent ${leaves === 1 ? "leaf" : "leaves"}`);
+  }
+  return parts.join(" · ");
+}
 
 /**
  * Mycelium price of each species, exactly as the legacy build prices them (SPEC_UNLOCK).

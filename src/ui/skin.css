@@ -3593,3 +3593,155 @@ button:not(.playbtn):active,
   font-weight: 900;
   text-align: center;
 }
+
+/* ============================================================================
+   ==  A COLONY'S PAGE  =======================================================
+   ============================================================================
+
+   Four grey cards of the same shape stacked down a page: a hero box, a "combat
+   profile" of bars measured against nothing, the research list, and then the
+   trait, the field notes and the ability in three more boxes with the cooldown
+   printed in all of them. It was the last screen still wearing the legacy shape.
+
+   Research leads now, because it is what the screen is FOR, and it states what
+   you have against what the next level buys — the Anthill's comparison, reusing
+   the Anthill's rows so the two screens read as one app.
+   ============================================================================ */
+.spgwrap { display: grid; gap: 6px; padding-bottom: 14px; }
+.spgwrap .secthead { margin: 14px 0 2px; }
+.spgwrap .secthead:first-child { margin-top: 0; }
+
+/* ------------------------------------------------------------------- THE HERO */
+.spghero {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 14px;
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  /* The tier is the one thing on this screen that is about rarity, so it is the
+     one thing that colours it. */
+  border: 1px solid color-mix(in srgb, var(--tc) 45%, var(--line));
+}
+/* Drawn at twice the size it is shown at, which is what keeps it sharp. */
+.spgport { display: block; width: 96px; height: 96px; }
+.spgwho { min-width: 0; display: grid; gap: 2px; }
+.spgtier {
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--tc);
+}
+.spgname { font-size: 21px; font-weight: 900; letter-spacing: -.4px; line-height: 1.1; }
+.spgblurb { font-size: 11.5px; font-weight: 700; line-height: 1.35; color: var(--ink-soft); }
+
+/* The bars run over the REAL span of every colony in the game, read off SPECIES.
+   They used to be drawn against a made-up ceiling of 1.7, so 0.90 filled half a
+   bar and said nothing about whether that was strong or weak. */
+/* FULL WIDTH, not the column beside the portrait. Squeezed into what was left of
+   a 96px-portrait row the track came out 110px long, and a bar that short cannot
+   show where a colony sits in a range at all. */
+.spgstats { grid-column: 1 / -1; display: grid; gap: 5px; margin-top: 4px; }
+.spgstat { display: grid; grid-template-columns: 62px 1fr 40px; align-items: center; gap: 10px; }
+.spgstat-k { font-size: 10px; font-weight: 900; letter-spacing: .4px; color: var(--muted); }
+.spgstat-b {
+  position: relative;
+  height: 7px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, .38);
+  overflow: hidden;
+}
+.spgstat-f { position: absolute; left: 0; top: 0; height: 100%; border-radius: 99px; }
+/* The colony's own strength, in its tier colour, over the length research has
+   grown it to — so the green showing past the end is what the player added. */
+.spgstat-f.grown { background: var(--grass-glow); }
+.spgstat-v {
+  justify-self: end;
+  font-size: 12px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.spgstat-v.up { color: var(--grass-glow); }
+
+.spgdone { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; }
+.spgdone-k {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.spgdone-v { font-size: 11.5px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.spgdone .hl-track { grid-column: 1 / -1; }
+
+/* --------------------------------------------------------------- THE RESEARCH */
+.spglist { display: grid; gap: 6px; }
+.spgtrack {
+  padding: 12px 13px;
+  border-radius: var(--r-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.spgtrack.maxed { border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); }
+.spgthead { display: grid; grid-template-columns: 32px 1fr; align-items: center; gap: 10px; }
+.spgti {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, .26);
+  color: var(--grass-glow);
+}
+.spgtrack.maxed .spgti { color: var(--gold); }
+.spgtt { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.spgtn { font-size: 13px; font-weight: 900; }
+.spgtl { font-size: 10px; font-weight: 900; letter-spacing: .4px; color: var(--muted); }
+.spgtrack.maxed .spgtl { color: var(--gold); }
+.spgtd {
+  margin: 7px 0 9px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+.spgtrack .cheff { margin-bottom: 10px; }
+.spgtrack.fresh .che-now .che-v { color: var(--muted); }
+
+/* ------------------------------------------------------------ ABILITY & LORE */
+.spgcard {
+  display: grid;
+  gap: 8px;
+  padding: 13px;
+  border-radius: var(--r-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.spgchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.spgchip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, .28);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--muted);
+}
+/* Lit when research has moved it off its base — the one thing on this card that
+   is about the player rather than about the ant. */
+.spgchip.lit { border-color: var(--grass); color: var(--grass-glow); }
+.spgtext { margin: 0; font-size: 12.5px; font-weight: 700; line-height: 1.5; color: var(--ink-soft); }
+.spgtrait { margin: 0; font-size: 13px; font-weight: 800; line-height: 1.4; color: var(--ink); }
+.spglabel {
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.spglabel + * { margin-top: -3px; }

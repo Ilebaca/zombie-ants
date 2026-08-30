@@ -271,7 +271,12 @@ describe("the ladder", () => {
         p.timeBudgetMs = b[0]; p.nodeBudget = b[1];
       });
     }
-  }, 60000);
+    // Generous, and deliberately not tight. The budget is NODES, so the work is fixed —
+    // but the clock is not, and on a loaded box this took 68 seconds against 36 on an idle
+    // one. A tight limit here measures the machine, which is exactly what budgeting by
+    // nodes exists to avoid. The sixty-second ceiling that matters is vitest's RPC one,
+    // and that is per blocking stretch: seventeen seconds a game, handed back between.
+  }, 240_000);
 });
 
 /**

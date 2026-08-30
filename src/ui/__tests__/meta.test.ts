@@ -13,12 +13,13 @@ import {
 import type { SpeciesId } from "../../engine";
 import {
   COLONY_START, GRANARY_LEVELS, GRANARY_MAX, MemoryStore, ProfileStore, ROAD_CHAPTER_STOPS,
-  SPECIES_UNLOCK, chapterOf, compact, granaryFull, roadKey, stopColony,
+  RESEARCH_TOTAL_MAX, SPECIES_UNLOCK, chapterOf, compact, granaryFull, roadKey, stopColony,
 } from "../../platform";
 import { buildAnthill } from "../anthill";
 import { buildProfile } from "../profile";
 import { clockOf, colonyBanner, granaryPill } from "../chrome";
-import { buildAntarium, buildSpeciesPage } from "../antarium";
+import { buildAntarium } from "../antarium";
+import { buildSpeciesPage } from "../species";
 import type { EngineEvent } from "../../engine";
 import { dayIndex, questDef } from "../../platform";
 import { scoreQuestEvents } from "../../platform";
@@ -447,6 +448,14 @@ describe("antarium collection", () => {
   });
 });
 
+/**
+ * A COLONY'S PAGE.
+ *
+ * It was four grey cards of the same shape with the cooldown printed in three of them and
+ * "combat profile" bars measured against a made-up ceiling. What the rebuild is for: the
+ * research comes first and states what you HAVE against what the next level buys, the bars
+ * are measured against the other colonies, and the cooldown is stated once.
+ */
 describe("species page", () => {
   const openPage = (s: ProfileStore, species: SpeciesId = "fire"): HTMLElement =>
     buildSpeciesPage(s, { species, onBack: () => {} });
@@ -454,46 +463,116 @@ describe("species page", () => {
   it("names the colony and lists its three research tracks", () => {
     const root = openPage(store());
     expect(root.querySelector("#aupTitle, .screenh")?.textContent).toBe("Fire Ant");
-    expect(root.querySelectorAll(".rtrack").length).toBe(3);
+    expect(root.querySelectorAll(".spgtrack").length).toBe(3);
     expect(root.textContent).toContain("Wildfire");
-    expect(root.textContent).toContain("RESEARCH LV 0 / 15");
+    expect(root.textContent).toContain(`0 of ${RESEARCH_TOTAL_MAX}`);
   });
 
   it("buys a research level with mycelium and shows the new one", () => {
     const s = store(researchCost(0));
     const root = openPage(s);
-    click(buyIn(root, ".rtrack", "Mandible muscle"));
+    click(buyIn(root, ".spgtrack", "Mandible muscle"));
     expect(s.get().research.fire?.mandible).toBe(1);
     expect(s.get().mycel).toBe(0);
-    expect(root.querySelectorAll(".rtrack .pip.on").length).toBe(1);
-    expect(root.textContent).toContain("RESEARCH LV 1 / 15");
+    expect(root.querySelectorAll(".spgtrack .pip.on").length).toBe(1);
+    expect(root.textContent).toContain(`1 of ${RESEARCH_TOTAL_MAX}`);
+  });
+
+  /**
+   * NOW against NEXT, the Anthill's comparison. A price beside "+5% attack per level"
+   * never says which level you are on or what the next one buys.
+   */
+  it("states what a track gives now against what the next level buys", () => {
+    const s = store(100000);
+    s.buyResearch("fire", "mandible");
+    const row = Array.from(openPage(s).querySelectorAll<HTMLElement>(".spgtrack"))
+      .find((r) => r.dataset.track === "mandible");
+    expect(row?.querySelector(".che-now .che-v")?.textContent).toBe("+5% attack");
+    expect(row?.querySelector(".che-next .che-v")?.textContent).toBe("+10% attack");
+  });
+
+  // The reservoir does four different things and the old summary named one of them.
+  it("spells out everything a reservoir level actually gives", () => {
+    const s = store(100000);
+    for (let i = 0; i < RESEARCH_MAX; i++) s.buyResearch("fire", "reservoir");
+    const row = Array.from(openPage(s).querySelectorAll<HTMLElement>(".spgtrack"))
+      .find((r) => r.dataset.track === "reservoir");
+    const now = row?.querySelector(".che-now .che-v")?.textContent ?? "";
+    expect(now).toContain("x1.30");
+    expect(now).toContain("+1 turn or tile");
+    expect(now).toContain("-1 turn cooldown");
+    // Leaf walls are Leafcutter's alone; naming them here put a sentence about leaves on
+    // every other colony's page. Matched loosely on purpose — "leaf" is not a substring of
+    // "leaves", so the obvious assertion passes against exactly the bug it is for.
+    expect(now).not.toMatch(/leaf|leaves|permanent/i);
+  });
+
+  it("names the permanent leaves on the colony that actually gets them", () => {
+    const s = store(100000);
+    for (let i = 0; i < 3; i++) s.buyResearch("leafcutter", "reservoir");
+    const row = Array.from(openPage(s, "leafcutter").querySelectorAll<HTMLElement>(".spgtrack"))
+      .find((r) => r.dataset.track === "reservoir");
+    expect(row?.querySelector(".che-now .che-v")?.textContent).toContain("2 permanent leaves");
   });
 
   it("moves the attack figure only after the research is bought", () => {
     const s = store(100000);
-    expect(openPage(s).querySelector(".srow .sv")?.textContent).toBe("0.86");
+    expect(openPage(s).querySelector(".spgstat-v")?.textContent).toBe("0.86");
     s.buyResearch("fire", "mandible");
-    expect(openPage(s).querySelector(".srow .sv")?.textContent).toContain("0.90");
+    expect(openPage(s).querySelector(".spgstat-v")?.textContent).toBe("0.90");
+    expect(openPage(s).querySelector(".spgstat-v")?.className).toContain("up");
   });
 
-  it("shortens the ability cooldown only at maximum reservoir research", () => {
+  /**
+   * The BAR, not only the figure. The researched length is drawn first and the colony's own
+   * strength sits on top of it, so what shows past the end of the base is exactly what the
+   * player added — and a bar that never grows looks identical to one that does until the
+   * two widths are actually compared.
+   */
+  it("grows the bar past the colony's own strength when research buys some", () => {
     const s = store(100000);
-    const cooldown = (): string | undefined =>
-      Array.from(openPage(s).querySelectorAll(".srow")).find((r) => r.textContent?.startsWith("Ability"))
-        ?.querySelector(".sv")?.textContent ?? undefined;
-    // Read the base off the species rather than writing it in: this is testing the RULE,
-    // and a balance tweak to one ability should not fail it.
+    const widths = (): number[] =>
+      Array.from(
+        Array.from(openPage(s).querySelectorAll<HTMLElement>(".spgstat"))[0]!
+          .querySelectorAll<HTMLElement>(".spgstat-f"),
+      ).map((f) => parseFloat(f.style.width));
+    const [grownBefore, baseBefore] = widths() as [number, number];
+    expect(grownBefore).toBe(baseBefore);
+    s.buyResearch("fire", "mandible");
+    const [grownAfter, baseAfter] = widths() as [number, number];
+    expect(grownAfter).toBeGreaterThan(baseAfter);
+    expect(baseAfter).toBe(baseBefore);
+  });
+
+  /**
+   * ONCE. It used to be in the stat block, in a note beneath it and in the ability card's
+   * header — and in one of those it read "7t → 7t", because only a maxed reservoir
+   * shortens a cooldown.
+   */
+  it("states the ability cooldown exactly once, and shortens it only at max", () => {
+    const s = store(100000);
     const base = SPECIES.fire.ability.cooldown;
+    const chips = (): string[] => Array.from(openPage(s).querySelectorAll(".spgchip"))
+      .map((c) => c.textContent ?? "");
+    expect(chips().filter((t) => /cooldown/i.test(t)).length).toBe(1);
     for (let i = 0; i < RESEARCH_MAX - 1; i++) s.buyResearch("fire", "reservoir");
-    expect(cooldown()).toContain(`${base}t`);
+    expect(chips().join()).toContain(`${base}-turn cooldown`);
     s.buyResearch("fire", "reservoir");
-    expect(cooldown()).toContain(`${base - 1}t`);
+    expect(chips().join()).toContain(`${base - 1}-turn cooldown`);
+    expect(openPage(s).textContent).not.toContain(`${base}t →`);
   });
 
   it("keeps research per species — levelling Fire leaves Ghost alone", () => {
     const s = store(100000);
     s.buyResearch("fire", "cuticle");
-    expect(openPage(s, "ghost").textContent).toContain("RESEARCH LV 0 / 15");
+    expect(openPage(s, "ghost").textContent).toContain(`0 of ${RESEARCH_TOTAL_MAX}`);
+  });
+
+  // A tab that can only ever raise a toast is the same thing Settings' Sound switch was.
+  it("offers no control that does nothing", () => {
+    const root = openPage(store());
+    expect(root.querySelector(".auptabs"), "the dead Customize tab is back").toBeNull();
+    expect(root.textContent).not.toContain("Customize");
   });
 });
 
@@ -783,12 +862,17 @@ describe("legacy markup parity", () => {
     expect(root.querySelector("#antGrid")).toBeTruthy();
   });
 
-  it("keeps the species page's hero → dcard skeleton", () => {
+  /**
+   * The species page is a DELIBERATE deviation from the legacy skeleton (CLAUDE.md §10):
+   * the legacy shape was four identical grey cards, and it was the last screen in the app
+   * still wearing it. What is held here is the shape it was rebuilt into — and the ids the
+   * router and the tour reach it by, which are not styling and must not drift.
+   */
+  it("keeps the species page's hero → research → ability skeleton", () => {
     const root = buildSpeciesPage(store(), { species: "fire", onBack: () => {} });
     expect(root.id).toBe("antup");
-    for (const cls of ["auptabs", "auptab", "antscroll", "dhero", "dtier", "dname", "dtag",
-      "dlvl", "dcard", "ch", "srow", "sk", "sb", "sf", "sv", "dbio", "rtrack", "ri", "rb",
-      "rn", "rd", "re", "pips"]) {
+    for (const cls of ["spgwrap", "spghero", "spgstat", "spgtrack", "cheff", "che-row",
+      "chfoot", "pips", "spgcard", "spgchip", "secthead"]) {
       expect(landmarks(root), `.${cls} missing`).toContain(cls);
     }
     expect(root.querySelector("#aupTitle")?.textContent).toBe("Fire Ant");
