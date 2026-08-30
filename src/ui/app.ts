@@ -28,7 +28,7 @@ import {
 import type { NavId } from "./chrome";
 import { MatchScreen } from "./match";
 import {
-  CHALLENGES, CHALLENGE_REWARD, DAILY_BONUS_PHEROMONE, buildChallenges, buildDaily,
+  CHALLENGES, CHALLENGE_REWARD, DAILY_BONUS_PHEROMONE, buildChallenges, buildDaily, dayNumber,
 } from "./challenges";
 import { buildLeaderboard } from "./leaderboard";
 import { buildShop } from "./shop";
@@ -452,8 +452,13 @@ export class App {
         () => this.show("home"),
       );
     }
-    if (id === "challenges") return buildChallenges((i) => this.startChallenge(i));
-    if (id === "daily") return buildDaily((i) => this.startChallenge(i, true), () => this.show("home"));
+    if (id === "challenges") return buildChallenges(this.profile, (i) => this.startChallenge(i));
+    if (id === "daily") {
+      return buildDaily(
+        this.profile, (i) => this.startChallenge(i, true),
+        () => this.show("home"), () => this.show("challenges"),
+      );
+    }
     // The one menu entry that really is unbuilt (CLAUDE.md §9: the lucky hatch needs the
     // larva currency and a cosmetics pool, neither of which exists). It fell through to
     // the Antarium, so tapping it silently opened a different screen.
@@ -779,11 +784,25 @@ export class App {
         });
         this.profile.questProgress("play");
         if (winner === "you") this.profile.questProgress("win");
-        // A challenge pays on top of the usual match reward, once.
-        if (this.challenge && !this.challenge.done) {
+        /*
+         * A CHALLENGE PAYS ONCE, and the profile is what remembers it.
+         *
+         * It used to be guarded by a flag on the match, which only stopped it paying twice
+         * for the same match — replaying the easiest position paid forty mycelium every
+         * single run. `beatChallenge` returns false when it was already beaten and the
+         * reward hangs off that; the daily is stamped by DAY, because it is meant to come
+         * back.
+         */
+        if (this.challenge && !this.challenge.done && winner === "you") {
           this.challenge.done = true;
+          const def = CHALLENGES[this.challenge.index];
           const daily = this.challenge.daily;
-          if (winner === "you") {
+          const first = daily
+            ? this.profile.beatDaily(dayNumber())
+            : !!def && this.profile.beatChallenge(def.id);
+          // Beating a daily also beats the position it drew, so the ladder moves too.
+          if (daily && def) this.profile.beatChallenge(def.id);
+          if (first) {
             this.profile.update((p) => {
               p.mycel += CHALLENGE_REWARD;
               if (daily) p.pheromone += DAILY_BONUS_PHEROMONE;

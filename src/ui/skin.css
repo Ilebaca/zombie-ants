@@ -3745,3 +3745,153 @@ button:not(.playbtn):active,
   color: var(--muted);
 }
 .spglabel + * { margin-top: -3px; }
+
+/* ============================================================================
+   ==  CHALLENGES  ============================================================
+   ============================================================================
+
+   Five identical cards, each a title, a run-on grey sentence and a green Play
+   button — and beating one changed nothing, so the reward paid again on every
+   replay and the screen had no reason to be opened twice.
+
+   A ladder now: how far along you are at the top, each position drawn by the
+   board's own code, and the next one named rather than padlocked.
+   ============================================================================ */
+.chalwrap { display: grid; gap: 10px; padding-bottom: 14px; }
+
+/* How far down the ladder, which a list of five cards could not say. */
+.chalsum {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 11px 14px;
+  border-radius: var(--r-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.chalsum-k {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.chalsum-v { font-size: 13px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.chalsum .hl-track { grid-column: 1 / -1; }
+
+.challist { display: grid; gap: 8px; }
+.chalcard {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.chalcard.beaten { border-color: color-mix(in srgb, var(--grass) 50%, var(--line)); }
+/* Dimmed, not hidden: the point of a locked rung is that you can see what is coming. */
+.chalcard.locked { opacity: .62; }
+
+.chalhead { display: grid; grid-template-columns: 76px 1fr; align-items: center; gap: 12px; }
+/* The real position, drawn by the board's own code. */
+.chalshot {
+  width: 76px;
+  height: 76px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--bg1);
+}
+.chalshot canvas { display: block; width: 76px; height: 76px; object-fit: cover; }
+.chalmeta { min-width: 0; display: grid; gap: 7px; }
+.chaltop { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.chalname { font-size: 14px; font-weight: 900; letter-spacing: -.2px; }
+
+/* Marks from the icon family, not ★ and ☆ glyphs. */
+.chalstars { display: flex; gap: 2px; flex: none; color: var(--panel-edge); }
+.chalstar { display: grid; place-items: center; color: rgba(255, 255, 255, .16); }
+.chalstar.on { color: var(--gold); }
+
+/* WHERE and WHO are facts; the objective is the line that gets read. Making all
+   three one grey sentence was what made every card look the same. */
+.chalchips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chalchip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, .28);
+  font-size: 10.5px;
+  font-weight: 900;
+  color: var(--muted);
+}
+.chalgoal { margin: 0; font-size: 12.5px; font-weight: 700; line-height: 1.4; color: var(--ink-soft); }
+
+.chalfoot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.chalfoot .challplay { width: auto; margin: 0; padding: 9px 22px; font-size: 14px; }
+/* What beating it pays — a price tag, not a sentence under the card. */
+.chalpay {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--gold);
+}
+.chalstate {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 900;
+  color: var(--muted);
+}
+.chalstate.done { color: var(--grass-glow); }
+/* Beaten ground can still be walked; it just does not pay again, so the button
+   that walks it does not look like the one that earns. */
+.chalagain {
+  padding: 7px 14px;
+  border-radius: 99px;
+  background: none;
+  border: 1px solid var(--line);
+  font-family: var(--font);
+  font-size: 11.5px;
+  font-weight: 900;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+/* The clock is about when the NEXT one arrives, which is true whether or not
+   today's has been beaten — so it belongs to the screen, not to the card. */
+.chalclock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+/* The daily was one card floating in an empty screen. The ladder is the other
+   half of the same subject, and the daily draws its position from it. */
+.chalmore {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: var(--r-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.chalmore svg { color: var(--muted); }
+.chalmore-t { display: grid; gap: 2px; }
+.chalmore-t b { font-size: 13px; font-weight: 900; }
+.chalmore-t span { font-size: 11px; font-weight: 800; color: var(--muted); }

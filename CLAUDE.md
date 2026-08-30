@@ -611,6 +611,31 @@ Ten numbered sections now, with a picture beside the rules that need one.
 - **The hive terrain is cleared from every figure that is not about it.** It sits in the
   middle of every map, which is inside most of these windows.
 
+**CHALLENGES ARE A LADDER, AND BEATING ONE IS REMEMBERED** (`src/ui/challenges.ts`). Five
+identical cards — a title, a run-on grey sentence, a green Play button — and nothing
+recorded a win, so the forty-mycelium reward paid again on EVERY replay of the easiest
+position in the game, and the screen had no reason to be opened twice.
+- **A challenge is beaten once.** `profile.challenges` holds the ids and
+  `ProfileStore.beatChallenge` returns false when it was already there; the reward hangs
+  off that return, which is the only thing making it pay once. Keyed by ID, never by index
+  — reordering the table would otherwise re-award or re-lock every one of them (§8a's rung
+  lesson).
+- **The daily is the repeatable half**, stamped by DAY rather than listed, because it is
+  meant to come back. Beating it also beats the position it drew, so the ladder moves.
+- **Each rung opens when the one before it falls, and the lock is NAMED.** "Beat Hold the
+  Line first" says what to do; a padlock says only that you cannot. A win out of order (a
+  daily can draw any of them) counts as beaten without opening the ones below it.
+- **Every card draws the position it is about** through `render/snapshot.ts` — the real
+  map with the real formation in the corner, the same rule the map picker, the manual and
+  the news follow. `hideCounts` was added for it: at twenty-odd pixels a tile, the garrison
+  numbers are noise over the one thing the picture is for.
+- **Where, who and what-to-do are three different KINDS of fact.** They were one grey
+  sentence, which is most of why every card looked the same: the map and the colony are
+  chips now and the objective is the line that gets read.
+- **The daily screen has a second half.** It was one card floating in an empty page; it
+  carries the ladder's progress and the way into it, because the daily draws its position
+  from there.
+
 **A COLONY'S PAGE IS ABOUT RESEARCH** (`src/ui/species.ts`, split out of `antarium.ts`).
 It was four grey cards of the same shape — a hero box, a "combat profile", the research
 list, then the trait, the field notes and the ability in three more boxes — and it was the

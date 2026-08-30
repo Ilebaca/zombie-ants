@@ -140,6 +140,17 @@ export interface Profile {
   newsSeen: number;
   /** Messages sent to support, kept so nothing a player wrote is thrown away. */
   tickets: Ticket[];
+  /**
+   * CHALLENGES BEATEN, by id.
+   *
+   * Nothing recorded one before, so a challenge paid its reward every time it was replayed
+   * — forty mycelium a run off the easiest position in the game — and the list had no
+   * reason to be opened twice. Keyed by id rather than index, so reordering the table
+   * cannot silently re-award or re-lock one.
+   */
+  challenges: string[];
+  /** The day the daily challenge was last beaten. It pays once a day, not once ever. */
+  dailyDay: number;
   /** Daily quests: today's three, the day they were rolled for, and the sweep streak. */
   quests: QuestState[];
   questDay: number;
@@ -205,6 +216,8 @@ export function defaultProfile(): Profile {
     friendsOut: [],
     newsSeen: 0,
     tickets: [],
+    challenges: [],
+    dailyDay: 0,
     quests: [],
     questDay: 0,
     questStreak: 0,
@@ -329,6 +342,10 @@ export function normalise(raw: unknown): Profile {
     friendsOut: people(p.friendsOut, base.friendsOut),
     newsSeen: int(p.newsSeen, 0, 1e15, 0),
     tickets: tickets(p.tickets),
+    challenges: Array.isArray(p.challenges)
+      ? p.challenges.filter((c): c is string => typeof c === "string").slice(0, 200)
+      : [],
+    dailyDay: int(p.dailyDay, 0, 1e9, 0),
     // A quest id that no longer exists in the pool is dropped rather than kept at zero
     // progress, where it would be permanently unclaimable and block the daily sweep.
     quests: Array.isArray(p.quests)
@@ -524,6 +541,29 @@ export class ProfileStore {
       p.xp += matchXp(won, turns);
       p.lastSpecies = species;
     });
+  }
+
+  /* ----------------------------------------------------------- CHALLENGES */
+
+  challengeBeaten(id: string): boolean { return this.profile.challenges.includes(id); }
+
+  /**
+   * Mark a challenge beaten. Returns false when it already was, which is what stops the
+   * reward paying twice — the caller pays only on a true.
+   */
+  beatChallenge(id: string): boolean {
+    if (this.challengeBeaten(id)) return false;
+    this.update((p) => { p.challenges = [...p.challenges, id]; });
+    return true;
+  }
+
+  /** The daily pays once a DAY rather than once ever, so it is stamped, not listed. */
+  dailyBeaten(day: number): boolean { return this.profile.dailyDay === day; }
+
+  beatDaily(day: number): boolean {
+    if (this.dailyBeaten(day)) return false;
+    this.update((p) => { p.dailyDay = day; });
+    return true;
   }
 
   /* -------------------------------------------------------------- FRIENDS */

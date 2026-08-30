@@ -64,6 +64,14 @@ export interface SnapshotOptions {
    * inches wide is mostly empty ground.
    */
   view?: { c: number; r: number; cols: number; rows: number };
+  /**
+   * Draw the board with no garrison numbers on it.
+   *
+   * A thumbnail is a picture of a PLACE. At twenty-odd pixels a tile the counts are three
+   * pixels of noise on every square, and what the picture is for — the shape of the
+   * position — is the thing they crowd out.
+   */
+  hideCounts?: boolean;
   /** A tile shown as picked up, and the squares it may act on. */
   selection?: Coord | null;
   valid?: readonly Coord[];
@@ -137,7 +145,7 @@ export function drawSnapshot(
       you: opts.looks?.you ?? basicLook(state.species.you),
       ai: opts.looks?.ai ?? basicLook(state.species.ai),
     },
-    hideCounts: false,
+    hideCounts: opts.hideCounts ?? false,
     flood: null,
     selection: opts.selection ?? null,
     valid: opts.valid ?? [],
