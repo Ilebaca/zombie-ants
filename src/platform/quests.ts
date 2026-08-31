@@ -40,11 +40,11 @@ export interface QuestState {
  * silently dropped.
  */
 export const QUEST_POOL: readonly QuestDef[] = [
-  { id: "play3", icon: "⚔️", text: "Play 3 matches", kind: "play", goal: 3, xp: 60, reward: { mycel: 40 } },
+  { id: "play3", icon: "attack", text: "Play 3 matches", kind: "play", goal: 3, xp: 60, reward: { mycel: 40 } },
   { id: "win2", icon: "trophy", text: "Win 2 matches", kind: "win", goal: 2, xp: 90, reward: { mycel: 60 } },
   { id: "conq30", icon: "antarium", text: "Conquer 30 enemy tiles", kind: "conquered", goal: 30, xp: 70, reward: { pheromone: 300 } },
   { id: "abil5", icon: "star", text: "Use 5 abilities", kind: "ability", goal: 5, xp: 60, reward: { mycel: 40 } },
-  { id: "win1fast", icon: "⚡", text: "Win a match", kind: "win", goal: 1, xp: 50, reward: { mycel: 30 } },
+  { id: "win1fast", icon: "spark", text: "Win a match", kind: "win", goal: 1, xp: 50, reward: { mycel: 30 } },
   { id: "play5", icon: "flag", text: "Play 5 matches", kind: "play", goal: 5, xp: 100, reward: { pheromone: 500 } },
 ];
 

@@ -19,6 +19,7 @@ import {
 } from "../render";
 import { screenEl, screenHeader, setupSteps, toast } from "./chrome";
 import { Deck } from "./deck";
+import { icon } from "./icons";
 
 /** What a match is built from. The setup screens are the only things that write it. */
 export interface Choices {
@@ -220,9 +221,14 @@ export function buildSpeciesSelect(o: SetupOptions): HTMLElement {
       nm.appendChild(prem);
     }
 
+    // Marks from the icon family, not a crossed sword and a shield emoji: those are two
+    // pictures from two illustrators, and this row sits under every colony in the picker.
     const mods = document.createElement("div");
     mods.className = "mods";
-    mods.textContent = `⚔ ${s.atk.toFixed(1)} · 🛡 ${s.def.toFixed(1)}`;
+    mods.append(
+      icon("attack", 13), document.createTextNode(s.atk.toFixed(1)),
+      icon("defence", 13), document.createTextNode(s.def.toFixed(1)),
+    );
 
     const ds = document.createElement("div");
     ds.className = "ds";
@@ -237,7 +243,7 @@ export function buildSpeciesSelect(o: SetupOptions): HTMLElement {
     if (!owned) {
       const lock = document.createElement("div");
       lock.className = "splockmsg";
-      lock.textContent = "🔒 Unlock in the Antarium";
+      lock.append(icon("lock", 13), document.createTextNode("Unlock in the Antarium"));
       card.appendChild(lock);
     }
 

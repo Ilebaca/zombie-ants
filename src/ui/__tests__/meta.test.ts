@@ -653,7 +653,11 @@ describe("colony road screen", () => {
     s.grantPass();
     const withPass = buildColonyRoad(s, () => {}, () => {});
     expect(withPass.querySelectorAll(".roadcell.passlock").length).toBe(0);
-    expect(withPass.textContent).toContain("PASS \u2713");
+    // The tick beside it is a drawn mark now, not a ✓ typed into the string, so the
+    // banner is asserted on by what it SAYS plus the presence of the mark.
+    const banner = withPass.querySelector(".passon");
+    expect(banner?.textContent).toContain("PASS");
+    expect(banner?.querySelector("svg"), "the pass lost its mark").toBeTruthy();
   });
 
   it("offers nothing to a colony that has not reached the first rung", () => {

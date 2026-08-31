@@ -17,6 +17,7 @@
 import { compact, rewardText, roadKey, roadStops } from "../platform";
 import type { ProfileStore, RoadReward, RoadStop } from "../platform";
 import { el, screenEl, screenHeader, toast } from "./chrome";
+import { icon } from "./icons";
 
 export function buildColonyRoad(store: ProfileStore, onBack: () => void, onShop: () => void): HTMLElement {
   const root = screenEl("achievements");
@@ -77,7 +78,9 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, onShop:
     );
     box.appendChild(left);
     if (profile.pass) {
-      box.appendChild(el("span", "passon", "PASS ✓"));
+      const on = el("span", "passon", "PASS ");
+      on.appendChild(icon("check", 13));
+      box.appendChild(on);
     } else {
       // The shop sells the pass now, so send the player there rather than explaining.
       const buy = el("button", "passbuy", "Get Pass");
@@ -95,7 +98,7 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, onShop:
 
     const centre = el("div", "rcolC" + (reached ? " reached" : ""));
     const node = el("div", "rnode" + (reached ? " done" : ""));
-    if (reached) node.textContent = "✓";
+    if (reached) node.appendChild(icon("check", 18));
     else node.appendChild(el("b", undefined, compact(stop.colony)));
     centre.appendChild(node);
     row.appendChild(centre);

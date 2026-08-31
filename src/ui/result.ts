@@ -54,10 +54,18 @@ winner: Player | null, recap: Recap, act: ResultActions,
   const h1 = el("h1", undefined,
     recap.challenge ? (won ? "Challenge complete!" : "Challenge failed.") : (won ? "Victory" : "Defeat"));
   h1.id = "overTitle";
-  const tag = el("div", "tag", recap.challenge
-    ? `${recap.challenge.name} — ${GOAL_TEXT[recap.challenge.goal]}  ${won ? "✓" : "✗"}`
-    : resultFlavour(won, recap.reason, recap.turns));
+  const tag = el("div", "tag");
   tag.id = "overSub";
+  if (recap.challenge) {
+    // The tick is a MARK, not a glyph: ✓ and ✗ are two characters from whatever font the
+    // device picked, sitting in the one line that says whether the objective was met.
+    tag.append(
+      document.createTextNode(`${recap.challenge.name} — ${GOAL_TEXT[recap.challenge.goal]} `),
+      icon(won ? "check" : "cross", 14),
+    );
+  } else {
+    tag.textContent = resultFlavour(won, recap.reason, recap.turns);
+  }
   card.append(h1, tag);
 
   // WHAT IT PAID. Three cells, equal width, each one a currency the player recognises

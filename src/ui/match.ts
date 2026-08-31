@@ -24,6 +24,8 @@ import { BoardRenderer } from "../render";
 // board draws the figure, and the progression layer decides what it looks like.
 import { compact } from "../platform";
 import type { SpotRect, Tour, TourStep } from "./tour";
+import { icon } from "./icons";
+import { el } from "./chrome";
 
 /** Seconds a player gets per move before the turn passes automatically. */
 const MOVE_SECONDS = 15;
@@ -154,6 +156,18 @@ export class MatchScreen {
     // the end of a match.
     this.root.style.cssText = "display:contents";
     this.root.innerHTML = MARKUP;
+    /*
+     * THE ACTION BAR'S MARKS ARE DRAWN, NOT TYPESET.
+     *
+     * They were emoji — a crossed sword, a flag, a sparkle, a skip glyph and a white flag,
+     * five pictures from five illustrators rendered differently on every platform. This is
+     * the screen a player spends the whole game on, and it was the loudest remaining
+     * "unconsidered" signal in the app (CLAUDE.md §10). The markup names a mark and the
+     * shell fills it in, because the shell is one HTML string and an SVG cannot be one.
+     */
+    for (const slot of Array.from(this.root.querySelectorAll<HTMLElement>(".ic[data-ic]"))) {
+      slot.replaceChildren(icon(slot.dataset.ic as string, 20));
+    }
     host.appendChild(this.root);
     this.bind();
 
@@ -972,8 +986,11 @@ export class MatchScreen {
     const ready = abilityReady(s, "you") && s.current === "you";
     const lb = this.el.bAbility.querySelector(".lb");
     if (lb) {
-      const status = s.cooldown.you > 0 ? `⏳ ${s.cooldown.you}` : "ready";
-      lb.innerHTML = `${escapeHtml(ability.name)}<b>${status}</b>`;
+      // WORDS, not an hourglass. The turns left is the number a player is counting down,
+      // and "3 turns" says what "⏳ 3" only implies — in a glyph the device chose.
+      const turns = s.cooldown.you;
+      const status = turns > 0 ? `${turns} turn${turns === 1 ? "" : "s"}` : "ready";
+      lb.replaceChildren(document.createTextNode(ability.name), el("b", undefined, status));
     }
     this.el.bAbility.classList.toggle("armed", ready || this.mode === "tunnel");
     this.el.bAbility.classList.toggle("cool", s.cooldown.you > 0);
@@ -1004,9 +1021,6 @@ export class MatchScreen {
 
 }
 
-const escapeHtml = (s: string): string =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
 const MARKUP = `
   <header>
     <div class="stat you"><span class="k">You</span><span class="v" id="youArmy">0 / +0</span></div>
@@ -1023,13 +1037,13 @@ const MARKUP = `
   </main>
   <footer>
     <div class="brow brow4">
-      <button class="btn on" id="bMove"><span class="ic">⚔️</span><span class="lb">Move / Attack</span></button>
-      <button class="btn" id="bRally"><span class="ic">🚩</span><span class="lb">Rally</span></button>
-      <button class="btn ability" id="bAbility"><span class="ic">✨</span><span class="lb">Ability</span></button>
-      <button class="btn end" id="bEnd"><span class="ic">⏭️</span><span class="lb">End turn</span></button>
+      <button class="btn on" id="bMove"><span class="ic" data-ic="attack"></span><span class="lb">Move / Attack</span></button>
+      <button class="btn" id="bRally"><span class="ic" data-ic="flag"></span><span class="lb">Rally</span></button>
+      <button class="btn ability" id="bAbility"><span class="ic" data-ic="spark"></span><span class="lb">Ability</span></button>
+      <button class="btn end" id="bEnd"><span class="ic" data-ic="skip"></span><span class="lb">End turn</span></button>
     </div>
     <div class="brow">
-      <button class="btn surr" id="bSurr"><span class="ic">🏳️</span><span class="lb">Surrender</span></button>
+      <button class="btn surr" id="bSurr"><span class="ic" data-ic="surrender"></span><span class="lb">Surrender</span></button>
     </div>
   </footer>
   <div class="spellcard" id="spellCard" aria-hidden="true">

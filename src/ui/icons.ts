@@ -56,6 +56,18 @@ const PATHS: Record<string, string | string[]> = {
   defence: "M12 1.8 3.6 4.9a1 1 0 0 0-.7 1v6.3c0 4.4 3.5 8.2 9.1 10 5.6-1.8 9.1-5.6 9.1-10V5.9a1 1 0 0 0-.7-1z",
   // A seed store: a domed roof over a squat bin. Harvester ants really do keep one, and it
   // is the one mark on this screen that has to read as a PLACE rather than an effect.
+  // A spark: the mark for casting an ability. Four rays and a core, so it reads at 18px
+  // where a many-pointed star turns to mush.
+  spark: ["M12 1.8a1 1 0 0 1 1 .8l.9 5 5 .9a1 1 0 0 1 0 2l-5 .9-.9 5a1 1 0 0 1-2 0l-.9-5-5-.9a1 1 0 0 1 0-2l5-.9.9-5a1 1 0 0 1 1-.8",
+    "M19.4 14.6a.7.7 0 0 1 .7.6l.4 1.7 1.7.4a.7.7 0 0 1 0 1.4l-1.7.4-.4 1.7a.7.7 0 0 1-1.4 0l-.4-1.7-1.7-.4a.7.7 0 0 1 0-1.4l1.7-.4.4-1.7a.7.7 0 0 1 .7-.6"],
+  // Skip forward: the end of a turn, handing it over.
+  skip: ["M4.6 4.4a1.4 1.4 0 0 0-1.4 1.4v12.4a1.4 1.4 0 0 0 2.2 1.1l8.6-6.2a1.4 1.4 0 0 0 0-2.2L5.4 4.7a1.4 1.4 0 0 0-.8-.3",
+    "M18.6 4.4a1.4 1.4 0 0 1 1.4 1.4v12.4a1.4 1.4 0 0 1-2.8 0V5.8a1.4 1.4 0 0 1 1.4-1.4"],
+  // A white flag on a pole: giving up, which is not the same mark as rallying to one.
+  surrender: ["M5 2a1.3 1.3 0 0 1 1.3 1.3v18.1a1.3 1.3 0 0 1-2.6 0V3.3A1.3 1.3 0 0 1 5 2",
+    "M8 4.2h10.8a1 1 0 0 1 .8 1.6l-2.5 3.4 2.5 3.4a1 1 0 0 1-.8 1.6H8z"],
+  // A cross, for the objective a challenge did not meet. `check` is its other half.
+  cross: "M18.3 5.7a1.4 1.4 0 0 1 0 2L14 12l4.3 4.3a1.4 1.4 0 0 1-2 2L12 14l-4.3 4.3a1.4 1.4 0 1 1-2-2L10 12 5.7 7.7a1.4 1.4 0 0 1 2-2L12 10l4.3-4.3a1.4 1.4 0 0 1 2 0",
   // A bin. The reset row wore a flask, which is the RESEARCH mark — a row about erasing
   // everything should not be signed with the icon for buying an upgrade.
   trash: ["M9.4 2h5.2a1.4 1.4 0 0 1 1.4 1.4V5h4a1 1 0 0 1 0 2h-.8l-1 12.7a2.4 2.4 0 0 1-2.4 2.3H8.2a2.4 2.4 0 0 1-2.4-2.3L4.8 7H4a1 1 0 0 1 0-2h4V3.4A1.4 1.4 0 0 1 9.4 2m.6 3h4V4h-4z",

@@ -173,7 +173,7 @@ function detail(
   const foot = el("div", "chfoot");
   foot.append(
     pips(lv, ch.max),
-    buyButton({ icon: "🍄", cost, maxed, affordable: purse >= cost, onBuy }),
+    buyButton({ icon: "mycel", cost, maxed, affordable: purse >= cost, onBuy }),
   );
   box.appendChild(foot);
   return box;
@@ -287,7 +287,7 @@ function granaryDetail(g: GranaryState, purse: number, onBuy: () => void): HTMLE
     locked && g.next
       ? el("span", "glock", `Chapter ${g.next.chapter}`)
       : buyButton({
-        icon: "🍄",
+        icon: "mycel",
         cost: g.next?.cost ?? 0,
         maxed: !g.next,
         affordable: !!g.next && purse >= g.next.cost,

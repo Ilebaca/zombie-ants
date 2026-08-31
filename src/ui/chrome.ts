@@ -314,7 +314,13 @@ export function pips(level: number, max: number): HTMLElement {
 }
 
 export interface BuyOptions {
-  /** Currency icon shown before the price. */
+  /**
+   * The currency's mark, by NAME.
+   *
+   * It used to be the emoji itself, mapped back to a mark here — so every caller passed a
+   * mushroom or a test tube through a layer whose whole job was to throw it away, and a
+   * typo in the glyph silently priced everything in mycelium.
+   */
   icon: string;
   cost: number;
   affordable: boolean;
@@ -334,7 +340,7 @@ export function buyButton(opts: BuyOptions): HTMLButtonElement {
   }
   const b = el("button", "buybtn" + (opts.affordable ? "" : " off"));
   // The currency is a mark from the icon family, not the emoji the price used to carry.
-  b.append(icon(opts.icon === "🧪" ? "pheromone" : "mycel", 15), el("span", undefined, String(opts.cost)));
+  b.append(icon(opts.icon, 15), el("span", undefined, String(opts.cost)));
   b.disabled = !opts.affordable;
   if (opts.affordable) b.onclick = opts.onBuy;
   return b;

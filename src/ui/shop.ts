@@ -170,11 +170,17 @@ export function buildShop(
   return root;
 }
 
-/** What the player just received, in the words the toast uses. */
+/**
+ * What the player just received, in the words the toast uses.
+ *
+ * Named, not glyphed. The two currencies were a mushroom and a test tube typed into the
+ * string — and a toast is one line of text with no room to teach what a glyph means
+ * (CLAUDE.md §10: currency in words, not glyphs).
+ */
 function describe(product: Product): string {
   const parts = [
-    product.grant.mycel ? `+${product.grant.mycel} 🍄` : "",
-    product.grant.pheromone ? `+${product.grant.pheromone} 🧪` : "",
+    product.grant.mycel ? `+${product.grant.mycel} mycelium` : "",
+    product.grant.pheromone ? `+${product.grant.pheromone} pheromone` : "",
     product.grant.pass ? "Colony Pass unlocked" : "",
     product.grant.species ? `${product.title ?? "Colony"} unlocked` : "",
   ].filter(Boolean);

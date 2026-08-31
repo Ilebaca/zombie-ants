@@ -116,7 +116,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     const cost = researchCost(level);
     const foot = el("div", "chfoot");
     foot.append(pips(level, RESEARCH_MAX), buyButton({
-      icon: "🍄",
+      icon: "mycel",
       cost,
       maxed,
       affordable: purse >= cost,

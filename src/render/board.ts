@@ -207,6 +207,15 @@ export function shade(hex: string, amount: number): string {
 /** Clip to the revealed portion of a cell — a directional "progress bar" wipe. */
 interface BadgeOptions {
   text: string;
+  /**
+   * Draw a shield in front of the number.
+   *
+   * It used to be a 🛡 typed into the string, which is an EMOJI ON THE BOARD — rendered by
+   * whatever font the device happened to pick, at whatever size and colour that font
+   * decided, in the middle of a canvas where everything else is drawn by us. It is a path
+   * now, so it takes the badge's own ink and scales with the tile like the rest of the art.
+   */
+  shield?: boolean;
   /** Centre of the badge. */
   cx: number;
   cy: number;
@@ -231,7 +240,9 @@ function countBadge(scene: Scene, o: BadgeOptions): void {
   const ph = ts * 0.42 * scale;
 
   ctx.font = `900 ${Math.max(13, ts * 0.34 * scale)}px var(--font),sans-serif`;
-  const pw = Math.max(ph, ctx.measureText(o.text).width + ts * 0.24 * scale);
+  const mark = o.shield ? ph * 0.62 : 0;
+  const gap = mark ? ts * 0.05 * scale : 0;
+  const pw = Math.max(ph, ctx.measureText(o.text).width + mark + gap + ts * 0.24 * scale);
   const px = o.cx - pw / 2;
   const py = o.cy - ph / 2;
 
@@ -244,7 +255,35 @@ function countBadge(scene: Scene, o: BadgeOptions): void {
   ctx.fillStyle = o.ink;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
+  if (mark) {
+    // The mark takes the left of the pill and the number the rest, so the pair stays
+    // centred as the count grows from one digit to three.
+    const textW = ctx.measureText(o.text).width;
+    const left = o.cx - (mark + gap + textW) / 2;
+    drawShield(ctx, left + mark / 2, o.cy, mark);
+    ctx.fillText(o.text, left + mark + gap + textW / 2, o.cy + 1);
+    return;
+  }
   ctx.fillText(o.text, o.cx, o.cy + 1);
+}
+
+/**
+ * A shield, drawn: flat across the top, shoulders down the sides, a point at the bottom.
+ *
+ * Explicit path commands rather than a `Path2D` of the icon family's data, because the
+ * recorder the render tests drive (render/__tests__/recorder.ts) sees the commands and can
+ * assert on them — a single opaque `fill(path)` says nothing about what was drawn.
+ */
+function drawShield(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number): void {
+  const w = size * 0.5, h = size * 0.56;
+  ctx.beginPath();
+  ctx.moveTo(cx - w, cy - h);
+  ctx.lineTo(cx + w, cy - h);
+  ctx.lineTo(cx + w, cy - h * 0.05);
+  ctx.quadraticCurveTo(cx + w, cy + h * 0.62, cx, cy + h);
+  ctx.quadraticCurveTo(cx - w, cy + h * 0.62, cx - w, cy - h * 0.05);
+  ctx.closePath();
+  ctx.fill();
 }
 
 function clipReveal(ctx: CanvasRenderingContext2D, layout: Layout, t: Tile, rv: number, edge: RevealEdge): void {
@@ -386,7 +425,8 @@ export function drawTile(scene: Scene, t: Tile): void {
   // wild neutral garrison — a defended tile you must fight through
   if (!t.owner && t.guard > 0 && !scene.hideCounts) {
     countBadge(scene, {
-      text: "🛡" + t.guard,
+      text: String(t.guard),
+      shield: true,
       cx: layout.cx(t.c),
       cy: layout.cy(t.r),
       stroke: "rgba(190,205,225,0.7)",
@@ -611,9 +651,15 @@ export function drawHiveTile(scene: Scene, t: Tile): void {
 
   // The finale takes every number off the board at once, the Hive's garrison included.
   if (t.owner === null && !scene.hideCounts) {
-    ctx.font = `900 ${Math.max(10, ts * 0.22)}px var(--font),sans-serif`;
+    const size = Math.max(10, ts * 0.22);
+    ctx.font = `900 ${size}px var(--font),sans-serif`;
     ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText("🛡" + t.soldiers, x, y + R * 1.25);
+    const label = String(t.soldiers);
+    const w = ctx.measureText(label).width;
+    const mark = size * 0.9, gap = size * 0.18;
+    const left = x - (mark + gap + w) / 2;
+    drawShield(ctx, left + mark / 2, y + R * 1.25, mark);
+    ctx.fillText(label, left + mark + gap + w / 2, y + R * 1.25);
   }
 }
 
