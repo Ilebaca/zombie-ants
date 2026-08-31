@@ -14,13 +14,33 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { SilentFeedback, WebFeedback } from "../feedback";
 import type { Cue } from "../feedback";
 
-/** A recording stand-in for AudioContext: enough surface for the synthesiser to run on. */
-function fakeAudio(state: AudioContextState = "running") {
+/**
+ * A recording stand-in for AudioContext: enough surface for the synthesiser to run on.
+ *
+ * `full` is the difference between a phone that can do convolution and buffer sources and
+ * one that cannot. Both have to work — the room and the wind are what make the bed sound
+ * like a place rather than a device, but a browser without them gets a thinner bed and
+ * never a broken one — so the default here is the POOR device, and every existing test
+ * runs on it.
+ */
+function fakeAudio(state: AudioContextState = "running", full = false) {
   const started: number[] = [];
   const gains: number[] = [];
-  const ctx = {
+  const freqs: number[] = [];
+  const nodes = { convolver: 0, buffers: 0, sources: 0, filters: 0, loops: 0 };
+  const param = () => ({
+    value: 0,
+    setValueAtTime: () => {},
+    cancelScheduledValues: () => {},
+    linearRampToValueAtTime: () => {},
+    exponentialRampToValueAtTime: () => {},
+  });
+  const ctx: Record<string, unknown> & {
+    state: AudioContextState; currentTime: number; closed: boolean;
+  } = {
     state,
     currentTime: 0,
+    sampleRate: 8000,
     destination: {},
     closed: false,
     resume: vi.fn(() => { ctx.state = "running"; return Promise.resolve(); }),
@@ -36,14 +56,40 @@ function fakeAudio(state: AudioContextState = "running") {
     }),
     createOscillator: () => ({
       type: "sine" as OscillatorType,
-      frequency: { setValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} },
+      frequency: {
+        setValueAtTime: (v: number) => { freqs.push(v); },
+        exponentialRampToValueAtTime: () => {},
+      },
       detune: { setValueAtTime: () => {} },
       connect: () => {},
       start: (t: number) => { started.push(t); },
       stop: () => {},
     }),
   };
-  return { ctx, started, gains };
+  if (full) {
+    ctx.createBuffer = (ch: number, len: number) => {
+      nodes.buffers++;
+      const data = Array.from({ length: ch }, () => new Float32Array(len));
+      return { getChannelData: (i: number) => data[i] as Float32Array, length: len };
+    };
+    ctx.createConvolver = () => { nodes.convolver++; return { buffer: null, connect: () => {} }; };
+    ctx.createBufferSource = () => {
+      nodes.sources++;
+      return {
+        buffer: null,
+        set loop(v: boolean) { if (v) nodes.loops++; },
+        get loop() { return true; },
+        connect: () => {},
+        start: () => {},
+        stop: () => {},
+      };
+    };
+    ctx.createBiquadFilter = () => {
+      nodes.filters++;
+      return { type: "lowpass", frequency: param(), Q: param(), connect: () => {} };
+    };
+  }
+  return { ctx, started, gains, freqs, nodes };
 }
 
 beforeEach(() => vi.useFakeTimers());
@@ -222,9 +268,9 @@ describe("the silent one", () => {
  */
 describe("the music", () => {
   const rig = (state: AudioContextState = "running") => {
-    const { ctx, started } = fakeAudio(state);
+    const { ctx, started, freqs, nodes } = fakeAudio(state);
     const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
-    return { fb, ctx, started };
+    return { fb, ctx, started, freqs, nodes };
   };
 
   /**
@@ -332,7 +378,80 @@ describe("the music", () => {
       .toBeLessThan(60);
   });
 
-  it("takes the bed down when it is closed", () => {
+  /**
+   * The harmony is a sixteen-bar round, not a four-bar loop.
+   *
+   * A loop a player can predict is a loop they start hearing, and this bed is meant to run
+   * for an hour under a game. Counted off the notes rather than off the table, so a change
+   * to the round that shortened it back to a phrase would fail here.
+   */
+  it("moves through more than one chord before it comes round", () => {
+    const { fb, ctx, freqs } = rig();
+    fb.unlock();
+    fb.setMusic("menu");
+    runClock(ctx, 40);
+    // Counted off the BASS, which is one note per bar at the chord's root and the only
+    // voice below the tonic. Counting every pitch instead proves nothing: the melody is a
+    // random walk, so it fills the histogram whatever the harmony is doing — which is
+    // exactly what a collapsed round hid behind the first time this was written.
+    const bass = new Set(freqs.filter((f) => f > 30 && f < 110).map((f) => Math.round(f)));
+    expect(bass.size, "the bed sat on one chord").toBeGreaterThanOrEqual(4);
+  });
+
+  /**
+   * The melody is CHOSEN AT RANDOM, so the only thing keeping it in tune is the scale.
+   * Every pitch has to be a pentatonic degree of the bed's own tonic, or a walk that
+   * wandered off the scale would be audible as a wrong note and invisible here.
+   */
+  it("never plays a note outside the key", () => {
+    const { fb, ctx, freqs } = rig();
+    fb.unlock();
+    fb.setMusic("menu");
+    runClock(ctx, 40);
+    // Birds are not in the band: they slide, and they sit far above the music. Nor are
+    // the vibrato LFOs, which are a few hertz and are not heard as pitch at all.
+    const notes = freqs.filter((f) => f > 30 && f < 2000);
+    expect(notes.length, "nothing was scheduled").toBeGreaterThan(20);
+    // A natural minor, and nothing else. Five of the twelve semitones are excluded, and
+    // this is the assertion that caught the first version of the bed: its round moved the
+    // chord roots while the voicing stacked a fixed number of SEMITONES above them, so ten
+    // of the twelve turned up — a random melody over a chromatic accompaniment.
+    const scale = [0, 2, 3, 5, 7, 8, 10];
+    for (const f of notes) {
+      const semis = 12 * Math.log2(f / 110);
+      const near = Math.round(semis);
+      expect(Math.abs(semis - near), `${f}Hz is between two notes`).toBeLessThan(0.01);
+      expect(scale, `${f}Hz is not in the scale`).toContain(((near % 12) + 12) % 12);
+    }
+  });
+
+  /**
+   * A phone that can convolve gets the room and the wind. Both are what turn a beep into
+   * an instrument standing in a clearing, and both are built ONCE — a per-note impulse
+   * response would be the most expensive thing in the app.
+   */
+  it("builds the room and the wind once for a bed that can have them", () => {
+    const { ctx, nodes } = fakeAudio("running", true);
+    const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
+    fb.unlock();
+    fb.setMusic("menu");
+    runClock(ctx, 8);
+    expect(nodes.convolver, "no room").toBe(1);
+    expect(nodes.sources, "no wind").toBe(1);
+    expect(nodes.loops, "the wind does not loop, so it stops after four seconds").toBe(1);
+    fb.close();
+  });
+
+  /** And a phone that cannot gets a thinner bed, never a broken one. */
+  it("still plays on a device with no convolver and no buffers", () => {
+    const { fb, ctx, started } = rig();
+    fb.unlock();
+    fb.setMusic("match");
+    runClock(ctx, 6);
+    expect(started.length, "a poor device got silence").toBeGreaterThan(10);
+  });
+
+    it("takes the bed down when it is closed", () => {
     const { fb, ctx, started } = rig();
     fb.unlock();
     fb.setMusic("menu");

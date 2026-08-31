@@ -1208,15 +1208,51 @@ the first tap and a decode on a phone. Each cue is a few oscillators and an enve
   queued: a sound arriving after the thing it marks is worse than one that never came. The
   same goes for the gap while `resume()` is still settling — scheduling on a suspended
   context does not play late, it plays at the wrong time when the clock starts.
-- **THERE IS MUSIC, and it is generated too.** Two beds — menu and match — each a short
-  chord loop with a pad, a bass and a sparse pluck pattern, scheduled a sixteenth at a time
-  off the AUDIO clock rather than off the timer: a timer drifts and a backgrounded tab
-  throttles it to once a second, so it decides only WHEN TO SCHEDULE. `setMusic` is
-  idempotent for the bed already playing, because navigation calls it constantly and a bed
-  that restarted on every screen change is a stutter. Muting STOPS it rather than turning
-  it down — an oscillator per sixteenth for ever into a gain of zero is a phone kept awake
-  for nothing — and a bed asked for before the first press is remembered until `unlock`
-  can grant it.
+- **THERE IS MUSIC, and it is generated too.** Two beds — menu and match — scheduled a
+  sixteenth at a time off the AUDIO clock rather than off the timer: a timer drifts and a
+  backgrounded tab throttles it to once a second, so it decides only WHEN TO SCHEDULE.
+  `setMusic` is idempotent for the bed already playing, because navigation calls it
+  constantly and a bed that restarted on every screen change is a stutter. Muting STOPS it
+  rather than turning it down — an oscillator per sixteenth for ever into a gain of zero is
+  a phone kept awake for nothing — and a bed asked for before the first press is remembered
+  until `unlock` can grant it.
+  - **IT NEVER REPEATS, and that is the whole design.** The first version was a four-bar
+    chord loop with a fixed pluck pattern, which a player hears as a loop inside a minute
+    and then cannot stop hearing. The harmony is a SIXTEEN-bar round now, and everything on
+    top of it — the melody, the droplets, the birds — is rolled per sixteenth off a seeded
+    generator rather than written out, so the bed is sparse without ever sounding stopped
+    and never plays the same phrase twice.
+  - **EVERY PITCH IS A SCALE DEGREE. There is no other way to name a note.** `degree()` is
+    that one function, and it exists because of a real bug: the round moved the chord roots
+    while the voicing stacked a fixed number of SEMITONES above each one, so the two
+    disagreed and the bed used ten of the twelve pitch classes — a random pentatonic melody
+    over a chromatic accompaniment, which is the opposite of relaxing. Stacking in scale
+    STEPS makes every chord diatonic by construction, so no combination of round and
+    voicing can break it. A test counts the pitch classes and holds it to A natural minor;
+    it is the assertion that found this, and an ear finds it faster.
+  - **The melody is a random WALK, one degree at a time**, fenced to two octaves. A walk
+    that could jump anywhere sounds like notes rather than a tune, and an unfenced one
+    wanders off in one direction and stays there — ten minutes in it is subsonic or a
+    whistle. It walks the pentatonic, which is a SUBSET of the scale, so a random note can
+    never disagree with the chord under it.
+  - **IT IS IN A SPACE.** Everything goes through a convolution reverb whose impulse
+    response is a generated burst of decaying noise — there is no file to load one from,
+    and a burst of noise IS one for anything ambient. This is the single biggest difference
+    between a beep and an instrument standing in a clearing.
+  - **THE FOREST IS UNDER IT.** A continuous loop of brown noise through a lowpass whose
+    cutoff drifts over half a minute at a time — wind in leaves — and, every several
+    seconds, two or three sliding notes far above the music. The bird SLIDES because a bird
+    bends its pitch and a fixed one reads as a beep. The drift is scheduled well ahead on
+    the audio clock for the same reason the notes are: a throttled tab would otherwise
+    freeze the wind mid-gust.
+  - **A note is a PAIR of oscillators a few cents apart**, and the long ones carry a slow
+    vibrato in CENTS (a fixed number of hertz is a wide wobble on a bass note and inaudible
+    on a high one). Perfectly in tune and perfectly steady is the sound of a machine.
+  - **The room and the wind are built ONCE per bed.** The impulse response is a couple of
+    seconds of audio to generate and the wind is a four-second loop; either on the beat
+    would be the most expensive thing in the app. Every piece of this is feature-guarded —
+    a browser without a convolver or buffer sources gets a thinner bed, never a broken one,
+    and that is also every test, since the fake context has neither.
 - **EVERY BUTTON MAKES THE SAME SOUND, from ONE listener** on the app root. It is a
   property of the app, not of any screen: wiring a click into forty controls is forty
   chances to miss one, and the two that got missed would be the two a player noticed. It

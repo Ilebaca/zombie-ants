@@ -140,49 +140,225 @@ const MASTER = 0.45;
 /* ------------------------------------------------------------------------ THE MUSIC */
 
 /**
- * THE BEDS ARE GENERATED, note by note, for the same reason the cues are: there is no
- * asset pipeline here, and a music file is a megabyte to download before the first screen.
+ * THE BEDS ARE GENERATED, note by note, for the same reason the cues are: there is no asset
+ * pipeline here, and a music file is a megabyte to download before the first screen.
  *
- * A short progression, looped: a pad holding the chord, a bass note under it, and a sparse
- * pluck pattern over the top. Nothing clever — what makes it bearable for an hour is that
- * it is quiet, slow, and never resolves anywhere surprising.
+ * The first version was a four-bar loop of a pad, a bass and three fixed plucks, and it
+ * sounded exactly like that — a short loop of bare oscillators. What makes music feel
+ * ORGANIC is not more notes, it is four things this now has:
+ *
+ *  1. IT NEVER REPEATS. The harmony is a sixteen-bar round, and the melody on top is a
+ *     random walk through a pentatonic scale — so it is always in key and never the same
+ *     phrase twice. A loop a player can predict is a loop they start hearing.
+ *  2. IT IS IN A SPACE. Everything goes through a reverb built from an exponentially
+ *     decaying burst of noise, which is what turns a beep into an instrument in a clearing.
+ *     This is the single biggest difference between the old bed and this one.
+ *  3. THE VOICES BREATHE. Each is two oscillators a few cents apart through a lowpass, and
+ *     the long ones carry a slow vibrato. Perfectly in tune and perfectly steady is the
+ *     sound of a machine.
+ *  4. THE FOREST IS UNDER IT. A continuous bed of filtered noise whose cutoff drifts — wind
+ *     in leaves — and, every few seconds, a two-or-three note chirp high above the music.
+ *
+ * All of it is quiet and slow, because a game somebody has on in a room is a game whose
+ * music has to be ignorable.
  */
+
+/**
+ * A natural minor scale, in semitones. THE WHOLE BED IS BUILT OUT OF THIS.
+ *
+ * Not out of chords with their own intervals: a round whose roots move and whose voicing
+ * is a fixed number of semitones above each one leaves the key the moment the two disagree.
+ * The first version of this did, and used ten of the twelve semitones — a random melody
+ * over a chromatic accompaniment, which is the opposite of relaxing and is exactly what a
+ * test that counts pitch classes catches and an ear catches faster.
+ *
+ * Stacking in SCALE STEPS instead means every note of every chord is diatonic by
+ * construction, and there is no combination of round and voicing that can break it.
+ */
+const MINOR = [0, 2, 3, 5, 7, 8, 10];
+
+/**
+ * The degrees the melody may walk: the minor pentatonic, which is a SUBSET of the scale
+ * above, so the tune can never disagree with the chord under it.
+ *
+ * Pentatonic because the melody is CHOSEN AT RANDOM: with five notes and no semitone
+ * clashes, a random walk cannot land on a wrong note, which is what lets the tune be
+ * different every time without ever needing to be checked.
+ */
+const PENTATONIC = [0, 2, 3, 4, 6];
+
+/** Equal temperament, from a root. */
+const noteAt = (root: number, semis: number): number => root * Math.pow(2, semis / 12);
+
+/**
+ * The nth degree of the scale above a tonic, counting on past the octave.
+ *
+ * Everything pitched in this file goes through here, which is what keeps the bed in one
+ * key: there is no other way to name a note.
+ */
+function degree(tonic: number, n: number): number {
+  const i = ((n % MINOR.length) + MINOR.length) % MINOR.length;
+  const octaves = Math.floor(n / MINOR.length);
+  return noteAt(tonic, (MINOR[i] ?? 0) + 12 * octaves);
+}
+
 interface TrackDef {
   /** Seconds per beat. */
   beat: number;
-  /** Root of each chord, in Hz, one per bar. */
-  chords: readonly number[][];
-  /** Which sixteenth-notes of a bar carry a pluck. */
-  plucks: readonly number[];
-  /** A low pulse on every beat — the match bed has one, the menu does not. */
+  /** The tonic the whole bed is built on. */
+  tonic: number;
+  /**
+   * The round: the scale degree each bar's chord is rooted on. Sixteen bars, so the
+   * harmony comes back round about every minute rather than every ten seconds — a loop a
+   * player can predict is a loop they start hearing.
+   */
+  round: readonly number[];
+  /** How far above each chord's root the pad stacks, IN SCALE STEPS. */
+  voicing: readonly number[];
+  /** Chance per sixteenth that the melody plays a note. Sparse: this is a bed. */
+  melody: number;
+  /** Chance per sixteenth of a high droplet — water off a leaf. */
+  droplet: number;
+  /** Seconds of reverb tail. The clearing is bigger on the menu than over the board. */
+  room: number;
+  /** How loud the wind sits under everything. */
+  wind: number;
+  /** Average seconds between birdcalls. Zero for none. */
+  chirp: number;
+  /** A low pulse off the beat — the match bed has a heartbeat, the menu does not. */
   pulse: boolean;
   gain: number;
 }
 
-/** A minor ninth on A, then F, C, G: four bars that come back round without landing hard. */
-const MENU_CHORDS = [
-  [220, 261.6, 329.6],       // Am
-  [174.6, 220, 261.6],       // F
-  [130.8, 196, 261.6],       // C
-  [196, 246.9, 293.7],       // G
-];
-/** The same harmony a fourth down, which sits under a board without pulling at it. */
-const MATCH_CHORDS = [
-  [110, 164.8, 196],
-  [98, 146.8, 174.6],
-  [123.5, 164.8, 246.9],
-  [87.3, 130.8, 174.6],
+/**
+ * A sixteen-bar round in A minor that never quite settles.
+ *
+ * i – VI – III – VII twice, then a phrase that starts on the iv and comes home by another
+ * route: long enough that the ear stops predicting it, and low enough that it never demands
+ * attention.
+ */
+const A = 110;
+const ROUND = [
+  0, 5, 2, 6,
+  0, 5, 2, 6,
+  3, 5, 2, 6,
+  0, 2, 6, 5,
 ];
 
 const TRACKS: Record<Track, TrackDef> = {
-  menu: { beat: 0.72, chords: MENU_CHORDS, plucks: [0, 6, 10], pulse: false, gain: 0.19 },
-  match: { beat: 0.58, chords: MATCH_CHORDS, plucks: [0, 3, 8, 11], pulse: true, gain: 0.15 },
+  menu: {
+    beat: 0.78,
+    tonic: A,
+    round: ROUND,
+    // Root, fifth, octave and the ninth above: open, and no third, so it never commits to
+    // happy or sad. That ambiguity is most of why an ambient bed can run for an hour.
+    voicing: [0, 4, 7, 8],
+    melody: 0.16,
+    droplet: 0.05,
+    room: 2.6,
+    wind: 0.055,
+    chirp: 7,
+    pulse: false,
+    gain: 0.2,
+  },
+  match: {
+    // The same round an octave lower and a shade quicker: under a board rather than in
+    // front of one.
+    beat: 0.66,
+    tonic: A / 2,
+    round: ROUND,
+    voicing: [0, 4, 7, 9],
+    melody: 0.1,
+    droplet: 0.03,
+    room: 1.8,
+    wind: 0.04,
+    chirp: 13,
+    pulse: true,
+    gain: 0.16,
+  },
 };
 
 /** Sixteenths in a bar, and how far ahead the scheduler works. */
 const STEPS_PER_BAR = 16;
 const LOOKAHEAD = 0.4;
 const TICK_MS = 60;
+
+/**
+ * A small seeded generator.
+ *
+ * Seeded rather than `Math.random` for the same reason the scenery is (CLAUDE.md §5): a
+ * test can pin it, and a bed that is reproducible can be debugged. Reseeded per bed, so two
+ * sessions do not open on the same phrase.
+ */
+function rng(seed: number): () => number {
+  let s = (seed >>> 0) || 1;
+  return () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+
+/**
+ * The room: an impulse response made from noise that decays exponentially.
+ *
+ * A convolver needs a recording of a space, and there is no file to load one from — but a
+ * burst of noise with the right decay IS one, and a very convincing one for anything
+ * ambient. Two channels, decorrelated, so the tail spreads rather than sitting in the
+ * middle of the head.
+ */
+function makeRoom(ctx: AudioContext, seconds: number): AudioBuffer | null {
+  if (typeof ctx.createBuffer !== "function") return null;
+  const rate = ctx.sampleRate || 44100;
+  const len = Math.max(1, Math.floor(rate * seconds));
+  const buf = ctx.createBuffer(2, len, rate);
+  const rand = rng(0x5eed);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) {
+      // A slow attack on the tail as well as a decay: a real room takes a moment to fill.
+      const t = i / len;
+      data[i] = (rand() * 2 - 1) * Math.pow(1 - t, 2.4) * Math.min(1, t * 40);
+    }
+  }
+  return buf;
+}
+
+/** Wind: a long loop of noise, lowpassed hard and drifting. Made once per bed. */
+function makeWind(ctx: AudioContext, seconds = 4): AudioBuffer | null {
+  if (typeof ctx.createBuffer !== "function") return null;
+  const rate = ctx.sampleRate || 44100;
+  const len = Math.max(1, Math.floor(rate * seconds));
+  const buf = ctx.createBuffer(1, len, rate);
+  const data = buf.getChannelData(0);
+  const rand = rng(0xa11ce);
+  // Brown-ish noise: a running sum of white, which has far more weight low down and
+  // sounds like moving air rather than like static.
+  let last = 0;
+  for (let i = 0; i < len; i++) {
+    last = (last + (rand() * 2 - 1) * 0.08) * 0.985;
+    data[i] = last;
+  }
+  return buf;
+}
+
+/**
+ * Keep the melody walk inside two octaves of the scale.
+ *
+ * A random walk with no fence wanders off in one direction and stays there — ten minutes
+ * in, the tune is either subsonic or a whistle.
+ */
+function clampTone(i: number): number {
+  return Math.max(0, Math.min(PENTATONIC.length * 2 - 1, i));
+}
+
+/** The standing parts of one bed: where notes go, and the wind that never stops. */
+interface Bed {
+  /** Everything eventually arrives here; the reverb is fed from it. */
+  out: GainNode;
+  /** The same, through a lowpass: pads and bass, so they sit under the melody. */
+  soft: AudioNode;
+  wind: AudioBufferSourceNode | null;
+}
 
 type ContextMaker = () => AudioContext;
 
@@ -208,6 +384,14 @@ export class WebFeedback implements Feedback {
   /** The next unscheduled sixteenth: its time, and which one of the loop it is. */
   private nextAt = 0;
   private step = 0;
+  /** The standing parts of whatever bed is playing: the room, and the wind under it. */
+  private bed: Bed | null = null;
+  /** The bed's own generator: the melody, the droplets and the birds are all rolled off it. */
+  private rand: () => number = rng(1);
+  /** Where the melody's walk currently stands, as a degree of the scale. */
+  private tone = 2;
+  /** When the next birdcall is due, on the audio clock. */
+  private nextChirp = 0;
 
   constructor(
     private makeContext: ContextMaker | null = defaultContext(),
@@ -234,25 +418,124 @@ export class WebFeedback implements Feedback {
     this.stopMusic();
     if (!want || !this.ctx || !this.musicBus) return;
     this.playing = want;
+    const def = TRACKS[want];
+    const ctx = this.ctx;
     // A short fade in, or the bed arrives as a click on top of whatever else is playing.
-    const now = this.ctx.currentTime;
+    const now = ctx.currentTime;
     this.musicBus.gain.setValueAtTime(0.0001, now);
-    this.musicBus.gain.exponentialRampToValueAtTime(TRACKS[want].gain, now + 0.9);
+    this.musicBus.gain.exponentialRampToValueAtTime(def.gain, now + 0.9);
+    this.bed = this.buildBed(ctx, this.musicBus, def);
+    // Seeded off the clock, so two sessions do not open on the same phrase — but seeded,
+    // so a test can pin one and read the notes back.
+    this.rand = rng(Math.floor(now * 1000) ^ (want === "menu" ? 0x1eaf : 0x5011));
+    this.tone = 2;
+    this.nextChirp = now + def.chirp * 0.6;
     this.nextAt = now + 0.1;
     this.step = 0;
     this.timer = setInterval(() => this.pump(), TICK_MS);
     this.pump();
   }
 
+  /**
+   * The standing parts of a bed: the room it is played in, and the wind under it.
+   *
+   * Both are made ONCE per bed rather than per note. The impulse response is a second or
+   * two of audio to generate and the wind is a four-second loop; doing either on the beat
+   * would be the most expensive thing in the app.
+   *
+   * Every piece is feature-guarded, because this has to run on a fake context in tests and
+   * on whatever a phone browser turns out to implement. A bed with no reverb and no wind is
+   * a thinner bed, never a broken one.
+   */
+  private buildBed(ctx: AudioContext, bus: GainNode, def: TrackDef): Bed {
+    const out = ctx.createGain();
+    out.gain.value = 1;
+    out.connect(bus);
+
+    // The pads and the bass go through a lowpass so they sit UNDER the melody. One filter
+    // for all of them rather than one per note: a pad holds for four beats, so per-note
+    // filters would be a few dozen live nodes for one shared answer.
+    let soft: AudioNode = out;
+    if (typeof ctx.createBiquadFilter === "function") {
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 900;
+      lp.Q.value = 0.5;
+      lp.connect(out);
+      soft = lp;
+    }
+
+    // The room. This is the single biggest difference between a beep and an instrument
+    // standing in a clearing, so it is worth the buffer.
+    if (typeof ctx.createConvolver === "function") {
+      const room = makeRoom(ctx, def.room);
+      if (room) {
+        const verb = ctx.createConvolver();
+        verb.buffer = room;
+        const wet = ctx.createGain();
+        wet.gain.value = 0.5;
+        verb.connect(wet);
+        wet.connect(bus);
+        out.connect(verb);
+      }
+    }
+
+    // Wind: a loop of brown noise whose cutoff drifts, so the bed is never quite still even
+    // between notes. Silence between phrases is what made the old loop sound like a device.
+    let wind: AudioBufferSourceNode | null = null;
+    if (typeof ctx.createBufferSource === "function" && typeof ctx.createBiquadFilter === "function") {
+      const buf = makeWind(ctx);
+      if (buf) {
+        wind = ctx.createBufferSource();
+        wind.buffer = buf;
+        wind.loop = true;
+        const lp = ctx.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.frequency.value = 420;
+        const g = ctx.createGain();
+        g.gain.value = def.wind;
+        wind.connect(lp);
+        lp.connect(g);
+        g.connect(bus);
+        try { wind.start(); } catch { wind = null; }
+        if (wind) this.driftWind(ctx, lp);
+      }
+    }
+
+    return { out, soft, wind };
+  }
+
+  /**
+   * The wind's cutoff wanders between a hush and a gust over half a minute at a time.
+   *
+   * Scheduled well ahead on the AUDIO clock rather than nudged by the timer, for the same
+   * reason the notes are: a throttled tab would otherwise freeze the wind mid-gust.
+   */
+  private driftWind(ctx: AudioContext, lp: BiquadFilterNode): void {
+    let at = ctx.currentTime;
+    const rand = rng(0xb1a5);
+    for (let i = 0; i < 24; i++) {
+      const span = 6 + rand() * 10;
+      lp.frequency.linearRampToValueAtTime(260 + rand() * 520, at + span);
+      at += span;
+    }
+  }
+
   private stopMusic(): void {
     if (this.timer !== null) clearInterval(this.timer);
     this.timer = null;
     this.playing = null;
+    const bed = this.bed;
+    this.bed = null;
     if (this.musicBus && this.ctx) {
       const now = this.ctx.currentTime;
       this.musicBus.gain.cancelScheduledValues(now);
       this.musicBus.gain.setValueAtTime(Math.max(0.0001, this.musicBus.gain.value), now);
       this.musicBus.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+    }
+    if (bed?.wind) {
+      // Stopped after the fade, or the wind cuts out a third of a second before the music.
+      try { bed.wind.stop((this.ctx?.currentTime ?? 0) + 0.4); } catch { /* already stopped */ }
     }
   }
 
@@ -265,8 +548,8 @@ export class WebFeedback implements Feedback {
    * is what keeps the loop from wandering over an hour.
    */
   private pump(): void {
-    const ctx = this.ctx, bus = this.musicBus, track = this.playing;
-    if (!ctx || !bus || !track) return;
+    const ctx = this.ctx, bed = this.bed, track = this.playing;
+    if (!ctx || !bed || !track) return;
     if (ctx.state !== "running") return;
     const def = TRACKS[track];
     const sixteenth = def.beat / 4;
@@ -274,53 +557,141 @@ export class WebFeedback implements Feedback {
     // scheduling a thousand notes at once.
     if (this.nextAt < ctx.currentTime) this.nextAt = ctx.currentTime + 0.05;
     while (this.nextAt < ctx.currentTime + LOOKAHEAD) {
-      this.scheduleStep(ctx, bus, def, this.step, this.nextAt);
-      this.step = (this.step + 1) % (STEPS_PER_BAR * def.chords.length);
+      this.scheduleStep(ctx, bed, def, this.step, this.nextAt);
+      this.step = (this.step + 1) % (STEPS_PER_BAR * def.round.length);
       this.nextAt += sixteenth;
     }
   }
 
-  /** One sixteenth of the loop: the pad on a bar line, the bass under it, plucks over it. */
+  /**
+   * One sixteenth: the round underneath, and whatever the walk decides to put on top.
+   *
+   * Nothing here is a fixed pattern except the harmony. The melody, the droplets and the
+   * birds are all rolled per sixteenth, which is why the bed never plays the same phrase
+   * twice and why it can be sparse without sounding like it has stopped.
+   */
   private scheduleStep(
-    ctx: AudioContext, bus: GainNode, def: TrackDef, step: number, at: number,
+    ctx: AudioContext, bed: Bed, def: TrackDef, step: number, at: number,
   ): void {
     const inBar = step % STEPS_PER_BAR;
-    const bar = Math.floor(step / STEPS_PER_BAR);
-    const chord = def.chords[bar] ?? def.chords[0] as number[];
+    const bar = Math.floor(step / STEPS_PER_BAR) % def.round.length;
+    const tonic = def.tonic;
+    // The bar's chord, named as a scale degree: everything below stacks off this in scale
+    // steps, so no chord in the round can leave the key.
+    const chord = def.round[bar] ?? 0;
+    const root = degree(tonic, chord);
+    const rand = this.rand;
 
     if (inBar === 0) {
-      // The pad: the whole chord, held for the bar, detuned a hair so it breathes.
-      for (const [i, f] of chord.entries()) {
-        this.voice(ctx, bus, "sine", f, at, def.beat * 4.1, 0.075, i * 1.6);
+      // The pad holds the whole bar and overlaps the next by a beat, so the harmony CROSS
+      // FADES rather than switching. A chord that stops before the next starts is a gap,
+      // and a gap in a pad is what makes a loop audible as a loop.
+      for (const [i, steps] of def.voicing.entries()) {
+        this.voice(ctx, bed.soft, "sine", degree(tonic, chord + steps), at, def.beat * 5, 0.05, {
+          detune: (i % 2 === 0 ? 4 : -4) + (rand() * 4 - 2),
+          vibrato: 0.12,
+        });
       }
-      this.voice(ctx, bus, "triangle", (chord[0] ?? 220) / 2, at, def.beat * 1.6, 0.09);
     }
-    if (def.pulse && inBar % 4 === 0 && inBar !== 0) {
-      this.voice(ctx, bus, "sine", (chord[0] ?? 220) / 2, at, def.beat * 0.5, 0.05);
+    // The bass breathes twice a bar, off the bar line the second time, so the pulse is felt
+    // rather than counted.
+    if (inBar === 0 || inBar === 10) {
+      this.voice(ctx, bed.soft, "triangle", root / 2, at, def.beat * 2.2, inBar === 0 ? 0.09 : 0.05);
     }
-    if (def.plucks.includes(inBar)) {
-      const note = chord[(step + bar) % chord.length] ?? 220;
-      this.voice(ctx, bus, "triangle", note * 2, at, def.beat * 0.9, 0.05);
+    if (def.pulse && inBar % 8 === 4) {
+      this.voice(ctx, bed.soft, "sine", root / 2, at, def.beat * 0.6, 0.045);
+    }
+
+    // The melody: a random walk through the pentatonic, so it is always in key and never
+    // the same phrase twice. It steps by ONE degree at a time — a walk that could jump
+    // anywhere sounds like notes rather than like a tune.
+    if (rand() < def.melody) {
+      const drift = rand();
+      this.tone = clampTone(this.tone + (drift < 0.4 ? -1 : drift < 0.8 ? 1 : 0));
+      const note = PENTATONIC[this.tone % PENTATONIC.length] ?? 0;
+      const octave = MINOR.length * (1 + Math.floor(this.tone / PENTATONIC.length));
+      this.voice(ctx, bed.out, "triangle", degree(tonic, note + octave), at, def.beat * 1.9, 0.045, {
+        detune: 3,
+        vibrato: 0.2,
+      });
+    }
+    // A droplet is a single high note off a leaf: no melody, no pattern, just somewhere for
+    // the ear to go.
+    if (rand() < def.droplet) {
+      const note = PENTATONIC[Math.floor(rand() * PENTATONIC.length)] ?? 0;
+      this.voice(ctx, bed.out, "sine", degree(tonic, note + MINOR.length * 3), at, def.beat * 0.8, 0.03);
+    }
+    // And a bird, every several seconds, well above everything else. Two or three notes
+    // that slide, because a bird bends its pitch and a fixed one reads as a beep.
+    if (def.chirp > 0 && at >= this.nextChirp) {
+      this.chirp(ctx, bed.out, at, rand);
+      this.nextChirp = at + def.chirp * (0.55 + rand() * 0.9);
     }
   }
 
-  /** One note. Soft attack and a long tail — a square-edged envelope on a pad clicks. */
+  /** Two or three sliding notes high above the bed. */
+  private chirp(ctx: AudioContext, out: AudioNode, at: number, rand: () => number): void {
+    const notes = 2 + Math.floor(rand() * 2);
+    const base = 2200 + rand() * 1400;
+    for (let i = 0; i < notes; i++) {
+      const from = base * (1 + rand() * 0.15);
+      this.voice(ctx, out, "sine", from, at + i * 0.075, 0.07, 0.02, {
+        glide: from * (rand() < 0.5 ? 1.35 : 0.75),
+      });
+    }
+  }
+
+  /**
+   * One note, as a pair of oscillators a few cents apart.
+   *
+   * Two rather than one is the whole difference between a tone and an instrument: the pair
+   * beat slowly against each other, which is what a struck or bowed thing does and what a
+   * single perfect oscillator never does. Perfectly in tune and perfectly steady is the
+   * sound of a machine, so the long ones carry a slow vibrato as well.
+   */
   private voice(
-    ctx: AudioContext, bus: GainNode, type: OscillatorType,
-    freq: number, at: number, dur: number, gain: number, detune = 0,
+    ctx: AudioContext, out: AudioNode, type: OscillatorType,
+    freq: number, at: number, dur: number, gain: number,
+    opts: { detune?: number; vibrato?: number; glide?: number } = {},
   ): void {
-    const osc = ctx.createOscillator();
     const g = ctx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, at);
-    if (detune) osc.detune.setValueAtTime(detune, at);
     g.gain.setValueAtTime(0.0001, at);
-    g.gain.exponentialRampToValueAtTime(gain, at + Math.min(0.25, dur * 0.3));
+    // A soft attack and a long tail — a square-edged envelope on a pad clicks. The attack
+    // scales with the note, so a droplet still arrives sharply.
+    g.gain.exponentialRampToValueAtTime(gain, at + Math.min(0.4, dur * 0.35));
     g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-    osc.connect(g);
-    g.connect(bus);
-    osc.start(at);
-    osc.stop(at + dur + 0.05);
+    g.connect(out);
+
+    const spread = opts.detune ?? 0;
+    for (const cents of spread ? [spread, -spread] : [0]) {
+      const osc = ctx.createOscillator();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, at);
+      if (opts.glide) osc.frequency.exponentialRampToValueAtTime(Math.max(1, opts.glide), at + dur);
+      if (cents) osc.detune.setValueAtTime(cents, at);
+      osc.connect(g);
+      osc.start(at);
+      osc.stop(at + dur + 0.05);
+      if (opts.vibrato) this.vibrato(ctx, osc, at, dur, opts.vibrato);
+    }
+  }
+
+  /** A slow, shallow wobble on a held note. Anything faster than this reads as a siren. */
+  private vibrato(
+    ctx: AudioContext, osc: OscillatorNode, at: number, dur: number, depth: number,
+  ): void {
+    if (typeof ctx.createOscillator !== "function") return;
+    const lfo = ctx.createOscillator();
+    const amt = ctx.createGain();
+    lfo.type = "sine";
+    lfo.frequency.setValueAtTime(4.2 + depth, at);
+    // Depth in CENTS through `detune`, not in hertz through `frequency`: a fixed number of
+    // hertz is a wide wobble on a bass note and inaudible on a high one.
+    amt.gain.setValueAtTime(depth * 40, at);
+    lfo.connect(amt);
+    try { amt.connect(osc.detune); } catch { return; }
+    lfo.start(at);
+    lfo.stop(at + dur + 0.05);
   }
 
   setHaptics(on: boolean): void { this.haptics = on; }
