@@ -214,3 +214,62 @@ describe("daily rollover", () => {
     expect(p.quests[0]?.claimed).toBe(false);
   });
 });
+
+/**
+ * THE DAY'S THREE ARE THREE DIFFERENT QUESTIONS.
+ *
+ * The pool was six across four kinds with three drawn at random from the pile, so a card
+ * regularly asked "Play 3 matches" and "Play 5 matches" — one quest, twice, in different
+ * numbers. It is drawn one per bucket now: turn up, win, play well.
+ */
+describe("the day's spread", () => {
+  it("has enough quests that a week is not the same three", () => {
+    expect(QUEST_POOL.length).toBeGreaterThanOrEqual(12);
+    const kinds = new Set(QUEST_POOL.map((q) => q.kind));
+    expect(kinds.size).toBeGreaterThanOrEqual(6);
+  });
+
+  it("never asks the same kind twice in one day", () => {
+    for (let day = 0; day < 400; day++) {
+      const kinds = rollQuests(day).map((s) => questDef(s.id)?.kind);
+      expect(new Set(kinds).size, `day ${day} asked one thing twice: ${kinds.join()}`)
+        .toBe(kinds.length);
+    }
+  });
+
+  it("always hands back a full day", () => {
+    for (let day = 0; day < 400; day++) {
+      const rolled = rollQuests(day);
+      expect(rolled.length, `day ${day}`).toBe(QUESTS_PER_DAY);
+      expect(new Set(rolled.map((q) => q.id)).size, `day ${day} repeated a quest`)
+        .toBe(QUESTS_PER_DAY);
+    }
+  });
+
+  // Easy, real, stretch — in that order, so the card reads as a ladder rather than a heap.
+  it("reads as an easy one, a real one and a stretch", () => {
+    for (let day = 0; day < 90; day++) {
+      const kinds = rollQuests(day).map((s) => questDef(s.id)?.kind ?? "");
+      expect(["play", "turns"], `day ${day}`).toContain(kinds[0]);
+      expect(["win", "nest"], `day ${day}`).toContain(kinds[1]);
+      expect(["conquered", "ability", "queen", "tunnel"], `day ${day}`).toContain(kinds[2]);
+    }
+  });
+
+  // Over a fortnight a player should meet most of the pool, not the same rotation.
+  it("works its way through the pool rather than circling a handful", () => {
+    const seen = new Set<string>();
+    for (let day = 0; day < 14; day++) for (const q of rollQuests(day)) seen.add(q.id);
+    expect(seen.size).toBeGreaterThanOrEqual(9);
+  });
+
+  it("gives every quest something to do and something to pay", () => {
+    for (const q of QUEST_POOL) {
+      expect(q.goal, q.id).toBeGreaterThan(0);
+      expect(q.xp, q.id).toBeGreaterThan(0);
+      expect((q.reward.mycel ?? 0) + (q.reward.pheromone ?? 0), q.id).toBeGreaterThan(0);
+      expect(q.text.length, q.id).toBeGreaterThan(6);
+    }
+    expect(new Set(QUEST_POOL.map((q) => q.id)).size).toBe(QUEST_POOL.length);
+  });
+});

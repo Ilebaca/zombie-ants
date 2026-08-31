@@ -754,6 +754,7 @@ export class App {
           if (kind === "tunnel") p.stats.tunnels++;
         });
         this.profile.questProgress("ability");
+        if (kind === "tunnel") this.profile.questProgress("tunnel");
       },
       onEvents: (events) => {
         scoreQuestEvents(this.profile, events);
@@ -782,8 +783,21 @@ export class App {
           queens: queensTaken,
           byNest: reason === "nest",
         });
+        /*
+         * EVERY KIND THE POOL CAN ASK FOR IS FED FROM HERE.
+         *
+         * Queens, nests and turns were already being counted for the career record and
+         * simply never credited to a quest, which is most of why the pool only had four
+         * kinds in it. Tunnels are credited at the cast (`onAbilityCast`), because that is
+         * where the ability's kind is known.
+         */
         this.profile.questProgress("play");
-        if (winner === "you") this.profile.questProgress("win");
+        this.profile.questProgress("turns", state.turn);
+        if (queensTaken > 0) this.profile.questProgress("queen", queensTaken);
+        if (winner === "you") {
+          this.profile.questProgress("win");
+          if (reason === "nest") this.profile.questProgress("nest");
+        }
         /*
          * A CHALLENGE PAYS ONCE, and the profile is what remembers it.
          *

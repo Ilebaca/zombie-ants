@@ -11,7 +11,16 @@
  * engine, and the engine knows nothing about quests.
  */
 
-export type QuestKind = "play" | "win" | "conquered" | "ability";
+/**
+ * What a quest can ask for.
+ *
+ * There were four, and three of the six quests in the pool were "play N" or "win N" — so a
+ * day's three regularly asked the same thing twice in different numbers. Every kind added
+ * here is something the app was ALREADY counting and simply never asked about: queens
+ * taken off the Hive, nests cracked, galleries dug, and turns played.
+ */
+export type QuestKind =
+  | "play" | "win" | "conquered" | "ability" | "queen" | "nest" | "tunnel" | "turns";
 
 export interface QuestReward {
   mycel?: number;
@@ -35,17 +44,51 @@ export interface QuestState {
 }
 
 /**
- * The legacy pool. Larva rewards (the lucky-hatch currency) are not ported yet, so the two
- * quests that paid larva pay their mycelium equivalent instead — noted here rather than
- * silently dropped.
+ * THE POOL, and why it is this long.
+ *
+ * It was six, across four kinds, with three drawn a day — so a player saw the same handful
+ * on rotation and two of any day's three were usually both "play N matches". Fifteen across
+ * eight kinds, and the roll takes one from each of three BUCKETS (see `rollQuests`), so a
+ * day asks for three different sorts of thing rather than three numbers of one.
+ *
+ * Larva rewards (the lucky-hatch currency) are not ported, so the legacy quests that paid
+ * larva pay their mycelium or pheromone equivalent instead — noted rather than dropped.
  */
 export const QUEST_POOL: readonly QuestDef[] = [
-  { id: "play3", icon: "attack", text: "Play 3 matches", kind: "play", goal: 3, xp: 60, reward: { mycel: 40 } },
-  { id: "win2", icon: "trophy", text: "Win 2 matches", kind: "win", goal: 2, xp: 90, reward: { mycel: 60 } },
-  { id: "conq30", icon: "antarium", text: "Conquer 30 enemy tiles", kind: "conquered", goal: 30, xp: 70, reward: { pheromone: 300 } },
-  { id: "abil5", icon: "star", text: "Use 5 abilities", kind: "ability", goal: 5, xp: 60, reward: { mycel: 40 } },
-  { id: "win1fast", icon: "spark", text: "Win a match", kind: "win", goal: 1, xp: 50, reward: { mycel: 30 } },
+  // TURN UP — the floor. Something a player clears by playing at all.
+  { id: "play2", icon: "flag", text: "Play 2 matches", kind: "play", goal: 2, xp: 45, reward: { mycel: 30 } },
+  { id: "play3", icon: "flag", text: "Play 3 matches", kind: "play", goal: 3, xp: 60, reward: { mycel: 40 } },
   { id: "play5", icon: "flag", text: "Play 5 matches", kind: "play", goal: 5, xp: 100, reward: { pheromone: 500 } },
+  { id: "turns60", icon: "clock", text: "Play 60 turns", kind: "turns", goal: 60, xp: 70, reward: { mycel: 45 } },
+  { id: "turns120", icon: "clock", text: "Play 120 turns", kind: "turns", goal: 120, xp: 110, reward: { pheromone: 400 } },
+
+  // WIN — the middle. It asks for a result, not just for time at the board.
+  { id: "win1", icon: "trophy", text: "Win a match", kind: "win", goal: 1, xp: 50, reward: { mycel: 30 } },
+  { id: "win2", icon: "trophy", text: "Win 2 matches", kind: "win", goal: 2, xp: 90, reward: { mycel: 60 } },
+  { id: "win3", icon: "trophy", text: "Win 3 matches", kind: "win", goal: 3, xp: 140, reward: { pheromone: 600 } },
+  { id: "nest1", icon: "anthill", text: "Win by taking the enemy nest", kind: "nest", goal: 1, xp: 130, reward: { mycel: 90 } },
+
+  // PLAY WELL — the ceiling. Each names a thing the game can do that a beginner does not.
+  { id: "conq20", icon: "antarium", text: "Conquer 20 enemy tiles", kind: "conquered", goal: 20, xp: 55, reward: { mycel: 40 } },
+  { id: "conq30", icon: "antarium", text: "Conquer 30 enemy tiles", kind: "conquered", goal: 30, xp: 70, reward: { pheromone: 300 } },
+  { id: "conq50", icon: "antarium", text: "Conquer 50 enemy tiles", kind: "conquered", goal: 50, xp: 120, reward: { pheromone: 550 } },
+  { id: "abil3", icon: "spark", text: "Use 3 abilities", kind: "ability", goal: 3, xp: 45, reward: { mycel: 30 } },
+  { id: "abil5", icon: "spark", text: "Use 5 abilities", kind: "ability", goal: 5, xp: 60, reward: { mycel: 40 } },
+  { id: "queen1", icon: "crown", text: "Take the Hive queen", kind: "queen", goal: 1, xp: 100, reward: { pheromone: 450 } },
+  { id: "tunnel2", icon: "granary", text: "Dig 2 galleries", kind: "tunnel", goal: 2, xp: 65, reward: { mycel: 45 } },
+];
+
+/**
+ * The three buckets a day is drawn from, one each.
+ *
+ * Turn up, win, play well — in that order, so the card reads as an easy one, a real one and
+ * a stretch. Drawing three at random from one list is how a day ended up asking for two
+ * match counts and nothing else.
+ */
+const BUCKETS: readonly (readonly QuestKind[])[] = [
+  ["play", "turns"],
+  ["win", "nest"],
+  ["conquered", "ability", "queen", "tunnel"],
 ];
 
 /** Paid on top when all of a day's quests are claimed, as in the legacy build. */
@@ -68,14 +111,30 @@ export function msUntilRollover(now: number = Date.now()): number {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime() - now;
 }
 
-/** Three distinct quests for a day. Same shape as the legacy roll, derived from the day. */
+/**
+ * A day's quests: one from each bucket, derived from the day number.
+ *
+ * Derived, never rolled and stored (CLAUDE.md §11) — a reload cannot reroll, and a test can
+ * ask for any day it likes. One per bucket rather than three from the pile, because three
+ * independent draws regularly produced "Play 3 matches" and "Play 5 matches" on the same
+ * card, which is one quest asked twice.
+ *
+ * A bucket that somehow has nothing in it is skipped and the shortfall made up from the
+ * rest of the pool, so the day always has its three.
+ */
 export function rollQuests(day: number): QuestState[] {
   const rng = mulberry32(hash(day));
-  const pool = [...QUEST_POOL];
   const picked: QuestDef[] = [];
-  while (pool.length && picked.length < QUESTS_PER_DAY) {
-    const idx = Math.floor(rng() * pool.length);
-    const [q] = pool.splice(idx, 1);
+  for (const kinds of BUCKETS) {
+    if (picked.length >= QUESTS_PER_DAY) break;
+    const options = QUEST_POOL.filter((q) => kinds.includes(q.kind));
+    const q = options[Math.floor(rng() * options.length)];
+    if (q) picked.push(q);
+  }
+  // Backstop: never hand back fewer than three, whatever the buckets happen to hold.
+  const rest = QUEST_POOL.filter((q) => !picked.includes(q));
+  while (picked.length < QUESTS_PER_DAY && rest.length) {
+    const [q] = rest.splice(Math.floor(rng() * rest.length), 1);
     if (q) picked.push(q);
   }
   return picked.map((q) => ({ id: q.id, progress: 0, claimed: false }));
