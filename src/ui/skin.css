@@ -3886,3 +3886,8 @@ button:not(.playbtn):active,
 .chalmore-t { display: grid; gap: 2px; }
 .chalmore-t b { font-size: 13px; font-weight: 900; }
 .chalmore-t span { font-size: 11px; font-weight: 800; color: var(--muted); }
+
+/* A switch reports its own state in a word: "On" and "Off" survive a
+   screenshot and a player who has never seen the control before. */
+.setswitch { color: var(--muted); }
+.setswitch.on { border-color: var(--grass); color: var(--grass-glow); }

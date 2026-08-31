@@ -12,12 +12,12 @@ import { buildSettings } from "../settings";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
 
-interface Spy { rules: number; tour: number; reset: number; board: number; diff: number }
+interface Spy { rules: number; tour: number; reset: number; board: number; diff: number; feedback: number }
 
 const build = (store = new ProfileStore(new MemoryStore())): {
   root: HTMLElement; store: ProfileStore; spy: Spy;
 } => {
-  const spy: Spy = { rules: 0, tour: 0, reset: 0, board: 0, diff: 0 };
+  const spy: Spy = { rules: 0, tour: 0, reset: 0, board: 0, diff: 0, feedback: 0 };
   const root = buildSettings({
     profile: store,
     onBack: () => {},
@@ -26,6 +26,7 @@ const build = (store = new ProfileStore(new MemoryStore())): {
     onCycleBoard: () => { spy.board++; },
     onCycleDifficulty: () => { spy.diff++; },
     onHowToPlay: () => { spy.rules++; },
+    onFeedbackChanged: () => { spy.feedback++; },
     onReplayTutorial: () => { spy.tour++; },
     onReset: () => { spy.reset++; },
   });
@@ -45,13 +46,43 @@ describe("the settings screen", () => {
    * no audio and no haptics, and both rows were disabled buttons reading "On" — which is
    * a screen telling the player something untrue about itself.
    */
+  /**
+   * Sound and Vibration were disabled buttons reading "On" over nothing — this build had
+   * no audio and no haptics, so they were removed. They are back because there is a device
+   * behind them now, and what is held is that they are LIVE: no disabled control on the
+   * screen, and flipping one writes the save and tells the app.
+   */
   it("offers no control that does nothing", () => {
     const { root } = build();
     const dead = Array.from(root.querySelectorAll<HTMLButtonElement>("button"))
       .filter((b) => b.disabled);
     expect(dead.map((b) => b.textContent)).toEqual([]);
-    expect(root.textContent).not.toContain("Vibration");
-    expect(root.textContent).not.toContain("Sound");
+  });
+
+  it("flips sound and vibration, and tells the app each time", () => {
+    const { root, store: s, spy } = build();
+    expect(s.get().sound, "a new colony should ship audible").toBe(true);
+    root.querySelector<HTMLButtonElement>("#setSound")?.click();
+    expect(s.get().sound).toBe(false);
+    expect(root.querySelector("#setSound")?.textContent).toBe("Off");
+    expect(spy.feedback, "the live device was never told").toBe(1);
+
+    root.querySelector<HTMLButtonElement>("#setHaptics")?.click();
+    expect(s.get().haptics).toBe(false);
+    expect(spy.feedback).toBe(2);
+
+    // ...and back, on the same button.
+    root.querySelector<HTMLButtonElement>("#setSound")?.click();
+    expect(s.get().sound).toBe(true);
+    expect(root.querySelector("#setSound")?.getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("opens on whatever the save says", () => {
+    const s = new ProfileStore(new MemoryStore());
+    s.update((p) => { p.sound = false; p.haptics = true; });
+    const { root } = build(s);
+    expect(root.querySelector("#setSound")?.textContent).toBe("Off");
+    expect(root.querySelector("#setHaptics")?.textContent).toBe("On");
   });
 
   it("wires every row it does show", () => {

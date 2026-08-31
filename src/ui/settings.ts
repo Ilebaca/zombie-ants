@@ -36,6 +36,8 @@ export interface SettingsOptions {
   onCycleBoard: () => void;
   onCycleDifficulty: () => void;
   onHowToPlay: () => void;
+  /** Flipping a switch writes the profile AND tells the live device — see `App`. */
+  onFeedbackChanged: () => void;
   /** Run the guided tour again. It is a first-run thing, so this is the only way back. */
   onReplayTutorial: () => void;
   /** Everything erased and the app sent home. Asked twice before it is called. */
@@ -71,6 +73,30 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
       value: opts.difficulty,
       id: "setDiff",
       onPick: opts.onCycleDifficulty,
+    }),
+
+    el("div", "secthead", "Sound & feel"),
+    switchRow({
+      mark: "spark",
+      title: "Sound",
+      desc: "Short cues for a fight, an ability and the end of a match.",
+      id: "setSound",
+      on: opts.profile.get().sound,
+      onFlip: (on) => {
+        opts.profile.update((p) => { p.sound = on; });
+        opts.onFeedbackChanged();
+      },
+    }),
+    switchRow({
+      mark: "attack",
+      title: "Vibration",
+      desc: "A short buzz on the moments worth feeling.",
+      id: "setHaptics",
+      on: opts.profile.get().haptics,
+      onFlip: (on) => {
+        opts.profile.update((p) => { p.haptics = on; });
+        opts.onFeedbackChanged();
+      },
     }),
 
     el("div", "secthead", "Learning the game"),
@@ -140,6 +166,37 @@ function goRow(parts: RowParts & { onGo: () => void }): HTMLElement {
   row.type = "button";
   row.appendChild(icon("next", 14));
   row.onclick = parts.onGo;
+  return row;
+}
+
+/**
+ * A switch.
+ *
+ * These two were disabled buttons reading "On" over nothing for months, and were taken off
+ * this screen for exactly that reason — a switch for something that does not exist is a
+ * screen lying about itself. There is a device behind them now (platform/feedback.ts).
+ *
+ * It reports its own state in a word rather than as a bare toggle: "On" and "Off" survive a
+ * screenshot, a description and a player who has never seen this control before.
+ */
+function switchRow(
+  parts: RowParts & { on: boolean; onFlip: (on: boolean) => void },
+): HTMLElement {
+  const row = shell(parts, "div");
+  const btn = el("button", "setval setswitch" + (parts.on ? " on" : ""), parts.on ? "On" : "Off");
+  btn.id = parts.id;
+  btn.setAttribute("role", "switch");
+  btn.setAttribute("aria-checked", String(parts.on));
+  row.id = `${parts.id}Row`;
+  let on = parts.on;
+  btn.onclick = () => {
+    on = !on;
+    btn.textContent = on ? "On" : "Off";
+    btn.classList.toggle("on", on);
+    btn.setAttribute("aria-checked", String(on));
+    parts.onFlip(on);
+  };
+  row.appendChild(btn);
   return row;
 }
 

@@ -11,10 +11,11 @@ import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
 import {
   DEFAULT_SPECIES, DemoGateway, LocalFriendService, LocalMatchmaker, LocalSupportGateway,
-  ProfileStore, TOUR_VERSION, botsForChapter, chapterOf, compact, scoreQuestEvents,
+  ProfileStore, TOUR_VERSION, botsForChapter, chapterOf, compact, makeFeedback,
+  scoreQuestEvents,
 } from "../platform";
 import type {
-  FriendService, Matchmaker, Opponent, PurchaseGateway, SupportGateway,
+  Feedback, FriendService, Matchmaker, Opponent, PurchaseGateway, SupportGateway,
 } from "../platform";
 import { setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
@@ -105,6 +106,15 @@ export class App {
    */
   private readonly friends: FriendService = new LocalFriendService();
   private readonly support: SupportGateway = new LocalSupportGateway();
+  /**
+   * Sound and haptics (platform/feedback.ts).
+   *
+   * One for the whole app, because an audio device is a device: a match screen that made
+   * its own would leak one per match. It is created muted-or-not from the save and
+   * UNLOCKED on the first press anywhere — a browser refuses to start audio without a
+   * gesture, and the first press is the earliest honest one.
+   */
+  private readonly feedback: Feedback = makeFeedback();
   /** Redraw the home top bar in place. Set when home is built; a no-op before that. */
   private rebuildHomeBar: () => void = () => {};
   /** The challenge being played, if this match is one. */
@@ -136,10 +146,21 @@ export class App {
   }
 
   start(): void {
+    this.applyFeedbackPrefs();
+    // A browser refuses to start audio without a gesture, so the device is created on the
+    // first press anywhere in the app — captured, so nothing can stop it reaching here.
+    this.host.addEventListener("pointerdown", () => this.feedback.unlock(), { capture: true });
     this.show("home");
     // First run only. `tourSeen` is written when the walk finishes OR is skipped, so a
     // player who knows the game sees it once and never again.
     if (this.profile.get().tourSeen < TOUR_VERSION) this.startTour();
+  }
+
+  /** Push the saved switches into the device. Called at boot and whenever one is flipped. */
+  private applyFeedbackPrefs(): void {
+    const p = this.profile.get();
+    this.feedback.setSound(p.sound);
+    this.feedback.setHaptics(p.haptics);
   }
 
   /* ----------------------------------------------------------------------- TOUR */
@@ -492,6 +513,9 @@ export class App {
           this.show("settings");
         },
         onHowToPlay: () => this.show("rules"),
+        // The switch writes the profile; this is what makes the live device agree with it
+        // without waiting for a reload.
+        onFeedbackChanged: () => this.applyFeedbackPrefs(),
         onReplayTutorial: () => {
           this.profile.update((p) => { p.tourSeen = 0; });
           this.startTour();
@@ -605,6 +629,7 @@ export class App {
     });
     bar.appendChild(granaryPill(this.profile, (got) => {
       this.rebuildHomeBar();
+      this.feedback.play("claim");
       toast(root, `Granary → +${compact(got)} troops`, "hive");
     }));
     return bar;
@@ -718,6 +743,7 @@ export class App {
     const me = this.profile.get();
 
     this.match = new MatchScreen(this.host, {
+      feedback: this.feedback,
       state,
       mods,
       // WHO IS ACROSS THE BOARD — the one the search seated, so the plate on the soil is

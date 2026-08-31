@@ -1199,6 +1199,34 @@ are gone until there is something behind them.
   (§ finding an opponent), so the setting drives challenges; the row states that, because
   a setting that silently applies to less than its name suggests is worse than no setting.
 
+**SOUND AND HAPTICS ARE SYNTHESISED, NOT SHIPPED** (`src/platform/feedback.ts`). There is
+no asset pipeline in this project and no image file either — every picture is drawn by the
+code that owns it — and a sound file has the same problem plus two more: a download before
+the first tap and a decode on a phone. Each cue is a few oscillators and an envelope.
+- **A browser will not start audio without a gesture.** The context is built on `unlock()`,
+  called from the first press anywhere, and every cue before that is DROPPED rather than
+  queued: a sound arriving after the thing it marks is worse than one that never came. The
+  same goes for the gap while `resume()` is still settling — scheduling on a suspended
+  context does not play late, it plays at the wrong time when the clock starts.
+- **ONE cue per batch, and it is the loudest thing in it** (`loudestOf` in `match.ts`). A
+  long send is a dozen `veinLaid` and a `capture`; an attack is a `combat` and a `capture`.
+  A sound each is a rattle.
+- **A tile picked up does NOT buzz.** It happens constantly, and a buzz on every one is not
+  feedback, it is a fault. `BUZZ` sets that per cue and a test holds it.
+- **`SilentFeedback` is not a stub for something missing** — it is the honest implementation
+  for a device with neither capability, and every test in the suite runs on it. Nothing here
+  may throw: no audio is a quiet game, never a broken one.
+- **Settings' two switches are back**, because there is finally something behind them. They
+  default ON, and `normalise` reads a missing flag as `!== false` — reading it as "off"
+  would silently mute the game for every returning player.
+
+**NO EMOJI, AND A TEST SAYS SO** (`src/ui/__tests__/no-emoji.test.ts`). §10 has said this
+since the beginning and every screen was cleaned by hand, which is exactly why the MATCH
+screen's action bar still carried five of them — the one screen a player spends the whole
+game on — and the board drew a shield emoji into the canvas. The test walks every shipped
+`.ts` and `.css` file; comments are exempt, and so are arrows and dashes, which are
+typography. It found the hourglass on the ability button that the sweep itself had missed.
+
 ## 10a. The guided tour
 
 `src/ui/tour.ts` is the first-run walkthrough, and it is one component doing both halves:

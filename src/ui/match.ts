@@ -25,6 +25,7 @@ import { BoardRenderer } from "../render";
 import { compact } from "../platform";
 import type { SpotRect, Tour, TourStep } from "./tour";
 import { icon } from "./icons";
+import type { Cue, Feedback } from "../platform";
 import { el } from "./chrome";
 
 /** Seconds a player gets per move before the turn passes automatically. */
@@ -73,6 +74,11 @@ export interface MatchOptions {
    * them, and the engine stays unaware that anything is listening.
    */
   onEvents?: (events: readonly EngineEvent[]) => void;
+  /**
+   * Sound and haptics. Optional: a match with none is a silent match, not a broken one,
+   * which is what every test and every platform without an audio device gets.
+   */
+  feedback?: Feedback;
   /**
    * Scenario objective. Returns the winner when a batch of events settles it, or null to
    * play on. The match asks; it does not know what the objective is.
@@ -626,6 +632,7 @@ export class MatchScreen {
     if (!events.length) {
       return;
     }
+    this.cue("ability");
     this.opts.onAbilityCast?.(ability.kind);
     this.consume(events);
     this.showSpellCard(ability.name, ability.desc);
@@ -741,12 +748,18 @@ export class MatchScreen {
     const winner = this.state.winner;
     this.updateTimerUI();
 
+    this.cue(winner === "you" ? "win" : "lose");
     const wait = winner ? this.renderer.floodWin(winner) : 0;
     // `destroy()` cancels this, so a screen torn down mid-wash never hands out a card.
     this.endTimer = window.setTimeout(() => {
       this.endTimer = null;
       this.opts.onExit?.(winner, this.endReason, this.playedMs);
     }, wait);
+  }
+
+  /** Mark a moment, if there is anything to mark it with. */
+  private cue(c: Cue | null): void {
+    if (c) this.opts.feedback?.play(c);
   }
 
   /* ----------------------------------------------------------------------- INPUT */
@@ -1005,6 +1018,7 @@ export class MatchScreen {
   private consume(events: readonly EngineEvent[]): void {
     for (const e of events) if (e.type === "gameOver") this.endReason = e.reason;
     this.renderer.consume(events as EngineEvent[]);
+    this.cue(loudestOf(events));
     this.opts.onEvents?.(events);
     this.tourSignals(events);
 
@@ -1019,6 +1033,31 @@ export class MatchScreen {
     }
   }
 
+}
+
+/**
+ * ONE cue per batch, and it is the loudest thing that happened.
+ *
+ * A single action produces a whole batch — a long send is a dozen `veinLaid` and a
+ * `capture`; an attack is a `combat` and then a `capture` — and playing a sound for each
+ * would be a rattle. The batch gets the sound of the biggest thing in it, in the order a
+ * player would rank them.
+ *
+ * Returns null for a batch with nothing worth marking, which is most of them: production
+ * ticking over is not an event a player needs to hear.
+ */
+export function loudestOf(events: readonly EngineEvent[]): Cue | null {
+  let best: Cue | null = null;
+  const rank: Cue[] = ["move", "fight", "hive"];
+  const take = (c: Cue): void => {
+    if (best === null || rank.indexOf(c) > rank.indexOf(best)) best = c;
+  };
+  for (const e of events) {
+    if (e.type === "hiveCaptured") take("hive");
+    else if (e.type === "combat") take("fight");
+    else if (e.type === "capture") take("move");
+  }
+  return best;
 }
 
 const MARKUP = `

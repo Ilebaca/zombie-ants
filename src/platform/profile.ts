@@ -151,6 +151,15 @@ export interface Profile {
   challenges: string[];
   /** The day the daily challenge was last beaten. It pays once a day, not once ever. */
   dailyDay: number;
+  /**
+   * Sound and haptics, both on by default.
+   *
+   * They were switches over nothing for months and were taken off Settings for exactly
+   * that reason. There is something behind them now (platform/feedback.ts), so they are
+   * back — and on, because a game that ships muted is a game most players never hear.
+   */
+  sound: boolean;
+  haptics: boolean;
   /** Daily quests: today's three, the day they were rolled for, and the sweep streak. */
   quests: QuestState[];
   questDay: number;
@@ -218,6 +227,8 @@ export function defaultProfile(): Profile {
     tickets: [],
     challenges: [],
     dailyDay: 0,
+    sound: true,
+    haptics: true,
     quests: [],
     questDay: 0,
     questStreak: 0,
@@ -346,6 +357,11 @@ export function normalise(raw: unknown): Profile {
       ? p.challenges.filter((c): c is string => typeof c === "string").slice(0, 200)
       : [],
     dailyDay: int(p.dailyDay, 0, 1e9, 0),
+    // `!== false`, not `=== true`: a save from before these existed has neither field, and
+    // reading a missing flag as "off" would silently mute the game for every returning
+    // player (the same trap the mycelium fallback fell into — see the note above).
+    sound: p.sound !== false,
+    haptics: p.haptics !== false,
     // A quest id that no longer exists in the pool is dropped rather than kept at zero
     // progress, where it would be permanently unclaimable and block the daily sweep.
     quests: Array.isArray(p.quests)
