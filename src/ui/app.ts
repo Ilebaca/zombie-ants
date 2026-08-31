@@ -63,6 +63,20 @@ type ScreenId =
   | "luckyhatch" | "leaderboard" | "shop";
 
 /**
+ * Is this press on something that ACTS?
+ *
+ * The interface sound belongs to controls, not to the screen: a drag across the board, a
+ * swipe between deck screens or a scroll down a list must not click. Anything a browser
+ * would treat as a button counts, plus the few controls this app draws itself.
+ */
+function pressable(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return !!target.closest(
+    'button, a, input, [role="button"], [role="switch"], .navitem, .menuitem, .roadcell',
+  );
+}
+
+/**
  * The five screens on the deck, in the order the bottom bar lists them. Home sits in the
  * middle, so it is one swipe from everything.
  */
@@ -147,9 +161,26 @@ export class App {
 
   start(): void {
     this.applyFeedbackPrefs();
-    // A browser refuses to start audio without a gesture, so the device is created on the
-    // first press anywhere in the app — captured, so nothing can stop it reaching here.
-    this.host.addEventListener("pointerdown", () => this.feedback.unlock(), { capture: true });
+    /*
+     * ONE LISTENER FOR EVERY PRESS IN THE APP.
+     *
+     * It does two jobs, and both have to happen here rather than on each screen. A browser
+     * refuses to start audio without a gesture, so the device is created on the first press
+     * anywhere; and every button in the game makes the SAME sound, which is a property of
+     * the app rather than of any screen — wiring a click cue into forty controls one at a
+     * time is forty chances to miss one, and the two that were missed would be the two a
+     * player noticed.
+     *
+     * Captured, so a handler that stops propagation cannot silence the interface, and on
+     * `pointerdown` rather than `click`: the sound belongs to the press, not to the release.
+     */
+    this.host.addEventListener("pointerdown", (e) => {
+      this.feedback.unlock();
+      if (pressable(e.target)) this.feedback.play("tap");
+    }, { capture: true });
+    // The menu bed goes on at boot. It cannot actually sound until the first press — the
+    // device does not exist yet — and `unlock` picks the wish up from there.
+    this.feedback.setMusic("menu");
     this.show("home");
     // First run only. `tourSeen` is written when the walk finishes OR is skipped, so a
     // player who knows the game sees it once and never again.
@@ -692,6 +723,9 @@ export class App {
   /* ---------------------------------------------------------------------- MATCH */
 
   private startMatch(foe?: Opponent): void {
+    // The board gets its own bed. `setMusic` is idempotent, so this is safe to call for
+    // every match, including a rematch straight off the result card.
+    this.feedback.setMusic("match");
     if (this.tour.running) this.tour.signal("shape");
     // Whether this match is the tutorial one, decided once: the board is arranged for it
     // and the match screen runs the walkthrough on it.
@@ -870,6 +904,9 @@ export class App {
   }
 
   private clearMatch(): void {
+    // Back to the menu bed the moment the board goes away — a surrender, the result card's
+    // Home, or the router being sent anywhere else mid-match.
+    if (this.match) this.feedback.setMusic("menu");
     this.match?.destroy();
     this.match = null;
   }

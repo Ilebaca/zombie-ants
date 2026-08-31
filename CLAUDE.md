@@ -1208,6 +1208,21 @@ the first tap and a decode on a phone. Each cue is a few oscillators and an enve
   queued: a sound arriving after the thing it marks is worse than one that never came. The
   same goes for the gap while `resume()` is still settling — scheduling on a suspended
   context does not play late, it plays at the wrong time when the clock starts.
+- **THERE IS MUSIC, and it is generated too.** Two beds — menu and match — each a short
+  chord loop with a pad, a bass and a sparse pluck pattern, scheduled a sixteenth at a time
+  off the AUDIO clock rather than off the timer: a timer drifts and a backgrounded tab
+  throttles it to once a second, so it decides only WHEN TO SCHEDULE. `setMusic` is
+  idempotent for the bed already playing, because navigation calls it constantly and a bed
+  that restarted on every screen change is a stutter. Muting STOPS it rather than turning
+  it down — an oscillator per sixteenth for ever into a gain of zero is a phone kept awake
+  for nothing — and a bed asked for before the first press is remembered until `unlock`
+  can grant it.
+- **EVERY BUTTON MAKES THE SAME SOUND, from ONE listener** on the app root. It is a
+  property of the app, not of any screen: wiring a click into forty controls is forty
+  chances to miss one, and the two that got missed would be the two a player noticed. It
+  fires on `pointerdown` (the press, not the release), in the capture phase (so a handler
+  that stops propagation cannot silence the interface), and only for things that ACT — a
+  drag across the board or a swipe between screens must not click.
 - **ONE cue per batch, and it is the loudest thing in it** (`loudestOf` in `match.ts`). A
   long send is a dozen `veinLaid` and a `capture`; an attack is a `combat` and a `capture`.
   A sound each is a rattle.

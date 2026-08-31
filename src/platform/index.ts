@@ -46,7 +46,7 @@ export {
 } from "./granary";
 export type { GranaryLevel } from "./granary";
 export { SilentFeedback, WebFeedback, makeFeedback } from "./feedback";
-export type { Cue, Feedback } from "./feedback";
+export type { Cue, Feedback, Track } from "./feedback";
 export { scoreQuestEvents } from "./scoring";
 export { DemoGateway, SHOP_PRODUCTS, productById } from "./purchases";
 export type { Grant, Product, ProductKind, PurchaseGateway, PurchaseResult } from "./purchases";
