@@ -27,6 +27,7 @@ function fakeAudio(state: AudioContextState = "running", full = false) {
   const started: number[] = [];
   const gains: number[] = [];
   const freqs: number[] = [];
+  const envelopes: { kind: "set" | "ramp"; v: number; t: number }[][] = [];
   const nodes = { convolver: 0, buffers: 0, sources: 0, filters: 0, loops: 0 };
   const param = () => ({
     value: 0,
@@ -45,15 +46,24 @@ function fakeAudio(state: AudioContextState = "running", full = false) {
     closed: false,
     resume: vi.fn(() => { ctx.state = "running"; return Promise.resolve(); }),
     close: vi.fn(() => { ctx.closed = true; return Promise.resolve(); }),
-    createGain: () => ({
-      gain: {
-        value: 0,
-        setValueAtTime: () => {},
-        cancelScheduledValues: () => {},
-        exponentialRampToValueAtTime: (v: number) => { gains.push(v); },
-      },
-      connect: () => {},
-    }),
+    createGain: () => {
+      // Every automation point on every note, in order: the ENVELOPE, which is what
+      // decides whether a held note is a pad or a tick.
+      const env: { kind: "set" | "ramp"; v: number; t: number }[] = [];
+      envelopes.push(env);
+      return {
+        gain: {
+          value: 0,
+          setValueAtTime: (v: number, t: number) => { env.push({ kind: "set", v, t }); },
+          cancelScheduledValues: () => {},
+          exponentialRampToValueAtTime: (v: number, t: number) => {
+            gains.push(v);
+            env.push({ kind: "ramp", v, t });
+          },
+        },
+        connect: () => {},
+      };
+    },
     createOscillator: () => ({
       type: "sine" as OscillatorType,
       frequency: {
@@ -89,7 +99,7 @@ function fakeAudio(state: AudioContextState = "running", full = false) {
       return { type: "lowpass", frequency: param(), Q: param(), connect: () => {} };
     };
   }
-  return { ctx, started, gains, freqs, nodes };
+  return { ctx, started, gains, freqs, nodes, envelopes };
 }
 
 beforeEach(() => vi.useFakeTimers());
@@ -268,9 +278,9 @@ describe("the silent one", () => {
  */
 describe("the music", () => {
   const rig = (state: AudioContextState = "running") => {
-    const { ctx, started, freqs, nodes } = fakeAudio(state);
+    const { ctx, started, gains, freqs, nodes, envelopes } = fakeAudio(state);
     const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
-    return { fb, ctx, started, freqs, nodes };
+    return { fb, ctx, started, gains, freqs, nodes, envelopes };
   };
 
   /**
@@ -449,6 +459,50 @@ describe("the music", () => {
     fb.setMusic("match");
     runClock(ctx, 6);
     expect(started.length, "a poor device got silence").toBeGreaterThan(10);
+  });
+
+    /**
+   * A HELD NOTE HAS TO HOLD, and this is the test that would have caught it not doing.
+   *
+   * The bed's envelope ramped straight from its attack down to silence, which sounds like a
+   * decaying pluck however long the note is written to be: an exponential from 0.075 to
+   * 0.0001 is four fifths of the way down a quarter of the way through. So the pads were
+   * ticks, the whole bed measured about −54 dBFS at the speaker, and the report from the
+   * phone was that there was no music at all. Every test in this file passed.
+   */
+  it("holds a long note rather than decaying it away", () => {
+    const { fb, ctx, envelopes } = rig();
+    fb.unlock();
+    fb.setMusic("menu");
+    runClock(ctx, 8);
+    // The pad is the longest thing in the bed: five beats. Find the envelopes that span it.
+    const long = envelopes.filter((e) => e.length >= 3 && (e[e.length - 1]?.t ?? 0) - (e[0]?.t ?? 0) > 2);
+    expect(long.length, "nothing in the bed is held for long").toBeGreaterThan(3);
+    for (const env of long) {
+      const start = env[0]?.t ?? 0;
+      const end = env[env.length - 1]?.t ?? 0;
+      const top = Math.max(...env.map((p) => p.v));
+      // The last point at full level: everything before it is attack, everything after is
+      // release. A note that is still at its peak past the halfway mark is a note that is
+      // sounding, not one that faded out under the next.
+      const held = Math.max(...env.filter((p) => p.v >= top * 0.99).map((p) => p.t));
+      const through = (held - start) / (end - start);
+      expect(through, "the note starts fading before it is half over").toBeGreaterThan(0.5);
+    }
+  });
+
+  /**
+   * And it has to be LOUD ENOUGH to hear over a phone speaker in a room. Measured off the
+   * envelope peaks rather than off a rendered waveform, which is as close as a fake context
+   * gets — the real level was checked in a browser with an analyser on the destination.
+   */
+  it("plays the bed at a level a speaker can carry", () => {
+    const { fb, ctx, gains } = rig();
+    fb.unlock();
+    fb.setMusic("menu");
+    runClock(ctx, 8);
+    const bus = Math.max(...gains);
+    expect(bus, "the whole bed is turned down to nothing").toBeGreaterThan(0.5);
   });
 
     it("takes the bed down when it is closed", () => {

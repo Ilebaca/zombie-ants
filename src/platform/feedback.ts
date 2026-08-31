@@ -256,10 +256,10 @@ const TRACKS: Record<Track, TrackDef> = {
     melody: 0.16,
     droplet: 0.05,
     room: 2.6,
-    wind: 0.055,
+    wind: 0.16,
     chirp: 7,
     pulse: false,
-    gain: 0.2,
+    gain: 1.05,
   },
   match: {
     // The same round an octave lower and a shade quicker: under a board rather than in
@@ -271,10 +271,10 @@ const TRACKS: Record<Track, TrackDef> = {
     melody: 0.1,
     droplet: 0.03,
     room: 1.8,
-    wind: 0.04,
+    wind: 0.13,
     chirp: 13,
     pulse: true,
-    gain: 0.16,
+    gain: 0.85,
   },
 };
 
@@ -587,7 +587,7 @@ export class WebFeedback implements Feedback {
       // FADES rather than switching. A chord that stops before the next starts is a gap,
       // and a gap in a pad is what makes a loop audible as a loop.
       for (const [i, steps] of def.voicing.entries()) {
-        this.voice(ctx, bed.soft, "sine", degree(tonic, chord + steps), at, def.beat * 5, 0.05, {
+        this.voice(ctx, bed.soft, "sine", degree(tonic, chord + steps), at, def.beat * 5, 0.075, {
           detune: (i % 2 === 0 ? 4 : -4) + (rand() * 4 - 2),
           vibrato: 0.12,
         });
@@ -596,10 +596,10 @@ export class WebFeedback implements Feedback {
     // The bass breathes twice a bar, off the bar line the second time, so the pulse is felt
     // rather than counted.
     if (inBar === 0 || inBar === 10) {
-      this.voice(ctx, bed.soft, "triangle", root / 2, at, def.beat * 2.2, inBar === 0 ? 0.09 : 0.05);
+      this.voice(ctx, bed.soft, "triangle", root / 2, at, def.beat * 2.2, inBar === 0 ? 0.16 : 0.09);
     }
     if (def.pulse && inBar % 8 === 4) {
-      this.voice(ctx, bed.soft, "sine", root / 2, at, def.beat * 0.6, 0.045);
+      this.voice(ctx, bed.soft, "sine", root / 2, at, def.beat * 0.6, 0.09);
     }
 
     // The melody: a random walk through the pentatonic, so it is always in key and never
@@ -610,7 +610,7 @@ export class WebFeedback implements Feedback {
       this.tone = clampTone(this.tone + (drift < 0.4 ? -1 : drift < 0.8 ? 1 : 0));
       const note = PENTATONIC[this.tone % PENTATONIC.length] ?? 0;
       const octave = MINOR.length * (1 + Math.floor(this.tone / PENTATONIC.length));
-      this.voice(ctx, bed.out, "triangle", degree(tonic, note + octave), at, def.beat * 1.9, 0.045, {
+      this.voice(ctx, bed.out, "triangle", degree(tonic, note + octave), at, def.beat * 1.9, 0.085, {
         detune: 3,
         vibrato: 0.2,
       });
@@ -619,7 +619,7 @@ export class WebFeedback implements Feedback {
     // the ear to go.
     if (rand() < def.droplet) {
       const note = PENTATONIC[Math.floor(rand() * PENTATONIC.length)] ?? 0;
-      this.voice(ctx, bed.out, "sine", degree(tonic, note + MINOR.length * 3), at, def.beat * 0.8, 0.03);
+      this.voice(ctx, bed.out, "sine", degree(tonic, note + MINOR.length * 3), at, def.beat * 0.8, 0.055);
     }
     // And a bird, every several seconds, well above everything else. Two or three notes
     // that slide, because a bird bends its pitch and a fixed one reads as a beep.
@@ -635,7 +635,7 @@ export class WebFeedback implements Feedback {
     const base = 2200 + rand() * 1400;
     for (let i = 0; i < notes; i++) {
       const from = base * (1 + rand() * 0.15);
-      this.voice(ctx, out, "sine", from, at + i * 0.075, 0.07, 0.02, {
+      this.voice(ctx, out, "sine", from, at + i * 0.075, 0.07, 0.04, {
         glide: from * (rand() < 0.5 ? 1.35 : 0.75),
       });
     }
@@ -654,15 +654,29 @@ export class WebFeedback implements Feedback {
     freq: number, at: number, dur: number, gain: number,
     opts: { detune?: number; vibrato?: number; glide?: number } = {},
   ): void {
+    const spread = opts.detune ?? 0;
+    const pair = spread ? 2 : 1;
+
     const g = ctx.createGain();
+    // ATTACK, HOLD, RELEASE — and the hold is the whole point.
+    //
+    // The first version ramped straight from the attack down to silence, which sounds like
+    // a decaying pluck however long the note is: an exponential from 0.05 to 0.0001 is
+    // four fifths of the way down after a quarter of its length. So a "pad" held for five
+    // beats was a tick, the bed measured about −54 dBFS at the speaker, and the honest
+    // report from the phone was that there was nothing there at all. A held note has to
+    // actually hold.
+    const attack = Math.min(0.5, dur * 0.25);
+    const release = Math.min(1.2, dur * 0.45);
+    // The pair sums before this gain, so halve it — otherwise `gain` means one thing for a
+    // detuned note and twice that for a plain one.
+    const peak = gain / pair;
     g.gain.setValueAtTime(0.0001, at);
-    // A soft attack and a long tail — a square-edged envelope on a pad clicks. The attack
-    // scales with the note, so a droplet still arrives sharply.
-    g.gain.exponentialRampToValueAtTime(gain, at + Math.min(0.4, dur * 0.35));
+    g.gain.exponentialRampToValueAtTime(peak, at + attack);
+    g.gain.setValueAtTime(peak, at + Math.max(attack, dur - release));
     g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
     g.connect(out);
 
-    const spread = opts.detune ?? 0;
     for (const cents of spread ? [spread, -spread] : [0]) {
       const osc = ctx.createOscillator();
       osc.type = type;

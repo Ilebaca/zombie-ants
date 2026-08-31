@@ -1248,6 +1248,17 @@ the first tap and a decode on a phone. Each cue is a few oscillators and an enve
   - **A note is a PAIR of oscillators a few cents apart**, and the long ones carry a slow
     vibrato in CENTS (a fixed number of hertz is a wide wobble on a bass note and inaudible
     on a high one). Perfectly in tune and perfectly steady is the sound of a machine.
+  - **A HELD NOTE HAS TO HOLD — attack, HOLD, release.** The envelope ramped straight from
+    its attack down to silence, which sounds like a decaying pluck however long the note is
+    written to be: an exponential from 0.075 to 0.0001 is four fifths of the way down a
+    quarter of the way through. So the pads were ticks, the whole bed measured **−54 dBFS**
+    at the speaker, and the honest report from the phone was that there was no music at
+    all — with every test in this file passing, because they counted notes and pitches and
+    nothing measured a LEVEL. Two tests do now: one that a long note is still at its peak
+    past its halfway mark, and one on the bed's own bus. The level itself was set with an
+    AnalyserNode on the destination in a real browser (§11 — the same "you cannot see it,
+    so measure it" rule, for something you cannot hear either); it sits near −26 dBFS, and
+    the wind is deliberately UNDER the notes rather than level with them.
   - **The room and the wind are built ONCE per bed.** The impulse response is a couple of
     seconds of audio to generate and the wind is a four-second loop; either on the beat
     would be the most expensive thing in the app. Every piece of this is feature-guarded —
