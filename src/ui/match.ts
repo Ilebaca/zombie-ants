@@ -1061,7 +1061,9 @@ export function loudestOf(events: readonly EngineEvent[]): Cue | null {
     else if (e.type === "combat") take("fight");
     // A long send is the same movement going much further, and gets the longer scurry.
     else if (e.type === "travel") take("travel");
-    else if (e.type === "capture") take("move");
+    // A plain `move` is reinforcing ground already held — no capture event, and for a long
+    // time no sound either, so half of what a player does was silent.
+    else if (e.type === "capture" || e.type === "move" || e.type === "rally") take("move");
   }
   return best;
 }

@@ -139,7 +139,7 @@ const VOICES: Record<Cue, Voice[]> = {
 };
 
 /** How loud the whole thing is, before anything else. Quiet by design. */
-const MASTER = 0.45;
+const MASTER = 0.5;
 
 /* ------------------------------------------------------------------------ THE MUSIC */
 
@@ -219,6 +219,22 @@ interface TrackDef {
   round: readonly number[];
   /** How far above each chord's root the pad stacks, IN SCALE STEPS. */
   voicing: readonly number[];
+  /**
+   * How loud the sustained chord is.
+   *
+   * Its own number because the two beds want opposite things from it: in the menus the pad
+   * IS the music, and over a board it has to get out of the way of the drum. One level for
+   * both is what made the match bed sound like the menu bed with something faint under it.
+   */
+  pad: number;
+  /**
+   * Change chord every HALF bar rather than every bar.
+   *
+   * The single most audible difference between the two beds after the drum: the same round,
+   * pushed through twice as fast, is a harmony that will not settle — which is the whole
+   * feeling wanted over a board.
+   */
+  half: boolean;
   /** Chance per sixteenth that the melody plays a note. Sparse: this is a bed. */
   melody: number;
   /** Chance per sixteenth of a high droplet — water off a leaf. */
@@ -264,6 +280,8 @@ const TRACKS: Record<Track, TrackDef> = {
     // Root, fifth, octave and the ninth above: open, and no third, so it never commits to
     // happy or sad. That ambiguity is most of why an ambient bed can run for an hour.
     voicing: [0, 4, 7, 8],
+    pad: 0.075,
+    half: false,
     melody: 0.16,
     droplet: 0.05,
     room: 2.6,
@@ -273,11 +291,21 @@ const TRACKS: Record<Track, TrackDef> = {
     gain: 3.0,
   },
   match: {
-    // The same round an octave lower and half again as fast: the same forest, at war in it.
+    // The same round, half again as fast: the same forest, at war in it.
+    //
+    // NOT an octave lower, which is where this started. A phone speaker has next to nothing
+    // below about 400 Hz, so dropping the whole bed an octave for gravity took the match
+    // music out of the only range the device can reproduce — measured, it had ten decibels
+    // LESS midrange than the menu bed, which is why the war bed was reported as sounding
+    // no different and, if anything, thinner. Weight here has to come from the drum and the
+    // ostinato, never from pitch.
     beat: 0.44,
-    tonic: A / 2,
+    tonic: A,
     round: ROUND,
     voicing: [0, 4, 7, 9],
+    // Under the drum, not over it.
+    pad: 0.038,
+    half: true,
     melody: 0.24,
     droplet: 0.02,
     room: 1.5,
@@ -286,7 +314,7 @@ const TRACKS: Record<Track, TrackDef> = {
     wind: 0.08,
     chirp: 22,
     drive: true,
-    gain: 2.4,
+    gain: 1.75,
   },
 };
 
@@ -631,8 +659,10 @@ export class WebFeedback implements Feedback {
   private scheduleStep(
     ctx: AudioContext, bed: Bed, def: TrackDef, step: number, at: number,
   ): void {
+    // A "bar" here is however long a chord lasts, which is half a bar in the match bed.
+    const barSteps = def.half ? STEPS_PER_BAR / 2 : STEPS_PER_BAR;
     const inBar = step % STEPS_PER_BAR;
-    const bar = Math.floor(step / STEPS_PER_BAR) % def.round.length;
+    const bar = Math.floor(step / barSteps) % def.round.length;
     const tonic = def.tonic;
     // The bar's chord, named as a scale degree: everything below stacks off this in scale
     // steps, so no chord in the round can leave the key.
@@ -640,12 +670,12 @@ export class WebFeedback implements Feedback {
     const root = degree(tonic, chord);
     const rand = this.rand;
 
-    if (inBar === 0) {
+    if (step % barSteps === 0) {
       // The pad holds the whole bar and overlaps the next by a beat, so the harmony CROSS
       // FADES rather than switching. A chord that stops before the next starts is a gap,
       // and a gap in a pad is what makes a loop audible as a loop.
       for (const [i, steps] of def.voicing.entries()) {
-        this.voice(ctx, bed.soft, "sine", degree(tonic, chord + steps), at, def.beat * 5, 0.075, {
+        this.voice(ctx, bed.soft, "sine", degree(tonic, chord + steps), at, def.beat * (def.half ? 2.6 : 5), def.pad, {
           detune: (i % 2 === 0 ? 4 : -4) + (rand() * 4 - 2),
           vibrato: 0.12,
         });
@@ -653,8 +683,9 @@ export class WebFeedback implements Feedback {
     }
     // The bass breathes twice a bar, off the bar line the second time, so the pulse is felt
     // rather than counted.
-    if (inBar === 0 || inBar === 10) {
-      this.voice(ctx, bed.soft, "triangle", root / 2, at, def.beat * 2.2, inBar === 0 ? 0.16 : 0.09);
+    const onChord = step % barSteps === 0;
+    if (onChord || inBar % barSteps === 10 % barSteps) {
+      this.voice(ctx, bed.soft, "triangle", root / 2, at, def.beat * 2.2, onChord ? 0.16 : 0.09);
     }
     if (def.drive) this.warKit(ctx, bed, def, inBar, at, root);
 
@@ -698,23 +729,31 @@ export class WebFeedback implements Feedback {
   ): void {
     // Kick on one and on the and-of-three: a pulse that leans forward rather than sitting
     // squarely on the bar.
+    // THIS IS ALL TUNED FOR A PHONE SPEAKER, which has next to nothing below about 400 Hz.
+    // The first version of this kit put its weight in a low sine and a 180 Hz band, which
+    // measured loud and was inaudible on the device it is actually played on — the report
+    // was that the match bed sounded no different from the menu. Every part of it now has
+    // something in the midrange to be heard BY; the low end is what a real speaker adds.
     if (inBar === 0 || inBar === 6 || inBar === 10) {
-      this.tick(ctx, bed.out, at, 180, 0.09, 0.5, 1.2, 55);
-      this.noteAtGain(ctx, bed.out, "sine", 130, 42, at, 0.13, 0.34);
+      this.noteAtGain(ctx, bed.out, "sine", 145, 38, at, 0.17, 0.8);
+      // The beater, not the drum: a hard mid click is the part of a kick a phone can play.
+      this.tick(ctx, bed.out, at, 900, 0.035, 1.5, 0.8, 260);
     }
     // Backbeat: a rough band, wide open, which is a rattle rather than a snare — a real
     // snare would be a marching band and this is an anthill.
     if (inBar === 4 || inBar === 12) {
-      this.tick(ctx, bed.out, at, 1900, 0.11, 0.3, 0.8, 900);
+      this.tick(ctx, bed.out, at, 2100, 0.14, 1.7, 0.5, 800);
+      this.noteAtGain(ctx, bed.out, "triangle", 420, 210, at, 0.07, 0.4);
     }
-    // And a tick on every eighth, quiet, so the bar is always being counted.
+    // And a tick on every eighth, so the bar is always being counted.
     if (inBar % 2 === 0) {
-      this.tick(ctx, bed.out, at, 5200, 0.02, inBar % 4 === 0 ? 0.12 : 0.07, 4);
+      this.tick(ctx, bed.out, at, 6200, 0.03, inBar % 4 === 0 ? 1.0 : 0.55, 1.4);
     }
-    // The ostinato: the chord root, driven, on every eighth. Short and sawtooth through the
-    // soft bus, so it reads as movement under the pad rather than as another melody.
+    // The ostinato: the chord root, driven, on every eighth — and on the OPEN bus, not the
+    // soft one. Through the pad's lowpass it was a rumble a phone could not reproduce; the
+    // sawtooth's upper harmonics are the whole reason it is a sawtooth.
     if (inBar % 2 === 0) {
-      this.voice(ctx, bed.soft, "sawtooth", root, at, def.beat * 0.42, 0.055);
+      this.voice(ctx, bed.out, "sawtooth", root * 2, at, def.beat * 0.38, 0.075);
     }
   }
 
@@ -812,7 +851,26 @@ export class WebFeedback implements Feedback {
         this.ctx = this.makeContext();
         this.master = this.ctx.createGain();
         this.master.gain.value = this.sound ? MASTER : 0;
-        this.master.connect(this.ctx.destination);
+        // A LIMITER ON THE WAY OUT.
+        //
+        // The match bed is a drum kit, an ostinato, a pad and a melody, and a cue can land
+        // on top of all four — measured, that hit twice full scale, which a browser clips
+        // into distortion. A compressor is the difference between turning everything down
+        // until the worst moment fits (a bed nobody can hear, which is where this started)
+        // and holding the loud moments down so the rest can be loud. It is also most of
+        // what makes a drum feel like it is hitting something.
+        let out: AudioNode = this.ctx.destination;
+        if (typeof this.ctx.createDynamicsCompressor === "function") {
+          const limiter = this.ctx.createDynamicsCompressor();
+          limiter.threshold.value = -16;
+          limiter.knee.value = 8;
+          limiter.ratio.value = 7;
+          limiter.attack.value = 0.003;
+          limiter.release.value = 0.12;
+          limiter.connect(this.ctx.destination);
+          out = limiter;
+        }
+        this.master.connect(out);
         this.musicBus = this.ctx.createGain();
         this.musicBus.gain.value = 0;
         this.musicBus.connect(this.master);
@@ -846,7 +904,7 @@ export class WebFeedback implements Feedback {
       // Higher and quieter as the column thins out, so the burst has a shape rather than
       // being a flat rattle.
       const fade = 1 - (i / ticks) * 0.45;
-      this.tick(ctx, out, t, 2400 + rand() * 2600, 0.014, 3.0 * fade, 6);
+      this.tick(ctx, out, t, 1100 + rand() * 2600, 0.02, 4.5 * fade, 2.2);
     }
   }
 
@@ -861,12 +919,12 @@ export class WebFeedback implements Feedback {
    */
   private crack(ctx: AudioContext, out: AudioNode, at: number, size: number): void {
     const rand = this.rand;
-    this.tick(ctx, out, at, 1500 * size, 0.05 * size, 2.1, 1.1, 260 * size);
-    this.noteAtGain(ctx, out, "square", 150 * size, 44, at, 0.16 * size, 0.5);
+    this.tick(ctx, out, at, 1400 * size, 0.07 * size, 3.4, 0.7, 200 * size);
+    this.noteAtGain(ctx, out, "square", 150 * size, 40, at, 0.22 * size, 0.6);
     const bits = Math.round(6 * size) + 4;
     for (let i = 0; i < bits; i++) {
       const t = at + 0.04 + rand() * 0.32 * size;
-      this.tick(ctx, out, t, 700 + rand() * 2200, 0.02, 1.1 * (1 - i / bits), 3);
+      this.tick(ctx, out, t, 500 + rand() * 2200, 0.025, 2.2 * (1 - i / bits), 1.8);
     }
   }
 
@@ -930,8 +988,8 @@ export class WebFeedback implements Feedback {
     try {
       const now = ctx.currentTime;
       // The percussive cues are noise, and are built rather than looked up.
-      if (cue === "move") this.scurry(ctx, master, now, 0.2, 8);
-      else if (cue === "travel") this.scurry(ctx, master, now, 0.55, 22);
+      if (cue === "move") this.scurry(ctx, master, now, 0.22, 14);
+      else if (cue === "travel") this.scurry(ctx, master, now, 0.6, 34);
       else if (cue === "fight") this.crack(ctx, master, now, 0.8);
       else if (cue === "destroy") this.crack(ctx, master, now, 1.35);
       for (const v of VOICES[cue]) {

@@ -28,7 +28,7 @@ function fakeAudio(state: AudioContextState = "running", full = false) {
   const gains: number[] = [];
   const freqs: number[] = [];
   const envelopes: { kind: "set" | "ramp"; v: number; t: number }[][] = [];
-  const nodes = { convolver: 0, buffers: 0, sources: 0, filters: 0, loops: 0 };
+  const nodes = { convolver: 0, buffers: 0, sources: 0, filters: 0, loops: 0, limiter: 0 };
   const param = () => ({
     value: 0,
     setValueAtTime: () => {},
@@ -98,6 +98,13 @@ function fakeAudio(state: AudioContextState = "running", full = false) {
         connect: () => {},
         start: (t: number) => { started.push(t); },
         stop: () => {},
+      };
+    };
+    ctx.createDynamicsCompressor = () => {
+      nodes.limiter++;
+      return {
+        threshold: param(), knee: param(), ratio: param(),
+        attack: param(), release: param(), connect: () => {},
       };
     };
     ctx.createBiquadFilter = () => {
@@ -294,6 +301,33 @@ describe("the cues themselves", () => {
     fb.unlock();
     fb.close();
     expect(ctx.close).toHaveBeenCalled();
+  });
+});
+
+describe("the way out", () => {
+  /**
+   * A LIMITER, and it is not a nicety.
+   *
+   * The match bed is a drum kit, an ostinato, a pad and a melody, and a cue can land on top
+   * of all four: measured in a browser that hit twice full scale, which a browser clips
+   * into distortion. The alternative is turning everything down until the worst moment
+   * fits, which is a bed nobody can hear — where this whole thing started.
+   */
+  it("holds the loud moments down so the rest can be loud", () => {
+    const { ctx, nodes } = fakeAudio("running", true);
+    const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
+    fb.unlock();
+    expect(nodes.limiter, "nothing is stopping the output clipping").toBe(1);
+    fb.close();
+  });
+
+  /** And a device without one still plays. Every part of this is feature-guarded. */
+  it("plays without one on a device that has none", () => {
+    const { ctx, started } = fakeAudio();
+    const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
+    fb.unlock();
+    fb.play("win");
+    expect(started.length).toBeGreaterThan(0);
   });
 });
 

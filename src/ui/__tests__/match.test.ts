@@ -15,7 +15,7 @@ import {
   createGame, defaultContext, NEUTRAL_MODS, snapshot,
 } from "../../engine";
 import type { EngineEvent, GameState } from "../../engine";
-import { MatchScreen } from "../match";
+import { MatchScreen, loudestOf } from "../match";
 
 beforeAll(() => {
   HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
@@ -288,5 +288,51 @@ describe("the opening", () => {
     });
     expect(() => screen.start()).not.toThrow();
     screen.destroy();
+  });
+});
+/**
+ * ONE CUE PER BATCH, AND IT IS THE LOUDEST THING IN IT.
+ *
+ * A single action produces a whole batch, and a sound each would be a rattle. What this
+ * had never been tested for is the other half: a batch whose loudest thing has NO case
+ * here is silent, and silence is indistinguishable from a broken speaker. Reinforcing a
+ * tile you already hold emits `move` and no capture, and for a long time it played nothing
+ * at all — which is a large fraction of everything a player does.
+ */
+describe("what a batch sounds like", () => {
+  const cue = (...events: EngineEvent[]): string | null => loudestOf(events);
+  const at = { c: 1, r: 1 };
+
+  it("sounds a plain move, not just a capture", () => {
+    expect(cue({ type: "move", from: at, to: { c: 1, r: 2 }, owner: "you", count: 3 })).toBe("move");
+    expect(cue({ type: "rally", to: at, owner: "you", sources: [], count: 9 })).toBe("move");
+  });
+
+  it("gives a long send its own, longer sound", () => {
+    expect(cue(
+      { type: "veinLaid", at, owner: "you" },
+      { type: "travel", path: [at], owner: "you", count: 4 },
+      { type: "capture", at, owner: "you", from: "U", previous: null },
+    )).toBe("travel");
+  });
+
+  it("ranks ground coming apart above the fight that caused it", () => {
+    expect(cue(
+      { type: "combat", at, attacker: "you", from: "U", won: true, survivors: 2 },
+      { type: "capture", at, owner: "you", from: "U", previous: "ai" },
+      { type: "veinPruned", at: { c: 2, r: 2 }, owner: "ai" },
+    )).toBe("destroy");
+  });
+
+  it("keeps the Hive above everything", () => {
+    expect(cue(
+      { type: "combat", at, attacker: "you", from: "U", won: true, survivors: 1 },
+      { type: "veinPruned", at, owner: "ai" },
+      { type: "hiveCaptured", owner: "you", level: 1, cells: [] },
+    )).toBe("hive");
+  });
+
+  it("stays quiet for a batch with nothing worth marking", () => {
+    expect(cue({ type: "production", owner: "you", gained: 4 })).toBeNull();
   });
 });

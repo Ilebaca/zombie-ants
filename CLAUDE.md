@@ -1261,12 +1261,29 @@ the first tap and a decode on a phone. Each cue is a few oscillators and an enve
     the wind is deliberately UNDER the notes rather than level with them.
   - **THE MATCH BED IS A WAR, NOT FURNITURE.** The two beds were the same music at two
     speeds, which says the same thing on the home screen and over a board somebody is
-    losing. `drive` puts a drum kit and an eighth-note ostinato under the match bed and
-    runs it half again as fast, with the wind and the birds pulled back — they were the
-    first things fighting the drum for room. The key and the round are unchanged, so it is
-    recognisably the same forest, at war in it. A test measures the BAR (the gap between
-    the longest voice's entries) rather than a fixed threshold: the two beds run at
-    different speeds, so any fixed number picks a different voice in each.
+    losing. `drive` puts a drum kit and an eighth-note ostinato under the match bed, runs
+    it half again as fast and changes chord every HALF bar (`half`) — a round that will not
+    settle is the most audible difference after the drum — with the pad on its own level
+    (`pad`) so it gets out of the way, and the wind and birds pulled back. The key and the
+    round are unchanged, so it is recognisably the same forest. Measured: **6.7 transients a
+    second against the menu bed's 1.7.** A test measures the BAR (the gap between the
+    longest voice's entries) rather than a fixed threshold: the two beds run at different
+    speeds, so any fixed number picks a different voice in each.
+  - **IT IS ALL TUNED FOR A PHONE SPEAKER, WHICH HAS NOTHING BELOW ABOUT 400 Hz.** The war
+    bed was first written an octave DOWN for gravity, with its kick in a low sine and a
+    180 Hz noise band and its ostinato through the pad's lowpass. Measured per band it had
+    ten decibels LESS midrange than the menu bed — so on the device it is actually played
+    on, the "heavier" bed was the thinner one, and it came back as "sounds the same". It is
+    in the same octave as the menu bed now; the kick carries a hard mid click (the beater,
+    not the drum), the backbeat sits at 2 kHz and the ostinato is on the open bus where its
+    sawtooth harmonics survive. Low end is what a real speaker ADDS, never what a part
+    depends on.
+  - **THERE IS A LIMITER ON THE WAY OUT.** Four voices and a drum kit with a cue on top
+    measured at twice full scale, which a browser clips into distortion. The alternative is
+    turning everything down until the worst moment fits — which is a bed nobody can hear,
+    and is exactly where this started. Its attack is deliberately slow enough (3 ms) to let
+    transients through: tightening it to 1 ms stopped the clipping and cut the measured
+    transient rate almost in half, which is the punch being flattened.
   - **THE BED MUST ARRIVE AT ONCE, AND THE OLD FADE HAS TO BE CANCELLED FIRST.** `stopMusic`
     schedules a ramp to silence a third of a second out and the timeline KEEPS it, so the
     new bed faded up into a fade-down still coming — a bed that took seconds to appear when
@@ -1306,7 +1323,10 @@ the first tap and a decode on a phone. Each cue is a few oscillators and an enve
   rather than against each other on paper.
 - **ONE cue per batch, and it is the loudest thing in it** (`loudestOf` in `match.ts`). A
   long send is a dozen `veinLaid` and a `capture`; an attack is a `combat` and a `capture`.
-  A sound each is a rattle.
+  A sound each is a rattle. **A batch whose loudest event has no case here is SILENT**, and
+  silence is indistinguishable from a broken speaker — reinforcing a tile emits `move` and
+  no `capture`, and played nothing at all for as long as this function existed, which is a
+  large fraction of everything a player does. It has its own tests now.
 - **A tile picked up does NOT buzz.** It happens constantly, and a buzz on every one is not
   feedback, it is a fault. `BUZZ` sets that per cue and a test holds it.
 - **`SilentFeedback` is not a stub for something missing** — it is the honest implementation
