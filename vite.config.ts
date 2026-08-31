@@ -47,6 +47,15 @@ export default defineConfig({
     // The engine is pure and runs fastest with no DOM at all; only the screens need one,
     // so jsdom is switched on per directory rather than globally.
     environment: "node",
-    environmentMatchGlobs: [["src/ui/**", "jsdom"]],
+    /*
+     * jsdom where a test needs a DOM. The screens obviously do — and so does the board
+     * RENDERER, which owns a canvas, a ResizeObserver and an animation frame, and was the
+     * one file in `render/` with no test at all because of it. The rest of `render/` is
+     * pure drawing against a recorded context and stays in node, which is faster.
+     */
+    environmentMatchGlobs: [
+      ["src/ui/**", "jsdom"],
+      ["src/render/__tests__/renderer.test.ts", "jsdom"],
+    ],
   },
 });
