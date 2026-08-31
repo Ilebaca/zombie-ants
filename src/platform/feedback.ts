@@ -24,7 +24,9 @@
 export type Cue =
   | "tap"        // a tile picked up
   | "move"       // ground taken with no fight
+  | "travel"     // a long send: the same movement, going much further
   | "fight"      // combat resolved
+  | "destroy"    // a tile razed — a colony coming apart
   | "ability"    // an ability cast
   | "hive"       // the Hive queen taken — the biggest thing on a board
   | "endTurn"
@@ -65,7 +67,9 @@ export interface Feedback {
 const BUZZ: Record<Cue, number | number[]> = {
   tap: 0,                 // far too often to be anything but irritating
   move: 8,
+  travel: [6, 30, 6],
   fight: 18,
+  destroy: [24, 30, 40],
   ability: [12, 40, 12],
   hive: [20, 60, 30],
   endTurn: 0,
@@ -96,42 +100,42 @@ interface Voice {
  * match, which have earned it.
  */
 const VOICES: Record<Cue, Voice[]> = {
-  tap: [{ type: "sine", from: 620, to: 720, dur: 0.05, gain: 0.16 }],
-  move: [{ type: "triangle", from: 380, to: 560, dur: 0.09, gain: 0.2 }],
-  // A bite: a hard square dropping fast, which reads as an impact rather than a note.
-  fight: [
-    { type: "square", from: 220, to: 70, dur: 0.13, gain: 0.22 },
-    { type: "sawtooth", from: 90, to: 50, dur: 0.16, gain: 0.14 },
-  ],
+  tap: [{ type: "sine", from: 620, to: 720, dur: 0.05, gain: 0.256 }],
+  // Movement and destruction are NOISE, not notes — see `scurry` and `crack` below. The
+  // table only carries the cues that really are a pitch.
+  move: [],
+  travel: [],
+  fight: [],
+  destroy: [],
   // Rising, and in two parts: something was released rather than struck.
   ability: [
-    { type: "sine", from: 330, to: 880, dur: 0.22, gain: 0.2 },
-    { type: "triangle", from: 660, to: 1320, dur: 0.26, gain: 0.1, at: 0.06 },
+    { type: "sine", from: 330, to: 880, dur: 0.22, gain: 0.32 },
+    { type: "triangle", from: 660, to: 1320, dur: 0.26, gain: 0.16, at: 0.06 },
   ],
   // The Hive is the biggest thing that can happen on a board, so it gets a chord.
   hive: [
-    { type: "sine", from: 196, to: 196, dur: 0.5, gain: 0.18 },
-    { type: "sine", from: 294, to: 294, dur: 0.5, gain: 0.14, at: 0.05 },
-    { type: "sine", from: 392, to: 466, dur: 0.6, gain: 0.12, at: 0.1 },
+    { type: "sine", from: 196, to: 196, dur: 0.5, gain: 0.288 },
+    { type: "sine", from: 294, to: 294, dur: 0.5, gain: 0.224, at: 0.05 },
+    { type: "sine", from: 392, to: 466, dur: 0.6, gain: 0.192, at: 0.1 },
   ],
-  endTurn: [{ type: "sine", from: 300, to: 220, dur: 0.11, gain: 0.15 }],
+  endTurn: [{ type: "sine", from: 300, to: 220, dur: 0.11, gain: 0.24 }],
   // Up: a major arpeggio, which is the shortest way to say "that went well".
   win: [
-    { type: "triangle", from: 523, to: 523, dur: 0.16, gain: 0.2 },
-    { type: "triangle", from: 659, to: 659, dur: 0.16, gain: 0.2, at: 0.12 },
-    { type: "triangle", from: 784, to: 784, dur: 0.34, gain: 0.22, at: 0.24 },
+    { type: "triangle", from: 523, to: 523, dur: 0.16, gain: 0.32 },
+    { type: "triangle", from: 659, to: 659, dur: 0.16, gain: 0.32, at: 0.12 },
+    { type: "triangle", from: 784, to: 784, dur: 0.34, gain: 0.352, at: 0.24 },
   ],
   // Down, and slower. Not a buzzer: a defeat is disappointing, not an error.
   lose: [
-    { type: "sine", from: 392, to: 392, dur: 0.2, gain: 0.18 },
-    { type: "sine", from: 311, to: 233, dur: 0.5, gain: 0.18, at: 0.16 },
+    { type: "sine", from: 392, to: 392, dur: 0.2, gain: 0.288 },
+    { type: "sine", from: 311, to: 233, dur: 0.5, gain: 0.288, at: 0.16 },
   ],
   claim: [
-    { type: "sine", from: 784, to: 1046, dur: 0.1, gain: 0.18 },
-    { type: "sine", from: 1046, to: 1318, dur: 0.14, gain: 0.14, at: 0.07 },
+    { type: "sine", from: 784, to: 1046, dur: 0.1, gain: 0.288 },
+    { type: "sine", from: 1046, to: 1318, dur: 0.14, gain: 0.224, at: 0.07 },
   ],
   // Flat and short. A refusal should be felt and forgotten, not announced.
-  deny: [{ type: "square", from: 160, to: 120, dur: 0.09, gain: 0.12 }],
+  deny: [{ type: "square", from: 160, to: 120, dur: 0.09, gain: 0.192 }],
 };
 
 /** How loud the whole thing is, before anything else. Quiet by design. */
@@ -225,8 +229,15 @@ interface TrackDef {
   wind: number;
   /** Average seconds between birdcalls. Zero for none. */
   chirp: number;
-  /** A low pulse off the beat — the match bed has a heartbeat, the menu does not. */
-  pulse: boolean;
+  /**
+   * DRIVE: the match bed is a war, not furniture.
+   *
+   * The two beds were the same music at two speeds, which said the same thing on the home
+   * screen and over a board somebody is losing. With this on, the bed gets a drum under it,
+   * an eighth-note ostinato on the chord root, and a far busier melody — the harmony and
+   * the key are the same, so it is recognisably the same world, but it is pushing.
+   */
+  drive: boolean;
   gain: number;
 }
 
@@ -258,23 +269,24 @@ const TRACKS: Record<Track, TrackDef> = {
     room: 2.6,
     wind: 0.16,
     chirp: 7,
-    pulse: false,
-    gain: 1.05,
+    drive: false,
+    gain: 3.0,
   },
   match: {
-    // The same round an octave lower and a shade quicker: under a board rather than in
-    // front of one.
-    beat: 0.66,
+    // The same round an octave lower and half again as fast: the same forest, at war in it.
+    beat: 0.44,
     tonic: A / 2,
     round: ROUND,
     voicing: [0, 4, 7, 9],
-    melody: 0.1,
-    droplet: 0.03,
-    room: 1.8,
-    wind: 0.13,
-    chirp: 13,
-    pulse: true,
-    gain: 0.85,
+    melody: 0.24,
+    droplet: 0.02,
+    room: 1.5,
+    // The wind and the birds pull back. A battle is not the moment to be pointing out the
+    // scenery, and they were the first things fighting the drum for room.
+    wind: 0.08,
+    chirp: 22,
+    drive: true,
+    gain: 2.4,
   },
 };
 
@@ -320,6 +332,24 @@ function makeRoom(ctx: AudioContext, seconds: number): AudioBuffer | null {
       data[i] = (rand() * 2 - 1) * Math.pow(1 - t, 2.4) * Math.min(1, t * 40);
     }
   }
+  return buf;
+}
+
+/**
+ * A second of white noise, for every percussive sound in the app.
+ *
+ * Windowed through a bandpass this is a stick, a rim, a twig or a footfall depending only
+ * on where the band sits and how fast the envelope closes, which is why there is not one
+ * audio file in this project.
+ */
+function makeNoise(ctx: AudioContext, seconds = 1): AudioBuffer | null {
+  if (typeof ctx.createBuffer !== "function") return null;
+  const rate = ctx.sampleRate || 44100;
+  const len = Math.max(1, Math.floor(rate * seconds));
+  const buf = ctx.createBuffer(1, len, rate);
+  const data = buf.getChannelData(0);
+  const rand = rng(0xc0ffee);
+  for (let i = 0; i < len; i++) data[i] = rand() * 2 - 1;
   return buf;
 }
 
@@ -392,6 +422,17 @@ export class WebFeedback implements Feedback {
   private tone = 2;
   /** When the next birdcall is due, on the audio clock. */
   private nextChirp = 0;
+  /** Set when a bed is armed and cleared by the pump that opens it up. */
+  private fading = false;
+  /**
+   * A second of white noise, made once at unlock.
+   *
+   * Every percussive sound in the app is a window onto this through a bandpass — the
+   * scurry, the crack, the rubble, the drums under the match bed. One buffer rather than
+   * one per hit, because a hit lasts a hundredth of a second and generating a buffer does
+   * not.
+   */
+  private noise: AudioBuffer | null = null;
 
   constructor(
     private makeContext: ContextMaker | null = defaultContext(),
@@ -420,17 +461,26 @@ export class WebFeedback implements Feedback {
     this.playing = want;
     const def = TRACKS[want];
     const ctx = this.ctx;
-    // A short fade in, or the bed arrives as a click on top of whatever else is playing.
     const now = ctx.currentTime;
+    // CANCEL FIRST. `stopMusic` just scheduled a ramp down to silence a third of a second
+    // out, and the timeline keeps it: without this the new bed fades UP and is then pulled
+    // straight back down by the previous bed's fade-out, which is silence when the two
+    // lengths happen to line up and a slow, unexplained arrival when they do not.
+    this.musicBus.gain.cancelScheduledValues(now);
     this.musicBus.gain.setValueAtTime(0.0001, now);
-    this.musicBus.gain.exponentialRampToValueAtTime(def.gain, now + 0.9);
+    // The fade is armed here and RUN from the first pump that actually schedules something.
+    // Running it here cost the bed a second of nothing every time: a context still waking
+    // up from `resume()` has a clock that has not started, so the ramp was already over by
+    // the time a note existed to hear through it. And 0.9s of fade on top of that is most
+    // of why the music was reported as arriving several seconds late.
+    this.fading = true;
     this.bed = this.buildBed(ctx, this.musicBus, def);
     // Seeded off the clock, so two sessions do not open on the same phrase — but seeded,
     // so a test can pin one and read the notes back.
     this.rand = rng(Math.floor(now * 1000) ^ (want === "menu" ? 0x1eaf : 0x5011));
     this.tone = 2;
     this.nextChirp = now + def.chirp * 0.6;
-    this.nextAt = now + 0.1;
+    this.nextAt = now + 0.02;
     this.step = 0;
     this.timer = setInterval(() => this.pump(), TICK_MS);
     this.pump();
@@ -548,14 +598,22 @@ export class WebFeedback implements Feedback {
    * is what keeps the loop from wandering over an hour.
    */
   private pump(): void {
-    const ctx = this.ctx, bed = this.bed, track = this.playing;
-    if (!ctx || !bed || !track) return;
+    const ctx = this.ctx, bed = this.bed, bus = this.musicBus, track = this.playing;
+    if (!ctx || !bed || !bus || !track) return;
     if (ctx.state !== "running") return;
     const def = TRACKS[track];
     const sixteenth = def.beat / 4;
     // A tab that was away comes back to a clock far past `nextAt`; catch up rather than
     // scheduling a thousand notes at once.
     if (this.nextAt < ctx.currentTime) this.nextAt = ctx.currentTime + 0.05;
+    if (this.fading) {
+      // Short, and only now: this is the first moment the clock is really running, so the
+      // fade covers the first note rather than a second of silence before it.
+      this.fading = false;
+      bus.gain.cancelScheduledValues(ctx.currentTime);
+      bus.gain.setValueAtTime(0.0001, ctx.currentTime);
+      bus.gain.exponentialRampToValueAtTime(def.gain, ctx.currentTime + 0.25);
+    }
     while (this.nextAt < ctx.currentTime + LOOKAHEAD) {
       this.scheduleStep(ctx, bed, def, this.step, this.nextAt);
       this.step = (this.step + 1) % (STEPS_PER_BAR * def.round.length);
@@ -598,9 +656,7 @@ export class WebFeedback implements Feedback {
     if (inBar === 0 || inBar === 10) {
       this.voice(ctx, bed.soft, "triangle", root / 2, at, def.beat * 2.2, inBar === 0 ? 0.16 : 0.09);
     }
-    if (def.pulse && inBar % 8 === 4) {
-      this.voice(ctx, bed.soft, "sine", root / 2, at, def.beat * 0.6, 0.09);
-    }
+    if (def.drive) this.warKit(ctx, bed, def, inBar, at, root);
 
     // The melody: a random walk through the pentatonic, so it is always in key and never
     // the same phrase twice. It steps by ONE degree at a time — a walk that could jump
@@ -626,6 +682,39 @@ export class WebFeedback implements Feedback {
     if (def.chirp > 0 && at >= this.nextChirp) {
       this.chirp(ctx, bed.out, at, rand);
       this.nextChirp = at + def.chirp * (0.55 + rand() * 0.9);
+    }
+  }
+
+  /**
+   * The match bed's engine: a drum, and an ostinato that will not sit still.
+   *
+   * All of it is the same noise buffer the cues use, through different bands — a kick is a
+   * low band closing fast, a hat is a high one closing faster. Written as a pattern rather
+   * than rolled at random, because this half of the bed is the part that has to feel
+   * DELIBERATE: the rest of the music wanders, and something underneath has to be marching.
+   */
+  private warKit(
+    ctx: AudioContext, bed: Bed, def: TrackDef, inBar: number, at: number, root: number,
+  ): void {
+    // Kick on one and on the and-of-three: a pulse that leans forward rather than sitting
+    // squarely on the bar.
+    if (inBar === 0 || inBar === 6 || inBar === 10) {
+      this.tick(ctx, bed.out, at, 180, 0.09, 0.5, 1.2, 55);
+      this.noteAtGain(ctx, bed.out, "sine", 130, 42, at, 0.13, 0.34);
+    }
+    // Backbeat: a rough band, wide open, which is a rattle rather than a snare — a real
+    // snare would be a marching band and this is an anthill.
+    if (inBar === 4 || inBar === 12) {
+      this.tick(ctx, bed.out, at, 1900, 0.11, 0.3, 0.8, 900);
+    }
+    // And a tick on every eighth, quiet, so the bar is always being counted.
+    if (inBar % 2 === 0) {
+      this.tick(ctx, bed.out, at, 5200, 0.02, inBar % 4 === 0 ? 0.12 : 0.07, 4);
+    }
+    // The ostinato: the chord root, driven, on every eighth. Short and sawtooth through the
+    // soft bus, so it reads as movement under the pad rather than as another melody.
+    if (inBar % 2 === 0) {
+      this.voice(ctx, bed.soft, "sawtooth", root, at, def.beat * 0.42, 0.055);
     }
   }
 
@@ -727,6 +816,7 @@ export class WebFeedback implements Feedback {
         this.musicBus = this.ctx.createGain();
         this.musicBus.gain.value = 0;
         this.musicBus.connect(this.master);
+        this.noise = makeNoise(this.ctx);
       }
       if (this.ctx.state === "suspended") void this.ctx.resume();
       // Whatever was asked for before there was a device to ask: start it now.
@@ -735,6 +825,99 @@ export class WebFeedback implements Feedback {
       // No audio on this device, or the browser refused. Everything else still works.
       this.broken = true;
     }
+  }
+
+  /**
+   * MOVEMENT IS A SCURRY, NOT A NOTE.
+   *
+   * A rising blip is what a puzzle game does when a piece lands. What is actually moving
+   * here is a column of ants, and the sound of that is a great many tiny impacts very close
+   * together — a stick tapped gently on a surface, over and over, filling the time the move
+   * takes. So a move is a burst of very short filtered noise ticks rather than a tone, and
+   * a long send is the same burst spread over the longer distance.
+   *
+   * The gaps are jittered off the seeded generator. Evenly spaced ticks are a machine gun;
+   * uneven ones are feet.
+   */
+  private scurry(ctx: AudioContext, out: AudioNode, at: number, span: number, ticks: number): void {
+    const rand = this.rand;
+    for (let i = 0; i < ticks; i++) {
+      const t = at + (span * i) / ticks + rand() * (span / ticks) * 0.6;
+      // Higher and quieter as the column thins out, so the burst has a shape rather than
+      // being a flat rattle.
+      const fade = 1 - (i / ticks) * 0.45;
+      this.tick(ctx, out, t, 2400 + rand() * 2600, 0.014, 3.0 * fade, 6);
+    }
+  }
+
+  /**
+   * DESTRUCTION IS A CRACK AND THEN A COLLAPSE.
+   *
+   * Three parts, because a single burst of noise is a hiss and not a thing breaking: the
+   * SNAP is a short band of noise whose filter drops fast, which is what a stick does; the
+   * THUD under it is what gives the snap a size; and the RUBBLE afterwards is a handful of
+   * scattered ticks, which is the part that says something fell apart rather than merely
+   * being hit.
+   */
+  private crack(ctx: AudioContext, out: AudioNode, at: number, size: number): void {
+    const rand = this.rand;
+    this.tick(ctx, out, at, 1500 * size, 0.05 * size, 2.1, 1.1, 260 * size);
+    this.noteAtGain(ctx, out, "square", 150 * size, 44, at, 0.16 * size, 0.5);
+    const bits = Math.round(6 * size) + 4;
+    for (let i = 0; i < bits; i++) {
+      const t = at + 0.04 + rand() * 0.32 * size;
+      this.tick(ctx, out, t, 700 + rand() * 2200, 0.02, 1.1 * (1 - i / bits), 3);
+    }
+  }
+
+  /**
+   * One filtered burst of noise: the whole percussion set is this function.
+   *
+   * A bandpass over noise is a stick, a rim, a twig or a footfall depending only on where
+   * the band sits and how fast the envelope closes — which is why there are no samples here
+   * and no need for any.
+   */
+  private tick(
+    ctx: AudioContext, out: AudioNode, at: number,
+    freq: number, dur: number, gain: number, q: number, sweepTo = 0,
+  ): void {
+    const buf = this.noise;
+    if (!buf || typeof ctx.createBufferSource !== "function") return;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    // Start somewhere random in the buffer, or every tick is the identical waveform and the
+    // burst rings like a tone.
+    const offset = this.rand() * Math.max(0, buf.duration - dur - 0.01);
+    const band = ctx.createBiquadFilter();
+    band.type = "bandpass";
+    band.frequency.setValueAtTime(freq, at);
+    if (sweepTo) band.frequency.exponentialRampToValueAtTime(Math.max(40, sweepTo), at + dur);
+    band.Q.value = q;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(gain, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    src.connect(band);
+    band.connect(g);
+    g.connect(out);
+    try { src.start(at, offset, dur + 0.02); } catch { return; }
+  }
+
+  /** A pitched note straight onto a bus, for the body under a percussive hit. */
+  private noteAtGain(
+    ctx: AudioContext, out: AudioNode, type: OscillatorType,
+    from: number, to: number, at: number, dur: number, gain: number,
+  ): void {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(from, at);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(20, to), at + dur);
+    g.gain.setValueAtTime(gain, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    osc.connect(g);
+    g.connect(out);
+    osc.start(at);
+    osc.stop(at + dur + 0.02);
   }
 
   play(cue: Cue): void {
@@ -746,6 +929,11 @@ export class WebFeedback implements Feedback {
     if (!ctx || !master || ctx.state !== "running") return;
     try {
       const now = ctx.currentTime;
+      // The percussive cues are noise, and are built rather than looked up.
+      if (cue === "move") this.scurry(ctx, master, now, 0.2, 8);
+      else if (cue === "travel") this.scurry(ctx, master, now, 0.55, 22);
+      else if (cue === "fight") this.crack(ctx, master, now, 0.8);
+      else if (cue === "destroy") this.crack(ctx, master, now, 1.35);
       for (const v of VOICES[cue]) {
         const at = now + (v.at ?? 0);
         const osc = ctx.createOscillator();

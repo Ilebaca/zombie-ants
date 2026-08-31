@@ -1259,6 +1259,23 @@ the first tap and a decode on a phone. Each cue is a few oscillators and an enve
     AnalyserNode on the destination in a real browser (§11 — the same "you cannot see it,
     so measure it" rule, for something you cannot hear either); it sits near −26 dBFS, and
     the wind is deliberately UNDER the notes rather than level with them.
+  - **THE MATCH BED IS A WAR, NOT FURNITURE.** The two beds were the same music at two
+    speeds, which says the same thing on the home screen and over a board somebody is
+    losing. `drive` puts a drum kit and an eighth-note ostinato under the match bed and
+    runs it half again as fast, with the wind and the birds pulled back — they were the
+    first things fighting the drum for room. The key and the round are unchanged, so it is
+    recognisably the same forest, at war in it. A test measures the BAR (the gap between
+    the longest voice's entries) rather than a fixed threshold: the two beds run at
+    different speeds, so any fixed number picks a different voice in each.
+  - **THE BED MUST ARRIVE AT ONCE, AND THE OLD FADE HAS TO BE CANCELLED FIRST.** `stopMusic`
+    schedules a ramp to silence a third of a second out and the timeline KEEPS it, so the
+    new bed faded up into a fade-down still coming — a bed that took seconds to appear when
+    the two lengths missed each other and never appeared at all when they lined up. The
+    fade is also ARMED in `syncMusic` and RUN from the first pump that really schedules
+    something: a context still waking from `resume()` has a clock that has not started, so
+    a ramp run at arm time was over before there was a note to hear through it. Measured in
+    a browser at **310 ms** from the press to audible. The test fake models
+    `cancelScheduledValues` as a real timeline — as a no-op it cannot show this at all.
   - **The room and the wind are built ONCE per bed.** The impulse response is a couple of
     seconds of audio to generate and the wind is a four-second loop; either on the beat
     would be the most expensive thing in the app. Every piece of this is feature-guarded —
@@ -1270,6 +1287,23 @@ the first tap and a decode on a phone. Each cue is a few oscillators and an enve
   fires on `pointerdown` (the press, not the release), in the capture phase (so a handler
   that stops propagation cannot silence the interface), and only for things that ACT — a
   drag across the board or a swipe between screens must not click.
+- **THE CUES ARE NOISE WHERE THE THING IS NOT A NOTE.** A rising blip is what a puzzle game
+  does when a piece lands, and it was what this one did for a move, a fight and a razed
+  tile. What actually moves on this board is a column of ants, so a `move` is a burst of
+  very short bandpassed noise ticks filling the time the move takes and a `travel` is the
+  same burst over the longer distance — jittered, because evenly spaced ticks are a machine
+  gun and uneven ones are feet. `destroy` is a SNAP (a narrow band whose filter drops fast,
+  which is what a stick does), a THUD that gives the snap a size, and then RUBBLE — the
+  scattered part that says something came apart rather than was merely hit; `fight` is the
+  same shape, smaller. One function, `tick()`, is the entire percussion set: a bandpass over
+  one noise buffer is a stick, a rim, a twig or a footfall depending only on where the band
+  sits and how fast the envelope closes, which is why there is not one audio file here.
+- **Levels are MEASURED, never guessed** — with an AnalyserNode on the destination in a real
+  browser, because a fake context has no waveform. The beds sit near −20 dBFS RMS and the
+  cues peak between a half and three quarters of the bed, so a tap still reads over it. A
+  narrow bandpass throws away most of a burst's energy, so the percussive cues need several
+  times the gain the numbers suggest; that is why they are tuned against a measurement
+  rather than against each other on paper.
 - **ONE cue per batch, and it is the loudest thing in it** (`loudestOf` in `match.ts`). A
   long send is a dozen `veinLaid` and a `capture`; an attack is a `combat` and a `capture`.
   A sound each is a rattle.

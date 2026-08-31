@@ -55,7 +55,13 @@ function fakeAudio(state: AudioContextState = "running", full = false) {
         gain: {
           value: 0,
           setValueAtTime: (v: number, t: number) => { env.push({ kind: "set", v, t }); },
-          cancelScheduledValues: () => {},
+          // A REAL timeline: cancelling drops everything scheduled at or after that time.
+          // Modelling this as a no-op is what let the bed's fade bug hide — the fade-out
+          // the old bed scheduled outlives the new bed's fade-in unless it is cancelled,
+          // and a fake that forgets automation cannot show that.
+          cancelScheduledValues: (t: number) => {
+            for (let i = env.length - 1; i >= 0; i--) if ((env[i]?.t ?? 0) >= t) env.splice(i, 1);
+          },
           exponentialRampToValueAtTime: (v: number, t: number) => {
             gains.push(v);
             env.push({ kind: "ramp", v, t });
@@ -90,7 +96,7 @@ function fakeAudio(state: AudioContextState = "running", full = false) {
         set loop(v: boolean) { if (v) nodes.loops++; },
         get loop() { return true; },
         connect: () => {},
-        start: () => {},
+        start: (t: number) => { started.push(t); },
         stop: () => {},
       };
     };
@@ -106,7 +112,8 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
 const CUES: Cue[] = [
-  "tap", "move", "fight", "ability", "hive", "endTurn", "win", "lose", "claim", "deny",
+  "tap", "move", "travel", "fight", "destroy", "ability", "hive", "endTurn",
+  "win", "lose", "claim", "deny",
 ];
 
 describe("before the first gesture", () => {
@@ -220,7 +227,10 @@ describe("the switches", () => {
 
 describe("the cues themselves", () => {
   it("gives every moment a sound", () => {
-    const { ctx, started } = fakeAudio();
+    // The full device, because four of these cues are NOISE rather than notes — the scurry
+    // a column of ants makes and the crack of ground coming apart are windows onto a noise
+    // buffer, and a context with no buffer sources cannot make one.
+    const { ctx, started } = fakeAudio("running", true);
     const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
     fb.unlock();
     for (const c of CUES) {
@@ -228,6 +238,39 @@ describe("the cues themselves", () => {
       fb.play(c);
       expect(started.length, `${c} made no sound`).toBeGreaterThan(before);
     }
+  });
+
+  /**
+   * MOVEMENT IS A SCURRY. What moves on this board is a column of ants, and the sound of
+   * that is a great many tiny impacts filling the time the move takes — not one blip. A
+   * long send is the same thing over a longer distance, so it has to be MORE of them.
+   */
+  it("moves as a burst of small taps, and a long send as a longer burst", () => {
+    const { ctx, started } = fakeAudio("running", true);
+    const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
+    fb.unlock();
+    const count = (c: Cue): number => {
+      const before = started.length;
+      fb.play(c);
+      return started.length - before;
+    };
+    const move = count("move");
+    const travel = count("travel");
+    expect(move, "a move is one blip, not a column of ants").toBeGreaterThan(4);
+    expect(travel, "a long send sounds the same as a short one").toBeGreaterThan(move);
+  });
+
+  /** And destruction is bigger than a fight, because it is: the ground itself went. */
+  it("gives destruction more debris than a fight", () => {
+    const { ctx, started } = fakeAudio("running", true);
+    const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
+    fb.unlock();
+    const count = (c: Cue): number => {
+      const before = started.length;
+      fb.play(c);
+      return started.length - before;
+    };
+    expect(count("destroy")).toBeGreaterThan(count("fight"));
   });
 
   /** A tile picked up happens constantly. A buzz on every one is not feedback, it is a fault. */
@@ -503,6 +546,80 @@ describe("the music", () => {
     runClock(ctx, 8);
     const bus = Math.max(...gains);
     expect(bus, "the whole bed is turned down to nothing").toBeGreaterThan(0.5);
+  });
+
+    /**
+   * THE BED HAS TO ARRIVE AT ONCE, and this is the bug that stopped it.
+   *
+   * `stopMusic` schedules a ramp down to silence a third of a second out, and the timeline
+   * KEEPS it. So the new bed faded up into a fade-down that was still coming — which was
+   * a bed that took seconds to appear when the two lengths missed each other, and one that
+   * never appeared at all when they lined up. Cancelling first is the whole fix.
+   */
+  it("cancels the old bed's fade before opening the new one", () => {
+    const { fb, ctx, envelopes } = rig();
+    fb.unlock();
+    fb.setMusic("menu");
+    runClock(ctx, 2);
+    fb.setMusic("match");
+    runClock(ctx, 2);
+    // The bus is the one gain node that outlives every note: it is made at unlock, before
+    // any bed exists. Read IN TIME ORDER, not in the order the calls were made — the stale
+    // ramp is scheduled first and lands last, which is the whole shape of the bug.
+    const bus = [...(envelopes[1] ?? [])].sort((a, z) => a.t - z.t);
+    const last = bus[bus.length - 1];
+    expect(last?.v ?? 0, "the new bed was left fading to silence").toBeGreaterThan(0.5);
+  });
+
+  /** And it has to arrive NOW: the fade is a quarter of a second, not most of a second. */
+  it("opens the bed within a quarter second of the first note", () => {
+    const { fb, ctx, envelopes } = rig();
+    fb.unlock();
+    fb.setMusic("menu");
+    runClock(ctx, 1);
+    const bus = envelopes[1] ?? [];
+    const open = bus.find((p) => p.v > 0.5);
+    const start = bus[0]?.t ?? 0;
+    expect(open, "the bed never opened up").toBeDefined();
+    expect((open?.t ?? 99) - start, "the bed takes too long to arrive").toBeLessThanOrEqual(0.3);
+  });
+
+    /**
+   * THE MATCH BED IS A WAR, NOT FURNITURE.
+   *
+   * The two beds were the same music at two speeds, which says the same thing on the home
+   * screen and over a board somebody is losing. Same key, same round — so it is
+   * recognisably the same world — but under the board there is a drum and an ostinato, and
+   * far more happens per second.
+   */
+  it("plays a busier, harder bed over the board than in the menus", () => {
+    const busy = (track: "menu" | "match"): { bar: number; drums: number } => {
+      const { ctx, nodes, envelopes } = fakeAudio("running", true);
+      const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
+      fb.unlock();
+      fb.setMusic(track);
+      // The wind is one buffer source per bed; everything past it is percussion.
+      const wind = nodes.sources;
+      for (let t = 0; t < 12; t += 0.05) { ctx.currentTime += 0.05; vi.advanceTimersByTime(60); }
+      // The pad is the LONGEST voice in either bed and it fires once on each bar line, so
+      // the gap between those is the bar, and the bar is the tempo. Found by length rather
+      // than by a fixed threshold: the two beds run at different speeds, which is the
+      // whole point, so any fixed number picks a different voice in each of them.
+      const spans = envelopes.map((e) => ({ t: e[0]?.t ?? 0, d: (e[e.length - 1]?.t ?? 0) - (e[0]?.t ?? 0) }));
+      const longest = Math.max(...spans.map((v) => v.d));
+      const pads = spans
+        .filter((v) => v.d > longest * 0.95)
+        .map((v) => v.t)
+        .sort((a, z) => a - z);
+      const gaps = pads.slice(1).map((t, i) => t - (pads[i] ?? 0)).filter((g) => g > 0.01);
+      fb.close();
+      return { bar: Math.min(...gaps), drums: nodes.sources - wind };
+    };
+    const menu = busy("menu");
+    const match = busy("match");
+    expect(menu.drums, "the menu bed has a drum kit under it").toBe(0);
+    expect(match.drums, "the match bed has no drum under it").toBeGreaterThan(20);
+    expect(match.bar, "the match bed is no quicker than the menu").toBeLessThan(menu.bar * 0.8);
   });
 
     it("takes the bed down when it is closed", () => {

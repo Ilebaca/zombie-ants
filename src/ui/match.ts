@@ -1048,13 +1048,19 @@ export class MatchScreen {
  */
 export function loudestOf(events: readonly EngineEvent[]): Cue | null {
   let best: Cue | null = null;
-  const rank: Cue[] = ["move", "fight", "hive"];
+  const rank: Cue[] = ["move", "travel", "fight", "destroy", "hive"];
   const take = (c: Cue): void => {
     if (best === null || rank.indexOf(c) > rank.indexOf(best)) best = c;
   };
   for (const e of events) {
     if (e.type === "hiveCaptured") take("hive");
+    // Ground coming apart outranks a fight: a trail collapsing or a garrison burned off
+    // the map is the bigger thing that happened, even when a fight caused it.
+    else if (e.type === "veinPruned") take("destroy");
+    else if (e.type === "effectDamage" && e.wiped) take("destroy");
     else if (e.type === "combat") take("fight");
+    // A long send is the same movement going much further, and gets the longer scurry.
+    else if (e.type === "travel") take("travel");
     else if (e.type === "capture") take("move");
   }
   return best;
