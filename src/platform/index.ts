@@ -16,6 +16,8 @@ export {
   FRIEND_MAX, FRIEND_RESULTS, LocalFriendService, directory, personId, seedRequests,
 } from "./friends";
 export type { Friend, FriendService, Person } from "./friends";
+export { DUELS_MAX, DUEL_WAIT_MS, LocalDuels, inviteFrom, inviteId, seedInvites } from "./duels";
+export type { DuelInvite, DuelService } from "./duels";
 export {
   FAQ, LocalSupportGateway, SUPPORT_EMAIL, TICKET_KINDS, TICKET_MAX, mailLink,
 } from "./support";

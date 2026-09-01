@@ -9,7 +9,7 @@
  * keeps simulation from writing stats or currencies (CLAUDE.md §5).
  */
 import {
-  CHAMBER_MAX, RESEARCH_MAX, SPECIES, chamberCost, researchCost,
+  CHAMBER_MAX, MAPS, RESEARCH_MAX, SPECIES, chamberCost, researchCost,
 } from "../engine";
 import { COLONY_START, grownColony } from "./colony";
 import type { MapId, Player, PlayerMods, SpeciesId } from "../engine";
@@ -28,6 +28,8 @@ import {
 } from "./granary";
 import type { GranaryLevel } from "./granary";
 import { FRIEND_MAX, seedRequests } from "./friends";
+import { DUELS_MAX, seedInvites } from "./duels";
+import type { DuelInvite } from "./duels";
 import type { Friend, Person } from "./friends";
 import type { SupportGateway, Ticket, TicketKind } from "./support";
 import type { Grant } from "./purchases";
@@ -136,6 +138,14 @@ export interface Profile {
   friends: Friend[];
   friendsIn: Person[];
   friendsOut: Person[];
+  /**
+   * Match invitations waiting to be answered.
+   *
+   * Here rather than in `duels.ts` for the same reason the friend requests are: this is
+   * state, and `ProfileStore` is the only thing in the app that writes state. It also has
+   * to survive a reload — a badge that forgets what it was counting is worse than none.
+   */
+  duelsIn: DuelInvite[];
   /** The newest post the player has read, as a stamp. Older than every post = all unread. */
   newsSeen: number;
   /** Messages sent to support, kept so nothing a player wrote is thrown away. */
@@ -229,6 +239,9 @@ export function defaultProfile(): Profile {
     // A new colony arrives to two requests. Nothing can ever arrive on its own without a
     // server, and accept/decline nobody can reach is a screen nobody can tell is finished.
     friendsIn: seedRequests(),
+    // Empty here, and seeded by the store's constructor instead: an invitation carries the
+    // time it arrived, and this function is a CONSTANT — it may not read a clock.
+    duelsIn: [],
     friendsOut: [],
     newsSeen: 0,
     tickets: [],
@@ -359,6 +372,7 @@ export function normalise(raw: unknown): Profile {
       .map((f, i) => ({ ...f, since: int((p.friends as Friend[])?.[i]?.since, 0, 1e15, 0) })),
     friendsIn: people(p.friendsIn, base.friendsIn),
     friendsOut: people(p.friendsOut, base.friendsOut),
+    duelsIn: invites(p.duelsIn),
     newsSeen: int(p.newsSeen, 0, 1e15, 0),
     tickets: tickets(p.tickets),
     challenges: Array.isArray(p.challenges)
@@ -457,6 +471,32 @@ function people<T extends Person>(raw: unknown, fallback: T[]): T[] {
     .map((p) => ({ ...p, name: p.name.slice(0, 18), colony: Math.max(0, Math.round(p.colony)) }));
 }
 
+/**
+ * Match invitations. Rebuilt entry by entry like the friend lists, and for the same reason:
+ * every field here reaches a screen as text, as a map lookup or as a colour lookup, and a
+ * malformed one would put `undefined` on the page or index off the end of a table.
+ */
+function invites(raw: unknown): DuelInvite[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((d): d is DuelInvite => !!d && typeof d === "object"
+    && typeof (d as DuelInvite).id === "string"
+    && typeof (d as DuelInvite).map === "string" && (d as DuelInvite).map in MAPS
+    && !!(d as DuelInvite).from && typeof (d as DuelInvite).from === "object"
+    && typeof (d as DuelInvite).from.name === "string"
+    && typeof (d as DuelInvite).from.species === "string" && (d as DuelInvite).from.species in SPECIES)
+    .slice(0, DUELS_MAX)
+    .map((d) => ({
+      ...d,
+      at: Math.max(0, Math.round(Number(d.at) || 0)),
+      from: {
+        ...d.from,
+        id: typeof d.from.id === "string" ? d.from.id : "",
+        name: d.from.name.slice(0, 18),
+        colony: Math.max(0, Math.round(Number(d.from.colony) || 0)),
+      },
+    }));
+}
+
 /** Sent messages. Kept so nothing a player wrote is thrown away by a bad save. */
 function tickets(raw: unknown): Ticket[] {
   if (!Array.isArray(raw)) return [];
@@ -504,7 +544,19 @@ export class ProfileStore {
     this.profile = normalise(readJson<Profile>(store, KEY));
     // Minted here rather than in `defaultProfile`, which is a constant, or in `normalise`,
     // which has to stay a pure function of its input. Exactly once per save.
-    if (!this.profile.playerId) this.update((p) => { p.playerId = mintPlayerId(); });
+    if (!this.profile.playerId) {
+      // A NEW COLONY ARRIVES TO ONE CHALLENGE, minted in the same breath as the player
+      // code and for the same reason: it needs the clock, and neither `defaultProfile`
+      // (a constant) nor `normalise` (a pure function of its input) may read one. Once
+      // per save, so accepting it does not summon another.
+      //
+      // It is here at all because nothing can turn up on its own without a server, and an
+      // Accept button nobody can reach is a feature nobody can tell is finished.
+      this.update((p) => {
+        p.playerId = mintPlayerId();
+        p.duelsIn = seedInvites(Date.now());
+      });
+    }
   }
 
   get(): Readonly<Profile> { return this.profile; }
@@ -569,6 +621,35 @@ export class ProfileStore {
       p.xp += matchXp(won, turns);
       p.lastSpecies = species;
     });
+  }
+
+  /* ---------------------------------------------------------------- DUELS */
+
+  /** Invitations waiting to be answered — what the badge on the home screen counts. */
+  get duels(): readonly DuelInvite[] { return this.profile.duelsIn; }
+
+  /**
+   * Take an invitation off the list, and say whether it was there.
+   *
+   * The BOOLEAN is the point, exactly as it is for a challenge reward: accepting is what
+   * starts a match, and an invitation that could be accepted twice would start two. The
+   * caller acts only on a true.
+   */
+  answerDuel(id: string): DuelInvite | null {
+    const found = this.profile.duelsIn.find((d) => d.id === id) ?? null;
+    if (!found) return null;
+    this.update((p) => { p.duelsIn = p.duelsIn.filter((d) => d.id !== id); });
+    return found;
+  }
+
+  /**
+   * Put one on the list. Only a server will really call this; the local build uses it to
+   * put the first invitation there, so the receiving half of the feature is reachable.
+   */
+  addDuel(invite: DuelInvite): boolean {
+    if (this.profile.duelsIn.some((d) => d.id === invite.id)) return false;
+    this.update((p) => { p.duelsIn = [invite, ...p.duelsIn].slice(0, DUELS_MAX); });
+    return true;
   }
 
   /* ----------------------------------------------------------- CHALLENGES */

@@ -38,6 +38,16 @@ export interface MatchmakingOptions {
   search: () => Promise<Opponent>;
   /** The opponent is on screen and the halves have parted. The match starts here. */
   onFound: (foe: Opponent) => void;
+  /**
+   * Who is being waited FOR, when that is already known.
+   *
+   * A ranked match is a search: nobody is named because nobody has been chosen yet. A
+   * challenge is the opposite — the player picked the person — so "searching for an
+   * opponent" would be describing something that is not happening. Same screen, because
+   * the moment is the same one; different sentence, because the moment means something
+   * different.
+   */
+  awaiting?: string;
 }
 
 /** How long the found opponent is held before the halves part. */
@@ -76,7 +86,8 @@ export class MatchmakingScreen {
     this.foeCard = el("div", "mmk-found");
     right.append(this.reel, this.foeCard);
 
-    this.status = el("div", "mmk-status", "Searching for an opponent…");
+    this.status = el("div", "mmk-status",
+      opts.awaiting ? `Waiting for ${opts.awaiting}…` : "Searching for an opponent…");
 
     this.root.append(left, right, this.status);
     host.appendChild(this.root);
@@ -131,7 +142,7 @@ export class MatchmakingScreen {
     this.reel.remove();
     this.foeCard.appendChild(seatCard(foe));
     this.foeCard.classList.add("on");
-    this.status.textContent = "Opponent found";
+    this.status.textContent = this.opts.awaiting ? `${this.opts.awaiting} is ready` : "Opponent found";
     this.root.classList.add("found");
 
     this.after(HOLD_MS, () => {

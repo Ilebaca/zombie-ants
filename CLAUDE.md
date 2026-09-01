@@ -717,6 +717,43 @@ boxes now: a fixed head, and a table that scrolls under it.
   is four places to fix when the drawing changes (§7). A face drawn at twice the size it is
   shown at and scaled by the stylesheet is what keeps it sharp on a phone.
 
+**CHALLENGING A FRIEND** (`platform/duels.ts`, `ui/duel.ts`). A ranked match is against
+whoever the finder seats; a DUEL is against a named person. It is deliberately the ORDINARY
+setup flow with one step added and one step skipped:
+
+    challenging   home → map → colony → formation → WHO → the match
+    invited       the bar → colony → formation → the match, on their ground
+
+- **ONE BUTTON, BOTH HALVES.** A third floating button under Daily opens the flow, and it
+  carries the count of invitations waiting. A separate "invitations" screen would be a
+  control that is empty almost every time it is opened, and the badge is the only thing on
+  the home screen that can say somebody is waiting on an answer.
+- **THE INVITATION SITS ON THE SCREEN IT REPLACES.** The bar rides on the MAP PICKER,
+  because the ground is the one choice an invitation has already made — the person who
+  sends a challenge picks it, since there is no negotiating a position between two people
+  who are not both looking at a screen. The picker opens ON their map too: a bar naming
+  Gauntlet over a board showing Corridor says two things about one match. `choices.map` has
+  to be set BEFORE `buildMapSelect`, which opens its deck during construction.
+- **Accept AND decline.** An invitation you can only accept is a demand.
+- **An invitation is answered exactly ONCE.** `answerDuel` returns it and removes it, and a
+  null means somebody already did — the same reason a challenge reward returns a boolean:
+  accepting is what starts a match, so an invitation that could be taken twice starts two.
+- **The first invitation is minted in the store's CONSTRUCTOR**, beside the player code and
+  for the same reason: it needs the clock, and neither `defaultProfile` (a constant) nor
+  `normalise` (a pure function of its input) may read one. Once per save, so accepting it
+  does not summon another — and it exists at all because nothing arrives on its own without
+  a server, and an Accept button nobody can reach is a feature nobody can tell is finished.
+- **A CHALLENGE IS NOT A SEARCH.** It reuses the matchmaking screen, because the moment —
+  between choosing and playing — is the same one; but the reel is the player's own friends
+  and the status names the person (`awaiting`). "Searching for an opponent" over somebody
+  you have just chosen is the screen describing something that is not happening.
+- **Leaving abandons it.** `challenge` takes the screen's abort signal, exactly as the
+  opponent search does, so a promise that resolves after the player walked away cannot
+  start a match behind whatever they went to.
+- **`waitingFor` is not `agoOf`.** A news post lives for weeks and is dated in days, so
+  "Today" is right for one. A challenge lives for minutes, and "Today" says nothing about
+  whether the person who sent it is still sitting there.
+
 **FINDING AN OPPONENT is a screen, and the seam is real** (`platform/matchmaking.ts`,
 `ui/matchmaking.ts`). It sits between the formation pick and the board: a vertical split,
 you on the left, the seat across the board on the right, and the right half REELS —

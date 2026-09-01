@@ -10,12 +10,13 @@ import type { MapId, Player, SpeciesId } from "../engine";
 import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
 import {
-  DEFAULT_SPECIES, DemoGateway, LocalFriendService, LocalMatchmaker, LocalSupportGateway,
+  DEFAULT_SPECIES, DemoGateway, LocalDuels, LocalFriendService, LocalMatchmaker, LocalSupportGateway,
   ProfileStore, TOUR_VERSION, botsForChapter, chapterOf, compact, makeFeedback,
   scoreQuestEvents,
 } from "../platform";
 import type {
-  Feedback, FriendService, Matchmaker, Opponent, PurchaseGateway, SupportGateway,
+  DuelInvite, DuelService, Feedback, Friend, FriendService, Matchmaker, Opponent, Person,
+  PurchaseGateway, SupportGateway,
 } from "../platform";
 import { setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
@@ -41,6 +42,7 @@ import { buildSupport } from "./support";
 import { buildSettings } from "./settings";
 import { buildRules } from "./rules";
 import { buildFormationSelect, buildMapSelect, buildSpeciesSelect, rollAISpecies, rollShape } from "./setup";
+import { buildDuelPick, inviteBar } from "./duel";
 import type { Choices, SetupOptions } from "./setup";
 import { buildResultCard } from "./result";
 import { MatchmakingScreen } from "./matchmaking";
@@ -58,7 +60,7 @@ import "./skin.css";   // the look, layered over the structure
  * its rules select by id, so these names are load-bearing.
  */
 type ScreenId =
-  | "home" | "mapsel" | "start" | "formation"
+  | "home" | "mapsel" | "start" | "formation" | "duelpick"
   | "anthill" | "antarium" | "antup" | "achievements" | "quests" | "profile"
   | "challenges" | "daily" | "rules" | "settings" | "news" | "friends" | "support"
   | "luckyhatch" | "leaderboard" | "shop";
@@ -120,6 +122,12 @@ export class App {
    * each, so a server-backed implementation is one line here and nothing else moves.
    */
   private readonly friends: FriendService = new LocalFriendService();
+  /**
+   * Who answers a challenge. Offline nobody really does, so `LocalDuels` sits the friend
+   * down after a moment — the same arrangement `Matchmaker` has, and the same one line to
+   * change when there is a server.
+   */
+  private readonly duels: DuelService = new LocalDuels();
   private readonly support: SupportGateway = new LocalSupportGateway();
   /**
    * Sound and haptics (platform/feedback.ts).
@@ -134,6 +142,16 @@ export class App {
   private rebuildHomeBar: () => void = () => {};
   /** The challenge being played, if this match is one. */
   private challenge: { index: number; done: boolean; daily: boolean } | null = null;
+
+  /**
+   * WHAT KIND OF MATCH THE SETUP FLOW IS SETTING UP.
+   *
+   * `null` is the ordinary one, which ends in a search for a stranger. A duel ends
+   * somewhere else — either at the friend picker (you are the one challenging) or straight
+   * at the board with the person who invited you — so the flow has to know before it
+   * reaches the end of itself, and only the shell can know.
+   */
+  private duel: { host: true } | { host: false; invite: DuelInvite } | null = null;
 
   private choices: Choices;
   private profile: ProfileStore;
@@ -476,7 +494,30 @@ export class App {
 
   private build(id: ScreenId): HTMLElement {
     if (id === "home") return this.buildHome();
-    if (id === "mapsel") return buildMapSelect(this.setup(() => this.show("home"), "start"));
+    if (id === "mapsel") {
+      // Set BEFORE the picker is built: `buildMapSelect` opens its deck on `choices.map`
+      // while it is being constructed, so choosing the ground afterwards moves nothing.
+      const invite = this.profile.duels[0];
+      if (invite) this.choices.map = invite.map;
+      const screen = buildMapSelect(this.setup(() => this.show("home"), "start"));
+      // THE INVITATION SITS ON THE SCREEN IT REPLACES. A challenge starts by choosing the
+      // ground; an invitation has already chosen it, so the bar goes on top of that
+      // choice rather than on a screen of its own.
+      if (invite) {
+        // THE BOARD BEHIND THE BAR IS THE ONE BEING OFFERED. The bar names their ground,
+        // and a picker sitting on the player's own last choice underneath it says two
+        // different things about the same match. Opening on theirs makes the screen SHOW
+        // the invitation rather than only describe it — and the player can still swipe
+        // away, which is what declining and choosing your own looks like.
+        screen.classList.add("hasinvite");
+        screen.prepend(inviteBar({
+          invite,
+          onAccept: () => this.acceptDuel(invite.id),
+          onDecline: () => { this.profile.answerDuel(invite.id); this.show("mapsel"); },
+        }));
+      }
+      return screen;
+    }
     if (id === "start") {
       // Every new play opens on the first colony by rarity, exactly as the legacy build
       // does — the picker is a fresh choice each time, not a memory of the last match.
@@ -486,6 +527,14 @@ export class App {
     }
     if (id === "formation") {
       return buildFormationSelect(this.setup(() => this.show("start"), "formation"));
+    }
+    if (id === "duelpick") {
+      return buildDuelPick({
+        profile: this.profile,
+        onBack: () => this.show("formation"),
+        onPick: (friend) => this.playDuel(friend),
+        onFindFriends: () => this.show("friends"),
+      });
     }
     if (id === "anthill") return buildAnthill(this.profile);
     if (id === "achievements") return buildColonyRoad(this.profile, () => this.show("home"), () => this.show("shop"));
@@ -621,11 +670,21 @@ export class App {
     settings.appendChild(icon("menu", 19));
     settings.onclick = () => this.openMenu();
 
+    const duels = el("button", "duelfab");
+    duels.title = "Challenge a friend";
+    duels.setAttribute("aria-label", "Challenge a friend");
+    duels.append(icon("friends", 17), el("small", undefined, "Friends"));
+    // The badge is the whole receiving half of the feature: nothing else on the home
+    // screen can say that somebody is waiting for an answer.
+    const waiting = this.profile.duels.length;
+    if (waiting > 0) duels.appendChild(el("i", "fabdot", String(waiting)));
+    duels.onclick = () => this.openDuels();
+
     const daily = el("button", "dailyfab");
     daily.title = "Daily challenges";
     daily.append(icon("calendar", 17), el("small", undefined, "Daily"));
     daily.onclick = () => this.show("daily");
-    root.append(settings, daily);
+    root.append(settings, daily, duels);
 
     const play = el("div", "homeplay");
     // The app had no name on its own front page. The artwork is the title screen; this is
@@ -682,7 +741,14 @@ export class App {
       profile: this.profile,
       onBack,
       onNext: () => this.show(next),
-      onBegin: () => { this.challenge = null; this.findOpponent(); },
+      onBegin: () => {
+        this.challenge = null;
+        // A duel does not go looking for a stranger. Hosting one asks WHO next; accepting
+        // one already knows, and goes straight to the board with them.
+        if (this.duel?.host === true) { this.show("duelpick"); return; }
+        if (this.duel) { this.playDuel(this.duel.invite.from); return; }
+        this.findOpponent();
+      },
     };
   }
 
@@ -718,6 +784,66 @@ export class App {
     this.matchmaking = screen;
     // Started here, not in the constructor: `search` above closes over `screen`.
     screen.start();
+  }
+
+  /* ---------------------------------------------------------------- DUELS */
+
+  /**
+   * Play the person, rather than whoever the finder seats.
+   *
+   * It goes through the SAME matchmaking screen, and that is deliberate rather than lazy:
+   * what that screen is for is the moment between choosing and playing, and a duel has one
+   * too — the friend has to sit down. The only differences are that the reel stops on
+   * somebody already known and that nobody else is ever seated, so `search` resolves with
+   * the one person or rejects.
+   */
+  private playDuel(person: Person): void {
+    const me = this.profile.get();
+    const friend = me.friends.find((f) => f.id === person.id);
+    const seat: Friend = friend ?? { ...person, since: 0 };
+    this.clearMatchmaking();
+    this.syncNav(null);
+    for (const el of this.screens.values()) el.classList.add("hidden");
+
+    const screen: MatchmakingScreen = new MatchmakingScreen(this.host, {
+      you: { name: me.name, colony: me.colony, species: this.choices.species },
+      // Their own friends go past rather than a chapter of strangers: this is a screen
+      // about people the player knows, and the one it stops on is one of them.
+      roster: me.friends
+        .filter((f) => f.id !== seat.id)
+        .map((f) => ({ name: f.name, colony: f.colony, species: f.species, human: true })),
+      awaiting: seat.name,
+      search: () => this.duels.challenge(seat, this.choices.map, screen.signal)
+        .then((who) => ({ name: who.name, colony: who.colony, species: who.species, human: true })),
+      onFound: (foe) => { this.matchmaking = null; this.duel = null; this.startMatch(foe); },
+    });
+    this.matchmaking = screen;
+    screen.start();
+  }
+
+  /**
+   * Open the challenge flow — the button under Daily on the home screen.
+   *
+   * ONE BUTTON FOR BOTH HALVES of the feature. It sends the player to the map picker,
+   * which is where a challenge begins; if somebody has invited THEM, the same screen
+   * carries the invitation on top of it, because an invitation replaces exactly that
+   * choice — the ground is already picked. A second button for "invitations" would be a
+   * screen that is empty almost every time it is opened.
+   */
+  private openDuels(): void {
+    this.duel = { host: true };
+    this.show("mapsel");
+  }
+
+  /** Take an invitation: the ground is theirs, the colony and the shape are still yours. */
+  private acceptDuel(id: string): void {
+    const invite = this.profile.answerDuel(id);
+    // Gone already — accepted on another screen, or a stale button. Rebuild rather than
+    // start a match against an invitation that is no longer there.
+    if (!invite) { this.show("mapsel"); return; }
+    this.duel = { host: false, invite };
+    this.choices.map = invite.map;
+    this.show("start");
   }
 
   private clearMatchmaking(): void {
@@ -963,6 +1089,7 @@ export class App {
 function syncFabs(home: HTMLElement): void {
   const daily = home.querySelector<HTMLElement>(".dailyfab");
   const settings = home.querySelector<HTMLElement>(".settingsfab");
+  const duels = home.querySelector<HTMLElement>(".duelfab");
   const head = home.querySelector<HTMLElement>(".tophead");
   if (!daily || !settings) return;
   const box = daily.getBoundingClientRect();
@@ -972,8 +1099,11 @@ function syncFabs(home: HTMLElement): void {
   settings.style.height = `${box.height}px`;
   const top = home.getBoundingClientRect().top;
   const y = head ? head.getBoundingClientRect().bottom - top + 10 : 84;
+  // Measured and stacked rather than given percentages in the stylesheet, so a third
+  // button is a third step down the same column and not a fourth guess at a percentage.
   settings.style.top = `${y}px`;
-  daily.style.top = `${y + box.height + 10}px`;
+  daily.style.top = `${y + (box.height + 10)}px`;
+  if (duels) duels.style.top = `${y + (box.height + 10) * 2}px`;
 }
 
 /**
