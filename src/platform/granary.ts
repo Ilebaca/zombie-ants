@@ -40,20 +40,32 @@ export interface GranaryLevel {
 }
 
 /**
- * Seven levels, from a win a day to a win every twelve hours.
+ * Seven levels, and every one of them is a TOP-UP rather than a rival to playing.
  *
- * The hours come down two at a time so every purchase is the same size of step, and the
- * chapters spread across the whole road so the last one is something to still be reaching
- * for at the end of it rather than a box ticked in the first week.
+ * That is the number that matters here, and it was wrong. A player at two to three matches
+ * a day gains a little over one win's worth of colony a day; the first level used to pay a
+ * whole win every twenty-four hours and the last one two — so a maxed granary out-earned
+ * playing the game by three quarters, and the fastest way up the ladder was to put the
+ * phone down. The twelve-hour lid stopped a fortnight's absence paying out; it could not
+ * stop the RATE being wrong.
+ *
+ * THE LID IS PART OF THE SUM, and so is the win rate. The store holds twelve hours, so the
+ * most a diligent player can take is two full stores a day — and what that has to stay
+ * under is what PLAYING yields for somebody with an even record, which is far less than it
+ * is for somebody winning two in three. Measured that way the ladder runs from about a
+ * third of a day's play to about two thirds of it, so waiting never beats playing at any
+ * level. The hours come down eight at a time so every purchase is the same size of step,
+ * and the chapters spread across the whole road so the last level is still something to
+ * reach for at the end of it.
  */
 export const GRANARY_LEVELS: readonly GranaryLevel[] = [
-  { level: 1, hours: 24, chapter: 1, cost: 0 },
-  { level: 2, hours: 22, chapter: 6, cost: 260 },
-  { level: 3, hours: 20, chapter: 12, cost: 480 },
-  { level: 4, hours: 18, chapter: 20, cost: 820 },
-  { level: 5, hours: 16, chapter: 30, cost: 1400 },
-  { level: 6, hours: 14, chapter: 40, cost: 2200 },
-  { level: 7, hours: 12, chapter: 50, cost: 3400 },
+  { level: 1, hours: 96, chapter: 1, cost: 0 },
+  { level: 2, hours: 88, chapter: 6, cost: 400 },
+  { level: 3, hours: 80, chapter: 12, cost: 800 },
+  { level: 4, hours: 72, chapter: 20, cost: 1500 },
+  { level: 5, hours: 64, chapter: 30, cost: 2600 },
+  { level: 6, hours: 56, chapter: 40, cost: 4200 },
+  { level: 7, hours: 48, chapter: 50, cost: 6500 },
 ];
 
 export const GRANARY_MAX = GRANARY_LEVELS.length;

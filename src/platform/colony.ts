@@ -33,8 +33,15 @@ export const COLONY_WIN = 0.14;
  * Exactly 1 would be the flat percentage that ran away; below 1 is what bends the curve
  * over. It is the one number to turn if the late road feels too fast or too slow, and
  * it moves the whole shape rather than one end of it.
+ *
+ * MODELLED AGAINST A REAL PLAYER: two to three matches a day, winning about half of them.
+ * At 0.87 that player finished the fifty-chapter road in under three months, which is not
+ * a career — and the figure ran to eleven digits inside a year. At 0.78 the road is eleven
+ * to fifteen months for an even record, nine or ten for somebody who wins more, and the
+ * number stays a number: a win pays 20% of a starting colony, 7% of a thousand and about
+ * 1% of five million.
  */
-export const COLONY_TAPER = 0.87;
+export const COLONY_TAPER = 0.78;
 
 /**
  * ...but a win always grows it by at least this many troops.

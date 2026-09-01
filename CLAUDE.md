@@ -848,10 +848,46 @@ provisional and say so if asked.
   are 180°-symmetric and tested to be — so this is the move order, not the ground. Whether
   to compensate the second player is an open design question; note that the AI always plays
   second, so every match a player sees is one the AI starts behind in.
-- The colony: a win pays **a share of itself that tapers as it grows** — 13% of a young
-  colony down to 3% of five million (at least +8) — and a loss costs **36% of what a win
-  there pays**. Never below its starting 40 (§8a). Not comparable to the flat +30/−15
+- The colony: a win pays **a share of itself that tapers as it grows** — 20% of a young
+  colony, 7% of a thousand, about 1% of five million (at least +8) — and a loss costs
+  **36% of what a win there pays**, so an even record still gains about a third of a win
+  every match. Never below its starting 40 (§8a). Not comparable to the flat +30/−15
   trophy count it replaced.
+
+**8c. THE ECONOMY IS MODELLED AGAINST A REAL PLAYER** (`platform/__tests__/economy.test.ts`).
+Every number below was checked in isolation and none of them had been checked TOGETHER, and
+that is where all of it was wrong. The player it is tuned for: **two to three matches a day,
+winning about half.**
+- **What the model found.** The road was over in under three months. The whole research
+  economy — every track on all nine colonies — was covered three times over inside three
+  weeks. The daily sweep bonus alone paid more mycelium in a year than the game has to
+  spend it on. And the granary out-earned playing, so the fastest way up was to stop.
+- **The larva conversion was the single worst number.** Legacy pays some quests and road
+  stops in larva, which is not ported, so they pay pheromone instead — at **50 each**,
+  chosen to make the figures look like the legacy ones and never checked against what
+  pheromone BUYS. A research level costs 40 to 180, so one ten-larva stop paid for five of
+  them. It is **4** now: a larva is about a tenth of a research level.
+- **Currency has to TRAIL desire.** A player should finish the road at about the point they
+  have bought everything, with enough slack never to be stuck and never so much that the
+  currency stops meaning anything. Held at 0.9–1.8× for mycelium and 0.7–1.3× for
+  pheromone — tighter, because pheromone buys ONE thing and a surplus has nowhere to go.
+- **No single faucet may carry the economy.** The level track and the sweep bonus are both
+  held under what the quests themselves pay, because those two arrive without being played
+  for and are exactly the kind of stream that quietly becomes the biggest one.
+- **The granary is measured at its MAXIMUM, against an EVEN record.** The store holds
+  twelve hours, so a diligent player banks two full stores a day — and what that has to
+  stay under is what playing yields for somebody winning half, not two in three. Both
+  roundings were wrong once: measuring one collection let a granary twice as fast as it
+  should be through, and rounding 2.5 matches into two wins and a loss is a 67% player
+  wearing a 50% label, which made the road look a third shorter than it is.
+- **The shop is priced against free income, and the SKU names the grant.** Around seventy
+  mycelium and fifty pheromone a day free, so a euro buys a few days, the largest bundle
+  buys a couple of months, and nothing is more than a fifth of the game. The ids are the
+  Play Console SKUs, so `mycel.150` granting 220 is a trap for whoever wires up the real
+  store — they were renamed with the amounts.
+- Measured pacing, whole road: 2 games/day at an even record **521 days**, 2.5 **431**,
+  3 **368**; at 60% it is 385/316/268. That is the spread to check against after any
+  balance change.
 - Maps: Skirmish 7×7 (wake 10, expected 32), Corridor 9×9 (14/45), Gauntlet 13×13 (18/80).
   The turn figure is an expectation, not a limit — nothing happens when it passes (§4.8).
 

@@ -68,13 +68,22 @@ describe("colony growth", () => {
     }
   });
 
-  /** Two hundred-odd wins to the end of the road — a career, not an afternoon. */
-  it("takes a long career to climb the road", () => {
+  /**
+   * HOW LONG THE CURVE ITSELF IS, in wins — the one thing about pacing that belongs in
+   * this file, because it is a property of the curve and of nothing else.
+   *
+   * What a real player's career comes to is a different question with a lot more in it —
+   * how often they play, how often they win, what the granary carries — and it lives in
+   * `economy.test.ts`, which models all of that together. Answering it here from wins
+   * alone is what let the road be tuned to "two hundred-odd wins" while an actual player
+   * finished it in under three months.
+   */
+  it("is four hundred-odd wins long, end to end", () => {
     let colony = COLONY_START;
     let wins = 0;
     while (colony < ROAD_LAST && wins < 5000) { colony = grownColony(colony, true); wins++; }
-    expect(wins).toBeGreaterThan(120);
-    expect(wins).toBeLessThan(320);
+    expect(wins, "the road is short enough to sprint").toBeGreaterThan(300);
+    expect(wins, "the road is too long to ever finish").toBeLessThan(600);
   });
 });
 

@@ -10,7 +10,8 @@ import { describe, expect, it } from "vitest";
 import { MemoryStore, ProfileStore } from "../../platform";
 import { MAPS, SPECIES } from "../../engine";
 import {
-  CHALLENGES, buildChallenges, buildDaily, challengeState, dailyIndex, dayNumber,
+  CHALLENGES, CHALLENGE_REWARD, DAILY_BONUS_PHEROMONE, buildChallenges, buildDaily,
+  challengeState, dailyIndex, dayNumber,
 } from "../challenges";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
@@ -138,7 +139,10 @@ describe("the challenges screen", () => {
   });
 
   it("shows what an unbeaten position pays", () => {
-    expect(cards(list(store()))[0]?.querySelector(".chalpay")?.textContent).toContain("+40");
+    // Read from the constant, never typed out: a balance pass must not be able to leave
+    // this test asserting a number the screen no longer shows.
+    expect(cards(list(store()))[0]?.querySelector(".chalpay")?.textContent)
+      .toContain(`+${CHALLENGE_REWARD}`);
   });
 
   it("plays the position that was tapped", () => {
@@ -173,7 +177,7 @@ describe("the daily", () => {
   it("offers today's reward once, then reports it beaten", () => {
     const s = store();
     const before = daily(s);
-    expect(before.querySelector(".chalpay")?.textContent).toContain("+250");
+    expect(before.querySelector(".chalpay")?.textContent).toContain(`+${DAILY_BONUS_PHEROMONE}`);
     expect(before.querySelector(".challplay")).toBeTruthy();
     s.beatDaily(dayNumber(AT));
     const after = daily(s);

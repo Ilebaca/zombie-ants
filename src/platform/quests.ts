@@ -56,26 +56,26 @@ export interface QuestState {
  */
 export const QUEST_POOL: readonly QuestDef[] = [
   // TURN UP — the floor. Something a player clears by playing at all.
-  { id: "play2", icon: "flag", text: "Play 2 matches", kind: "play", goal: 2, xp: 45, reward: { mycel: 30 } },
-  { id: "play3", icon: "flag", text: "Play 3 matches", kind: "play", goal: 3, xp: 60, reward: { mycel: 40 } },
-  { id: "play5", icon: "flag", text: "Play 5 matches", kind: "play", goal: 5, xp: 100, reward: { pheromone: 500 } },
-  { id: "turns60", icon: "clock", text: "Play 60 turns", kind: "turns", goal: 60, xp: 70, reward: { mycel: 45 } },
-  { id: "turns120", icon: "clock", text: "Play 120 turns", kind: "turns", goal: 120, xp: 110, reward: { pheromone: 400 } },
+  { id: "play2", icon: "flag", text: "Play 2 matches", kind: "play", goal: 2, xp: 45, reward: { mycel: 9 } },
+  { id: "play3", icon: "flag", text: "Play 3 matches", kind: "play", goal: 3, xp: 60, reward: { mycel: 12 } },
+  { id: "play5", icon: "flag", text: "Play 5 matches", kind: "play", goal: 5, xp: 100, reward: { pheromone: 28 } },
+  { id: "turns60", icon: "clock", text: "Play 60 turns", kind: "turns", goal: 60, xp: 70, reward: { mycel: 13 } },
+  { id: "turns120", icon: "clock", text: "Play 120 turns", kind: "turns", goal: 120, xp: 110, reward: { pheromone: 22 } },
 
   // WIN — the middle. It asks for a result, not just for time at the board.
-  { id: "win1", icon: "trophy", text: "Win a match", kind: "win", goal: 1, xp: 50, reward: { mycel: 30 } },
-  { id: "win2", icon: "trophy", text: "Win 2 matches", kind: "win", goal: 2, xp: 90, reward: { mycel: 60 } },
-  { id: "win3", icon: "trophy", text: "Win 3 matches", kind: "win", goal: 3, xp: 140, reward: { pheromone: 600 } },
-  { id: "nest1", icon: "anthill", text: "Win by taking the enemy nest", kind: "nest", goal: 1, xp: 130, reward: { mycel: 90 } },
+  { id: "win1", icon: "trophy", text: "Win a match", kind: "win", goal: 1, xp: 50, reward: { mycel: 9 } },
+  { id: "win2", icon: "trophy", text: "Win 2 matches", kind: "win", goal: 2, xp: 90, reward: { mycel: 18 } },
+  { id: "win3", icon: "trophy", text: "Win 3 matches", kind: "win", goal: 3, xp: 140, reward: { pheromone: 34 } },
+  { id: "nest1", icon: "anthill", text: "Win by taking the enemy nest", kind: "nest", goal: 1, xp: 130, reward: { mycel: 26 } },
 
   // PLAY WELL — the ceiling. Each names a thing the game can do that a beginner does not.
-  { id: "conq20", icon: "antarium", text: "Conquer 20 enemy tiles", kind: "conquered", goal: 20, xp: 55, reward: { mycel: 40 } },
-  { id: "conq30", icon: "antarium", text: "Conquer 30 enemy tiles", kind: "conquered", goal: 30, xp: 70, reward: { pheromone: 300 } },
-  { id: "conq50", icon: "antarium", text: "Conquer 50 enemy tiles", kind: "conquered", goal: 50, xp: 120, reward: { pheromone: 550 } },
-  { id: "abil3", icon: "spark", text: "Use 3 abilities", kind: "ability", goal: 3, xp: 45, reward: { mycel: 30 } },
-  { id: "abil5", icon: "spark", text: "Use 5 abilities", kind: "ability", goal: 5, xp: 60, reward: { mycel: 40 } },
-  { id: "queen1", icon: "crown", text: "Take the Hive queen", kind: "queen", goal: 1, xp: 100, reward: { pheromone: 450 } },
-  { id: "tunnel2", icon: "granary", text: "Dig 2 galleries", kind: "tunnel", goal: 2, xp: 65, reward: { mycel: 45 } },
+  { id: "conq20", icon: "antarium", text: "Conquer 20 enemy tiles", kind: "conquered", goal: 20, xp: 55, reward: { mycel: 12 } },
+  { id: "conq30", icon: "antarium", text: "Conquer 30 enemy tiles", kind: "conquered", goal: 30, xp: 70, reward: { pheromone: 17 } },
+  { id: "conq50", icon: "antarium", text: "Conquer 50 enemy tiles", kind: "conquered", goal: 50, xp: 120, reward: { pheromone: 30 } },
+  { id: "abil3", icon: "spark", text: "Use 3 abilities", kind: "ability", goal: 3, xp: 45, reward: { mycel: 9 } },
+  { id: "abil5", icon: "spark", text: "Use 5 abilities", kind: "ability", goal: 5, xp: 60, reward: { mycel: 12 } },
+  { id: "queen1", icon: "crown", text: "Take the Hive queen", kind: "queen", goal: 1, xp: 100, reward: { pheromone: 25 } },
+  { id: "tunnel2", icon: "granary", text: "Dig 2 galleries", kind: "tunnel", goal: 2, xp: 65, reward: { mycel: 13 } },
 ];
 
 /**
@@ -91,8 +91,15 @@ const BUCKETS: readonly (readonly QuestKind[])[] = [
   ["conquered", "ability", "queen", "tunnel"],
 ];
 
-/** Paid on top when all of a day's quests are claimed, as in the legacy build. */
-export const QUEST_SWEEP_BONUS = { mycel: 100 } as const;
+/**
+ * Paid on top when all of a day's quests are claimed.
+ *
+ * A HUNDRED in the legacy build, and it was the single biggest faucet in this game: more
+ * mycelium per day than the three quests it sits on top of, and thirty-six thousand a year
+ * against a game that has about twenty-one thousand of things to buy in it. Priced against
+ * the sink now, like everything else here.
+ */
+export const QUEST_SWEEP_BONUS = { mycel: 24 } as const;
 
 export const QUESTS_PER_DAY = 3;
 
@@ -174,10 +181,10 @@ export function levelProgress(totalXp: number): LevelProgress {
 
 /** Every few levels pays something the player must tap to claim. */
 export function levelReward(level: number): QuestReward & { label: string } {
-  if (level % 10 === 0) return { mycel: 200, pheromone: 400, label: "200 mycelium + 400 pheromone" };
-  if (level % 5 === 0) return { mycel: 150, label: "150 mycelium" };
-  if (level % 2 === 0) return { pheromone: 400, label: "400 pheromone" };
-  return { mycel: 60, label: "60 mycelium" };
+  if (level % 10 === 0) return { mycel: 90, pheromone: 200, label: "90 mycelium + 200 pheromone" };
+  if (level % 5 === 0) return { mycel: 60, label: "60 mycelium" };
+  if (level % 2 === 0) return { pheromone: 200, label: "200 pheromone" };
+  return { mycel: 25, label: "25 mycelium" };
 }
 
 /** Levels reached but not yet claimed. Level 1 is free, so claims start once level 2 lands. */

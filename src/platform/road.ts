@@ -84,13 +84,20 @@ export const roadKey = (track: RoadTrack, index: number): string =>
   `${track === "pass" ? "p" : "f"}${index}`;
 
 /**
- * Reward tables, ported from the legacy build's roadFree/roadPass.
+ * Reward tables, ported from the legacy build's roadFree/roadPass — but PRICED, not copied.
  *
- * Legacy pays some stops in larva — the lucky-hatch currency, which is not ported — so
- * those stops pay pheromone at LARVA_IN_PHEROMONE each instead. Every other number is the
- * legacy number, so a stop that pays mycelium there pays the same mycelium here.
+ * Legacy pays some stops in larva, the lucky-hatch currency, which is not ported; those
+ * stops pay pheromone instead. The conversion was fifty, chosen so the numbers looked like
+ * the legacy ones, and nobody checked it against what pheromone actually BUYS. A research
+ * level costs forty to a hundred and eighty, so a single ten-larva stop was paying for
+ * five of them, and the whole research economy — every track on all nine colonies — was
+ * covered three times over before the road was half walked.
+ *
+ * Four is the rate that makes a larva worth about a tenth of a research level, so a stop
+ * that pays ten of them buys one. The mycelium numbers came down with it: the free track
+ * alone used to pay more mycelium than everything in the game costs.
  */
-const LARVA_IN_PHEROMONE = 50;
+const LARVA_IN_PHEROMONE = 4;
 
 /** Free track: one reward per chapter, alternating currency. */
 export function freeReward(index: number): RoadReward | null {
@@ -99,14 +106,14 @@ export function freeReward(index: number): RoadReward | null {
   const tier = index / ROAD_CHAPTER_STOPS;
   return tier % 2 === 0
     ? { pheromone: 10 * LARVA_IN_PHEROMONE }
-    : { mycel: 200 + tier * 15 };
+    : { mycel: 100 + tier * 5 };
 }
 
 /** Pass track: pays at every stop, and every fourth stop pays both currencies. */
 export function passReward(index: number): RoadReward | null {
   if (index < 1 || index > ROAD_STOPS) return null;
-  if (index % 4 === 0) return { mycel: 300, pheromone: 10 * LARVA_IN_PHEROMONE };
-  return index % 2 === 0 ? { pheromone: 4 * LARVA_IN_PHEROMONE } : { mycel: 180 };
+  if (index % 4 === 0) return { mycel: 150, pheromone: 10 * LARVA_IN_PHEROMONE };
+  return index % 2 === 0 ? { pheromone: 4 * LARVA_IN_PHEROMONE } : { mycel: 80 };
 }
 
 export function roadStops(): RoadStop[] {

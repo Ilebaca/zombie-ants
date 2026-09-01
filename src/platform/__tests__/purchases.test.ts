@@ -116,7 +116,7 @@ describe("granting what was bought", () => {
   it("says plainly that the demo gateway is not a real sale", async () => {
     const gateway = new DemoGateway();
     expect(gateway.live).toBe(false);
-    const result = await gateway.buy("mycel.150");
+    const result = await gateway.buy("mycel.220");
     expect(result.note).toMatch(/demo/i);
   });
 });

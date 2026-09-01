@@ -87,8 +87,8 @@ export const GOAL_TEXT: Record<ChallengeGoal, string> = {
  * daily screen advertises "250 pheromone + 40 mycelium" while paying the same 40 — the pheromone half
  * is honoured here so the promise on screen is the promise kept.
  */
-export const CHALLENGE_REWARD = 40;
-export const DAILY_BONUS_PHEROMONE = 250;
+export const CHALLENGE_REWARD = 12;
+export const DAILY_BONUS_PHEROMONE = 10;
 
 
 /** The day the daily is drawn for. One challenge a day, the same one for everybody. */

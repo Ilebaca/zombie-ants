@@ -97,10 +97,15 @@ describe("progression", () => {
     expect(winnings(big)).toBeGreaterThan(COLONY_FLOOR);
   });
 
-  /** A win-heavy career has to actually reach the sizes the road and the ladder show. */
+  /**
+   * A win-heavy career has to actually reach the sizes the road and the ladder show.
+   *
+   * Two hundred wins is a few months at two or three matches a day, and it is where six
+   * figures should land: the road's ninetieth rung is a hundred thousand troops.
+   */
   it("climbs into six figures over a career", () => {
     let colony = COLONY_START;
-    for (let i = 0; i < 100; i++) colony = grownColony(colony, true);
+    for (let i = 0; i < 200; i++) colony = grownColony(colony, true);
     expect(colony).toBeGreaterThan(1e5);
   });
 

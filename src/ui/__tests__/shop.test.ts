@@ -84,8 +84,8 @@ describe("buying", () => {
     const s = store();
     const { gw } = gateway((id) => ({ ok: true, grant: productById(id)?.grant }));
     const root = build(s, gw);
-    const product = productById("mycel.400")!;
-    buyIn(root, "mycel.400")?.click();
+    const product = productById("mycel.650")!;
+    buyIn(root, "mycel.650")?.click();
     await vi.waitFor(() => expect(s.get().mycel).toBe(product.grant.mycel));
   });
 
@@ -103,7 +103,7 @@ describe("buying", () => {
       ok: false, note: "Payment declined", grant: productById(id)?.grant,
     }));
     const root = build(s, gw);
-    buyIn(root, "mycel.400")?.click();
+    buyIn(root, "mycel.650")?.click();
     await vi.waitFor(() => expect(root.textContent).toContain("Payment declined"));
     expect(s.get().mycel, "a refused purchase paid out").toBe(0);
   });
@@ -112,7 +112,7 @@ describe("buying", () => {
     const s = store();
     const gw: PurchaseGateway = { live: false, buy: () => Promise.reject(new Error("offline")) };
     const root = build(s, gw);
-    buyIn(root, "mycel.400")?.click();
+    buyIn(root, "mycel.650")?.click();
     await vi.waitFor(() => expect(root.textContent).toMatch(/could not be reached/i));
     expect(s.get().mycel).toBe(0);
   });
@@ -127,11 +127,11 @@ describe("buying", () => {
       buy: (id) => { asked.push(id); return new Promise<PurchaseResult>((r) => { release = r; }); },
     };
     const root = build(s, gw);
-    buyIn(root, "mycel.400")?.click();
-    buyIn(root, "mycel.400")?.click();
-    buyIn(root, "mycel.400")?.click();
+    buyIn(root, "mycel.650")?.click();
+    buyIn(root, "mycel.650")?.click();
+    buyIn(root, "mycel.650")?.click();
     expect(asked.length, "a double tap reached the gateway twice").toBe(1);
-    release({ ok: true, grant: productById("mycel.400")?.grant });
+    release({ ok: true, grant: productById("mycel.650")?.grant });
     await vi.waitFor(() => expect(s.get().mycel).toBeGreaterThan(0));
   });
 
