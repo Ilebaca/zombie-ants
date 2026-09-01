@@ -1329,12 +1329,45 @@ the first tap and a decode on a phone. Each cue is a few oscillators and an enve
   large fraction of everything a player does. It has its own tests now.
 - **A tile picked up does NOT buzz.** It happens constantly, and a buzz on every one is not
   feedback, it is a fault. `BUZZ` sets that per cue and a test holds it.
+- **THE SOUND CAN BE REPLACED WITH REAL RECORDINGS, ONE AT A TIME** (`platform/sounds.ts`).
+  Synthesis has a ceiling: a recorded frame drum is a recorded frame drum, and no amount of
+  filtered noise is going to be one. `SOUNDS` is a table of file URLs, EMPTY in the repo,
+  and anything named in it REPLACES the synthesised version — drop a file in `public/audio/`
+  and name it, and nothing else moves.
+  - **Per ENTRY, never all or nothing.** A build can use a recorded loop for the match bed
+    and keep every synthesised cue, because that is how a replacement actually arrives.
+  - **Every failure falls back to the synthesiser.** Nothing named, a path typed wrong, a
+    fetch that dropped, a codec the phone refuses — each gives the generated sound, never
+    silence. A missing asset is the failure mode this whole design exists to avoid.
+  - **The first play of a sampled cue is synthesised**, because the file is still in the
+    air: a cue that arrives late is worse than one that arrived generated, which is the
+    same rule as dropping a cue before the first gesture.
+  - **A sampled bed replaces the WHOLE generator** — no round, no drums, no wind. A recorded
+    piece already has those in it, and running the generator underneath is two pieces of
+    music at once.
+  - **Paths resolve against `BASE_URL`**, so a manifest written the obvious way works under
+    the project page as well as at a domain root.
+- **A MATCH IS COUNTED IN.** The match bed opens on a bar of drums ALONE — a roll that
+  fills in from quarters to sixteenths and a pickup into the downbeat the music enters on
+  (`openBars`, `opener`). A bed that fades up out of nothing does not say a match has
+  started. Counted off `played`, which never wraps: `step` wraps with the round, so an
+  opening keyed to it would fire again every time bar one came back.
+- **THE KIT IS A HAND DRUM, NOT A DRUM MACHINE.** Every hit is a pitched MEMBRANE that
+  falls, with the noise part rolled off rather than a bright click on top, and the ostinato
+  is a plucked triangle rather than a sawtooth — the sawtooth and the beater click were
+  most of what came back as "aggressive and digital". Nothing lands exactly on the grid
+  either: each hit carries a few milliseconds of timing jitter and a little weight
+  variation, because perfect timing at a constant level is the single most digital thing a
+  piece of music can do.
 - **`SilentFeedback` is not a stub for something missing** — it is the honest implementation
   for a device with neither capability, and every test in the suite runs on it. Nothing here
   may throw: no audio is a quiet game, never a broken one.
-- **Settings' two switches are back**, because there is finally something behind them. They
-  default ON, and `normalise` reads a missing flag as `!== false` — reading it as "off"
-  would silently mute the game for every returning player.
+- **Settings has THREE switches, and music is its own.** They are two different
+  irritations: a bed running for an hour is what somebody turns off on a bus, and the cues
+  are what they still want when they do — one switch for both means turning the music off
+  costs the feedback with it. All default ON, and `normalise` reads a missing flag as
+  `!== false` — reading it as "off" would silently mute the game for every returning
+  player, including on the `music` flag that no older save has at all.
 
 **NO EMOJI, AND A TEST SAYS SO** (`src/ui/__tests__/no-emoji.test.ts`). §10 has said this
 since the beginning and every screen was cleaned by hand, which is exactly why the MATCH

@@ -58,6 +58,10 @@ const PATHS: Record<string, string | string[]> = {
   // is the one mark on this screen that has to read as a PLACE rather than an effect.
   // A spark: the mark for casting an ability. Four rays and a core, so it reads at 18px
   // where a many-pointed star turns to mush.
+  /* A beamed pair of notes: two heads, two stems, one beam across the top. */
+  music: [
+    "M20 3.2a1 1 0 0 0-1.2-1L9.4 4.1a1 1 0 0 0-.8 1v9.6a3.4 3.4 0 1 0 2 1.8V8.5l7.4-1.5v5.3a3.4 3.4 0 1 0 2 1.8z",
+  ],
   spark: ["M12 1.8a1 1 0 0 1 1 .8l.9 5 5 .9a1 1 0 0 1 0 2l-5 .9-.9 5a1 1 0 0 1-2 0l-.9-5-5-.9a1 1 0 0 1 0-2l5-.9.9-5a1 1 0 0 1 1-.8",
     "M19.4 14.6a.7.7 0 0 1 .7.6l.4 1.7 1.7.4a.7.7 0 0 1 0 1.4l-1.7.4-.4 1.7a.7.7 0 0 1-1.4 0l-.4-1.7-1.7-.4a.7.7 0 0 1 0-1.4l1.7-.4.4-1.7a.7.7 0 0 1 .7-.6"],
   // Skip forward: the end of a turn, handing it over.

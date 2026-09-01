@@ -79,11 +79,22 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
     switchRow({
       mark: "spark",
       title: "Sound",
-      desc: "Short cues for a fight, an ability and the end of a match.",
+      desc: "The taps, the fights and the end of a match. Not the music.",
       id: "setSound",
       on: opts.profile.get().sound,
       onFlip: (on) => {
         opts.profile.update((p) => { p.sound = on; });
+        opts.onFeedbackChanged();
+      },
+    }),
+    switchRow({
+      mark: "music",
+      title: "Music",
+      desc: "The bed under the menus, and the drums under a match.",
+      id: "setMusic",
+      on: opts.profile.get().music,
+      onFlip: (on) => {
+        opts.profile.update((p) => { p.music = on; });
         opts.onFeedbackChanged();
       },
     }),

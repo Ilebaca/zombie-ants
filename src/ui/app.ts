@@ -191,6 +191,7 @@ export class App {
   private applyFeedbackPrefs(): void {
     const p = this.profile.get();
     this.feedback.setSound(p.sound);
+    this.feedback.setMusicEnabled(p.music);
     this.feedback.setHaptics(p.haptics);
   }
 

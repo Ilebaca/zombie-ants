@@ -159,6 +159,13 @@ export interface Profile {
    * back — and on, because a game that ships muted is a game most players never hear.
    */
   sound: boolean;
+  /**
+   * The beds, apart from the cues.
+   *
+   * Its own flag because they are two different irritations: a bed running for an hour is
+   * what somebody turns off on a bus, and the cues are what they still want when they do.
+   */
+  music: boolean;
   haptics: boolean;
   /** Daily quests: today's three, the day they were rolled for, and the sweep streak. */
   quests: QuestState[];
@@ -228,6 +235,7 @@ export function defaultProfile(): Profile {
     challenges: [],
     dailyDay: 0,
     sound: true,
+    music: true,
     haptics: true,
     quests: [],
     questDay: 0,
@@ -361,6 +369,10 @@ export function normalise(raw: unknown): Profile {
     // reading a missing flag as "off" would silently mute the game for every returning
     // player (the same trap the mycelium fallback fell into — see the note above).
     sound: p.sound !== false,
+    // `!== false`, never `=== true`: a save from a build before this flag existed has no
+    // field at all, and reading that as "off" would silently mute the game for every
+    // returning player.
+    music: p.music !== false,
     haptics: p.haptics !== false,
     // A quest id that no longer exists in the pool is dropped rather than kept at zero
     // progress, where it would be permanently unclaimable and block the daily sweep.

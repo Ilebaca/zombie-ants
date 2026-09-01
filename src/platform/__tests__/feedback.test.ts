@@ -304,6 +304,48 @@ describe("the cues themselves", () => {
   });
 });
 
+describe("the two switches", () => {
+  /**
+   * MUSIC APART FROM EVERYTHING ELSE.
+   *
+   * They are two different irritations: a bed running for an hour is what somebody turns
+   * off on a bus, and the cues are what they still want when they do. One switch for both
+   * means turning the music off costs the feedback with it.
+   */
+  it("stops the bed without taking the cues with it", () => {
+    const { ctx, started } = fakeAudio("running", true);
+    const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
+    fb.unlock();
+    fb.setMusic("menu");
+    for (let t = 0; t < 3; t += 0.05) { ctx.currentTime += 0.05; vi.advanceTimersByTime(60); }
+    const withBed = started.length;
+    fb.setMusicEnabled(false);
+    const quiet = started.length;
+    for (let t = 0; t < 3; t += 0.05) { ctx.currentTime += 0.05; vi.advanceTimersByTime(60); }
+    expect(started.length, "the bed kept playing with the music off").toBe(quiet);
+    expect(withBed, "the bed never started").toBeGreaterThan(quiet - withBed);
+    // And a cue still sounds.
+    const before = started.length;
+    fb.play("fight");
+    expect(started.length, "turning the music off silenced the cues too").toBeGreaterThan(before);
+    fb.close();
+  });
+
+  it("brings the bed back", () => {
+    const { ctx, started } = fakeAudio("running", true);
+    const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
+    fb.unlock();
+    fb.setMusicEnabled(false);
+    fb.setMusic("menu");
+    for (let t = 0; t < 2; t += 0.05) { ctx.currentTime += 0.05; vi.advanceTimersByTime(60); }
+    const off = started.length;
+    fb.setMusicEnabled(true);
+    for (let t = 0; t < 2; t += 0.05) { ctx.currentTime += 0.05; vi.advanceTimersByTime(60); }
+    expect(started.length, "the bed did not come back").toBeGreaterThan(off);
+    fb.close();
+  });
+});
+
 describe("the way out", () => {
   /**
    * A LIMITER, and it is not a nicety.
@@ -654,6 +696,33 @@ describe("the music", () => {
     expect(menu.drums, "the menu bed has a drum kit under it").toBe(0);
     expect(match.drums, "the match bed has no drum under it").toBeGreaterThan(20);
     expect(match.bar, "the match bed is no quicker than the menu").toBeLessThan(menu.bar * 0.8);
+  });
+
+    /**
+   * A MATCH IS COUNTED IN. The bed does not fade up out of nothing over a board — a drum
+   * is struck, and the music walks in on top of it. So the first bar has percussion and
+   * no notes in it.
+   */
+  it("opens the match bed on drums alone", () => {
+    // The full device, because the drums are windows onto a noise buffer.
+    const { ctx, envelopes, nodes } = fakeAudio("running", true);
+    const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
+    fb.unlock();
+    fb.setMusic("match");
+    const wind = nodes.sources;
+    for (let t = 0; t < 6; t += 0.05) { ctx.currentTime += 0.05; vi.advanceTimersByTime(60); }
+    // Asserted on when a held note STARTS, not on what exists at a moment: the scheduler
+    // works most of a second ahead, so at any wall-clock instant it has already written
+    // notes for a bar that has not been heard yet.
+    const held = envelopes
+      .filter((e) => (e[e.length - 1]?.t ?? 0) - (e[0]?.t ?? 0) > 0.9)
+      .map((e) => e[0]?.t ?? 0);
+    expect(held.length, "the music never arrived at all").toBeGreaterThan(0);
+    // One bar at 0.44s a beat is 1.76s.
+    expect(Math.min(...held), "the music came in over the opening").toBeGreaterThan(1.7);
+    // And the opening is not silence: something percussive played through it.
+    expect(nodes.sources - wind, "nothing at all played in the opening").toBeGreaterThan(8);
+    fb.close();
   });
 
     it("takes the bed down when it is closed", () => {

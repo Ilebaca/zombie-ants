@@ -20,6 +20,8 @@
  * it is the honest implementation for a device that cannot do this.
  */
 
+import { SOUNDS, soundUrl } from "./sounds";
+
 /** The moments worth marking. Named for what HAPPENED, never for how it sounds. */
 export type Cue =
   | "tap"        // a tile picked up
@@ -58,6 +60,15 @@ export interface Feedback {
   /** Called from the first press: browsers refuse to start audio without one. */
   unlock(): void;
   setSound(on: boolean): void;
+  /**
+   * Music apart from everything else.
+   *
+   * Two switches rather than one because they are two different irritations: a bed running
+   * for an hour is the thing somebody turns off on a bus, and the cues are the thing they
+   * still want when they do. One switch for both means turning the music off costs the
+   * feedback with it.
+   */
+  setMusicEnabled(on: boolean): void;
   setHaptics(on: boolean): void;
   /** Release the audio device. A match screen torn down must not hold one open. */
   close(): void;
@@ -254,6 +265,8 @@ interface TrackDef {
    * the key are the same, so it is recognisably the same world, but it is pushing.
    */
   drive: boolean;
+  /** Bars of drums alone before the music enters. Zero for a bed that just starts. */
+  openBars: number;
   gain: number;
 }
 
@@ -288,6 +301,7 @@ const TRACKS: Record<Track, TrackDef> = {
     wind: 0.16,
     chirp: 7,
     drive: false,
+    openBars: 0,
     gain: 3.0,
   },
   match: {
@@ -314,6 +328,7 @@ const TRACKS: Record<Track, TrackDef> = {
     wind: 0.08,
     chirp: 22,
     drive: true,
+    openBars: 1,
     gain: 1.75,
   },
 };
@@ -420,12 +435,22 @@ interface Bed {
 
 type ContextMaker = () => AudioContext;
 
+/**
+ * A decoded file from the manifest, or the fact that it could not be had.
+ *
+ * `null` means "asked for, and it is not coming" — a fetch that failed, a codec the phone
+ * refused, or a context with no decoder. It is cached as firmly as a success, so a broken
+ * path is one failed request rather than one per tap, and the synthesiser takes over.
+ */
+type Sample = AudioBuffer | null;
+
 export class WebFeedback implements Feedback {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   /** The beds run through their own gain, well under the cues, so one never buries the other. */
   private musicBus: GainNode | null = null;
   private sound = true;
+  private music = true;
   private haptics = true;
   /** Set once the device has told us it cannot do this, so we stop trying every cue. */
   private broken = false;
@@ -453,6 +478,13 @@ export class WebFeedback implements Feedback {
   /** Set when a bed is armed and cleared by the pump that opens it up. */
   private fading = false;
   /**
+   * Sixteenths since this bed began, never wrapped.
+   *
+   * `step` wraps with the round, so it cannot say whether the bed has just started — and
+   * the opening has to happen ONCE, not every time the round comes back to bar one.
+   */
+  private played = 0;
+  /**
    * A second of white noise, made once at unlock.
    *
    * Every percussive sound in the app is a window onto this through a bandpass — the
@@ -461,11 +493,20 @@ export class WebFeedback implements Feedback {
    * not.
    */
   private noise: AudioBuffer | null = null;
+  /** Files from the manifest, once fetched. See `platform/sounds.ts`. */
+  private samples = new Map<string, Sample>();
+  /** The looping source for a bed that is a FILE rather than a synthesised round. */
+  private trackSource: AudioBufferSourceNode | null = null;
 
   constructor(
     private makeContext: ContextMaker | null = defaultContext(),
     private vibrate: ((p: number | number[]) => void) | null = defaultVibrate(),
   ) {}
+
+  setMusicEnabled(on: boolean): void {
+    this.music = on;
+    this.syncMusic();
+  }
 
   setSound(on: boolean): void {
     this.sound = on;
@@ -482,7 +523,7 @@ export class WebFeedback implements Feedback {
 
   /** Bring what is playing into line with what is wanted. The only thing that starts a bed. */
   private syncMusic(): void {
-    const want = this.sound && !this.broken ? this.wanted : null;
+    const want = this.sound && this.music && !this.broken ? this.wanted : null;
     if (want === this.playing) return;
     this.stopMusic();
     if (!want || !this.ctx || !this.musicBus) return;
@@ -502,6 +543,23 @@ export class WebFeedback implements Feedback {
     // the time a note existed to hear through it. And 0.9s of fade on top of that is most
     // of why the music was reported as arriving several seconds late.
     this.fading = true;
+
+    // A file named in the manifest REPLACES the synthesised bed: no round, no drums, no
+    // wind — a recorded piece already has all of that in it, and running the generator
+    // underneath would be two pieces of music at once.
+    const file = SOUNDS.tracks?.[want];
+    const buf = file ? this.sample(file) : null;
+    if (buf) {
+      this.trackSource = this.playSample(buf, this.musicBus, now, true);
+      if (this.trackSource) {
+        // Still on the pump, because the pump is what runs the fade — and it is what
+        // notices the clock has finally started on a context that was waking up.
+        this.timer = setInterval(() => this.pump(), TICK_MS);
+        this.pump();
+        return;
+      }
+    }
+
     this.bed = this.buildBed(ctx, this.musicBus, def);
     // Seeded off the clock, so two sessions do not open on the same phrase — but seeded,
     // so a test can pin one and read the notes back.
@@ -510,6 +568,7 @@ export class WebFeedback implements Feedback {
     this.nextChirp = now + def.chirp * 0.6;
     this.nextAt = now + 0.02;
     this.step = 0;
+    this.played = 0;
     this.timer = setInterval(() => this.pump(), TICK_MS);
     this.pump();
   }
@@ -611,6 +670,10 @@ export class WebFeedback implements Feedback {
       this.musicBus.gain.setValueAtTime(Math.max(0.0001, this.musicBus.gain.value), now);
       this.musicBus.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
     }
+    if (this.trackSource) {
+      try { this.trackSource.stop((this.ctx?.currentTime ?? 0) + 0.4); } catch { /* gone */ }
+      this.trackSource = null;
+    }
     if (bed?.wind) {
       // Stopped after the fade, or the wind cuts out a third of a second before the music.
       try { bed.wind.stop((this.ctx?.currentTime ?? 0) + 0.4); } catch { /* already stopped */ }
@@ -627,9 +690,19 @@ export class WebFeedback implements Feedback {
    */
   private pump(): void {
     const ctx = this.ctx, bed = this.bed, bus = this.musicBus, track = this.playing;
-    if (!ctx || !bed || !bus || !track) return;
+    if (!ctx || !bus || !track) return;
     if (ctx.state !== "running") return;
     const def = TRACKS[track];
+    // A sampled bed has nothing to schedule; it only wants the fade.
+    if (!bed) {
+      if (this.fading) {
+        this.fading = false;
+        bus.gain.cancelScheduledValues(ctx.currentTime);
+        bus.gain.setValueAtTime(0.0001, ctx.currentTime);
+        bus.gain.exponentialRampToValueAtTime(def.gain, ctx.currentTime + 0.25);
+      }
+      return;
+    }
     const sixteenth = def.beat / 4;
     // A tab that was away comes back to a clock far past `nextAt`; catch up rather than
     // scheduling a thousand notes at once.
@@ -645,6 +718,7 @@ export class WebFeedback implements Feedback {
     while (this.nextAt < ctx.currentTime + LOOKAHEAD) {
       this.scheduleStep(ctx, bed, def, this.step, this.nextAt);
       this.step = (this.step + 1) % (STEPS_PER_BAR * def.round.length);
+      this.played++;
       this.nextAt += sixteenth;
     }
   }
@@ -663,6 +737,15 @@ export class WebFeedback implements Feedback {
     const barSteps = def.half ? STEPS_PER_BAR / 2 : STEPS_PER_BAR;
     const inBar = step % STEPS_PER_BAR;
     const bar = Math.floor(step / barSteps) % def.round.length;
+    // THE OPENING: a bar of drums alone before anything else arrives. A match starts, and
+    // what starts it is a drum being struck — the music walks in on top of it. Counted off
+    // `played` rather than `step`, so it happens once at the top of the bed and never again
+    // when the round comes back round to bar one.
+    const opening = def.openBars * STEPS_PER_BAR;
+    if (this.played < opening) {
+      this.opener(ctx, bed, def, this.played, opening, at);
+      return;
+    }
     const tonic = def.tonic;
     // The bar's chord, named as a scale degree: everything below stacks off this in scale
     // steps, so no chord in the round can leave the key.
@@ -729,31 +812,76 @@ export class WebFeedback implements Feedback {
   ): void {
     // Kick on one and on the and-of-three: a pulse that leans forward rather than sitting
     // squarely on the bar.
-    // THIS IS ALL TUNED FOR A PHONE SPEAKER, which has next to nothing below about 400 Hz.
-    // The first version of this kit put its weight in a low sine and a 180 Hz band, which
-    // measured loud and was inaudible on the device it is actually played on — the report
-    // was that the match bed sounded no different from the menu. Every part of it now has
-    // something in the midrange to be heard BY; the low end is what a real speaker adds.
+    // A HAND DRUM, NOT A DRUM MACHINE.
+    //
+    // Two rules make the difference between this and a beatbox. Every hit is a pitched
+    // MEMBRANE that falls — a skin under tension, which is what a struck drum is — with
+    // the noise part rolled OFF rather than a bright click on top; and nothing lands
+    // exactly on the grid. A drummer is a few milliseconds early or late every time and
+    // never hits twice at the same weight, and perfect timing at a constant level is the
+    // single most digital thing a piece of music can do.
+    //
+    // It is also tuned for a PHONE SPEAKER, which has next to nothing below about 400 Hz:
+    // every part has something in the midrange to be heard by, and the low end is what a
+    // real speaker adds rather than what any of it depends on.
+    const rand = this.rand;
+    const human = (): number => at + (rand() - 0.5) * 0.014;
+    const weight = (): number => 0.85 + rand() * 0.3;
+
+    // The low drum: on the bar, and leaning forward off the beat rather than sitting square.
     if (inBar === 0 || inBar === 6 || inBar === 10) {
-      this.noteAtGain(ctx, bed.out, "sine", 145, 38, at, 0.17, 0.8);
-      // The beater, not the drum: a hard mid click is the part of a kick a phone can play.
-      this.tick(ctx, bed.out, at, 900, 0.035, 1.5, 0.8, 260);
+      const t = human(), w = weight();
+      this.noteAtGain(ctx, bed.out, "sine", 210, 66, t, 0.22, 0.85 * w);
+      // The skin, not a beater: lowpassed, so it is the sound of a hand rather than a stick.
+      this.tick(ctx, bed.out, t, 420, 0.05, 1.2 * w, 0.5, 150);
     }
-    // Backbeat: a rough band, wide open, which is a rattle rather than a snare — a real
-    // snare would be a marching band and this is an anthill.
+    // The open slap: the higher drum of the pair, and the one that answers.
     if (inBar === 4 || inBar === 12) {
-      this.tick(ctx, bed.out, at, 2100, 0.14, 1.7, 0.5, 800);
-      this.noteAtGain(ctx, bed.out, "triangle", 420, 210, at, 0.07, 0.4);
+      const t = human(), w = weight();
+      this.noteAtGain(ctx, bed.out, "triangle", 520, 260, t, 0.11, 0.42 * w);
+      this.tick(ctx, bed.out, t, 1500, 0.13, 1.1 * w, 0.35, 520);
     }
-    // And a tick on every eighth, so the bar is always being counted.
+    // A shaker on every eighth, so the bar is always being counted by something.
     if (inBar % 2 === 0) {
-      this.tick(ctx, bed.out, at, 6200, 0.03, inBar % 4 === 0 ? 1.0 : 0.55, 1.4);
+      this.tick(ctx, bed.out, human(), 6400, 0.028, (inBar % 4 === 0 ? 0.8 : 0.42) * weight(), 1.1);
     }
-    // The ostinato: the chord root, driven, on every eighth — and on the OPEN bus, not the
-    // soft one. Through the pad's lowpass it was a rumble a phone could not reproduce; the
-    // sawtooth's upper harmonics are the whole reason it is a sawtooth.
+    // The ostinato is PLUCKED, not driven. A sawtooth here was the other half of what read
+    // as digital: it is a triangle with a fast decay now, which is a thumb piano rather
+    // than a synth line, and it is doubled an octave up every other beat so the figure
+    // moves instead of repeating.
     if (inBar % 2 === 0) {
-      this.voice(ctx, bed.out, "sawtooth", root * 2, at, def.beat * 0.38, 0.075);
+      const t = human();
+      this.voice(ctx, bed.out, "triangle", root * 2, t, def.beat * 0.34, 0.09 * weight(), { detune: 5 });
+      if (inBar % 8 === 4) this.voice(ctx, bed.out, "sine", root * 4, t, def.beat * 0.3, 0.045);
+    }
+  }
+
+  /**
+   * The drum opening: one bar, alone, building.
+   *
+   * A roll that thickens and gets louder as it goes, ending on the downbeat the music
+   * enters on — so the bed does not fade up out of nothing, it is COUNTED IN. This is the
+   * whole of what a listener hears in the first two seconds of a match, so it is the part
+   * that has to say "something is starting".
+   */
+  private opener(
+    ctx: AudioContext, bed: Bed, def: TrackDef, played: number, total: number, at: number,
+  ): void {
+    const rand = this.rand;
+    const through = played / total;
+    const t = at + (rand() - 0.5) * 0.012;
+    // The roll fills in: quarters, then eighths, then every sixteenth by the end.
+    const every = through < 0.4 ? 4 : through < 0.75 ? 2 : 1;
+    if (played % every === 0) {
+      const w = (0.35 + through * 0.85) * (0.85 + rand() * 0.3);
+      // Accented on each beat, so the bar can be counted rather than just heard.
+      const beat = played % 4 === 0;
+      this.noteAtGain(ctx, bed.out, "sine", beat ? 230 : 330, beat ? 70 : 150, t, beat ? 0.2 : 0.09, (beat ? 0.9 : 0.4) * w);
+      this.tick(ctx, bed.out, t, beat ? 430 : 1300, beat ? 0.05 : 0.04, (beat ? 1.3 : 0.8) * w, 0.4, beat ? 150 : 500);
+    }
+    // And the last two sixteenths are the pickup into the downbeat.
+    if (played === total - 2 || played === total - 1) {
+      this.tick(ctx, bed.out, t, 2000, 0.05, 1.2, 0.35, 700);
     }
   }
 
@@ -901,10 +1029,14 @@ export class WebFeedback implements Feedback {
     const rand = this.rand;
     for (let i = 0; i < ticks; i++) {
       const t = at + (span * i) / ticks + rand() * (span / ticks) * 0.6;
-      // Higher and quieter as the column thins out, so the burst has a shape rather than
-      // being a flat rattle.
+      // Quieter as the column thins out, so the burst has a shape rather than being a flat
+      // rattle.
       const fade = 1 - (i / ticks) * 0.45;
-      this.tick(ctx, out, t, 1100 + rand() * 2600, 0.02, 4.5 * fade, 2.2);
+      // SMALL AND SOFT. High, because a tiny thing makes a high sound; very short, because
+      // a foot is not a drum; and a wide, gentle filter, because a narrow one RINGS and a
+      // ring is what made the first version read as hard. Many of them quietly is a
+      // column of ants — a few of them loudly is somebody knocking.
+      this.tick(ctx, out, t, 3200 + rand() * 3400, 0.007, 0.85 * fade, 0.9);
     }
   }
 
@@ -978,6 +1110,47 @@ export class WebFeedback implements Feedback {
     osc.stop(at + dur + 0.02);
   }
 
+  /**
+   * Fetch and decode a manifest file, once.
+   *
+   * Everything here fails SOFT. A sound is a nicety; a promise rejection that escapes is a
+   * crash. So the result — success or failure — is cached under the path, and the caller
+   * reads the cache: the very first play of a sampled cue is synthesised while the file is
+   * still in the air, which is right, because a cue that arrives late is worse than one
+   * that arrived synthesised (the same rule as playing before the first gesture).
+   */
+  private sample(path: string): Sample {
+    const cached = this.samples.get(path);
+    if (cached !== undefined) return cached;
+    const ctx = this.ctx;
+    if (!ctx || typeof ctx.decodeAudioData !== "function") return null;
+    // Mark it in flight so a burst of taps does not start a dozen fetches.
+    this.samples.set(path, null);
+    void (async () => {
+      try {
+        const res = await fetch(soundUrl(path));
+        if (!res.ok) return;
+        const buf = await ctx.decodeAudioData(await res.arrayBuffer());
+        this.samples.set(path, buf);
+      } catch {
+        // Left as null: the synthesiser has it from here, for good.
+      }
+    })();
+    return null;
+  }
+
+  /** Play a decoded file at `at`. Returns false when there is nothing to play. */
+  private playSample(buf: AudioBuffer, out: AudioNode, at: number, loop = false): AudioBufferSourceNode | null {
+    const ctx = this.ctx;
+    if (!ctx || typeof ctx.createBufferSource !== "function") return null;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = loop;
+    src.connect(out);
+    try { src.start(at); } catch { return null; }
+    return src;
+  }
+
   play(cue: Cue): void {
     this.buzz(cue);
     if (!this.sound || this.broken) return;
@@ -987,9 +1160,13 @@ export class WebFeedback implements Feedback {
     if (!ctx || !master || ctx.state !== "running") return;
     try {
       const now = ctx.currentTime;
+      // A file named in the manifest REPLACES the synthesised cue entirely.
+      const file = SOUNDS.cues?.[cue];
+      const buf = file ? this.sample(file) : null;
+      if (buf && this.playSample(buf, master, now)) return;
       // The percussive cues are noise, and are built rather than looked up.
-      if (cue === "move") this.scurry(ctx, master, now, 0.22, 14);
-      else if (cue === "travel") this.scurry(ctx, master, now, 0.6, 34);
+      if (cue === "move") this.scurry(ctx, master, now, 0.24, 22);
+      else if (cue === "travel") this.scurry(ctx, master, now, 0.62, 48);
       else if (cue === "fight") this.crack(ctx, master, now, 0.8);
       else if (cue === "destroy") this.crack(ctx, master, now, 1.35);
       for (const v of VOICES[cue]) {
@@ -1039,6 +1216,7 @@ export class WebFeedback implements Feedback {
 export class SilentFeedback implements Feedback {
   play(_cue: Cue): void {}
   setMusic(_track: Track | null): void {}
+  setMusicEnabled(_on: boolean): void {}
   unlock(): void {}
   setSound(_on: boolean): void {}
   setHaptics(_on: boolean): void {}
