@@ -153,6 +153,15 @@ export class App {
    */
   private duel: { host: true } | { host: false; invite: DuelInvite } | null = null;
 
+  /**
+   * The seed the two players share for a duel.
+   *
+   * A match is only replayable — and only verifiable by a server — if both sides open the
+   * same board (engine/protocol.ts), and ability scatter draws from this. Offline there is
+   * nobody to agree with, so `LocalDuels` picks one; with a server it is the server's.
+   */
+  private duelSeed: number | null = null;
+
   private choices: Choices;
   private profile: ProfileStore;
   /**
@@ -813,8 +822,17 @@ export class App {
         .filter((f) => f.id !== seat.id)
         .map((f) => ({ name: f.name, colony: f.colony, species: f.species, human: true })),
       awaiting: seat.name,
-      search: () => this.duels.challenge(seat, this.choices.map, screen.signal)
-        .then((who) => ({ name: who.name, colony: who.colony, species: who.species, human: true })),
+      // Every way a challenge can end is an OUTCOME now, so anything but an accept is a
+      // reason the screen can state rather than an exception it has to catch. The
+      // matchmaking screen wants a promise that settles with an opponent, so the ones
+      // that are not an accept become a rejection HERE — one place, with the reason kept.
+      search: () => this.duels.challenge(seat, this.choices.map, screen.signal).then((out) => {
+        if (out.kind !== "accepted") throw new Error(out.kind);
+        // The SEED is the match: both players must open the same board, so it comes from
+        // whoever set the challenge up rather than from each client separately.
+        this.duelSeed = out.seed;
+        return { name: out.who.name, colony: out.who.colony, species: out.who.species, human: true };
+      }),
       onFound: (foe) => { this.matchmaking = null; this.duel = null; this.startMatch(foe); },
     });
     this.matchmaking = screen;
@@ -880,7 +898,13 @@ export class App {
 
     // Held rather than inlined: the opponent's nameplate is drawn from it too, and the
     // state's own `rng` has moved on by the time the board is built.
-    const seed = (Date.now() ^ (Math.random() * 0xffffffff)) | 0;
+    //
+    // A DUEL'S SEED IS AGREED, not rolled. Two people playing each other have to open the
+    // same board or nothing replays and no server can verify it (engine/protocol.ts), so
+    // when there is one it comes from whoever set the challenge up. Everything else rolls
+    // its own, which is right: nobody else has to agree with it.
+    const seed = this.duelSeed ?? ((Date.now() ^ (Math.random() * 0xffffffff)) | 0);
+    this.duelSeed = null;
     const state = createGame({
       map: this.choices.map,
       species: { you: this.choices.species, ai: aiSpecies },

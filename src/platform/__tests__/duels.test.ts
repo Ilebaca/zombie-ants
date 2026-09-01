@@ -19,33 +19,71 @@ describe("asking a friend for a match", () => {
 
   const friend = { id: "p:vela", name: "Vela", colony: 900, species: "fire" as const, since: 0 };
 
-  it("seats them after a moment", async () => {
+  it("seats them after a moment, and agrees a seed", async () => {
     const duels = new LocalDuels(100);
     const promise = duels.challenge(friend, "small", new AbortController().signal);
     vi.advanceTimersByTime(120);
-    await expect(promise).resolves.toMatchObject({ name: "Vela", colony: 900 });
+    const out = await promise;
+    expect(out.kind).toBe("accepted");
+    if (out.kind !== "accepted") return;
+    expect(out.who).toMatchObject({ name: "Vela", colony: 900 });
+    // THE SEED IS THE MATCH. Both players have to open the same board or nothing replays
+    // and no server can verify it, so a challenge that was accepted carries one.
+    expect(Number.isInteger(out.seed), "an accepted challenge agreed no seed").toBe(true);
   });
 
   /**
    * LEAVING THE SCREEN ABANDONS THE CHALLENGE. The same rule the opponent search follows:
-   * a promise that resolves after the player has walked away would start a match behind
+   * a promise that settles after the player has walked away must not start a match behind
    * whatever screen they went to.
+   *
+   * An OUTCOME rather than a rejection, because walking away is an ordinary thing to do.
+   * Exceptions are for something going wrong.
    */
   it("gives up when the screen is left", async () => {
     const duels = new LocalDuels(100);
     const abort = new AbortController();
     const promise = duels.challenge(friend, "small", abort.signal);
     abort.abort();
-    await expect(promise).rejects.toThrow();
+    await expect(promise).resolves.toEqual({ kind: "abandoned" });
     // ...and the timer that would have seated them is gone, not merely ignored.
     vi.advanceTimersByTime(500);
-    await expect(promise).rejects.toThrow();
+    await expect(promise).resolves.toEqual({ kind: "abandoned" });
   });
 
   it("refuses one that was abandoned before it started", async () => {
     const abort = new AbortController();
     abort.abort();
-    await expect(new LocalDuels(1).challenge(friend, "small", abort.signal)).rejects.toThrow();
+    await expect(new LocalDuels(1).challenge(friend, "small", abort.signal))
+      .resolves.toEqual({ kind: "abandoned" });
+  });
+
+  /**
+   * ANSWERING ONE THAT CAME IN. Declining is an answer, not a failure — an invitation you
+   * can only accept is a demand, and the service has to be able to say so.
+   */
+  it("reports an accept and a decline as outcomes", async () => {
+    const duels = new LocalDuels(1);
+    const invite = inviteFrom("Kestra", 1200, "mid", 5000);
+    const yes = await duels.answer(invite, true);
+    expect(yes.kind).toBe("accepted");
+    if (yes.kind === "accepted") expect(yes.who.name).toBe("Kestra");
+    await expect(duels.answer(invite, false)).resolves.toEqual({ kind: "declined" });
+  });
+
+  /**
+   * NOTHING ARRIVES ON ITS OWN OFFLINE, and the listener says so by never firing. The
+   * method exists because a badge that can only change when the local code writes it is
+   * not a notification — and finding that out after a server exists means rewriting the
+   * screens that read it.
+   */
+  it("takes a listener for invitations that arrive, and hands back a way to stop", () => {
+    const duels = new LocalDuels(1);
+    let calls = 0;
+    const stop = duels.subscribe(() => { calls++; });
+    expect(typeof stop, "there is no way to unsubscribe").toBe("function");
+    stop();
+    expect(calls, "an offline build invented an invitation").toBe(0);
   });
 });
 

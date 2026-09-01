@@ -13,3 +13,10 @@ export * from "./hive";
 export * from "./actions";
 export * from "./state";
 export * from "./tutorial";
+
+export {
+  applyMove, openingBoard, replayMatch,
+} from "./protocol";
+export type {
+  MatchRecord, MatchSetup, Move, MoveResult, Refusal, Replay,
+} from "./protocol";

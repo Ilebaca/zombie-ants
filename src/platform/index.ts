@@ -57,3 +57,5 @@ export {
   levelProgress, levelReward, msUntilRollover, questDef, rollQuests, unclaimedLevels, xpForLevel,
 } from "./quests";
 export type { LevelProgress, QuestDef, QuestKind, QuestReward, QuestState } from "./quests";
+export { LocalResults, verify } from "./results";
+export type { MatchOutcome, RecordedResult, ResultsService } from "./results";

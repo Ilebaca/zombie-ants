@@ -16,7 +16,9 @@ import type {
   AbilityKind, ActionContext, Coord, EngineEvent, GameOverReason, GameState, MapId, Player,
   PlayerMods, SpeciesId, Tile,
 } from "../engine";
-import { Thinker, adopt } from "../ai/thinker";
+import { adopt } from "../ai/thinker";
+import { AiOpponent } from "./opponent";
+import type { OpponentSource } from "./opponent";
 import type { Thought } from "../ai/thinker";
 import type { Difficulty } from "../ai/search";
 import { BoardRenderer } from "../render";
@@ -63,6 +65,14 @@ export interface MatchOptions {
   mods: Record<Player, PlayerMods>;
   ctx: ActionContext;
   difficulty: Difficulty;
+  /**
+   * Who plays the enemy's turns. Defaults to the local search.
+   *
+   * Handed in rather than built here so a match against another player is a different
+   * source rather than a different screen — the landing path, the animation and the HUD
+   * are all the same either way.
+   */
+  opponent?: OpponentSource;
   map: MapId;
   /** `played` is the wall clock: how long the match was playable, in milliseconds. */
   onExit?: (winner: Player | null, reason: GameOverReason | null, played: number) => void;
@@ -146,7 +156,17 @@ export class MatchScreen {
   private surrenderTimer: number | null = null;
   /** Why the match ended. Only the engine's gameOver event carries it. */
   private endReason: GameOverReason | null = null;
-  private thinker = new Thinker();
+  /**
+   * WHO IS ACROSS THE BOARD, as a source of turns rather than as the AI.
+   *
+   * The screen used to call the local search directly, which left no way at all for a turn
+   * to arrive from another player. It asks this instead, and a remote opponent is a
+   * different class handed in through the options (`ui/opponent.ts`) rather than a rewrite
+   * of the turn loop.
+   */
+  private opponent: OpponentSource;
+  /** Cancels a turn in flight when the match ends or the screen is torn down. */
+  private thinking = new AbortController();
   /**
    * Bumped whenever this match stops caring about an answer still in flight — torn down, or
    * already finished. The AI thinks off the main thread now, so a reply can arrive after the
@@ -155,6 +175,8 @@ export class MatchScreen {
   private generation = 0;
 
   constructor(host: HTMLElement, private opts: MatchOptions) {
+    this.opponent = opts.opponent
+      ?? new AiOpponent("ai", opts.difficulty, opts.ctx);
     this.root = document.createElement("div");
     this.root.className = "match";
     // `.match` is `display: contents` (skin.css) so header/timeband/main/footer are laid
@@ -564,7 +586,8 @@ export class MatchScreen {
   destroy(): void {
     if (this.touring) this.opts.tour?.stop();
     this.generation++;
-    this.thinker.dispose();
+    this.thinking.abort();
+    this.opponent.dispose();
     this.renderer.stop();
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
     this.clearTimers();
@@ -693,10 +716,11 @@ export class MatchScreen {
     const started = performance.now();
     const thinkFor = AI_THINK_MIN_MS + Math.random() * (AI_THINK_MAX_MS - AI_THINK_MIN_MS);
 
-    const thought = await this.thinker.think(this.state, "ai", this.opts.difficulty, this.opts.ctx);
+    const thought = await this.opponent.takeTurn(this.state, this.thinking.signal);
     // The match may have ended — surrendered, or torn down — while it was thinking. Adopting
-    // the searched board then would undo that, so the answer is simply dropped.
-    if (gen !== this.generation || this.state.over) return;
+    // the searched board then would undo that, so the answer is simply dropped. A remote
+    // opponent that never answered arrives here as a null, and is dropped the same way.
+    if (!thought || gen !== this.generation || this.state.over) return;
 
     // However fast the answer came back, the AI sits on the move for the rest of its think
     // time. The searched board is NOT adopted yet: it lands with the animation that shows

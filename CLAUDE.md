@@ -1051,6 +1051,46 @@ war, and the store is emptied into the colony from the home screen.
 Later, server-backed: async PvP, ranked ladder, seasons, replays. Determinism makes
 server-side verification and replays nearly free — keep it that way.
 
+**9b. WHAT IS ALREADY BUILT FOR MULTIPLAYER, AND WHAT IS NOT.** Everything here works and
+is tested with no server anywhere; the point of building it early is that the SHAPES are
+decided by the game rather than by whatever backend turns up.
+- **`engine/protocol.ts` is the wire format.** `Move` is one action as plain data — five
+  verbs, which is the whole game. A match is `MatchSetup` (map, species, shapes, mods and
+  the SEED) plus a list of moves; `replayMatch` rebuilds the board from it. No board ever
+  needs to cross the wire, and a server can check a result it never watched.
+- **`applyMove` REFUSES, and that is why it exists.** Every action function was written for
+  a screen that only offers legal taps, so none of them ask whose turn it is — and
+  `moveOrAttack` reads the attacker off the tile it is handed, so passed an enemy tile it
+  marches the enemy's army. A client could play its opponent's turn. The turn, the
+  ownership and the target are checked here against the same functions the screen uses to
+  decide what to offer, so there is one answer to "is this legal" rather than two that can
+  drift.
+- **An action that produced nothing did not happen.** The engine says no with an empty
+  event list (§5); reporting that as a success lets a client burn its opponent's clock with
+  moves the board never felt.
+- **`ui/opponent.ts` is where the enemy's turn comes from.** The match screen used to call
+  the local search directly, which left no way in for a turn from another player.
+  `AiOpponent` and `RemoteOpponent` both answer with the BOARD THEY LEFT BEHIND plus the
+  events — the AI's own shape — so a remote turn lands through exactly the same code that
+  lands a searched one. One landing path, so a remote match cannot drift from a local one.
+  A refused move STOPS the turn: replaying the rest onto a board that has already diverged
+  puts the two players on different boards, which is worse than a stall.
+- **`platform/results.ts` is who decides who won.** Today the client does, which is fine
+  against a bot and not fine the moment two people play for a ladder place — the colony and
+  the currencies live in `localStorage`. `verify` replays the record and compares; it is
+  the server's job, written here because it is pure and belongs to the game. It refuses a
+  record containing an impossible move even when the winner matches, because a record that
+  can carry arbitrary extra moves can carry anything.
+- **A challenge ends in an OUTCOME, not a person** (`DuelOutcome`). Declined, timed out,
+  offline and abandoned are ordinary answers a real opponent gives; an exception is for
+  something going wrong. `subscribe` is the receiving half — offline it registers a
+  listener and never calls it, which is honest, and it is there because a badge that can
+  only change when the local code writes it is not a notification.
+- **STILL MISSING, and it needs the server:** the transport itself, accounts and identity,
+  and a clock — an async match has to survive both players closing the app, which means
+  turn deadlines and a way to resume. `platform/duels.ts` carries the endpoint list a
+  backend can be built against.
+
 **Remaining gap: the shop.** Everything else in the meta layer is built. The species picker
 now enforces `profile.unlocked` (locked colonies stay visible so the player can see the
 goal), because the Antarium can sell them.

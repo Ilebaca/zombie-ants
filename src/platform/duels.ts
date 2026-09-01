@@ -1,6 +1,17 @@
 /**
  * DUELS: challenging somebody you know, and the seam a server will slot into.
  *
+ * WHAT A BACKEND HAS TO PROVIDE, in one place, so it can be built against:
+ *
+ *   POST  /duels                {toPlayerId, map}     -> DuelOutcome (accepted carries the seed)
+ *   POST  /duels/:id/answer     {accept}              -> DuelOutcome
+ *   GET   /duels                                      -> DuelInvite[]   (or a socket; see subscribe)
+ *   POST  /matches/:id/result   MatchOutcome          -> RecordedResult (platform/results.ts)
+ *
+ * The seed on an accept is the load-bearing part: both players must open the same board or
+ * nothing replays and nothing can be verified (engine/protocol.ts). Only one side can
+ * choose it, which is the server.
+ *
  * A ranked match is against whoever the finder seats (`matchmaking.ts`). A DUEL is against
  * a named person: you pick the ground, you pick the colony, then you pick the friend, and
  * the match starts when they sit down. From the other side an invitation arrives, and
@@ -36,15 +47,52 @@ export interface DuelInvite {
   at: number;
 }
 
+/**
+ * How a challenge ended.
+ *
+ * A RESULT RATHER THAN A PERSON, and that is the whole reason this type exists. The first
+ * version resolved with the friend and rejected on abandonment, which left "they said no"
+ * and "they are not online" with nowhere to go but an exception — and an exception is for
+ * something going wrong, not for an answer nobody wanted. All four of these are ordinary
+ * outcomes a real opponent produces, and the screen can say something different for each.
+ */
+export type DuelOutcome =
+  | { kind: "accepted"; who: Person; seed: number }
+  | { kind: "declined" }
+  | { kind: "timeout" }
+  | { kind: "offline" }
+  | { kind: "abandoned" };
+
+/**
+ * An invitation arriving while the app is open.
+ *
+ * `subscribe` is the half a server needs and a local build cannot have: with no server
+ * nothing ever arrives on its own, so `LocalDuels` registers the listener and calls it
+ * never. It is here anyway because the shape is the point — a badge that can only change
+ * when the local code writes it is not a notification, and discovering that after a
+ * backend exists means rewriting the screens that read it.
+ */
 export interface DuelService {
   /**
    * Ask a friend for a match.
    *
-   * Resolves with the person once they sit down. Rejects if the challenge was abandoned —
-   * the caller passes the same abort signal the matchmaking screen uses, so leaving the
-   * screen cannot start a match behind it.
+   * Never rejects: every way this can end is a `DuelOutcome`, including the player walking
+   * away. The signal is the matchmaking screen's, so leaving cannot start a match behind
+   * whatever they went to.
    */
-  challenge(friend: Friend, map: MapId, signal: AbortSignal): Promise<Person>;
+  challenge(friend: Friend, map: MapId, signal: AbortSignal): Promise<DuelOutcome>;
+
+  /**
+   * Answer one that came in. The server decides; this reports what it decided.
+   *
+   * The SEED comes back on an accept because both players must open the same board — it
+   * is what makes two clients replay to the same position (engine/protocol.ts), and only
+   * one side can choose it.
+   */
+  answer(invite: DuelInvite, accept: boolean): Promise<DuelOutcome>;
+
+  /** Called whenever the set of waiting invitations changes. Returns an unsubscribe. */
+  subscribe(onChange: (invites: readonly DuelInvite[]) => void): () => void;
 }
 
 /** An inbox is a list, not a phone book: past this the oldest fall off. */
@@ -61,18 +109,40 @@ export const DUEL_WAIT_MS = 3200;
  * would be inventing a refusal rather than reporting one.
  */
 export class LocalDuels implements DuelService {
-  constructor(private wait = DUEL_WAIT_MS) {}
+  constructor(private wait = DUEL_WAIT_MS, private seed = () => (Math.random() * 2 ** 31) | 0) {}
 
-  challenge(friend: Friend, _map: MapId, signal: AbortSignal): Promise<Person> {
-    return new Promise((resolve, reject) => {
-      if (signal.aborted) { reject(new Error("abandoned")); return; }
+  challenge(friend: Friend, _map: MapId, signal: AbortSignal): Promise<DuelOutcome> {
+    return new Promise((resolve) => {
+      if (signal.aborted) { resolve({ kind: "abandoned" }); return; }
       const timer = setTimeout(() => {
         signal.removeEventListener("abort", onAbort);
-        resolve({ id: friend.id, name: friend.name, colony: friend.colony, species: friend.species });
+        resolve({
+          kind: "accepted",
+          who: { id: friend.id, name: friend.name, colony: friend.colony, species: friend.species },
+          // Chosen HERE because offline there is nobody else to choose it. With a server
+          // this is the server's number, and both players are handed the same one.
+          seed: this.seed(),
+        });
       }, this.wait);
-      const onAbort = (): void => { clearTimeout(timer); reject(new Error("abandoned")); };
+      const onAbort = (): void => { clearTimeout(timer); resolve({ kind: "abandoned" }); };
       signal.addEventListener("abort", onAbort, { once: true });
     });
+  }
+
+  /** Offline the answer is simply what the player pressed: there is nobody to tell. */
+  answer(invite: DuelInvite, accept: boolean): Promise<DuelOutcome> {
+    return Promise.resolve(accept
+      ? { kind: "accepted", who: invite.from, seed: this.seed() }
+      : { kind: "declined" });
+  }
+
+  /**
+   * Nothing ever arrives on its own without a server, so this listener is registered and
+   * never called. That is the honest offline behaviour rather than a stub — and the
+   * unsubscribe is real, so the screens are already tidying up something they will need to.
+   */
+  subscribe(_onChange: (invites: readonly DuelInvite[]) => void): () => void {
+    return () => { /* nothing to stop */ };
   }
 }
 
