@@ -48,6 +48,7 @@ import type { Recap } from "./result";
 import { buildColonyRoad } from "./road";
 import { Deck } from "./deck";
 import { Tour } from "./tour";
+import { lockPortrait } from "../platform/orientation";
 import type { TourStep } from "./tour";
 import "./game.css";
 import "./skin.css";   // the look, layered over the structure
@@ -176,6 +177,9 @@ export class App {
      */
     this.host.addEventListener("pointerdown", (e) => {
       this.feedback.unlock();
+      // Asked for on a gesture, like the audio device, and for the same reason: a browser
+      // that grants this at all grants it to a user action (platform/orientation.ts).
+      lockPortrait();
       if (pressable(e.target)) this.feedback.play("tap");
     }, { capture: true });
     // The menu bed goes on at boot. It cannot actually sound until the first press — the

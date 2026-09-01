@@ -157,10 +157,13 @@ export class MatchScreen {
   constructor(host: HTMLElement, private opts: MatchOptions) {
     this.root = document.createElement("div");
     this.root.className = "match";
-    // display:contents so header/timeband/main/footer are laid out by #app itself, exactly
-    // as they are in the legacy build — this wrapper exists only to tear them all down at
-    // the end of a match.
-    this.root.style.cssText = "display:contents";
+    // `.match` is `display: contents` (skin.css) so header/timeband/main/footer are laid
+    // out by #app itself, exactly as they are in the legacy build — this wrapper exists
+    // only to tear them all down at the end of a match.
+    //
+    // In a STYLESHEET rather than as an inline style here, and that is the whole reason it
+    // moved: an inline style outranks every rule, so the landscape layout — which needs
+    // this wrapper to become a real grid — could not override it without `!important`.
     this.root.innerHTML = MARKUP;
     /*
      * THE ACTION BAR'S MARKS ARE DRAWN, NOT TYPESET.

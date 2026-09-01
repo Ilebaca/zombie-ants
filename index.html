@@ -11,6 +11,17 @@
 </head>
 <body>
 <div id="app"></div>
+<!--
+  THE GAME IS PLAYED UPRIGHT (see skin.css). In the document rather than built
+  by the app, so it is on screen before a single line of script has run: a phone
+  held sideways while the bundle loads should never show the layout sideways,
+  even for a frame.
+-->
+<div id="rotate" aria-live="polite">
+  <div class="rot-mark" aria-hidden="true"></div>
+  <div class="rot-h">Turn your device upright</div>
+  <div class="rot-p">Zombie Ants is played in portrait — the board is square and the colony reads down the screen.</div>
+</div>
 <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

@@ -1177,6 +1177,55 @@ These differ from the legacy build **on purpose**. Anything else that differs is
 - **Venom Rain's description** says "10 troops/turn" in the legacy build, but both engines
   do 7. The text was copied verbatim, so the number is wrong in both — worth deciding.
 
+**ONE DESIGN, EVERY SIZE** (the responsive block at the end of `src/ui/skin.css`). The app
+was drawn for a phone and stayed drawn for one: a fixed 360px column with chrome running
+edge to edge, so a tablet got an 1100px top bar over a column a third of that — a phone app
+stranded in a big screen.
+- **The COLUMN grows and the TYPE does not.** `--page` steps 360 → 440 → 520 → 560. This is
+  what iOS itself does, and scaling type up on a tablet is the mistake that makes an app
+  look blown up rather than designed: a 15px label is 15px on a phone and 15px on an iPad.
+  A test holds both the steps and their direction.
+- **CSS `zoom` was tried first and rejected.** One line per breakpoint and everything
+  scales — but `#app` is `position: fixed; inset: 0` and the tab bar is fixed inside it, and
+  a fixed box under `zoom` is sized in scaled units against an unscaled viewport. Board
+  hit-testing survived it (measured); the chrome did not.
+- **The two bars stay full-bleed and their CONTENTS join the column**, through
+  `padding-inline: max(16px, calc((100% - var(--page)) / 2))` rather than a wrapper — so no
+  markup moves and the background does not break at the screen edge. The home screen's
+  banner, granary pill and hero need telling separately: they are laid out above the body
+  column, not inside it. The two floating buttons are POSITIONED, so they answer to the
+  viewport until pinned to the column's edge too.
+- **Every control is a thumb wide** (`--tap: 44px`). A dozen were under it — the back button
+  on every screen, the currency steppers, the granary pill, every switch in Settings, and
+  the chip rows in Friends, Support and the Leaderboard. Where a control has to stay
+  visually small the SIZE and the TARGET are separated: the 16px stepper keeps its mark and
+  an invisible `::after` is what the thumb hits, so the row's spacing does not move by a
+  pixel. `getBoundingClientRect` cannot see that, which is worth knowing before "fixing" it
+  again.
+- **THE GAME IS PLAYED UPRIGHT** (`platform/orientation.ts`, `#rotate` in `index.html`). The
+  board is square and the interface is one column, so landscape gives the board a third of
+  its pixels and spreads the rest as empty width. Two halves, because neither is enough:
+  `screen.orientation.lock` is the real thing where it is allowed (installed, or fullscreen
+  on Android) and is REFUSED in an ordinary tab and absent on iOS — so it is asked for on a
+  gesture and its failure is the expected case, swallowed rather than logged. The shade is
+  what actually holds the line, and it lives in the DOCUMENT rather than being built by the
+  app: a phone held sideways while the bundle loads must not show the layout sideways even
+  for a frame. Gated on `pointer: coarse`, never on a screen size — a tablet held sideways
+  is 1100px tall and would sail through any height threshold, and a laptop window must never
+  be told to rotate.
+- **A landscape layout was built and then deleted.** The match screen became a grid with the
+  action bar as a rail beside the board, which took the board from 156px to 306px on a phone
+  on its side. It is gone because the game is portrait-only; it is mentioned here so it is
+  not rediscovered as a missing feature. What survived it is `.match { display: contents }`
+  moving from an inline style into `skin.css` — an inline style outranks every rule, which
+  is worth remembering the next time a screen will not respond to a media query.
+- **CSS FAILS SILENTLY, so a test reads the stylesheets**
+  (`src/ui/__tests__/css-sanity.test.ts`). `border-radius: 12pxpx` is not an error anywhere:
+  the value is dropped and the rest of the rule still applies, so the corner quietly stays
+  square while the file says it is round. Twelve of those had accumulated in `skin.css` —
+  twelve considered decisions that had never once taken effect — and all twelve were found
+  by a search for something else.
+
 **SETTINGS IS A SCREEN, NOT A FORM** (`src/ui/settings.ts`). It was one card of six
 identical rows — a label, a bordered button — and two of them were dead: "Sound [On]" and
 "Vibration [On]", both disabled, both over nothing, because this build has no audio and no

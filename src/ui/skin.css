@@ -840,7 +840,7 @@ body,
 .stile, .luckycard, .rbanner, .dhero, .hillcut, .antcell, .lbbanner, .lbrow,
 .menudraw, .setrow, .roadhead {
   background: var(--panel);
-  border-radius: 13pxpx;
+  border-radius: 13px;
   box-shadow: var(--bevel);
 }
 
@@ -876,7 +876,7 @@ body,
   padding: 0;
   color: var(--ink-soft);
   background: var(--panel);
-  border-radius: 9pxpx;
+  border-radius: 9px;
 }
 .screentop .backbtn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--panel-edge); }
 
@@ -939,7 +939,7 @@ body,
   position: relative;
   color: var(--muted);
   background: none;
-  border-radius: 9pxpx;
+  border-radius: 9px;
   font-size: 10.5px;
   font-weight: 800;
   letter-spacing: .2px;
@@ -1040,14 +1040,14 @@ body,
   width: 50px;
   padding: 8px 0 7px;
   gap: 2px;
-  border-radius: 11pxpx;
+  border-radius: 11px;
   background: var(--gold);
   color: #3a2600;
   box-shadow: 0 3px 0 var(--gold-edge), 0 8px 18px rgba(0, 0, 0, .5), var(--sheen);
 }
 .settingsfab {
   padding: 0;
-  border-radius: 11pxpx;
+  border-radius: 11px;
   background: rgba(16, 28, 19, .86);
   color: var(--ink-soft);
   box-shadow: 0 3px 0 rgba(0, 0, 0, .5), 0 8px 18px rgba(0, 0, 0, .45), var(--sheen);
@@ -1057,7 +1057,7 @@ body,
    One green, one shape, one place. The play button is the only thing on
    the home screen that is allowed to be this bright. */
 .playbtn, #begin, .cta.begin, .challplay {
-  border-radius: 12pxpx;
+  border-radius: 12px;
   letter-spacing: .6px;
 }
 .playbtn {
@@ -1083,14 +1083,14 @@ body,
   place-items: center;
   width: 40px;
   height: 40px;
-  border-radius: 9pxpx;
+  border-radius: 9px;
   background: rgba(0, 0, 0, .26);
   box-shadow: var(--sheen);
 }
 
 /* ------------------------------------------------------------- BUTTONS */
 .cta, .buybtn, .qbtn, .passbuy, .buybar, .setbtn, .claimchip, .antcta, .hbuy {
-  border-radius: 10pxpx;
+  border-radius: 10px;
   font-weight: 900;
   letter-spacing: .3px;
 }
@@ -1102,7 +1102,7 @@ body,
 .shopnote, .testnote, .demo-note {
   border: none;
   background: rgba(79, 184, 240, .1);
-  border-radius: 10pxpx;
+  border-radius: 10px;
   color: var(--ink-soft);
   box-shadow: var(--sheen);
 }
@@ -1216,7 +1216,7 @@ body,
 .chic, .ri {
   width: 40px;
   height: 40px;
-  border-radius: 9pxpx;
+  border-radius: 9px;
   background: rgba(0, 0, 0, .26);
   box-shadow: var(--sheen);
   color: var(--grass-glow);
@@ -1256,7 +1256,7 @@ body,
   gap: 10px;
   border: none;
   background: rgba(79, 184, 240, .09);
-  border-radius: 10pxpx;
+  border-radius: 10px;
   color: var(--ink-soft);
   box-shadow: var(--sheen);
   font-size: 12.5px;
@@ -1275,7 +1275,7 @@ body,
   width: 54px;
   height: 54px;
   margin: 0 auto 8px;
-  border-radius: 12pxpx;
+  border-radius: 12px;
   background: rgba(0, 0, 0, .28);
   box-shadow: var(--sheen);
   color: var(--gold-glow);
@@ -1357,13 +1357,13 @@ body,
    The drawer floated straight on the artwork with nothing behind it, and
    its seven entries were seven emoji from seven sets. */
 .menuwrap { background: rgba(8, 15, 10, .6); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
-.menudraw { padding: 8px; border-radius: 14pxpx 0 0 20px; }
+.menudraw { padding: 8px; border-radius: 14px 0 0 20px; }
 .menuitem {
   display: flex;
   align-items: center;
   gap: 12px;
   border: none;
-  border-radius: 10pxpx;
+  border-radius: 10px;
   background: none;
   color: var(--ink);
   font-weight: 800;
@@ -1374,7 +1374,7 @@ body,
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: 8pxpx;
+  border-radius: 8px;
   background: rgba(0, 0, 0, .26);
   box-shadow: var(--sheen);
   color: var(--grass-glow);
@@ -1386,14 +1386,14 @@ body,
 .qic, .lbbadge {
   display: grid;
   place-items: center;
-  border-radius: 9pxpx;
+  border-radius: 9px;
   background: rgba(0, 0, 0, .26);
   box-shadow: var(--sheen);
   color: var(--grass-glow);
   font-size: 0;
 }
 .qic { width: 40px; height: 40px; }
-.lbbadge { width: 48px; height: 48px; border-radius: 10pxpx; color: var(--gold-glow); }
+.lbbadge { width: 48px; height: 48px; border-radius: 10px; color: var(--gold-glow); }
 .qstreak { color: var(--gold-glow); font-weight: 800; letter-spacing: .3px; }
 
 /* ======================================================================
@@ -1735,7 +1735,7 @@ button:not(.playbtn):active,
   width: 54px;
   height: 54px;
   margin: 0 auto 8px;
-  border-radius: 12pxpx;
+  border-radius: 12px;
   background: rgba(0, 0, 0, .28);
   box-shadow: var(--sheen);
   color: var(--gold-glow);
@@ -3891,3 +3891,174 @@ button:not(.playbtn):active,
    screenshot and a player who has never seen the control before. */
 .setswitch { color: var(--muted); }
 .setswitch.on { border-color: var(--grass); color: var(--grass-glow); }
+
+
+/* ======================================================================
+   ONE DESIGN, EVERY SIZE
+
+   The app was drawn for a phone and it stayed drawn for a phone: a fixed
+   360px column, and chrome that ran edge to edge. On a tablet that reads
+   as a phone app stranded in the middle of a big screen — a top bar
+   eleven hundred pixels long over a column a third of that.
+
+   The fix is the one iOS itself uses, and the one thing NOT to do is
+   scale the type. A 15px label is 15px on an iPhone and 15px on an iPad;
+   what changes is how much room the layout is given. So the column grows,
+   the chrome lines up with it at every size, and every proportion inside
+   is the one that was drawn. Same design, more room.
+   ====================================================================== */
+@media (min-width: 600px)  { :root { --page: 440px; } }
+@media (min-width: 900px)  { :root { --page: 520px; } }
+@media (min-width: 1200px) { :root { --page: 560px; } }
+
+/* The two bars are the only full-bleed things in the app, and they stay
+   full-bleed — a tab tray that stopped short of the screen edges would
+   float. It is their CONTENTS that join the column, through padding
+   rather than a wrapper, so no markup moves and the background does not
+   break. `max()` keeps the phone's own gutter when there is no slack. */
+.topnav,
+.homenav {
+  padding-inline: max(16px, calc((100% - var(--page)) / 2));
+}
+
+/* The home screen's own furniture is laid out, not in the body column:
+   the colony banner, the granary pill and the hero all have to be told
+   about the column separately or they stretch while the cards do not. */
+#home #colonyHero,
+#home .granpill,
+#home .homeplay {
+  width: min(100%, var(--page));
+  margin-inline: auto;
+}
+
+/* The floating buttons are POSITIONED, not laid out, so they answer to
+   the viewport unless told otherwise. Pinned to the column's right edge
+   they stay beside the content they belong to instead of drifting off
+   toward the screen edge on a tablet. */
+.settingsfab,
+.dailyfab {
+  right: max(16px, calc((100% - var(--page)) / 2));
+}
+
+/* ----------------------------------------------------------------------
+   EVERY CONTROL IS A THUMB WIDE
+
+   A 30px chip and a 16px stepper are fine with a mouse and wrong under a
+   thumb: the guidance everywhere is 44px, and this app had a dozen
+   controls under it — the back button on every screen, the currency
+   steppers, the granary pill, every switch in Settings, and the chip rows
+   in Friends, Support and the Leaderboard.
+
+   Where a control has to stay visually small, the SIZE and the TARGET are
+   separated: the mark keeps its drawn size and an invisible box around it
+   is what the thumb actually hits.
+   ---------------------------------------------------------------------- */
+:root { --tap: 44px; }
+
+.screentop .backbtn,
+.backbtn {
+  width: var(--tap);
+  height: var(--tap);
+}
+
+/* The steppers stay 16px marks. The ::after is the hit area, centred on
+   the mark and larger than it, which is why the row's spacing does not
+   change by a pixel. */
+.tn-plus { position: relative; }
+.tn-plus::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--tap);
+  height: var(--tap);
+  transform: translate(-50%, -50%);
+}
+
+#granaryPill.granpill { min-height: var(--tap); }
+
+.setval,
+.setswitch,
+.frtab,
+.spkind,
+.spqhead,
+.lbchip {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+
+/* The match wrapper is not a box: its header, board and action bar are laid
+   out by #app's own column, exactly as in the legacy build, and the wrapper
+   exists only to tear them all down at the end of a match. In the stylesheet
+   rather than as an inline style on the element, because an inline style
+   outranks every rule in the app and this one is styling like any other. */
+.match { display: contents; }
+
+
+
+/* ======================================================================
+   THE GAME IS PLAYED UPRIGHT
+
+   The board is square and the whole interface is a single column, so a
+   phone on its side gives the board a third of the pixels and spreads the
+   rest as empty width. This is a portrait game; it says so rather than
+   degrading into a shape nobody designed.
+
+   Two halves, because neither is enough on its own. `screen.orientation.
+   lock` is the real thing and it works where it is allowed — installed as
+   an app, or fullscreen on Android — but a browser tab is usually not
+   allowed to call it, and iOS Safari does not implement it at all. So the
+   shade below is what actually holds the line on most devices, and the
+   lock is the better answer where it can be had.
+   ====================================================================== */
+#rotate {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+  text-align: center;
+  background: var(--bg0, #0b1410);
+  color: var(--ink, #eaf3ea);
+}
+#rotate .rot-mark {
+  width: 66px;
+  height: 66px;
+  border: 3px solid var(--grass-glow, #6dd36d);
+  border-radius: 10px;
+  animation: rot-turn 2.4s ease-in-out infinite;
+}
+#rotate .rot-h {
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: .2px;
+}
+#rotate .rot-p {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-soft, #b7c9b7);
+  max-width: 260px;
+  line-height: 1.45;
+}
+@keyframes rot-turn {
+  0%, 30%   { transform: rotate(90deg)  scaleX(.62); }
+  60%, 100% { transform: rotate(0deg)   scaleX(1); }
+}
+
+/* Landscape on a device someone is HOLDING — phone or tablet, both.
+   `pointer: coarse` is the discriminator rather than a screen size: a laptop
+   window is landscape by nature and telling somebody at a desk to rotate it
+   would be nonsense, and an 1100px tablet held sideways is exactly the case
+   a size threshold would let through. */
+@media (orientation: landscape) and (pointer: coarse) {
+  #rotate { display: flex; }
+  #app { visibility: hidden; }
+}
