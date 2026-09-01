@@ -93,10 +93,11 @@ describe("dragging the deck", () => {
    */
   describe("a gesture that starts across and then runs down", () => {
     /** Touch, not pointer: `preventDefault` on touchmove is what blocks a scroll. */
-    const swipe = (deck: Deck<Id>, path: readonly (readonly [number, number])[]): boolean[] => {
+    const swipe = (deck: Deck<Id>, path: readonly (readonly [number, number])[], on?: Element): boolean[] => {
+      const target = on ?? deck.el;
       const down = new MouseEvent("pointerdown", { clientX: 500, clientY: 400, bubbles: true });
       Object.defineProperty(down, "pointerId", { value: 1 });
-      deck.el.dispatchEvent(down);
+      target.dispatchEvent(down);
       return path.map(([x, y]) => {
         const e = new Event("touchmove", { bubbles: true, cancelable: true });
         Object.defineProperty(e, "touches", { value: [{ clientX: 500 + x, clientY: 400 + y }] });
@@ -105,18 +106,71 @@ describe("dragging the deck", () => {
       });
     };
 
+    /**
+     * A panel that can really scroll. jsdom lays nothing out, so the two measurements the
+     * deck reads have to be stated — and stating them is the point: what decides whether a
+     * pivoting thumb is protected is whether there is anywhere for it to scroll TO.
+     */
+    const scroller = (deck: Deck<Id>, { top = 0, height = 400, content = 2000 } = {}): HTMLElement => {
+      const panel = document.createElement("div");
+      panel.style.overflowY = "auto";
+      Object.defineProperty(panel, "scrollHeight", { value: content, configurable: true });
+      Object.defineProperty(panel, "clientHeight", { value: height, configurable: true });
+      panel.scrollTop = top;
+      deck.el.querySelector(".slide")?.appendChild(panel);
+      return panel;
+    };
+
     it("lets the screen under it scroll", () => {
       const { deck } = make();
-      // Fourteen across before eight down — a pivoting thumb — and then straight down.
-      const blocked = swipe(deck, [[14, 8], [16, 60], [18, 200], [18, 420]]);
+      const panel = scroller(deck);
+      // A thumb FLICKING UP to scroll the list down, which is the gesture that pivots:
+      // fourteen pixels across before it has put eight down the screen, then straight up.
+      const blocked = swipe(deck, [[14, -8], [16, -60], [18, -200], [18, -420]], panel);
       expect(blocked.some(Boolean), "the deck blocked a scroll").toBe(false);
       expect(deck.at).toBe("a");
     });
 
+    /**
+     * ...and where there is NOTHING to scroll, the same gesture is the deck's.
+     *
+     * This is the whole of the fix. The bias toward vertical exists to protect a scroll
+     * from a pivoting thumb; on a screen that does not move vertically it protects nothing
+     * and only makes the deck hard to shift, which is exactly how it was reported — the
+     * one screen swiping worked on was the one with nothing to scroll.
+     */
+    it("takes the same gesture where there is nothing to scroll", () => {
+      const { deck } = make();
+      const blocked = swipe(deck, [[14, -8], [60, -12], [200, -18]]);
+      expect(blocked.some(Boolean), "a swipe was refused on a screen that does not scroll").toBe(true);
+    });
+
+    /** A list already at its bottom cannot take an upward flick, so that is a swipe too. */
+    it("takes it at the end of a list, where the scroll has nowhere to go", () => {
+      const { deck } = make();
+      const panel = scroller(deck, { top: 1600, height: 400, content: 2000 });
+      const blocked = swipe(deck, [[-14, -8], [-60, -12], [-200, -18]], panel);
+      expect(blocked.some(Boolean), "a swipe was refused at the bottom of a list").toBe(true);
+    });
+
     it("still takes a gesture that really is sideways", () => {
       const { deck } = make();
-      const blocked = swipe(deck, [[-20, 4], [-120, 6], [-320, 8]]);
+      const panel = scroller(deck);
+      const blocked = swipe(deck, [[-20, 4], [-120, 6], [-320, 8]], panel);
       expect(blocked.some(Boolean), "the deck let a swipe through to the page").toBe(true);
+    });
+
+    /**
+     * AND IT HAS TO DECIDE EARLY. The browser takes a touch that began on a scroll
+     * container within a move or two and cancels the pointer stream outright — measured in
+     * Chromium: one `pointermove`, then `pointercancel`, and nothing more. While the deck
+     * waited for 24px of travel it lost that race on every screen with a list, which is
+     * the bug this whole rule exists to fix.
+     */
+    it("claims a swipe within a few pixels, before the browser can take it", () => {
+      const { deck } = make();
+      const blocked = swipe(deck, [[-9, -1]]);
+      expect(blocked[0], "the deck had not decided after nine pixels").toBe(true);
     });
   });
 

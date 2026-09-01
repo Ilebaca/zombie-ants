@@ -1013,17 +1013,34 @@ screens, the species page — is still a page shown on top, and hides the deck w
   forbids its ANCESTOR from panning sideways. Owning the gesture is the only way to have
   both, so the drag is claimed only once it is clearly horizontal and the list keeps
   everything else.
-- **THE TIE GOES TO THE LIST, and the two thresholds are not the same size.** A thumb
-  pivots as it flicks, so a gesture meant to scroll regularly puts ten or fifteen pixels
-  ACROSS the screen before it has put any DOWN it — and deciding the axis at the same
-  distance in both directions handed those to the deck, whose `preventDefault` then killed
-  the scroll for the rest of the touch. A screen taller than the viewport simply would not
-  move. A pivot's sideways drift is bounded and a swipe's is not, so the deck waits for
-  `SWIPE_LOCK` (24px) across while the list takes `AXIS_LOCK` (10px) down, and neither is
-  decided off the first few pixels. The two mistakes are not equal: a wrongly claimed swipe
-  reads as a broken screen, a wrongly released one just fails to turn the page.
-  `TAP_SLOP` must stay ABOVE `SWIPE_LOCK` or nothing the deck claims is ever inside it and
-  the give-back never runs; the flick guard is measured against it for the same reason.
+- **THE ARBITRATION IS AN ANGLE, DECIDED EARLY — and a distance threshold does not work.**
+  The deck used to wait for 24px of sideways travel before claiming a swipe, and on every
+  screen with a scrolling list the BROWSER had already taken the touch by then. Measured in
+  Chromium: one `pointermove`, then `pointercancel`, and the deck never heard another
+  thing. So swiping worked on Home, which has nothing to scroll, and on none of the other
+  four — which from the outside is "it will not swipe if my finger is on anything". The
+  browser decides within a move or two, so the deck has to decide first: `AXIS_LOCK` is
+  **7px** in either direction, and what decides it is the RATIO.
+- **The bias toward vertical only applies where there is somewhere to scroll TO.** A thumb
+  pivots as it flicks, putting twelve or fourteen pixels across the screen for every eight
+  down it, and `SWIPE_BIAS` (2) is what keeps that gesture with the list — a pivot reaches
+  about 1.75 and a real swipe is five to one or more, so the line sits in a wide gap. But
+  the bias protects nothing on a screen that does not scroll, or at the top or bottom of one
+  that does, and there the tie goes to the DECK. `scrollableUnder` asks about the direction
+  of travel for exactly that reason: a list already at its end cannot take another flick, so
+  that flick is not a scroll.
+  `TAP_SLOP` must stay ABOVE `AXIS_LOCK` or nothing the deck claims is ever inside it and
+  the give-back never runs; the flick guard is measured against it for the same reason. It
+  is **34px**, because a press that rolls twenty pixels is still a tap and was landing on
+  nothing at all — measured, not guessed.
+- **The gestures are measured in a real browser, with real touch events.** `Input.
+  dispatchTouchEvent` over CDP, on every deck screen: a swipe must turn the page from
+  anywhere including on top of a button, a vertical flick must scroll and not turn the
+  page, and a tap with up to 24px of roll must reach the control under it. That is 45
+  checks, and it is the only way this was ever going to be found — every unit test in
+  `deck.test.ts` passed against the broken build, because jsdom has no browser to lose the
+  race to. The jsdom tests now state the scroller's `scrollHeight`/`clientHeight` outright,
+  so they can at least express the rule.
 - **`preventDefault` on a non-passive `touchmove` is what stops the browser stealing it.**
   With only `touch-action: pan-y` on the rail, Chromium still took a swipe that began near
   the left edge, cancelled the pointer stream mid-drag, and navigated the app away to a

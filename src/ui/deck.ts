@@ -14,23 +14,33 @@
  */
 
 /**
- * How far DOWN a drag must run to be the list's. Small: a scroll should start at once.
+ * How far a finger must travel before the deck decides whose gesture this is.
+ *
+ * SMALL, and that is the whole of the fix. It used to be 24px across before the deck would
+ * claim a swipe — and on any screen with a scrolling list the browser had already taken the
+ * touch by then. Measured: one `pointermove`, then `pointercancel`, and the deck never
+ * heard another thing. Swiping worked on Home, which has nothing to scroll, and nowhere
+ * else; from the outside that is "it will not swipe if my finger is on anything".
+ *
+ * The browser decides within a move or two, so the deck has to decide first.
  */
-const AXIS_LOCK = 10;
+const AXIS_LOCK = 7;
 /**
- * ...and how far ACROSS it must run to be the deck's. Deliberately more than twice as far.
+ * How much more horizontal than vertical a drag has to be to be a swipe — WHERE THERE IS
+ * SOMETHING UNDER THE FINGER THAT COULD SCROLL INSTEAD.
  *
- * A thumb pivots as it flicks, so a gesture meant to scroll regularly puts ten or fifteen
- * pixels across the screen before it has put any down it. Deciding at the same distance in
- * both directions handed those to the deck, and `preventDefault` then killed the scroll
- * for the rest of the touch — a screen taller than the viewport simply would not move.
+ * A thumb pivots as it flicks, so a gesture meant to scroll regularly puts twelve or
+ * fourteen pixels across the screen for every eight down it. That is the gesture this bias
+ * protects, and it is why the deck cannot simply take whichever axis is larger. TWICE as
+ * far across is the line: a pivot reaches about 1.75 and a swipe is five to one or more,
+ * so there is a wide gap between them to put it in.
  *
- * A pivot's sideways drift is BOUNDED; a swipe keeps going. So the deck waits until the
- * drag has gone somewhere no pivot goes. The two mistakes are not equal: a wrongly claimed
- * swipe stops the page scrolling, which reads as broken, while a wrongly released one just
- * fails to turn the page — and the player swipes again.
+ * But it only applies where a list could actually take the drag. On a screen that does not
+ * move vertically — or at the very top or bottom of one that does — a vertical bias is
+ * protecting nothing, and the tie goes to the deck instead. That is what makes a swipe
+ * work anywhere on Home, and anywhere on a list that is not mid-scroll.
  */
-const SWIPE_LOCK = 24;
+const SWIPE_BIAS = 2;
 /** Past this fraction of the screen, the finger has committed to the next screen. */
 const COMMIT = 0.22;
 /** ...or past this speed, in pixels per millisecond, however short the drag was. */
@@ -40,12 +50,15 @@ const RUBBER = 0.35;
 /**
  * How far a claimed gesture may have travelled and still be a TAP the deck stole.
  *
- * Necessarily MORE than `SWIPE_LOCK`, or nothing the deck claims can ever be inside it and
+ * Necessarily MORE than `AXIS_LOCK`, or nothing the deck claims can ever be inside it and
  * the give-back never runs at all. A press the deck did not claim needs no giving back —
  * the browser fires that click itself — so this band is exactly the sloppy presses that
- * went far enough to be taken and not far enough to have been going anywhere.
+ * went far enough to be taken and not far enough to have been going anywhere. Measured with synthetic
+ * touches: a press that rolls twenty pixels is still a tap and was landing on nothing at
+ * all — the rail nudged, snapped back, and the button never heard about it. Past about
+ * thirty-five the finger was going somewhere, and clicking what it started on would be wrong.
  */
-const TAP_SLOP = 40;
+const TAP_SLOP = 34;
 
 export class Deck<T extends string> {
   readonly el: HTMLElement;
@@ -189,25 +202,52 @@ export class Deck<T extends string> {
   /**
    * Decide, once, whether this gesture is the deck's or the list's underneath.
    *
-   * THE TIE GOES TO THE LIST, and that is the whole of this function. A vertical flick on
-   * a phone almost never starts straight down — the thumb pivots, so the first sample past
-   * the threshold is regularly something like 12 across and 8 down. Comparing the two
-   * magnitudes claimed that gesture for the deck, `preventDefault` killed the scroll for
-   * the rest of the touch, and a screen taller than the viewport simply would not move.
+   * TWO THINGS DECIDE IT, and the second is what makes a swipe work anywhere.
    *
-   * So horizontal has to be clearly dominant (`AXIS_BIAS`) to win, and vertical is taken
-   * the moment it crosses the threshold at all. The two mistakes are not equal: a wrongly
-   * claimed swipe stops the page scrolling, which reads as broken, while a wrongly
-   * released one just fails to turn the page — and the player swipes again.
+   * The first is the ANGLE rather than a distance: a drag is the deck's when it is clearly
+   * more across than down. It used to be a distance — 24 pixels sideways before the deck
+   * would claim anything — which lost the race with the browser. Chromium takes a touch
+   * that started on a scroll container within a move or two and cancels the pointer stream
+   * outright, so on every screen with a list the deck's threshold was never reached and
+   * swiping simply did not work.
+   *
+   * The second is WHETHER THERE IS ANYWHERE TO SCROLL. The bias toward vertical exists to
+   * protect a scroll from a pivoting thumb — but at the top of a list, at the bottom of
+   * one, or on a screen that does not scroll at all, it protects nothing and only makes
+   * the deck hard to move. So it applies where a list could take the drag and nowhere
+   * else, and the tie goes to the deck.
    */
   private lock(dx: number, dy: number): void {
     if (this.axis !== null) return;
     const ax = Math.abs(dx), ay = Math.abs(dy);
-    // Across, far enough that no pivot got there, and still the larger of the two.
-    if (ax >= SWIPE_LOCK && ax > ay) { this.axis = "x"; return; }
-    // Down at all: the list's, immediately.
-    if (ay >= AXIS_LOCK) this.axis = "y";
-    // Neither yet — stay undecided rather than guessing off the first few pixels.
+    if (ax < AXIS_LOCK && ay < AXIS_LOCK) return;
+    const bias = this.scrollableUnder(dy) ? SWIPE_BIAS : 1;
+    this.axis = ax >= ay * bias ? "x" : "y";
+  }
+
+  /**
+   * Is there something under the finger that can scroll the way it is going?
+   *
+   * DIRECTION MATTERS, which is why this asks about `dy` rather than just "is there a
+   * list". A list already scrolled to the bottom cannot take a further upward flick, so
+   * that flick is not a scroll and there is no reason to protect it — and the player
+   * dragging at the end of a list is very often trying to leave the screen.
+   */
+  private scrollableUnder(dy: number): boolean {
+    let el: Element | null = this.downOn;
+    while (el && el !== this.el) {
+      if (el instanceof HTMLElement && el.scrollHeight > el.clientHeight + 1) {
+        const flow = getComputedStyle(el).overflowY;
+        if (flow === "auto" || flow === "scroll") {
+          const room = dy > 0
+            ? el.scrollTop > 0
+            : el.scrollTop + el.clientHeight < el.scrollHeight - 1;
+          if (room) return true;
+        }
+      }
+      el = el.parentElement;
+    }
+    return false;
   }
 
   private onMove = (e: PointerEvent): void => {
