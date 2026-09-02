@@ -818,6 +818,15 @@ footer { background: var(--bg1); }
   --gap: 12px;
   --pad: 16px;
 
+  /* ONE VERTICAL RHYTHM, for every screen that is a column of rows.
+     There were six: 6px between friends, 6 between research levels, 6 between
+     granary levels, 8 between settings rows, 8 between challenge cards and 10
+     between collection rows — with four different heading margins over them, so
+     no two of these screens sat on the same grid and the app read as several
+     apps. Every stacking container below uses this, and a heading adds 12 above
+     itself so a section starts with more air than a row does. */
+  --stack: 10px;
+
   /* The light along the top edge of every raised face. */
   --sheen: inset 0 1px 0 rgba(255, 255, 255, .09);
   --bevel: 0 3px 0 var(--panel-edge), var(--sheen);
@@ -2494,13 +2503,38 @@ button:not(.playbtn):active,
    ====================================================================== */
 
 /* -------------------------------------------------------------- WHO */
+/* ONE RHYTHM DOWN THE WHOLE SCREEN, and it is the container's rather than each
+   block's. Every box here carried its own margin-bottom — 4 under the hero, 12
+   under a stat grid, none at all under the two door rows, which had nothing but
+   their neighbours' margins to sit between — so the gaps ran 4, 22, 10, 12, 22,
+   10, 12 down one screen. A gap belongs to the space BETWEEN two things, which
+   is the container's business; a margin on the thing itself is a different
+   answer everywhere it is not set. */
+#profileBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack);
+}
+/* FLEX, NOT GRID, and every child pinned. As a GRID this scroller collapsed the
+   two stat grids to nothing: an item whose own overflow is not `visible` — and
+   `.pf-stats` clips, that is what makes its 1px gaps read as hairlines — gets an
+   automatic minimum size of zero, so the auto track sized to zero and both
+   blocks vanished with every test still passing. In a flex column the same item
+   is laid out from its content; `flex: none` is what stops the column shrinking
+   it once the page is taller than the scroller. */
+#profileBody > * { flex: none; }
+/* A heading gets more air above it than a plain gap: that space is what makes it
+   read as the start of a section rather than another row. Below it, the gap is
+   enough — the heading is already attached to what follows. */
+#profileBody > .secthead { margin: 12px 0 0; }
+#profileBody > .secthead:first-child { margin-top: 0; }
+
 .pf-hero {
   display: grid;
   grid-template-columns: 76px 1fr;
   align-items: center;
   gap: 14px;
   padding: 14px;
-  margin-bottom: 4px;
   border-radius: var(--r-lg);
   background: var(--panel);
   border: 1px solid var(--line);
@@ -2547,7 +2581,6 @@ button:not(.playbtn):active,
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1px;
-  margin-bottom: 12px;
   border-radius: var(--r-md);
   background: var(--line);
   overflow: hidden;
@@ -2574,7 +2607,7 @@ button:not(.playbtn):active,
 }
 
 /* ------------------------------------------------------- COLLECTION */
-.pf-coll { display: grid; gap: var(--gap); margin-bottom: var(--gap); }
+.pf-coll { display: grid; gap: var(--stack); }
 
 /* A row is a mark, what it is, how far along, and the way in. */
 .pf-row {
@@ -2715,7 +2748,6 @@ button:not(.playbtn):active,
   display: grid;
   justify-items: center;
   gap: 2px;
-  margin-bottom: 12px;
   padding: 16px 14px 18px;
   border-radius: var(--r-md);
   background: var(--panel);
@@ -3101,10 +3133,10 @@ button:not(.playbtn):active,
    acts on the right — grouped under headings by what each thing affects, so
    the screen says why a setting is there rather than only what it is called.
    ============================================================================ */
-.setwrap { display: grid; gap: 8px; padding-bottom: 12px; }
+.setwrap { display: grid; gap: var(--stack); padding-bottom: 12px; }
 /* A heading needs air above it, but not above the FIRST one — that would push
    the whole screen down away from its own title. */
-.setwrap .secthead { margin: 12px 0 2px; }
+.setwrap .secthead { margin: 12px 0 0; }
 .setwrap .secthead:first-child { margin-top: 0; }
 
 .setrow2 {
@@ -3436,9 +3468,10 @@ button:not(.playbtn):active,
   font-size: 10px;
   font-weight: 900;
 }
-.frpanel { display: grid; gap: 6px; padding-bottom: 12px; }
-.frpanel .secthead { margin: 8px 0 2px; }
-.frlist { display: grid; gap: 6px; }
+.frpanel { display: grid; gap: var(--stack); padding-bottom: 12px; }
+.frpanel .secthead { margin: 12px 0 0; }
+.frpanel .secthead:first-child { margin-top: 0; }
+.frlist { display: grid; gap: var(--stack); }
 .frrow {
   display: grid;
   grid-template-columns: 36px 1fr auto;
@@ -3518,8 +3551,8 @@ button:not(.playbtn):active,
    next; and whoever reads it needs the build and the save's code, so those are
    on the screen rather than asked for in a reply.
    ============================================================================ */
-.spwrap { display: grid; gap: 6px; padding-bottom: 14px; }
-.spwrap .secthead { margin: 12px 0 2px; }
+.spwrap { display: grid; gap: var(--stack); padding-bottom: 14px; }
+.spwrap .secthead { margin: 12px 0 0; }
 .spwrap .secthead:first-child { margin-top: 0; }
 .spfaq { display: grid; gap: 5px; }
 .spq { border-radius: var(--r-md); background: var(--panel); border: 1px solid var(--line); }
@@ -3649,8 +3682,8 @@ button:not(.playbtn):active,
    you have against what the next level buys — the Anthill's comparison, reusing
    the Anthill's rows so the two screens read as one app.
    ============================================================================ */
-.spgwrap { display: grid; gap: 6px; padding-bottom: 14px; }
-.spgwrap .secthead { margin: 14px 0 2px; }
+.spgwrap { display: grid; gap: var(--stack); padding-bottom: 14px; }
+.spgwrap .secthead { margin: 12px 0 0; }
 .spgwrap .secthead:first-child { margin-top: 0; }
 
 /* ------------------------------------------------------------------- THE HERO */
@@ -3822,7 +3855,7 @@ button:not(.playbtn):active,
 .chalsum-v { font-size: 13px; font-weight: 900; font-variant-numeric: tabular-nums; }
 .chalsum .hl-track { grid-column: 1 / -1; }
 
-.challist { display: grid; gap: 8px; }
+.challist { display: grid; gap: var(--stack); }
 .chalcard {
   display: grid;
   gap: 8px;
@@ -4272,7 +4305,7 @@ button:not(.playbtn):active,
    What differs is the RIGHT-HAND column: a match is remembered for what it
    PAID, and the colony is the number the whole game is played for. */
 .histbody { min-height: 0; }
-.histlist { display: grid; gap: 6px; padding-bottom: 12px; width: 100%; }
+.histlist { display: grid; gap: var(--stack); padding-bottom: 12px; width: 100%; }
 
 .histrow {
   display: grid;

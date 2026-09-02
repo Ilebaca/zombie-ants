@@ -111,3 +111,55 @@ describe("the game is played upright", () => {
       .toBeLessThan(html.indexOf("main.ts"));
   });
 });
+
+/**
+ * ONE VERTICAL RHYTHM.
+ *
+ * Every screen that is a column of rows had picked its own gap — 6 between friends, 6
+ * between research levels, 6 between granary levels, 8 between settings rows, 8 between
+ * challenge cards, 10 between collection rows — with four different heading margins over
+ * them. No two of these screens sat on the same grid, and the app read as several apps
+ * stitched together. Nothing failed; it just never looked designed.
+ *
+ * The step is `--stack` and a heading adds 12 above itself. This holds both.
+ */
+/**
+ * The rule whose selector is EXACTLY this one, at the start of a line. `.challist` also
+ * appears as `.slide .challist` — a different rule about overscroll — and a plain
+ * `indexOf` finds that one first and reads a rule the check is not about.
+ */
+const ruleFor = (css: string, selector: string): string => {
+  const at = css.search(new RegExp(`^${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\{`, "m"));
+  expect(at, `${selector} is not in the stylesheet any more`).toBeGreaterThan(-1);
+  return css.slice(at, css.indexOf("}", at));
+};
+
+describe("the app is on one vertical rhythm", () => {
+  const STACKS = [
+    "#profileBody", ".pf-coll", ".setwrap", ".frpanel", ".frlist",
+    ".spwrap", ".spgwrap", ".challist", ".histlist",
+  ];
+
+  it("spaces every stacking column by the same step", () => {
+    const css = code(read("skin.css"));
+    expect(css, "the step itself is gone").toMatch(/--stack:\s*\d+px/);
+    for (const sel of STACKS) {
+      expect(ruleFor(css, sel), `${sel} spaces its rows by a number of its own`)
+        .toMatch(/gap:\s*var\(--stack\)/);
+    }
+  });
+
+  /**
+   * A heading needs MORE air above it than a row does — that space is what makes it read
+   * as the start of a section — and none of its own below, because the step already
+   * separates it from what it introduces.
+   */
+  it("gives every section heading the same air above it", () => {
+    const css = code(read("skin.css"));
+    for (const sel of ["#profileBody > .secthead", ".setwrap .secthead",
+      ".frpanel .secthead", ".spwrap .secthead", ".spgwrap .secthead"]) {
+      expect(ruleFor(css, sel), `${sel} sets its own heading spacing`)
+        .toContain("margin: 12px 0 0");
+    }
+  });
+});

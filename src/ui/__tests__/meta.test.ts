@@ -335,17 +335,17 @@ describe("profile screen", () => {
   });
 
   /**
-   * THE MATCH LIST IS PART OF THE RECORD, NOT PART OF THE COLLECTION. It sat under the
-   * collection — three doors and a strip of nine heads deep — so from the top of the
-   * screen it did not exist, and the record above it stayed a count with no way into the
-   * matches it was counting. The screen reads who, then what has HAPPENED, then what has
-   * been collected, and a played match is the middle one.
+   * THE MATCH LIST RIDES WITH THE HERO, above everything the record says about it. It sat
+   * under the COLLECTION — three doors and a strip of nine heads deep — so from the top
+   * of the screen it did not exist at all, and the record stayed a count with no way into
+   * the matches it was counting. Everything under "Record" is a summary of these matches,
+   * and the way into a summary belongs beside the thing it summarises.
    */
-  it("puts the match list with the record, above the collection", () => {
+  it("puts the match list under the hero, above the record", () => {
     const root = buildProfile(played(), nowhere);
-    const order = Array.from(root.querySelectorAll<HTMLElement>(".secthead, #pfHistory"))
-      .map((e) => e.id === "pfHistory" ? "matches" : e.textContent);
-    expect(order).toEqual(["Record", "In the field", "matches", "Collection"]);
+    const order = Array.from(root.querySelectorAll<HTMLElement>(".pf-hero, .secthead, #pfHistory"))
+      .map((e) => e.id === "pfHistory" ? "matches" : e.classList.contains("pf-hero") ? "who" : e.textContent);
+    expect(order).toEqual(["who", "matches", "Record", "In the field", "Collection"]);
   });
 
   // A door with a count behind it, not a label: how many there are to look at is the

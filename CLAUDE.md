@@ -1110,12 +1110,12 @@ is the same twenty bytes a server would verify a result from.
   with no moves is still listed — the facts are the point of the list — it simply does not
   offer a replay it cannot give, which is the difference between a quiet row and a dead
   button.
-- **It is part of the RECORD, not part of the collection.** The row into it sat under the
-  collection — three doors and a strip of nine heads deep — so from the top of the profile
-  it did not exist, and the career above it stayed a count with no way into the matches it
-  was counting. The screen reads who, then what has HAPPENED, then what has been
-  collected, and a played match is the middle one. The row carries the COUNT, because how
-  many there are to look at is the reason to open it.
+- **It rides with the HERO, above the record.** The row into it began under the collection
+  — three doors and a strip of nine heads deep — so from the top of the profile it did not
+  exist at all, and the career stayed a count with no way into the matches it was counting.
+  Everything under "Record" is a summary OF these matches, and the way into a summary
+  belongs beside the thing it summarises. The row carries the COUNT, because how many there
+  are to look at is the reason to open it.
 - **The list reports what a match PAID.** The colony is the number the whole game is played
   for (§8a), so the right-hand column is the delta, in the losing colour when it cost.
 - **The player rewinds by REBUILDING.** The engine has no undo, so Again folds a fresh
@@ -1420,6 +1420,26 @@ stranded in a big screen.
   square while the file says it is round. Twelve of those had accumulated in `skin.css` —
   twelve considered decisions that had never once taken effect — and all twelve were found
   by a search for something else.
+
+**ONE VERTICAL RHYTHM, AND IT IS THE CONTAINER'S** (`--stack` in `skin.css`). Every
+screen that is a column of rows had picked its own gap — 6 between friends, 6 between
+research levels, 6 between granary levels, 8 between settings rows, 8 between challenge
+cards, 10 between collection rows — under four different heading margins. No two of those
+screens sat on the same grid, nothing ever failed, and the app simply never looked
+designed. The step is one variable and a heading adds 12 above itself, so everywhere:
+10 between rows, 22 above a section, 10 under it. A test holds both.
+- **A gap belongs to the space BETWEEN two things.** The profile carried its rhythm as a
+  `margin-bottom` per block — 4 under the hero, 12 under a stat grid, none at all under
+  the two door rows, which had nothing but their neighbours' margins to sit between — so
+  one screen ran 4, 22, 10, 12, 22, 10, 12. A margin on the thing itself is a different
+  answer everywhere it is not set.
+- **FLEX, NOT GRID, for a scroller of mixed blocks.** Making `#profileBody` a grid
+  collapsed both stat grids to nothing: a grid item whose own `overflow` is not `visible`
+  — and `.pf-stats` clips, which is what makes its 1px gaps read as hairlines — has an
+  automatic minimum size of ZERO, so the auto track sized to zero. Every test still
+  passed, because jsdom has no layout. A flex column lays the same item out from its
+  content; `flex: none` on the children is what stops it shrinking them once the page is
+  taller than the scroller.
 
 **SETTINGS IS A SCREEN, NOT A FORM** (`src/ui/settings.ts`). It was one card of six
 identical rows — a label, a bordered button — and two of them were dead: "Sound [On]" and

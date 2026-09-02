@@ -58,6 +58,28 @@ export function buildProfile(store: ProfileStore, opts: ProfileOptions): HTMLEle
 
     scroll.appendChild(who(store, render, root));
 
+    // THE RECORD IS A COUNT; THIS IS THE LIST. A player who has won 61 of 104 could not
+    // see one of them — no idea who they played last night or how it went.
+    //
+    // It rides with the HERO, above the record rather than below it, because everything
+    // under "Record" is a summary OF these matches and the way into a summary is the
+    // thing it summarises. It began under the collection — three doors and a strip of
+    // nine heads deep — where from the top of the screen it did not exist at all.
+    const stored = store.history.length;
+    const history = el("button", "pf-row pf-row-go");
+    history.id = "pfHistory";
+    const hmid = el("div", "pf-row-mid");
+    const htop = el("div", "pf-row-top");
+    htop.append(
+      el("span", "pf-row-t", "Recent matches"),
+      // The count is what makes it a door with something behind it rather than a label.
+      el("span", "pf-row-c", stored ? String(stored) : "none yet"),
+    );
+    hmid.appendChild(htop);
+    history.append(iconSlot("pf-row-i", "board", 18), hmid, icon("next", 14));
+    history.onclick = opts.onHistory;
+    scroll.appendChild(history);
+
     /*
      * RECORD, in two grids rather than one.
      *
@@ -98,27 +120,6 @@ export function buildProfile(store: ProfileStore, opts: ProfileOptions): HTMLEle
         ["Fastest win", s.bestMs ? clockOf(s.bestMs) : "—"],
       ]),
     );
-
-    // THE RECORD ABOVE IS A COUNT; THIS IS THE LIST. A player who has won 61 of 104 could
-    // not see one of them — no idea who they played last night or how it went. So it goes
-    // DIRECTLY under the career it details, not below the collection: the screen reads
-    // who, then what has happened, then what has been collected, and a match is the
-    // middle one. It was under the collection, which is three doors and a strip of heads
-    // deep, and from the top of the screen it did not exist.
-    const stored = store.history.length;
-    const history = el("button", "pf-row pf-row-go");
-    history.id = "pfHistory";
-    const hmid = el("div", "pf-row-mid");
-    const htop = el("div", "pf-row-top");
-    htop.append(
-      el("span", "pf-row-t", "Recent matches"),
-      // The count is what makes it a door with something behind it rather than a label.
-      el("span", "pf-row-c", stored ? String(stored) : "none yet"),
-    );
-    hmid.appendChild(htop);
-    history.append(iconSlot("pf-row-i", "board", 18), hmid, icon("next", 14));
-    history.onclick = opts.onHistory;
-    scroll.appendChild(history);
 
     // The quests still have a home, and this is the screen you would look for them from.
     const quests = el("button", "pf-row pf-row-go");
