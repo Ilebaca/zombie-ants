@@ -176,8 +176,10 @@ These were each decided deliberately, several after bugs. Changing one silently 
    species gets one. `abilitySpendsTurn()` in the engine owns the rule so the screen and the
    AI cannot disagree about it — `aiTurn` used to cast and march in the same turn.
 
-10. **The AI gets no anthill upgrades and no research.** It competes on decision quality only,
-   so player progression never becomes mandatory.
+10. **The AI gets no anthill upgrades, no research and no traits.** It competes on decision
+   quality only, so player progression never becomes mandatory. `neutralMods()` spreads the
+   engine's own `NEUTRAL_MODS` rather than writing the fields out, or a field added there
+   is silently zero here and reads as a deliberate neutral value.
 
 ## 4a. The AI
 
@@ -695,7 +697,10 @@ and one line in `App`.
   compares the two field by field). Ambiguous characters are left out of it, because the
   whole point of the string is that somebody reads it off a screen and types it.
 - **Lucky hatch is the one entry still unbuilt**, and it now says so. It fell through the
-  router to the Antarium, so tapping it silently opened a different screen.
+  router to the Antarium, so tapping it silently opened a different screen. It is also no
+  longer a cosmetics machine waiting on a currency that does not exist: TRAITS are what it
+  pays out, the roll is written and tested (`platform/traits.ts`), and it is one caller
+  away from being the only source of them.
 
 **THE LADDER'S HEAD DOES NOT SCROLL** (`src/ui/leaderboard.ts`). The body was one
 scroller and the screen opened by scrolling the player's own row into the middle of it,
@@ -1094,6 +1099,89 @@ decided by the game rather than by whatever backend turns up.
   and a clock — an async match has to survive both players closing the app, which means
   turn deadlines and a way to resume. `platform/duels.ts` carries the endpoint list a
   backend can be built against.
+
+**TRAITS — THE COLLECTABLE HALF OF A COLONY** (`platform/traits.ts`, `ui/traits.ts`).
+Chambers and research are BOUGHT: a straight line from mycelium to a number, the same for
+every player who saves up. A trait is FOUND. It has a tier, there are fifty-three of them,
+two players never hold the same set, and what you do with the ones you have is a choice
+rather than a purchase.
+- **Three things, all percentages.** Attack, defence, and a CHANCE that the ability comes
+  back a turn sooner. Five tiers — common (grey), uncommon (green), rare (blue),
+  exceptional (purple), mythic (red) — and the tier is the whole visual language: it is
+  the tile's border and its mark, carried on a `--tier` custom property the screen sets
+  from the table, so one place decides what a mythic LOOKS like and it is the same place
+  that decides what a mythic is WORTH.
+- **Five slots per colony and five for the anthill**, the same split the rest of the
+  progression layer already has: research is per-colony, chambers are account-wide. A
+  species trait fits exactly one colony's bench and a universal one only the anthill, so
+  "worn somewhere else" is impossible by construction.
+- **THE COOLDOWN CHANCES DO NOT SUM, and that is the one piece of arithmetic here worth
+  arguing about.** Two 22% chances are not 44%, they are two draws — 1 − 0.78², or 39%.
+  Summing them would let five mythics GUARANTEE the boon, and a certainty is not what the
+  trait says it gives; it would also make the fifth copy worth as much as the first, when
+  the whole shape of a stacked chance is that it is worth less. Attack and defence DO sum,
+  because that is what a player expects of a percentage.
+- **The roll is made in the ENGINE, off the seeded stream, ONCE per match** (`state.boon`,
+  set in `createGame`). Not per cast — a chance re-drawn every time would bring the same
+  ability back at a different speed each turn, which reads as a bug rather than as luck,
+  and the AI's search would see a different answer from the board it is searching. Not in
+  the platform either, or a real random number enters a game that has to replay identically
+  from its seed (§4.1). It is snapshot/restored with the board like everything else.
+  - **The stream is advanced whether or not there is a chance to roll.** A colony with no
+    cooldown traits that SKIPPED its draw would shift every later scatter in the match, so
+    two players with different traits would see different ability scatter from one seed.
+- **What crosses into the engine is three FINISHED percentages** (`atkPct`, `defPct`,
+  `boonPct`). A chamber and a research track are LEVELS and the engine owns the curve that
+  turns a level into a number, because that curve is a rule of the game. A tier is not a
+  level: what it is worth is a progression decision that will be retuned, so it belongs
+  beside the prices. `TRAIT_PCT_CAP` in `engine/config.ts` is the floor under that — the
+  engine refusing to let any table, or any hand-edited save, double a colony's punch.
+- **Combat is still pure arithmetic.** A trait changes the numbers that go INTO `fight()`,
+  never how it resolves. Same attack against same defence is still the same answer.
+- **The AI still gets none of it.** `neutralMods()` spreads `NEUTRAL_MODS` rather than
+  writing the fields out, or a field added to the engine is silently zero here and reads
+  as a deliberate neutral value.
+- **A SLOT HOLDS A UID, NEVER AN INDEX.** The bag is sorted, filtered and added to; an
+  index would re-point every equipped slot at a different item the first time one was
+  removed — a loadout the player did not choose, weeks later, with nothing to trace it to.
+  `traitSeq` mints them and only ever goes up, past items already thrown away, and
+  `normalise` floors it past the highest uid it can see: two items with one uid is one item
+  the player can never take off.
+- **The bag and the benches are rebuilt TOGETHER**, because they refer to each other. An
+  item whose trait id is gone from the table is dropped; a slot pointing at a uid the bag
+  does not hold is emptied; a slot wearing something that does not fit that bench is
+  emptied; and one uid cannot occupy two slots. That is what lets every screen assume a
+  filled slot always resolves to an item.
+- **ONE SQUARE, IN BOTH HALVES.** A worn trait and a spare one are the same object, so a
+  filled slot and an inventory tile are the same tile: the trait's own mark in its tier's
+  colour, and under it the kind — sword, shield or clock — with what it is worth. Five
+  across, which is what makes a collection something you take in at a glance rather than
+  scroll through, and five across on a 320px phone is why there is no room for a name on
+  it. The name survives as `title` and `aria-label`.
+- **The CAP is printed beside every total, always.** A ceiling a player only discovers by
+  watching a number stop moving reads as a bug in the game rather than as a rule of it.
+- **The slots and the inventory share ONE screen** so slotting something and watching the
+  total move is one gesture in one place. Tapping an empty slot ARMS it, so replacing one
+  particular trait is two taps rather than a remove and an add; tapping it again disarms,
+  or an accidental tap leaves the screen with no way out but Back.
+- **The row that opens it carries PIPS, not a count.** "3 / 5" says how many and nothing
+  about WHICH, and which is what a player checks before a match. Locked, it names the
+  CHAPTER and drops its chevron — an arrow into a door that does not open is the row
+  promising something the tap will not deliver.
+- **THE LUCKY HATCH IS THE ONLY SOURCE, and that is the design.** A match pays mycelium
+  and a colony; the hatch pays the one thing there is no other way to get, which is what
+  gives it a reason to exist beyond handing out currency the player could have earned by
+  playing. `rollDrop`/`rollTier`/`rollTrait` are finished and tested and the hatch is one
+  caller away. Until it is built the bag stays empty and every bench reads as five empty
+  slots — the empty state says where they come from, because a screen that does not is a
+  screen that reads as broken.
+- **Chapter 10 gates both.** A trait is a CHOICE between things you have found, and a
+  player handed one in their first hour has no collection to choose from and no idea what
+  +2% defence is worth.
+- **`Species.trait` is a different thing and the species page now says so.** That field is
+  lore ("Pheromone mask — soldier counts hidden until contact") and it was labelled
+  "Trait"; with equippable Traits on the same page, one word for two things is the screen
+  contradicting itself. It reads "Signature" now.
 
 **A MATCH IS REMEMBERED, AND CAN BE WATCHED BACK** (`platform/history.ts`, `ui/history.ts`).
 Nothing kept a finished match: the result card came up, the colony moved, and every game a

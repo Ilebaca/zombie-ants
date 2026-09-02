@@ -9,7 +9,7 @@
  * keeps simulation from writing stats or currencies (CLAUDE.md §5).
  */
 import {
-  CHAMBER_MAX, MAPS, RESEARCH_MAX, SPECIES, chamberCost, researchCost,
+  CHAMBER_MAX, MAPS, NEUTRAL_MODS, RESEARCH_MAX, SPECIES, chamberCost, researchCost,
 } from "../engine";
 import { COLONY_START, grownColony } from "./colony";
 import type { MapId, Player, PlayerMods, SpeciesId } from "../engine";
@@ -31,6 +31,10 @@ import { FRIEND_MAX, seedRequests } from "./friends";
 import { DUELS_MAX, seedInvites } from "./duels";
 import { HISTORY_MAX, addToHistory } from "./history";
 import type { MatchLog } from "./history";
+import {
+  TRAITS_CHAPTER, TRAIT_SLOTS, TRAIT_TIERS, combine, fitsScope, totalsOf, traitDef,
+} from "./traits";
+import type { TraitItem, TraitScope, TraitTier, TraitTotals } from "./traits";
 import type { DuelInvite } from "./duels";
 import type { Friend, Person } from "./friends";
 import type { SupportGateway, Ticket, TicketKind } from "./support";
@@ -156,6 +160,20 @@ export interface Profile {
    * the only thing in the app that writes.
    */
   history: MatchLog[];
+  /**
+   * TRAITS: everything found, and what is worn where.
+   *
+   * The bag is the inventory; `wearing` maps a bench — "hill" or a colony's id — to five
+   * slots holding an item's UID or nothing. Slots hold uids rather than positions in the
+   * bag, because the bag is sorted and filtered and added to: an index would re-point
+   * every equipped slot at a different item the first time one was removed.
+   *
+   * `traitSeq` mints those uids. It only ever goes up, including past items that have
+   * been thrown away, so a uid can never be handed out twice to two different traits.
+   */
+  bag: TraitItem[];
+  wearing: Record<string, (string | null)[]>;
+  traitSeq: number;
   /** The newest post the player has read, as a stamp. Older than every post = all unread. */
   newsSeen: number;
   /** Messages sent to support, kept so nothing a player wrote is thrown away. */
@@ -253,6 +271,9 @@ export function defaultProfile(): Profile {
     // time it arrived, and this function is a CONSTANT — it may not read a clock.
     duelsIn: [],
     history: [],
+    bag: [],
+    wearing: {},
+    traitSeq: 0,
     friendsOut: [],
     newsSeen: 0,
     tickets: [],
@@ -385,6 +406,7 @@ export function normalise(raw: unknown): Profile {
     friendsOut: people(p.friendsOut, base.friendsOut),
     duelsIn: invites(p.duelsIn),
     history: matchLogs(p.history),
+    ...bagAndBenches(p),
     newsSeen: int(p.newsSeen, 0, 1e15, 0),
     tickets: tickets(p.tickets),
     challenges: Array.isArray(p.challenges)
@@ -507,6 +529,74 @@ function invites(raw: unknown): DuelInvite[] {
         colony: Math.max(0, Math.round(Number(d.from.colony) || 0)),
       },
     }));
+}
+
+/** How many found traits a save may hold. Generous, and a ceiling all the same. */
+export const BAG_MAX = 300;
+
+/** Every bench there is: the anthill's, and one per colony. */
+const BENCHES: readonly string[] = ["hill", ...(Object.keys(SPECIES) as SpeciesId[])];
+
+/**
+ * THE BAG AND THE BENCHES, rebuilt together because they refer to each other.
+ *
+ * Two rules, and both are about a save outliving the code that wrote it:
+ *
+ *  - an item whose trait id is no longer in the table is DROPPED. A trait that has been
+ *    renamed or removed would otherwise sit in the bag as a nameless row that cannot be
+ *    equipped, unequipped or explained;
+ *  - a slot pointing at a uid that is not in the bag is EMPTIED. That is what makes the
+ *    two halves consistent no matter what happened to the save in between, and it is the
+ *    only reason the screens can assume a filled slot always resolves to an item.
+ *
+ * `traitSeq` is floored at one past the highest uid actually held, so a save whose
+ * counter was lost cannot mint a uid that is already in use — two items with one uid is
+ * one item the player can never take off.
+ */
+function bagAndBenches(p: Partial<Profile>): Pick<Profile, "bag" | "wearing" | "traitSeq"> {
+  const raw = Array.isArray(p.bag) ? p.bag : [];
+  const seen = new Set<string>();
+  const bag: TraitItem[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const uid = typeof item.uid === "string" ? item.uid : "";
+    const def = typeof item.def === "string" ? item.def : "";
+    if (!uid || seen.has(uid) || !traitDef(def)) continue;
+    if (!TRAIT_TIERS.includes(item.tier as TraitTier)) continue;
+    seen.add(uid);
+    bag.push({ uid, def, tier: item.tier as TraitTier });
+    if (bag.length >= BAG_MAX) break;
+  }
+
+  const wearing: Record<string, (string | null)[]> = {};
+  const held = new Set(bag.map((i) => i.uid));
+  const source = p.wearing && typeof p.wearing === "object" ? p.wearing : {};
+  for (const scope of BENCHES) {
+    const slots = Array.isArray(source[scope]) ? source[scope] : [];
+    const used = new Set<string>();
+    wearing[scope] = Array.from({ length: TRAIT_SLOTS }, (_, i) => {
+      const uid = slots[i];
+      // One item cannot be in two slots. A save that says otherwise would show the same
+      // trait twice and count it twice.
+      if (typeof uid !== "string" || !held.has(uid) || used.has(uid)) return null;
+      const item = bag.find((b) => b.uid === uid);
+      if (!item || !fitsScope(item, scope as TraitScope)) return null;
+      used.add(uid);
+      return uid;
+    });
+  }
+
+  let highest = 0;
+  for (const item of bag) {
+    const n = Number(item.uid.slice(1));
+    if (Number.isFinite(n)) highest = Math.max(highest, n);
+  }
+  const seq = Math.round(Number(p.traitSeq));
+  return {
+    bag,
+    wearing,
+    traitSeq: Math.max(Number.isFinite(seq) ? seq : 0, highest + 1),
+  };
 }
 
 /**
@@ -638,6 +728,117 @@ export class ProfileStore {
     this.profile = normalise(profile);
     writeJson(this.store, KEY, this.profile);
     return this.profile;
+  }
+
+  /* ------------------------------------------------------------------ TRAITS */
+
+  /**
+   * Are traits open yet? Chapter 10, which is the same gate the lucky hatch opens on.
+   *
+   * Late on purpose. A trait is a CHOICE between things you have found, and a player who
+   * is handed one in their first hour has no collection to choose from and no idea what
+   * +2% defence is worth — it would land as one more number on a screen they are still
+   * learning. By chapter 10 they have a colony, a favourite species and opinions.
+   */
+  traitsOpen(): boolean { return chapterOf(this.profile.colony) >= TRAITS_CHAPTER; }
+
+  get bag(): readonly TraitItem[] { return this.profile.bag; }
+
+  /** The five slots of one bench, as items and gaps. */
+  bench(scope: TraitScope): (TraitItem | null)[] {
+    const slots = this.profile.wearing[scope] ?? [];
+    return Array.from({ length: TRAIT_SLOTS }, (_, i) => {
+      const uid = slots[i];
+      return (uid ? this.profile.bag.find((b) => b.uid === uid) : null) ?? null;
+    });
+  }
+
+  /** What a bench is worth right now. */
+  benchTotals(scope: TraitScope): TraitTotals { return wornTotals(this.profile, scope); }
+
+  /** Everything in the bag that could go in this bench and is not already worn. */
+  spare(scope: TraitScope): TraitItem[] {
+    const worn = new Set((this.profile.wearing[scope] ?? []).filter(Boolean));
+    return this.profile.bag.filter((i) => fitsScope(i, scope) && !worn.has(i.uid));
+  }
+
+  /**
+   * Put an item in a bench.
+   *
+   * Returns false rather than throwing when it cannot — an item that does not fit the
+   * bench, a bench with no room, an item already worn there — so a screen can tap
+   * optimistically and nothing ever goes half-applied, the same contract every other
+   * spend on this store has.
+   *
+   * An item worn in ANOTHER bench is impossible by construction: a species trait fits
+   * exactly one colony's bench and a universal one fits only the anthill.
+   */
+  equipTrait(scope: TraitScope, uid: string, slot?: number): boolean {
+    const item = this.profile.bag.find((b) => b.uid === uid);
+    if (!item || !fitsScope(item, scope)) return false;
+    const slots = [...(this.profile.wearing[scope] ?? [])];
+    if (slots.includes(uid)) return false;
+    const at = slot ?? slots.findIndex((s) => !s);
+    if (at < 0 || at >= TRAIT_SLOTS) return false;
+    this.update((p) => {
+      const bench = [...(p.wearing[scope] ?? [])];
+      while (bench.length < TRAIT_SLOTS) bench.push(null);
+      bench[at] = uid;
+      p.wearing[scope] = bench;
+    });
+    return true;
+  }
+
+  /** Take a slot's item off. It goes back to the bag, which never let go of it. */
+  unequipTrait(scope: TraitScope, slot: number): boolean {
+    const slots = this.profile.wearing[scope] ?? [];
+    if (slot < 0 || slot >= TRAIT_SLOTS || !slots[slot]) return false;
+    this.update((p) => {
+      const bench = [...(p.wearing[scope] ?? [])];
+      bench[slot] = null;
+      p.wearing[scope] = bench;
+    });
+    return true;
+  }
+
+  /**
+   * A trait is found.
+   *
+   * Minted here rather than by the finder, because the uid has to come from the save's
+   * own counter — two callers each numbering from their own idea of "next" is two items
+   * with one uid, which is one item the player can never take off.
+   *
+   * A full bag REFUSES rather than silently dropping the oldest: a collection that
+   * quietly deletes what you collected is worse than one that tells you it is full.
+   */
+  findTrait(def: string, tier: TraitTier): TraitItem | null {
+    if (!traitDef(def) || !TRAIT_TIERS.includes(tier)) return null;
+    if (this.profile.bag.length >= BAG_MAX) return null;
+    const uid = `t${this.profile.traitSeq}`;
+    const item: TraitItem = { uid, def, tier };
+    this.update((p) => {
+      p.traitSeq++;
+      p.bag = [item, ...p.bag];
+    });
+    return item;
+  }
+
+  /**
+   * Throw one away.
+   *
+   * Asked for twice by the screen, like every other destructive thing in this app: a
+   * mythic thrown away by a misplaced thumb cannot be found again.
+   */
+  dropTrait(uid: string): boolean {
+    if (!this.profile.bag.some((b) => b.uid === uid)) return false;
+    this.update((p) => {
+      // Only the bag. `normalise` runs on every write and empties any slot pointing at
+      // something the bag no longer holds, so clearing the benches here as well was a
+      // second copy of that rule — and a rule written twice is a rule that can disagree
+      // with itself (CLAUDE.md §7: one function owns a rule).
+      p.bag = p.bag.filter((b) => b.uid !== uid);
+    });
+    return true;
   }
 
   /**
@@ -1130,16 +1331,23 @@ export const matchXp = (won: boolean, turns: number): number =>
 /** The shop's once-a-day free handout. */
 export const DAILY_GIFT = { mycel: 60, pheromone: 100 } as const;
 
+/**
+ * What the AI gets, always. No chambers, no research and NO TRAITS: it competes on
+ * decision quality alone, so nothing a player collects is ever needed to keep up with it
+ * (CLAUDE.md §4.10). Spread from the engine's own constant rather than written out, or a
+ * field added there is silently zero here and reads as a deliberate neutral value.
+ */
 function neutralMods(): PlayerMods {
-  return {
-    royal: 0, brood: 0, soldierCaste: 0, gland: 0, cultivate: 0,
-    reservoir: 0, mandible: 0, cuticle: 0,
-  };
+  return { ...NEUTRAL_MODS };
 }
 
 /** Fold anthill chambers and per-species research into the engine's PlayerMods shape. */
 export function modsFrom(profile: Profile, species: SpeciesId): PlayerMods {
   const r = profile.research[species];
+  // The anthill's five and this colony's five, added up here and handed over as three
+  // finished percentages — the engine owns what a percentage does, never what a tier is
+  // worth (platform/traits.ts).
+  const worn = combine(wornTotals(profile, "hill"), wornTotals(profile, species));
   return {
     royal: profile.hill.royal ?? 0,
     brood: profile.hill.brood ?? 0,
@@ -1149,5 +1357,24 @@ export function modsFrom(profile: Profile, species: SpeciesId): PlayerMods {
     reservoir: r?.reservoir ?? 0,
     mandible: r?.mandible ?? 0,
     cuticle: r?.cuticle ?? 0,
+    atkPct: worn.atkPct,
+    defPct: worn.defPct,
+    boonPct: worn.luckPct,
   };
+}
+
+/** What one bench is worth. Slots that resolve to nothing simply do not count. */
+export function wornTotals(profile: Profile, scope: TraitScope): TraitTotals {
+  return totalsOf(wornItems(profile, scope));
+}
+
+/** The items actually in a bench's slots, in slot order, gaps dropped. */
+export function wornItems(profile: Profile, scope: TraitScope): TraitItem[] {
+  const slots = profile.wearing[scope] ?? [];
+  const out: TraitItem[] = [];
+  for (const uid of slots) {
+    const item = uid ? profile.bag.find((b) => b.uid === uid) : null;
+    if (item) out.push(item);
+  }
+  return out;
 }

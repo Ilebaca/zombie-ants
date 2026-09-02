@@ -16,10 +16,11 @@ import {
 } from "../platform";
 import type {
   DuelInvite, DuelService, Feedback, Friend, FriendService, MatchLog, Matchmaker, Opponent,
-  Person, PurchaseGateway, SupportGateway,
+  Person, PurchaseGateway, SupportGateway, TraitScope,
 } from "../platform";
 import { setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
+import { buildTraitBench } from "./traits";
 import { buildAntarium } from "./antarium";
 import { buildSpeciesPage } from "./species";
 import { buildProfile } from "./profile";
@@ -65,7 +66,7 @@ type ScreenId =
   | "home" | "mapsel" | "start" | "formation" | "duelpick" | "history"
   | "anthill" | "antarium" | "antup" | "achievements" | "quests" | "profile"
   | "challenges" | "daily" | "rules" | "settings" | "news" | "friends" | "support"
-  | "luckyhatch" | "leaderboard" | "shop";
+  | "luckyhatch" | "leaderboard" | "shop" | "traits";
 
 /**
  * Is this press on something that ACTS?
@@ -103,6 +104,15 @@ export class App {
   private nav: HTMLElement | null = null;
   /** Which colony the #antup page is showing. */
   private speciesPage: SpeciesId = "leafcutter";
+  /**
+   * Which bench the trait screen is showing, and where Back goes.
+   *
+   * One screen serves the anthill's five and every colony's five, so the scope has to
+   * live out here — and so does the way back, because the same screen is reached from
+   * two different places and must not strand the player on the other one.
+   */
+  private traitScope: TraitScope = "hill";
+  private traitBack: ScreenId = "anthill";
   private menu: HTMLElement | null = null;
   /** The five-tab deck. Built on first use, then it outlives every screen. */
   private deck: Deck<DeckId> | null = null;
@@ -477,6 +487,13 @@ export class App {
     }
   }
 
+  /** Open a bench, remembering which screen sent us so Back is not a guess. */
+  private openTraits(scope: TraitScope, back: ScreenId): void {
+    this.traitScope = scope;
+    this.traitBack = back;
+    this.show("traits");
+  }
+
   /** The slide-in drawer behind the hamburger. One element, reused. */
   private openMenu(): void {
     // REBUILT every time, not reused: the News entry carries how many posts are unread,
@@ -563,7 +580,15 @@ export class App {
         onFindFriends: () => this.show("friends"),
       });
     }
-    if (id === "anthill") return buildAnthill(this.profile);
+    if (id === "anthill") {
+      return buildAnthill(this.profile, { onTraits: () => this.openTraits("hill", "anthill") });
+    }
+    if (id === "traits") {
+      return buildTraitBench(this.profile, {
+        scope: this.traitScope,
+        onBack: () => this.show(this.traitBack),
+      });
+    }
     if (id === "achievements") return buildColonyRoad(this.profile, () => this.show("home"), () => this.show("shop"));
     if (id === "quests") return buildQuests(this.profile, () => this.show("profile"));
     if (id === "profile") {
@@ -575,6 +600,10 @@ export class App {
         onChambers: () => this.show("anthill"),
         onQuests: () => this.show("quests"),
         onHistory: () => this.show("history"),
+        // Straight to the anthill's five: they are the ones that apply whatever colony
+        // is fielded, so they are the right first thing to see from a screen about the
+        // player rather than about one species.
+        onTraits: () => this.openTraits("hill", "profile"),
       });
     }
     if (id === "history") {
@@ -658,6 +687,7 @@ export class App {
       return buildSpeciesPage(this.profile, {
         species: this.speciesPage,
         onBack: () => this.show("antarium"),
+        onTraits: () => this.openTraits(this.speciesPage, "antup"),
       });
     }
     return buildAntarium(this.profile, {

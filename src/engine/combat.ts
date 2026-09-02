@@ -1,4 +1,4 @@
-import { DEF } from "./config";
+import { DEF, TRAIT_PCT_CAP } from "./config";
 import { isHiveTerrain } from "./board";
 import { speciesOf } from "./species";
 import type { GameState, Player, PlayerMods, Tile } from "./types";
@@ -70,10 +70,26 @@ export function surgeMultiplier(state: GameState, p: Player): number {
   return state.hive.phase === "buff" && state.hive.owner === p ? 1.5 : 1;
 }
 
+/**
+ * TRAITS ARE A PERCENTAGE ON TOP, AND THEY ARE STILL NOT RANDOM.
+ *
+ * `fight()` is and stays pure arithmetic (CLAUDE.md §4.1): a trait changes the numbers
+ * that go into it, never how it resolves. Same attack against same defence gives the same
+ * answer, and the player can still count it out — they just count it out with a bigger
+ * number, exactly as they do with research.
+ *
+ * Clamped because the table is data: a save somebody has edited, or a future tier that is
+ * too generous, must not be able to double a colony's punch (platform/traits.ts caps it
+ * too, and this is the floor under that).
+ */
+const traitBoost = (pct: number): number => 1 + Math.max(0, Math.min(TRAIT_PCT_CAP, pct)) / 100;
+
 export function attackMultiplier(state: GameState, p: Player, mods: PlayerMods): number {
-  return speciesOf(state.species[p]).atk * surgeMultiplier(state, p) * (1 + mods.mandible * 0.05);
+  return speciesOf(state.species[p]).atk * surgeMultiplier(state, p)
+    * (1 + mods.mandible * 0.05) * traitBoost(mods.atkPct);
 }
 
 export function defenceMultiplier(state: GameState, p: Player, mods: PlayerMods): number {
-  return speciesOf(state.species[p]).def * surgeMultiplier(state, p) * (1 + mods.cuticle * 0.05);
+  return speciesOf(state.species[p]).def * surgeMultiplier(state, p)
+    * (1 + mods.cuticle * 0.05) * traitBoost(mods.defPct);
 }

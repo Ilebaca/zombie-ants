@@ -7,6 +7,7 @@ import { pruneAllVeins, recomputeConnectivity } from "./connectivity";
 import { setHiveDefence, hiveTick } from "./hive";
 import { runProduction } from "./production";
 import { tickEffects } from "./effects";
+import { nextRandom } from "./random";
 import { speciesOf } from "./species";
 import { NEUTRAL_MODS } from "./types";
 import type {
@@ -66,18 +67,40 @@ export function createGame(opts: NewGameOptions): GameState {
     conn: { you: new Set(), ai: new Set() },
     limits: { awakenTurn: def.awakenTurn, turnLimit: def.turnLimit, buffTurns: def.buffTurns },
     rng: (opts.seed ?? 0x9e3779b9) | 0,
+    boon: { you: 0, ai: 0 },
   };
 
   const shape = opts.shape ?? START_SHAPES.wedge;
   const aiShape = opts.aiShape ?? shape;
   buildMap(state, reservedCells(state.size, shape, aiShape));
   const mods = opts.mods ?? { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } };
+  // ONCE PER MATCH, off the seeded stream, and BEFORE anything else may draw from it —
+  // so the roll depends on the seed alone and not on how the map happened to be built.
+  state.boon.you = rollBoon(state, mods.you.boonPct);
+  state.boon.ai = rollBoon(state, mods.ai.boonPct);
   placeStart(state, "you", shape, mods.you);
   placeStart(state, "ai", aiShape, mods.ai);
 
   setHiveDefence(state);
   recomputeConnectivity(state);
   return state;
+}
+
+/**
+ * Does this colony's ability come back a turn sooner, for this whole match?
+ *
+ * A trait gives a CHANCE rather than a certainty, and the draw happens here: once, at the
+ * board's creation, from the seeded generator. Rolling it per cast would make the same
+ * ability return at a different speed each time, which reads as a bug rather than as
+ * luck — and rolling it outside the engine would put a real random number into a game
+ * that has to replay identically from its seed (CLAUDE.md §4.1).
+ *
+ * The stream is ALWAYS advanced, whether or not there is a chance to roll: a colony with
+ * no cooldown traits must not shift every later scatter draw by having skipped a number.
+ */
+function rollBoon(state: GameState, chance: number): number {
+  const roll = nextRandom(state);
+  return roll * 100 < Math.max(0, chance) ? 1 : 0;
 }
 
 /**
@@ -303,6 +326,8 @@ export interface Snapshot {
   conn: { you: Set<string>; ai: Set<string> };
   /** Without this, a simulated ability would advance the real match's scatter stream. */
   rng: number;
+  /** Rolled once per match, so search must see the roll the real match is playing on. */
+  boon: GameState["boon"];
 }
 
 /**
@@ -323,6 +348,7 @@ export function snapshot(state: GameState): Snapshot {
     cloak: { ...state.cloak },
     conn: { you: new Set(state.conn.you), ai: new Set(state.conn.ai) },
     rng: state.rng,
+    boon: { ...state.boon },
   };
 }
 
@@ -345,6 +371,7 @@ export function restore(state: GameState, snap: Snapshot): void {
   state.cloak = { ...snap.cloak };
   state.conn = { you: new Set(snap.conn.you), ai: new Set(snap.conn.ai) };
   state.rng = snap.rng;
+  state.boon = { ...snap.boon };
 }
 
 export { nestTile };

@@ -16,12 +16,20 @@
  * itself, so an unaffordable tap is a no-op rather than a half-finished purchase.
  */
 import { chamberCost } from "../engine";
-import { CHAMBERS, GRANARY_CAP_HOURS, GRANARY_MAX, compact } from "../platform";
+import {
+  CHAMBERS, GRANARY_CAP_HOURS, GRANARY_MAX, TRAITS_CHAPTER, compact,
+} from "../platform";
 import type { ChamberDef, GranaryState, ProfileStore } from "../platform";
 import { buyButton, el, pips, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
+import { traitOpener } from "./traits";
 
-export function buildAnthill(store: ProfileStore): HTMLElement {
+export interface AnthillOptions {
+  /** Open the anthill's five universal trait slots. */
+  onTraits?: () => void;
+}
+
+export function buildAnthill(store: ProfileStore, opts: AnthillOptions = {}): HTMLElement {
   const root = screenEl("anthill");
   // Which chamber is standing open. It survives a re-render — buying a level must not
   // close the room the player is in the middle of digging.
@@ -75,6 +83,14 @@ export function buildAnthill(store: ProfileStore): HTMLElement {
       }));
     });
     wrap.appendChild(nest);
+
+    // THE UNIVERSAL BENCH LIVES IN THE NEST, under the picture of it — these five apply
+    // to whichever colony is fielded, which is exactly what a chamber does, so this is
+    // the screen they belong on. It is not IN the cross-section, because a trait is not
+    // a room: nothing is dug for it.
+    wrap.append(el("div", "secthead", "Traits"));
+    wrap.appendChild(traitOpener(store, "hill", () => opts.onTraits?.(),
+      store.traitsOpen() ? null : `Chapter ${TRAITS_CHAPTER}`));
 
     body.appendChild(wrap);
     root.appendChild(body);

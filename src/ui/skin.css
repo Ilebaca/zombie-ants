@@ -4426,3 +4426,169 @@ button:not(.playbtn):active,
    three and reads as a readout you can press. */
 .replayrate { padding-inline: 12px; font-variant-numeric: tabular-nums; }
 .replaybtn:active, .replayrate:active { transform: translateY(1px); }
+
+/* ============================================================================
+   ==  TRAITS  ================================================================
+   ============================================================================
+
+   Five slots and everything found underneath them, on one screen: a player
+   slotting something has to be able to watch the total move without walking to
+   another page and back.
+
+   THE TIER IS THE COLOUR, and it is carried on a `--tier` custom property that
+   the screen sets per element from the table (platform/traits.ts). One place
+   decides what a mythic looks like, and it is the same place that decides what
+   a mythic is worth — a second list of colours in this file is a second thing
+   to keep in step. */
+.trwrap {
+  display: grid;
+  gap: var(--stack);
+  padding-bottom: 14px;
+  width: 100%;
+}
+.trwrap .secthead { margin: 12px 0 0; }
+.trwrap .secthead:first-child { margin-top: 0; }
+
+/* ---- The tile ----
+   ONE SQUARE, in both halves: a worn trait and a spare one are the same object,
+   so a filled slot and an inventory tile are the same thing drawn once. Five
+   across is what makes a collection something you take in at a glance rather
+   than scroll through, and five across on a 320px phone is why there is no room
+   for a name on it — the mark, the tier's colour, the kind and the figure. */
+.trgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.trtile {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
+  aspect-ratio: 1;
+  padding: 4px 2px;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--tier) 12%, var(--panel));
+  border: 1px solid var(--tier);
+  color: var(--ink);
+  font-family: var(--font);
+  cursor: pointer;
+}
+.trtile:active { transform: translateY(1px); }
+/* Dashed and colourless while empty: it reads as a place for something rather
+   than as a thing in its own right. */
+.trtile.empty {
+  background: rgba(0, 0, 0, .24);
+  border: 1px dashed var(--line);
+  color: var(--muted);
+}
+.trtile.armed {
+  border-style: solid;
+  border-color: var(--grass);
+  background: color-mix(in srgb, var(--grass) 14%, transparent);
+  color: var(--grass-glow);
+}
+.trtile-i { display: grid; place-items: center; color: var(--tier); }
+.trtile-f {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--ink-soft);
+}
+.trtile-f svg { flex: none; }
+.trtile-v {
+  font-size: 10px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: var(--grass-glow);
+}
+
+/* ---- What it adds up to ----
+   The CAP is printed beside every figure, always. A ceiling a player only finds
+   by watching a number stop moving reads as a bug in the game. */
+.trtotals {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  border-radius: var(--r-md);
+  background: var(--line);
+  overflow: hidden;
+}
+.trtotal { display: grid; gap: 2px; padding: 10px; background: var(--panel); }
+/* Tight tracking and a small mark: three cells across a 320px phone leave about
+   70px for the label, and "COOLDOWN" at the app's usual heading tracking runs
+   off the end of the third one. */
+.trtotal-k {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.trtotal-k svg { flex: none; }
+.trtotal-v {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--grass-glow);
+  font-variant-numeric: tabular-nums;
+}
+.trtotal-c { font-size: 9.5px; font-weight: 800; color: var(--muted); }
+/* At the ceiling the figure goes gold rather than red: it is the top of the
+   scale, not a fault. */
+.trtotal.capped .trtotal-v { color: var(--gold); }
+
+.trempty { display: grid; gap: 6px; justify-items: center; padding: 30px 20px; text-align: center; }
+.trempty-h { font-size: 14px; font-weight: 900; }
+.trempty-p { font-size: 12px; font-weight: 700; line-height: 1.5; color: var(--ink-soft); max-width: 26em; }
+
+/* ---- The row that opens it ----
+   It carries the five slots in miniature rather than a count: "3 / 5" says how
+   many and nothing about WHICH, and which is what a player checks before a
+   match. */
+.tropen {
+  display: grid;
+  /* The chevron column collapses to nothing when it is locked, which is when there is
+     no chevron: `auto`, not a fixed 14px that would leave a hole. */
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  text-align: left;
+  font-family: var(--font);
+  cursor: pointer;
+}
+.tropen.locked { cursor: default; opacity: .66; }
+.tropen:not(.locked):active { transform: translateY(1px); }
+.tropen > svg:last-child { color: var(--muted); }
+.tropen-i {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, .26);
+  color: var(--gold);
+}
+.tropen.locked .tropen-i { color: var(--muted); }
+.tropen-mid { min-width: 0; display: grid; gap: 7px; }
+.tropen-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.tropen-t { font-size: 13px; font-weight: 900; letter-spacing: .1px; }
+/* The chapter, never a padlock: a number is something to play toward. */
+.tropen-c { font-size: 11px; font-weight: 900; color: var(--gold); }
+.tropen-pips { display: flex; gap: 5px; }
+.tropen-pip {
+  width: 26px;
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, .34);
+  border: 1px solid var(--line);
+}
+.tropen-pip.on { background: var(--tier); border-color: var(--tier); }
+
+/* A found trait's count, under the collection row that counts the slots. */
+.pf-row-note { font-size: 10.5px; font-weight: 800; color: var(--muted); }

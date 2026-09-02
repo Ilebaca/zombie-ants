@@ -30,9 +30,17 @@ export const SWARM_BITE = 0.25;
 /** Exocrine Reservoir level. The AI always passes NEUTRAL_MODS, so it scales at zero. */
 const abilityLevel = (mods: PlayerMods): number => mods.reservoir;
 
-/** Cooldown, shortened by exactly one turn and only at max research. */
-export function abilityCooldown(ability: Ability, mods: PlayerMods): number {
-  return Math.max(2, ability.cooldown - (abilityLevel(mods) >= RESEARCH_MAX ? 1 : 0));
+/**
+ * Cooldown, shortened by exactly one turn at max research — and by one more if the
+ * colony's traits WON their roll for this match (state.boon, drawn once at createGame).
+ *
+ * The roll is not made here. A chance re-rolled on every cast would bring the same
+ * ability back at a different speed each time, which reads as a bug rather than as luck,
+ * and the AI's search would see a different answer from the board it is searching.
+ */
+export function abilityCooldown(ability: Ability, mods: PlayerMods, boon = 0): number {
+  const cut = (abilityLevel(mods) >= RESEARCH_MAX ? 1 : 0) + (boon > 0 ? 1 : 0);
+  return Math.max(2, ability.cooldown - cut);
 }
 
 /** Each level hits slightly harder. */
@@ -173,7 +181,7 @@ export function activateAbility(
   }
   if (!fired) return [];
 
-  state.cooldown[p] = abilityCooldown(ability, mods);
+  state.cooldown[p] = abilityCooldown(ability, mods, state.boon[p]);
   events.unshift({ type: "abilityCast", owner: p, kind: ability.kind, name: ability.name });
 
   /*

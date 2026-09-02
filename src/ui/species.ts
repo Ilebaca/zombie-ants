@@ -30,15 +30,20 @@ import {
   RESEARCH_MAX, SPECIES, abilityCooldown, researchCost, NEUTRAL_MODS,
 } from "../engine";
 import type { SpeciesId } from "../engine";
-import { RESEARCH_TOTAL_MAX, RESEARCH_TRACKS, SPECIES_NOTES, tierOf } from "../platform";
+import {
+  RESEARCH_TOTAL_MAX, RESEARCH_TRACKS, SPECIES_NOTES, TRAITS_CHAPTER, tierOf,
+} from "../platform";
 import type { ProfileStore, Research, ResearchDef } from "../platform";
 import { SPECIES_COL } from "../render";
 import { antPortrait, buyButton, el, pips, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
+import { traitOpener } from "./traits";
 
 export interface SpeciesPageOptions {
   species: SpeciesId;
   onBack: () => void;
+  /** Open this colony's five trait slots. */
+  onTraits?: () => void;
 }
 
 export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions): HTMLElement {
@@ -67,6 +72,13 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     page.id = "aupBody";
 
     page.appendChild(hero(id, research, tier.name, tier.col));
+
+    // TRAITS COME BEFORE RESEARCH, because they are the thing on this page that CHANGES
+    // between visits. Research is a price list — it is the same list every time until
+    // there is mycelium to spend; the five slots are a loadout the player rethinks.
+    page.append(el("div", "secthead", "Traits"));
+    page.appendChild(traitOpener(store, id, () => opts.onTraits?.(),
+      store.traitsOpen() ? null : `Chapter ${TRAITS_CHAPTER}`));
 
     page.appendChild(el("div", "secthead", "Research"));
     const list = el("div", "spglist");
@@ -250,7 +262,9 @@ function abilityCard(id: SpeciesId, research: Research): HTMLElement {
 /** Trait and biology in one card: they are both "what this ant is", not two subjects. */
 function loreCard(id: SpeciesId): HTMLElement {
   const box = el("div", "spgcard");
-  box.appendChild(el("div", "spglabel", "Trait"));
+  // "Signature", not "Trait": there are equippable Traits on this page now, and one
+  // word for two different things on one screen is the screen contradicting itself.
+  box.appendChild(el("div", "spglabel", "Signature"));
   box.appendChild(el("p", "spgtrait", SPECIES[id].trait));
   box.appendChild(el("div", "spglabel", "In the field"));
   box.appendChild(el("p", "spgtext", SPECIES_NOTES[id]));

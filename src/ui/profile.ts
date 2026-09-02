@@ -26,9 +26,9 @@
 import { CHAMBER_MAX, SPECIES } from "../engine";
 import type { SpeciesId } from "../engine";
 import {
-  CHAMBERS, RESEARCH_TOTAL_MAX, SPECIES_ORDER, compact, exact, levelReward,
+  CHAMBERS, RESEARCH_TOTAL_MAX, SPECIES_ORDER, TRAIT_SLOTS, compact, exact, levelReward,
 } from "../platform";
-import type { ProfileStore } from "../platform";
+import type { ProfileStore, TraitScope } from "../platform";
 import { antPortrait, clockOf, el, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 
@@ -40,6 +40,8 @@ export interface ProfileOptions {
   onQuests: () => void;
   /** The record's own detail: which matches, not just how many. */
   onHistory: () => void;
+  /** The collection's fourth door, once traits are open. */
+  onTraits: () => void;
 }
 
 export function buildProfile(store: ProfileStore, opts: ProfileOptions): HTMLElement {
@@ -223,7 +225,30 @@ function collection(store: ProfileStore, opts: ProfileOptions): HTMLElement {
     collRow("anthill", "Nest chambers", chambers, chamberMax, opts.onChambers),
     collRow("flask", "Research levels", research, researchMax, opts.onColonies),
   );
+  /*
+   * TRAITS ARE COUNTED AGAINST THE SLOTS, not against how many exist.
+   *
+   * Every other row here is "x of everything there is", because chambers and research
+   * have an end. Traits do not: they are found, there is no last one, and a bar creeping
+   * toward a total nobody will ever reach says the collection is failing. What CAN be
+   * finished is the fifty slots, so that is the number — and how many are in the bag
+   * rides beside it as the thing there is more of.
+   */
+  if (store.traitsOpen()) box.appendChild(traitRow(store, opts.onTraits));
   return box;
+}
+
+/** The collection's fourth door: fifty slots, and a bag with no ceiling. */
+function traitRow(store: ProfileStore, onOpen: () => void): HTMLElement {
+  const benches: TraitScope[] = ["hill", ...SPECIES_ORDER];
+  const filled = benches.reduce((n, b) => n + store.bench(b).filter(Boolean).length, 0);
+  const slots = benches.length * TRAIT_SLOTS;
+  const bag = store.bag.length;
+  const row = collRow("star", "Traits equipped", filled, slots, onOpen);
+  row.id = "pfTraits";
+  const found = el("div", "pf-row-note", `${bag} found`);
+  row.querySelector(".pf-row-mid")?.appendChild(found);
+  return row;
 }
 
 function collRow(

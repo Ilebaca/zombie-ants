@@ -69,6 +69,17 @@ export const MAPS: Record<MapId, MapDef> = {
 /** Per-species research cap. At max, an ability's cooldown drops by exactly one turn. */
 export const RESEARCH_MAX = 5;
 
+/**
+ * The most a stack of traits may ever add to attack or to defence, as a percentage.
+ *
+ * The tier table lives in the progression layer, which is where deciding what a mythic is
+ * worth belongs — this is the engine refusing to let ANY table double a colony's punch.
+ * It is deliberately well above what a full collection reaches, so it never binds during
+ * a real game; it is here for a save somebody has hand-edited and for the day the tiers
+ * are retuned by somebody who does not read this file.
+ */
+export const TRAIT_PCT_CAP = 40;
+
 /** Anthill caps. Fungal Cultivation is deliberately shorter than the rest. */
 export const CHAMBER_MAX = { royal: 5, brood: 5, soldierCaste: 5, gland: 5, cultivate: 3 } as const;
 

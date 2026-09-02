@@ -101,6 +101,16 @@ export interface GameState {
    * Snapshot/restored with the board so AI search cannot advance the real stream.
    */
   rng: number;
+  /**
+   * Turns shaved off this colony's ability cooldown for the WHOLE match — 0 or 1.
+   *
+   * Rolled once at `createGame` against `boonPct` (traits), and it is a property of the
+   * match rather than of the turn: a chance re-rolled every cast would make the same
+   * ability come back at a different speed each time, which reads as a bug rather than as
+   * luck. Snapshot/restored with the board like everything else, so AI search cannot see
+   * a different roll from the one the real match is playing on.
+   */
+  boon: Record<Player, number>;
 }
 
 export interface MapLimits {
@@ -150,11 +160,33 @@ export interface PlayerMods {
   reservoir: number;
   mandible: number;
   cuticle: number;
+  /*
+   * TRAITS, and they arrive here already ADDED UP.
+   *
+   * A chamber and a research track are LEVELS — the engine owns the curve that turns a
+   * level into a number, because that curve is a rule of the game. A trait is not a level:
+   * it is one of a hundred collectable things with a tier, and what a tier is worth is a
+   * progression decision that belongs beside the prices (platform/traits.ts). So what
+   * crosses the boundary is the finished percentage, and the engine owns only what a
+   * percentage DOES.
+   */
+  /** Extra attack, as a percentage. */
+  atkPct: number;
+  /** Extra defence, as a percentage. */
+  defPct: number;
+  /**
+   * The CHANCE, as a percentage, that this colony's ability comes back a turn sooner —
+   * rolled once at the start of a match, for the whole match. Rolled in the engine off
+   * the seeded generator rather than handed in already decided, so the same seed replays
+   * to the same match and a server can verify a result it never watched (CLAUDE.md §4.1).
+   */
+  boonPct: number;
 }
 
 export const NEUTRAL_MODS: PlayerMods = {
   royal: 0, brood: 0, soldierCaste: 0, gland: 0, cultivate: 0,
   reservoir: 0, mandible: 0, cuticle: 0,
+  atkPct: 0, defPct: 0, boonPct: 0,
 };
 
 /* ---------------------------------------------------------------------------
