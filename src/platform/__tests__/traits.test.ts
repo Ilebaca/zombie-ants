@@ -151,9 +151,9 @@ describe("finding one", () => {
   });
 
   it("pays a trait of the kind it was asked for", () => {
-    const universal = rollDrop(feed([0.1, 0.9]), null);
+    const universal = rollDrop(feed([0.1, 0.9]), [null]);
     expect(traitDef(universal!.def)?.species).toBeNull();
-    const mine = rollDrop(feed([0.1, 0.9]), "weaver");
+    const mine = rollDrop(feed([0.1, 0.9]), ["weaver"]);
     expect(traitDef(mine!.def)?.species).toBe("weaver");
   });
 });

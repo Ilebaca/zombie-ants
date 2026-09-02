@@ -37,7 +37,8 @@ import {
 import { buildLeaderboard } from "./leaderboard";
 import { buildShop } from "./shop";
 import { buildQuests } from "./quests";
-import { buildComingSoon, buildMenu } from "./screens-simple";
+import { buildMenu } from "./screens-simple";
+import { buildHatch } from "./hatch";
 import { buildNews } from "./news";
 import { buildFriends } from "./friends";
 import { buildSupport } from "./support";
@@ -488,6 +489,22 @@ export class App {
     }
   }
 
+  /**
+   * The shop, opened AT something.
+   *
+   * A tap that asks for larva and lands at the top of a shop selling five other things has
+   * not been answered. The shop is a deck slide and the deck rebuilds a screen on entry
+   * (§9a), so the element does not exist until after the slide — hence the frame's wait.
+   */
+  private showShop(anchorId?: string): void {
+    this.hideOverlayScreens();
+    this.slideTo("shop", false);
+    if (!anchorId) return;
+    requestAnimationFrame(() => {
+      document.getElementById(anchorId)?.scrollIntoView({ block: "start" });
+    });
+  }
+
   /** Open a bench, remembering which screen sent us so Back is not a guess. */
   private openTraits(scope: TraitScope, back: ScreenId): void {
     this.traitScope = scope;
@@ -635,11 +652,16 @@ export class App {
       );
     }
     // The one menu entry that really is unbuilt (CLAUDE.md §9: the lucky hatch needs the
-    // larva currency and a cosmetics pool, neither of which exists). It fell through to
-    // the Antarium, so tapping it silently opened a different screen.
     if (id === "luckyhatch") {
-      return buildComingSoon("luckyhatch", "Lucky hatch", "Colony cosmetics", "brood",
-        () => this.show("home"));
+      return buildHatch(this.profile, {
+        onBack: () => this.show("home"),
+        // The plus is not a general "go shopping": it lands on the larva shelf, because
+        // the tap it answers was about larva.
+        onBuyLarva: () => this.showShop("shopLarva"),
+        onInventory: () => this.show("inventory"),
+        // The trait went to the bag, so anything counting the bag is now stale.
+        onChanged: () => { this.rebuildHomeBar(); },
+      });
     }
     if (id === "news") return buildNews(this.profile, () => this.show("home"));
     if (id === "friends") {

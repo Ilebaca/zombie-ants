@@ -24,7 +24,7 @@ describe("the catalogue", () => {
     for (const p of SHOP_PRODUCTS) {
       expect(p.id, "product without an id").toBeTruthy();
       expect(p.price, `${p.id} has no price`).toBeTruthy();
-      const gives = (p.grant.mycel ?? 0) + (p.grant.pheromone ?? 0);
+      const gives = (p.grant.mycel ?? 0) + (p.grant.pheromone ?? 0) + (p.grant.larva ?? 0);
       expect(gives > 0 || !!p.grant.pass || !!p.grant.species, `${p.id} grants nothing`).toBe(true);
     }
   });
@@ -34,11 +34,20 @@ describe("the catalogue", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  /** Larva is the lucky-hatch currency and the hatch is not ported: nothing may sell it. */
-  it("never sells a currency the game cannot spend", () => {
+  /**
+   * NOTHING MAY BE SOLD THAT THE GAME CANNOT GIVE — and this is checked by actually
+   * GIVING it, not against a list of allowed keys. Larva was on that list as forbidden
+   * for as long as the lucky hatch did not exist; the day it was built, the list was the
+   * thing standing in the way, and a list has to be remembered while a purchase that
+   * moves nothing fails by itself.
+   */
+  it("hands over something real for every product", () => {
     for (const p of SHOP_PRODUCTS) {
-      expect(Object.keys(p.grant).every((k) => ["mycel", "pheromone", "pass", "species"].includes(k)),
-        `${p.id} grants something unspendable`).toBe(true);
+      const store = new ProfileStore(new MemoryStore());
+      const before = JSON.stringify(store.get());
+      store.applyGrant(p.grant);
+      expect(JSON.stringify(store.get()), `${p.id} took money and changed nothing`)
+        .not.toBe(before);
     }
   });
 

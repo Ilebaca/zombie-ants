@@ -696,11 +696,9 @@ and one line in `App`.
   constant) and not in `normalise` (which has to stay a pure function of its input — a test
   compares the two field by field). Ambiguous characters are left out of it, because the
   whole point of the string is that somebody reads it off a screen and types it.
-- **Lucky hatch is the one entry still unbuilt**, and it now says so. It fell through the
-  router to the Antarium, so tapping it silently opened a different screen. It is also no
-  longer a cosmetics machine waiting on a currency that does not exist: TRAITS are what it
-  pays out, the roll is written and tested (`platform/traits.ts`), and it is one caller
-  away from being the only source of them.
+- **Lucky hatch is BUILT** (`ui/hatch.ts`), and with it every drawer entry is a real
+  screen — `buildComingSoon` is gone, because a "Coming soon" helper that nothing calls is
+  an invitation to ship another dead entry.
 
 **THE LADDER'S HEAD DOES NOT SCROLL** (`src/ui/leaderboard.ts`). The body was one
 scroller and the screen opened by scrolling the player's own row into the middle of it,
@@ -1036,17 +1034,16 @@ war, and the store is emptied into the colony from the home screen.
 
 1. Engine port + tests ✅ (all nine abilities implemented)
 2. Canvas renderer driven by engine events ✅
-3. Meta UI ✅ — every legacy screen is ported except two: **lucky hatch** and the
-   (unreachable in legacy) profile card. Built: home with its top bar and five-tab
+3. Meta UI ✅ — every legacy screen is ported, including the **lucky hatch**, plus a
+   profile card the legacy build could not reach. Built: home with its top bar and five-tab
    bottom nav, the three setup steps, Anthill, Antarium + per-species page, Colony/quests
    with the XP spine, Trophy Road, Challenges, daily challenge, Leaderboard, Settings, the
    slide-in menu, How to play, and the result card.
    The shop is built and sells through `platform/purchases.ts`: a `PurchaseGateway`
    interface with a `DemoGateway` that grants without charging. Swapping in RevenueCat is
    one new implementation of that interface — the screen and the grant code do not change.
-   It deliberately sells only what the game can spend (mycelium, pheromone, the Colony Pass,
-   the premium colony); the lucky hatch needs the larva currency and a cosmetics pool,
-   neither of which exists yet, which is why larva rewards are paid in pheromone (§10).
+   It sells only what the game can spend: mycelium, pheromone, larva, the Colony Pass and
+   the premium colony. Cosmetic rolls are still out — there is no cosmetics pool.
 4. Capacitor wrap → Android build
 5. RevenueCat in-app purchases — implement `PurchaseGateway` against it and hand it to
    `App`; nothing else moves. Needs, from Milan: a Play Console account, the products
@@ -1178,10 +1175,7 @@ rather than a purchase.
 - **THE LUCKY HATCH IS THE ONLY SOURCE, and that is the design.** A match pays mycelium
   and a colony; the hatch pays the one thing there is no other way to get, which is what
   gives it a reason to exist beyond handing out currency the player could have earned by
-  playing. `rollDrop`/`rollTier`/`rollTrait` are finished and tested and the hatch is one
-  caller away. Until it is built the bag stays empty and every bench reads as five empty
-  slots — the empty state says where they come from, because a screen that does not is a
-  screen that reads as broken.
+  playing.
 - **Chapter 10 gates both.** A trait is a CHOICE between things you have found, and a
   player handed one in their first hour has no collection to choose from and no idea what
   +2% defence is worth.
@@ -1189,6 +1183,44 @@ rather than a purchase.
   lore ("Pheromone mask — soldier counts hidden until contact") and it was labelled
   "Trait"; with equippable Traits on the same page, one word for two things is the screen
   contradicting itself. It reads "Signature" now.
+
+**THE LUCKY HATCH** (`ui/hatch.ts`, `platform/traits.ts`). One egg in the middle of the
+screen, the larva you have above it, one button under it. That is deliberately the whole
+interface: the hatch does exactly one thing, and every control that is not "hatch" is a
+control competing with it.
+- **LARVA IS THE THIRD CURRENCY AND IT IS SHOWN HERE AND NOWHERE ELSE.** It buys exactly
+  one thing, so it does not ride the top bar beside the two a player spends every day — a
+  figure in the chrome that the chrome offers nothing to spend on is a question the
+  interface never answers. The plus sign beside it opens the shop AT the larva shelf
+  (`#shopLarva`): a tap that asks for larva and lands at the top of a shop selling five
+  other things has not been answered.
+- **SPENDING AND ROLLING ARE ONE CALL** (`ProfileStore.hatch`). A hatch that spent and did
+  not roll takes something for nothing; one that rolled and did not spend is free traits
+  for ever. The screen owns only the drama.
+- **THE POOL IS WHAT THE PLAYER HAS** — the universal traits and every colony they own. A
+  mythic for a colony they may never buy is a mythic they cannot use, and the whole point
+  of the top tier is that finding one is the best thing that happens in the feature. The
+  roll is uniform over the TRAITS rather than over the pools: a colony's five and the
+  universal eight are different sizes, so picking a pool first would make a universal
+  trait rarer the more colonies you own — a collection that gets worse as it grows.
+- **THE MOMENT IS THE FEATURE.** A roll that resolves instantly is a number changing, and
+  a collection nobody feels collecting is a spreadsheet. The egg ROCKS — never spins, which
+  reads as a loading spinner, the one thing this must not look like — and then the tier's
+  COLOUR arrives before the trait is named. The colour is the answer, which is the whole
+  reason the tiers have colours.
+- **With no larva the button is not disabled, it is the way to buy some.** A dead button is
+  a dead end. And the prize says where it went, with the way there: a reward that lands
+  somewhere the player has to go looking for is a reward they will not find.
+- **Re-entry is stopped by the BUTTON being disabled**, not by a flag re-checked in the
+  handler as well — one mechanism, and the one a player can see.
+- **IT IS SHUT UNTIL TRAITS ARE (chapter 10), and that is not tidiness.** Larva buys traits
+  and nothing else, so a hatch open before the benches are would sell a player something
+  they cannot equip on any colony — which is the one thing a shop must never do.
+- **The shop sells larva now**, and the test that used to forbid it was rewritten to hold
+  the real rule instead: every product is bought against a real store and has to MOVE the
+  save. A list of allowed grant keys has to be remembered; a purchase that changes nothing
+  fails by itself. Cosmetic rolls are still not sold — there is no cosmetics pool, so there
+  is nothing to hand over.
 
 **A MATCH IS REMEMBERED, AND CAN BE WATCHED BACK** (`platform/history.ts`, `ui/history.ts`).
 Nothing kept a finished match: the result card came up, the colony moved, and every game a
@@ -1462,8 +1494,11 @@ These differ from the legacy build **on purpose**. Anything else that differs is
 - **Currency in words, not glyphs.** "60 🍄" became "60 mycelium". A reward line is read, not
   scanned, and the glyph was the only thing telling two currencies apart.
 
-- **Larva.** The lucky-hatch currency is not ported, so rewards paid in larva pay pheromone
-  instead (50 each). Affects the Colony Road tables and two quests.
+- **Larva.** The currency exists now and the lucky hatch spends it, but it is BOUGHT
+  rather than earned: the Colony Road and the two quests that pay larva in the legacy build
+  still pay pheromone instead (at 4 each — §8c, where that conversion was retuned). Moving
+  those payouts to larva would re-open the economy model, so it is a deliberate decision
+  rather than an omission.
 - **Daily quest roll.** Legacy rolls with `Math.random` and stores the result; this build
   derives the day's three from the day number (§11), so a reload cannot reroll.
 - **Formation thumbnails.** Legacy draws them once at boot and never redraws, so they keep

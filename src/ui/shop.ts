@@ -47,6 +47,15 @@ export function buildShop(
     wrap.append(...section("Bundles"), row(byKind("bundle")));
     wrap.append(...section("Mycelium", "Chambers, research and colonies"), row(byKind("currency", "mycel")));
     wrap.append(...section("Pheromone dust", "Spent in the shop and on the road"), row(byKind("currency", "pheromone")));
+
+    // ANCHORED, because the lucky hatch's plus sign comes straight here. A shop that opens
+    // at the top and leaves the player to find the row they asked for has not answered the
+    // tap — and the id is on the HEADING, not the tiles, so what scrolls into view is the
+    // section rather than the middle of it.
+    const larva = section("Larva", "Hatched in the lucky hatch");
+    larva[0]?.setAttribute("id", "shopLarva");
+    wrap.append(...larva, row(byKind("currency", "brood")));
+
     wrap.append(...section("Unlocks"), row([...byKind("pass"), ...byKind("species")]));
 
     body.appendChild(wrap);
@@ -82,7 +91,8 @@ export function buildShop(
     const mark = el("span", "ic");
     mark.appendChild(icon(product.icon, product.kind === "currency" ? 30 : 26));
     art.appendChild(mark);
-    const amount = (product.grant.mycel ?? 0) + (product.grant.pheromone ?? 0);
+    const amount = (product.grant.mycel ?? 0) + (product.grant.pheromone ?? 0)
+      + (product.grant.larva ?? 0);
     if (product.kind === "currency") {
       art.appendChild(el("span", "amt", amount.toLocaleString()));
     } else {
@@ -181,6 +191,7 @@ function describe(product: Product): string {
   const parts = [
     product.grant.mycel ? `+${product.grant.mycel} mycelium` : "",
     product.grant.pheromone ? `+${product.grant.pheromone} pheromone` : "",
+    product.grant.larva ? `+${product.grant.larva} larva` : "",
     product.grant.pass ? "Colony Pass unlocked" : "",
     product.grant.species ? `${product.title ?? "Colony"} unlocked` : "",
   ].filter(Boolean);

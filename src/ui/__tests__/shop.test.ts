@@ -61,14 +61,26 @@ describe("the shop's shelves", () => {
     expect(root.querySelectorAll(".stile").length).toBe(SHOP_PRODUCTS.length + 1); // + the gift
   });
 
-  // The legacy build sells larva and cosmetic rolls. Neither is ported, and taking money
-  // against a feature that does not exist is the one thing a shop must never do.
+  /**
+   * Taking money against a feature that does not exist is the one thing a shop must never
+   * do. Larva was forbidden here for as long as the lucky hatch was a "Coming soon" panel;
+   * it is sold now because the hatch spends it. What is still forbidden is a cosmetic
+   * roll — there is no cosmetics pool, so there is nothing to hand over.
+   */
   it("sells nothing the game cannot actually give", () => {
     for (const p of SHOP_PRODUCTS) {
-      const gives = p.grant.mycel || p.grant.pheromone || p.grant.pass || p.grant.species;
+      const gives = p.grant.mycel || p.grant.pheromone || p.grant.larva
+        || p.grant.pass || p.grant.species;
       expect(gives, `${p.id} grants nothing`).toBeTruthy();
     }
-    expect(SHOP_PRODUCTS.some((p) => /larva|hatch|skin/i.test(p.id))).toBe(false);
+    expect(SHOP_PRODUCTS.some((p) => /skin|cosmetic/i.test(p.id))).toBe(false);
+  });
+
+  /** The lucky hatch's plus sign lands here, so the shelf has to be findable. */
+  it("gives the larva shelf an anchor the hatch can open it at", () => {
+    const root = build(store(), new DemoGateway());
+    expect(root.querySelector("#shopLarva"), "nothing for the hatch to scroll to").toBeTruthy();
+    expect(SHOP_PRODUCTS.some((p) => p.grant.larva), "the shop sells no larva").toBe(true);
   });
 
   /** A demo gateway grants without charging. Not saying so would be a lie, not a stub. */

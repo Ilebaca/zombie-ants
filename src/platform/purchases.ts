@@ -12,8 +12,9 @@
  * The split matters: the shop UI must never know whether money changed hands. It asks the
  * gateway to buy a product id and applies whatever the result says was granted.
  *
- * NOTE ON LARVA: the legacy build sells larva for the lucky hatch, which is not ported.
- * Nothing here sells a currency the game cannot spend — see SHOP_PRODUCTS.
+ * LARVA IS SOLD NOW. It was left out for as long as the lucky hatch did not exist, because
+ * nothing here may sell a currency the game cannot spend. The hatch is built, larva is what
+ * feeds it, and it is the only thing larva buys.
  */
 import type { SpeciesId } from "../engine";
 
@@ -21,6 +22,8 @@ import type { SpeciesId } from "../engine";
 export interface Grant {
   mycel?: number;
   pheromone?: number;
+  /** Hatches, one each. */
+  larva?: number;
   /** Unlocks the Colony Road's pass track. */
   pass?: boolean;
   species?: SpeciesId;
@@ -55,10 +58,9 @@ export interface Product {
 /**
  * The catalogue.
  *
- * Deliberately narrower than the legacy build's: it sells only what a player can actually
- * spend today — mycelium, pheromone, the Colony Pass and the one premium colony. Larva
- * packs and cosmetic rolls are left out rather than sold against a feature that does not
- * exist yet.
+ * It sells only what a player can actually spend: mycelium, pheromone, larva, the Colony
+ * Pass and the one premium colony. Cosmetic rolls are still left out rather than sold
+ * against a feature that does not exist.
  */
 export const SHOP_PRODUCTS: readonly Product[] = [
   // ---- headline bundles ------------------------------------------------------------
@@ -91,6 +93,17 @@ export const SHOP_PRODUCTS: readonly Product[] = [
   { id: "pher.130", kind: "currency", price: "€0.99", icon: "pheromone", grant: { pheromone: 130 } },
   { id: "pher.420", kind: "currency", price: "€2.99", icon: "pheromone", grant: { pheromone: 420 } },
   { id: "pher.1300", kind: "currency", price: "€4.99", icon: "pheromone", grant: { pheromone: 900 } },
+
+  // ---- larva -----------------------------------------------------------------------
+  // Priced so a hatch is a real decision rather than a habit: a single is about the cost
+  // of a day's free mycelium, and the pack is where the value is — which is how a bundle
+  // is meant to read. Nothing else in the game grants larva, so this is the whole faucet
+  // and its price is the whole of the hatch's pacing.
+  { id: "larva.3", kind: "currency", price: "€0.99", icon: "brood", grant: { larva: 3 } },
+  // No ribbon on this row on purpose: "MOST POPULAR" is already on the mycelium tile and
+  // "BEST VALUE" on a bundle, and the same claim made twice in one shop is a claim.
+  { id: "larva.10", kind: "currency", price: "€2.99", icon: "brood", grant: { larva: 10 } },
+  { id: "larva.25", kind: "currency", price: "€5.99", icon: "brood", grant: { larva: 25 } },
 
   // ---- the things that are not currency ---------------------------------------------
   {

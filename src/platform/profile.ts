@@ -32,7 +32,8 @@ import { DUELS_MAX, seedInvites } from "./duels";
 import { HISTORY_MAX, addToHistory } from "./history";
 import type { MatchLog } from "./history";
 import {
-  TRAITS_CHAPTER, TRAIT_SLOTS, TRAIT_TIERS, combine, fitsScope, totalsOf, traitDef,
+  HATCH_COST, TRAITS_CHAPTER, TRAIT_SLOTS, TRAIT_TIERS, combine, fitsScope, rollDrop,
+  totalsOf, traitDef,
 } from "./traits";
 import type { TraitItem, TraitScope, TraitTier, TraitTotals } from "./traits";
 import type { DuelInvite } from "./duels";
@@ -107,6 +108,14 @@ export interface Profile {
   /** Soft currency (mycelium) and research currency (pheromone). */
   mycel: number;
   pheromone: number;
+  /**
+   * LARVA — the third currency, and the only one that is not spent on a screen it can be
+   * seen from. It buys exactly one thing: a hatch. So it is shown in the lucky hatch and
+   * nowhere else, rather than riding the top bar beside the two currencies a player spends
+   * every day. A number in the chrome that the chrome offers nothing to spend on is a
+   * question the interface never answers.
+   */
+  larva: number;
   stats: Stats;
   unlocked: SpeciesId[];
   research: Partial<Record<SpeciesId, Research>>;
@@ -248,6 +257,7 @@ export function defaultProfile(): Profile {
     // match instead is what gives that visit a point.
     mycel: 0,
     pheromone: 0,
+    larva: 0,
     stats: {
       games: 0, wins: 0, conquered: 0, abilities: 0, tunnels: 0,
       winStreak: 0, bestStreak: 0, turns: 0, playedMs: 0, bestMs: 0, queens: 0, nests: 0,
@@ -367,6 +377,7 @@ export function normalise(raw: unknown): Profile {
     colony: colonyOf(p, base.colony),
     mycel: int(p.mycel, 0, 1e9, base.mycel),
     pheromone: int(p.pheromone, 0, 1e9, base.pheromone),
+    larva: int(p.larva, 0, 1e9, base.larva),
     stats: {
       games: int(p.stats?.games, 0, 1e9, 0),
       wins: int(p.stats?.wins, 0, 1e9, 0),
@@ -1212,9 +1223,31 @@ export class ProfileStore {
     this.update((p) => {
       p.mycel += grant.mycel ?? 0;
       p.pheromone += grant.pheromone ?? 0;
+      p.larva += grant.larva ?? 0;
       if (grant.pass) p.pass = true;
       if (grant.species && !p.unlocked.includes(grant.species)) p.unlocked.push(grant.species);
     });
+  }
+
+  /**
+   * SPEND ONE LARVA AND HATCH WHAT IT HELD.
+   *
+   * One method rather than "take a larva" and "add a trait" called in order, because those
+   * two must never come apart: a hatch that spent and then failed to roll takes something
+   * for nothing, and one that rolled and then failed to spend is free traits for ever. It
+   * returns the item so the screen has something to reveal, and `null` when the player
+   * cannot afford it — the same contract every other spend on this store has.
+   *
+   * WHICH TRAITS. The universal ones, and every colony the player actually HAS. A mythic
+   * for a colony they may never buy is a mythic they cannot use, and the whole point of
+   * the tier is that finding one is the best thing that happens in the feature.
+   */
+  hatch(random: () => number = Math.random): TraitItem | null {
+    if (this.profile.larva < HATCH_COST) return null;
+    const drop = rollDrop(random, [null, ...this.profile.unlocked]);
+    if (!drop) return null;
+    this.update((p) => { p.larva -= HATCH_COST; });
+    return this.findTrait(drop.def, drop.tier);
   }
 
   /** Timestamp of the last daily gift claim, so the shop can offer it once a day. */

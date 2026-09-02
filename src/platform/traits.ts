@@ -377,19 +377,37 @@ export function rollTier(random: () => number): TraitTier {
  */
 export interface Drop { def: string; tier: TraitTier }
 
+/** One larva. It buys exactly one hatch, which is the only thing larva buys. */
+export const HATCH_COST = 1;
+
 /**
  * One pull: a trait, and a tier for it.
  *
  * `random` is injected rather than reached for, so a test is not a coin flip and so the
  * hatch can later draw from whatever stream it wants to be verifiable against.
+ *
+ * `from` is the set of colonies whose traits can turn up, with `null` in it for the
+ * universal ones. It is passed rather than assumed because the hatch draws only from what
+ * the player HAS: a mythic for a colony they may never buy is a mythic they cannot use,
+ * and the whole point of the top tier is that finding one is the best thing that happens.
  */
-export function rollDrop(random: () => number, species: SpeciesId | null): Drop | null {
-  const def = rollTrait(random, species);
+export function rollDrop(
+  random: () => number, from: readonly (SpeciesId | null)[],
+): Drop | null {
+  const def = rollTrait(random, from);
   return def ? { def: def.id, tier: rollTier(random) } : null;
 }
 
-/** Roll one trait, either universal or for a named colony. */
-export function rollTrait(random: () => number, species: SpeciesId | null): TraitDef | null {
-  const pool = TRAITS.filter((t) => t.species === species);
+/**
+ * Roll one trait out of the pools given.
+ *
+ * Uniform over the TRAITS, not over the pools: a colony's five and the universal eight are
+ * different sizes, and picking a pool first and a trait second would make a universal
+ * trait rarer the more colonies the player owns — a collection that gets worse as it grows.
+ */
+export function rollTrait(
+  random: () => number, from: readonly (SpeciesId | null)[],
+): TraitDef | null {
+  const pool = TRAITS.filter((t) => from.includes(t.species));
   return pool[Math.floor(random() * pool.length)] ?? null;
 }

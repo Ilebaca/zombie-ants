@@ -64,7 +64,7 @@ export type { MatchLog } from "./history";
 export { BACKUP_TAG, BACKUP_VERSION, checksum, exportProfile, importProfile } from "./backup";
 export type { ImportFailure, ImportResult } from "./backup";
 export {
-  ATK_CAP, DEF_CAP, LUCK_CAP, TRAITS, TRAITS_CHAPTER, TRAIT_SLOTS, TRAIT_TIER,
+  ATK_CAP, DEF_CAP, HATCH_COST, LUCK_CAP, TRAITS, TRAITS_CHAPTER, TRAIT_SLOTS, TRAIT_TIER,
   TRAIT_TIERS, combine, effectFigure, effectText, fitsScope, itemDef, markOf, rollDrop, rollTier,
   rollTrait, scopeName, totalsOf, traitDef, traitsFor,
 } from "./traits";

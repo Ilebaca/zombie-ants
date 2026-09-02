@@ -4722,3 +4722,206 @@ button:not(.playbtn):active,
 
 /* A found trait's count, under the collection row that counts the slots. */
 .pf-row-note { font-size: 10.5px; font-weight: 800; color: var(--muted); }
+
+/* ============================================================================
+   ==  THE LUCKY HATCH  =======================================================
+   ============================================================================
+
+   One egg in the middle, what you have above it, one button under it. The
+   screen does exactly one thing, and every control that is not "hatch" is a
+   control competing with it — so there are none.
+
+   THE COLOUR IS THE ANSWER. A tier is the whole visual language of the trait
+   feature, so the prize is drawn as that colour before it is read as a name:
+   the disc, the ring around it and the tier word all take `--tier` from the
+   table (platform/traits.ts), which is the same place that decides what a
+   mythic is worth. */
+.hatchwrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack);
+  min-height: 0;
+  flex: 1;
+  width: 100%;
+}
+
+/* ---- What you are holding ----
+   Larva lives on this screen and nowhere else: it buys exactly one thing, and
+   a figure in the top bar the top bar cannot spend is a question the interface
+   never answers. */
+.hatchpurse {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: center;
+  padding: 8px 8px 8px 14px;
+  border-radius: 99px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.hp-i { display: grid; place-items: center; color: var(--gold); }
+.hp-n { font-size: 19px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.hp-k {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.hp-plus {
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  margin: -8px -8px -8px 4px;
+  border-radius: 99px;
+  background: none;
+  border: none;
+  color: var(--grass-glow);
+  cursor: pointer;
+}
+.hp-plus:active { transform: translateY(1px); }
+
+/* ---- The stage ----
+   It takes the room that is left, which is what makes the egg the subject of
+   the screen rather than an illustration on it. */
+.hatchstage {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding: 10px 0;
+}
+
+.hatchegg {
+  display: grid;
+  place-items: center;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  color: var(--gold);
+  /* A FLAT tint, not a radial gradient: the app clears every background-image
+     app-wide (§10), so a gradient here is a declaration that never once takes
+     effect — which is exactly the silent failure css-sanity.test.ts exists for. */
+  background: color-mix(in srgb, var(--gold) 9%, transparent);
+  border: 1px dashed var(--line);
+}
+/* It ROCKS, it does not spin: an egg about to hatch is something moving inside
+   a shell, and a rotation reads as a loading spinner — which is the one thing
+   this must not look like. */
+.hatchegg.shaking { animation: hatchrock .3s ease-in-out infinite; }
+@keyframes hatchrock {
+  0%, 100% { transform: rotate(-7deg) scale(1); }
+  50% { transform: rotate(7deg) scale(1.04); }
+}
+.hatchhint {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+  max-width: 22em;
+}
+
+/* ---- What came out ---- */
+.hatchprize {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  animation: hatchpop .34s cubic-bezier(.2, 1.5, .4, 1) both;
+}
+@keyframes hatchpop {
+  from { transform: scale(.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.hp-disc {
+  display: grid;
+  place-items: center;
+  width: 150px;
+  height: 150px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  color: var(--tier);
+  background: color-mix(in srgb, var(--tier) 14%, transparent);
+  border: 2px solid var(--tier);
+}
+.hp-tier {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--tier);
+}
+.hp-name { font-size: 19px; font-weight: 900; letter-spacing: .2px; text-align: center; }
+.hp-eff {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--grass-glow);
+}
+/* Where it went. A reward that lands somewhere the player has to go looking for
+   is a reward they will not find. */
+.hp-go {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: var(--tap);
+  margin-top: 2px;
+  padding: 0 6px;
+  background: none;
+  border: none;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/* ---- The button ---- */
+.hatchfoot { flex: none; padding-bottom: 10px; }
+.hatchbtn {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  width: 100%;
+  min-height: 60px;
+  padding: 10px;
+  border-radius: var(--r-lg);
+  background: var(--grass);
+  border: none;
+  font-family: var(--font);
+  color: #0d1c0b;
+  cursor: pointer;
+}
+.hatchbtn:active { transform: translateY(1px); }
+/* With no larva it is NOT disabled — it is the way to get some. A dead button
+   is a dead end; this one still answers, it just answers with the shop. */
+.hatchbtn.out { background: rgba(255, 255, 255, .07); border: 1px solid var(--line); color: var(--ink); }
+.hatchbtn[disabled] { opacity: .7; cursor: default; }
+.hb-t { font-size: 17px; font-weight: 900; letter-spacing: .4px; text-transform: uppercase; }
+.hb-c { font-size: 11px; font-weight: 800; opacity: .75; }
+
+/* Shut until traits are. Larva buys traits and nothing else, so a hatch open
+   before the benches are would sell something that cannot be equipped. */
+.hatchshut {
+  flex: 1;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+  padding: 20px;
+}
+.hatchegg.locked { width: 150px; height: 150px; color: var(--muted); background: none; }
+.hatchshut-h { font-size: 16px; font-weight: 900; color: var(--gold); }
+.hatchshut-p {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  max-width: 24em;
+}

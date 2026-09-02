@@ -1,31 +1,17 @@
 /**
- * The placeholders behind the slide-in menu, and the menu itself.
+ * THE SLIDE-IN MENU.
  *
- * Each is the legacy build's markup for that screen, so the ported stylesheet applies to
- * them unchanged. The placeholders are deliberately faithful: the legacy build ships them
- * as "Coming soon" panels, and hiding them here would leave the menu with dead entries.
+ * This file used to be "the placeholders and the menu": News, Friends, Support and the
+ * lucky hatch were all `buildComingSoon` panels, faithful to the legacy build. Every one
+ * of them is a real screen now — the hatch was the last — so the placeholder is gone with
+ * its markup. A "Coming soon" helper that nothing calls is an invitation to ship another
+ * dead entry.
  *
  * How to play grew into a manual of its own and lives in `rules.ts`, and Settings grew
- * into a screen of its own in `settings.ts` — this file is the placeholders and the menu.
+ * into a screen of its own in `settings.ts`.
  */
-import { el, screenEl, screenHeader } from "./chrome";
+import { el } from "./chrome";
 import { icon as iconMark } from "./icons";
-
-/** News, Friends and Support are "Coming soon" panels in the legacy build too. */
-export function buildComingSoon(
-  id: string, title: string, sub: string, icon: string, onBack: () => void,
-): HTMLElement {
-  const root = screenEl(id);
-  screenHeader(root, { title, sub, onBack });
-  const body = el("div", "screenbody");
-  const box = el("div", "comingsoon");
-  const mark = el("span", "csico");
-  mark.appendChild(iconMark(icon, 34));
-  box.append(mark, document.createTextNode("Coming soon"));
-  body.appendChild(box);
-  root.appendChild(body);
-  return root;
-}
 
 export interface MenuEntry {
   id: string;

@@ -48,6 +48,30 @@ describe("every declaration does something", () => {
   });
 });
 
+/**
+ * THE APP CLEARS EVERY BACKGROUND IMAGE (§10), so a `background: <gradient>` written
+ * anywhere but on `#home` is a declaration that never takes effect — the same silent
+ * failure as a doubled unit, and it happened twice on the lucky hatch before this existed.
+ */
+describe("no rule paints a gradient the app has already cleared", () => {
+  it("has no gradient outside the home artwork", () => {
+    const css = code(read("skin.css"));
+    const bad: string[] = [];
+    for (const m of css.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+      const selector = (m[1] ?? "").trim();
+      // `background` and `background-image` ONLY. A gradient in a `mask-image` is
+      // untouched by the blanket rule and is exactly how the matchmaking reel fades its
+      // ends — the first version of this check called that a fault.
+      const paints = [...(m[2] ?? "").matchAll(/(^|[;{])\s*(background(?:-image)?)\s*:([^;]*)/g)]
+        .some((d) => /gradient\(/.test(d[3] ?? ""));
+      if (!paints) continue;
+      if (selector.includes("#home") || selector.startsWith("@")) continue;
+      bad.push(selector.slice(0, 60));
+    }
+    expect(bad, "these gradients are cleared by the app-wide rule").toEqual([]);
+  });
+});
+
 describe("the design scales", () => {
   /**
    * The whole point of the responsive pass: on a bigger screen the COLUMN grows and the
