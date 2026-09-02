@@ -1488,13 +1488,23 @@ stranded in a big screen.
   thumb reaching for the first or last tab lands. The column is 360px and a phone is
   wider, so joining it was itself a gutter. `--navmax` (640) is what stops five tabs
   spreading across a tablet, and it is deliberately wider than the reading measure.
-- **HOME IS ALMOST EDGE TO EDGE.** Every other screen is a column of cards that wants a
-  gutter; home is one picture with a banner over it and a button under it, and the app's
-  16px gutter framed all three in a border of nothing. `#home` carries `--gutter: 6px` and
-  `--homemax: 640px`, and the top bar, the banner, the granary pill, the hero and the three
-  floating buttons all answer to those two — one pair of edges for the whole screen. The
-  legacy `.tophead` pulls itself full-bleed by the app's 16px, so it is re-pulled by
-  `--gutter` here or it overhangs by ten pixels on each side. The home screen's
+- **HOME HAS ONE GUTTER AND EVERYTHING ON IT USES THAT.** Every other screen is a column
+  of cards that wants the app's 16px; home is one picture with a banner over it and a
+  button under it, and a card gutter framed all three in a border of nothing. `#home`
+  carries `--gutter: 12px` and `--homemax: 640px`, and the top bar's contents, the banner,
+  the granary pill, the hero and the three floating buttons all answer to those two — one
+  pair of edges for the whole screen, at every width.
+  - **Not zero.** Taking the tab tray's gutter off dropped the banner and the granary pill
+    to nothing while the hero under them stayed at the gutter: three insets on one screen,
+    and two items touching the glass, which reads as a layout that overflowed.
+  - **The full-bleed block escapes by the SAME number it is put back by.** The legacy
+    `.tophead` pulls itself out by the app's 16px, so on home it is re-pulled by
+    `--gutter` — otherwise it overhangs the screen it is meant to fill.
+  - **A wrapper gets PADDING, a card gets a WIDTH.** `#colonyHero` is a wrapper around the
+    visible band, so padding moves what is drawn; the granary pill IS the card, so padding
+    only fattens it and leaves its edges on the glass. And a margin is not enough either —
+    `margin-inline: 12px` gave the right gap on a phone and left the pill hard against the
+    left edge of a tablet while the banner above it was centred. Sized and auto-margined. The home screen's
   banner, granary pill and hero need telling separately: they are laid out above the body
   column, not inside it. The two floating buttons are POSITIONED, so they answer to the
   viewport until pinned to the column's edge too.

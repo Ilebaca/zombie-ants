@@ -80,6 +80,24 @@ describe("the design scales", () => {
     );
   });
 
+  /**
+   * HOME IS ONE PAIR OF EDGES. Its gutter is a single variable and nothing on the screen
+   * sets its own inset — the banner and the granary pill live inside a full-bleed block
+   * and ended up hard against the glass when the tab tray's gutter came off, while the
+   * hero under them sat at the gutter. Three insets on one screen.
+   */
+  it("puts everything on home on one gutter", () => {
+    const css = code(read("skin.css"));
+    expect(ruleFor(css, "#home"), "home has no gutter of its own").toMatch(/--gutter:\s*\d+px/);
+    for (const sel of ["#home .granpill", "#home .homeplay"]) {
+      expect(ruleFor(css, sel), `${sel} is not on home's gutter`)
+        .toMatch(/var\(--gutter\)|var\(--homemax\)/);
+    }
+    // The full-bleed top block escapes by the SAME number it is put back by, or it
+    // overhangs the screen it is meant to fill.
+    expect(ruleFor(css, "#home .tophead")).toContain("calc(-1 * var(--gutter))");
+  });
+
   it("lets the tab tray fill the bar on a phone", () => {
     const css = read("skin.css");
     expect(css, "the tab tray still pads itself in").toMatch(

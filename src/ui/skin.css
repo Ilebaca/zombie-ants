@@ -4015,25 +4015,58 @@ button:not(.playbtn):active,
    all three in a border of nothing. It keeps a hair so nothing touches
    the glass, and no more than that. */
 #home {
-  --gutter: 6px;
-  /* Wider than the reading column on purpose. Home is not a page of text: it
-     is one picture with a banner over it and a button under it, and clamping
-     those to a 360px measure inside a 390px phone put a second gutter inside
-     the first. The cap only bites on a tablet, where a banner spread across
-     the whole screen would be the thing that looked wrong. */
+  /* ONE NUMBER FOR THE WHOLE SCREEN. Every item on home — the currency row,
+     the colony banner, the granary pill, the hero and the three floating
+     buttons — sits this far from the glass, and nothing on the screen sets
+     its own inset. It is tighter than the app's 16px card gutter because
+     home is not a column of cards: it is one picture with a banner over it
+     and a button under it, and a card gutter framed all three in a border
+     of nothing. It is not ZERO either, which is what the banner and the
+     granary pill ended up at when the tab tray's gutter came off — an item
+     touching the glass reads as a layout that overflowed. */
+  --gutter: 12px;
+  /* Wider than the reading column on purpose: clamping home's furniture to
+     a 360px measure inside a 390px phone put a second gutter inside the
+     first. The cap only bites on a tablet, where a banner spread across the
+     whole screen would be the thing that looked wrong. */
   --homemax: 640px;
   padding-inline: var(--gutter);
 }
-/* The top bar escapes the gutter to sit edge to edge, and it has to escape
-   the RIGHT one: the legacy rule pulls itself out by the app's 16px, which
-   overhangs by ten on each side now that home's own gutter is six. */
+/* The top bar and the banner are one BACKGROUND that runs edge to edge, so
+   the block escapes the gutter — and it has to escape the right one: the
+   legacy rule pulls itself out by the app's 16px, which overhangs now that
+   home's own gutter is different. Its CONTENTS are put back inside it below,
+   or they end up at zero while everything under them sits at the gutter. */
 #home .tophead { margin-inline: calc(-1 * var(--gutter)); }
 
 /* The home screen's own furniture is laid out, not in the body column:
    the colony banner, the granary pill and the hero all have to be told
    about the column separately or they stretch while the cards do not. */
-#home #colonyHero,
-#home .granpill,
+/* Everything laid out on home, put on the same pair of edges.
+   The banner and the granary pill live INSIDE the full-bleed top block, so
+   they have to be inset again — but not the same way. `#colonyHero` is a
+   WRAPPER around the visible band, so padding moves what is drawn; the
+   granary pill IS the card, so padding would only fatten it and leave its
+   edges on the glass. That one needs margin. */
+#home #colonyHero {
+  box-sizing: border-box;
+  padding-inline: var(--gutter);
+}
+/* Sized rather than margined, so it CENTRES on a wide screen. A plain
+   `margin-inline: 12px` gave the right gap on a phone and left the pill
+   hard against the left edge of a tablet while the banner above it was
+   centred. */
+#home .granpill {
+  width: min(calc(100% - 2 * var(--gutter)), var(--homemax));
+  margin-inline: auto;
+}
+
+#home #colonyHero {
+  width: min(100%, calc(var(--homemax) + 2 * var(--gutter)));
+  margin-inline: auto;
+}
+/* No subtraction here: the hero is a direct child of the screen, which is
+   already padded by the gutter. Taking it off again would double it. */
 #home .homeplay {
   width: min(100%, var(--homemax));
   margin-inline: auto;
