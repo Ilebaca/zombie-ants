@@ -26,6 +26,49 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
+/**
+ * EMPTY A SCREEN FOR A REBUILD, AND PUT IT BACK WHERE THE PLAYER LEFT IT.
+ *
+ * Every progression screen redraws itself in place after a tap — buy a research level and
+ * the price, the NOW row, the purse in the header and the bar at the top all have to
+ * change — and every one of them does it by throwing the whole screen away and building a
+ * new one. That is the right shape: one function decides what the screen looks like, and
+ * there is no second path that updates half of it.
+ *
+ * What it cost was the SCROLL. A new element starts at the top, so buying the fifth
+ * chamber down a long nest snapped the player back to the mound; so did claiming a level,
+ * collecting the granary, equipping a trait, opening a news post. It reads as the app
+ * losing your place, and it was reported exactly that way.
+ *
+ * The restore runs on a MICROTASK rather than here, because at this moment the new content
+ * does not exist yet — this is called at the START of a render and the rest of it runs
+ * synchronously after. By the time the microtask fires the screen is whole and can be
+ * scrolled to where it was. A screen torn down in between simply finds nothing and stops.
+ *
+ * The scroller is found by looking for the one that IS scrolled: every screen has exactly
+ * one, they are all named differently (`.hillwrap`, `.antscroll`, `.spgwrap`, …), and a
+ * list of those names here would be a list to keep in step with twelve other files.
+ */
+export function redraw(root: HTMLElement): void {
+  const scrolled = Array.from(root.querySelectorAll<HTMLElement>("*"))
+    .find((e) => e.scrollTop > 0);
+  const top = scrolled?.scrollTop ?? 0;
+  const key = scrolled ? selectorFor(scrolled) : null;
+  root.replaceChildren();
+  if (!key || top <= 0) return;
+  queueMicrotask(() => {
+    const again = root.querySelector<HTMLElement>(key);
+    if (again) again.scrollTop = top;
+  });
+}
+
+/** How to find this element again in the rebuilt screen: its id, else its classes. */
+function selectorFor(node: HTMLElement): string | null {
+  if (node.id) return `#${CSS.escape(node.id)}`;
+  const classes = Array.from(node.classList);
+  return classes.length ? `.${classes.map((c) => CSS.escape(c)).join(".")}` : null;
+}
+
 /** A full-screen panel carrying the legacy id — several stylesheet rules are keyed by it. */
 export function screenEl(id: string): HTMLDivElement {
   const node = el("div", "screen");

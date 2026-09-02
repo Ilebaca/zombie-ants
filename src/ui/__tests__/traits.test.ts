@@ -9,7 +9,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { ProfileStore, TRAITS, TRAIT_SLOTS, TRAIT_TIER } from "../../platform";
 import { MemoryStore } from "../../platform";
-import { buildTraitBench, traitOpener } from "../traits";
+import { buildInventory, buildTraitBench, traitOpener } from "../traits";
 import type { TraitScope } from "../../platform";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
@@ -156,5 +156,81 @@ describe("the row that opens it", () => {
     let opened = 0;
     traitOpener(store(), "hill", () => { opened++; }, null).click();
     expect(opened).toBe(1);
+  });
+});
+
+/* ==================================================================== INVENTORY */
+
+/**
+ * THE COLLECTION AS A COLLECTION.
+ *
+ * The benches show only what fits them, so a player with traits spread over ten benches
+ * could never see all of them anywhere. This screen is the only place in the app that
+ * does, and the thing worth holding is that it shows EVERYTHING — worn included — because
+ * a collection that hid what was in use would be a different number every time a loadout
+ * changed.
+ */
+describe("the inventory", () => {
+  const inventory = (s: ProfileStore, onOpen: (sc: TraitScope) => void = () => {}): HTMLElement => {
+    const root = buildInventory(s, { onBack: () => {}, onOpen });
+    document.body.replaceChildren(root);
+    return root;
+  };
+  const tiles = (root: HTMLElement): HTMLButtonElement[] =>
+    Array.from(root.querySelectorAll<HTMLButtonElement>(".trtile"));
+
+  it("shows everything found, worn or not", () => {
+    const s = store();
+    const worn = s.findTrait(UNIVERSAL[0]!.id, "rare")!;
+    s.findTrait(UNIVERSAL[1]!.id, "common");
+    s.findTrait(FIRE[0]!.id, "mythic");
+    s.equipTrait("hill", worn.uid);
+
+    const root = inventory(s);
+    expect(tiles(root).length, "a worn trait was left out of the collection").toBe(3);
+    // ...and the worn one is marked rather than hidden.
+    expect(root.querySelectorAll(".trtile.worn").length).toBe(1);
+  });
+
+  it("groups by bench, and every group is a door into it", () => {
+    const s = store();
+    s.findTrait(UNIVERSAL[0]!.id, "rare");
+    s.findTrait(FIRE[0]!.id, "mythic");
+    const opened: TraitScope[] = [];
+    const root = inventory(s, (sc) => opened.push(sc));
+
+    const heads = Array.from(root.querySelectorAll<HTMLButtonElement>(".invhead"));
+    expect(heads.map((h) => h.dataset.scope)).toEqual(["hill", "fire"]);
+    heads[1]?.click();
+    expect(opened).toEqual(["fire"]);
+  });
+
+  // A bench with nothing in it is not a heading over an empty grid.
+  it("names only the benches it has something for", () => {
+    const s = store();
+    s.findTrait(FIRE[0]!.id, "rare");
+    expect(inventory(s).querySelectorAll(".invhead").length).toBe(1);
+  });
+
+  it("takes a tapped tile to the bench it belongs to", () => {
+    const s = store();
+    s.findTrait(FIRE[0]!.id, "rare");
+    const opened: TraitScope[] = [];
+    tiles(inventory(s, (sc) => opened.push(sc)))[0]?.click();
+    expect(opened).toEqual(["fire"]);
+  });
+
+  /** A screen with nothing on it has to say why, or it reads as one that failed. */
+  it("says where traits come from when there are none", () => {
+    const root = inventory(store());
+    expect(root.querySelectorAll(".trtile").length).toBe(0);
+    expect(root.querySelector(".trempty")?.textContent).toContain("lucky hatch");
+  });
+
+  it("names the chapter before traits are open", () => {
+    const early = new ProfileStore(new MemoryStore());
+    const root = inventory(early);
+    expect(root.querySelector(".trempty")?.textContent).toContain("chapter 10");
+    expect(root.querySelectorAll(".invhead").length).toBe(0);
   });
 });

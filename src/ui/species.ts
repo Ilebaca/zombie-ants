@@ -35,7 +35,7 @@ import {
 } from "../platform";
 import type { ProfileStore, Research, ResearchDef } from "../platform";
 import { SPECIES_COL } from "../render";
-import { antPortrait, buyButton, el, pips, screenEl, screenHeader, toast } from "./chrome";
+import { antPortrait, buyButton, el, pips, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 import { traitOpener } from "./traits";
 
@@ -55,7 +55,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     const profile = store.get();
     const research = researchOf(store, id);
     const tier = tierOf(id);
-    root.replaceChildren();
+    redraw(root);
 
     screenHeader(root, {
       title: species.name,

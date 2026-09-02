@@ -1164,6 +1164,13 @@ rather than a purchase.
   total move is one gesture in one place. Tapping an empty slot ARMS it, so replacing one
   particular trait is two taps rather than a remove and an add; tapping it again disarms,
   or an accidental tap leaves the screen with no way out but Back.
+- **THE INVENTORY IS ITS OWN SCREEN, in the drawer** (`buildInventory`). A bench shows
+  only what fits THAT bench, so without it there is nowhere in the app that shows a
+  collection AS a collection — a player with forty traits across ten benches could never
+  see forty of anything. Grouped by bench rather than by tier, because "where does this
+  go" is the question a collection raises and "what colour is it" is not; every group is a
+  DOOR into the bench it names, and a worn trait is MARKED rather than hidden, or the
+  number would change every time a loadout did.
 - **The row that opens it carries PIPS, not a count.** "3 / 5" says how many and nothing
   about WHICH, and which is what a player checks before a match. Locked, it names the
   CHAPTER and drops its chevron — an arrow into a door that does not open is the row
@@ -1508,6 +1515,24 @@ stranded in a big screen.
   square while the file says it is round. Twelve of those had accumulated in `skin.css` —
   twelve considered decisions that had never once taken effect — and all twelve were found
   by a search for something else.
+
+**A SCREEN THAT REBUILDS ITSELF KEEPS THE PLAYER'S PLACE** (`redraw` in `chrome.ts`).
+Twelve screens redraw in place after a tap — buy a research level and the price, the NOW
+row, the purse in the header and the bar at the top all change — and every one does it by
+throwing the whole screen away and building a new one. That is the right shape: one
+function decides what the screen looks like, and there is no second path that updates half
+of it. What it cost was the SCROLL, because a new element starts at the top: buying the
+fifth chamber down a long nest snapped back to the mound, and so did claiming a level,
+collecting the granary and opening a news post. It reads as the app losing your place.
+- **The restore runs on a MICROTASK, never inline.** `redraw` is called at the START of a
+  render and the rest of it runs synchronously after, so at the moment it is called the
+  content to scroll does not exist yet. By the time the microtask fires the screen is
+  whole. A screen torn down in between finds nothing and stops.
+- **The scroller is found by looking for the one that IS scrolled**, then re-found by its
+  id or its classes. A list of the twelve scroller names (`.hillwrap`, `.antscroll`,
+  `.spgwrap`, `.screenbody`…) would be a thirteenth place to keep in step — and the
+  species page scrolls its `.screenbody` while the anthill scrolls a wrapper inside it,
+  which is exactly the kind of thing such a list gets wrong.
 
 **ONE VERTICAL RHYTHM, AND IT IS THE CONTAINER'S** (`--stack` in `skin.css`). Every
 screen that is a column of rows had picked its own gap — 6 between friends, 6 between

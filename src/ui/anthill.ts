@@ -20,7 +20,7 @@ import {
   CHAMBERS, GRANARY_CAP_HOURS, GRANARY_MAX, TRAITS_CHAPTER, compact,
 } from "../platform";
 import type { ChamberDef, GranaryState, ProfileStore } from "../platform";
-import { buyButton, el, pips, screenEl, screenHeader, toast } from "./chrome";
+import { buyButton, el, pips, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 import { traitOpener } from "./traits";
 
@@ -39,7 +39,7 @@ export function buildAnthill(store: ProfileStore, opts: AnthillOptions = {}): HT
     const profile = store.get();
     const levelOf = (ch: ChamberDef): number => profile.hill[ch.id] ?? 0;
 
-    root.replaceChildren();
+    redraw(root);
     // No back arrow: this is a bottom-nav tab, and the nav is how the player leaves it.
     screenHeader(root, {
       title: "Anthill",

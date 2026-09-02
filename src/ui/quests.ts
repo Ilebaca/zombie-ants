@@ -9,7 +9,7 @@
  */
 import { isClaimable, isComplete, levelReward, questDef } from "../platform";
 import type { ProfileStore, QuestState } from "../platform";
-import { el, screenEl, screenHeader, toast } from "./chrome";
+import { el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 
 export function buildQuests(store: ProfileStore, onBack: () => void): HTMLElement {
@@ -18,7 +18,7 @@ export function buildQuests(store: ProfileStore, onBack: () => void): HTMLElemen
   const render = (): void => {
     const quests = store.dailyQuests();
     const profile = store.get();
-    root.replaceChildren();
+    redraw(root);
     screenHeader(root, { title: "Colony", sub: "Level & daily quests", onBack });
 
     const body = el("div", "screenbody sb-top");

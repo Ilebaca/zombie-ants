@@ -14,7 +14,7 @@
  */
 import { FRIEND_MAX, compact } from "../platform";
 import type { Friend, FriendService, Person, ProfileStore } from "../platform";
-import { antPortrait, el, screenEl, screenHeader, toast } from "./chrome";
+import { antPortrait, el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 
 type Tab = "list" | "requests" | "find";
@@ -37,7 +37,7 @@ export function buildFriends(
 
   const render = (): void => {
     const profile = store.get();
-    root.replaceChildren();
+    redraw(root);
     screenHeader(root, { title: "Friends", sub: "Your colonies", onBack });
 
     const body = el("div", "screenbody sb-top frbody");

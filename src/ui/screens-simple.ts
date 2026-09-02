@@ -39,6 +39,10 @@ export const MENU_ENTRIES: readonly MenuEntry[] = [
   { id: "news", icon: "news", label: "News" },
   { id: "friends", icon: "friends", label: "Friends" },
   { id: "support", icon: "support", label: "Support" },
+  // The inventory sits next to the one thing that fills it. Everything found is here,
+  // across every bench — the per-bench screens show only what fits THAT bench, so
+  // without this there is nowhere in the app that shows a collection as a collection.
+  { id: "inventory", icon: "gift", label: "Inventory" },
   { id: "luckyhatch", icon: "brood", label: "Lucky hatch" },
   { id: "leaderboard", icon: "star", label: "Leaderboard" },
   { id: "achievements", icon: "trophy", label: "Colony Road" },

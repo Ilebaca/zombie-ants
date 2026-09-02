@@ -16,7 +16,7 @@
  */
 import { compact, rewardText, roadKey, roadStops } from "../platform";
 import type { ProfileStore, RoadReward, RoadStop } from "../platform";
-import { el, screenEl, screenHeader, toast } from "./chrome";
+import { el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 
 export function buildColonyRoad(store: ProfileStore, onBack: () => void, onShop: () => void): HTMLElement {
@@ -26,7 +26,7 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, onShop:
 
   const render = (): void => {
     const profile = store.get();
-    root.replaceChildren();
+    redraw(root);
     screenHeader(root, { title: "Colony Road", sub: "Grow the colony · claim rewards", onBack });
 
     const body = el("div", "screenbody achbody");

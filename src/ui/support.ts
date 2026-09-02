@@ -14,7 +14,7 @@
  */
 import { BUILD, FAQ, SUPPORT_EMAIL, TICKET_KINDS, TICKET_MAX, mailLink } from "../platform";
 import type { ProfileStore, SupportGateway, TicketKind } from "../platform";
-import { el, screenEl, screenHeader, toast } from "./chrome";
+import { el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 
 export function buildSupport(
@@ -29,7 +29,7 @@ export function buildSupport(
 
   const render = (): void => {
     const profile = store.get();
-    root.replaceChildren();
+    redraw(root);
     screenHeader(root, { title: "Support", sub: "Answers & contact", onBack });
 
     const body = el("div", "screenbody sb-top");

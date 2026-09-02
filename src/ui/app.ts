@@ -20,7 +20,7 @@ import type {
 } from "../platform";
 import { setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
-import { buildTraitBench } from "./traits";
+import { buildInventory, buildTraitBench } from "./traits";
 import { buildAntarium } from "./antarium";
 import { buildSpeciesPage } from "./species";
 import { buildProfile } from "./profile";
@@ -66,7 +66,7 @@ type ScreenId =
   | "home" | "mapsel" | "start" | "formation" | "duelpick" | "history"
   | "anthill" | "antarium" | "antup" | "achievements" | "quests" | "profile"
   | "challenges" | "daily" | "rules" | "settings" | "news" | "friends" | "support"
-  | "luckyhatch" | "leaderboard" | "shop" | "traits";
+  | "luckyhatch" | "leaderboard" | "shop" | "traits" | "inventory";
 
 /**
  * Is this press on something that ACTS?
@@ -582,6 +582,14 @@ export class App {
     }
     if (id === "anthill") {
       return buildAnthill(this.profile, { onTraits: () => this.openTraits("hill", "anthill") });
+    }
+    if (id === "inventory") {
+      return buildInventory(this.profile, {
+        onBack: () => this.show("home"),
+        // Straight into the bench a tile belongs to, and Back from there comes here —
+        // the inventory is where the player was, not the screen the bench usually sits on.
+        onOpen: (scope) => this.openTraits(scope, "inventory"),
+      });
     }
     if (id === "traits") {
       return buildTraitBench(this.profile, {

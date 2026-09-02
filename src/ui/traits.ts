@@ -16,11 +16,11 @@
  */
 import { SPECIES } from "../engine";
 import {
-  ATK_CAP, DEF_CAP, LUCK_CAP, TRAIT_SLOTS, TRAIT_TIER, effectFigure, effectText, itemDef,
-  markOf, scopeName,
+  ATK_CAP, DEF_CAP, LUCK_CAP, SPECIES_ORDER, TRAITS_CHAPTER, TRAIT_SLOTS, TRAIT_TIER,
+  effectFigure, effectText, fitsScope, itemDef, markOf, scopeName,
 } from "../platform";
 import type { ProfileStore, TraitItem, TraitScope } from "../platform";
-import { el, screenEl, screenHeader, toast } from "./chrome";
+import { el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 
 export interface TraitBenchOptions {
@@ -44,7 +44,7 @@ export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): H
   let armed: number | null = null;
 
   const render = (): void => {
-    root.replaceChildren();
+    redraw(root);
     screenHeader(root, {
       title: scopeName(scope),
       sub: "Traits",
@@ -195,6 +195,120 @@ export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): H
 
   render();
   return root;
+}
+
+/* ==================================================================== INVENTORY */
+
+/**
+ * EVERYTHING FOUND, IN ONE PLACE.
+ *
+ * The benches show only what fits THEM — a colony's five and the anthill's — so without
+ * this there is nowhere in the app that shows a collection AS a collection: a player with
+ * forty traits spread over ten benches could never see forty of anything.
+ *
+ * It is grouped by bench rather than by tier, because "where does this go" is the question
+ * a collection raises and "what colour is it" is not — and every group is a DOOR into the
+ * bench it names, so seeing something you are not using and going to use it is one tap.
+ */
+export interface InventoryOptions {
+  onBack: () => void;
+  /** Open the bench a tile belongs to. */
+  onOpen: (scope: TraitScope) => void;
+}
+
+export function buildInventory(store: ProfileStore, opts: InventoryOptions): HTMLElement {
+  const root = screenEl("inventory");
+  screenHeader(root, {
+    title: "Inventory",
+    sub: "Every trait you have found",
+    onBack: opts.onBack,
+    backId: "invBack",
+  });
+
+  const body = el("div", "screenbody sb-top");
+  const wrap = el("div", "trwrap");
+  wrap.id = "invBody";
+
+  // Locked, and it says the chapter rather than showing a padlock — the same thing the
+  // bench openers do, because it is the same gate.
+  if (!store.traitsOpen()) {
+    wrap.appendChild(locked(`Traits open at chapter ${TRAITS_CHAPTER}.`,
+      "They are found in the lucky hatch, and worn five at a time by each colony."));
+    body.appendChild(wrap);
+    root.appendChild(body);
+    return root;
+  }
+
+  const bag = store.bag;
+  if (bag.length === 0) {
+    wrap.appendChild(locked("Nothing found yet",
+      "Traits come from the lucky hatch. Each colony wears five, and the anthill wears five more."));
+    body.appendChild(wrap);
+    root.appendChild(body);
+    return root;
+  }
+
+  const benches: TraitScope[] = ["hill", ...SPECIES_ORDER];
+  for (const scope of benches) {
+    const mine = bag.filter((i) => fitsScope(i, scope));
+    if (mine.length === 0) continue;
+    const worn = new Set(store.bench(scope).flatMap((i) => (i ? [i.uid] : [])));
+
+    const head = el("button", "invhead") as HTMLButtonElement;
+    head.type = "button";
+    head.dataset.scope = scope;
+    head.append(
+      el("span", "invhead-t", scopeName(scope)),
+      el("span", "invhead-c", `${worn.size} / ${TRAIT_SLOTS} worn · ${mine.length} held`),
+      icon("next", 13),
+    );
+    head.onclick = () => opts.onOpen(scope);
+
+    const grid = el("div", "trgrid");
+    grid.dataset.scope = scope;
+    for (const item of mine) {
+      // A tile here does not equip: it belongs to a bench, and which slot it should go in
+      // is a decision that needs the bench in front of you. Tapping it takes you there.
+      const cell = readOnlyTile(item, () => opts.onOpen(scope));
+      if (worn.has(item.uid)) cell.classList.add("worn");
+      grid.appendChild(cell);
+    }
+    wrap.append(head, grid);
+  }
+
+  body.appendChild(wrap);
+  root.appendChild(body);
+  return root;
+}
+
+/** A tile that opens a bench rather than filling one. Same square, everywhere. */
+function readOnlyTile(item: TraitItem, onTap: () => void): HTMLButtonElement {
+  const def = itemDef(item);
+  const tier = TRAIT_TIER[item.tier];
+  const cell = el("button", "trtile filled") as HTMLButtonElement;
+  cell.type = "button";
+  cell.dataset.uid = item.uid;
+  cell.style.setProperty("--tier", tier.colour);
+
+  const mark = el("span", "trtile-i");
+  mark.appendChild(icon(def?.icon ?? "star", 22));
+  const foot = el("span", "trtile-f");
+  foot.appendChild(icon(def ? markOf(def.kind) : "spark", 11));
+  foot.appendChild(el("span", "trtile-v", def ? effectFigure(def, item.tier) : ""));
+
+  cell.append(mark, foot);
+  const label = def ? `${def.name} · ${tier.name} · ${effectText(def, item.tier)}` : tier.name;
+  cell.title = label;
+  cell.setAttribute("aria-label", label);
+  cell.onclick = onTap;
+  return cell;
+}
+
+/** A screen with nothing on it has to say WHY, or it reads as one that failed to load. */
+function locked(head: string, note: string): HTMLElement {
+  const box = el("div", "trempty");
+  box.append(el("div", "trempty-h", head), el("div", "trempty-p", note));
+  return box;
 }
 
 /**

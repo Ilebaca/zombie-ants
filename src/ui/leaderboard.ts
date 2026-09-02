@@ -26,7 +26,7 @@
 import { COLONY_START, RIVAL_NAMES, compact, exact } from "../platform";
 import type { SpeciesId } from "../engine";
 import { SPECIES } from "../engine";
-import { antPortrait, el, screenEl, screenHeader } from "./chrome";
+import { antPortrait, el, redraw, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 
 export interface Division {
@@ -120,7 +120,7 @@ export function buildLeaderboard(you: LadderYou, onBack: () => void): HTMLElemen
   let selected = home;
 
   const render = (): void => {
-    root.replaceChildren();
+    redraw(root);
     screenHeader(root, { title: "Biggest colonies", sub: "World ranking", onBack });
 
     const body = el("div", "screenbody lbbody");

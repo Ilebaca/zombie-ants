@@ -14,7 +14,7 @@
  */
 import { DAILY_GIFT, SHOP_PRODUCTS } from "../platform";
 import type { ProfileStore, Product, PurchaseGateway } from "../platform";
-import { el, screenEl, screenHeader, toast } from "./chrome";
+import { el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 
 export function buildShop(
@@ -25,7 +25,7 @@ export function buildShop(
   let busy = false;
 
   const render = (): void => {
-    root.replaceChildren();
+    redraw(root);
     screenHeader(root, { title: "Shop", sub: "Bundles, currency & the pass", onBack });
 
     const body = el("div", "screenbody shopbody");

@@ -19,7 +19,7 @@ import {
 } from "../platform";
 import type { ProfileStore, Research } from "../platform";
 import { SPECIES_COL } from "../render";
-import { antPortrait, el, screenEl, screenHeader, toast } from "./chrome";
+import { antPortrait, el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 
 export interface AntariumOptions {
@@ -36,7 +36,7 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
 
   const render = (): void => {
     const profile = store.get();
-    root.replaceChildren();
+    redraw(root);
     // No back arrow: this is a bottom-nav tab, and the nav is how the player leaves it.
     screenHeader(root, {
       title: "Antarium",

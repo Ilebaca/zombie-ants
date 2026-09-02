@@ -29,7 +29,7 @@ import {
   CHAMBERS, RESEARCH_TOTAL_MAX, SPECIES_ORDER, TRAIT_SLOTS, compact, exact, levelReward,
 } from "../platform";
 import type { ProfileStore, TraitScope } from "../platform";
-import { antPortrait, clockOf, el, screenEl, screenHeader, toast } from "./chrome";
+import { antPortrait, clockOf, el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 
 export interface ProfileOptions {
@@ -51,7 +51,7 @@ export function buildProfile(store: ProfileStore, opts: ProfileOptions): HTMLEle
     const profile = store.get();
     const s = profile.stats;
 
-    root.replaceChildren();
+    redraw(root);
     screenHeader(root, { title: "Profile", sub: "Record & collection", onBack: opts.onBack });
 
     const body = el("div", "screenbody sb-top");

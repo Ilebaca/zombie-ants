@@ -18,7 +18,7 @@ import { agoOf, newsFeed } from "../platform";
 import type { NewsArt, NewsPost, ProfileStore } from "../platform";
 import { createGame } from "../engine";
 import { drawSnapshot } from "../render";
-import { el, screenEl, screenHeader } from "./chrome";
+import { el, redraw, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 
 const TAG_LABEL: Record<NewsPost["tag"], string> = {
@@ -35,7 +35,7 @@ export function buildNews(store: ProfileStore, onBack: () => void): HTMLElement 
   let open = posts[0]?.id ?? "";
 
   const render = (): void => {
-    root.replaceChildren();
+    redraw(root);
     screenHeader(root, { title: "News", sub: "What changed", onBack });
 
     const body = el("div", "screenbody sb-top");
