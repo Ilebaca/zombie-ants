@@ -1500,11 +1500,18 @@ stranded in a big screen.
   - **The full-bleed block escapes by the SAME number it is put back by.** The legacy
     `.tophead` pulls itself out by the app's 16px, so on home it is re-pulled by
     `--gutter` — otherwise it overhangs the screen it is meant to fill.
-  - **A wrapper gets PADDING, a card gets a WIDTH.** `#colonyHero` is a wrapper around the
-    visible band, so padding moves what is drawn; the granary pill IS the card, so padding
-    only fattens it and leaves its edges on the glass. And a margin is not enough either —
-    `margin-inline: 12px` gave the right gap on a phone and left the pill hard against the
-    left edge of a tablet while the banner above it was centred. Sized and auto-margined. The home screen's
+  - **THE BANNER AND THE PILL ARE BOTH CARDS, so both are SIZED, never padded.** Padding
+    moves the text and leaves the card's own edges on the glass — which is exactly how the
+    chapter banner ended up spanning the whole screen while the granary pill under it sat
+    at the gutter, with the text inside both looking correctly inset. Nor is a margin
+    enough: `margin-inline: 12px` gave the right gap on a phone and left the pill hard
+    against the left edge of a tablet while the banner above it was centred. Sized and
+    auto-margined, so they hold the gutter on a phone and centre on a tablet.
+  - **THREE SCREEN BODIES OPTED OUT OF THE COLUMN.** `.achbody`, `.lbbody` and `.shopbody`
+    each set `width: 100%` in the legacy sheet, and two classes outrank the one rule that
+    puts a `.screenbody` in the reading column — so on a tablet the Colony Road, the
+    Leaderboard and the Shop each had a 440px header sitting over an 800px body. Nothing
+    showed on a phone, which is why it survived the responsive pass. The home screen's
   banner, granary pill and hero need telling separately: they are laid out above the body
   column, not inside it. The two floating buttons are POSITIONED, so they answer to the
   viewport until pinned to the column's edge too.

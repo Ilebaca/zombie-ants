@@ -4029,6 +4029,9 @@ button:not(.playbtn):active,
      a 360px measure inside a 390px phone put a second gutter inside the
      first. The cap only bites on a tablet, where a banner spread across the
      whole screen would be the thing that looked wrong. */
+  /* Wider than the reading column on purpose: clamping home's furniture to a
+     360px measure inside a 390px phone puts a second gutter inside the first.
+     The cap only bites on a tablet. */
   --homemax: 640px;
   padding-inline: var(--gutter);
 }
@@ -4043,26 +4046,15 @@ button:not(.playbtn):active,
    the colony banner, the granary pill and the hero all have to be told
    about the column separately or they stretch while the cards do not. */
 /* Everything laid out on home, put on the same pair of edges.
-   The banner and the granary pill live INSIDE the full-bleed top block, so
-   they have to be inset again — but not the same way. `#colonyHero` is a
-   WRAPPER around the visible band, so padding moves what is drawn; the
-   granary pill IS the card, so padding would only fatten it and leave its
-   edges on the glass. That one needs margin. */
-#home #colonyHero {
-  box-sizing: border-box;
-  padding-inline: var(--gutter);
-}
-/* Sized rather than margined, so it CENTRES on a wide screen. A plain
-   `margin-inline: 12px` gave the right gap on a phone and left the pill
-   hard against the left edge of a tablet while the banner above it was
-   centred. */
+   THE BANNER AND THE GRANARY PILL ARE BOTH CARDS, and both live inside the
+   full-bleed top block, so both have to be sized rather than padded: padding
+   moves the text and leaves the card's own edges on the glass, which is
+   exactly how the banner ended up spanning the whole screen while the pill
+   under it sat at the gutter. Sized and auto-margined, so they also centre
+   on a wide screen instead of hugging the left edge. */
+#home #colonyHero,
 #home .granpill {
   width: min(calc(100% - 2 * var(--gutter)), var(--homemax));
-  margin-inline: auto;
-}
-
-#home #colonyHero {
-  width: min(100%, calc(var(--homemax) + 2 * var(--gutter)));
   margin-inline: auto;
 }
 /* No subtraction here: the hero is a direct child of the screen, which is
@@ -4092,6 +4084,22 @@ button:not(.playbtn):active,
    wider one — which is exactly how it looked on a tablet. */
 #home .topnav {
   padding-inline: max(var(--gutter), calc((100% - var(--homemax)) / 2));
+}
+
+/* ----------------------------------------------------------------------
+   THREE BODIES THAT IGNORED THE COLUMN
+
+   `.achbody`, `.lbbody` and `.shopbody` each set `width: 100%` in the
+   legacy sheet, and two classes outrank the one that puts a `.screenbody`
+   in the reading column. On a phone nothing showed; on a tablet all three
+   had a 440px header sitting over an 800px body — a narrow screen drawn on
+   a wide one, which is the exact thing the responsive pass exists to stop.
+   ---------------------------------------------------------------------- */
+.screenbody.achbody,
+.screenbody.lbbody,
+.screenbody.shopbody {
+  width: min(100%, var(--page));
+  margin-inline: auto;
 }
 
 /* ----------------------------------------------------------------------

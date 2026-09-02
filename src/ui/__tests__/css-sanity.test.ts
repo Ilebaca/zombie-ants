@@ -89,13 +89,27 @@ describe("the design scales", () => {
   it("puts everything on home on one gutter", () => {
     const css = code(read("skin.css"));
     expect(ruleFor(css, "#home"), "home has no gutter of its own").toMatch(/--gutter:\s*\d+px/);
-    for (const sel of ["#home .granpill", "#home .homeplay"]) {
+    for (const sel of ["#home #colonyHero,\n#home .granpill", "#home .homeplay"]) {
       expect(ruleFor(css, sel), `${sel} is not on home's gutter`)
         .toMatch(/var\(--gutter\)|var\(--homemax\)/);
     }
     // The full-bleed top block escapes by the SAME number it is put back by, or it
     // overhangs the screen it is meant to fill.
     expect(ruleFor(css, "#home .tophead")).toContain("calc(-1 * var(--gutter))");
+  });
+
+  /**
+   * THREE BODIES THAT IGNORED THE COLUMN. `.achbody`, `.lbbody` and `.shopbody` each set
+   * `width: 100%` in the legacy sheet, and two classes outrank the one rule that puts a
+   * `.screenbody` in the reading column — so on a tablet the Colony Road, the Leaderboard
+   * and the Shop each had a 440px header sitting over an 800px body. Nothing showed on a
+   * phone, which is why it survived the responsive pass.
+   */
+  it("keeps every screen body in the column, including the three that opted out", () => {
+    const css = code(read("skin.css"));
+    const rule = ruleFor(css, ".screenbody.achbody,\n.screenbody.lbbody,\n.screenbody.shopbody");
+    expect(rule).toMatch(/width:\s*min\(100%, var\(--page\)\)/);
+    expect(rule).toContain("margin-inline: auto");
   });
 
   it("lets the tab tray fill the bar on a phone", () => {
