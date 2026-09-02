@@ -71,14 +71,17 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     const page = el("div", "spgwrap");
     page.id = "aupBody";
 
-    page.appendChild(hero(id, research, tier.name, tier.col));
-
-    // TRAITS COME BEFORE RESEARCH, because they are the thing on this page that CHANGES
-    // between visits. Research is a price list — it is the same list every time until
-    // there is mycelium to spend; the five slots are a loadout the player rethinks.
-    page.append(el("div", "secthead", "Traits"));
-    page.appendChild(traitOpener(store, id, () => opts.onTraits?.(),
-      store.traitsOpen() ? null : `Chapter ${TRAITS_CHAPTER}`));
+    // THE TRAITS RIDE IN THE HERO, as its last row.
+    //
+    // They were a section of their own between the hero and the research list — a
+    // heading, a card, and a gap either side of it, for one row that is a summary of what
+    // this colony is WEARING. Everything else in that card is a summary of what the
+    // colony IS (its numbers, and how far its research has come), so the loadout belongs
+    // with them; a section is for a list, and this is not one. It stays a door: the pips
+    // say which five, and the row opens the bench.
+    page.appendChild(hero(id, research, tier.name, tier.col,
+      traitOpener(store, id, () => opts.onTraits?.(),
+        store.traitsOpen() ? null : `Chapter ${TRAITS_CHAPTER}`)));
 
     page.appendChild(el("div", "secthead", "Research"));
     const list = el("div", "spglist");
@@ -155,7 +158,9 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
  * ceiling, so "0.90" means something: it is read off `SPECIES`, and a balance change moves
  * the track on the same commit.
  */
-function hero(id: SpeciesId, research: Research, tierName: string, tierCol: string): HTMLElement {
+function hero(
+  id: SpeciesId, research: Research, tierName: string, tierCol: string, traits: HTMLElement,
+): HTMLElement {
   const species = SPECIES[id];
   const pal = SPECIES_COL[id];
   const box = el("div", "spghero");
@@ -192,6 +197,10 @@ function hero(id: SpeciesId, research: Research, tierName: string, tierCol: stri
   track.appendChild(fill);
   done.appendChild(track);
   box.appendChild(done);
+
+  // Last, and on the card's own surface rather than in a box of its own — it is the
+  // fourth thing this card says about the colony, not a fourth card.
+  box.appendChild(traits);
   return box;
 }
 

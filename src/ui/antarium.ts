@@ -66,17 +66,28 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
 
     const info = el("div", "rb-info");
     info.appendChild(el("div", "rb-tier", species.premium ? "Mythic · Premium" : tier.name));
+    // THE LEVEL RIDES WITH THE NAME, hard right.
+    //
+    // It used to lead the chip row, where it was the widest thing in it and pushed the
+    // cooldown onto a second line — four chips wrapping 3 + 1, which reads as a row that
+    // did not fit rather than as one that was laid out. It is also not the same KIND of
+    // fact as the other three: attack, defence and cooldown are what the colony DOES, and
+    // the level is how far this player has taken it. Moved up, the three that belong
+    // together sit on one line.
+    const nameline = el("div", "rb-nl");
     const name = el("div", "rb-name", species.name);
     name.style.color = pal[1];
-    info.append(name, el("div", "rb-tag", species.blurb));
+    nameline.append(name, el("span", "lv",
+      owned ? `LV ${researchTotal(research)}/${RESEARCH_TOTAL_MAX}` : "LOCKED"));
+    info.append(nameline, el("div", "rb-tag", species.blurb));
 
     const meta = el("div", "rb-meta");
-    meta.appendChild(el("span", "lv",
-      owned ? `LV ${researchTotal(research)}/${RESEARCH_TOTAL_MAX}` : "LOCKED"));
     meta.append(
       statChip("attack", (species.atk * (1 + research.mandible * 0.05)).toFixed(2)),
       statChip("defence", (species.def * (1 + research.cuticle * 0.05)).toFixed(2)),
-      statChip("clock", `${cooldownOf(id, research)}t CD`),
+      // "CD" is what the clock mark already says, and the two together did not fit the
+      // line. The colony's own page spells the cooldown out in words.
+      statChip("clock", `${cooldownOf(id, research)}t`),
     );
     info.appendChild(meta);
     box.appendChild(info);

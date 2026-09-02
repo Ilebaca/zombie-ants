@@ -439,7 +439,12 @@ describe("antarium collection", () => {
     click(cardFor(root, "Bullet Ant"));
     expect(root.querySelector(".rb-name")?.textContent).toBe("Bullet Ant");
     expect(root.querySelector("#antCTA")?.textContent).toContain(String(SPECIES_UNLOCK.bullet));
-    expect(root.querySelector(".rb-meta .lv")?.textContent).toContain("LOCKED");
+    // The level rides on the NAME line, not in the chip row — it is how far this player
+    // has taken the colony, where the three chips are what the colony does.
+    expect(root.querySelector(".rb-nl .lv")?.textContent).toContain("LOCKED");
+    expect(root.querySelectorAll(".rb-meta .statchip").length, "the level rejoined the chips")
+      .toBe(3);
+    expect(root.querySelector(".rb-meta .lv"), "the level rejoined the chips").toBeNull();
   });
 
   it("opens an owned colony's page through the call to action", () => {

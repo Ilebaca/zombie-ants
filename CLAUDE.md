@@ -639,10 +639,25 @@ position in the game, and the screen had no reason to be opened twice.
   carries the ladder's progress and the way into it, because the daily draws its position
   from there.
 
+**THE ANTARIUM'S HERO PUTS THE LEVEL ON THE NAME LINE.** It led a row of four chips, where
+it was the widest of them and pushed the cooldown onto a second line — 3 + 1, which reads
+as a row that did not fit rather than one that was laid out. It is also not the same KIND
+of fact: attack, defence and cooldown are what the colony DOES, and the level is how far
+this player has taken it. The three that remain are a GRID of equal columns, never a flex
+row: sized to their content they came to 242px in a 202px line and the cooldown was sliced
+off the card's edge, and equal columns cannot let one chip push another out. The cooldown
+reads "7t" there — "CD" is what the clock mark already says, and the colony's own page
+spells it out in words.
+
 **A COLONY'S PAGE IS ABOUT RESEARCH** (`src/ui/species.ts`, split out of `antarium.ts`).
 It was four grey cards of the same shape — a hero box, a "combat profile", the research
 list, then the trait, the field notes and the ability in three more boxes — and it was the
 last screen in the app still wearing the legacy skeleton. A deliberate deviation now (§10).
+- **THE TRAITS ARE THE HERO'S LAST LINE, not a section.** They had a heading, a card and
+  a gap either side, for one row summarising what the colony is WEARING — while everything
+  in the card above it summarised what the colony IS. A section is for a list and this is
+  one row, so it rides in the hero on the card's own surface, under a hairline, still
+  showing its five slots and still opening the bench.
 - **Research leads, and states NOW against NEXT.** It is what the screen is for, and a
   price beside "+5% attack per level" never says which level you are on or what the next
   one buys. It reuses the Anthill's comparison rows, so the two screens read as one app.

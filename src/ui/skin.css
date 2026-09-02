@@ -3769,6 +3769,59 @@ button:not(.playbtn):active,
 .spgdone-v { font-size: 11.5px; font-weight: 900; font-variant-numeric: tabular-nums; }
 .spgdone .hl-track { grid-column: 1 / -1; }
 
+/* THE TRAIT ROW IS THE HERO'S LAST LINE, not a card sitting inside a card.
+   It keeps the row idiom — mark, state, pips, chevron — and loses the panel
+   and the border, so it reads as the fourth thing the card says about this
+   colony rather than a box nested in one. The hairline above it is what
+   separates it from the research bar; the negative margins take it out to the
+   card's own edges so the divider spans the card. */
+/* THE LEVEL SITS ON THE NAME LINE. `.rb-meta span` is what gave every chip in
+   that row its plate, so a chip lifted out of the row has to be dressed here or
+   it comes out as bare text. The name takes the room that is left and ellipses;
+   the chip never shrinks, because a level clipped to "LV 0/1" is worse than a
+   name clipped to fit. */
+.rb-nl { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rb-nl .rb-name { min-width: 0; }
+.rb-nl .lv {
+  flex: none;
+  font-size: 11px;
+  font-weight: 900;
+  background: var(--tc);
+  color: #0a0f18;
+  border-radius: 7px;
+  padding: 4px 7px;
+  white-space: nowrap;
+}
+/* THREE CHIPS, ONE LINE — and the line is only 202px wide once the portrait has
+   taken its share, which is why they are a GRID rather than a flex row that
+   wraps. Sized to their content they came to 242 and the cooldown was sliced
+   off the card's edge; three equal columns share what there is, so every chip
+   gets the same room whatever is written in it and none can push another out.
+   Tighter than a free-standing chip for the same reason. */
+.rb-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+.rb-meta .statchip {
+  justify-content: center;
+  min-width: 0;
+  padding: 4px 5px;
+  gap: 4px;
+}
+
+.spghero .tropen {
+  grid-column: 1 / -1;
+  margin: 8px -14px -14px;
+  width: auto;
+  padding: 12px 14px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  background: transparent;
+}
+
 /* --------------------------------------------------------------- THE RESEARCH */
 .spglist { display: grid; gap: 6px; }
 .spgtrack {

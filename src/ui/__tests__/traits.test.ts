@@ -10,6 +10,7 @@ import { describe, expect, it, beforeEach } from "vitest";
 import { ProfileStore, TRAITS, TRAIT_SLOTS, TRAIT_TIER } from "../../platform";
 import { MemoryStore } from "../../platform";
 import { buildInventory, buildTraitBench, traitOpener } from "../traits";
+import { buildSpeciesPage } from "../species";
 import type { TraitScope } from "../../platform";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
@@ -234,3 +235,43 @@ describe("the inventory", () => {
     expect(root.querySelectorAll(".invhead").length).toBe(0);
   });
 });
+
+/**
+ * THE ROW IS PART OF THE HERO, not a section of its own.
+ *
+ * A heading, a card and a gap either side of it, for one row summarising what the colony
+ * is WEARING — while everything in the card above summarised what the colony IS. It is
+ * the card's last line now, and still a door.
+ */
+describe("where the colony page keeps its traits", () => {
+  const grown = (): ProfileStore => {
+    const s = new ProfileStore(new MemoryStore());
+    s.update((p) => { p.colony = 2_000_000; });
+    return s;
+  };
+
+  it("puts the row inside the hero card, last, with its pips", () => {
+    let opened = 0;
+    const page = buildSpeciesPage(grown(), {
+      species: "fire", onBack: () => {}, onTraits: () => { opened++; },
+    });
+    const hero = page.querySelector(".spghero");
+    const row = hero?.querySelector<HTMLElement>("#spgTraits");
+    expect(row, "the traits row is not in the hero card").toBeTruthy();
+    expect(hero?.lastElementChild, "something was added after it").toBe(row);
+    expect(row?.querySelectorAll(".tropen-pip").length, "the slots are not shown")
+      .toBe(TRAIT_SLOTS);
+
+    // Still a door.
+    row?.click();
+    expect(opened).toBe(1);
+  });
+
+  /** The section it used to have is gone, or the page says "Traits" twice. */
+  it("keeps no separate Traits section", () => {
+    const page = buildSpeciesPage(grown(), { species: "fire", onBack: () => {} });
+    const heads = Array.from(page.querySelectorAll(".secthead")).map((h) => h.textContent);
+    expect(heads).not.toContain("Traits");
+  });
+});
+
