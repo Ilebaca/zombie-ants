@@ -1479,9 +1479,22 @@ stranded in a big screen.
   scales — but `#app` is `position: fixed; inset: 0` and the tab bar is fixed inside it, and
   a fixed box under `zoom` is sized in scaled units against an unscaled viewport. Board
   hit-testing survived it (measured); the chrome did not.
-- **The two bars stay full-bleed and their CONTENTS join the column**, through
+- **The TOP bar stays full-bleed and its CONTENTS join the column**, through
   `padding-inline: max(16px, calc((100% - var(--page)) / 2))` rather than a wrapper — so no
-  markup moves and the background does not break at the screen edge. The home screen's
+  markup moves and the background does not break at the screen edge.
+- **THE TAB TRAY DOES NOT JOIN THE COLUMN, AND HAS NO GUTTER.** Five tabs are targets
+  rather than text: they FILL the bar, because a gutter inside a full-bleed tray shrinks
+  every one of them and leaves a strip of nothing at each end — which is exactly where a
+  thumb reaching for the first or last tab lands. The column is 360px and a phone is
+  wider, so joining it was itself a gutter. `--navmax` (640) is what stops five tabs
+  spreading across a tablet, and it is deliberately wider than the reading measure.
+- **HOME IS ALMOST EDGE TO EDGE.** Every other screen is a column of cards that wants a
+  gutter; home is one picture with a banner over it and a button under it, and the app's
+  16px gutter framed all three in a border of nothing. `#home` carries `--gutter: 6px` and
+  `--homemax: 640px`, and the top bar, the banner, the granary pill, the hero and the three
+  floating buttons all answer to those two — one pair of edges for the whole screen. The
+  legacy `.tophead` pulls itself full-bleed by the app's 16px, so it is re-pulled by
+  `--gutter` here or it overhangs by ten pixels on each side. The home screen's
   banner, granary pill and hero need telling separately: they are laid out above the body
   column, not inside it. The two floating buttons are POSITIONED, so they answer to the
   viewport until pinned to the column's edge too.

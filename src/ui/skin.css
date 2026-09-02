@@ -3991,10 +3991,43 @@ button:not(.playbtn):active,
    float. It is their CONTENTS that join the column, through padding
    rather than a wrapper, so no markup moves and the background does not
    break. `max()` keeps the phone's own gutter when there is no slack. */
-.topnav,
-.homenav {
+.topnav {
   padding-inline: max(16px, calc((100% - var(--page)) / 2));
 }
+/* THE TAB TRAY HAS NO GUTTER OF ITS OWN, and it does not follow the
+   reading column either. Five tabs are a row of equal targets and they
+   should FILL the bar they sit in: a gutter inside a full-bleed tray
+   shrinks every one of them and leaves a strip of nothing at each end,
+   which is exactly where a thumb reaching for the first or last tab
+   lands. The column is 360px and a phone is wider than that, so joining
+   it was itself a gutter.
+   It still stops short of absurd on a big screen — `--navmax` is wider
+   than the reading column on purpose, because a tab bar is furniture
+   rather than text and wants to stay near the screen's own edges. */
+.homenav {
+  --navmax: 640px;
+  padding-inline: max(0px, calc((100% - var(--navmax)) / 2));
+}
+
+/* THE HOME SCREEN IS ALMOST EDGE TO EDGE. Every other screen is a column
+   of cards that wants a gutter to sit in; home is one picture with a
+   banner over it and a button under it, and the app's 16px gutter framed
+   all three in a border of nothing. It keeps a hair so nothing touches
+   the glass, and no more than that. */
+#home {
+  --gutter: 6px;
+  /* Wider than the reading column on purpose. Home is not a page of text: it
+     is one picture with a banner over it and a button under it, and clamping
+     those to a 360px measure inside a 390px phone put a second gutter inside
+     the first. The cap only bites on a tablet, where a banner spread across
+     the whole screen would be the thing that looked wrong. */
+  --homemax: 640px;
+  padding-inline: var(--gutter);
+}
+/* The top bar escapes the gutter to sit edge to edge, and it has to escape
+   the RIGHT one: the legacy rule pulls itself out by the app's 16px, which
+   overhangs by ten on each side now that home's own gutter is six. */
+#home .tophead { margin-inline: calc(-1 * var(--gutter)); }
 
 /* The home screen's own furniture is laid out, not in the body column:
    the colony banner, the granary pill and the hero all have to be told
@@ -4002,7 +4035,7 @@ button:not(.playbtn):active,
 #home #colonyHero,
 #home .granpill,
 #home .homeplay {
-  width: min(100%, var(--page));
+  width: min(100%, var(--homemax));
   margin-inline: auto;
 }
 
@@ -4013,6 +4046,19 @@ button:not(.playbtn):active,
 .settingsfab,
 .dailyfab {
   right: max(16px, calc((100% - var(--page)) / 2));
+}
+/* On HOME they follow home's own edge, or the banner ends six pixels from the
+   glass and the buttons over it stop sixteen — two right edges on one screen. */
+#home .settingsfab,
+#home .dailyfab,
+#home .duelfab {
+  right: max(var(--gutter), calc((100% - var(--homemax)) / 2));
+}
+/* ...and so does the currency row above them. Everything on this screen lines up
+   on one pair of edges, or the top bar reads as a narrower screen sitting on a
+   wider one — which is exactly how it looked on a tablet. */
+#home .topnav {
+  padding-inline: max(var(--gutter), calc((100% - var(--homemax)) / 2));
 }
 
 /* ----------------------------------------------------------------------

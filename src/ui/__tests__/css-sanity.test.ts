@@ -67,10 +67,23 @@ describe("the design scales", () => {
   });
 
   /** And the chrome follows the column, or a tablet gets an 1100px bar over a 500px page. */
-  it("keeps the bars lined up with the column", () => {
+  /**
+   * The TOP bar's contents join the reading column, so a tablet does not get a currency
+   * row spread across eleven hundred pixels while the cards under it sit in a narrow
+   * one. The TAB TRAY deliberately does not: five tabs are targets rather than text and
+   * they fill the bar, which on a phone means no side padding at all.
+   */
+  it("keeps the top bar lined up with the column", () => {
     const css = read("skin.css");
     expect(css, "the top bar does not follow the column").toMatch(
-      /\.topnav,\s*\n\.homenav\s*\{[^}]*padding-inline:\s*max\(/,
+      /\.topnav\s*\{[^}]*padding-inline:\s*max\(16px,\s*calc\(\(100% - var\(--page\)\)/,
+    );
+  });
+
+  it("lets the tab tray fill the bar on a phone", () => {
+    const css = read("skin.css");
+    expect(css, "the tab tray still pads itself in").toMatch(
+      /\.homenav\s*\{[^}]*padding-inline:\s*max\(0px,/,
     );
   });
 });
