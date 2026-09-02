@@ -26,6 +26,7 @@ const recap = (over: Partial<Recap> = {}): Recap => ({
   colony: 24_305,
   colonyDelta: 305,
   mycel: 25,
+  larva: null,
   leveledTo: null,
   reason: null,
   challenge: null,
@@ -132,5 +133,22 @@ describe("the buttons", () => {
     document.body.replaceChildren();
     buildResultCard("you", recap(), { onAgain: () => {}, onChangeColony: () => {}, onHome: () => {} });
     expect(document.body.children.length).toBe(0);
+  });
+
+  /**
+   * A win pays one lucky hatch, and that is a door opening rather than a number going up
+   * — so it is its own line, not a fourth payout cell in a three-column row.
+   */
+  it("names the larva a win paid, on its own line", () => {
+    const won = card(true, { larva: 1 });
+    expect(won.querySelector("#overLarva")?.textContent).toContain("+1 larva");
+    expect(won.querySelectorAll(".payouts .payout").length, "it joined the payout row")
+      .toBe(3);
+  });
+
+  /** Shut before chapter 10: a currency whose only door is locked is a question. */
+  it("says nothing about larva while the hatch is shut", () => {
+    expect(card(true, { larva: null }).querySelector("#overLarva")).toBeNull();
+    expect(card(false, { larva: 0 }).querySelector("#overLarva")).toBeNull();
   });
 });

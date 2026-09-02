@@ -42,7 +42,16 @@ export interface TraitTierDef {
   stat: number;
   /** Cooldown chance, in percent. */
   luck: number;
-  /** Relative chance of a drop landing on this tier. */
+  /**
+   * The chance of a hatch landing on this tier, in percent.
+   *
+   * A percentage rather than a relative weight, and the five add up to a hundred, because
+   * this number is PRINTED on the hatch screen: a player deciding whether to keep opening
+   * has to be told what they are chasing, and a weight of 1.6 out of 171.6 is not
+   * something anybody can be told. `tierOdds()` still divides by the total rather than
+   * reading this straight, so a retune that stops summing to a hundred cannot quietly put
+   * a wrong figure on screen.
+   */
   weight: number;
 }
 
@@ -57,11 +66,11 @@ export interface TraitTierDef {
  * screen rather than hidden.
  */
 export const TRAIT_TIER: Record<TraitTier, TraitTierDef> = {
-  common:      { id: "common",      name: "Common",      colour: "#9aa5a0", stat: 1, luck: 3,  weight: 100 },
-  uncommon:    { id: "uncommon",    name: "Uncommon",    colour: "#5fc86b", stat: 2, luck: 6,  weight: 46 },
-  rare:        { id: "rare",        name: "Rare",        colour: "#4c9df0", stat: 3, luck: 10, weight: 18 },
-  exceptional: { id: "exceptional", name: "Exceptional", colour: "#a86df0", stat: 5, luck: 15, weight: 6 },
-  mythic:      { id: "mythic",      name: "Mythic",      colour: "#f2674c", stat: 8, luck: 22, weight: 1.6 },
+  common:      { id: "common",      name: "Common",      colour: "#9aa5a0", stat: 1, luck: 3,  weight: 60 },
+  uncommon:    { id: "uncommon",    name: "Uncommon",    colour: "#5fc86b", stat: 2, luck: 6,  weight: 25 },
+  rare:        { id: "rare",        name: "Rare",        colour: "#4c9df0", stat: 3, luck: 10, weight: 10 },
+  exceptional: { id: "exceptional", name: "Exceptional", colour: "#a86df0", stat: 5, luck: 15, weight: 4 },
+  mythic:      { id: "mythic",      name: "Mythic",      colour: "#f2674c", stat: 8, luck: 22, weight: 1 },
 };
 
 /** Slots, per colony and for the anthill. Five each, as designed. */
@@ -345,16 +354,35 @@ export function combine(a: TraitTotals, b: TraitTotals): TraitTotals {
 
 /* --------------------------------------------------------------- FINDING ONE */
 
+const tierTotal = (): number =>
+  TRAIT_TIERS.reduce((n, t) => n + TRAIT_TIER[t].weight, 0);
+
+/**
+ * THE ODDS, AS THE PLAYER IS TOLD THEM.
+ *
+ * Derived from the same table the roll uses rather than written out beside it, because a
+ * printed chance that has drifted from the real one is worse than none — it is the game
+ * lying about the only thing a player has to go on when deciding whether to open another.
+ *
+ * 60 / 25 / 10 / 4 / 1. Common most of the time so a hatch nearly always gives something;
+ * mythic one in a hundred so finding one is the best thing that happens in the feature,
+ * and a win pays one larva, so it is about a hundred wins of chase. That is deliberately
+ * long: the benches hold fifty slots across ten colonies, so the chase is never over and
+ * every tier below the top keeps arriving while it runs.
+ */
+export function tierOdds(tier: TraitTier): number {
+  return (TRAIT_TIER[tier].weight / tierTotal()) * 100;
+}
+
 /**
  * Roll a tier.
  *
- * Weighted, and the weights are what make a mythic feel like one: a mythic is about one
- * drop in a hundred, an exceptional about one in twenty-five. Deliberately steep — the
- * whole point of a tier is that the top of it is rare, and a table where the best outcome
- * turns up every tenth time has four tiers and a formality.
+ * Weighted, and the weights are what make a mythic feel like one. Deliberately steep —
+ * the whole point of a tier is that the top of it is rare, and a table where the best
+ * outcome turns up every tenth time has four tiers and a formality.
  */
 export function rollTier(random: () => number): TraitTier {
-  const total = TRAIT_TIERS.reduce((n, t) => n + TRAIT_TIER[t].weight, 0);
+  const total = tierTotal();
   let roll = random() * total;
   for (const t of TRAIT_TIERS) {
     roll -= TRAIT_TIER[t].weight;
@@ -379,6 +407,21 @@ export interface Drop { def: string; tier: TraitTier }
 
 /** One larva. It buys exactly one hatch, which is the only thing larva buys. */
 export const HATCH_COST = 1;
+
+/**
+ * WHAT A WIN PAYS TOWARD THE CHASE.
+ *
+ * Larva used to be bought and nothing else, which made the hatch a shop with one shelf:
+ * a player who never spent money never opened one, so the whole collection — fifty slots
+ * across ten benches — was closed to them. A win pays exactly one, so a hatch is a thing
+ * you PLAY for, the odds above are a chase somebody is actually on, and the shop sells
+ * the same thing faster rather than the only way in.
+ *
+ * One, not more, and only on a win. At two or three matches a day winning about half
+ * (CLAUDE.md §8c) that is roughly a hatch a day: a mythic at one in a hundred is about
+ * three months of play, and every tier below it arrives while that runs.
+ */
+export const WIN_LARVA = 1;
 
 /**
  * One pull: a trait, and a tier for it.

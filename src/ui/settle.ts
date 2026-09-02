@@ -16,6 +16,7 @@
 import { armyOf } from "../engine";
 import type { GameOverReason, MapId, Player, SpeciesId } from "../engine";
 import type { GameState, MatchRecord } from "../engine";
+import { WIN_LARVA } from "../platform";
 import type { ProfileStore } from "../platform";
 import { CHALLENGES, CHALLENGE_REWARD, DAILY_BONUS_PHEROMONE, dayNumber } from "./challenges";
 import type { Recap } from "./result";
@@ -48,6 +49,9 @@ export function settleMatch(s: Settlement): Recap {
   const beforeXp = before.xp;
   const beforeColony = before.colony;
   const beforeMycel = before.mycel;
+  // Scalars, not the object: `update` mutates the profile in place, so a field read
+  // off `before` afterwards is the AFTER value and every delta comes out zero.
+  const beforeLarva = before.larva;
   const beforeLevel = store.level().level;
 
   store.recordResult(won, s.species, s.state.turn, {
@@ -90,6 +94,18 @@ export function settleMatch(s: Settlement): Recap {
     if (s.reason === "nest") store.questProgress("nest");
   }
 
+  /*
+   * A WIN PAYS A LARVA, WHICH IS ONE LUCKY HATCH.
+   *
+   * The hatch is the only source of a trait and larva was the only thing that could open
+   * it, so until this line a player who never bought any had the whole collection closed
+   * to them. It is paid at EVERY chapter and only SHOWN once the hatch is open (below):
+   * banking it is right, because the player who arrives at chapter 10 should arrive with
+   * something to open, and a reward the app cannot yet explain is a question it does not
+   * answer.
+   */
+  if (won) store.update((p) => { p.larva += WIN_LARVA; });
+
   if (s.challenge && won) payChallenge(store, s.challenge);
 
   const after = store.get();
@@ -104,6 +120,7 @@ export function settleMatch(s: Settlement): Recap {
     colony: after.colony,
     colonyDelta: after.colony - beforeColony,
     mycel: after.mycel - beforeMycel,
+    larva: store.traitsOpen() ? after.larva - beforeLarva : null,
     leveledTo: level > beforeLevel ? level : null,
     reason: s.reason,
   };

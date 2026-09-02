@@ -182,11 +182,15 @@ describe("anthill screen", () => {
     const now = open?.querySelector(".che-now .che-v")?.textContent ?? "";
     const next = open?.querySelector(".che-next .che-v")?.textContent ?? "";
     expect(now).toContain("troops/hour");
-    expect(now).toContain("a day");
+    // And what a VISIT actually carries in, which is most of what a level buys now: the
+    // rate ladder is squeezed by the clock, so the store is where the step is (granary.ts).
+    expect(now).toContain("a full store");
     expect(root.textContent?.toLowerCase(), "the granary priced itself in wins").not.toContain("win");
-    // The next level really is faster, or the comparison says nothing.
+    // The next level really is faster AND holds more, or the comparison says nothing.
     const rate = (txt: string): number => Number(/\+([\d.]+)/.exec(txt)?.[1] ?? 0);
+    const store_ = (txt: string): number => Number(/· ([\d.]+) a full store/.exec(txt)?.[1] ?? 0);
     expect(rate(next)).toBeGreaterThan(rate(now));
+    expect(store_(next)).toBeGreaterThan(store_(now));
   });
 
   // A young colony forages a fraction of a troop an hour. Rounded to a whole number the

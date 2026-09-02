@@ -21,8 +21,8 @@
 import { describe, expect, it } from "vitest";
 import { CHAMBER_MAX, RESEARCH_MAX, chamberCost, researchCost } from "../../engine";
 import { COLONY_START, losses, winnings } from "../colony";
-import { GRANARY_LEVELS, granaryStored } from "../granary";
-import { ROAD_LAST, ROAD_STOPS, freeReward } from "../road";
+import { GRANARY_LEVELS, granaryFull, granaryRate, granaryStored } from "../granary";
+import { ROAD_LAST, ROAD_STOPS, chapterOf, freeReward } from "../road";
 import { QUEST_POOL, QUEST_SWEEP_BONUS, QUESTS_PER_DAY, levelReward, xpForLevel } from "../quests";
 import { SPECIES_UNLOCK } from "../catalogue";
 
@@ -206,10 +206,13 @@ describe("no single faucet carries the economy", () => {
 
 describe("the granary is a top-up, not a rival", () => {
   /**
-   * NOT PLAYING MUST NEVER BE THE FASTEST WAY UP. The twelve-hour lid stops a fortnight
-   * away paying out, but it cannot stop the RATE being wrong — and it was: the first level
-   * carried nearly as much colony per day as playing two or three matches, and the last one
-   * carried nearly twice as much.
+   * NOT PLAYING MUST NEVER BE THE FASTEST WAY UP.
+   *
+   * And the thing that bounds it is not the lid — it is the CLOCK. A player who empties
+   * the store every single time it fills forages twenty-four hours a day whatever the lid
+   * says, so that, not two collections, is the ceiling to measure at. It is also why the
+   * rate ladder is narrow and the LID ladder is wide (granary.ts): the lid can pay the
+   * once-a-day player sevenfold without moving this number at all.
    */
   it("carries less than playing does, at every level", () => {
     const colony = 10_000;
@@ -218,12 +221,7 @@ describe("the granary is a top-up, not a rival", () => {
     const fromPlaying = GAMES_PER_DAY *
       (winnings(colony) * WIN_RATE - losses(colony) * (1 - WIN_RATE));
 
-    // THE MOST A DAY CAN YIELD, not the least. The store holds twelve hours and then
-    // stops, so a player who empties it morning and night banks TWO full stores — and it
-    // is that player, not the one who collects once, who decides whether waiting beats
-    // playing. Measuring a single collection lets a granary twice as fast as it should be
-    // sail through.
-    const perDay = (level: number): number => 2 * granaryStored(colony, level, 12 * 60 * 60 * 1000);
+    const perDay = (level: number): number => granaryRate(colony, level) * 24;
 
     for (const level of GRANARY_LEVELS) {
       expect(perDay(level.level), `granary level ${level.level} out-earns playing`)
@@ -231,5 +229,54 @@ describe("the granary is a top-up, not a rival", () => {
     }
     // ...and the first level still has to be worth opening the app for.
     expect(perDay(1)).toBeGreaterThan(fromPlaying * 0.2);
+  });
+
+  /**
+   * EVERY LEVEL HAS TO BE A STEP THE PLAYER CAN SEE.
+   *
+   * This is the bug that was reported, in a test. The rate was 96 hours per win falling
+   * eight at a time, so the level bought two chapters later was 9% faster — and at the
+   * colony sizes where it was bought, 9% disappeared into the one decimal place the screen
+   * prints: "0.6 an hour" before, "0.6 an hour" after, for 800 mycelium.
+   *
+   * A full store is what a visit actually carries in, so that is the figure held here, and
+   * it has to move by a QUARTER. The rate is checked more gently — it has the clock above
+   * it and cannot move far — but it may never stand still.
+   */
+  it("makes every level a step a player can see", () => {
+    const colony = 640; // about chapter 10, where this was reported from.
+    for (let i = 1; i < GRANARY_LEVELS.length; i++) {
+      const lower = GRANARY_LEVELS[i - 1]!, upper = GRANARY_LEVELS[i]!;
+      expect(granaryFull(colony, upper.level), `granary level ${upper.level} holds no more`)
+        .toBeGreaterThan(granaryFull(colony, lower.level) * 1.25);
+      expect(granaryRate(colony, upper.level), `granary level ${upper.level} is no faster`)
+        .toBeGreaterThan(granaryRate(colony, lower.level) * 1.03);
+    }
+  });
+
+  /**
+   * AND THE FIGURE ON SCREEN HAS TO BE ONE, not a rounding of nothing.
+   *
+   * "0.6 troops an hour" reads as a room that does not work. By the chapter the road opens
+   * traits and the lucky hatch at, a granary the player can actually hold — level two, on
+   * chapter 6 — carries a troop an hour or better.
+   */
+  it("never prints the same rate for two levels running", () => {
+    // One decimal place is what the anthill writes (ui/anthill.ts), and two levels reading
+    // "0.6 an hour" for 800 mycelium between them is the fault this was reported as.
+    const shown = (colony: number, level: number): string => granaryRate(colony, level).toFixed(1);
+    for (const colony of [640, 990, 5700, 4e6]) {
+      for (let i = 1; i < GRANARY_LEVELS.length; i++) {
+        expect(shown(colony, GRANARY_LEVELS[i]!.level),
+          `levels ${i} and ${i + 1} print the same rate at colony ${colony}`)
+          .not.toBe(shown(colony, GRANARY_LEVELS[i - 1]!.level));
+      }
+    }
+  });
+
+  it("pays a whole troop an hour by the chapter it is judged on", () => {
+    const colony = 640;
+    expect(chapterOf(colony)).toBeGreaterThanOrEqual(10);
+    expect(granaryRate(colony, 2)).toBeGreaterThanOrEqual(1);
   });
 });

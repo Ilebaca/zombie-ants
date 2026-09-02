@@ -8,7 +8,7 @@
  * would report the totals where it means the deltas.
  */
 import { describe, expect, it } from "vitest";
-import { MemoryStore, ProfileStore, questDef } from "../../platform";
+import { MemoryStore, ProfileStore, WIN_LARVA, questDef } from "../../platform";
 import { NEUTRAL_MODS, START_SHAPES, createGame } from "../../engine";
 import type { GameState, Player } from "../../engine";
 import { settleMatch } from "../settle";
@@ -43,6 +43,42 @@ const settle = (over: Partial<Settlement> = {}): { recap: ReturnType<typeof sett
   });
   return { recap, store };
 };
+
+describe("what a win pays toward the lucky hatch", () => {
+  /**
+   * The hatch is the only source of a trait and larva was the only way to open it, so
+   * before this a player who never bought any had the whole collection shut to them.
+   */
+  it("pays a larva for a win and nothing for a loss", () => {
+    const win = new ProfileStore(new MemoryStore());
+    settle({ store: win });
+    expect(win.get().larva).toBe(WIN_LARVA);
+
+    const loss = new ProfileStore(new MemoryStore());
+    settle({ store: loss, winner: "ai" as Player });
+    expect(loss.get().larva).toBe(0);
+  });
+
+  /**
+   * BANKED AT EVERY CHAPTER, SHOWN ONLY ONCE THE DOOR IS OPEN. A player arriving at the
+   * chapter the hatch opens on should arrive with something to open; a card announcing a
+   * currency whose only use is still locked is a question the app cannot answer.
+   */
+  it("banks it before chapter 10 but keeps it off the card", () => {
+    const young = new ProfileStore(new MemoryStore());
+    expect(young.traitsOpen()).toBe(false);
+    const { recap } = settle({ store: young });
+    expect(young.get().larva).toBe(WIN_LARVA);
+    expect(recap.larva).toBeNull();
+  });
+
+  it("puts it on the card once the hatch is open", () => {
+    const grown = new ProfileStore(new MemoryStore());
+    grown.update((p) => { p.colony = 2_000_000; });
+    expect(grown.traitsOpen()).toBe(true);
+    expect(settle({ store: grown }).recap.larva).toBe(WIN_LARVA);
+  });
+});
 
 describe("settling a match", () => {
   /** The whole reason the figures are read before the payout and again after. */

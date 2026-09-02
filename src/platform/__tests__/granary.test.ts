@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-  GRANARY_CAP_HOURS, GRANARY_LEVELS, GRANARY_MAX, granaryFull, granaryLevel, granaryNext,
+  GRANARY_LEVELS, GRANARY_MAX, GRANARY_MAX_LID, granaryFull, granaryLevel, granaryNext,
   granaryRate, granaryStored,
 } from "../granary";
 import { COLONY_START, winnings } from "../colony";
@@ -69,7 +69,7 @@ describe("the store", () => {
   // fastest way up the ladder.
   it("stops at the cap however long you stay away", () => {
     const full = granaryFull(10_000, 1);
-    expect(granaryStored(10_000, 1, GRANARY_CAP_HOURS * HOUR)).toBe(full);
+    expect(granaryStored(10_000, 1, GRANARY_LEVELS[0]!.lid * HOUR)).toBe(full);
     expect(granaryStored(10_000, 1, 400 * HOUR)).toBe(full);
     expect(full).toBeLessThan(winnings(10_000));
   });
@@ -153,7 +153,7 @@ describe("digging it deeper", () => {
   it("empties the store at the OLD rate before it digs", () => {
     const colony = stopColony((GRANARY_LEVELS[1]!.chapter - 1) * 2 + 1);
     const store = rich(colony);
-    store.update((p) => { p.granaryAt = T0 - GRANARY_CAP_HOURS * HOUR; });
+    store.update((p) => { p.granaryAt = T0 - GRANARY_MAX_LID * HOUR; });
     const owedAtOldRate = granaryFull(colony, 1);
     expect(store.buyGranary(T0)).toBe(true);
     expect(store.get().colony).toBe(colony + owedAtOldRate);

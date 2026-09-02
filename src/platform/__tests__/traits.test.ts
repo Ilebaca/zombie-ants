@@ -9,7 +9,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ATK_CAP, LUCK_CAP, TRAITS, TRAIT_SLOTS, TRAIT_TIER, TRAIT_TIERS, combine, effectText,
-  fitsScope, rollDrop, rollTier, totalsOf, traitDef, traitsFor,
+  fitsScope, rollDrop, rollTier, tierOdds, totalsOf, traitDef, traitsFor,
 } from "../traits";
 import type { TraitItem, TraitTier } from "../traits";
 import { ProfileStore, normalise } from "../profile";
@@ -148,6 +148,43 @@ describe("finding one", () => {
     expect(common).toBeGreaterThan(mythic * 20);
     // ...and a mythic still turns up, or the top tier is decoration.
     expect(mythic).toBeGreaterThan(0);
+  });
+
+  /**
+   * THE ODDS ARE PRINTED, so they have to be the odds. A stated chance that has drifted
+   * from the table is the game lying about the only thing a player has to go on.
+   */
+  it("states odds that add up and match what it actually rolls", () => {
+    const total = TRAIT_TIERS.reduce((n, t) => n + tierOdds(t), 0);
+    expect(total).toBeCloseTo(100, 6);
+
+    let seed = 999;
+    const rnd = (): number => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed / 0x7fffffff;
+    };
+    const seen: Record<string, number> = {};
+    const runs = 40_000;
+    for (let i = 0; i < runs; i++) {
+      const t = rollTier(rnd);
+      seen[t] = (seen[t] ?? 0) + 1;
+    }
+    // Within a point and a half: forty thousand rolls off a cheap LCG lands close, and a
+    // tighter band here would be a test of the generator rather than of the table.
+    for (const t of TRAIT_TIERS) {
+      const measured = (seen[t] ?? 0) / runs * 100;
+      expect(Math.abs(measured - tierOdds(t)), `${t} does not roll at its stated odds`)
+        .toBeLessThan(1.5);
+    }
+  });
+
+  /** Common quite high, mythic very small, and strictly descending in between. */
+  it("makes every tier rarer than the one below it", () => {
+    expect(tierOdds("common")).toBeGreaterThanOrEqual(50);
+    expect(tierOdds("mythic")).toBeLessThanOrEqual(2);
+    for (let i = 1; i < TRAIT_TIERS.length; i++) {
+      expect(tierOdds(TRAIT_TIERS[i]!)).toBeLessThan(tierOdds(TRAIT_TIERS[i - 1]!));
+    }
   });
 
   it("pays a trait of the kind it was asked for", () => {

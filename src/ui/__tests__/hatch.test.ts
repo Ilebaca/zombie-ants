@@ -7,7 +7,7 @@
  */
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
-  HATCH_COST, MemoryStore, ProfileStore, TRAITS, TRAITS_CHAPTER, itemDef,
+  HATCH_COST, MemoryStore, ProfileStore, TRAITS, TRAITS_CHAPTER, TRAIT_TIER, TRAIT_TIERS, itemDef, tierOdds,
 } from "../../platform";
 import { buildHatch } from "../hatch";
 
@@ -43,6 +43,30 @@ const build = (s: ProfileStore, random = (): number => 0.5): { root: HTMLElement
 
 const tap = (root: HTMLElement, id: string): void =>
   root.querySelector<HTMLButtonElement>(`#${id}`)?.click();
+
+describe("the odds", () => {
+  /**
+   * A hatch that does not print its chances asks a player to keep spending on a
+   * distribution they can only guess at, and the guess is always that the good one never
+   * comes. Read off `tierOdds` rather than written out here, so a retune cannot leave the
+   * screen quietly stating a chance the roll does not use.
+   */
+  it("prints every tier and its real chance", () => {
+    const rows = build(store()).root.querySelectorAll("#hatchOdds .ho-row");
+    expect(rows.length).toBe(TRAIT_TIERS.length);
+    const text = build(store()).root.querySelector("#hatchOdds")?.textContent ?? "";
+    for (const t of TRAIT_TIERS) {
+      expect(text, `${t} is not named`).toContain(TRAIT_TIER[t].name);
+      expect(text, `${t}'s chance is not stated`).toContain(`${Math.round(tierOdds(t))}%`);
+    }
+  });
+
+  /** Shut with the rest of it: there is nothing to state the chances OF. */
+  it("says nothing before the hatch opens", () => {
+    const young = new ProfileStore(new MemoryStore());
+    expect(build(young).root.querySelector("#hatchOdds")).toBeNull();
+  });
+});
 
 describe("the hatch", () => {
   it("shows how many larva are in hand", () => {

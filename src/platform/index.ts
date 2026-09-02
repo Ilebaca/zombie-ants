@@ -43,7 +43,7 @@ export {
 } from "./matchmaking";
 export type { Matchmaker, Opponent } from "./matchmaking";
 export {
-  GRANARY_CAP_HOURS, GRANARY_LEVELS, GRANARY_MAX, granaryFillsIn, granaryFull, granaryLevel,
+  GRANARY_LEVELS, GRANARY_MAX, GRANARY_MAX_LID, granaryFillsIn, granaryFull, granaryLevel,
   granaryNext, granaryRate, granaryStored,
 } from "./granary";
 export type { GranaryLevel } from "./granary";
@@ -65,8 +65,8 @@ export { BACKUP_TAG, BACKUP_VERSION, checksum, exportProfile, importProfile } fr
 export type { ImportFailure, ImportResult } from "./backup";
 export {
   ATK_CAP, DEF_CAP, HATCH_COST, LUCK_CAP, TRAITS, TRAITS_CHAPTER, TRAIT_SLOTS, TRAIT_TIER,
-  TRAIT_TIERS, combine, effectFigure, effectText, fitsScope, itemDef, markOf, rollDrop, rollTier,
-  rollTrait, scopeName, totalsOf, traitDef, traitsFor,
+  TRAIT_TIERS, WIN_LARVA, combine, effectFigure, effectText, fitsScope, itemDef, markOf,
+  rollDrop, rollTier, rollTrait, scopeName, tierOdds, totalsOf, traitDef, traitsFor,
 } from "./traits";
 export type {
   Drop, TraitDef, TraitItem, TraitKind, TraitScope, TraitTier, TraitTierDef, TraitTotals,

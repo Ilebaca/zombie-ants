@@ -17,7 +17,7 @@
  */
 import { chamberCost } from "../engine";
 import {
-  CHAMBERS, GRANARY_CAP_HOURS, GRANARY_MAX, TRAITS_CHAPTER, compact,
+  CHAMBERS, GRANARY_MAX, TRAITS_CHAPTER, compact,
 } from "../platform";
 import type { ChamberDef, GranaryState, ProfileStore } from "../platform";
 import { buyButton, effectRow, el, pips, redraw, screenEl, screenHeader, toast } from "./chrome";
@@ -224,8 +224,17 @@ export const perHour = (rate: number): string =>
  * what comes in per hour and what that adds up to in a day; a rate expressed in wins would
  * be asking them to price one thing in another.
  */
-const rateLine = (rate: number): string =>
-  `+${perHour(rate)} troops/hour · ${compact(Math.round(rate * 24))} a day`;
+/**
+ * What a level is worth, in the two numbers it actually moves.
+ *
+ * It used to read "+0.5 troops/hour · 12 a day", and the day figure was the rate times
+ * twenty-four — which is only true for somebody who empties the store every time it
+ * fills. What a player really carries in is one FULL STORE, so that is the second number,
+ * with the hours it takes to fill beside it. Most of what a level buys now is that store
+ * (granary.ts), so a comparison that omitted it would omit the reason to buy.
+ */
+const rateLine = (rate: number, lid: number): string =>
+  `+${perHour(rate)} troops/hour · ${compact(Math.floor(rate * lid))} a full store (${lid}h)`;
 
 /**
  * The granary, drawn as a room in the same nest.
@@ -269,9 +278,10 @@ function granaryDetail(g: GranaryState, purse: number, onBuy: () => void): HTMLE
   box.appendChild(el("div", "chdesc", GRANARY_DESC));
 
   const eff = el("div", "cheff");
-  eff.appendChild(effectRow("now", "Now", rateLine(g.rate)));
+  eff.appendChild(effectRow("now", "Now", rateLine(g.rate, g.def.lid)));
   if (g.next) {
-    eff.appendChild(effectRow("next", "Next", rateLine(g.rate * (g.def.hours / g.next.hours))));
+    eff.appendChild(effectRow("next", "Next",
+      rateLine(g.rate * (g.def.hours / g.next.hours), g.next.lid)));
   }
   box.appendChild(eff);
 
@@ -279,7 +289,7 @@ function granaryDetail(g: GranaryState, purse: number, onBuy: () => void): HTMLE
   // collected on the home screen, which is the one screen a player always passes through.
   const store = el("div", "gstore");
   store.append(
-    el("span", "gstore-k", `Store · holds ${GRANARY_CAP_HOURS}h`),
+    el("span", "gstore-k", `Store · holds ${g.def.lid}h`),
     el("span", "gstore-v", `${compact(g.stored)} / ${compact(g.full)}`),
   );
   const track = el("div", "hl-track");

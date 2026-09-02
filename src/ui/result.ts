@@ -28,6 +28,14 @@ export interface Recap {
   colony: number;
   colonyDelta: number;
   mycel: number;
+  /**
+   * Larva this match paid, or `null` while the lucky hatch is still shut.
+   *
+   * It is banked either way (settle.ts) — null means "do not put it on the card", because
+   * a currency whose only door does not open until chapter 10 is a question this screen
+   * cannot answer.
+   */
+  larva: number | null;
   leveledTo: number | null;
   reason: GameOverReason | null;
   challenge: Challenge | null;
@@ -88,6 +96,25 @@ winner: Player | null, recap: Recap, act: ResultActions,
     reward("star", `+${recap.xpGained}`, "colony XP", "xp"),
   );
   card.appendChild(rewards);
+
+  /*
+   * THE LARVA IS ITS OWN LINE, not a fourth payout cell.
+   *
+   * A win pays one hatch, and that is a different KIND of thing from the three figures
+   * above it: those are numbers going up, this is a door opening. It also cannot join
+   * them — `.payouts` is three columns and a fourth cell would re-column the row on a
+   * phone. Only shown once the hatch is open (Recap.larva).
+   */
+  if (recap.larva !== null && recap.larva > 0) {
+    const line = el("div", "larvawon");
+    line.id = "overLarva";
+    line.append(
+      icon("brood", 16),
+      el("b", undefined, `+${recap.larva} larva`),
+      el("span", undefined, recap.larva === 1 ? "one lucky hatch" : "lucky hatches"),
+    );
+    card.appendChild(line);
+  }
 
   // A level-up is the one thing worth its own line — it is why the XP cell matters.
   if (recap.leveledTo !== null) {

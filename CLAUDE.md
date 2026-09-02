@@ -914,8 +914,9 @@ winning about half.**
 - **No single faucet may carry the economy.** The level track and the sweep bonus are both
   held under what the quests themselves pay, because those two arrive without being played
   for and are exactly the kind of stream that quietly becomes the biggest one.
-- **The granary is measured at its MAXIMUM, against an EVEN record.** The store holds
-  twelve hours, so a diligent player banks two full stores a day — and what that has to
+- **The granary is measured at its MAXIMUM, against an EVEN record — and the maximum is
+  the CLOCK, not the lid.** A player who empties the store every time it fills forages
+  twenty-four hours a day whatever the lid says, so that is the ceiling, and what it has to
   stay under is what playing yields for somebody winning half, not two in three. Both
   roundings were wrong once: measuring one collection let a granary twice as fast as it
   should be through, and rounding 2.5 matches into two wins and a loss is a 67% player
@@ -990,16 +991,29 @@ half: harvester ants store seed underground, the brood eats whether or not the c
 war, and the store is emptied into the colony from the home screen.
 
 - **The rate is TUNED in wins and SHOWN in troops.** A level says how many hours of
-  foraging add up to one victory at the same colony size — level 1 a day, level 7 twelve
-  hours — and the figure is `winnings(colony) / hours`. A flat "+40 an hour" is generous at
-  forty troops and invisible at five million, and would have to be retuned every time the
-  win curve moved; this way the taper in §8a is inherited for free. A test holds it at five
-  sizes across all seven levels.
+  foraging add up to one victory at the same colony size, and the figure is
+  `winnings(colony) / hours`. A flat "+40 an hour" is generous at forty troops and
+  invisible at five million, and would have to be retuned every time the win curve moved;
+  this way the taper in §8a is inherited for free. A test holds it at five sizes across all
+  seven levels.
   **But that is OUR reference, and it never reaches the screen.** The player is told troops
-  per hour and what that adds up to in a day. Pricing one thing the game gives them in
+  per hour and what a full store carries in. Pricing one thing the game gives them in
   another is not an explanation, and a test greps the whole room for the word.
-- **The store has a lid** (`GRANARY_CAP_HOURS`, 12). Without one a fortnight away pays
-  fourteen wins, which makes not playing the fastest way up the ladder.
+- **A LEVEL BUYS TWO NUMBERS, AND MOSTLY IT BUYS THE LID.** The rate ladder has almost no
+  room in it: nobody forages more than twenty-four hours a day, so a level worth one win
+  per 24h is already level with playing and there is nothing above it. Squeezed into that
+  span, seven levels were 8 hours apart out of 96 — a 9% step, which at the colony sizes it
+  is bought at vanished into the one decimal the screen prints. It was reported exactly
+  that way: "it produces 0.6 and on chapter 12 I can upgrade to again 0.6". The LID has all
+  the room the rate does not, and it is what the once-a-day player actually collects. So
+  the rate comes down 56 → 31 hours per win (0.9 → 1.6 troops an hour at chapter 10) and
+  the store goes 6h → 24h (5 → 37 troops a visit at the same chapter). Two tests hold it:
+  every level's full store is a quarter bigger than the one below, and **no two levels may
+  print the same rate** at any colony size — the one decimal place is the whole bug.
+- **The store still has a lid**, per level (`GranaryLevel.lid`, 6–24h). Without one a
+  fortnight away pays a fortnight's foraging, which makes not playing the fastest way up
+  the ladder. What it cannot do is bound the diligent player — only the clock does that —
+  which is why the rate is tuned so a 24-hour day tops out at 97% of what playing yields.
 - **Levels are unlocked by CHAPTER as well as bought.** Mycelium alone can be saved up on
   day one; the chapter gate is what stops the passive rate running ahead of the colony that
   is meant to be earning it. The seven chapters are spread across the whole road (1, 6, 12,
@@ -1197,6 +1211,19 @@ control competing with it.
 - **SPENDING AND ROLLING ARE ONE CALL** (`ProfileStore.hatch`). A hatch that spent and did
   not roll takes something for nothing; one that rolled and did not spend is free traits
   for ever. The screen owns only the drama.
+- **A WIN PAYS ONE LARVA, so the hatch is played for rather than bought.** Until it did,
+  larva was purchase-only and the whole collection — fifty slots across ten benches — was
+  shut to a player who never spent money, which is the one thing a feature built on
+  finding things must not be. One per win and no more: at two or three matches a day
+  winning about half (§8c) that is roughly a hatch a day.
+- **THE ODDS ARE PRINTED ON THE SCREEN.** 60 / 25 / 10 / 4 / 1, common down to mythic, and
+  `tierOdds()` derives them from the same table the roll uses rather than restating them —
+  a printed chance that has drifted from the real one is the game lying about the only
+  thing a player has to go on. A hatch that hides its odds asks somebody to keep spending
+  on a distribution they can only guess at, and the guess is always that the good one never
+  comes; printed, one in a hundred is a target. The weights ARE the percentages (they sum
+  to 100) because this number is read by a person, and a test measures forty thousand real
+  rolls against what the screen says.
 - **THE POOL IS WHAT THE PLAYER HAS** — the universal traits and every colony they own. A
   mythic for a colony they may never buy is a mythic they cannot use, and the whole point
   of the top tier is that finding one is the best thing that happens in the feature. The
@@ -1494,11 +1521,14 @@ These differ from the legacy build **on purpose**. Anything else that differs is
 - **Currency in words, not glyphs.** "60 🍄" became "60 mycelium". A reward line is read, not
   scanned, and the glyph was the only thing telling two currencies apart.
 
-- **Larva.** The currency exists now and the lucky hatch spends it, but it is BOUGHT
-  rather than earned: the Colony Road and the two quests that pay larva in the legacy build
-  still pay pheromone instead (at 4 each — §8c, where that conversion was retuned). Moving
-  those payouts to larva would re-open the economy model, so it is a deliberate decision
-  rather than an omission.
+- **Larva.** A WIN pays one (`WIN_LARVA`, in `settle.ts`) and the shop sells more; the
+  Colony Road and the two quests that pay larva in the legacy build still pay pheromone
+  instead (at 4 each — §8c, where that conversion was retuned). Moving those payouts to
+  larva would re-open the economy model, so it is a deliberate decision rather than an
+  omission. It is banked at every chapter and SHOWN on the result card only once the
+  hatch is open (chapter 10): the player who gets there should arrive with something to
+  open, and a card announcing a currency whose only door is still locked is a question the
+  app cannot answer.
 - **Daily quest roll.** Legacy rolls with `Math.random` and stores the result; this build
   derives the day's three from the day number (§11), so a reload cannot reroll.
 - **Formation thumbnails.** Legacy draws them once at boot and never redraws, so they keep

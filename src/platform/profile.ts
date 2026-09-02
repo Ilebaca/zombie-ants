@@ -1073,7 +1073,7 @@ export class ProfileStore {
       rate: granaryRate(p.colony, level),
       stored: granaryStored(p.colony, level, elapsed),
       full: granaryFull(p.colony, level),
-      fillsIn: granaryFillsIn(elapsed),
+      fillsIn: granaryFillsIn(elapsed, level),
       // What the NEXT level needs, so one call answers everything the room has to show.
       chapter: chapterOf(p.colony),
     };

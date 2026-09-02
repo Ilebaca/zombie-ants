@@ -15,7 +15,7 @@
  * arrives first, which is the whole reason the tiers have colours at all.
  */
 import {
-  HATCH_COST, TRAITS_CHAPTER, TRAIT_TIER, effectText, itemDef, markOf,
+  HATCH_COST, TRAITS_CHAPTER, TRAIT_TIER, TRAIT_TIERS, effectText, itemDef, markOf, tierOdds,
 } from "../platform";
 import type { ProfileStore, TraitItem } from "../platform";
 import { el, screenEl, screenHeader } from "./chrome";
@@ -61,7 +61,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     // cannot equip on any colony. A shop must never take money against a feature that
     // does not exist yet, and for this player it does not.
     if (!store.traitsOpen()) wrap.appendChild(shut());
-    else wrap.append(purse(), stage(), foot());
+    else wrap.append(purse(), stage(), foot(), odds());
 
     body.appendChild(wrap);
     root.appendChild(body);
@@ -164,6 +164,38 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     return box;
   };
 
+  /* -------------------------------------------------------------------- THE ODDS */
+
+  /**
+   * WHAT YOU ARE CHASING, STATED.
+   *
+   * A hatch that does not print its odds is asking a player to keep spending on a
+   * distribution they can only guess at, and the guess is always that the good one never
+   * comes. Printed, one in a hundred is a target rather than a suspicion — and it is the
+   * whole reason the top tier is worth the chase.
+   *
+   * Five rows rather than a sentence, because the ORDER is the message: the colours run
+   * from the one that turns up most to the one that almost never does, and a player reads
+   * the shape of that before they read any number on it.
+   */
+  const odds = (): HTMLElement => {
+    const box = el("div", "hatchodds");
+    box.id = "hatchOdds";
+    box.appendChild(el("div", "ho-h", "Chances"));
+    for (const id of TRAIT_TIERS) {
+      const tier = TRAIT_TIER[id];
+      const row = el("div", "ho-row");
+      row.style.setProperty("--tier", tier.colour);
+      row.append(
+        el("span", "ho-dot"),
+        el("span", "ho-n", tier.name),
+        el("span", "ho-p", `${trim(tierOdds(id))}%`),
+      );
+      box.appendChild(row);
+    }
+    return box;
+  };
+
   /* ------------------------------------------------------------------ THE BUTTON */
 
   const foot = (): HTMLElement => {
@@ -211,3 +243,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
   render();
   return root;
 }
+
+/** A whole number where it is one, a decimal only where the figure needs it. */
+const trim = (pct: number): string =>
+  pct >= 10 || Number.isInteger(pct) ? String(Math.round(pct)) : pct.toFixed(1);
