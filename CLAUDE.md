@@ -1239,6 +1239,14 @@ under "Your save", read back on the other side.
   can act on; "the end is missing" tells them to copy it again.
 - **Base64, not raw JSON**, because a chat app helpfully "corrects" quotes and braces — and
   UTF-8 first, or `btoa` throws on a colony named in another alphabet.
+- **THE REPLAY RECORDS DO NOT TRAVEL.** A record is up to five hundred moves, for each of
+  twenty matches: measured on a full history of long games they are 400 KB of a 408 KB
+  save, and the code built from that was **544 KB** — half a million characters, in a box
+  the screen asks a player to copy into a message. Nobody does that, so the backup had
+  silently stopped working for exactly the players with most to lose. Without them the same
+  save is 17 KB. The match still travels — the row, the opponent, what it paid, and the
+  whole career built out of it — only the moves are left behind, and the Settings row says
+  so.
 - **Importing goes through `normalise` like every other read** (§12). A code is a string
   somebody can edit, so this is the door a hand-written profile arrives at.
 - **`importProfile` never half-applies and never decides.** It hands back a whole profile or
@@ -1545,6 +1553,29 @@ stranded in a big screen.
   square while the file says it is round. Twelve of those had accumulated in `skin.css` —
   twelve considered decisions that had never once taken effect — and all twelve were found
   by a search for something else.
+
+**WHAT A MATCH PAYS IS ITS OWN FILE** (`src/ui/settle.ts`). The career, the match record,
+four kinds of quest progress and the challenge reward were a hundred and twenty lines
+inside `App.startMatch`'s `onExit` handler — business logic in the router, which is the
+one thing `app.ts` is meant not to hold (§3), and the least tested path in the game
+despite being the one that moves every number a player has.
+- **The order is the part that is easy to get wrong.** The colony, the mycelium and the XP
+  all move inside `recordResult`, so the figures the card reports have to be read BEFORE it
+  and again after — a card that read them once would say "18K troops" where it means "+40".
+- **The challenge latch stays on the screen**, because it is screen state: `settleMatch`
+  is told whether this match's challenge has already paid, and the router remembers.
+- Its test settles a real board and holds each of the four quest credits separately. A test
+  that asserts "something moved" does not notice three of them going missing, which is
+  exactly how queens, nests and turns went uncredited for months.
+
+**ONE SEEDED GENERATOR, AND IT LIVES IN THE ENGINE** (`seeded` in `engine/random.ts`).
+`nextRandom` is for the BOARD, whose seed is a field on the state so it can be snapshot and
+restored. Everything else that wants a repeatable sequence — where the scenery is placed,
+which colonies a chapter fields, which note a bar of music plays — wants a closure over its
+own seed, and there were **five** hand-written copies of the same LCG across `platform/`
+and `render/`. Two of them started at `seed >>> 0` and three at `(seed >>> 0) || 1`, so a
+seed of zero produced two different sequences depending on which copy you happened to be
+looking at. One function now, and zero folds to one.
 
 **A SCREEN THAT REBUILDS ITSELF KEEPS THE PLAYER'S PLACE** (`redraw` in `chrome.ts`).
 Twelve screens redraw in place after a tap — buy a research level and the price, the NOW

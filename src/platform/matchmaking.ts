@@ -18,6 +18,7 @@
  * always fields the same twenty and a player meets a familiar ladder rather than noise.
  */
 import { SPECIES_ORDER } from "./catalogue";
+import { seeded } from "../engine";
 import type { SpeciesId } from "../engine";
 import { ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, chapterOf, stopColony } from "./road";
 import { RIVAL_NAMES } from "./rival";
@@ -46,14 +47,6 @@ export interface Matchmaker {
 }
 
 /** A tiny deterministic generator, so a chapter's roster is the same every time. */
-function seeded(seed: number): () => number {
-  let s = seed >>> 0;
-  return () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967296;
-  };
-}
-
 /**
  * The twenty who play this chapter.
  *

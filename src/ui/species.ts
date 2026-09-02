@@ -35,7 +35,7 @@ import {
 } from "../platform";
 import type { ProfileStore, Research, ResearchDef } from "../platform";
 import { SPECIES_COL } from "../render";
-import { antPortrait, buyButton, el, pips, redraw, screenEl, screenHeader, toast } from "./chrome";
+import { antPortrait, buyButton, effectRow, el, pips, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 import { traitOpener } from "./traits";
 
@@ -281,11 +281,6 @@ function chip(mark: string, text: string, lit: boolean): HTMLElement {
 }
 
 /** A labelled value on a shared left edge — the Anthill's comparison row. */
-function effectRow(kind: "now" | "next", label: string, value: string): HTMLElement {
-  const row = el("div", "che-row che-" + kind);
-  row.append(el("span", "che-k", label), el("span", "che-v", value));
-  return row;
-}
 
 const researchOf = (store: ProfileStore, id: SpeciesId): Research =>
   store.get().research[id] ?? { reservoir: 0, mandible: 0, cuticle: 0 };

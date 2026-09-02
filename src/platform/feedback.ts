@@ -20,6 +20,9 @@
  * it is the honest implementation for a device that cannot do this.
  */
 
+// The one seeded generator, under its local name: this file rolls a melody rather
+// than a board, but it is the same sequence and there is one of it (engine/random.ts).
+import { seeded as rng } from "../engine";
 import { SOUNDS, soundUrl } from "./sounds";
 
 /** The moments worth marking. Named for what HAPPENED, never for how it sounds. */
@@ -345,14 +348,6 @@ const TICK_MS = 60;
  * test can pin it, and a bed that is reproducible can be debugged. Reseeded per bed, so two
  * sessions do not open on the same phrase.
  */
-function rng(seed: number): () => number {
-  let s = (seed >>> 0) || 1;
-  return () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967296;
-  };
-}
-
 /**
  * The room: an impulse response made from noise that decays exponentially.
  *

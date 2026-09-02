@@ -69,6 +69,20 @@ function selectorFor(node: HTMLElement): string | null {
   return classes.length ? `.${classes.map((c) => CSS.escape(c)).join(".")}` : null;
 }
 
+/**
+ * A NOW / NEXT ROW — the comparison the Anthill and a colony's research page both make.
+ *
+ * "Now: +2 soldiers in your base → Next: +3" is the only thing on either screen that says
+ * what a purchase actually buys, and it was written out identically in both files. Two
+ * copies of one idiom is two chances for the two screens to stop reading as one app,
+ * which is the whole reason the species page borrowed the Anthill's shape to begin with.
+ */
+export function effectRow(kind: "now" | "next", label: string, value: string): HTMLElement {
+  const row = el("div", `che-row che-${kind}`);
+  row.append(el("span", "che-k", label), el("span", "che-v", value));
+  return row;
+}
+
 /** A full-screen panel carrying the legacy id — several stylesheet rules are keyed by it. */
 export function screenEl(id: string): HTMLDivElement {
   const node = el("div", "screen");

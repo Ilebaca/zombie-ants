@@ -14,6 +14,8 @@
 import { describe, expect, it } from "vitest";
 import { BACKUP_TAG, checksum, exportProfile, importProfile } from "../backup";
 import { CHAMBER_MAX } from "../../engine";
+import { canReplay } from "../history";
+import type { MatchLog } from "../history";
 import { ProfileStore, defaultProfile, normalise } from "../profile";
 import { MemoryStore } from "../storage";
 
@@ -47,6 +49,44 @@ describe("writing a save out", () => {
     const read = importProfile(mangled);
     expect(read.ok).toBe(true);
     if (read.ok) expect(read.profile.name).toBe("Ilebaca");
+  });
+
+  /**
+   * THE REPLAY RECORDS DO NOT TRAVEL. Measured on a full history of long matches they are
+   * 400 KB of a 408 KB save, and the code built from that is 544 KB — half a million
+   * characters, in a box a player is asked to copy into a message. Nobody does that, so
+   * the backup silently stopped working for exactly the players with most to lose.
+   *
+   * The match itself still travels. Only the moves are left behind.
+   */
+  it("carries the matches but not the moves", () => {
+    const store = new ProfileStore(new MemoryStore());
+    const log = {
+      id: "m:1", at: 1_000, map: "small" as const, you: "fire" as const, foe: "ghost" as const,
+      foeName: "Vela", human: true, winner: "you" as const, reason: "nest",
+      turns: 40, playedMs: 90_000, colonyBefore: 100, colonyAfter: 140,
+      record: {
+        setup: { map: "small" as const, species: { you: "fire" as const, ai: "ghost" as const }, seed: 7 },
+        moves: Array.from({ length: 400 }, () => ({ do: "end" as const })),
+      },
+    };
+    store.rememberMatch(log);
+    const fat = exportProfile(store.get()).length;
+
+    const read = importProfile(exportProfile(store.get()));
+    expect(read.ok).toBe(true);
+    if (!read.ok) return;
+    expect(read.profile.history.length, "the match was left behind with its moves").toBe(1);
+    expect(read.profile.history[0]?.foeName).toBe("Vela");
+    expect(read.profile.history[0]?.colonyAfter).toBe(140);
+    expect(canReplay(read.profile.history[0] as MatchLog),
+      "the moves travelled after all").toBe(false);
+
+    // ...and it is the moves that were the weight.
+    const bare = new ProfileStore(new MemoryStore());
+    bare.rememberMatch({ ...log, record: undefined });
+    expect(fat, "the code still carries the move list")
+      .toBeLessThan(exportProfile(bare.get()).length + 400);
   });
 
   it("is recognisable on sight", () => {

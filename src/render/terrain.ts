@@ -23,6 +23,7 @@
  * scattered on it at the same density, not the same picture blown up.
  */
 import { MAP } from "./palette";
+import { seeded } from "../engine";
 import { INTRO_FROM } from "./intro";
 import type { Layout } from "./layout";
 import { rrect } from "./shapes";
@@ -30,14 +31,6 @@ import { rrect } from "./shapes";
 const TAU = 6.283185307;
 
 /** A tiny deterministic generator — the engine's rng is off-limits to the renderer. */
-function seeded(seed: number): () => number {
-  let s = seed >>> 0;
-  return () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967296;
-  };
-}
-
 interface Cached {
   canvas: HTMLCanvasElement;
   key: string;

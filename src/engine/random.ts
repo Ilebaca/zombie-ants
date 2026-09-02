@@ -21,6 +21,29 @@ export function nextRandom(holder: { rng: number }): number {
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
 
+/**
+ * A standalone generator: give it a seed, get a function that yields the next number.
+ *
+ * `nextRandom` above is for the BOARD, whose seed is a field on the state so it can be
+ * snapshot and restored. Everything else that needs a repeatable sequence — where the
+ * scenery is placed, which colonies a chapter fields, which note a bar of music plays —
+ * wants a closure over its own seed instead, and there were five hand-written copies of
+ * this LCG scattered through `platform/` and `render/` doing exactly that.
+ *
+ * Two of the five started at `seed >>> 0` and three at `(seed >>> 0) || 1`, so a seed of
+ * zero produced two different sequences depending on which copy you happened to be
+ * looking at — the kind of difference nothing ever fails on and nobody can see. One
+ * function, and zero is folded to one: a state of zero is the one value this generator
+ * cannot climb out of quickly.
+ */
+export function seeded(seed: number): () => number {
+  let s = (seed >>> 0) || 1;
+  return () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+
 /** Integer in [0, max). */
 export function nextInt(holder: { rng: number }, max: number): number {
   return Math.floor(nextRandom(holder) * max);

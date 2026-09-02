@@ -44,8 +44,32 @@ export type ImportResult =
  * a foreign one.
  */
 export function exportProfile(profile: Readonly<Profile>): string {
-  const body = encode(JSON.stringify(profile));
+  const body = encode(JSON.stringify(carryable(profile)));
   return `${BACKUP_TAG}.${BACKUP_VERSION}.${checksum(body)}.${body}`;
+}
+
+/**
+ * THE REPLAY RECORDS DO NOT TRAVEL, AND THAT IS THE DIFFERENCE BETWEEN A FEATURE AND A
+ * BROKEN ONE.
+ *
+ * A match record is the moves — up to five hundred of them, for each of the twenty matches
+ * the history keeps. Measured on a full history of long games they are 400 KB of a 408 KB
+ * save, and the code built from that is **544 KB**: half a million characters, in a box the
+ * screen asks a player to copy out and paste into a message. Nobody does that. So for
+ * exactly the players who have most to lose, the backup silently stopped working.
+ *
+ * Without them the same save is 17 KB — a long string, but one that survives being copied.
+ *
+ * What is lost is the ability to WATCH an old match back on the new device. What is kept is
+ * everything the match COUNTED: the row, who it was against, what it paid, and the whole
+ * career built out of it. That is the right side of the trade — a backup is for carrying a
+ * colony, and a replay is entertainment about a game already played.
+ */
+function carryable(profile: Readonly<Profile>): Profile {
+  return {
+    ...profile,
+    history: profile.history.map(({ record: _dropped, ...facts }) => facts),
+  };
 }
 
 /**

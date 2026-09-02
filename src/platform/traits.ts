@@ -299,8 +299,6 @@ export interface TraitTotals {
   luckPct: number;
 }
 
-export const NO_TOTALS: TraitTotals = { atkPct: 0, defPct: 0, luckPct: 0 };
-
 /**
  * Add a set of equipped traits up.
  *

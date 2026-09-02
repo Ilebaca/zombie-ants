@@ -309,7 +309,7 @@ function backupRow(store: ProfileStore, root: HTMLElement): HTMLElement {
   const row = shell({
     mark: "granary",
     title: "Backup code",
-    desc: "Carries this colony to another phone. Keep it somewhere safe.",
+    desc: "Carries this colony to another phone. Saved replays stay behind.",
     id: "setBackupRow",
   }, "div");
 

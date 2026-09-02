@@ -5,7 +5,7 @@
  * match — a match is created from the choices, handed to MatchScreen, and reported back
  * through `onExit`.
  */
-import { START_SHAPES, armyOf, arrangeTutorial, createGame } from "../engine";
+import { START_SHAPES, arrangeTutorial, createGame } from "../engine";
 import type { MapId, Player, SpeciesId } from "../engine";
 import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
@@ -21,6 +21,7 @@ import type {
 import { setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
 import { buildInventory, buildTraitBench } from "./traits";
+import { settleMatch } from "./settle";
 import { buildAntarium } from "./antarium";
 import { buildSpeciesPage } from "./species";
 import { buildProfile } from "./profile";
@@ -31,7 +32,7 @@ import {
 import type { NavId } from "./chrome";
 import { MatchScreen } from "./match";
 import {
-  CHALLENGES, CHALLENGE_REWARD, DAILY_BONUS_PHEROMONE, buildChallenges, buildDaily, dayNumber,
+  CHALLENGES, buildChallenges, buildDaily,
 } from "./challenges";
 import { buildLeaderboard } from "./leaderboard";
 import { buildShop } from "./shop";
@@ -1082,34 +1083,29 @@ export class App {
         return attack && attack.type === "combat" ? attack.attacker : null;
       },
       onExit: (winner, reason, played) => {
-        // Snapshot before recording, so the card can report what this match actually paid.
-        const before = this.profile.get();
-        const beforeXp = before.xp;
-        const beforeColony = before.colony;
-        const beforeMycel = before.mycel;
-        const beforeLevel = this.profile.level().level;
-        this.profile.recordResult(winner === "you", this.choices.species, state.turn, {
-          playedMs: played,
-          queens: queensTaken,
-          byNest: reason === "nest",
-        });
-        // REMEMBER THE MATCH ITSELF, not just what it added up to. The career counts games
-        // and wins; this is which ones. The record travels with it where it fits, so the
-        // entry can be watched back (platform/history.ts).
-        this.profile.rememberMatch({
-          id: `m:${Date.now()}:${seed}`,
-          at: Date.now(),
-          map: this.choices.map,
-          you: this.choices.species,
-          foe: aiSpecies,
-          foeName: foe?.name ?? "",
-          human: foe?.human ?? false,
+        // The settlement is its own subject and lives in its own file: the career, the
+        // match record, the quests and the challenge reward all move together and in an
+        // order that matters (ui/settle.ts). What stays here is the screen state — the
+        // latch that stops a challenge paying twice, and putting the card up.
+        const challenge = this.challenge && !this.challenge.done
+          ? { index: this.challenge.index, daily: this.challenge.daily }
+          : null;
+        if (this.challenge && winner === "you") this.challenge.done = true;
+
+        const recap = settleMatch({
+          store: this.profile,
+          state,
           winner,
           reason,
-          turns: state.turn,
           playedMs: played,
-          colonyBefore: beforeColony,
-          colonyAfter: this.profile.get().colony,
+          queens: queensTaken,
+          map: this.choices.map,
+          species: this.choices.species,
+          foe: {
+            species: aiSpecies,
+            name: foe?.name ?? "",
+            human: foe?.human ?? false,
+          },
           record: {
             setup: {
               map: this.choices.map,
@@ -1121,62 +1117,9 @@ export class App {
             },
             moves: [...(this.match?.record ?? [])],
           },
+          challenge,
         });
-        /*
-         * EVERY KIND THE POOL CAN ASK FOR IS FED FROM HERE.
-         *
-         * Queens, nests and turns were already being counted for the career record and
-         * simply never credited to a quest, which is most of why the pool only had four
-         * kinds in it. Tunnels are credited at the cast (`onAbilityCast`), because that is
-         * where the ability's kind is known.
-         */
-        this.profile.questProgress("play");
-        this.profile.questProgress("turns", state.turn);
-        if (queensTaken > 0) this.profile.questProgress("queen", queensTaken);
-        if (winner === "you") {
-          this.profile.questProgress("win");
-          if (reason === "nest") this.profile.questProgress("nest");
-        }
-        /*
-         * A CHALLENGE PAYS ONCE, and the profile is what remembers it.
-         *
-         * It used to be guarded by a flag on the match, which only stopped it paying twice
-         * for the same match — replaying the easiest position paid forty mycelium every
-         * single run. `beatChallenge` returns false when it was already beaten and the
-         * reward hangs off that; the daily is stamped by DAY, because it is meant to come
-         * back.
-         */
-        if (this.challenge && !this.challenge.done && winner === "you") {
-          this.challenge.done = true;
-          const def = CHALLENGES[this.challenge.index];
-          const daily = this.challenge.daily;
-          const first = daily
-            ? this.profile.beatDaily(dayNumber())
-            : !!def && this.profile.beatChallenge(def.id);
-          // Beating a daily also beats the position it drew, so the ladder moves too.
-          if (daily && def) this.profile.beatChallenge(def.id);
-          if (first) {
-            this.profile.update((p) => {
-              p.mycel += CHALLENGE_REWARD;
-              if (daily) p.pheromone += DAILY_BONUS_PHEROMONE;
-            });
-          }
-        }
-        const after = this.profile.get();
-        const level = this.profile.level().level;
-        this.showResult(winner, {
-          challenge: this.challenge ? CHALLENGES[this.challenge.index] ?? null : null,
-          turns: state.turn,
-          played,
-          youArmy: armyOf(state, "you"),
-          species: this.choices.species,
-          xpGained: after.xp - beforeXp,
-          colony: after.colony,
-          colonyDelta: after.colony - beforeColony,
-          mycel: after.mycel - beforeMycel,
-          leveledTo: level > beforeLevel ? level : null,
-          reason,
-        });
+        this.showResult(winner, recap);
       },
     });
     this.match.start();

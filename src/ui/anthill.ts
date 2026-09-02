@@ -20,7 +20,7 @@ import {
   CHAMBERS, GRANARY_CAP_HOURS, GRANARY_MAX, TRAITS_CHAPTER, compact,
 } from "../platform";
 import type { ChamberDef, GranaryState, ProfileStore } from "../platform";
-import { buyButton, el, pips, redraw, screenEl, screenHeader, toast } from "./chrome";
+import { buyButton, effectRow, el, pips, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 import { traitOpener } from "./traits";
 
@@ -196,11 +196,6 @@ function detail(
 }
 
 /** A labelled value on the panel's shared left edge. */
-function effectRow(kind: "now" | "next", label: string, value: string): HTMLElement {
-  const row = el("div", "che-row che-" + kind);
-  row.append(el("span", "che-k", label), el("span", "che-v", value));
-  return row;
-}
 
 /* ------------------------------------------------------------------ THE GRANARY */
 

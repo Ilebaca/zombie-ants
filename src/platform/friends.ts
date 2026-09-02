@@ -11,7 +11,7 @@
  * does: this file is arithmetic and names, and `ProfileStore` is the only thing that writes.
  */
 import type { SpeciesId } from "../engine";
-import { SPECIES } from "../engine";
+import { SPECIES, seeded } from "../engine";
 import { RIVAL_NAMES } from "./rival";
 import { COLONY_START } from "./colony";
 
@@ -45,14 +45,6 @@ const DIRECTORY_SPECIES = (Object.keys(SPECIES) as SpeciesId[])
   .filter((id) => !SPECIES[id].premium);
 
 /** A tiny deterministic generator, so the directory is the same every time it is read. */
-function seeded(seed: number): () => number {
-  let s = (seed >>> 0) || 1;
-  return () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967296;
-  };
-}
-
 /** A stable id for a generated colony — the name is unique in the directory. */
 export const personId = (name: string): string => `p:${name.toLowerCase()}`;
 

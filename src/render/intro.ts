@@ -22,6 +22,7 @@
  * rather than reshuffling on a resize, exactly as the scenery does (terrain.ts).
  */
 import { MAP } from "./palette";
+import { seeded } from "../engine";
 
 const TAU = 6.283185307;
 
@@ -196,14 +197,6 @@ export function drawSupply(
 }
 
 /** A tiny deterministic generator. The engine's rng is off-limits to the renderer. */
-function seeded(seed: number): () => number {
-  let s = seed >>> 0;
-  return () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967296;
-  };
-}
-
 interface Bush {
   x: number; y: number; r: number; lobes: number; a: number; dark: boolean;
   /** Unit direction out of frame, and how far it has to go to be gone. */

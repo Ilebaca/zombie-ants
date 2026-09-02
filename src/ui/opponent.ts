@@ -14,7 +14,7 @@
  * The TIMING is deliberately not here. How long the enemy appears to think, and how long
  * the reveal is given before the turn hands back, are drama and belong to the screen.
  */
-import { applyMove, restore, snapshot } from "../engine";
+import { applyMove } from "../engine";
 import type { ActionContext, GameState, Move, Player, PlayerMods } from "../engine";
 import type { Difficulty } from "../ai/search";
 import { Thinker } from "../ai/thinker";
@@ -92,8 +92,3 @@ export class RemoteOpponent implements OpponentSource {
 
   dispose(): void { /* the transport owns its own lifetime */ }
 }
-
-/** Copy a board onto another, keeping the caller's object identity. Re-exported for tests. */
-export const adoptBoard = (live: GameState, next: GameState): void => {
-  if (live !== next) restore(live, snapshot(next));
-};

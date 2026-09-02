@@ -19,6 +19,7 @@ import {
   applyMove, createGame, endTurn, openingBoard, replayMatch, snapshot,
 } from "../index";
 import type { MatchSetup, Move } from "../index";
+import { NEUTRAL_MODS } from "../index";
 
 const setup = (): MatchSetup => ({
   map: "small",
@@ -44,6 +45,15 @@ function firstLegalMove(state: ReturnType<typeof createGame>): Move {
   throw new Error("the opening position has no legal move");
 }
 
+/** A colony wearing traits: the newest thing that crosses into the engine. */
+const withTraits = (): MatchSetup => ({
+  ...setup(),
+  mods: {
+    you: { ...NEUTRAL_MODS, atkPct: 9, defPct: 4, boonPct: 100 },
+    ai: { ...NEUTRAL_MODS },
+  },
+});
+
 describe("rebuilding a match from its moves", () => {
   /**
    * THE WHOLE POINT. If this ever stops being true, nothing else about server-side
@@ -66,6 +76,49 @@ describe("rebuilding a match from its moves", () => {
     expect(rebuilt.applied).toBe(moves.length);
     expect(snapshot(rebuilt.state), "the rebuilt board is not the board that was played")
       .toEqual(snapshot(played));
+  });
+
+  /**
+   * ...AND WITH TRAITS ON, which is the case that could break it without anything else
+   * noticing. A trait's cooldown chance is ROLLED, once, off the board's own seeded stream
+   * (engine/state.ts) — so if that roll ever stopped being part of the seed, or the mods
+   * stopped travelling in the record, a replay would rebuild a different match from the
+   * same moves and the difference would be one turn of one cooldown, deep in the game.
+   */
+  it("rebuilds a match played by a colony wearing traits", () => {
+    const played = openingBoard(withTraits());
+    expect(played.boon.you, "the trait's roll never happened").toBe(1);
+
+    const moves: Move[] = [];
+    for (let i = 0; i < 8; i++) {
+      const move = firstLegalMove(played);
+      if (applyMove(played, played.current, move, withTraits().mods).ok) moves.push(move);
+      applyMove(played, played.current, { do: "end" }, withTraits().mods);
+      moves.push({ do: "end" });
+    }
+
+    const rebuilt = replayMatch({ setup: withTraits(), moves });
+    expect(rebuilt.refused).toBeNull();
+    expect(snapshot(rebuilt.state), "a match with traits did not replay to the same board")
+      .toEqual(snapshot(played));
+  });
+
+  /**
+   * And the traits have to be IN the record, not assumed. A record whose mods were lost
+   * replays a colony without its traits — the same moves onto a board where every fight
+   * resolves differently, which is the worst kind of wrong: it still looks like a match.
+   */
+  it("replays to a DIFFERENT board when the traits are dropped from the record", () => {
+    const played = openingBoard(withTraits());
+    const moves: Move[] = [];
+    for (let i = 0; i < 8; i++) {
+      const move = firstLegalMove(played);
+      if (applyMove(played, played.current, move, withTraits().mods).ok) moves.push(move);
+      applyMove(played, played.current, { do: "end" }, withTraits().mods);
+      moves.push({ do: "end" });
+    }
+    const stripped = replayMatch({ setup: setup(), moves });
+    expect(stripped.state.boon.you, "the boon survived losing the traits").toBe(0);
   });
 
   /** A different seed is a different match, or the seed is not doing anything. */
