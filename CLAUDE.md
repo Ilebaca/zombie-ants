@@ -1110,6 +1110,12 @@ is the same twenty bytes a server would verify a result from.
   with no moves is still listed — the facts are the point of the list — it simply does not
   offer a replay it cannot give, which is the difference between a quiet row and a dead
   button.
+- **It is part of the RECORD, not part of the collection.** The row into it sat under the
+  collection — three doors and a strip of nine heads deep — so from the top of the profile
+  it did not exist, and the career above it stayed a count with no way into the matches it
+  was counting. The screen reads who, then what has HAPPENED, then what has been
+  collected, and a played match is the middle one. The row carries the COUNT, because how
+  many there are to look at is the reason to open it.
 - **The list reports what a match PAID.** The colony is the number the whole game is played
   for (§8a), so the right-hand column is the delta, in the losing colour when it cost.
 - **The player rewinds by REBUILDING.** The engine has no undo, so Again folds a fresh

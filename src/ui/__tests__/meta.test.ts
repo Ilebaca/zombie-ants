@@ -331,7 +331,35 @@ describe("profile screen", () => {
     });
     const rows = Array.from(root.querySelectorAll<HTMLButtonElement>(".pf-row"));
     for (const r of rows) r.click();
-    expect(seen).toEqual(["colonies", "chambers", "colonies", "history", "quests"]);
+    expect(seen).toEqual(["history", "quests", "colonies", "chambers", "colonies"]);
+  });
+
+  /**
+   * THE MATCH LIST IS PART OF THE RECORD, NOT PART OF THE COLLECTION. It sat under the
+   * collection — three doors and a strip of nine heads deep — so from the top of the
+   * screen it did not exist, and the record above it stayed a count with no way into the
+   * matches it was counting. The screen reads who, then what has HAPPENED, then what has
+   * been collected, and a played match is the middle one.
+   */
+  it("puts the match list with the record, above the collection", () => {
+    const root = buildProfile(played(), nowhere);
+    const order = Array.from(root.querySelectorAll<HTMLElement>(".secthead, #pfHistory"))
+      .map((e) => e.id === "pfHistory" ? "matches" : e.textContent);
+    expect(order).toEqual(["Record", "In the field", "matches", "Collection"]);
+  });
+
+  // A door with a count behind it, not a label: how many there are to look at is the
+  // reason to open it, and "none yet" is what an empty one has to say for itself.
+  it("says how many matches are stored", () => {
+    const s = played();
+    const built = (): HTMLElement => buildProfile(s, nowhere);
+    expect(built().querySelector("#pfHistory")?.textContent).toContain("none yet");
+    s.rememberMatch({
+      id: "m:1", at: 1, map: "small", you: "fire", foe: "ghost", foeName: "Vela",
+      human: false, winner: "you", reason: null, turns: 4, playedMs: 1000,
+      colonyBefore: 40, colonyAfter: 48,
+    });
+    expect(built().querySelector("#pfHistory")?.textContent).toContain("1");
   });
 
   /**
