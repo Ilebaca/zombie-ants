@@ -3792,15 +3792,14 @@ button:not(.playbtn):active,
   padding: 4px 7px;
   white-space: nowrap;
 }
-/* THREE CHIPS, ONE LINE — and the line is only 202px wide once the portrait has
-   taken its share, which is why they are a GRID rather than a flex row that
-   wraps. Sized to their content they came to 242 and the cooldown was sliced
-   off the card's edge; three equal columns share what there is, so every chip
-   gets the same room whatever is written in it and none can push another out.
-   Tighter than a free-standing chip for the same reason. */
+/* TWO CHIPS, ONE LINE — and the line is only 202px wide once the portrait has
+   taken its share. A GRID rather than a flex row that wraps: sized to their own
+   content the chips wrapped 3 + 1, which reads as a row that did not fit rather
+   than one that was laid out, and equal columns cannot let one chip push another
+   out whatever is written in it. */
 .rb-meta {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 6px;
   flex-wrap: nowrap;
 }

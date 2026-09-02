@@ -12,7 +12,7 @@
  * Nothing here computes a modifier. `ProfileStore.modsFor` stays the only source of
  * PlayerMods; this screen reads levels and prices, and asks the store to spend.
  */
-import { NEUTRAL_MODS, SPECIES, abilityCooldown } from "../engine";
+import { SPECIES } from "../engine";
 import type { SpeciesId } from "../engine";
 import {
   RESEARCH_TOTAL_MAX, SPECIES_ORDER, SPECIES_UNLOCK, TIERS, tierOf,
@@ -81,13 +81,15 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
       owned ? `LV ${researchTotal(research)}/${RESEARCH_TOTAL_MAX}` : "LOCKED"));
     info.append(nameline, el("div", "rb-tag", species.blurb));
 
+    // TWO CHIPS, NOT THREE. The cooldown was the one that would not fit: even shorn to
+    // "7t" it left three chips sharing a 202px line, each too narrow to read comfortably.
+    // It is also the one this screen is not about — the colony's own page states it, once
+    // (ui/species.ts), and the cards below this hero already pair attack with defence, so
+    // the hero now says the same two things in the same order.
     const meta = el("div", "rb-meta");
     meta.append(
       statChip("attack", (species.atk * (1 + research.mandible * 0.05)).toFixed(2)),
       statChip("defence", (species.def * (1 + research.cuticle * 0.05)).toFixed(2)),
-      // "CD" is what the clock mark already says, and the two together did not fit the
-      // line. The colony's own page spells the cooldown out in words.
-      statChip("clock", `${cooldownOf(id, research)}t`),
     );
     info.appendChild(meta);
     box.appendChild(info);
@@ -206,10 +208,6 @@ const researchOf = (store: ProfileStore, id: SpeciesId): Research =>
   store.get().research[id] ?? { reservoir: 0, mandible: 0, cuticle: 0 };
 
 const researchTotal = (r: Research): number => r.reservoir + r.mandible + r.cuticle;
-
-/** Cooldown after research. Only a maxed reservoir shortens it (engine/abilities.ts). */
-const cooldownOf = (id: SpeciesId, r: Research): number =>
-  abilityCooldown(SPECIES[id].ability, { ...NEUTRAL_MODS, reservoir: r.reservoir });
 
 /** Species portrait. Locked colonies are drawn as silhouettes by the stylesheet's veil. */
 /** A mark from the icon family; `iconMark` because `icon` is a parameter name in here. */

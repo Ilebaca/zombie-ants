@@ -442,9 +442,12 @@ describe("antarium collection", () => {
     // The level rides on the NAME line, not in the chip row — it is how far this player
     // has taken the colony, where the three chips are what the colony does.
     expect(root.querySelector(".rb-nl .lv")?.textContent).toContain("LOCKED");
-    expect(root.querySelectorAll(".rb-meta .statchip").length, "the level rejoined the chips")
-      .toBe(3);
+    // Two chips, not four: the level rides on the name line, and the cooldown — the one
+    // fact this screen is not about — is stated on the colony's own page instead.
+    expect(root.querySelectorAll(".rb-meta .statchip").length).toBe(2);
     expect(root.querySelector(".rb-meta .lv"), "the level rejoined the chips").toBeNull();
+    expect(root.querySelector(".rb-meta")?.textContent, "the cooldown came back")
+      .not.toContain("t");
   });
 
   it("opens an owned colony's page through the call to action", () => {

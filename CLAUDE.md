@@ -643,11 +643,12 @@ position in the game, and the screen had no reason to be opened twice.
 it was the widest of them and pushed the cooldown onto a second line — 3 + 1, which reads
 as a row that did not fit rather than one that was laid out. It is also not the same KIND
 of fact: attack, defence and cooldown are what the colony DOES, and the level is how far
-this player has taken it. The three that remain are a GRID of equal columns, never a flex
-row: sized to their content they came to 242px in a 202px line and the cooldown was sliced
-off the card's edge, and equal columns cannot let one chip push another out. The cooldown
-reads "7t" there — "CD" is what the clock mark already says, and the colony's own page
-spells it out in words.
+this player has taken it. What is left is TWO chips, attack and defence — the cooldown was
+the one that would not fit, and it is also the one this screen is not about: the colony's
+own page states it once (`ui/species.ts`), and the cards below the hero already pair attack
+with defence, so the hero says the same two things in the same order. They are a GRID of
+equal columns, never a flex row: sized to their own content the four came to 242px in a
+202px line and wrapped 3 + 1, and equal columns cannot let one chip push another out.
 
 **A COLONY'S PAGE IS ABOUT RESEARCH** (`src/ui/species.ts`, split out of `antarium.ts`).
 It was four grey cards of the same shape — a hero box, a "combat profile", the research
