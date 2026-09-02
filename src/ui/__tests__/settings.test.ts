@@ -7,17 +7,17 @@
  * asks twice.
  */
 import { describe, expect, it } from "vitest";
-import { BUILD, MemoryStore, ProfileStore } from "../../platform";
+import { BUILD, MemoryStore, ProfileStore, exportProfile, importProfile } from "../../platform";
 import { buildSettings } from "../settings";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
 
-interface Spy { rules: number; tour: number; reset: number; board: number; diff: number; feedback: number }
+interface Spy { rules: number; tour: number; reset: number; board: number; diff: number; feedback: number; restored: number }
 
 const build = (store = new ProfileStore(new MemoryStore())): {
   root: HTMLElement; store: ProfileStore; spy: Spy;
 } => {
-  const spy: Spy = { rules: 0, tour: 0, reset: 0, board: 0, diff: 0, feedback: 0 };
+  const spy: Spy = { rules: 0, tour: 0, reset: 0, board: 0, diff: 0, feedback: 0, restored: 0 };
   const root = buildSettings({
     profile: store,
     onBack: () => {},
@@ -29,6 +29,7 @@ const build = (store = new ProfileStore(new MemoryStore())): {
     onFeedbackChanged: () => { spy.feedback++; },
     onReplayTutorial: () => { spy.tour++; },
     onReset: () => { spy.reset++; },
+    onRestored: () => { spy.restored++; },
   });
   document.body.replaceChildren(root);
   return { root, store, spy };
@@ -146,6 +147,101 @@ describe("the settings screen", () => {
     expect(root.querySelector("#setReset")?.textContent).toContain("confirm");
     press(root, "setReset");
     expect(spy.reset).toBe(1);
+  });
+
+  /* ------------------------------------------------------------------- THE SAVE */
+
+  /**
+   * The code is a couple of thousand characters. A wall of base64 sitting open in the
+   * middle of Settings reads as a fault rather than as an offer, so the row opens it.
+   */
+  it("keeps the backup code hidden until it is asked for", () => {
+    const { root } = build();
+    const panel = root.querySelector<HTMLElement>("#setBackupPanel");
+    expect(panel?.hidden).toBe(true);
+    press(root, "setBackup");
+    expect(panel?.hidden).toBe(false);
+    press(root, "setBackup");
+    expect(panel?.hidden, "would not close again").toBe(true);
+  });
+
+  /**
+   * Written at the moment it is SHOWN, never at build time. The screen is rebuilt on
+   * entry, but a match played between two openings would otherwise hand out a code for a
+   * colony the player no longer has — the one thing a backup must never do.
+   */
+  it("writes the code out fresh, for the save as it stands now", () => {
+    const { root, store } = build();
+    press(root, "setBackup");
+    const field = root.querySelector<HTMLTextAreaElement>("#setBackupCode");
+    const first = importProfile(field!.value);
+    expect(first.ok && first.profile.mycel).toBe(store.get().mycel);
+
+    press(root, "setBackup");
+    store.update((p) => { p.mycel += 500; });
+    press(root, "setBackup");
+    const again = importProfile(field!.value);
+    expect(again.ok && again.profile.mycel).toBe(store.get().mycel);
+  });
+
+  it("takes a code and makes it the save", () => {
+    const from = new ProfileStore(new MemoryStore());
+    from.update((p) => { p.name = "Ilebaca"; p.mycel = 640; });
+
+    const { root, store, spy } = build();
+    press(root, "setRestore");
+    const field = root.querySelector<HTMLTextAreaElement>("#setRestoreCode");
+    field!.value = exportProfile(from.get());
+
+    press(root, "setRestoreGo");
+    expect(store.get().name, "replaced the save on the first tap").not.toBe("Ilebaca");
+    expect(spy.restored).toBe(0);
+
+    press(root, "setRestoreGo");
+    expect(store.get().name).toBe("Ilebaca");
+    expect(store.get().mycel).toBe(640);
+    // The app has to be told: everything on screen is about a different colony now.
+    expect(spy.restored).toBe(1);
+  });
+
+  /**
+   * A bad code is refused BEFORE the confirmation, not after it. Arming on a code that
+   * cannot load would ask the player to confirm destroying their save for nothing.
+   */
+  it("refuses a bad code without ever arming", () => {
+    const { root, store, spy } = build();
+    const was = store.get().name;
+    press(root, "setRestore");
+    const field = root.querySelector<HTMLTextAreaElement>("#setRestoreCode");
+    field!.value = "definitely not a code";
+
+    press(root, "setRestoreGo");
+    expect(root.querySelector("#setRestoreGo")?.textContent).toBe("Restore");
+    press(root, "setRestoreGo");
+    expect(store.get().name).toBe(was);
+    expect(spy.restored).toBe(0);
+  });
+
+  /**
+   * Editing the field disarms it. Otherwise a confirmation given for one code would be
+   * spent on whatever was pasted over it — a save replaced by a colony nobody confirmed.
+   */
+  it("forgets a confirmation when the code is changed", () => {
+    const other = new ProfileStore(new MemoryStore());
+    other.update((p) => { p.name = "Ilebaca"; });
+    const { root, store, spy } = build();
+    const was = store.get().name;
+
+    press(root, "setRestore");
+    const field = root.querySelector<HTMLTextAreaElement>("#setRestoreCode");
+    field!.value = exportProfile(other.get());
+    press(root, "setRestoreGo");
+
+    field!.value = exportProfile(other.get());
+    field!.dispatchEvent(new Event("input"));
+    press(root, "setRestoreGo");
+    expect(store.get().name, "replaced the save on an unconfirmed code").toBe(was);
+    expect(spy.restored).toBe(0);
   });
 
   /* ------------------------------------------------------------------ THE BUILD */

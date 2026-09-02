@@ -13,7 +13,7 @@
 /// <reference lib="webworker" />
 import { aiTurn } from "./search";
 import type { Difficulty } from "./search";
-import type { ActionContext, EngineEvent, GameState, Player } from "../engine";
+import type { ActionContext, EngineEvent, GameState, Move, Player } from "../engine";
 
 export interface ThinkRequest {
   id: number;
@@ -27,12 +27,15 @@ export interface ThinkReply {
   id: number;
   state: GameState;
   events: EngineEvent[];
+  /** What it played, as data — a replay needs the moves, not the finished board. */
+  moves: Move[];
 }
 
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 
 scope.addEventListener("message", (e: MessageEvent<ThinkRequest>) => {
   const { id, state, me, difficulty, ctx } = e.data;
-  const events = aiTurn(state, me, difficulty, ctx);
-  scope.postMessage({ id, state, events } satisfies ThinkReply);
+  const moves: Move[] = [];
+  const events = aiTurn(state, me, difficulty, ctx, moves);
+  scope.postMessage({ id, state, events, moves } satisfies ThinkReply);
 });

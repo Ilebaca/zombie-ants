@@ -261,7 +261,7 @@ describe("anthill screen", () => {
  * every number the game kept about their career sat in the save and on no screen at all.
  */
 describe("profile screen", () => {
-  const nowhere = { onBack: () => {}, onColonies: () => {}, onChambers: () => {}, onQuests: () => {} };
+  const nowhere = { onBack: () => {}, onColonies: () => {}, onChambers: () => {}, onQuests: () => {}, onHistory: () => {} };
   const played = (over: Partial<Record<string, number>> = {}): ProfileStore => {
     const s = store();
     s.update((p) => {
@@ -327,10 +327,11 @@ describe("profile screen", () => {
       onColonies: () => seen.push("colonies"),
       onChambers: () => seen.push("chambers"),
       onQuests: () => seen.push("quests"),
+      onHistory: () => seen.push("history"),
     });
     const rows = Array.from(root.querySelectorAll<HTMLButtonElement>(".pf-row"));
     for (const r of rows) r.click();
-    expect(seen).toEqual(["colonies", "chambers", "colonies", "quests"]);
+    expect(seen).toEqual(["colonies", "chambers", "colonies", "history", "quests"]);
   });
 
   /**

@@ -15,8 +15,8 @@ import {
   scoreQuestEvents,
 } from "../platform";
 import type {
-  DuelInvite, DuelService, Feedback, Friend, FriendService, Matchmaker, Opponent, Person,
-  PurchaseGateway, SupportGateway,
+  DuelInvite, DuelService, Feedback, Friend, FriendService, MatchLog, Matchmaker, Opponent,
+  Person, PurchaseGateway, SupportGateway,
 } from "../platform";
 import { setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
@@ -43,6 +43,8 @@ import { buildSettings } from "./settings";
 import { buildRules } from "./rules";
 import { buildFormationSelect, buildMapSelect, buildSpeciesSelect, rollAISpecies, rollShape } from "./setup";
 import { buildDuelPick, inviteBar } from "./duel";
+import { ReplayScreen, buildHistory } from "./history";
+import { canReplay } from "../platform";
 import type { Choices, SetupOptions } from "./setup";
 import { buildResultCard } from "./result";
 import { MatchmakingScreen } from "./matchmaking";
@@ -60,7 +62,7 @@ import "./skin.css";   // the look, layered over the structure
  * its rules select by id, so these names are load-bearing.
  */
 type ScreenId =
-  | "home" | "mapsel" | "start" | "formation" | "duelpick"
+  | "home" | "mapsel" | "start" | "formation" | "duelpick" | "history"
   | "anthill" | "antarium" | "antup" | "achievements" | "quests" | "profile"
   | "challenges" | "daily" | "rules" | "settings" | "news" | "friends" | "support"
   | "luckyhatch" | "leaderboard" | "shop";
@@ -162,6 +164,9 @@ export class App {
    */
   private duelSeed: number | null = null;
 
+  /** The replay on screen, if one is. Torn down by the router like a match is. */
+  private replay: ReplayScreen | null = null;
+
   private choices: Choices;
   private profile: ProfileStore;
   /**
@@ -216,6 +221,18 @@ export class App {
     // First run only. `tourSeen` is written when the walk finishes OR is skipped, so a
     // player who knows the game sees it once and never again.
     if (this.profile.get().tourSeen < TOUR_VERSION) this.startTour();
+  }
+
+  /**
+   * Take the settings that live on the app object back off the save.
+   *
+   * The difficulty and the map are held here as well as in the profile, so a save that is
+   * swapped underneath — reset, or restored from a backup code — leaves the shell playing
+   * by the old one until it is told.
+   */
+  private adoptProfile(): void {
+    this.difficulty = this.profile.get().difficulty;
+    this.choices.map = this.profile.get().lastMap;
   }
 
   /** Push the saved switches into the device. Called at boot and whenever one is flipped. */
@@ -376,6 +393,7 @@ export class App {
       else if (id === "formation") this.tour.signal("species");
     }
     this.clearMatch();
+    this.clearReplay();
     // Navigating away abandons a search in flight — the finder is told, so a promise that
     // resolves after the player left cannot start a match behind the screen they went to.
     this.clearMatchmaking();
@@ -556,7 +574,11 @@ export class App {
         onColonies: () => this.show("antarium"),
         onChambers: () => this.show("anthill"),
         onQuests: () => this.show("quests"),
+        onHistory: () => this.show("history"),
       });
+    }
+    if (id === "history") {
+      return buildHistory(this.profile, () => this.show("profile"), (log) => this.watch(log));
     }
     if (id === "rules") return buildRules();
     if (id === "shop") return buildShop(this.profile, this.purchases, () => this.show("home"));
@@ -619,8 +641,15 @@ export class App {
         // longer exists.
         onReset: () => {
           this.profile.reset();
-          this.difficulty = this.profile.get().difficulty;
-          this.choices.map = this.profile.get().lastMap;
+          this.adoptProfile();
+          this.show("home");
+        },
+        // A restored save is a different colony: the difficulty, the map and the sound
+        // switches all came off the code, so the app has to be told rather than left
+        // running on the settings of the save that was just replaced.
+        onRestored: () => {
+          this.adoptProfile();
+          this.applyFeedbackPrefs();
           this.show("home");
         },
       });
@@ -795,6 +824,31 @@ export class App {
     screen.start();
   }
 
+  /* -------------------------------------------------------------- REPLAYS */
+
+  /**
+   * Watch a stored match back.
+   *
+   * A page on top of everything, like a match is: the board wants the whole screen, and
+   * the deck under it would be showing through a canvas that fills it.
+   */
+  private watch(log: MatchLog): void {
+    if (!canReplay(log)) return;
+    this.clearReplay();
+    this.syncNav(null);
+    for (const el of this.screens.values()) el.classList.add("hidden");
+    if (this.deck) this.deck.hidden = true;
+    this.replay = new ReplayScreen(this.host, {
+      log,
+      onBack: () => { this.clearReplay(); this.show("history"); },
+    });
+  }
+
+  private clearReplay(): void {
+    this.replay?.destroy();
+    this.replay = null;
+  }
+
   /* ---------------------------------------------------------------- DUELS */
 
   /**
@@ -905,13 +959,16 @@ export class App {
     // its own, which is right: nobody else has to agree with it.
     const seed = this.duelSeed ?? ((Date.now() ^ (Math.random() * 0xffffffff)) | 0);
     this.duelSeed = null;
+    // Named rather than rolled inline: a record has to carry the enemy's formation too, or
+    // replaying it opens a different board (engine/protocol.ts).
+    const enemyShape = START_SHAPES[rollShape()];
     const state = createGame({
       map: this.choices.map,
       species: { you: this.choices.species, ai: aiSpecies },
       shape: START_SHAPES[this.choices.shape],
       // The enemy picks its own formation, so the board never opens as a perfect mirror of
       // your own corner. Both sides still get exactly five tiles and identical income.
-      aiShape: START_SHAPES[rollShape()],
+      aiShape: enemyShape,
       mods,
       seed,
     });
@@ -997,6 +1054,35 @@ export class App {
           playedMs: played,
           queens: queensTaken,
           byNest: reason === "nest",
+        });
+        // REMEMBER THE MATCH ITSELF, not just what it added up to. The career counts games
+        // and wins; this is which ones. The record travels with it where it fits, so the
+        // entry can be watched back (platform/history.ts).
+        this.profile.rememberMatch({
+          id: `m:${Date.now()}:${seed}`,
+          at: Date.now(),
+          map: this.choices.map,
+          you: this.choices.species,
+          foe: aiSpecies,
+          foeName: foe?.name ?? "",
+          human: foe?.human ?? false,
+          winner,
+          reason,
+          turns: state.turn,
+          playedMs: played,
+          colonyBefore: beforeColony,
+          colonyAfter: this.profile.get().colony,
+          record: {
+            setup: {
+              map: this.choices.map,
+              species: { you: this.choices.species, ai: aiSpecies },
+              seed,
+              shape: START_SHAPES[this.choices.shape],
+              aiShape: enemyShape,
+              mods,
+            },
+            moves: [...(this.match?.record ?? [])],
+          },
         });
         /*
          * EVERY KIND THE POOL CAN ASK FOR IS FED FROM HERE.

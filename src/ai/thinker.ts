@@ -9,7 +9,7 @@
  * dramatises it rather than a beat before.
  */
 import { restore, snapshot } from "../engine";
-import type { ActionContext, EngineEvent, GameState, Player } from "../engine";
+import type { ActionContext, EngineEvent, GameState, Move, Player } from "../engine";
 import { aiTurn } from "./search";
 import type { Difficulty } from "./search";
 import type { ThinkReply, ThinkRequest } from "./worker";
@@ -18,6 +18,14 @@ export interface Thought {
   events: EngineEvent[];
   /** The board the AI left behind — always a copy. `adopt` folds it onto the live one. */
   next: GameState;
+  /**
+   * What was played, as data.
+   *
+   * The board alone is enough to SHOW a turn and not enough to record one: a replay and a
+   * server-side check both need the moves (engine/protocol.ts). A remote opponent fills
+   * this in with what actually arrived.
+   */
+  moves: Move[];
 }
 
 /** Copy a searched board back onto the live one, keeping the caller's object identity. */
@@ -40,7 +48,7 @@ export class Thinker {
         const ask = this.pending.get(e.data.id);
         if (!ask) return;
         this.pending.delete(e.data.id);
-        ask.land({ events: e.data.events, next: e.data.state });
+        ask.land({ events: e.data.events, next: e.data.state, moves: e.data.moves ?? [] });
       });
       // A worker that will not start is not worth reporting to the player: fall back to
       // thinking inline, which is exactly how the game ran before. Whatever it was already
@@ -55,7 +63,8 @@ export class Thinker {
     const inline = (): Thought => {
       // On a copy, so the caller's board is untouched whichever way the search ran.
       const next = structuredClone(state);
-      return { events: aiTurn(next, me, difficulty, ctx), next };
+      const moves: Move[] = [];
+      return { events: aiTurn(next, me, difficulty, ctx, moves), next, moves };
     };
     const worker = this.worker;
     if (!worker) return Promise.resolve(inline());

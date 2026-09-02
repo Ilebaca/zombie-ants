@@ -22,7 +22,7 @@
  * of the screen, which is where a version belongs — and it has to stay somewhere readable,
  * because a stale cached page and a real bug look identical on a phone without it.
  */
-import { BUILD } from "../platform";
+import { BUILD, exportProfile, importProfile } from "../platform";
 import type { ProfileStore } from "../platform";
 import { el, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
@@ -42,6 +42,8 @@ export interface SettingsOptions {
   onReplayTutorial: () => void;
   /** Everything erased and the app sent home. Asked twice before it is called. */
   onReset: () => void;
+  /** A code was taken. Everything on screen is about a different colony now. */
+  onRestored: () => void;
 }
 
 export function buildSettings(opts: SettingsOptions): HTMLElement {
@@ -125,6 +127,10 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
       id: "setTutorial",
       onGo: opts.onReplayTutorial,
     }),
+
+    el("div", "secthead", "Your save"),
+    backupRow(opts.profile, root),
+    restoreRow(opts.profile, root, opts.onRestored),
 
     el("div", "secthead", "Start over"),
     resetRow(opts.onReset),
@@ -281,6 +287,156 @@ function nameRow(store: ProfileStore, root: HTMLElement): HTMLElement {
 
   row.appendChild(field);
   return row;
+}
+
+/* --------------------------------------------------------------- YOUR SAVE */
+
+/**
+ * THE BACKUP CODE.
+ *
+ * Everything the player has lives in `localStorage` on one device, so a new phone or a
+ * cleared browser takes all of it with nothing they could have done. Until there is a
+ * server to hang an account on, the honest thing is the save written out as one string
+ * they can keep somewhere — a note, a message to themselves — and read back on the other
+ * side (platform/backup.ts).
+ *
+ * It is HIDDEN until asked for. The code is a couple of thousand characters and a wall of
+ * base64 sitting open in the middle of Settings reads as a fault; a row that says what it
+ * is and opens on a tap reads as an offer.
+ */
+function backupRow(store: ProfileStore, root: HTMLElement): HTMLElement {
+  const wrap = el("div", "setgroup");
+  const row = shell({
+    mark: "granary",
+    title: "Backup code",
+    desc: "Carries this colony to another phone. Keep it somewhere safe.",
+    id: "setBackupRow",
+  }, "div");
+
+  const btn = el("button", "setval", "Show");
+  btn.id = "setBackup";
+  const panel = el("div", "setpanel");
+  panel.id = "setBackupPanel";
+  panel.hidden = true;
+
+  const field = el("textarea", "setcode") as HTMLTextAreaElement;
+  field.id = "setBackupCode";
+  field.readOnly = true;
+  field.setAttribute("aria-label", "Backup code");
+
+  const copy = el("button", "setval setwide", "Copy") as HTMLButtonElement;
+  copy.id = "setBackupCopy";
+  copy.onclick = (): void => {
+    // Selecting it is the fallback that always works: a page served over http, an older
+    // browser or a denied permission all leave `writeText` unavailable, and a Copy button
+    // that silently does nothing is worse than one that hands the player the selection.
+    field.select();
+    void writeClipboard(field.value).then((ok) => {
+      toast(root, ok ? "Code copied" : "Code selected — copy it", "hive");
+    });
+  };
+
+  panel.append(field, copy);
+
+  btn.onclick = (): void => {
+    const open = panel.hidden;
+    panel.hidden = !open;
+    btn.textContent = open ? "Hide" : "Show";
+    // Written at the moment it is shown, never at build time: the screen is rebuilt on
+    // entry but a match played in between would otherwise hand out a stale colony.
+    if (open) field.value = exportProfile(store.get());
+  };
+
+  row.appendChild(btn);
+  wrap.append(row, panel);
+  return wrap;
+}
+
+/**
+ * RESTORING, which is the destructive half.
+ *
+ * Taking a code REPLACES the save on this device — that is what it is for, and it is the
+ * most damaging thing in the app after Reset — so it asks twice on the same button, the
+ * way Reset does, rather than opening a second overlay for one control.
+ *
+ * A code that will not load says WHICH of the three things went wrong. "Invalid" tells a
+ * player nothing they can act on; "the end is missing" tells them to copy it again.
+ */
+function restoreRow(store: ProfileStore, root: HTMLElement, onRestored: () => void): HTMLElement {
+  const wrap = el("div", "setgroup");
+  const row = shell({
+    mark: "brood",
+    title: "Restore a colony",
+    desc: "Paste a backup code from another device. It replaces this save.",
+    id: "setRestoreRow",
+  }, "div");
+
+  const btn = el("button", "setval", "Paste");
+  btn.id = "setRestore";
+  const panel = el("div", "setpanel");
+  panel.id = "setRestorePanel";
+  panel.hidden = true;
+
+  const field = el("textarea", "setcode") as HTMLTextAreaElement;
+  field.id = "setRestoreCode";
+  field.placeholder = "ZA1...";
+  field.setAttribute("aria-label", "Backup code to restore");
+
+  const go = el("button", "setval setdanger setwide", "Restore") as HTMLButtonElement;
+  go.id = "setRestoreGo";
+  let armed = false;
+  const disarm = (): void => {
+    armed = false;
+    go.textContent = "Restore";
+    go.classList.remove("armed");
+  };
+  field.oninput = disarm;
+
+  go.onclick = (): void => {
+    const read = importProfile(field.value);
+    if (!read.ok) {
+      disarm();
+      toast(root, whyNot(read.why), "bad");
+      return;
+    }
+    if (!armed) {
+      armed = true;
+      go.textContent = "Tap to replace this save";
+      go.classList.add("armed");
+      return;
+    }
+    store.restore(read.profile);
+    onRestored();
+  };
+
+  panel.append(field, go);
+  btn.onclick = (): void => {
+    const open = panel.hidden;
+    panel.hidden = !open;
+    btn.textContent = open ? "Hide" : "Paste";
+    if (!open) disarm();
+  };
+
+  row.appendChild(btn);
+  wrap.append(row, panel);
+  return wrap;
+}
+
+/** Say what is actually wrong with the code, not that it is "invalid". */
+function whyNot(why: "not-a-code" | "damaged" | "unreadable"): string {
+  if (why === "not-a-code") return "That is not a backup code";
+  if (why === "damaged") return "That code is incomplete — copy all of it";
+  return "That code could not be read";
+}
+
+/** Copy, where copying is allowed. Never throws; says whether it worked. */
+async function writeClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard?.writeText(text);
+    return !!navigator.clipboard;
+  } catch {
+    return false;
+  }
 }
 
 /** The build, at the foot of the screen where a version belongs. */

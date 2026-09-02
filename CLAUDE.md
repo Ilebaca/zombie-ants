@@ -1048,8 +1048,12 @@ war, and the store is emptied into the colony from the home screen.
    created there with these ids (`platform/purchases.ts`), and a RevenueCat key.
 6. Play Console release
 
-Later, server-backed: async PvP, ranked ladder, seasons, replays. Determinism makes
-server-side verification and replays nearly free — keep it that way.
+Later, server-backed: async PvP, ranked ladder, seasons. Determinism makes server-side
+verification nearly free — keep it that way. Replays are already built and local (see
+"A match is remembered" below); a server only has to store the records.
+
+Also still local: **the save lives on one device**. `platform/backup.ts` is the honest
+stand-in — the profile as one string a player can carry — and an account replaces it.
 
 **9b. WHAT IS ALREADY BUILT FOR MULTIPLAYER, AND WHAT IS NOT.** Everything here works and
 is tested with no server anywhere; the point of building it early is that the SHAPES are
@@ -1090,6 +1094,61 @@ decided by the game rather than by whatever backend turns up.
   and a clock — an async match has to survive both players closing the app, which means
   turn deadlines and a way to resume. `platform/duels.ts` carries the endpoint list a
   backend can be built against.
+
+**A MATCH IS REMEMBERED, AND CAN BE WATCHED BACK** (`platform/history.ts`, `ui/history.ts`).
+Nothing kept a finished match: the result card came up, the colony moved, and every game a
+player had ever played was gone. Determinism is what makes this nearly free — the record is
+the SETUP and the MOVES, and `replayMatch` rebuilds the board from them (§9b), so a replay
+is the same twenty bytes a server would verify a result from.
+- **The record is written where the moves are MADE, not derived afterwards.** `MatchScreen`
+  pushes a `Move` as it plays each one, the AI's included — `aiTurn` reports what it chose
+  through the worker, because the search runs on a COPY and the move that lands on the real
+  board has to be the move that goes in the record.
+- **A record that will not fit is DROPPED, never truncated.** `fitRecord` keeps the match
+  and throws the moves away past `RECORD_MAX_MOVES`; half a record replays to a board the
+  match never reached, which is a game nobody played presented as one somebody did. A row
+  with no moves is still listed — the facts are the point of the list — it simply does not
+  offer a replay it cannot give, which is the difference between a quiet row and a dead
+  button.
+- **The list reports what a match PAID.** The colony is the number the whole game is played
+  for (§8a), so the right-hand column is the delta, in the losing colour when it cost.
+- **The player rewinds by REBUILDING.** The engine has no undo, so Again folds a fresh
+  opening board onto the one the renderer is holding (`restore(state, snapshot(...))`) —
+  the same trick the AI's searched board lands by, which is why the renderer needs no
+  rewind of its own. And a refused move LATCHES: skipping it and playing the rest would put
+  the remainder of the record onto a board that has already diverged.
+- **No opening descent.** `playIntro()` is a match STARTING; replaying it every time a row
+  is opened is an animation nobody asked for twice.
+- **`normalise` destructures the record OUT before rebuilding an entry.** Spreading the
+  stored object copied a malformed `record` straight through, and re-adding a good one
+  never removed it — so `canReplay` read `.moves` off a string. Any normaliser that both
+  spreads and conditionally re-adds a field has that trap.
+
+**TAKING YOUR COLONY WITH YOU** (`platform/backup.ts`). Everything a player has is in
+`localStorage` on one device: a new phone, a cleared browser or a switch from the web build
+to the installed one and all of it is gone. There is no account to hang it on until there
+is a server, so the save is written out as one string they can keep — offered in Settings
+under "Your save", read back on the other side.
+- **Tagged, versioned and CHECKSUMMED.** The way this actually moves is a person copying it
+  out of a message, and the thing that really happens is that the end goes missing. Half a
+  code that LOADS is a colony quietly reset, so a code that fails its checksum is refused
+  as damaged and a string that is not one of ours is refused as not a code at all — never
+  read as an empty save.
+- **It says WHICH of the three things went wrong.** "Invalid" tells a player nothing they
+  can act on; "the end is missing" tells them to copy it again.
+- **Base64, not raw JSON**, because a chat app helpfully "corrects" quotes and braces — and
+  UTF-8 first, or `btoa` throws on a colony named in another alphabet.
+- **Importing goes through `normalise` like every other read** (§12). A code is a string
+  somebody can edit, so this is the door a hand-written profile arrives at.
+- **`importProfile` never half-applies and never decides.** It hands back a whole profile or
+  a reason; the SCREEN asks twice before `ProfileStore.restore` replaces the save, the way
+  the reset row does, because overwriting a colony is the most destructive thing in the app.
+  A bad code is refused BEFORE the confirmation — arming on one that cannot load asks the
+  player to confirm destroying their save for nothing — and editing the field disarms it,
+  or a confirmation given for one code is spent on whatever was pasted over it.
+- **A restore is a different colony, so the app is TOLD.** The difficulty and the map live
+  on the shell as well as in the save; `adoptProfile` is what stops it playing on by the
+  settings of the save that was just replaced.
 
 **Remaining gap: the shop.** Everything else in the meta layer is built. The species picker
 now enforces `profile.unlocked` (locked colonies stay visible so the player can see the
@@ -1374,6 +1433,16 @@ are gone until there is something behind them.
 - **The build stamp is not a setting and no longer sits in the list pretending to be one.**
   It is the foot of the screen — but it stays readable, because on a phone a stale cached
   page and a real bug look identical without it (§ Settings shows the build).
+- **"Your save" is a fourth kind of row: one that OPENS something.** The backup code is a
+  couple of thousand characters and a wall of base64 sitting open in the middle of Settings
+  reads as a fault rather than as an offer, so the row opens a panel. The code is written at
+  the moment it is SHOWN, never at build time — a match played between two openings would
+  otherwise hand out a code for a colony the player no longer has.
+- **The code box is sized in WHOLE PIXELS with no bottom padding.** A scroll box clips at
+  its PADDING box, so any padding-bottom is scrollable room the next line shows through —
+  which is a fifth line sliced across the bottom edge, reading as a box that cannot fit its
+  own text. `rows`, and a height in `em` against a fractional line-height, both land a few
+  pixels off and slice one anyway.
 - **Enemy AI says what it actually governs.** A matchmade opponent always plays `hard`
   (§ finding an opponent), so the setting drives challenges; the row states that, because
   a setting that silently applies to less than its name suggests is worse than no setting.

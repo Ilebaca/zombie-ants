@@ -6,7 +6,7 @@ import {
   abilityOf, abilityReady, abilitySpendsTurn, activateAbility, frontline, onEnemyHalf,
 } from "../engine";
 import type {
-  ActionContext, Coord, EngineEvent, GameState, Player, PlayerMods,
+  ActionContext, Coord, EngineEvent, GameState, Move, Player, PlayerMods,
 } from "../engine";
 import { FULL, NAIVE, WIN, evaluate as evaluateWith } from "./evaluate";
 import type { EvalWeights } from "./evaluate";
@@ -367,6 +367,15 @@ export function generateMoves(
  */
 export function aiTurn(
   state: GameState, me: Player, difficulty: Difficulty, ctx: ActionContext,
+  /**
+   * Where to write down what it played, for anything that needs the turn as DATA rather
+   * than as a finished board — a replay, or a record a server can verify
+   * (engine/protocol.ts).
+   *
+   * A sink rather than a second return value because almost nothing wants it: the search
+   * calls itself thousands of times a turn and the screen only ever wanted the events.
+   */
+  into?: Move[],
 ): EngineEvent[] {
   if (state.over) return [];
   const profile = PROFILES[difficulty];
@@ -379,15 +388,21 @@ export function aiTurn(
     state.current = me;
     const cast = activateAbility(state, me, ctx.mods[me]);
     events.push(...cast);
+    // Recorded only when it really fired: an ability that returned nothing did not happen
+    // (CLAUDE.md §5), and a replay of a cast that never occurred would diverge.
+    if (cast.length) into?.push({ do: "ability" });
     if (state.over) return events;
-    // An ability that returned nothing did not fire (CLAUDE.md §5), so it costs nothing.
     if (cast.length && abilitySpendsTurn(abilityOf(state, me).kind)) return events;
   }
 
   const decision = chooseMove(state, me, difficulty, ctx);
   if (!decision.move) return events;
   state.current = me;
-  events.push(...applyAction(state, decision.move.action, ctx));
+  const action = decision.move.action;
+  events.push(...applyAction(state, action, ctx));
+  into?.push(action.kind === "rally"
+    ? { do: "rally", to: action.to }
+    : { do: action.kind, from: action.from, to: action.to });
   return events;
 }
 

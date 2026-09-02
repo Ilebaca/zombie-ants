@@ -78,12 +78,16 @@ export class RemoteOpponent implements OpponentSource {
     // On a copy, so a refused move leaves the live board exactly as it was.
     const board = structuredClone(state);
     const events: Thought["events"] = [];
+    const played: Move[] = [];
     for (const move of moves) {
       const result = applyMove(board, this.me, move, this.mods, this.ctx);
       if (!result.ok) break;
       events.push(...result.events);
+      // Only the moves that were ACCEPTED go into the record, so a replay of it cannot
+      // contain a move the board refused.
+      played.push(move);
     }
-    return { events, next: board };
+    return { events, next: board, moves: played };
   }
 
   dispose(): void { /* the transport owns its own lifetime */ }

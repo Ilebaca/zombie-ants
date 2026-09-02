@@ -13,8 +13,8 @@ import {
   tilesOwnedBy, allTiles, neighbours, tutorialAiMove, furthestTravel,
 } from "../engine";
 import type {
-  AbilityKind, ActionContext, Coord, EngineEvent, GameOverReason, GameState, MapId, Player,
-  PlayerMods, SpeciesId, Tile,
+  AbilityKind, ActionContext, Coord, EngineEvent, GameOverReason, GameState, MapId, Move,
+  Player, PlayerMods, SpeciesId, Tile,
 } from "../engine";
 import { adopt } from "../ai/thinker";
 import { AiOpponent } from "./opponent";
@@ -167,6 +167,19 @@ export class MatchScreen {
   private opponent: OpponentSource;
   /** Cancels a turn in flight when the match ends or the screen is torn down. */
   private thinking = new AbortController();
+
+  /** The match as data, for a history entry or a server to verify. Null before it starts. */
+  get record(): Move[] { return this.moves; }
+
+  /**
+   * EVERY MOVE, IN ORDER — the match as data.
+   *
+   * Written down beside the actions rather than derived from the events, because events
+   * describe what HAPPENED and a replay needs what was ASKED FOR: one capture event could
+   * have come from a move, a long send or a won fight. Only moves the engine accepted are
+   * kept, so the list always replays (engine/protocol.ts).
+   */
+  private moves: Move[] = [];
   /**
    * Bumped whenever this match stops caring about an answer still in flight — torn down, or
    * already finished. The AI thinks off the main thread now, so a reply can arrive after the
@@ -655,6 +668,7 @@ export class MatchScreen {
     }
 
     const events = activateAbility(s, "you", this.opts.mods.you);
+    if (events.length) this.moves.push({ do: "ability" });
     if (!events.length) {
       return;
     }
@@ -704,6 +718,9 @@ export class MatchScreen {
   private handOver(): void {
     if (this.state.over) { this.finish(); return; }
     this.clearTimers();
+    // Recorded like any other move: a replay has no other way to know the turn changed
+    // hands, and whose move each one is comes from the board it is replayed onto.
+    this.moves.push({ do: "end" });
     const events = endTurn(this.state, this.opts.mods);
     this.consume(events);
     this.beginTurn();
@@ -741,6 +758,7 @@ export class MatchScreen {
     this.aiTimer = null;
     if (gen !== this.generation) return;
     adopt(this.state, thought.next);
+    this.moves.push(...thought.moves);
     const events = thought.events;
     this.consume(events);
     this.refreshHUD();
@@ -815,6 +833,7 @@ export class MatchScreen {
         return;
       }
       this.opts.onAbilityCast?.("tunnel");
+      this.moves.push({ do: "ability", at });
       this.consume(events);
       this.refreshHUD();
       // Tunnelling spends the turn — `abilitySpendsTurn` in the engine owns that rule, and
@@ -829,6 +848,7 @@ export class MatchScreen {
       if (t.owner === "you" && isConnected(this.state, t)) {
         const events = rally(this.state, at);
         if (events.length) {
+          this.moves.push({ do: "rally", to: at });
           this.consume(events);
           // The walkthrough keeps the turn (see the move branch), so the mode has to come
           // back by itself — `handOver` is what normally resets it.
@@ -861,6 +881,7 @@ export class MatchScreen {
 
       this.clearSelection();
       if (events.length) {
+        this.moves.push({ do: adjacent ? "move" : "travel", from, to: at });
         this.consume(events);
         this.refreshHUD();
         // The step waits for the deed to RESOLVE — `tourSignals`, from the events — so a

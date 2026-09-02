@@ -3175,6 +3175,48 @@ button:not(.playbtn):active,
 }
 .setname:focus { outline: none; border-color: var(--grass); }
 
+/* ---- The backup code -------------------------------------------------------
+   The code is a couple of thousand characters, so it is HIDDEN until asked for:
+   a wall of base64 sitting open in the middle of Settings reads as a fault
+   rather than as an offer. The row and the panel it opens are one group so the
+   list's own gap does not fall between a control and the thing it opened. */
+.setgroup { display: grid; gap: 6px; }
+.setpanel {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: rgba(0, 0, 0, .22);
+  border: 1px solid var(--line);
+}
+/* Monospace and BREAKING ANYWHERE: it is one unbroken token, so a normal font
+   would run it off the side of the screen rather than wrap it. */
+.setcode {
+  width: 100%;
+  resize: none;
+  /* Four WHOLE lines, and the bottom padding is zero on purpose. A scroll box
+     clips at its PADDING box, not its content box, so any padding-bottom is
+     scrollable room that the next line shows through — which is how this came
+     out with a fifth line sliced across the bottom edge. Sized in whole pixels
+     for the same reason: `rows`, or a height in `em` against a fractional
+     line-height, lands a few pixels off and slices one anyway. */
+  line-height: 16px;
+  height: 76px;
+  padding: 10px 12px 0;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, .34);
+  border: 1px solid var(--line);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: var(--ink-soft);
+  word-break: break-all;
+}
+.setcode:focus { outline: none; border-color: var(--grass); }
+.setcode::placeholder { color: var(--muted); }
+/* Inside the panel there is no row to sit at the end of, so the button is the
+   width of the thing it acts on. */
+.setwide { width: 100%; text-align: center; }
+
 /* The build is not a setting and no longer sits in the list pretending to be
    one — but it has to stay readable, because a stale cached page and a real bug
    look identical on a phone without it. */
@@ -4219,3 +4261,135 @@ button:not(.playbtn):active,
    the step indicator of the very flow it is interrupting. The bar is
    absolutely positioned, so the room has to be made on the screen itself. */
 #mapsel.hasinvite { padding-top: 78px; }
+
+/* ============================================================================
+   ==  RECENT MATCHES, AND WATCHING ONE BACK  =================================
+   ============================================================================
+
+   The list is the friends row's shape — a head, then who and where, then what
+   it came to — because both are "a colony, and a fact about it", and two
+   different shapes for the same thing is two screens the player has to learn.
+   What differs is the RIGHT-HAND column: a match is remembered for what it
+   PAID, and the colony is the number the whole game is played for. */
+.histbody { min-height: 0; }
+.histlist { display: grid; gap: 6px; padding-bottom: 12px; width: 100%; }
+
+.histrow {
+  display: grid;
+  grid-template-columns: 38px 1fr auto auto;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  text-align: left;
+  font-family: var(--font);
+  cursor: pointer;
+}
+.histrow > svg:last-child { color: var(--muted); }
+/* A row with no moves is not a door, so it does not look like one — it is
+   quieter and it does not press. The facts are still the point of the row. */
+.histrow.noreplay { cursor: default; opacity: .74; }
+.histrow:not(.noreplay):active { transform: translateY(1px); }
+
+/* Drawn at twice the size it is shown at, so it stays sharp on a phone. */
+.histface { display: grid; place-items: center; width: 38px; height: 38px; }
+.histface canvas { display: block; width: 38px; height: 38px; }
+
+.histmid { min-width: 0; display: grid; gap: 2px; }
+.histwho {
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.histwhat {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.histright { display: grid; justify-items: end; gap: 2px; }
+.histresult {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .9px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.histresult.won { color: var(--grass-glow); }
+.histresult.lost { color: var(--danger); }
+/* The colony is the score, so what the match paid is the biggest thing in the
+   column — and a defeat is printed in the losing colour, because it cost
+   troops (§8a, the same rule the result card follows). */
+.histdelta {
+  font-size: 14px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: var(--grass-glow);
+}
+.histrow.lost .histdelta { color: var(--danger); }
+
+.histempty { display: grid; gap: 6px; justify-items: center; padding: 40px 20px; text-align: center; }
+.histemptyh { font-size: 15px; font-weight: 900; }
+.histemptyp { font-size: 12px; font-weight: 700; line-height: 1.5; color: var(--ink-soft); max-width: 24em; }
+
+/* ---- The player ------------------------------------------------------------
+   The board fills what is left and the controls sit under it, which is the
+   match screen's own arrangement — a replay that laid its board out
+   differently from the game would read as a different game. */
+#replay .replaystage {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  padding: 4px 0 8px;
+}
+#replay .replaystage canvas { display: block; max-width: 100%; }
+
+.replaybar {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px 14px;
+}
+.replayturn {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.replaybtn,
+.replayrate {
+  min-height: var(--tap);
+  padding: 9px 16px;
+  border-radius: 99px;
+  border: 1px solid var(--grass);
+  background: var(--grass);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 900;
+  color: #0d1c0b;
+  cursor: pointer;
+}
+.replaybtn.ghost,
+.replayrate {
+  background: rgba(255, 255, 255, .07);
+  border-color: var(--line);
+  color: var(--grass-glow);
+}
+/* The speed is a value rather than an action, so it is the narrowest of the
+   three and reads as a readout you can press. */
+.replayrate { padding-inline: 12px; font-variant-numeric: tabular-nums; }
+.replaybtn:active, .replayrate:active { transform: translateY(1px); }

@@ -29,6 +29,8 @@ import {
 import type { GranaryLevel } from "./granary";
 import { FRIEND_MAX, seedRequests } from "./friends";
 import { DUELS_MAX, seedInvites } from "./duels";
+import { HISTORY_MAX, addToHistory } from "./history";
+import type { MatchLog } from "./history";
 import type { DuelInvite } from "./duels";
 import type { Friend, Person } from "./friends";
 import type { SupportGateway, Ticket, TicketKind } from "./support";
@@ -146,6 +148,14 @@ export interface Profile {
    * to survive a reload — a badge that forgets what it was counting is worse than none.
    */
   duelsIn: DuelInvite[];
+  /**
+   * The last few matches, newest first.
+   *
+   * The career counts what happened; this remembers WHICH matches. Kept here rather than
+   * in its own store because it is save data like everything else, and `ProfileStore` is
+   * the only thing in the app that writes.
+   */
+  history: MatchLog[];
   /** The newest post the player has read, as a stamp. Older than every post = all unread. */
   newsSeen: number;
   /** Messages sent to support, kept so nothing a player wrote is thrown away. */
@@ -242,6 +252,7 @@ export function defaultProfile(): Profile {
     // Empty here, and seeded by the store's constructor instead: an invitation carries the
     // time it arrived, and this function is a CONSTANT — it may not read a clock.
     duelsIn: [],
+    history: [],
     friendsOut: [],
     newsSeen: 0,
     tickets: [],
@@ -373,6 +384,7 @@ export function normalise(raw: unknown): Profile {
     friendsIn: people(p.friendsIn, base.friendsIn),
     friendsOut: people(p.friendsOut, base.friendsOut),
     duelsIn: invites(p.duelsIn),
+    history: matchLogs(p.history),
     newsSeen: int(p.newsSeen, 0, 1e15, 0),
     tickets: tickets(p.tickets),
     challenges: Array.isArray(p.challenges)
@@ -497,6 +509,45 @@ function invites(raw: unknown): DuelInvite[] {
     }));
 }
 
+/**
+ * Past matches. Rebuilt entry by entry like every other list on the profile.
+ *
+ * A malformed RECORD is dropped while the entry is KEPT: the facts are what the list
+ * reads, and losing the whole row because its move list went bad would delete a match the
+ * player remembers playing. A replay that cannot be replayed simply is not offered.
+ */
+function matchLogs(raw: unknown): MatchLog[] {
+  if (!Array.isArray(raw)) return [];
+  // `normalise`'s own clamp is local to it; this list is rebuilt out here, so it carries
+  // its own. Same rule either way: a number off a save is a suggestion, not a fact.
+  const num = (v: unknown, max: number): number => {
+    const n = Math.round(Number(v));
+    return Number.isFinite(n) ? Math.max(0, Math.min(max, n)) : 0;
+  };
+  return raw.filter((m): m is MatchLog => !!m && typeof m === "object"
+    && typeof (m as MatchLog).id === "string"
+    && typeof (m as MatchLog).map === "string" && (m as MatchLog).map in MAPS
+    && typeof (m as MatchLog).you === "string" && (m as MatchLog).you in SPECIES
+    && typeof (m as MatchLog).foe === "string" && (m as MatchLog).foe in SPECIES)
+    .slice(0, HISTORY_MAX)
+    .map(({ record, ...m }) => ({
+      // The record is taken OFF and only put back when it is readable. Spreading it and
+      // adding a good one back on top cannot remove a bad one — which left a `record`
+      // that was a bare string on the entry, and `canReplay` then read `.moves` off it.
+      ...m,
+      at: num(m.at, 1e15),
+      foeName: typeof m.foeName === "string" ? m.foeName.slice(0, 18) : "",
+      human: m.human === true,
+      winner: m.winner === "you" || m.winner === "ai" ? m.winner : null,
+      reason: typeof m.reason === "string" ? m.reason : null,
+      turns: num(m.turns, 1e6),
+      playedMs: num(m.playedMs, 1e12),
+      colonyBefore: num(m.colonyBefore, 1e15),
+      colonyAfter: num(m.colonyAfter, 1e15),
+      ...(Array.isArray(record?.moves) && record?.setup ? { record } : {}),
+    }));
+}
+
 /** Sent messages. Kept so nothing a player wrote is thrown away by a bad save. */
 function tickets(raw: unknown): Ticket[] {
   if (!Array.isArray(raw)) return [];
@@ -576,6 +627,20 @@ export class ProfileStore {
   }
 
   /**
+   * Take a save read off a backup code (platform/backup.ts) as THE save.
+   *
+   * It replaces rather than merges, because a backup is a whole colony at a moment and
+   * half of one merged into another is a save nobody has ever had. `normalise` runs again
+   * here even though `importProfile` already ran it: this is the door every write goes
+   * through, and a second pass over an already-normal profile costs nothing.
+   */
+  restore(profile: Profile): Readonly<Profile> {
+    this.profile = normalise(profile);
+    writeJson(this.store, KEY, this.profile);
+    return this.profile;
+  }
+
+  /**
    * Modifiers for a match. `you` is derived from the profile; `ai` is ALWAYS neutral —
    * the AI gets no anthill and no research (CLAUDE.md §4.8).
    */
@@ -621,6 +686,15 @@ export class ProfileStore {
       p.xp += matchXp(won, turns);
       p.lastSpecies = species;
     });
+  }
+
+  /* -------------------------------------------------------------- HISTORY */
+
+  get history(): readonly MatchLog[] { return this.profile.history; }
+
+  /** Remember a match. Newest first, capped, and de-duplicated by id. */
+  rememberMatch(log: MatchLog): void {
+    this.update((p) => { p.history = addToHistory(p.history, log); });
   }
 
   /* ---------------------------------------------------------------- DUELS */

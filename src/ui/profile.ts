@@ -38,6 +38,8 @@ export interface ProfileOptions {
   onColonies: () => void;
   onChambers: () => void;
   onQuests: () => void;
+  /** The record's own detail: which matches, not just how many. */
+  onHistory: () => void;
 }
 
 export function buildProfile(store: ProfileStore, opts: ProfileOptions): HTMLElement {
@@ -98,6 +100,19 @@ export function buildProfile(store: ProfileStore, opts: ProfileOptions): HTMLEle
     );
 
     scroll.append(el("div", "secthead", "Collection"), collection(store, opts));
+
+    // THE RECORD ABOVE IS A COUNT; THIS IS THE LIST. A player who has won 61 of 104 could
+    // not see one of them — no idea who they played last night or how it went. It sits
+    // directly under the career it details.
+    const history = el("button", "pf-row pf-row-go");
+    history.id = "pfHistory";
+    history.append(
+      iconSlot("pf-row-i", "board", 18),
+      el("span", "pf-row-t", "Recent matches"),
+      icon("next", 14),
+    );
+    history.onclick = opts.onHistory;
+    scroll.appendChild(history);
 
     // The quests still have a home, and this is the screen you would look for them from.
     const quests = el("button", "pf-row pf-row-go");

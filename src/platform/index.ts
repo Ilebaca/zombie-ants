@@ -59,3 +59,7 @@ export {
 export type { LevelProgress, QuestDef, QuestKind, QuestReward, QuestState } from "./quests";
 export { LocalResults, verify } from "./results";
 export type { MatchOutcome, RecordedResult, ResultsService } from "./results";
+export { HISTORY_MAX, RECORD_MAX_MOVES, addToHistory, canReplay, fitRecord, outcomeOf } from "./history";
+export type { MatchLog } from "./history";
+export { BACKUP_TAG, BACKUP_VERSION, checksum, exportProfile, importProfile } from "./backup";
+export type { ImportFailure, ImportResult } from "./backup";
