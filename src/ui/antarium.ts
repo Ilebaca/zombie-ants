@@ -170,12 +170,12 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
 
     if (owned) card.appendChild(el("span", "clv", `LV ${total}`));
     card.appendChild(antPortrait(id, 112, undefined, store.lookFor(id)));
-    card.append(
-      el("div", "cname", species.name),
-      el("div", "cstat",
-        `${(species.atk * (1 + research.mandible * 0.05)).toFixed(2)} · ` +
-        `${(species.def * (1 + research.cuticle * 0.05)).toFixed(2)}`),
-    );
+    // THE NAME AND NOTHING UNDER IT. The card used to carry the colony's attack and
+    // defence as a bare pair — "0.86 · 0.87" — which is two numbers with no label, no
+    // scale and nothing to compare them against, and reads as some kind of level rather
+    // than as a stat. Both figures are a tap away as LABELLED chips on the banner above,
+    // and the colony's own page draws them as bars measured against every other colony.
+    card.appendChild(el("div", "cname", species.name));
 
     // The research bar only appears once there IS research. At level nothing it is an
     // empty grey rule under the two numbers, which reads as a divider nobody drew on

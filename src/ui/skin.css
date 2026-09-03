@@ -579,7 +579,6 @@ footer { background: var(--bg1); }
 .tilerow .stile:has(.sub) .amt { font-size: 14px; line-height: 18px; }
 .coscell .cn { font-size: 10.5px; }
 .coscell .eq { font-size: 10.5px; }
-.ccard .cstat { font-size: 11px; }
 
 /* ------------------------------------------------------------ CHALLENGES
    Five stacked full-width buttons filled the screen and let barely two

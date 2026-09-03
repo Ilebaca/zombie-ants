@@ -910,9 +910,12 @@ describe("legacy markup parity", () => {
     expect(root.id).toBe("antarium");
     for (const cls of ["rbanner", "rb-info", "rb-tier", "rb-name", "rb-tag", "rb-meta",
       "antcta", "antscroll", "tierhead", "tl", "tline", "tc", "cgrid", "ccard", "cname",
-      "cstat", "cveil"]) {
+      "cveil"]) {
       expect(landmarks(root), `.${cls} missing`).toContain(cls);
     }
+    // A card carries the NAME and nothing under it: the stat pair was two unlabelled
+    // numbers that read as a level, and both are a tap away as labelled chips.
+    expect(landmarks(root), "the bare stat pair is back on the cards").not.toContain("cstat");
     expect(root.querySelector("#antBanner")).toBeTruthy();
     expect(root.querySelector("#antCTA")).toBeTruthy();
     expect(root.querySelector("#antGrid")).toBeTruthy();
