@@ -12,6 +12,7 @@ import { MemoryStore } from "../../platform";
 import { buildInventory, buildTraitBench, traitOpener } from "../traits";
 import { buildSpeciesPage } from "../species";
 import { TIERS, basicLook, looksFor } from "../../engine";
+import { ROAD_LAST, SLOT_STEP, slotChapter, stopColony } from "../../platform";
 import type { TraitScope } from "../../platform";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
@@ -22,9 +23,14 @@ const UNIVERSAL = TRAITS.filter((t) => t.species === null);
 const FIRE = TRAITS.filter((t) => t.species === "fire");
 
 /** A store past the chapter gate, so the screens are open. */
-const store = (): ProfileStore => {
+/**
+ * A colony at the END of the road, so all five slots are open — they unlock one every ten
+ * chapters (platform/traits.ts) and most of these tests are about the bench rather than
+ * the gate. The gate has its own describe below.
+ */
+const store = (colony = ROAD_LAST): ProfileStore => {
   const s = new ProfileStore(new MemoryStore());
-  s.update((p) => { p.colony = 2_000_000; });
+  s.update((p) => { p.colony = colony; });
   return s;
 };
 
@@ -386,3 +392,58 @@ describe("choosing a colony's look", () => {
     expect(s.get().look).toEqual({});
   });
 });
+
+/**
+ * A LOCKED SLOT IS DRAWN, AND IT NAMES ITS CHAPTER.
+ *
+ * Five squares with two live is the shape of the bench a player is working toward; two
+ * squares is a bench that looks finished. And a number is something to play toward, where
+ * a padlock only says you cannot — the same rule the granary's levels follow.
+ */
+describe("slots that have not opened yet", () => {
+  const at = (chapter: number): ProfileStore =>
+    store(stopColony((chapter - 1) * 2));
+
+  it("draws all five, with the shut ones naming their chapter", () => {
+    const root = bench(at(20));
+    const cells = Array.from(root.querySelectorAll("#trWorn > *"));
+    expect(cells.length, "the bench shrank instead of locking").toBe(5);
+    expect(root.querySelectorAll("#trWorn .trtile.shut").length).toBe(3);
+    expect(cells[2]?.textContent).toContain(`CH ${slotChapter(2)}`);
+    expect(cells[4]?.textContent).toContain(`CH ${slotChapter(4)}`);
+    // The two that ARE open are live controls.
+    expect((cells[0] as HTMLElement).tagName).toBe("BUTTON");
+    expect((cells[2] as HTMLElement).tagName, "a shut slot was a button").not.toBe("BUTTON");
+  });
+
+  /** "2 / 5" on a bench with two slots reads as three empty ones nobody can see. */
+  it("counts against the slots that are open, not against five", () => {
+    const said = bench(at(20)).textContent ?? "";
+    expect(said).toContain("Equipped  0 / 2");
+    expect(said).not.toContain("0 / 5");
+  });
+
+  it("opens them one at a time, ten chapters apart", () => {
+    for (const [chapter, open] of [[10, 1], [20, 2], [30, 3], [40, 4], [50, 5]] as const) {
+      const root = bench(at(chapter));
+      expect(root.querySelectorAll("#trWorn .trtile.shut").length,
+        `chapter ${chapter} did not have ${open} slots`).toBe(5 - open);
+    }
+    expect(SLOT_STEP).toBe(10);
+  });
+
+  /** The opener row is the same five squares, so it locks the same way. */
+  it("locks the same slots on the row that opens the bench", () => {
+    const row = traitOpener(at(20), "hill", () => {}, null);
+    expect(row.querySelectorAll(".tropen-slot").length).toBe(5);
+    expect(row.querySelectorAll(".tropen-slot.shut").length).toBe(3);
+    expect(row.textContent).toContain("No traits equipped");
+  });
+
+  it("counts against the open slots on that row too", () => {
+    const s = at(20);
+    s.equipTrait("hill", s.findTrait(UNIVERSAL[0]!.id, "rare")!.uid);
+    expect(traitOpener(s, "hill", () => {}, null).textContent).toContain("1 of 2 equipped");
+  });
+});
+

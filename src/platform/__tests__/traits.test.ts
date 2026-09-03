@@ -8,13 +8,16 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-  ATK_CAP, LUCK_CAP, TRAITS, TRAIT_SLOTS, TRAIT_TIER, TRAIT_TIERS, combine, effectText,
-  fitsScope, rollDrop, rollTier, tierOdds, totalsOf, traitDef, traitsFor,
+  ATK_CAP, LUCK_CAP, SLOT_STEP, TRAITS, TRAITS_CHAPTER, TRAIT_SLOTS, TRAIT_TIER,
+  TRAIT_TIERS, combine, effectText, fitsScope, rollDrop, rollTier, slotChapter, slotOpen,
+  slotsOpen, tierOdds, totalsOf, traitDef, traitsFor,
 } from "../traits";
 import type { TraitItem, TraitTier } from "../traits";
 import { ProfileStore, normalise } from "../profile";
 import { MemoryStore } from "../storage";
 import { SPECIES } from "../../engine";
+import { ROAD_CHAPTERS, ROAD_LAST, stopColony } from "../road";
+import { COLONY_START } from "../colony";
 
 const item = (def: string, tier: TraitTier, uid = def): TraitItem => ({ uid, def, tier });
 
@@ -199,8 +202,10 @@ describe("the bag and the benches", () => {
   const store = (): ProfileStore => new ProfileStore(new MemoryStore());
   const rich = (): ProfileStore => {
     const s = store();
-    // Chapter 10 is the gate; the colony is what decides the chapter.
-    s.update((p) => { p.colony = 2_000_000; });
+    // Chapter 10 opens traits and the FIRST slot; the fifth opens at chapter 50, which is
+    // the end of the road (ROAD_LAST). These tests are about the bench mechanics rather
+    // than the gate, so they run with all five open.
+    s.update((p) => { p.colony = ROAD_LAST; });
     return s;
   };
 
@@ -344,3 +349,90 @@ describe("reading a save back", () => {
     for (const id of Object.keys(SPECIES)) expect(p.wearing[id]?.length).toBe(TRAIT_SLOTS);
   });
 });
+
+/**
+ * SLOTS OPEN ONE EVERY TEN CHAPTERS, on both benches.
+ *
+ * Five handed over at once is a bench a player fills in an afternoon and never looks at
+ * again — the choice a trait is supposed to be only exists while there are more traits
+ * than room.
+ */
+describe("when each slot opens", () => {
+  const at = (chapter: number): ProfileStore => {
+    const s = new ProfileStore(new MemoryStore());
+    // The colony is what decides the chapter, so a chapter is set by picking a rung.
+    s.update((p) => { p.colony = chapter <= 1 ? COLONY_START : stopColony((chapter - 1) * 2); });
+    return s;
+  };
+
+  it("opens one every ten chapters, the first where traits open", () => {
+    expect(SLOT_STEP).toBe(10);
+    expect([0, 1, 2, 3, 4].map(slotChapter)).toEqual([10, 20, 30, 40, 50]);
+    // The first opens with the feature itself, and the last on the road's last chapter —
+    // so the bench is still growing on the final rung.
+    expect(slotChapter(0)).toBe(TRAITS_CHAPTER);
+    expect(slotChapter(TRAIT_SLOTS - 1)).toBe(ROAD_CHAPTERS);
+  });
+
+  it("counts none before traits open, and never more than five", () => {
+    expect(slotsOpen(1)).toBe(0);
+    expect(slotsOpen(9)).toBe(0);
+    expect(slotsOpen(10)).toBe(1);
+    expect(slotsOpen(19)).toBe(1);
+    expect(slotsOpen(20)).toBe(2);
+    expect(slotsOpen(50)).toBe(TRAIT_SLOTS);
+    // However far a colony runs past the last rung, there is no sixth slot.
+    expect(slotsOpen(500)).toBe(TRAIT_SLOTS);
+    expect(slotOpen(0, 10)).toBe(true);
+    expect(slotOpen(1, 10)).toBe(false);
+  });
+
+  /** THE SAME LADDER ON BOTH BENCHES — they are the same feature seen twice. */
+  it("refuses a slot the road has not opened, on either bench", () => {
+    const s = at(10);
+    expect(s.slotsOpen()).toBe(1);
+    const uids = TRAITS.filter((t) => t.species === null).slice(0, 2)
+      .map((t) => s.findTrait(t.id, "common")!.uid);
+
+    expect(s.equipTrait("hill", uids[0]!)).toBe(true);
+    expect(s.equipTrait("hill", uids[1]!), "a second slot was open at chapter 10").toBe(false);
+    expect(s.equipTrait("hill", uids[1]!, 1), "a locked slot took a trait").toBe(false);
+    expect(s.bench("hill").filter(Boolean).length).toBe(1);
+
+    const mine = s.findTrait(TRAITS.find((t) => t.species === "fire")!.id, "common")!;
+    expect(s.equipTrait("fire", mine.uid)).toBe(true);
+    const more = s.findTrait(TRAITS.filter((t) => t.species === "fire")[1]!.id, "common")!;
+    expect(s.equipTrait("fire", more.uid), "a colony bench had a different ladder").toBe(false);
+  });
+
+  it("names the chapter of the next slot, and nothing once all five are open", () => {
+    expect(at(10).nextSlotChapter()).toBe(20);
+    expect(at(20).nextSlotChapter()).toBe(30);
+    expect(at(50).nextSlotChapter()).toBeNull();
+  });
+
+  /**
+   * A COLONY SHRINKS ON A DEFEAT, so a player can drop back under a boundary. The trait
+   * stays where it is — clearing the slot would mean a loss silently costing a loadout —
+   * and simply stops counting until they climb again.
+   */
+  it("stops counting a trait in a slot that has closed, without throwing it away", () => {
+    const s = at(20);
+    expect(s.slotsOpen()).toBe(2);
+    const uids = TRAITS.filter((t) => t.species === null).slice(0, 2)
+      .map((t) => s.findTrait(t.id, "mythic")!.uid);
+    for (const uid of uids) expect(s.equipTrait("hill", uid)).toBe(true);
+    const both = s.benchTotals("hill");
+
+    s.update((p) => { p.colony = stopColony(9 * 2); });      // back to chapter 10
+    expect(s.slotsOpen()).toBe(1);
+    const one = s.benchTotals("hill");
+    expect(one.atkPct + one.defPct + one.luckPct,
+      "a closed slot still counted").toBeLessThan(both.atkPct + both.defPct + both.luckPct);
+    // ...and it is still THERE, so climbing back restores it.
+    expect(s.bench("hill").filter(Boolean).length).toBe(2);
+    s.update((p) => { p.colony = stopColony(19 * 2); });
+    expect(s.benchTotals("hill")).toEqual(both);
+  });
+});
+

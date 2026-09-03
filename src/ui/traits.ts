@@ -17,7 +17,7 @@
 import { SPECIES } from "../engine";
 import {
   ATK_CAP, DEF_CAP, LUCK_CAP, SPECIES_ORDER, TRAITS_CHAPTER, TRAIT_SLOTS, TRAIT_TIER,
-  effectFigure, effectText, fitsScope, itemDef, markOf, scopeName,
+  effectFigure, effectText, fitsScope, itemDef, markOf, scopeName, slotChapter,
 } from "../platform";
 import type { ProfileStore, TraitItem, TraitScope } from "../platform";
 import { el, redraw, screenEl, screenHeader, toast } from "./chrome";
@@ -57,8 +57,11 @@ export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): H
     wrap.id = "trBody";
 
     const bench = store.bench(scope);
-    wrap.append(el("div", "secthead", `Equipped  ${bench.filter(Boolean).length} / ${TRAIT_SLOTS}`));
-    wrap.appendChild(slotRow(bench));
+    // The heading counts against what is OPEN, not against five. "2 / 5" on a bench with
+    // two slots reads as three empty ones the player cannot see.
+    const open = store.slotsOpen();
+    wrap.append(el("div", "secthead", `Equipped  ${bench.filter(Boolean).length} / ${open}`));
+    wrap.appendChild(slotRow(bench, open));
     wrap.appendChild(totalsBox());
 
     const spare = store.spare(scope);
@@ -79,10 +82,23 @@ export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): H
 
   /* --------------------------------------------------------------- THE SLOTS */
 
-  const slotRow = (bench: (TraitItem | null)[]): HTMLElement => {
+  const slotRow = (bench: (TraitItem | null)[], open: number): HTMLElement => {
     const row = el("div", "trgrid");
     row.id = "trWorn";
     bench.forEach((item, i) => {
+      // A SLOT THE ROAD HAS NOT OPENED IS DRAWN, and it names its chapter. Five squares
+      // with two live is the shape of the bench a player is working toward; two squares
+      // is a bench that looks finished. A number is something to play toward, where a
+      // padlock only says you cannot — the same rule the granary's levels follow.
+      if (i >= open) {
+        const shut = el("span", "trtile shut");
+        shut.dataset.slot = String(i);
+        shut.append(icon("lock", 15), el("span", "trtile-ch", `CH ${slotChapter(i)}`));
+        shut.title = `Opens at chapter ${slotChapter(i)}`;
+        shut.setAttribute("aria-label", shut.title);
+        row.appendChild(shut);
+        return;
+      }
       if (item) {
         const cell = tile(item, () => { store.unequipTrait(scope, i); armed = null; changed(); });
         cell.classList.add("worn");
@@ -311,12 +327,18 @@ function readOnlyTile(item: TraitItem, onTap: () => void): HTMLButtonElement {
  * inside a control is a tap that lands on neither. The name still rides on `title` and
  * `aria-label`, exactly as it does on the full-size tile.
  */
-function miniBench(worn: readonly (TraitItem | null)[]): HTMLElement {
+function miniBench(worn: readonly (TraitItem | null)[], open: number): HTMLElement {
   const row = el("div", "tropen-slots");
-  for (const item of worn) {
+  worn.forEach((item, i) => {
+    // Slots the road has not opened are drawn too, so the row is the same five squares
+    // the bench is — just plainly not all live yet.
+    if (i >= open) {
+      row.appendChild(el("span", "tropen-slot shut"));
+      return;
+    }
     if (!item) {
       row.appendChild(el("span", "tropen-slot empty"));
-      continue;
+      return;
     }
     const def = itemDef(item);
     const tier = TRAIT_TIER[item.tier];
@@ -329,7 +351,7 @@ function miniBench(worn: readonly (TraitItem | null)[]): HTMLElement {
     cell.title = label;
     cell.setAttribute("aria-label", label);
     row.appendChild(cell);
-  }
+  });
   return row;
 }
 
@@ -366,17 +388,18 @@ export function traitOpener(
 
   const worn = locked ? [] : store.bench(scope);
   const on = worn.filter(Boolean).length;
+  const open = locked ? 0 : store.slotsOpen();
 
   const mid = el("div", "tropen-mid");
   const top = el("div", "tropen-top");
   // The row sits under a heading that already says "Traits", so repeating the word here
   // would be the only text on it and would say nothing. It states the STATE instead.
   top.append(el("span", "tropen-t",
-    locked ? "Traits" : on ? `${on} of ${TRAIT_SLOTS} equipped` : "No traits equipped"));
+    locked ? "Traits" : on ? `${on} of ${open} equipped` : "No traits equipped"));
   if (locked) top.append(el("span", "tropen-c", locked));
   mid.appendChild(top);
 
-  if (!locked) mid.appendChild(miniBench(worn));
+  if (!locked) mid.appendChild(miniBench(worn, open));
 
   const slot = el("span", "tropen-i");
   slot.appendChild(icon(locked ? "lock" : "star", 18));

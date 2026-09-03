@@ -89,6 +89,44 @@ export const TRAIT_TIER: Record<TraitTier, TraitTierDef> = Object.fromEntries(
 export const TRAIT_SLOTS = 5;
 
 /**
+ * SLOTS OPEN ONE EVERY TEN CHAPTERS, on both benches.
+ *
+ * Five slots handed over at once is a bench a player fills in an afternoon and never
+ * looks at again — the choice a trait is supposed to be only exists while there are more
+ * traits than room. Opened one at a time it is a decision every ten chapters instead: what
+ * comes off to make room, and what the fifth one is finally for.
+ *
+ * The first opens where traits themselves do (chapter 10) and the last at chapter 50, the
+ * end of the road — so the ladder lines up with the road exactly, and the bench is still
+ * growing on the last chapter. `SLOT_CHAPTER` is derived from the step rather than typed
+ * out: retuning the pace is one number, and two lists cannot disagree.
+ *
+ * IT IS THE SAME LADDER ON BOTH BENCHES. The anthill's five and a colony's five open at
+ * the same chapters, because they are the same feature seen twice — a player who has four
+ * slots has four everywhere, and a rule that differed per bench would be two rules to
+ * learn for one thing.
+ */
+export const SLOT_STEP = 10;
+
+/** The chapter slot `i` (0-based) opens at. */
+export const slotChapter = (i: number): number => TRAITS_CHAPTER + i * SLOT_STEP;
+
+/**
+ * How many slots this chapter has opened, 0 through `TRAIT_SLOTS`.
+ *
+ * Clamped at both ends: below the chapter traits open at there are none, and past the end
+ * of the road there are five — never six, however far a colony runs past the last rung.
+ */
+export function slotsOpen(chapter: number): number {
+  let n = 0;
+  while (n < TRAIT_SLOTS && chapter >= slotChapter(n)) n++;
+  return n;
+}
+
+/** Whether one slot is open. The only question the screens actually ask. */
+export const slotOpen = (i: number, chapter: number): boolean => i < slotsOpen(chapter);
+
+/**
  * Ceilings on what a whole collection may add.
  *
  * Stated on the screen beside the total, because a cap a player only discovers by

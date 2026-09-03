@@ -1146,6 +1146,28 @@ rather than a purchase.
   progression layer already has: research is per-colony, chambers are account-wide. A
   species trait fits exactly one colony's bench and a universal one only the anthill, so
   "worn somewhere else" is impossible by construction.
+- **THE SLOTS OPEN ONE EVERY TEN CHAPTERS** (`SLOT_STEP`, `slotsOpen`), on BOTH benches.
+  Five handed over at once is a bench a player fills in an afternoon and never looks at
+  again — the choice a trait is supposed to be only exists while there are more traits than
+  room. Opened one at a time it is a decision every ten chapters instead: what comes off to
+  make room, and what the fifth one is finally for. The first opens where traits do
+  (chapter 10) and the last at 50, the end of the road, so the bench is still growing on
+  the final rung. `slotChapter` is derived from the step, so retuning the pace is one
+  number and two lists cannot disagree.
+  - **The same ladder on both benches.** The anthill's five and a colony's five open at the
+    same chapters, because they are the same feature seen twice — a rule that differed per
+    bench would be two rules to learn for one thing.
+  - **A locked slot is DRAWN and NAMES ITS CHAPTER.** Five squares with two live is the
+    shape of the bench a player is working toward; two squares is a bench that looks
+    finished. And a number is something to play toward where a padlock only says you
+    cannot — the same rule the granary's levels follow. The count reads against what is
+    OPEN too: "0 / 5" on a bench with one slot is four empty ones nobody can see.
+  - **A trait in a slot that has CLOSED is left where it is and stops counting.** A colony
+    SHRINKS on a defeat, so a player can drop back under a boundary; clearing the slot
+    would mean a loss silently costing a loadout they earned. `wornItems` counts the open
+    slots only, and the trait comes back the moment they climb again.
+  - **It gates the SLOT, never the hatch.** Every tier is rollable from the moment the
+    hatch opens — what a player is short of is room, not rarity.
 - **THE COOLDOWN CHANCES DO NOT SUM, and that is the one piece of arithmetic here worth
   arguing about.** Two 22% chances are not 44%, they are two draws — 1 − 0.78², or 39%.
   Summing them would let five mythics GUARANTEE the boon, and a certainty is not what the

@@ -69,6 +69,7 @@ export {
   ATK_CAP, DEF_CAP, HATCH_COST, LUCK_CAP, TRAITS, TRAITS_CHAPTER, TRAIT_SLOTS, TRAIT_TIER,
   TRAIT_TIERS, WIN_LARVA, combine, effectFigure, effectText, fitsScope, itemDef, markOf,
   rollDrop, rollTier, rollTrait, scopeName, tierOdds, totalsOf, traitDef, traitsFor,
+  SLOT_STEP, slotChapter, slotOpen, slotsOpen,
 } from "./traits";
 export { SKIN_TIERS, lockedLooks, rollSkin, skinProgress, skinTier } from "./skins";
 export type {

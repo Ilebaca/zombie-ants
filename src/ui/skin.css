@@ -4708,6 +4708,22 @@ button:not(.playbtn):active,
   border: 1px dashed var(--line);
   color: var(--muted);
 }
+/* A slot the road has not opened. DRAWN, so the bench keeps the shape of the
+   five it is working toward, and it names its chapter — a number is something
+   to play toward where a padlock only says you cannot. */
+.trtile.shut {
+  gap: 2px;
+  background: rgba(0, 0, 0, .3);
+  border: 1px dashed color-mix(in srgb, var(--line) 70%, transparent);
+  color: var(--muted);
+  cursor: default;
+}
+.trtile-ch {
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: .3px;
+  color: var(--muted);
+}
 .trtile.armed {
   border-style: solid;
   border-color: var(--grass);
@@ -4881,6 +4897,13 @@ button:not(.playbtn):active,
 .tropen-slot.empty {
   background: rgba(0, 0, 0, .24);
   border: 1px dashed var(--line);
+}
+/* Not opened yet: the same square, plainly not live. The chapter is on the bench
+   itself — five tiny squares on a row have no room for a number. */
+.tropen-slot.shut {
+  background: rgba(0, 0, 0, .3);
+  border: 1px dashed color-mix(in srgb, var(--line) 55%, transparent);
+  opacity: .55;
 }
 .tropen-slot-i { display: grid; place-items: center; color: var(--tier); }
 .tropen-slot-v {

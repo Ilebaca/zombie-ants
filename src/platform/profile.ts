@@ -34,7 +34,7 @@ import { HISTORY_MAX, addToHistory } from "./history";
 import type { MatchLog } from "./history";
 import {
   HATCH_COST, TRAITS_CHAPTER, TRAIT_SLOTS, TRAIT_TIERS, combine, fitsScope, rollDrop,
-  totalsOf, traitDef,
+  slotChapter, slotsOpen, totalsOf, traitDef,
 } from "./traits";
 import type { TraitItem, TraitScope, TraitTier, TraitTotals } from "./traits";
 import { rollSkin, skinTier } from "./skins";
@@ -816,6 +816,23 @@ export class ProfileStore {
    */
   traitsOpen(): boolean { return chapterOf(this.profile.colony) >= TRAITS_CHAPTER; }
 
+  /**
+   * How many of the five slots the road has opened, on EITHER bench — they are the same
+   * ladder (platform/traits.ts).
+   *
+   * One method rather than `slotsOpen(chapterOf(colony))` at each of the five places that
+   * need it: the bench screen, the opener row, the profile's count, the equip check and
+   * the totals. A call site that used the whole five would let a trait count from a slot
+   * the player has not earned.
+   */
+  slotsOpen(): number { return slotsOpen(chapterOf(this.profile.colony)); }
+
+  /** The chapter the next locked slot opens at, or null when all five are open. */
+  nextSlotChapter(): number | null {
+    const open = this.slotsOpen();
+    return open >= TRAIT_SLOTS ? null : slotChapter(open);
+  }
+
   get bag(): readonly TraitItem[] { return this.profile.bag; }
 
   /** The five slots of one bench, as items and gaps. */
@@ -852,8 +869,11 @@ export class ProfileStore {
     if (!item || !fitsScope(item, scope)) return false;
     const slots = [...(this.profile.wearing[scope] ?? [])];
     if (slots.includes(uid)) return false;
-    const at = slot ?? slots.findIndex((s) => !s);
-    if (at < 0 || at >= TRAIT_SLOTS) return false;
+    // A SLOT THE ROAD HAS NOT OPENED IS NOT A SLOT. Refused rather than clamped, so a
+    // tap on a locked one does nothing at all instead of quietly filling a different one
+    // — the screen offers only open slots, and this is the answer if anything else asks.
+    const at = slot ?? slots.findIndex((s, i) => !s && i < this.slotsOpen());
+    if (at < 0 || at >= this.slotsOpen()) return false;
     this.update((p) => {
       const bench = [...(p.wearing[scope] ?? [])];
       while (bench.length < TRAIT_SLOTS) bench.push(null);
@@ -1535,11 +1555,20 @@ export function wornTotals(profile: Profile, scope: TraitScope): TraitTotals {
   return totalsOf(wornItems(profile, scope));
 }
 
-/** The items actually in a bench's slots, in slot order, gaps dropped. */
+/**
+ * The items actually in a bench's OPEN slots, in slot order, gaps dropped.
+ *
+ * A trait in a slot the road has not opened does not count — and it is left where it is
+ * rather than thrown away, because a colony SHRINKS on a defeat and can drop back under a
+ * chapter boundary. Clearing the slot would mean a loss silently costing a loadout the
+ * player earned; leaving it means the trait comes back the moment they climb again.
+ */
 export function wornItems(profile: Profile, scope: TraitScope): TraitItem[] {
   const slots = profile.wearing[scope] ?? [];
+  const open = slotsOpen(chapterOf(profile.colony));
   const out: TraitItem[] = [];
-  for (const uid of slots) {
+  for (let i = 0; i < Math.min(slots.length, open); i++) {
+    const uid = slots[i];
     const item = uid ? profile.bag.find((b) => b.uid === uid) : null;
     if (item) out.push(item);
   }
