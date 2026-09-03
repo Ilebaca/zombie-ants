@@ -15,11 +15,11 @@
  * arrives first, which is the whole reason the tiers have colours at all.
  */
 import {
-  HATCH_COST, SKIN_CHANCE, TRAITS_CHAPTER, TRAIT_TIER, TRAIT_TIERS, effectText, itemDef,
+  HATCH_COST, SKIN_TIERS, TRAITS_CHAPTER, TRAIT_TIER, TRAIT_TIERS, effectText, itemDef,
   markOf, tierOdds,
 } from "../platform";
 import type { HatchPrize, ProfileStore, TraitItem } from "../platform";
-import { SPECIES } from "../engine";
+import { SPECIES, TIERS } from "../engine";
 import type { Look } from "../engine";
 import { antPortrait, el, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
@@ -180,16 +180,21 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
    * at the colony it belongs to, which is the only place it can be worn from.
    */
   const skinPrize = (look: Look): HTMLElement => {
+    // A SKIN WEARS ITS OWN RARITY, in the game's one colour for it. It comes out of an
+    // Exceptional or a Mythic roll and nothing below, so the card says which — the colour
+    // is the answer here exactly as it is for a trait, and a skin that arrived in some
+    // colour of its own would be the one prize outside the ladder.
+    const tier = look.tier ? TIERS[look.tier] : null;
     const box = el("div", "hatchprize skin");
     box.id = "hatchPrize";
-    box.style.setProperty("--tier", "#ffd257");
+    box.style.setProperty("--tier", tier?.colour ?? "#ffd257");
 
     const disc = el("div", "hp-disc hp-face");
     disc.appendChild(antPortrait(look.species, 108, "hp-port", look));
 
     box.append(
       disc,
-      el("div", "hp-tier", "Colony skin"),
+      el("div", "hp-tier", `${tier?.name ?? ""} skin`.trim()),
       el("div", "hp-name", look.name),
       el("div", "hp-eff", SPECIES[look.species].name),
     );
@@ -232,13 +237,12 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
       );
       box.appendChild(row);
     }
-    // A skin is not a sixth tier — it has no stat on it and does not sit on the curve
-    // (platform/skins.ts) — so it is stated on its own line rather than squeezed into the
-    // row. Printed all the same: an outcome a player can get and was never told about is
-    // the one thing the odds panel exists to prevent.
+    // A skin has no chance of its own — it IS the top of this row (platform/skins.ts) —
+    // so the note names the tiers rather than a second number. Printed all the same: an
+    // outcome a player can get and was never told about is what this panel prevents.
+    const named = SKIN_TIERS.map((t) => TIERS[t].name).join(" and ");
     box.appendChild(el("div", "ho-note",
-      `A colony skin turns up ${Math.round(SKIN_CHANCE * 100)}% of the time, `
-      + "while you still have one to find."));
+      `${named} hatches pay a colony skin, while you still have one to find.`));
     return box;
   };
 

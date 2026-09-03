@@ -407,12 +407,22 @@ describe("antarium collection", () => {
   const cardFor = (root: HTMLElement, name: string): HTMLElement | undefined =>
     Array.from(root.querySelectorAll<HTMLElement>(".ccard")).find((c) => c.textContent?.includes(name));
 
-  it("shows every species, grouped into the four rarity tiers", () => {
+  /**
+   * ONE RARITY LADDER. The colonies used to have their own — "Founding castes / Rare
+   * colonies / Elite castes" in their own colours — so the same rung had two names and the
+   * top one had two colours. They read off the game's ladder now, and Common is held open
+   * because there is no grey colony yet and there will be.
+   */
+  it("shows every species, grouped by the game's own rarity tiers", () => {
     const root = openAntarium(store());
     expect(root.querySelectorAll(".ccard").length).toBe(Object.keys(SPECIES).length);
     expect(root.querySelectorAll(".tierhead").length).toBe(4);
-    expect(root.textContent).toContain("Founding castes");
-    expect(root.textContent).toContain("Mythic");
+    const said = root.textContent ?? "";
+    for (const name of ["Uncommon", "Rare", "Exceptional", "Mythic"]) {
+      expect(said, `the Antarium does not use the ladder's "${name}"`).toContain(name);
+    }
+    expect(said, "a colony took the rung being held open").not.toContain("Common");
+    expect(said, "the old species-only ladder is still here").not.toContain("Founding castes");
   });
 
   it("counts owned colonies per tier", () => {

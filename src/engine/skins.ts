@@ -39,6 +39,7 @@
  * only way this stays true through a retune of any species' own colours.
  */
 import type { SpeciesId } from "./types";
+import type { TierId } from "./tiers";
 
 /** The overlay drawn on top of the ant's body. `null` is the bare species. */
 export type SkinStyle =
@@ -61,6 +62,17 @@ export interface Look {
    * portrait. Absent means the species' own colours, which is what a basic look is.
    */
   pal?: readonly [string, string, string];
+  /**
+   * HOW RARE IT IS, on the game's one ladder (`tiers.ts`), and only ever the top two
+   * rungs: a skin is EXCEPTIONAL or MYTHIC and nothing below. Absent on a basic look,
+   * which is not something found.
+   *
+   * The colourway is the purple one and the drawn overlay is the red one, because the
+   * overlay is bespoke art per colony and the colourway is three hex values — and it
+   * paces well that way round: the change a player sees across the whole board arrives
+   * first, and the special one is what they carry on hatching for.
+   */
+  tier?: TierId;
 }
 
 /**
@@ -70,67 +82,79 @@ export interface Look {
  * a fight — it is so an opponent reads as the species it is, and so the one colony on
  * screen wearing something found is the player's.
  *
- * Each colony's second look is DRAWN (an overlay and usually its own nest) and its third
- * is a COLOURWAY. Both are unlockable; neither is better than the other, and a player who
- * finds only one still has something nobody else on their screen is wearing.
+ * THE TWO FOUND LOOKS ARE THE TOP TWO RUNGS OF THE LADDER AND NOTHING BELOW. A skin is
+ * EXCEPTIONAL or MYTHIC — hard to get, and worth having on the board for it. In rarity
+ * order, so the picker reads left to right: the COLOURWAY is the purple one and the drawn
+ * OVERLAY is the red one. The overlay is bespoke art per colony and the colourway is three
+ * hex values, and it paces well that way round — the change a player sees across the whole
+ * board arrives first, and the special one is what they carry on hatching for.
  */
 export const LOOKS: Record<SpeciesId, readonly Look[]> = {
   leafcutter: [
     { id: "lc_b", name: "Basic", species: "leafcutter", style: null, hill: "mound" },
-    { id: "lc_leaf", name: "Leaf Bearers", species: "leafcutter", style: "leaves", hill: "tree" },
     { id: "lc_night", name: "Nightshade", species: "leafcutter", style: null, hill: "tree",
-      pal: ["#5b4bc4", "#8a7ae8", "#2a2170"] },
+      pal: ["#5b4bc4", "#8a7ae8", "#2a2170"], tier: "exceptional" },
+    { id: "lc_leaf", name: "Leaf Bearers", species: "leafcutter", style: "leaves", hill: "tree",
+      tier: "mythic" },
   ],
   fire: [
     { id: "fi_b", name: "Basic", species: "fire", style: null, hill: "mound" },
-    { id: "fi_lava", name: "Molten", species: "fire", style: "lava", hill: "volcano" },
     // Ice, on the Fire Ant, on purpose. The warm half of the wheel is already four
     // colonies deep — and a GREY colony is worse than a crowded one: the board greys out
     // tiles it has cut off, so a grey colony reads as permanently disconnected.
     { id: "fi_frost", name: "Frostbite", species: "fire", style: null, hill: "volcano",
-      pal: ["#1f9fc4", "#3fd0f0", "#0d5570"] },
+      pal: ["#1f9fc4", "#3fd0f0", "#0d5570"], tier: "exceptional" },
+    { id: "fi_lava", name: "Molten", species: "fire", style: "lava", hill: "volcano",
+      tier: "mythic" },
   ],
   ghost: [
     { id: "gh_b", name: "Basic", species: "ghost", style: null, hill: "mound" },
-    { id: "gh_sheet", name: "Haunting", species: "ghost", style: "ghost", hill: "mound" },
     { id: "gh_glass", name: "Glasswing", species: "ghost", style: null, hill: "mound",
-      pal: ["#6fd3cb", "#c2fbf4", "#357670"] },
+      pal: ["#6fd3cb", "#c2fbf4", "#357670"], tier: "exceptional" },
+    { id: "gh_sheet", name: "Haunting", species: "ghost", style: "ghost", hill: "mound",
+      tier: "mythic" },
   ],
   pharaoh: [
     { id: "ph_b", name: "Basic", species: "pharaoh", style: null, hill: "mound" },
-    { id: "ph_glyph", name: "Hieroglyph", species: "pharaoh", style: "glyph", hill: "pyramid" },
     { id: "ph_lapis", name: "Lapis", species: "pharaoh", style: null, hill: "pyramid",
-      pal: ["#4a6ed6", "#7fa6ff", "#20306e"] },
+      pal: ["#4a6ed6", "#7fa6ff", "#20306e"], tier: "exceptional" },
+    { id: "ph_glyph", name: "Hieroglyph", species: "pharaoh", style: "glyph", hill: "pyramid",
+      tier: "mythic" },
   ],
   army: [
     { id: "ar_b", name: "Basic", species: "army", style: null, hill: "mound" },
-    { id: "ar_camo", name: "Camouflage", species: "army", style: "camo", hill: "bunker" },
     { id: "ar_night", name: "Night Raid", species: "army", style: null, hill: "bunker",
-      pal: ["#3a3f8f", "#5b62e0", "#171a44"] },
+      pal: ["#3a3f8f", "#5b62e0", "#171a44"], tier: "exceptional" },
+    { id: "ar_camo", name: "Camouflage", species: "army", style: "camo", hill: "bunker",
+      tier: "mythic" },
   ],
   weaver: [
     { id: "we_b", name: "Basic", species: "weaver", style: null, hill: "mound" },
-    { id: "we_silk", name: "Silk Weavers", species: "weaver", style: "silk", hill: "tree" },
     { id: "we_verdigris", name: "Verdigris", species: "weaver", style: null, hill: "tree",
-      pal: ["#2f9a92", "#57d6cb", "#14524d"] },
+      pal: ["#2f9a92", "#57d6cb", "#14524d"], tier: "exceptional" },
+    { id: "we_silk", name: "Silk Weavers", species: "weaver", style: "silk", hill: "tree",
+      tier: "mythic" },
   ],
   carpenter: [
     { id: "ca_b", name: "Basic", species: "carpenter", style: null, hill: "mound" },
-    { id: "ca_bark", name: "Heartwood", species: "carpenter", style: "bark", hill: "tree" },
     { id: "ca_iron", name: "Ironclad", species: "carpenter", style: null, hill: "bunker",
-      pal: ["#5d80a0", "#9fc9e4", "#283c4c"] },
+      pal: ["#5d80a0", "#9fc9e4", "#283c4c"], tier: "exceptional" },
+    { id: "ca_bark", name: "Heartwood", species: "carpenter", style: "bark", hill: "tree",
+      tier: "mythic" },
   ],
   bullet: [
     { id: "bu_b", name: "Basic", species: "bullet", style: null, hill: "mound" },
-    { id: "bu_band", name: "Warning", species: "bullet", style: "banded", hill: "mound" },
     { id: "bu_jade", name: "Jade Sting", species: "bullet", style: null, hill: "horn",
-      pal: ["#25977a", "#45dcac", "#0f4a3b"] },
+      pal: ["#25977a", "#45dcac", "#0f4a3b"], tier: "exceptional" },
+    { id: "bu_band", name: "Warning", species: "bullet", style: "banded", hill: "mound",
+      tier: "mythic" },
   ],
   demon: [
     { id: "dm_b", name: "Basic", species: "demon", style: null, hill: "mound" },
-    { id: "dm_dev", name: "Infernal", species: "demon", style: "devil", hill: "horn" },
     { id: "dm_void", name: "Void", species: "demon", style: null, hill: "horn",
-      pal: ["#6b34a4", "#a96cf0", "#2e1152"] },
+      pal: ["#6b34a4", "#a96cf0", "#2e1152"], tier: "exceptional" },
+    { id: "dm_dev", name: "Infernal", species: "demon", style: "devil", hill: "horn",
+      tier: "mythic" },
   ],
 };
 

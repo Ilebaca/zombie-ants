@@ -7,11 +7,15 @@
  * wear one of its own.
  */
 import { describe, expect, it } from "vitest";
-import { LOOKS, UNLOCKABLE_LOOKS, basicLook, lookById, looksFor } from "../../engine";
+import {
+  LOOKS, TIERS, TIER_LADDER, UNLOCKABLE_LOOKS, basicLook, lookById, looksFor,
+} from "../../engine";
+import { TIERS as SPECIES_TIERS, tierOf } from "../catalogue";
+import { TRAIT_TIER } from "../traits";
 import { SPECIES } from "../../engine";
 import type { SpeciesId } from "../../engine";
 import { MemoryStore, ProfileStore, defaultProfile, normalise } from "../index";
-import { SKIN_CHANCE, lockedLooks, rollSkin, skinProgress } from "../skins";
+import { SKIN_TIERS, lockedLooks, rollSkin, skinProgress, skinTier } from "../skins";
 
 const ALL = Object.keys(SPECIES) as SpeciesId[];
 
@@ -93,14 +97,72 @@ describe("the catalogue", () => {
    */
   it("makes every found look different from the one before it", () => {
     for (const id of ALL) {
-      const [, drawn, colour] = looksFor(id);
-      // The second is the DRAWN one: an overlay, and usually its own nest.
-      expect(drawn?.style, `${id}'s first skin draws nothing`).not.toBeNull();
-      // The third is the COLOURWAY, which is what carries onto every tile it holds.
-      expect(colour?.pal, `${id}'s second skin recolours nothing`).toBeTruthy();
+      const [, colour, drawn] = looksFor(id);
+      // The second is the COLOURWAY, which is what carries onto every tile it holds.
+      expect(colour?.pal, `${id}'s first skin recolours nothing`).toBeTruthy();
       expect(colour?.pal).toHaveLength(3);
+      // The third is the DRAWN one: an overlay, and usually its own nest.
+      expect(drawn?.style, `${id}'s second skin draws nothing`).not.toBeNull();
       expect(drawn?.name).not.toBe(colour?.name);
     }
+  });
+
+  /**
+   * MILAN'S ASK, HELD AS A RULE: a skin is only ever purple or red. It is not a sixth rung
+   * and it is not a chance beside the ladder — it is the top of the ladder, which is what
+   * makes one hard to get.
+   */
+  it("puts every skin on the top two rungs, in rarity order", () => {
+    for (const id of ALL) {
+      const [basic, purple, red] = looksFor(id);
+      expect(basic?.tier, "a basic look carries a rarity").toBeUndefined();
+      expect(purple?.tier).toBe("exceptional");
+      expect(red?.tier).toBe("mythic");
+      // ...and the picker reads left to right, commonest first.
+      expect(TIERS[purple!.tier!].rank).toBeLessThan(TIERS[red!.tier!].rank);
+    }
+    expect([...SKIN_TIERS].sort()).toEqual(["exceptional", "mythic"]);
+    expect(skinTier("rare")).toBe(false);
+    expect(skinTier("mythic")).toBe(true);
+  });
+});
+
+/**
+ * ONE RARITY LADDER, FOR EVERYTHING THAT HAS ONE.
+ *
+ * There were two and they disagreed: traits ran common/uncommon/rare/exceptional/mythic in
+ * grey, green, blue, purple and red, while colonies ran "Founding castes / Rare colonies /
+ * Elite castes / Mythic" in green, blue, purple and GOLD. Same rung, two names on two
+ * screens — and a player who learned that red is the best thing in the hatch met a gold
+ * Mythic colony and had to learn it twice.
+ */
+describe("the rarity ladder", () => {
+  it("gives traits and colonies the same names and the same colours", () => {
+    for (const tier of SPECIES_TIERS) {
+      const rung = TIERS[tier.k];
+      expect(rung, `a colony tier is off the ladder: ${tier.k}`).toBeTruthy();
+      expect(tier.name, "a colony tier renamed a rung").toBe(rung.name);
+      expect(tier.col, "a colony tier recoloured a rung").toBe(rung.colour);
+      expect(TRAIT_TIER[tier.k].name).toBe(rung.name);
+      expect(TRAIT_TIER[tier.k].colour).toBe(rung.colour);
+    }
+  });
+
+  /** Every colony sits on the ladder, in price order, and none of them is grey. */
+  it("puts every colony on a rung, and holds Common open", () => {
+    const used = new Set(ALL.map((id) => tierOf(id).k));
+    expect(used.has("common"), "a colony took the rung being held open").toBe(false);
+    expect(used).toContain("uncommon");
+    expect(used).toContain("mythic");
+    for (const id of ALL) expect(TIERS[tierOf(id).k]).toBeTruthy();
+  });
+
+  it("keeps the ladder in one order everywhere", () => {
+    expect(TIER_LADDER.map((t) => t.id))
+      .toEqual(["common", "uncommon", "rare", "exceptional", "mythic"]);
+    TIER_LADDER.forEach((t, i) => expect(t.rank).toBe(i));
+    expect(SPECIES_TIERS.map((t) => TIERS[t.k].rank))
+      .toEqual([...SPECIES_TIERS.map((t) => TIERS[t.k].rank)].sort((a, b) => a - b));
   });
 });
 
@@ -117,6 +179,7 @@ describe("finding one", () => {
       expect(mine, `offered a ${look.species} skin`).toContain(look.species);
     }
     expect(lockedLooks(mine, []).length).toBe(4);
+    expect(lockedLooks(mine, [], "mythic").length).toBe(2);
   });
 
   it("never offers one that has already been found", () => {
@@ -132,8 +195,19 @@ describe("finding one", () => {
    */
   it("answers null once there is nothing left to find", () => {
     const all = looksFor("fire").slice(1).map((l) => l.id);
-    expect(rollSkin(feed([0.5]), ["fire"], all)).toBeNull();
-    expect(rollSkin(feed([0.5]), [], [])).toBeNull();
+    expect(rollSkin(feed([0.5]), ["fire"], all, "mythic")).toBeNull();
+    expect(rollSkin(feed([0.5]), [], [], "mythic")).toBeNull();
+  });
+
+  /** A Mythic roll paying a purple skin would be the card lying about what just happened. */
+  it("never reaches across tiers", () => {
+    for (let i = 0; i < 20; i++) {
+      const got = rollSkin(feed([i / 20]), ALL, [], "mythic");
+      expect(got?.tier).toBe("mythic");
+    }
+    // With every red one found, a red roll gives nothing rather than a purple one.
+    const reds = UNLOCKABLE_LOOKS.filter((l) => l.tier === "mythic").map((l) => l.id);
+    expect(rollSkin(feed([0.5]), ALL, reds, "mythic")).toBeNull();
   });
 
   it("counts a colony's own collection", () => {
@@ -204,13 +278,24 @@ describe("owning and wearing one", () => {
 });
 
 describe("hatching one", () => {
-  /** A skin is a different KIND of prize, so the union says which arrived. */
-  it("pays a skin when the roll lands on one", () => {
+  /**
+   * A roll lands on a tier, and an Exceptional or Mythic tier pays a SKIN. The first draw
+   * picks the trait, the second the tier, the third which skin.
+   */
+  const rolls = (tier: number, pick = 0): (() => number) => {
+    const values = [0.1, tier, pick];
+    let i = 0;
+    return () => values[i++] ?? 0.5;
+  };
+  /** The weighted tier roll runs over 0-1; the top 5% is exceptional and mythic. */
+  const MYTHIC = 0.995, COMMON = 0.1;
+
+  it("pays a skin when the tier roll lands on one a skin can be", () => {
     const s = store(1);
-    // First draw decides skin-or-trait; the second picks which skin.
-    const prize = s.hatch(feedOf([0, 0]));
+    const prize = s.hatch(rolls(MYTHIC));
     expect(prize?.kind).toBe("skin");
     if (prize?.kind === "skin") {
+      expect(prize.look.tier, "a mythic roll paid another tier").toBe("mythic");
       expect(s.hasSkin(prize.look.id)).toBe(true);
       expect(s.get().unlocked).toContain(prize.look.species);
     }
@@ -218,40 +303,57 @@ describe("hatching one", () => {
     expect(s.bag.length, "a skin went into the bag").toBe(0);
   });
 
-  it("pays a trait when it does not", () => {
+  it("pays an Exceptional skin from an Exceptional roll", () => {
     const s = store(1);
-    const prize = s.hatch(feedOf([0.99, 0.3, 0.3]));
+    const prize = s.hatch(rolls(0.97));
+    expect(prize?.kind).toBe("skin");
+    if (prize?.kind === "skin") expect(prize.look.tier).toBe("exceptional");
+  });
+
+  it("pays a trait at every tier below them", () => {
+    const s = store(1);
+    const prize = s.hatch(rolls(COMMON));
     expect(prize?.kind).toBe("trait");
-    expect(s.skins).toEqual([]);
+    expect(s.skins, "a common roll paid a skin").toEqual([]);
     expect(s.bag.length).toBe(1);
   });
 
   /**
-   * THE CHASE MUST NOT DEAD-END. With every skin found, a roll that wanted one falls
-   * through to a trait rather than spending the larva on nothing.
+   * THE CHASE MUST NOT DEAD-END, AND MUST NOT DEMOTE. With every skin of that tier found,
+   * the roll falls back to a trait of the SAME tier — never nothing, and never a lesser one.
    */
-  it("falls through to a trait once every skin is found", () => {
+  it("falls back to a trait of the same tier once that tier's skins are found", () => {
     const s = store(1);
-    const owned = s.get().unlocked;
-    for (const look of lockedLooks(owned, [])) s.findSkin(look.id);
+    for (const look of lockedLooks(s.get().unlocked, [], "mythic")) s.findSkin(look.id);
     const before = s.skins.length;
-    const prize = s.hatch(feedOf([0, 0.3, 0.3]));
+    const prize = s.hatch(rolls(MYTHIC));
     expect(prize?.kind, "a full collection ate the larva").toBe("trait");
+    if (prize?.kind === "trait") expect(prize.item.tier).toBe("mythic");
     expect(s.skins.length).toBe(before);
     expect(s.get().larva).toBe(0);
   });
 
   it("takes nothing when there is no larva", () => {
     const s = store(0);
-    expect(s.hatch(feedOf([0, 0]))).toBeNull();
+    expect(s.hatch(rolls(MYTHIC))).toBeNull();
     expect(s.skins).toEqual([]);
     expect(s.bag.length).toBe(0);
   });
 
-  /** Printed on the screen, so it has to be a real number a player can act on. */
-  it("keeps the skin chance small enough to be an event", () => {
-    expect(SKIN_CHANCE).toBeGreaterThan(0.02);
-    expect(SKIN_CHANCE).toBeLessThan(0.2);
+  /**
+   * The whole set is reachable from the two tiers alone, or a skin is in the game and can
+   * never be found. Purple and red together are 5 hatches in 100, which is the point.
+   */
+  it("can reach every skin a player owns a colony for", () => {
+    const s = store(4000);
+    let seed = 7;
+    const rnd = (): number => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed / 0x7fffffff;
+    };
+    for (let i = 0; i < 4000; i++) s.hatch(rnd);
+    const want = lockedLooks(s.get().unlocked, []).map((l) => l.id).sort();
+    expect([...s.skins].sort()).toEqual(want);
   });
 });
 
@@ -292,9 +394,3 @@ describe("reading a save back", () => {
     for (const look of all) expect(lookById(look.id)).toBe(look);
   });
 });
-
-/** A stream that walks a fixed list, so a roll is a fact rather than a coin flip. */
-function feedOf(values: number[]): () => number {
-  let i = 0;
-  return () => values[i++] ?? 0.5;
-}

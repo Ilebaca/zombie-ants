@@ -1218,6 +1218,25 @@ rather than a purchase.
   "Trait"; with equippable Traits on the same page, one word for two things is the screen
   contradicting itself. It reads "Signature" now.
 
+**ONE RARITY LADDER, FOR EVERYTHING THAT HAS ONE** (`engine/tiers.ts`). There were TWO and
+they disagreed. Traits ran common / uncommon / rare / exceptional / mythic in grey, green,
+blue, purple and red; colonies ran "Founding castes" / "Rare colonies" / "Elite castes" /
+"Mythic" in green, blue, purple and GOLD. So the same rung had two names on two screens,
+and the top rung had two different colours — a player who learned that red means "the best
+thing in the hatch" then met a gold Mythic colony in the Antarium and had to learn it
+twice. A rarity is a promise about how hard something is to get; it has to mean one thing.
+- **The ladder is the vocabulary; what a rung is WORTH stays in `platform/`.** A trait's
+  percentages, a colony's price band, the weight a hatch rolls it at — those are
+  progression decisions that will be retuned and they belong beside the prices. The names,
+  the colours and the order are one table in the engine, because `render/` and `platform/`
+  both need them and may not import each other (§3).
+- **`TIERS` in `catalogue.ts` is DERIVED from it**, glow included (the tier's own colour at
+  low alpha), so a retune cannot move a colour on one screen and not the other.
+- **COMMON IS HELD OPEN.** There is no grey colony yet and there will be, so the three a
+  player starts with are Uncommon and the rung below is left empty rather than the ladder
+  renumbered — renumbering is exactly how a rung ends up meaning two things again. A test
+  holds that no colony has taken it.
+
 **SKINS — WHAT A COLONY LOOKS LIKE** (`engine/skins.ts`, `platform/skins.ts`, the picker in
 `ui/species.ts`). Every colony has THREE looks: the one it is born with and two that are
 found. A look changes nothing about the game — no stat, no rule, no number that reaches
@@ -1229,11 +1248,17 @@ that costs an opponent nothing.
   engine. It is the same kind of thing `SPECIES` already is: a name, some copy and some
   tags the engine itself never reads. Second reason: a match record carries the setup, so
   a replay of somebody else's match should be able to show the colony they fielded.
-- **A LOOK IS THREE TAGS, all drawn, none loaded** — `style` (an overlay on the ant),
-  `hill` (the nest's shape on the board) and `pal` (an optional recolour). **`pal` is the
+- **A LOOK IS FOUR TAGS, all drawn, none loaded** — `style` (an overlay on the ant), `hill`
+  (the nest's shape on the board), `pal` (an optional recolour) and `tier`. **`pal` is the
   one that carries furthest**: an overlay is a few pixels on a portrait, a palette is every
-  tile the colony holds on a board somebody stares at for ten minutes. So each colony's
-  FIRST found look is the drawn one and its SECOND is a colourway.
+  tile the colony holds on a board somebody stares at for ten minutes.
+- **A SKIN IS ONLY EVER PURPLE OR RED.** Every found look sits on the top two rungs of the
+  ladder and nothing below, which is what makes one hard to get — and it means a skin needs
+  no chance of its own at all (see the hatch). In rarity order, so the picker reads left to
+  right: the COLOURWAY is the Exceptional one and the drawn OVERLAY is the Mythic one. The
+  overlay is bespoke art per colony and the colourway is three hex values, and it paces
+  well that way round — the change a player sees across the whole board arrives first, and
+  the special one is what they carry on hatching for.
 - **NO SKIN MAY LOOK LIKE ANOTHER COLONY.** An opponent always fields its basic look, so a
   palette landing on another species' own colours is not a skin — it is a colony you cannot
   identify across the board. FOUR did on the first pass: a pink Leafcutter read as a Demon
@@ -1266,7 +1291,10 @@ that costs an opponent nothing.
   wearing something found is the player's.
 - **The picker shows all three, and a locked one is DRAWN.** Greyed, not hidden: seeing the
   two you have not found is the reason to keep opening the hatch. The state is WRITTEN
-  ("Worn" / "Wear" / "Locked") because worn and owned-but-not-worn are one hairline apart.
+  ("Worn" / "Wear" / "Locked") because worn and owned-but-not-worn are one hairline apart,
+  and each card names its RARITY in the ladder's own colour — a locked card that does not
+  say which is a chase with no idea how long it is. The worn one is the only card that is
+  FILLED, so the rarity edge and the worn state can never be confused.
 
 **THE LUCKY HATCH** (`ui/hatch.ts`, `platform/traits.ts`). One egg in the middle of the
 screen, the larva you have above it, one button under it. That is deliberately the whole
@@ -1294,15 +1322,17 @@ control competing with it.
   comes; printed, one in a hundred is a target. The weights ARE the percentages (they sum
   to 100) because this number is read by a person, and a test measures forty thousand real
   rolls against what the screen says.
-- **A SKIN IS DRAWN FIRST, AND IT IS NOT A SIXTH TIER.** The five tiers are a curve; a
-  skin has no stat on it and sits nowhere on that curve, so slotting it in would have meant
-  making it either a bad common or an unfindable mythic. It gets its own chance
-  (`SKIN_CHANCE`, 7%) drawn before the tier roll — and only when there is one left to find:
-  with the collection complete the roll **falls through to a trait** rather than paying
-  nothing, or the last skin found would make the hatch worse. There are eighteen, so at a
-  hatch a day a player meets one every couple of weeks. The chance is PRINTED under the
-  tier row, on its own line, because an outcome a player can get and was never told about
-  is the one thing the odds panel exists to prevent.
+- **A SKIN IS THE TOP OF THE LADDER, NOT A CHANCE BESIDE IT.** It carries a rarity like
+  everything else the hatch pays, and only ever Exceptional or Mythic — so ONE roll decides
+  both: the tier is rolled exactly as it always was, and a roll at one of those two pays a
+  SKIN of that tier while one is still locked. That is 5 hatches in 100. It needs no second
+  number, which is the only way the odds printed on the screen can be the odds the game
+  actually uses.
+  - **It falls back to a trait of the SAME tier**, never to nothing and never to a lesser
+    one. The last skin found must not be the moment the hatch got worse, and a Mythic roll
+    paying a purple skin would be the card lying about what just happened.
+  - The note under the tier row NAMES the two tiers rather than restating a percentage,
+    because a percentage there is a second number that can drift from the row above it.
 - **A skin's prize card is the colony WEARING it**, and the way out points at that colony
   rather than at the inventory — a skin goes nowhere, so there is nothing to go and look at.
 - **THE POOL IS WHAT THE PLAYER HAS** — the universal traits and every colony they own. A

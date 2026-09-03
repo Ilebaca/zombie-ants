@@ -70,7 +70,7 @@ export {
   TRAIT_TIERS, WIN_LARVA, combine, effectFigure, effectText, fitsScope, itemDef, markOf,
   rollDrop, rollTier, rollTrait, scopeName, tierOdds, totalsOf, traitDef, traitsFor,
 } from "./traits";
-export { SKIN_CHANCE, lockedLooks, rollSkin, skinProgress } from "./skins";
+export { SKIN_TIERS, lockedLooks, rollSkin, skinProgress, skinTier } from "./skins";
 export type {
   Drop, TraitDef, TraitItem, TraitKind, TraitScope, TraitTier, TraitTierDef, TraitTotals,
 } from "./traits";

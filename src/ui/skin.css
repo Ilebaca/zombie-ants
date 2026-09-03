@@ -3848,10 +3848,21 @@ button:not(.playbtn):active,
   cursor: pointer;
 }
 .skincard:not(.locked):active { transform: translateY(1px); }
-/* The one being worn is the only card with the colony's own colour on it. */
+/* A found look carries its RARITY on its edge — the game's one colour for it,
+   the same purple and red the hatch and the trait tiles use. */
+.skincard.tiered { border-color: color-mix(in srgb, var(--tier) 55%, var(--line)); }
+/* The one being worn is the only card that is FILLED, so "worn" is never a
+   hairline apart from "owned but not worn". */
 .skincard.on {
   border-color: var(--grass);
   background: color-mix(in srgb, var(--grass) 12%, var(--panel));
+}
+.skincard-t {
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--tier);
 }
 /* Locked is DRAWN, not hidden: seeing the two you have not found is the reason
    to keep opening the hatch. Greyed rather than blanked, so it is still a

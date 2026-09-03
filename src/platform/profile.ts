@@ -37,7 +37,7 @@ import {
   totalsOf, traitDef,
 } from "./traits";
 import type { TraitItem, TraitScope, TraitTier, TraitTotals } from "./traits";
-import { SKIN_CHANCE, rollSkin } from "./skins";
+import { rollSkin, skinTier } from "./skins";
 import type { DuelInvite } from "./duels";
 import type { Friend, Person } from "./friends";
 import type { SupportGateway, Ticket, TicketKind } from "./support";
@@ -1361,22 +1361,26 @@ export class ProfileStore {
   hatch(random: () => number = Math.random): HatchPrize | null {
     if (this.profile.larva < HATCH_COST) return null;
 
-    // A SKIN IS DRAWN FIRST, and only if there is one left to find. It is a different
-    // KIND of prize from a trait rather than a sixth tier (platform/skins.ts), so it gets
-    // its own chance — and when the collection is complete the roll falls THROUGH to a
-    // trait rather than paying nothing, or the last skin found would make the hatch worse.
-    const skin = random() < SKIN_CHANCE
-      ? rollSkin(random, this.profile.unlocked, this.profile.skins)
+    // ONE ROLL DECIDES BOTH. A skin is not a sixth rung and not a chance beside the
+    // ladder — it IS the top of it (platform/skins.ts). The tier is rolled exactly as it
+    // always was, and an Exceptional or Mythic roll pays a SKIN of that tier while one is
+    // still locked; with the collection complete it falls back to a trait of the SAME
+    // tier, so the last skin found never makes the hatch worse and never quietly demotes
+    // the prize. That is also the only way the odds printed on the screen are the odds
+    // the game uses: there is no second number to drift.
+    const drop = rollDrop(random, [null, ...this.profile.unlocked]);
+    if (!drop) return null;
+
+    const skin = skinTier(drop.tier)
+      ? rollSkin(random, this.profile.unlocked, this.profile.skins, drop.tier)
       : null;
-    const drop = skin ? null : rollDrop(random, [null, ...this.profile.unlocked]);
-    if (!skin && !drop) return null;
 
     this.update((p) => { p.larva -= HATCH_COST; });
     if (skin) {
       const found = this.findSkin(skin.id);
       return found ? { kind: "skin", look: found } : null;
     }
-    const item = drop ? this.findTrait(drop.def, drop.tier) : null;
+    const item = this.findTrait(drop.def, drop.tier);
     return item ? { kind: "trait", item } : null;
   }
 

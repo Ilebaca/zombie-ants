@@ -3,6 +3,7 @@ export * from "./types";
 export * from "./config";
 export * from "./species";
 export * from "./skins";
+export * from "./tiers";
 export * from "./board";
 export * from "./combat";
 export * from "./connectivity";

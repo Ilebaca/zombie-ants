@@ -11,8 +11,8 @@
  * The effect strings must stay in step with the engine — each one names the file that
  * implements it, so a balance change has a paper trail back to the text the player sees.
  */
-import { CHAMBER_MAX, RESEARCH_MAX, SPECIES } from "../engine";
-import type { SpeciesId } from "../engine";
+import { CHAMBER_MAX, RESEARCH_MAX, SPECIES, TIERS as TIER_DEFS } from "../engine";
+import type { SpeciesId, TierId } from "../engine";
 import type { ChamberId, Research } from "./profile";
 
 export type ResearchTrack = keyof Research;
@@ -138,18 +138,33 @@ export const SPECIES_UNLOCK: Record<SpeciesId, number> = {
  * species picker — a player reads the collection as founding castes first, mythic last.
  */
 export interface Tier {
-  k: "starter" | "rare" | "epic" | "myth";
+  k: TierId;
   name: string;
   col: string;
   glow: string;
 }
 
-export const TIERS: readonly Tier[] = [
-  { k: "starter", name: "Founding castes", col: "#4ec97a", glow: "rgba(78,201,122,.30)" },
-  { k: "rare", name: "Rare colonies", col: "#4fa8ff", glow: "rgba(79,168,255,.30)" },
-  { k: "epic", name: "Elite castes", col: "#b06bff", glow: "rgba(176,107,255,.32)" },
-  { k: "myth", name: "Mythic", col: "#ffce4a", glow: "rgba(255,206,74,.34)" },
-];
+/**
+ * A COLONY'S RARITY IS THE GAME'S RARITY, not a second ladder that happens to have four
+ * rungs. It used to be its own table — "Founding castes / Rare colonies / Elite castes /
+ * Mythic" in green, blue, purple and GOLD — so the same rung had two names on two screens
+ * and the top rung had two colours: a player who learned that red is the best thing in the
+ * hatch met a gold Mythic colony and had to learn it twice.
+ *
+ * COMMON IS HELD OPEN. There is no grey colony yet and there will be, so the three a
+ * player starts with are Uncommon and the rung below them is left empty rather than the
+ * ladder renumbered — renumbering is how a rung ends up meaning two things again.
+ */
+const RANKS: readonly TierId[] = ["uncommon", "rare", "exceptional", "mythic"];
+
+export const TIERS: readonly Tier[] = RANKS.map((id) => ({
+  k: id,
+  name: TIER_DEFS[id].name,
+  col: TIER_DEFS[id].colour,
+  // The glow is the tier's own colour at low alpha, derived rather than typed out: two
+  // places spelling one colour is two chances for a retune to move only one of them.
+  glow: `${TIER_DEFS[id].colour}55`,
+}));
 
 /** Tier is derived from price, never stored — one number decides colour, name and order. */
 export function tierOf(id: SpeciesId): Tier {

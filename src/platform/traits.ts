@@ -25,13 +25,18 @@
  * boonPct). The engine owns what a percentage DOES; this file owns what a tier is WORTH,
  * because that is a progression decision and it will be retuned.
  */
-import { SPECIES } from "../engine";
-import type { SpeciesId } from "../engine";
+import { SPECIES, TIERS, TIER_IDS } from "../engine";
+import type { SpeciesId, TierId } from "../engine";
 
 /* ------------------------------------------------------------------- TIERS */
 
-export const TRAIT_TIERS = ["common", "uncommon", "rare", "exceptional", "mythic"] as const;
-export type TraitTier = typeof TRAIT_TIERS[number];
+/**
+ * The ladder is the game's ONE rarity ladder (`engine/tiers.ts`), re-exported under the
+ * names this file has always used so nothing that reads traits has to change. What a rung
+ * is called and what colour it is are decided there; what it is WORTH is decided here.
+ */
+export const TRAIT_TIERS = TIER_IDS;
+export type TraitTier = TierId;
 
 export interface TraitTierDef {
   id: TraitTier;
@@ -65,13 +70,20 @@ export interface TraitTierDef {
  * stay big enough to be worth reading, and the total has a ceiling that is stated on
  * screen rather than hidden.
  */
-export const TRAIT_TIER: Record<TraitTier, TraitTierDef> = {
-  common:      { id: "common",      name: "Common",      colour: "#9aa5a0", stat: 1, luck: 3,  weight: 60 },
-  uncommon:    { id: "uncommon",    name: "Uncommon",    colour: "#5fc86b", stat: 2, luck: 6,  weight: 25 },
-  rare:        { id: "rare",        name: "Rare",        colour: "#4c9df0", stat: 3, luck: 10, weight: 10 },
-  exceptional: { id: "exceptional", name: "Exceptional", colour: "#a86df0", stat: 5, luck: 15, weight: 4 },
-  mythic:      { id: "mythic",      name: "Mythic",      colour: "#f2674c", stat: 8, luck: 22, weight: 1 },
+/** What a rung is worth and how often it lands. The name and the colour come from the ladder. */
+const WORTH: Record<TraitTier, { stat: number; luck: number; weight: number }> = {
+  common:      { stat: 1, luck: 3,  weight: 60 },
+  uncommon:    { stat: 2, luck: 6,  weight: 25 },
+  rare:        { stat: 3, luck: 10, weight: 10 },
+  exceptional: { stat: 5, luck: 15, weight: 4 },
+  mythic:      { stat: 8, luck: 22, weight: 1 },
 };
+
+export const TRAIT_TIER: Record<TraitTier, TraitTierDef> = Object.fromEntries(
+  TRAIT_TIERS.map((id) => [id, {
+    id, name: TIERS[id].name, colour: TIERS[id].colour, ...WORTH[id],
+  }]),
+) as Record<TraitTier, TraitTierDef>;
 
 /** Slots, per colony and for the anthill. Five each, as designed. */
 export const TRAIT_SLOTS = 5;

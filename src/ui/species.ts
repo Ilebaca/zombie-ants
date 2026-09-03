@@ -27,7 +27,7 @@
  * thing Settings' Sound switch was.
  */
 import {
-  RESEARCH_MAX, SPECIES, abilityCooldown, looksFor, researchCost, NEUTRAL_MODS,
+  RESEARCH_MAX, SPECIES, TIERS, abilityCooldown, looksFor, researchCost, NEUTRAL_MODS,
 } from "../engine";
 import type { Look, SpeciesId } from "../engine";
 import {
@@ -130,14 +130,22 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
       const on = look.id === worn.id;
 
       const card = el("button", "skincard"
-        + (on ? " on" : "") + (owned ? "" : " locked")) as HTMLButtonElement;
+        + (on ? " on" : "") + (owned ? "" : " locked")
+        + (look.tier ? " tiered" : "")) as HTMLButtonElement;
       card.type = "button";
       card.dataset.look = look.id;
       card.disabled = !owned;
 
+      // The card carries the look's RARITY, in the game's one colour for it — a skin is
+      // Exceptional or Mythic and nothing below, and a locked card that does not say which
+      // is a chase with no idea how long it is.
+      const tier = look.tier ? TIERS[look.tier] : null;
+      if (tier) card.style.setProperty("--tier", tier.colour);
+
       const face = el("span", "skincard-p");
       face.appendChild(antPortrait(id, 96, "skincard-c", look));
       card.append(face, el("span", "skincard-n", look.name));
+      if (tier) card.appendChild(el("span", "skincard-t", tier.name));
       // The state is written, never left to the border alone: "on" and "owned but not
       // worn" are one hairline apart, and the difference is the whole of what the row says.
       card.append(el("span", "skincard-s", on ? "Worn" : owned ? "Wear" : "Locked"));

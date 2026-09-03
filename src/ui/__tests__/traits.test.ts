@@ -11,7 +11,7 @@ import { ProfileStore, TRAITS, TRAIT_SLOTS, TRAIT_TIER, effectFigure } from "../
 import { MemoryStore } from "../../platform";
 import { buildInventory, buildTraitBench, traitOpener } from "../traits";
 import { buildSpeciesPage } from "../species";
-import { basicLook, looksFor } from "../../engine";
+import { TIERS, basicLook, looksFor } from "../../engine";
 import type { TraitScope } from "../../platform";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
@@ -316,6 +316,20 @@ describe("choosing a colony's look", () => {
 
   const cards = (root: HTMLElement): HTMLButtonElement[] =>
     Array.from(root.querySelectorAll<HTMLButtonElement>("#spgSkins .skincard"));
+
+  /** Purple then red, so the row reads left to right in rarity order. */
+  it("names each look's rarity, in the game's one colour for it", () => {
+    const all = cards(page(grown()));
+    const worn = looksFor("fire");
+    expect(all[0]?.querySelector(".skincard-t"), "a basic look carries a rarity").toBeNull();
+    for (const i of [1, 2]) {
+      const tier = TIERS[worn[i]!.tier!];
+      expect(all[i]?.querySelector(".skincard-t")?.textContent).toBe(tier.name);
+      expect(all[i]?.style.getPropertyValue("--tier")).toBe(tier.colour);
+    }
+    expect(all[1]?.textContent).toContain("Exceptional");
+    expect(all[2]?.textContent).toContain("Mythic");
+  });
 
   it("shows all three looks, with the two unfound ones locked", () => {
     const root = page(grown());

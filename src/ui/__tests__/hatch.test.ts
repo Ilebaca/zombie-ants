@@ -9,8 +9,8 @@ import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
   HATCH_COST, MemoryStore, ProfileStore, TRAITS, TRAITS_CHAPTER, TRAIT_TIER, TRAIT_TIERS, itemDef, tierOdds,
 } from "../../platform";
-import { SKIN_CHANCE } from "../../platform";
-import { lookById } from "../../engine";
+import { SKIN_TIERS } from "../../platform";
+import { TIERS, lookById } from "../../engine";
 import { buildHatch } from "../hatch";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
@@ -219,9 +219,12 @@ describe("what is in a larva", () => {
  * as the way out — the only place a skin can be worn from is the colony it belongs to.
  */
 describe("hatching a skin", () => {
-  /** A stream that lands on a skin: the first draw decides, the second picks which. */
+  /**
+   * A stream that lands on a skin: pick the trait, then a tier in the top 5% of the
+   * weighted roll (which is where Exceptional and Mythic are), then which skin.
+   */
   const skinRoll = (): (() => number) => {
-    const values = [0, 0];
+    const values = [0.1, 0.995, 0];
     let i = 0;
     return () => values[i++] ?? 0.5;
   };
@@ -242,7 +245,12 @@ describe("hatching a skin", () => {
 
     const prize = root.querySelector("#hatchPrize");
     expect(prize?.className, "a skin was drawn as a trait").toContain("skin");
-    expect(prize?.textContent).toContain("Colony skin");
+    // It wears its own rarity, in the game's one colour for it — a skin is only ever
+    // Exceptional or Mythic, and the card has to say which.
+    const look = lookById(s.skins[0] as string);
+    expect(prize?.textContent).toContain(`${TIERS[look!.tier!].name} skin`);
+    expect((prize as HTMLElement).style.getPropertyValue("--tier"))
+      .toBe(TIERS[look!.tier!].colour);
     // The picture IS the prize: the colony's own head, wearing it.
     expect(prize?.querySelector("canvas"), "the skin was not drawn").toBeTruthy();
 
@@ -257,12 +265,16 @@ describe("hatching a skin", () => {
     expect(spy.colony).toBe(lookById(found as string)?.species);
   });
 
-  /** Printed, like the tiers: an outcome nobody was told about is the thing to prevent. */
-  it("states the skin chance beside the tier odds", () => {
+  /**
+   * Printed, like the tiers. A skin has no chance of its own — it IS the top of the row —
+   * so the note NAMES the tiers rather than restating a number that could drift from them.
+   */
+  it("names the tiers a skin comes out of, beside the odds", () => {
     const root = buildHatch(store(1), {
       onBack: () => {}, onBuyLarva: () => {}, onInventory: () => {},
     });
-    expect(root.querySelector("#hatchOdds")?.textContent)
-      .toContain(`${Math.round(SKIN_CHANCE * 100)}%`);
+    const said = root.querySelector("#hatchOdds")?.textContent ?? "";
+    for (const t of SKIN_TIERS) expect(said).toContain(TIERS[t].name);
+    expect(said).toContain("colony skin");
   });
 });
