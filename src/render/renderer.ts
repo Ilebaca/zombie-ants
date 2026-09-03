@@ -80,26 +80,28 @@ export class BoardRenderer {
   ) {
     this.layout = new Layout(state.size);
     loadColors();
-    setFactionColor("you", opts.species.you);
-    setFactionColor("ai", opts.species.ai);
-    this.looks = {
-      you: opts.looks?.you ?? basicLook(opts.species.you),
-      ai: opts.looks?.ai ?? basicLook(opts.species.ai),
-    };
+    // THE LOOKS ARE SETTLED BEFORE THE PAINT, because a skin carries its own palette
+    // (engine/skins.ts) and this repaint is the LAST one before the first frame — it used
+    // to run on the bare species and quietly undo the colour the app had just set, so a
+    // skinned colony wore its own nest shape in the base species' colour.
+    this.looks = looksOf(opts);
+    this.paint();
     this.motes = seedMotes(this.reveal.reduced);
     this.rememberHomes();
+  }
+
+  /** One repaint for both factions, taking each one's look with it. */
+  private paint(): void {
+    setFactionColor("you", this.opts.species.you, this.looks.you);
+    setFactionColor("ai", this.opts.species.ai, this.looks.ai);
   }
 
   /** Point the renderer at a new match without rebuilding the canvas. */
   reset(state: GameState, opts: RendererOptions): void {
     this.state = state;
     this.layout.size = state.size;
-    setFactionColor("you", opts.species.you);
-    setFactionColor("ai", opts.species.ai);
-    this.looks = {
-      you: opts.looks?.you ?? basicLook(opts.species.you),
-      ai: opts.looks?.ai ?? basicLook(opts.species.ai),
-    };
+    this.looks = looksOf(opts);
+    this.paint();
     this.reveal.clear();
     this.fx.clear();
     this.hideCounts = false;
@@ -371,7 +373,7 @@ export class BoardRenderer {
       // winner's colour did not reach.
       if (this.opts.plates) {
         drawPlates(ctx, this.layout, this.opts.plates,
-          this.opts.colonySize ?? String, this.flood ? fade : 1);
+          this.opts.colonySize ?? String, this.looks, this.flood ? fade : 1);
       }
 
       // Last, and over everything: "consumed" means the veins, the garrisons, the Hive, the
@@ -393,4 +395,12 @@ export class BoardRenderer {
       }
     }
   }
+}
+
+/** Both sides' looks, defaulting to the basic one — which is what an opponent always is. */
+function looksOf(opts: RendererOptions): Record<Player, Look> {
+  return {
+    you: opts.looks?.you ?? basicLook(opts.species.you),
+    ai: opts.looks?.ai ?? basicLook(opts.species.ai),
+  };
 }

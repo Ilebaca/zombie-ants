@@ -2,6 +2,7 @@
 export * from "./types";
 export * from "./config";
 export * from "./species";
+export * from "./skins";
 export * from "./board";
 export * from "./combat";
 export * from "./connectivity";

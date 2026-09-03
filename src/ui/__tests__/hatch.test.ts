@@ -9,6 +9,8 @@ import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
   HATCH_COST, MemoryStore, ProfileStore, TRAITS, TRAITS_CHAPTER, TRAIT_TIER, TRAIT_TIERS, itemDef, tierOdds,
 } from "../../platform";
+import { SKIN_CHANCE } from "../../platform";
+import { lookById } from "../../engine";
 import { buildHatch } from "../hatch";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
@@ -181,7 +183,9 @@ describe("what is in a larva", () => {
       return seed / 0x7fffffff;
     };
     for (let i = 0; i < 200; i++) s.hatch(rnd);
-    expect(s.bag.length).toBe(200);
+    // Every larva bought SOMETHING: a trait in the bag, or a skin unlocked. A hatch that
+    // spent and gave nothing is the one outcome this call must never produce.
+    expect(s.bag.length + s.skins.length).toBe(200);
     for (const item of s.bag) {
       const def = itemDef(item);
       expect(def, "hatched something not in the table").toBeTruthy();
@@ -205,5 +209,60 @@ describe("what is in a larva", () => {
     expect(seen.size, "some traits can never be hatched").toBe(reachable.length);
     // ...and every tier turns up, or the top of the table is decoration.
     expect(new Set(s.bag.map((i) => i.tier)).size).toBe(5);
+  });
+});
+
+/**
+ * A SKIN CAME OUT.
+ *
+ * It is the one prize that does not go to the inventory, so the card must not offer that
+ * as the way out — the only place a skin can be worn from is the colony it belongs to.
+ */
+describe("hatching a skin", () => {
+  /** A stream that lands on a skin: the first draw decides, the second picks which. */
+  const skinRoll = (): (() => number) => {
+    const values = [0, 0];
+    let i = 0;
+    return () => values[i++] ?? 0.5;
+  };
+
+  it("shows the colony wearing it, and points at that colony", () => {
+    const s = store(3);
+    const spy = { colony: "" };
+    const root = buildHatch(s, {
+      onBack: () => {}, onBuyLarva: () => {}, onInventory: () => {},
+      onColony: (id) => { spy.colony = id; },
+      random: skinRoll(),
+    });
+    document.body.replaceChildren(root);
+    vi.useFakeTimers();
+    tap(root, "hatchGo");
+    vi.advanceTimersByTime(1200);
+    vi.useRealTimers();
+
+    const prize = root.querySelector("#hatchPrize");
+    expect(prize?.className, "a skin was drawn as a trait").toContain("skin");
+    expect(prize?.textContent).toContain("Colony skin");
+    // The picture IS the prize: the colony's own head, wearing it.
+    expect(prize?.querySelector("canvas"), "the skin was not drawn").toBeTruthy();
+
+    const found = s.skins[0];
+    expect(found, "nothing was unlocked").toBeTruthy();
+    expect(prize?.textContent).toContain(lookById(found as string)?.name ?? "");
+
+    // It went nowhere: a skin is an appearance, not an item.
+    expect(s.bag.length).toBe(0);
+    expect(root.querySelector("#hatchToBag"), "a skin offered the inventory").toBeNull();
+    root.querySelector<HTMLButtonElement>("#hatchToColony")?.click();
+    expect(spy.colony).toBe(lookById(found as string)?.species);
+  });
+
+  /** Printed, like the tiers: an outcome nobody was told about is the thing to prevent. */
+  it("states the skin chance beside the tier odds", () => {
+    const root = buildHatch(store(1), {
+      onBack: () => {}, onBuyLarva: () => {}, onInventory: () => {},
+    });
+    expect(root.querySelector("#hatchOdds")?.textContent)
+      .toContain(`${Math.round(SKIN_CHANCE * 100)}%`);
   });
 });

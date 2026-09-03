@@ -12,8 +12,8 @@ import {
   ROAD_CHAPTER_STOPS, compact, freeReward, passReward, stopColony, stopReached,
 } from "../platform";
 import type { Profile, ProfileStore } from "../platform";
-import type { SpeciesId } from "../engine";
-import { SPECIES_COL, antHead, basicLook } from "../render";
+import type { Look, SpeciesId } from "../engine";
+import { antHead, basicLook, lookCol } from "../render";
 import { icon } from "./icons";
 
 /** Small element factory: `el("div", "cls", "text")`. */
@@ -462,13 +462,19 @@ export function setupSteps(current: number): HTMLElement {
  * context it cannot draw into (§6), so a null context returns a blank canvas rather than
  * throwing.
  */
-export function antPortrait(id: SpeciesId, size: number, cls?: string): HTMLCanvasElement {
+export function antPortrait(
+  id: SpeciesId, size: number, cls?: string, look?: Look | null,
+): HTMLCanvasElement {
   const cv = document.createElement("canvas");
   cv.width = size;
   cv.height = size;
   if (cls) cv.className = cls;
   const g = cv.getContext("2d");
-  if (g) antHead(g, size / 2, size / 2, size * 0.46, SPECIES_COL[id], basicLook(id));
+  // A look carries its own colours as well as its overlay, and `lookCol` is the one place
+  // that decides which wins — so a portrait and the board can never disagree about what a
+  // colony looks like. No look means the basic one, which is what an opponent always is.
+  const worn = look ?? basicLook(id);
+  if (g) antHead(g, size / 2, size / 2, size * 0.46, lookCol(id, worn), worn);
   return cv;
 }
 

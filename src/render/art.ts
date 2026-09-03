@@ -4,51 +4,14 @@
  * Pure canvas drawing on a caller-supplied context: no game state, no layout. The meta
  * screens reuse these for species cards, so they must stay free of board assumptions.
  */
-import type { SpeciesId } from "../engine";
+import { basicLook, looksFor } from "../engine";
+import type { HillStyle, Look, SkinStyle } from "../engine";
 
-/** Cosmetic skin overlay drawn on top of the base ant body. */
-export type SkinStyle = "lava" | "leaves" | "ghost" | "glyph" | "camo" | "devil" | null;
-
-/** Which structure a colony's nest is drawn as. */
-export type HillStyle = "mound" | "tree" | "volcano" | "pyramid" | "bunker" | "horn";
-
-export interface Look {
-  id: string;
-  name: string;
-  style: SkinStyle;
-  hill: HillStyle;
-}
-
-/**
- * Unlockable looks per species. Index 0 is the basic look — the AI always fields it, and
- * it is what a player sees before any cosmetics are equipped.
- */
-export const RACE_SKINS: Record<SpeciesId, readonly Look[]> = {
-  leafcutter: [{ id: "lc_b", name: "Basic", style: null, hill: "mound" },
-               { id: "lc_leaf", name: "Leaf Bearers", style: "leaves", hill: "tree" }],
-  fire:       [{ id: "fi_b", name: "Basic", style: null, hill: "mound" },
-               { id: "fi_lava", name: "Molten", style: "lava", hill: "volcano" }],
-  ghost:      [{ id: "gh_b", name: "Basic", style: null, hill: "mound" },
-               { id: "gh_sheet", name: "Haunting", style: "ghost", hill: "mound" }],
-  pharaoh:    [{ id: "ph_b", name: "Basic", style: null, hill: "mound" },
-               { id: "ph_glyph", name: "Hieroglyph", style: "glyph", hill: "pyramid" }],
-  army:       [{ id: "ar_b", name: "Basic", style: null, hill: "mound" },
-               { id: "ar_camo", name: "Camouflage", style: "camo", hill: "bunker" }],
-  demon:      [{ id: "dm_b", name: "Basic", style: null, hill: "mound" },
-               { id: "dm_dev", name: "Infernal", style: "devil", hill: "horn" }],
-  weaver:     [{ id: "we_b", name: "Basic", style: null, hill: "mound" }],
-  carpenter:  [{ id: "ca_b", name: "Basic", style: null, hill: "mound" }],
-  bullet:     [{ id: "bu_b", name: "Basic", style: null, hill: "mound" }],
-};
-
-export function looksFor(species: SpeciesId): readonly Look[] {
-  return RACE_SKINS[species];
-}
-
-export function basicLook(species: SpeciesId): Look {
-  const list = looksFor(species);
-  return list[0] as Look;
-}
+// Re-exported so a caller that draws does not have to reach past the renderer for the
+// catalogue as well. The table itself lives in the engine (engine/skins.ts) because the
+// profile has to validate against it and platform/ may not import render/.
+export { basicLook, looksFor };
+export type { HillStyle, Look, SkinStyle };
 
 const TAU = 6.283;
 
@@ -161,6 +124,44 @@ export function antSkinOverlay(
     g.fillStyle = "#ff4a3a";
     g.beginPath(); g.arc(x - s * 0.09, y - s * 0.34, s * 0.045, 0, TAU); g.fill();
     g.beginPath(); g.arc(x + s * 0.09, y - s * 0.34, s * 0.045, 0, TAU); g.fill();
+
+  } else if (style === "silk") {                   // strands wound across the body
+    g.strokeStyle = "rgba(255,255,255,0.82)";
+    g.lineWidth = Math.max(1, s * 0.045); g.lineCap = "round";
+    for (const dy of [0.06, 0.24, 0.42]) {
+      g.beginPath();
+      g.moveTo(x - s * 0.34, y + s * (dy - 0.05));
+      g.quadraticCurveTo(x, y + s * (dy + 0.07), x + s * 0.34, y + s * (dy - 0.05));
+      g.stroke();
+    }
+    // a loose thread trailing off the gaster, which is what says SPUN rather than striped
+    g.strokeStyle = "rgba(255,255,255,0.5)"; g.lineWidth = Math.max(1, s * 0.03);
+    g.beginPath();
+    g.moveTo(x + s * 0.30, y + s * 0.50);
+    g.quadraticCurveTo(x + s * 0.52, y + s * 0.62, x + s * 0.44, y + s * 0.80);
+    g.stroke();
+
+  } else if (style === "bark") {                   // grain along the shell, and a ridge
+    g.strokeStyle = "rgba(48,32,18,0.8)";
+    g.lineWidth = Math.max(1, s * 0.035); g.lineCap = "round";
+    for (const dx of [-0.16, -0.04, 0.08, 0.20]) {
+      g.beginPath();
+      g.moveTo(x + s * dx, y + s * 0.02);
+      g.quadraticCurveTo(x + s * (dx + 0.05), y + s * 0.34, x + s * dx, y + s * 0.64);
+      g.stroke();
+    }
+    g.fillStyle = "rgba(214,180,132,0.55)";
+    g.beginPath(); g.ellipse(x, y - s * 0.02, s * 0.20, s * 0.07, 0, 0, TAU); g.fill();
+
+  } else if (style === "banded") {                 // aposematic warning bands
+    g.fillStyle = "rgba(250,214,64,0.95)";
+    for (const dy of [0.10, 0.34]) {
+      g.beginPath();
+      g.ellipse(x, y + s * dy, s * 0.33, s * 0.075, 0, 0, TAU);
+      g.fill();
+    }
+    g.fillStyle = "rgba(18,14,10,0.9)";
+    g.beginPath(); g.ellipse(x, y + s * 0.22, s * 0.30, s * 0.05, 0, 0, TAU); g.fill();
   }
 
   g.restore();
@@ -290,13 +291,34 @@ export function antHeadSkin(g: CanvasRenderingContext2D, style: SkinStyle, dark:
     g.beginPath(); g.ellipse(20, -8, 11, 15, 0, 0, TAU); g.fill();
 
   } else if (style === "glyph") {                      // carved marks across the head plate
+    /*
+     * NOT LETTERFORMS. The first version stacked a ringed circle over a vertical bar with
+     * a line under it, and at portrait size that reads as "16" — a number, on an ant's
+     * face, in a game whose every tile carries one. These are a sun disc, a pyramid and a
+     * water line: real marks, and none of them is a digit at any size.
+     */
     g.strokeStyle = "rgba(20,14,4,0.9)"; g.fillStyle = "rgba(20,14,4,0.9)";
-    g.lineWidth = 4; g.lineCap = "round";
-    g.beginPath(); g.arc(0, -6, 8, 0, TAU); g.stroke();
-    g.beginPath(); g.moveTo(-14, -6); g.lineTo(-4, -6); g.moveTo(4, -6); g.lineTo(14, -6); g.stroke();
-    g.fillRect(-3, 6, 6, 20);
-    g.beginPath(); g.moveTo(-12, 30); g.lineTo(12, 30); g.stroke();
-    g.beginPath(); g.moveTo(-16, -30); g.lineTo(-6, -38); g.moveTo(16, -30); g.lineTo(6, -38); g.stroke();
+    g.lineWidth = 4; g.lineCap = "round"; g.lineJoin = "round";
+
+    g.beginPath(); g.arc(0, -10, 8, 0, TAU); g.fill();          // sun disc
+    for (let i = 0; i < 6; i++) {                               // and its rays
+      const a = (i / 6) * TAU + 0.26;
+      g.beginPath();
+      g.moveTo(Math.cos(a) * 13, -10 + Math.sin(a) * 13);
+      g.lineTo(Math.cos(a) * 18, -10 + Math.sin(a) * 18);
+      g.stroke();
+    }
+
+    g.beginPath();                                              // pyramid
+    g.moveTo(-14, 26); g.lineTo(0, 8); g.lineTo(14, 26);
+    g.closePath(); g.stroke();
+
+    g.beginPath();                                              // water
+    g.moveTo(-15, 34);
+    for (let i = 0; i < 3; i++) {
+      g.quadraticCurveTo(-15 + i * 10 + 5, 30, -15 + i * 10 + 10, 34);
+    }
+    g.stroke();
 
   } else if (style === "camo") {
     const P = ["rgba(72,88,46,0.92)", "rgba(122,132,74,0.9)", "rgba(46,56,34,0.92)"];
@@ -322,6 +344,42 @@ export function antHeadSkin(g: CanvasRenderingContext2D, style: SkinStyle, dark:
     g.moveTo(-44, -30); g.lineTo(-16, -20);
     g.moveTo(44, -30); g.lineTo(16, -20);
     g.stroke();
+
+  } else if (style === "silk") {                       // a woven veil across the face
+    g.strokeStyle = "rgba(255,255,255,0.85)"; g.lineWidth = 5; g.lineCap = "round";
+    for (const yy of [-34, -8, 18]) {
+      g.beginPath();
+      g.moveTo(-56, yy - 6); g.quadraticCurveTo(0, yy + 12, 56, yy - 6); g.stroke();
+    }
+    g.lineWidth = 3.5; g.strokeStyle = "rgba(255,255,255,0.6)";
+    for (const xx of [-30, 0, 30]) {
+      g.beginPath();
+      g.moveTo(xx - 6, -50); g.quadraticCurveTo(xx + 6, -6, xx - 6, 36); g.stroke();
+    }
+    // the strand that leaves the head, so it reads as spun rather than as a net drawn on
+    g.lineWidth = 3; g.strokeStyle = "rgba(255,255,255,0.5)";
+    g.beginPath();
+    g.moveTo(56, 20); g.quadraticCurveTo(84, 40, 74, 68); g.stroke();
+
+  } else if (style === "bark") {                       // grain down the head plate
+    g.strokeStyle = "rgba(48,32,18,0.8)"; g.lineWidth = 4; g.lineCap = "round";
+    for (const xx of [-34, -14, 8, 30]) {
+      g.beginPath();
+      g.moveTo(xx, -46); g.quadraticCurveTo(xx + 8, -4, xx, 34); g.stroke();
+    }
+    g.fillStyle = "rgba(214,180,132,0.5)";
+    g.beginPath(); g.ellipse(0, -40, 34, 9, 0, 0, TAU); g.fill();
+    g.strokeStyle = "rgba(214,180,132,0.5)"; g.lineWidth = 3;
+    g.beginPath(); g.ellipse(-2, 4, 15, 20, 0.2, 0, TAU); g.stroke();
+
+  } else if (style === "banded") {                     // a warning chevron over the brow
+    g.fillStyle = "rgba(250,214,64,0.95)";
+    g.beginPath();
+    g.moveTo(-46, -40); g.lineTo(0, -18); g.lineTo(46, -40);
+    g.lineTo(46, -24); g.lineTo(0, -2); g.lineTo(-46, -24);
+    g.closePath(); g.fill();
+    g.fillStyle = "rgba(18,14,10,0.85)";
+    g.beginPath(); g.ellipse(0, 20, 30, 8, 0, 0, TAU); g.fill();
   }
 
   void dark;

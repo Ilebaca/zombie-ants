@@ -15,10 +15,13 @@
  * arrives first, which is the whole reason the tiers have colours at all.
  */
 import {
-  HATCH_COST, TRAITS_CHAPTER, TRAIT_TIER, TRAIT_TIERS, effectText, itemDef, markOf, tierOdds,
+  HATCH_COST, SKIN_CHANCE, TRAITS_CHAPTER, TRAIT_TIER, TRAIT_TIERS, effectText, itemDef,
+  markOf, tierOdds,
 } from "../platform";
-import type { ProfileStore, TraitItem } from "../platform";
-import { el, screenEl, screenHeader } from "./chrome";
+import type { HatchPrize, ProfileStore, TraitItem } from "../platform";
+import { SPECIES } from "../engine";
+import type { Look } from "../engine";
+import { antPortrait, el, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 
 /** How long the egg rocks before it gives an answer. */
@@ -32,6 +35,8 @@ export interface HatchOptions {
   onInventory: () => void;
   /** Told after a hatch, so the drawer's counts and the screen behind can catch up. */
   onChanged?: () => void;
+  /** Into the colony a found skin belongs to — that is where it is worn from. */
+  onColony?: (species: string) => void;
   /** Injected so a test is not a coin flip. */
   random?: () => number;
 }
@@ -39,7 +44,7 @@ export interface HatchOptions {
 export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement {
   const root = screenEl("luckyhatch");
   /** What the last hatch produced, or null before the first one. */
-  let found: TraitItem | null = null;
+  let found: HatchPrize | null = null;
   /** True while the egg is rocking: the button must not be tapped twice into one animation. */
   let busy = false;
 
@@ -47,7 +52,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     root.replaceChildren();
     screenHeader(root, {
       title: "Lucky hatch",
-      sub: "Where traits come from",
+      sub: "Where traits and skins come from",
       onBack: opts.onBack,
       backId: "hatchBack",
     });
@@ -117,7 +122,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     box.id = "hatchStage";
 
     if (found && !busy) {
-      box.appendChild(prize(found));
+      box.appendChild(found.kind === "skin" ? skinPrize(found.look) : prize(found.item));
       return box;
     }
 
@@ -128,7 +133,8 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     // Said once, under the egg, and only before the first hatch: after that the last
     // trait is standing there saying it better than a sentence could.
     if (!found && !busy) {
-      box.appendChild(el("div", "hatchhint", "Every trait in the game is in here."));
+      box.appendChild(el("div", "hatchhint",
+        "Every trait in the game is in here, and every colony skin."));
     }
     return box;
   };
@@ -164,6 +170,39 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     return box;
   };
 
+  /**
+   * A SKIN CAME OUT.
+   *
+   * It is shown as the thing itself — the colony's own head WEARING it, in the skin's own
+   * colours — because that is the whole of what a skin is, and a name over a generic mark
+   * would be the one prize in this game the screen refuses to show. It does not go to the
+   * inventory (a skin is not a thing you carry, it is an appearance), so the way out points
+   * at the colony it belongs to, which is the only place it can be worn from.
+   */
+  const skinPrize = (look: Look): HTMLElement => {
+    const box = el("div", "hatchprize skin");
+    box.id = "hatchPrize";
+    box.style.setProperty("--tier", "#ffd257");
+
+    const disc = el("div", "hp-disc hp-face");
+    disc.appendChild(antPortrait(look.species, 108, "hp-port", look));
+
+    box.append(
+      disc,
+      el("div", "hp-tier", "Colony skin"),
+      el("div", "hp-name", look.name),
+      el("div", "hp-eff", SPECIES[look.species].name),
+    );
+
+    const go = el("button", "hp-go") as HTMLButtonElement;
+    go.type = "button";
+    go.id = "hatchToColony";
+    go.append(el("span", undefined, `Wear it on the ${SPECIES[look.species].name}`), icon("next", 13));
+    go.onclick = () => opts.onColony?.(look.species);
+    box.appendChild(go);
+    return box;
+  };
+
   /* -------------------------------------------------------------------- THE ODDS */
 
   /**
@@ -193,6 +232,13 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
       );
       box.appendChild(row);
     }
+    // A skin is not a sixth tier — it has no stat on it and does not sit on the curve
+    // (platform/skins.ts) — so it is stated on its own line rather than squeezed into the
+    // row. Printed all the same: an outcome a player can get and was never told about is
+    // the one thing the odds panel exists to prevent.
+    box.appendChild(el("div", "ho-note",
+      `A colony skin turns up ${Math.round(SKIN_CHANCE * 100)}% of the time, `
+      + "while you still have one to find."));
     return box;
   };
 

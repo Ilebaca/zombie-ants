@@ -477,6 +477,17 @@ export class App {
    * build: it is fixed to the viewport, hidden on the setup flow and during a match, and
    * marks the tab the player is on.
    */
+  /**
+   * Repaint the whole UI in the player's colony's colours — INCLUDING ITS SKIN.
+   *
+   * One method rather than a `setFactionColor` at each of the three places that recolour,
+   * because a skin's palette is part of what a colony looks like and a call site that
+   * forgot it would show the base colour on one screen and the skin on the next.
+   */
+  private paintYou(species: SpeciesId = this.choices.species): void {
+    setFactionColor("you", species, this.profile.lookFor(species));
+  }
+
   private syncNav(id: ScreenId | null): void {
     if (!this.nav) {
       this.nav = bottomNav((tab) => this.onNav(tab));
@@ -584,7 +595,7 @@ export class App {
       // Every new play opens on the first colony by rarity, exactly as the legacy build
       // does — the picker is a fresh choice each time, not a memory of the last match.
       this.choices.species = DEFAULT_SPECIES;
-      setFactionColor("you", this.choices.species);
+      this.paintYou();
       return buildSpeciesSelect(this.setup(() => this.show("mapsel"), "formation"));
     }
     if (id === "formation") {
@@ -659,6 +670,15 @@ export class App {
         // the tap it answers was about larva.
         onBuyLarva: () => this.showShop("shopLarva"),
         onInventory: () => this.show("inventory"),
+        // A SKIN GOES NOWHERE — it is an appearance, not an item, so there is no bag to
+        // send the player to. The only place it can be worn from is the colony it belongs
+        // to, so that is where the prize card points.
+        onColony: (species) => {
+          this.speciesPage = species as SpeciesId;
+          this.choices.species = species as SpeciesId;
+          this.paintYou();
+          this.show("antup");
+        },
         // The trait went to the bag, so anything counting the bag is now stale.
         onChanged: () => { this.rebuildHomeBar(); },
       });
@@ -727,7 +747,7 @@ export class App {
       onOpenSpecies: (species) => {
         this.speciesPage = species;
         this.choices.species = species;
-        setFactionColor("you", species);
+        this.paintYou();
         this.profile.update((p) => { p.lastSpecies = species; });
         this.show("antup");
       },
@@ -1002,7 +1022,11 @@ export class App {
     // matchmaking screen has to be the colony that turns up on the board, or the search was
     // showing something it did not mean. Only a match with nobody found rolls one.
     const aiSpecies = foe?.species ?? rollAISpecies(this.choices.species);
-    setFactionColor("you", this.choices.species);
+    // The skin's palette is part of the colony (engine/skins.ts), so the whole UI takes
+    // it — the board, the chips, the buttons. The opponent always fields the basic look:
+    // a colony has to read as the species it is, and the one wearing something found is
+    // the player's.
+    setFactionColor("you", this.choices.species, this.profile.lookFor(this.choices.species));
     setFactionColor("ai", aiSpecies);
 
     // Anthill and research come from the profile; the AI always gets the neutral set.
@@ -1060,6 +1084,10 @@ export class App {
         you: { name: me.name, colony: me.colony },
         ai: { name: foe.name, colony: foe.colony },
       },
+      // The player's colony wears what they chose; the opponent always fields the basic
+      // look, so it reads as the species it is. It reaches the nest's shape on the board
+      // and, through the palette above, every tile the colony holds.
+      looks: { you: this.profile.lookFor(this.choices.species) },
       // The same mods must drive combat, or Mandible/Cuticle research would show up in the
       // income readout but do nothing in a fight.
       ctx: { mods },

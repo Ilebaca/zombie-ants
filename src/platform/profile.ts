@@ -9,10 +9,11 @@
  * keeps simulation from writing stats or currencies (CLAUDE.md §5).
  */
 import {
-  CHAMBER_MAX, MAPS, NEUTRAL_MODS, RESEARCH_MAX, SPECIES, chamberCost, researchCost,
+  CHAMBER_MAX, MAPS, NEUTRAL_MODS, RESEARCH_MAX, SPECIES, basicLook, chamberCost, lookById,
+  looksFor, researchCost,
 } from "../engine";
 import { COLONY_START, grownColony } from "./colony";
-import type { MapId, Player, PlayerMods, SpeciesId } from "../engine";
+import type { Look, MapId, Player, PlayerMods, SpeciesId } from "../engine";
 import { SPECIES_UNLOCK, type ResearchTrack } from "./catalogue";
 import {
   QUEST_SWEEP_BONUS, dayIndex, isClaimable, levelProgress, levelReward, questDef, rollQuests,
@@ -36,6 +37,7 @@ import {
   totalsOf, traitDef,
 } from "./traits";
 import type { TraitItem, TraitScope, TraitTier, TraitTotals } from "./traits";
+import { SKIN_CHANCE, rollSkin } from "./skins";
 import type { DuelInvite } from "./duels";
 import type { Friend, Person } from "./friends";
 import type { SupportGateway, Ticket, TicketKind } from "./support";
@@ -183,6 +185,19 @@ export interface Profile {
   bag: TraitItem[];
   wearing: Record<string, (string | null)[]>;
   traitSeq: number;
+  /**
+   * SKINS, WHICH ARE NOT ITEMS.
+   *
+   * A trait is a thing you hold: it has a uid, it sits in a bag, and it can be worn on one
+   * bench at a time. A skin is not — it is a colony's APPEARANCE, so finding one unlocks
+   * it for ever and there is nothing to carry, nothing to swap out and nothing to lose by
+   * wearing it. That is why it never reaches the inventory: an inventory is for things
+   * that have to be somewhere, and a skin is already somewhere — on the colony it belongs
+   * to. `skins` is the set that has been found, by look id; `look` is the one each colony
+   * is wearing, absent meaning the basic one it was born with.
+   */
+  skins: string[];
+  look: Partial<Record<SpeciesId, string>>;
   /** The newest post the player has read, as a stamp. Older than every post = all unread. */
   newsSeen: number;
   /** Messages sent to support, kept so nothing a player wrote is thrown away. */
@@ -247,6 +262,17 @@ export const TOUR_VERSION = 1;
  */
 const STARTER_SPECIES: SpeciesId[] = ["leafcutter", "fire", "carpenter"];
 
+/**
+ * WHAT A HATCH PAID.
+ *
+ * A union rather than two nullable fields, because exactly one of them happened and a
+ * shape that can carry both is a shape a screen has to guess at. `null` from `hatch()`
+ * still means "nothing was spent", which is the contract every spend on this store has.
+ */
+export type HatchPrize =
+  | { kind: "trait"; item: TraitItem }
+  | { kind: "skin"; look: Look };
+
 export function defaultProfile(): Profile {
   return {
     v: VERSION,
@@ -284,6 +310,8 @@ export function defaultProfile(): Profile {
     bag: [],
     wearing: {},
     traitSeq: 0,
+    skins: [],
+    look: {},
     friendsOut: [],
     newsSeen: 0,
     tickets: [],
@@ -418,6 +446,7 @@ export function normalise(raw: unknown): Profile {
     duelsIn: invites(p.duelsIn),
     history: matchLogs(p.history),
     ...bagAndBenches(p),
+    ...skinsAndLooks(p),
     newsSeen: int(p.newsSeen, 0, 1e15, 0),
     tickets: tickets(p.tickets),
     challenges: Array.isArray(p.challenges)
@@ -564,6 +593,40 @@ const BENCHES: readonly string[] = ["hill", ...(Object.keys(SPECIES) as SpeciesI
  * counter was lost cannot mint a uid that is already in use — two items with one uid is
  * one item the player can never take off.
  */
+/**
+ * THE SKINS AND WHAT EACH COLONY IS WEARING, rebuilt together.
+ *
+ * Together, because they refer to each other: a colony cannot be wearing a look it has
+ * not found, and it certainly cannot be wearing another colony's. Both are dropped to the
+ * basic look rather than kept, because a save outlives the build that wrote it and a look
+ * id can go out of the table — and the basic look is the one thing every colony always
+ * has (engine/skins.ts).
+ *
+ * A basic look is never STORED as unlocked. It is not something found, and putting it in
+ * the set would make "how many skins does this player have" a different number depending
+ * on how many colonies they own.
+ */
+function skinsAndLooks(p: Partial<Profile>): Pick<Profile, "skins" | "look"> {
+  const found = new Set<string>();
+  for (const id of Array.isArray(p.skins) ? p.skins : []) {
+    if (typeof id !== "string") continue;
+    const look = lookById(id);
+    // Index 0 is basic and is never a find, so only a look past it counts.
+    if (look && looksFor(look.species)[0]?.id !== id) found.add(id);
+  }
+
+  const look: Partial<Record<SpeciesId, string>> = {};
+  const worn = p.look && typeof p.look === "object" ? p.look : {};
+  for (const [species, id] of Object.entries(worn)) {
+    if (typeof id !== "string" || !found.has(id)) continue;
+    const def = lookById(id);
+    // A look worn by a colony it does not belong to is the one shape the screens all
+    // assume is impossible, so it is refused here rather than checked in five places.
+    if (def && def.species === species) look[species as SpeciesId] = id;
+  }
+  return { skins: [...found], look };
+}
+
 function bagAndBenches(p: Partial<Profile>): Pick<Profile, "bag" | "wearing" | "traitSeq"> {
   const raw = Array.isArray(p.bag) ? p.bag : [];
   const seen = new Set<string>();
@@ -832,6 +895,59 @@ export class ProfileStore {
       p.bag = [item, ...p.bag];
     });
     return item;
+  }
+
+  /* ---------------------------------------------------------------- SKINS */
+
+  /** Every look this player has found, basic ones excluded — those are not found. */
+  get skins(): readonly string[] { return this.profile.skins; }
+
+  hasSkin(id: string): boolean { return this.profile.skins.includes(id); }
+
+  /**
+   * A skin is found. Unlike a trait it has no uid and no bag: an appearance is not a
+   * thing you carry, so finding one twice is simply finding it once.
+   */
+  findSkin(id: string): Look | null {
+    const look = lookById(id);
+    if (!look || looksFor(look.species)[0]?.id === id) return null;
+    if (!this.profile.skins.includes(id)) {
+      this.update((p) => { p.skins = [...p.skins, id]; });
+    }
+    return look;
+  }
+
+  /**
+   * What a colony is wearing. Never null — a colony always has the look it was born with,
+   * which is also what a save naming a skin this build no longer has falls back to.
+   */
+  lookFor(species: SpeciesId): Look {
+    const id = this.profile.look[species];
+    const worn = id ? lookById(id) : null;
+    return worn && worn.species === species && this.hasSkin(id as string)
+      ? worn
+      : basicLook(species);
+  }
+
+  /**
+   * Wear one. Returns false rather than throwing when it is not this colony's to wear or
+   * has not been found — the same contract every other spend on this store has, so a
+   * screen can tap optimistically.
+   *
+   * The BASIC look is always wearable and is stored by clearing the field rather than by
+   * writing its id: "wearing nothing found" and "wearing the one everybody has" are the
+   * same state, and two ways to spell it is two states to keep in step.
+   */
+  wearSkin(species: SpeciesId, id: string): boolean {
+    const look = lookById(id);
+    if (!look || look.species !== species) return false;
+    const basic = looksFor(species)[0]?.id === id;
+    if (!basic && !this.hasSkin(id)) return false;
+    this.update((p) => {
+      if (basic) delete p.look[species];
+      else p.look[species] = id;
+    });
+    return true;
   }
 
   /**
@@ -1242,12 +1358,26 @@ export class ProfileStore {
    * for a colony they may never buy is a mythic they cannot use, and the whole point of
    * the tier is that finding one is the best thing that happens in the feature.
    */
-  hatch(random: () => number = Math.random): TraitItem | null {
+  hatch(random: () => number = Math.random): HatchPrize | null {
     if (this.profile.larva < HATCH_COST) return null;
-    const drop = rollDrop(random, [null, ...this.profile.unlocked]);
-    if (!drop) return null;
+
+    // A SKIN IS DRAWN FIRST, and only if there is one left to find. It is a different
+    // KIND of prize from a trait rather than a sixth tier (platform/skins.ts), so it gets
+    // its own chance — and when the collection is complete the roll falls THROUGH to a
+    // trait rather than paying nothing, or the last skin found would make the hatch worse.
+    const skin = random() < SKIN_CHANCE
+      ? rollSkin(random, this.profile.unlocked, this.profile.skins)
+      : null;
+    const drop = skin ? null : rollDrop(random, [null, ...this.profile.unlocked]);
+    if (!skin && !drop) return null;
+
     this.update((p) => { p.larva -= HATCH_COST; });
-    return this.findTrait(drop.def, drop.tier);
+    if (skin) {
+      const found = this.findSkin(skin.id);
+      return found ? { kind: "skin", look: found } : null;
+    }
+    const item = drop ? this.findTrait(drop.def, drop.tier) : null;
+    return item ? { kind: "trait", item } : null;
   }
 
   /** Timestamp of the last daily gift claim, so the shop can offer it once a day. */

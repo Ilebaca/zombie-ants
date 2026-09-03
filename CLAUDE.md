@@ -675,9 +675,12 @@ last screen in the app still wearing the legacy skeleton. A deliberate deviation
 - **The cooldown is stated once.** It was in the stat block, in a note beneath it and in
   the ability card's header — and in one of those it read "7t → 7t", which is what an
   unchanged number looks like printed with an arrow: only a maxed reservoir shortens one.
-- **The "Customize" tab is gone.** It sold skins from the lucky hatch, which is not built,
-  so it was a tab that could only ever raise a toast — the same thing Settings' Sound
-  switch was.
+- **Skins are the third section**, after research. Research is the point of the page and
+  leads it; a look costs nothing, affects nothing, and is the one thing on this screen a
+  player picks rather than buys.
+- **The "Customize" tab is gone.** It sold skins from a cosmetics pool that does not
+  exist, so it was a tab that could only ever raise a toast. Skins are found in the hatch
+  and worn here instead — never sold.
 
 **THE THREE DRAWER SCREENS ARE BUILT** — News, Friends and Support were "Coming soon"
 panels, which is what the legacy build ships. Each is an offline implementation behind an
@@ -1073,7 +1076,8 @@ war, and the store is emptied into the colony from the home screen.
    interface with a `DemoGateway` that grants without charging. Swapping in RevenueCat is
    one new implementation of that interface — the screen and the grant code do not change.
    It sells only what the game can spend: mycelium, pheromone, larva, the Colony Pass and
-   the premium colony. Cosmetic rolls are still out — there is no cosmetics pool.
+   the premium colony. Skins are FOUND rather than sold — the hatch is their only source,
+   the same rule traits follow.
 4. Capacitor wrap → Android build
 5. RevenueCat in-app purchases — implement `PurchaseGateway` against it and hand it to
    `App`; nothing else moves. Needs, from Milan: a Play Console account, the products
@@ -1214,6 +1218,56 @@ rather than a purchase.
   "Trait"; with equippable Traits on the same page, one word for two things is the screen
   contradicting itself. It reads "Signature" now.
 
+**SKINS — WHAT A COLONY LOOKS LIKE** (`engine/skins.ts`, `platform/skins.ts`, the picker in
+`ui/species.ts`). Every colony has THREE looks: the one it is born with and two that are
+found. A look changes nothing about the game — no stat, no rule, no number that reaches
+`fight()` — and that is the whole point of it: it is the one thing a player can collect
+that costs an opponent nothing.
+- **THE CATALOGUE IS IN THE ENGINE, and that is not where you would first put it.** The
+  drawing is in `render/`, the ownership is in `platform/`, and those two may not import
+  each other (§3) — so a table both need has to sit under both, and under both is the
+  engine. It is the same kind of thing `SPECIES` already is: a name, some copy and some
+  tags the engine itself never reads. Second reason: a match record carries the setup, so
+  a replay of somebody else's match should be able to show the colony they fielded.
+- **A LOOK IS THREE TAGS, all drawn, none loaded** — `style` (an overlay on the ant),
+  `hill` (the nest's shape on the board) and `pal` (an optional recolour). **`pal` is the
+  one that carries furthest**: an overlay is a few pixels on a portrait, a palette is every
+  tile the colony holds on a board somebody stares at for ten minutes. So each colony's
+  FIRST found look is the drawn one and its SECOND is a colourway.
+- **NO SKIN MAY LOOK LIKE ANOTHER COLONY.** An opponent always fields its basic look, so a
+  palette landing on another species' own colours is not a skin — it is a colony you cannot
+  identify across the board. FOUR did on the first pass: a pink Leafcutter read as a Demon
+  Ant, a gold Weaver as a Pharaoh, a cream Leafcutter as a Ghost, and an indigo Army as a
+  Carpenter. `skins.test.ts` measures every palette against every species' body colour, and
+  it is the only reason the last two were ever found.
+- **AND NEVER GREY.** The board greys out tiles it has cut off, so a grey colony reads as
+  permanently disconnected. That is what pushed the Fire Ant's colourway from ash to ice.
+- **A SKIN IS NOT AN ITEM, which is why it never reaches the inventory.** A trait has a
+  uid, sits in a bag and can be worn on one bench at a time; an appearance has none of
+  that. Finding one twice is finding it once, `profile.skins` is a set of ids and
+  `profile.look` is what each colony is wearing — absent meaning basic. `normalise`
+  rebuilds the two TOGETHER, because a colony cannot wear a look it has not found and
+  certainly cannot wear another colony's; both fall back to basic, which is the one look
+  every colony always has. A basic look is never STORED as found, or "how many skins does
+  this player have" would depend on how many colonies they own.
+- **Wearing basic is CLEARING the field**, never writing its id. Two ways to spell one
+  state is two states to keep in step.
+- **`ProfileStore.lookFor()` is the single answer to "what does this colony look like"**,
+  and `lookCol()` in `render/palette.ts` is the single answer to what colours it is drawn
+  in. That is what stops the board, the portraits and the pickers disagreeing.
+- **The renderer repaints the factions ITSELF**, in its constructor and in `reset` — which
+  ran on the bare species and quietly undid the colour `startMatch` had just set, so a
+  skinned colony wore its own nest shape in the base species' colour. `looksOf` settles the
+  looks BEFORE `paint()`. Anything else that calls `setFactionColor` has the same trap.
+- **The plate beside the nest wears it too.** It was the one mark left on the board still
+  drawn in the species' colour — a blue colony with an orange face beside its name.
+- **The AI always fields the basic look.** Not a fairness rule (a skin cannot affect a
+  fight) — it is so an opponent reads as the species it is, and so the one colony on screen
+  wearing something found is the player's.
+- **The picker shows all three, and a locked one is DRAWN.** Greyed, not hidden: seeing the
+  two you have not found is the reason to keep opening the hatch. The state is WRITTEN
+  ("Worn" / "Wear" / "Locked") because worn and owned-but-not-worn are one hairline apart.
+
 **THE LUCKY HATCH** (`ui/hatch.ts`, `platform/traits.ts`). One egg in the middle of the
 screen, the larva you have above it, one button under it. That is deliberately the whole
 interface: the hatch does exactly one thing, and every control that is not "hatch" is a
@@ -1240,6 +1294,17 @@ control competing with it.
   comes; printed, one in a hundred is a target. The weights ARE the percentages (they sum
   to 100) because this number is read by a person, and a test measures forty thousand real
   rolls against what the screen says.
+- **A SKIN IS DRAWN FIRST, AND IT IS NOT A SIXTH TIER.** The five tiers are a curve; a
+  skin has no stat on it and sits nowhere on that curve, so slotting it in would have meant
+  making it either a bad common or an unfindable mythic. It gets its own chance
+  (`SKIN_CHANCE`, 7%) drawn before the tier roll — and only when there is one left to find:
+  with the collection complete the roll **falls through to a trait** rather than paying
+  nothing, or the last skin found would make the hatch worse. There are eighteen, so at a
+  hatch a day a player meets one every couple of weeks. The chance is PRINTED under the
+  tier row, on its own line, because an outcome a player can get and was never told about
+  is the one thing the odds panel exists to prevent.
+- **A skin's prize card is the colony WEARING it**, and the way out points at that colony
+  rather than at the inventory — a skin goes nowhere, so there is nothing to go and look at.
 - **THE POOL IS WHAT THE PLAYER HAS** — the universal traits and every colony they own. A
   mythic for a colony they may never buy is a mythic they cannot use, and the whole point
   of the top tier is that finding one is the best thing that happens in the feature. The

@@ -11,6 +11,7 @@ import { Layout } from "../layout";
 import { drawPlates } from "../plates";
 import type { Plate } from "../plates";
 import { makeRecorder } from "./recorder";
+import { basicLook } from "../../engine";
 
 const you: Plate = { name: "Milan", colony: 1_284_000, species: "fire" };
 const ai: Plate = { name: "Formica42", colony: 1_100_000, species: "leafcutter" };
@@ -24,11 +25,14 @@ const board = (): Layout => {
   return layout;
 };
 
+/** Both sides basic, which is what an opponent always fields. */
+const LOOKS = { you: basicLook("fire"), ai: basicLook("ghost") };
+
 interface Text { s: string; x: number; y: number }
 
 const texts = (plates: Partial<Record<"you" | "ai", Plate>>, alpha = 1): Text[] => {
   const rec = makeRecorder();
-  drawPlates(rec.ctx, board(), plates, size, alpha);
+  drawPlates(rec.ctx, board(), plates, size, LOOKS, alpha);
   return rec.of("fillText").map((c) => ({
     s: String(c.args[0]), x: c.args[1] as number, y: c.args[2] as number,
   }));

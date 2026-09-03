@@ -152,7 +152,10 @@ function who(store: ProfileStore, render: () => void, root: HTMLElement): HTMLEl
   const box = el("div", "pf-hero");
 
   const face = el("div", "pf-face");
-  face.appendChild(antPortrait(fav ?? profile.lastSpecies, 76));
+  // The player's own colony, wearing what they put on it. Everywhere else a portrait is
+  // somebody else's and is drawn basic.
+  const me = fav ?? profile.lastSpecies;
+  face.appendChild(antPortrait(me, 76, undefined, store.lookFor(me)));
   // The level rides the portrait rather than sitting beside it: one object, and the
   // number is the part that changes.
   face.appendChild(el("span", "pf-level", String(progress.level)));
@@ -279,7 +282,7 @@ function faces(store: ProfileStore): HTMLElement {
   for (const id of SPECIES_ORDER) {
     const cell = el("span", "pf-head" + (store.isUnlocked(id) ? "" : " off"));
     cell.title = SPECIES[id].name;
-    cell.appendChild(antPortrait(id, 22));
+    cell.appendChild(antPortrait(id, 22, undefined, store.lookFor(id)));
     strip.appendChild(cell);
   }
   return strip;

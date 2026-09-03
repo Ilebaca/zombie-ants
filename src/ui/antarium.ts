@@ -62,7 +62,10 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
     box.id = "antBanner";
     box.style.setProperty("--tc", tier.col);
     box.style.setProperty("--tglow", tier.glow);
-    box.appendChild(antPortrait(id, 128));
+    // The colony is drawn WEARING what the player put on it (engine/skins.ts) — this is
+    // their own collection, so showing the base look here and the skin on the board would
+    // be two answers to one question.
+    box.appendChild(antPortrait(id, 128, undefined, store.lookFor(id)));
 
     const info = el("div", "rb-info");
     info.appendChild(el("div", "rb-tier", species.premium ? "Mythic · Premium" : tier.name));
@@ -166,7 +169,7 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
     card.style.setProperty("--tglow", glow);
 
     if (owned) card.appendChild(el("span", "clv", `LV ${total}`));
-    card.appendChild(antPortrait(id, 112));
+    card.appendChild(antPortrait(id, 112, undefined, store.lookFor(id)));
     card.append(
       el("div", "cname", species.name),
       el("div", "cstat",

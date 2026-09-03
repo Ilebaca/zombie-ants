@@ -5,7 +5,7 @@
  * here, exactly as the legacy build did. Keeping CSS as the source of truth is what lets
  * a species swap recolour the whole UI — HUD chips, buttons and canvas — in one write.
  */
-import type { Player, SpeciesId } from "../engine";
+import type { Look, Player, SpeciesId } from "../engine";
 
 /** [ base, vivid (buttons/highlights/glow), dark ] */
 export const SPECIES_COL: Record<SpeciesId, readonly [string, string, string]> = {
@@ -97,9 +97,22 @@ export function loadColors(): void {
   for (const n of VAR_NAMES) COL[n] = readVar("--" + n);
 }
 
+/**
+ * The colours a colony is actually drawn in.
+ *
+ * A skin's palette REPLACES the species' own (engine/skins.ts) — it is the part of a look
+ * that carries furthest, because an overlay is a few pixels on a portrait and a palette is
+ * every tile the colony holds. One function, so the board, the portraits and the pickers
+ * cannot disagree about what a colony looks like.
+ */
+export const lookCol = (
+  species: SpeciesId, look?: Look | null,
+): readonly [string, string, string] =>
+  look?.pal ?? SPECIES_COL[species] ?? SPECIES_COL.fire;
+
 /** Repaint one faction in its species colours. Rewrites the CSS vars, then reloads `COL`. */
-export function setFactionColor(faction: Player, species: SpeciesId): void {
-  const pal = SPECIES_COL[species] ?? SPECIES_COL.fire;
+export function setFactionColor(faction: Player, species: SpeciesId, look?: Look | null): void {
+  const pal = lookCol(species, look);
   const s = document.documentElement.style;
   s.setProperty("--" + faction, pal[0]);
   s.setProperty("--" + faction + "-glow", pal[1]);

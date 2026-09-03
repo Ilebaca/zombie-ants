@@ -27,9 +27,9 @@
  * thing Settings' Sound switch was.
  */
 import {
-  RESEARCH_MAX, SPECIES, abilityCooldown, researchCost, NEUTRAL_MODS,
+  RESEARCH_MAX, SPECIES, abilityCooldown, looksFor, researchCost, NEUTRAL_MODS,
 } from "../engine";
-import type { SpeciesId } from "../engine";
+import type { Look, SpeciesId } from "../engine";
 import {
   RESEARCH_TOTAL_MAX, RESEARCH_TRACKS, SPECIES_NOTES, TRAITS_CHAPTER, tierOf,
 } from "../platform";
@@ -79,7 +79,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     // colony IS (its numbers, and how far its research has come), so the loadout belongs
     // with them; a section is for a list, and this is not one. It stays a door: the pips
     // say which five, and the row opens the bench.
-    page.appendChild(hero(id, research, tier.name, tier.col,
+    page.appendChild(hero(id, research, tier.name, tier.col, store.lookFor(id),
       traitOpener(store, id, () => opts.onTraits?.(),
         store.traitsOpen() ? null : `Chapter ${TRAITS_CHAPTER}`)));
 
@@ -90,6 +90,12 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     }
     page.appendChild(list);
 
+    // SKINS COME AFTER RESEARCH, and they are the whole of what this screen can CHANGE
+    // for free. Research is the point of the page and leads it; a look costs nothing,
+    // affects nothing, and is the one thing here a player picks rather than buys.
+    page.appendChild(el("div", "secthead", "Skins"));
+    page.appendChild(skinRow());
+
     page.appendChild(el("div", "secthead", species.ability.name));
     page.appendChild(abilityCard(id, research));
 
@@ -98,6 +104,48 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
 
     body.appendChild(page);
     root.appendChild(body);
+  };
+
+  /**
+   * THE THREE LOOKS, AS THE THINGS THEY ARE.
+   *
+   * Each is the colony's own head drawn WEARING it, in that look's own colours — a skin
+   * shown as a name over a generic mark would be the one prize in this game the screen
+   * refuses to show. The basic look is always there and always wearable, so a player can
+   * put a skin back; a locked one is drawn all the same, greyed, because seeing the two
+   * you have not found is the reason to keep opening the hatch.
+   *
+   * Choosing is a tap, and it takes effect everywhere at once — the board, the pickers,
+   * the plates beside the nest — because `ProfileStore.lookFor` is the single answer to
+   * "what does this colony look like".
+   */
+  const skinRow = (): HTMLElement => {
+    const worn = store.lookFor(id);
+    const row = el("div", "skinrow");
+    row.id = "spgSkins";
+
+    for (const look of looksFor(id)) {
+      const basic = look.id === looksFor(id)[0]?.id;
+      const owned = basic || store.hasSkin(look.id);
+      const on = look.id === worn.id;
+
+      const card = el("button", "skincard"
+        + (on ? " on" : "") + (owned ? "" : " locked")) as HTMLButtonElement;
+      card.type = "button";
+      card.dataset.look = look.id;
+      card.disabled = !owned;
+
+      const face = el("span", "skincard-p");
+      face.appendChild(antPortrait(id, 96, "skincard-c", look));
+      card.append(face, el("span", "skincard-n", look.name));
+      // The state is written, never left to the border alone: "on" and "owned but not
+      // worn" are one hairline apart, and the difference is the whole of what the row says.
+      card.append(el("span", "skincard-s", on ? "Worn" : owned ? "Wear" : "Locked"));
+
+      if (owned) card.onclick = () => { store.wearSkin(id, look.id); render(); };
+      row.appendChild(card);
+    }
+    return row;
   };
 
   /** One research track: what it is, what you have, what the next level buys, the price. */
@@ -159,14 +207,15 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
  * the track on the same commit.
  */
 function hero(
-  id: SpeciesId, research: Research, tierName: string, tierCol: string, traits: HTMLElement,
+  id: SpeciesId, research: Research, tierName: string, tierCol: string, look: Look,
+  traits: HTMLElement,
 ): HTMLElement {
   const species = SPECIES[id];
   const pal = SPECIES_COL[id];
   const box = el("div", "spghero");
   box.style.setProperty("--tc", tierCol);
 
-  const port = antPortrait(id, 240, "spgport");
+  const port = antPortrait(id, 240, "spgport", look);
   port.id = "aupPort";
   box.appendChild(port);
 

@@ -14,7 +14,7 @@ import {
 } from "../engine";
 import type {
   AbilityKind, ActionContext, Coord, EngineEvent, GameOverReason, GameState, MapId, Move,
-  Player, PlayerMods, SpeciesId, Tile,
+  Look, Player, PlayerMods, SpeciesId, Tile,
 } from "../engine";
 import { adopt } from "../ai/thinker";
 import { AiOpponent } from "./opponent";
@@ -105,6 +105,12 @@ export interface MatchOptions {
    * the profile (that is the shell's job) and nothing here can change a colony.
    */
   plates?: Record<Player, Nameplate>;
+  /**
+   * What each colony is WEARING (engine/skins.ts). The screen is handed it rather than
+   * reading the profile, for the same reason the plates are: this file does not know the
+   * progression layer exists, and an opponent always fields the basic look anyway.
+   */
+  looks?: Partial<Record<Player, Look>>;
   /** Steps the meta walk already showed, so this half's counter carries on from it. */
   tourFrom?: number;
   /** The last step was finished or skipped: the tutorial is over for good. */
@@ -224,6 +230,7 @@ export class MatchScreen {
         ai: { ...opts.plates.ai, species: opts.state.species.ai },
       },
       colonySize: compact,
+      looks: opts.looks,
     });
   }
 

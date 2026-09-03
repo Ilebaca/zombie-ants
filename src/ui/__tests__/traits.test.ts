@@ -11,6 +11,7 @@ import { ProfileStore, TRAITS, TRAIT_SLOTS, TRAIT_TIER, effectFigure } from "../
 import { MemoryStore } from "../../platform";
 import { buildInventory, buildTraitBench, traitOpener } from "../traits";
 import { buildSpeciesPage } from "../species";
+import { basicLook, looksFor } from "../../engine";
 import type { TraitScope } from "../../platform";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
@@ -296,3 +297,78 @@ describe("where the colony page keeps its traits", () => {
   });
 });
 
+/**
+ * THE SKIN PICKER — three looks, and the one being worn.
+ *
+ * A skin is not an item: it never reaches the inventory, it is unlocked for ever, and the
+ * only place it can be worn from is the colony it belongs to. So the whole of the feature
+ * on this screen is three cards and a tap.
+ */
+describe("choosing a colony's look", () => {
+  const grown = (): ProfileStore => {
+    const s = new ProfileStore(new MemoryStore());
+    s.update((p) => { p.colony = 2_000_000; });
+    return s;
+  };
+
+  const page = (s: ProfileStore): HTMLElement =>
+    buildSpeciesPage(s, { species: "fire", onBack: () => {} });
+
+  const cards = (root: HTMLElement): HTMLButtonElement[] =>
+    Array.from(root.querySelectorAll<HTMLButtonElement>("#spgSkins .skincard"));
+
+  it("shows all three looks, with the two unfound ones locked", () => {
+    const root = page(grown());
+    const all = cards(root);
+    expect(all.length).toBe(looksFor("fire").length);
+    expect(all.map((c) => c.dataset.look)).toEqual(looksFor("fire").map((l) => l.id));
+
+    // The basic one is worn and always wearable; the found ones are not there yet.
+    expect(all[0]?.className).toContain("on");
+    expect(all[0]?.disabled).toBe(false);
+    expect(all[1]?.className, "an unfound skin was offered").toContain("locked");
+    expect(all[1]?.disabled).toBe(true);
+    // ...and it is still DRAWN, because seeing what you have not found is the point.
+    expect(all[1]?.querySelector("canvas"), "a locked skin was hidden").toBeTruthy();
+    expect(all[1]?.textContent).toContain("Locked");
+  });
+
+  it("wears one that has been found, and says which is worn", () => {
+    const s = grown();
+    const look = looksFor("fire")[1]!;
+    s.findSkin(look.id);
+
+    const root = page(s);
+    const card = cards(root)[1];
+    expect(card?.disabled).toBe(false);
+    expect(card?.textContent).toContain("Wear");
+
+    card?.click();
+    expect(s.lookFor("fire")).toBe(look);
+    // The screen redraws in place, so the state on it moved too.
+    const after = cards(root);
+    expect(after[1]?.className).toContain("on");
+    expect(after[1]?.textContent).toContain("Worn");
+    expect(after[0]?.className).not.toContain("on");
+  });
+
+  it("puts it back by tapping the basic one", () => {
+    const s = grown();
+    const look = looksFor("fire")[1]!;
+    s.findSkin(look.id);
+    s.wearSkin("fire", look.id);
+
+    const root = page(s);
+    cards(root)[0]?.click();
+    expect(s.lookFor("fire")).toBe(basicLook("fire"));
+    expect(s.hasSkin(look.id), "putting a skin back threw it away").toBe(true);
+  });
+
+  /** A locked card must not be a live control: a dead tap is worse than a dead button. */
+  it("does nothing when a locked card is tapped", () => {
+    const s = grown();
+    cards(page(s))[2]?.click();
+    expect(s.lookFor("fire")).toBe(basicLook("fire"));
+    expect(s.get().look).toEqual({});
+  });
+});

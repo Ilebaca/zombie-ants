@@ -99,7 +99,7 @@ table tbody tr:hover { background: #f5f1ea; }
   <button class="tab-btn" onclick="S('ai',this)">Enemy AI</button>
   <button class="tab-btn" onclick="S('meta',this)">Meta & economy</button>
   <button class="tab-btn" onclick="S('trophy',this)">Colony Road</button>
-  <button class="tab-btn" onclick="S('traits',this)">Traits &amp; hatch</button>
+  <button class="tab-btn" onclick="S('traits',this)">Traits, skins &amp; hatch</button>
   <button class="tab-btn" onclick="S('challenges',this)">Challenges</button>
   <button class="tab-btn" onclick="S('screens',this)">Screens</button>
   <button class="tab-btn" onclick="S('ui',this)">UI / UX</button>
@@ -120,7 +120,7 @@ table tbody tr:hover { background: #f5f1ea; }
     <option value="ai">Enemy AI</option>
     <option value="meta">Meta & economy</option>
     <option value="trophy">Colony Road</option>
-    <option value="traits">Traits &amp; hatch</option>
+    <option value="traits">Traits, skins &amp; hatch</option>
     <option value="challenges">Challenges</option>
     <option value="screens">Screens</option>
     <option value="ui">UI / UX</option>
@@ -456,7 +456,8 @@ table tbody tr:hover { background: #f5f1ea; }
     <h2>Traits</h2>
     <p>Every colony also has <strong>five trait slots</strong>, filled from the lucky hatch. See the Traits tab — a trait is found rather than bought, and it is the only part of a colony's strength that differs between two players who have both maxed their research.</p>
 
-    <div class="flag"><strong>Cosmetics are not built.</strong> Skins and themed anthills are described in the legacy build and do not exist here: there is no cosmetics pool, nothing sells them, and the Antarium's "Customize" tab was removed rather than left as a control that could only ever raise a toast.</div>
+    <h2>Skins</h2>
+    <p>Every colony has <strong>three looks</strong>: the one it is born with and two that are found. See the Traits &amp; hatch tab — a skin changes nothing about the game and is the one thing a player can collect that costs an opponent nothing.</p>
   </div>
 </div>
 
@@ -749,7 +750,7 @@ table tbody tr:hover { background: #f5f1ea; }
 <!-- TRAITS -->
 <div id="traits" class="tab-panel">
   <div class="page">
-    <div class="eyebrow">Traits &amp; the lucky hatch</div>
+    <div class="eyebrow">Traits, skins &amp; the lucky hatch</div>
     <h1>The collectable half of a colony</h1>
     <p>Chambers and research are <strong>bought</strong>: a straight line from mycel to a number, the same for every player who saves up. A trait is <strong>found</strong>. It has a tier, there are fifty-three of them, two players never hold the same set, and what you do with the ones you have is a choice rather than a purchase.</p>
 
@@ -804,6 +805,41 @@ table tbody tr:hover { background: #f5f1ea; }
       <li><strong>With no larva the button is not disabled, it is the way to buy some</strong>, landing directly on the larva shelf of the shop. A dead button is a dead end.</li>
       <li><strong>Larva is shown here and nowhere else.</strong> It buys exactly one thing, so it does not ride the top bar beside the two currencies a player spends every day — a figure in the chrome that the chrome offers nothing to spend on is a question the interface never answers.</li>
     </ul>
+    <h1>Skins</h1>
+    <p>Every colony has <strong>three looks</strong>: the one it is born with and two that are found. A look changes nothing about the game — no stat, no rule, no number that reaches the fight — and that is the whole point of it. It is the one thing a player can collect that costs an opponent nothing.</p>
+
+    <h2>What a look is</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Tag</th><th>What it changes</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Style</strong></td><td>An overlay drawn on the ant itself — molten cracks, a draped sheet, carved marks, silk, bark, warning bands</td></tr>
+        <tr><td><strong>Hill</strong></td><td>The shape of the colony's nest on the board — a mound, a tree, a volcano, a pyramid, a bunker, a horn</td></tr>
+        <tr><td><strong>Palette</strong></td><td>A recolour of the whole colony: every tile it holds, its nest, its portrait, and the interface around it</td></tr>
+      </tbody>
+    </table></div>
+    <p><strong>The palette is the one that carries furthest.</strong> An overlay is a few pixels on a portrait; a palette is every tile the colony holds, on a board somebody stares at for ten minutes. So each colony's first found look is the <em>drawn</em> one and its second is a <em>colourway</em> — between them a player can tell two colonies of the same species apart at a glance, which is what a skin is for.</p>
+    <p>All of it is <strong>drawn, never loaded</strong>. There is no image file anywhere in this project, and a skin is no exception: an overlay is canvas code and a palette is three hex values.</p>
+
+    <h2>Two rules the palettes have to obey</h2>
+    <ul>
+      <li><strong>No skin may look like another colony.</strong> An opponent always fields its basic look, so a palette landing on some other species' own colours is not a skin — it is a colony you cannot identify across the board. Four did on the first pass: a pink Leafcutter read as a Demon Ant, a gold Weaver as a Pharaoh, a cream Leafcutter as a Ghost, and an indigo Army as a Carpenter. A test measures every palette against every species' body colour, and it is the only reason the last two were ever found.</li>
+      <li><strong>And never grey.</strong> The board greys out tiles it has cut off, so a grey colony would read as permanently disconnected. That is what pushed the Fire Ant's colourway from ash to <em>ice</em> — a Fire Ant in Frostbite blue, on purpose.</li>
+    </ul>
+
+    <h2>A skin is not an item</h2>
+    <p>A trait has a uid, sits in a bag and can be worn on one bench at a time. An appearance has none of that — so a skin <strong>never reaches the inventory</strong>: finding one unlocks it for ever, there is nothing to carry, nothing to swap out and nothing to lose by wearing it. The only place it can be worn from is the colony it belongs to, which is where the picker lives.</p>
+    <ul>
+      <li>All three looks are shown on the colony's page, and a <strong>locked one is drawn</strong> — greyed, not hidden, because seeing the two you have not found is the reason to keep opening the hatch.</li>
+      <li>The state is <em>written</em> — Worn, Wear, Locked — because worn and owned-but-not-worn are one hairline apart.</li>
+      <li><strong>The AI always fields the basic look.</strong> Not a fairness rule, since a skin cannot affect a fight: it is so an opponent reads as the species it is, and so the one colony on screen wearing something found is the player's.</li>
+    </ul>
+
+    <h2>Finding one</h2>
+    <p>The lucky hatch is the only source, exactly as it is for traits. A skin is drawn <em>before</em> the tier roll and is <strong>not a sixth tier</strong>: the five tiers are a curve, and a skin has no stat on it and sits nowhere on that curve, so slotting it in would have meant making it either a bad common or an unfindable mythic. It has its own chance — <strong>7%</strong>, printed under the tier row — and there are eighteen to find, so at a hatch a day a player meets one every couple of weeks.</p>
+    <div class="callout">
+      <p><strong>The chase must not dead-end.</strong> With every skin for every colony the player owns already found, a roll that wanted one <em>falls through</em> to a trait rather than spending the larva on nothing. The last skin found must never be the moment the hatch got worse.</p>
+    </div>
+
     <div class="flag"><strong>Chapter 10 gates both.</strong> A trait is a choice between things you have found, and a player handed one in their first hour has no collection to choose from and no idea what +2% defence is worth. A hatch open before the benches are would sell a player something they cannot equip on any colony, which is the one thing a shop must never do. Larva earned before then is still banked.</div>
   </div>
 </div>
@@ -1072,6 +1108,7 @@ table tbody tr:hover { background: #f5f1ea; }
       <li>An alpha-beta AI at three genuinely different difficulties, running in a Web Worker, with measured self-play results</li>
       <li>Anthill chambers, the granary, per-species research, the Antarium and a page per colony</li>
       <li><strong>Traits</strong>: fifty-three of them across five tiers, five slots per colony and five for the anthill, with an inventory screen</li>
+      <li><strong>Skins</strong>: two per colony beside the basic look, found in the hatch and worn from the colony's own page — an overlay, a nest shape and a palette that recolours the whole colony on the board</li>
       <li><strong>The lucky hatch</strong>, larva, and printed odds</li>
       <li>The Colony Road (100 rungs, 50 chapters, free and pass tracks), daily quests, the challenge ladder and a daily challenge</li>
       <li>The shop, selling only what the game can spend, through a purchase gateway with a demo implementation</li>
@@ -1099,7 +1136,7 @@ table tbody tr:hover { background: #f5f1ea; }
       <li><strong>Seasons.</strong> The Colony Road already has the shape of a seasonal pass; add reset and rotating rewards.</li>
       <li><strong>Accounts, replacing the save code.</strong> The save lives on one device and the transfer code is the honest stand-in until there is somewhere to put it.</li>
       <li><strong>Server-stored replays.</strong> They are already built and local — a server only has to keep the records.</li>
-      <li><strong>Cosmetics.</strong> Skins and themed anthills are <em>not</em> built and are not sold: there is no cosmetics pool, so there is nothing to hand over. The Antarium's "Customize" tab was removed rather than left to raise a toast.</li>
+      <li><strong>More to collect.</strong> Skins are built — two per colony, found in the hatch — and so are traits. What is still not built is anything <em>sold</em> as a cosmetic: there is no shop shelf for looks, and the Antarium's old "Customize" tab was removed rather than left to raise a toast. Whether a skin should ever be purchasable is a design decision, not an omission.</li>
     </ul>
 
     <div class="callout green">

@@ -3821,6 +3821,68 @@ button:not(.playbtn):active,
   background: transparent;
 }
 
+/* ============================================================================
+   ==  SKINS  =================================================================
+   ============================================================================
+
+   Three cards, and each is the colony's own head WEARING the look — a skin
+   shown as a name over a generic mark would be the one prize in this game the
+   screen refuses to show. Three across, because that is exactly how many
+   there are: a scroller would imply a fourth. */
+.skinrow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.skincard {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 4px 7px;
+  border-radius: var(--r-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  font-family: var(--font);
+  color: var(--ink);
+  cursor: pointer;
+}
+.skincard:not(.locked):active { transform: translateY(1px); }
+/* The one being worn is the only card with the colony's own colour on it. */
+.skincard.on {
+  border-color: var(--grass);
+  background: color-mix(in srgb, var(--grass) 12%, var(--panel));
+}
+/* Locked is DRAWN, not hidden: seeing the two you have not found is the reason
+   to keep opening the hatch. Greyed rather than blanked, so it is still a
+   picture of the thing. */
+.skincard.locked { cursor: default; opacity: .42; filter: grayscale(1); }
+.skincard-p {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+}
+/* Drawn at twice the size it is shown at, which is what keeps it sharp. */
+.skincard-c { width: 100%; height: auto; }
+.skincard-n {
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+/* The state is WRITTEN. "Worn" and "owned but not worn" are one hairline
+   apart, and the difference is the whole of what the row says. */
+.skincard-s {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.skincard.on .skincard-s { color: var(--grass-glow); }
+
 /* --------------------------------------------------------------- THE RESEARCH */
 .spglist { display: grid; gap: 6px; }
 .spgtrack {
@@ -5043,6 +5105,24 @@ button:not(.playbtn):active,
    carried by its colour and the name rides under it as small as it can be read. */
 .ho-n { font-size: 8px; font-weight: 800; letter-spacing: .2px; color: var(--muted); }
 .ho-p { font-size: 12px; font-weight: 900; color: var(--tier); }
+/* A skin is not a sixth tier — no stat, and nowhere on the rarity curve — so
+   it is a sentence under the row rather than a column squeezed into it. */
+.ho-note {
+  grid-column: 1 / -1;
+  padding-top: 2px;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* ---- A skin came out ----
+   The portrait fills the disc rather than sitting in it: the picture IS the
+   prize, and a face floating in a ring reads as an icon for one. */
+.hp-face { overflow: hidden; }
+.hp-port { width: 108px; height: 108px; }
+
 
 /* Shut until traits are. Larva buys traits and nothing else, so a hatch open
    before the benches are would sell something that cannot be equipped. */

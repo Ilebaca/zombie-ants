@@ -22,8 +22,9 @@
  */
 import type { Player, SpeciesId } from "../engine";
 import type { Layout } from "./layout";
-import { antHead, basicLook } from "./art";
-import { COL, SPECIES_COL, ownerCol } from "./palette";
+import { antHead } from "./art";
+import type { Look } from "../engine";
+import { COL, lookCol, ownerCol } from "./palette";
 
 /** One side's identity. Settled when the match starts and never written again. */
 export interface Plate {
@@ -91,7 +92,7 @@ export function rowsOf(
 export function drawPlates(
   ctx: CanvasRenderingContext2D, layout: Layout,
   plates: Partial<Record<Player, Plate>>, size: (n: number) => string,
-  alpha = 1,
+  looks: Record<Player, Look>, alpha = 1,
 ): void {
   if (alpha <= 0) return;
   ctx.save();
@@ -102,8 +103,11 @@ export function drawPlates(
   for (const row of rowsOf(ctx, layout, plates, size)) {
     const mid = row.y + row.icon / 2;
     ctx.font = `900 ${row.font}px var(--font),sans-serif`;
-    antHead(ctx, row.x + row.icon / 2, mid, row.icon * 0.46,
-      SPECIES_COL[row.plate.species], basicLook(row.plate.species));
+    // The head WEARS what that colony is wearing, and takes the skin's own colours with
+    // it (engine/skins.ts) — otherwise the name beside a blue colony carries an orange
+    // face, which is the one place on the board that would still be showing the species.
+    const look = looks[row.who];
+    antHead(ctx, row.x + row.icon / 2, mid, row.icon * 0.46, lookCol(row.plate.species, look), look);
 
     // The name reads in the page's own ink; the figure in that side's colour, which is the
     // colour its ground is drawn in — so the row belongs to the half of the board it is on.

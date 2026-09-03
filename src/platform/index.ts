@@ -7,7 +7,9 @@ export {
   ProfileStore, defaultProfile, normalise, modsFrom, matchXp, DAILY_GIFT, MATCH_MYCEL,
   TOUR_VERSION,
 } from "./profile";
-export type { ChamberId, Equipped, GranaryState, Profile, Research, Stats } from "./profile";
+export type {
+  ChamberId, Equipped, GranaryState, HatchPrize, Profile, Research, Stats,
+} from "./profile";
 export {
   NEWS, agoOf, newsFeed, newsLatestAt, unreadNews,
 } from "./news";
@@ -68,6 +70,7 @@ export {
   TRAIT_TIERS, WIN_LARVA, combine, effectFigure, effectText, fitsScope, itemDef, markOf,
   rollDrop, rollTier, rollTrait, scopeName, tierOdds, totalsOf, traitDef, traitsFor,
 } from "./traits";
+export { SKIN_CHANCE, lockedLooks, rollSkin, skinProgress } from "./skins";
 export type {
   Drop, TraitDef, TraitItem, TraitKind, TraitScope, TraitTier, TraitTierDef, TraitTotals,
 } from "./traits";
