@@ -177,16 +177,11 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
     // and the colony's own page draws them as bars measured against every other colony.
     card.appendChild(el("div", "cname", species.name));
 
-    // The research bar only appears once there IS research. At level nothing it is an
-    // empty grey rule under the two numbers, which reads as a divider nobody drew on
-    // purpose — and the card already says "LV 0" a line above it.
-    if (owned && total > 0) {
-      const bar = el("span", "cbar");
-      const fill = el("i");
-      fill.style.width = `${Math.round((total / RESEARCH_TOTAL_MAX) * 100)}%`;
-      bar.appendChild(fill);
-      card.appendChild(bar);
-    }
+    // NO RESEARCH BAR. It drew the same number the "LV 15" badge already carries, in a
+    // form with no label on it — and because it only appeared once a colony HAD research,
+    // it showed under some cards and not others, which reads as a stray rule under two of
+    // them rather than as a measure of anything. The badge says the level; the colony's
+    // own page is where research is actually read.
     if (!owned) {
       const veil = el("div", "cveil");
       const shut = el("span", "cl");

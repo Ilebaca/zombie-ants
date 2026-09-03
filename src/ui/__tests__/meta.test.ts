@@ -922,6 +922,29 @@ describe("legacy markup parity", () => {
   });
 
   /**
+   * NOTHING UNDER THE NAME, INCLUDING ONCE THERE IS RESEARCH.
+   *
+   * The card used to grow a progress bar the moment a colony had any research — so it
+   * showed under some cards and not others, drawing the same number the "LV 15" badge
+   * already carries, with no label on it. Two rules under two of nine cards read as a
+   * stray line rather than as a measure of anything.
+   */
+  it("grows no bar under a card once its colony has research", () => {
+    const s = store(100_000, 100_000);
+    for (let i = 0; i < 3; i++) s.buyResearch("fire", "mandible");
+    expect(s.get().research.fire?.mandible).toBe(3);
+
+    const root = buildAntarium(s, { onOpenSpecies: () => {} });
+    const card = Array.from(root.querySelectorAll<HTMLElement>(".ccard"))
+      .find((c) => c.dataset.ant === "fire");
+    expect(card?.textContent, "the level badge went with it").toContain("LV 3");
+    expect(card?.querySelector(".cbar"), "a research bar grew under the name").toBeNull();
+    expect(root.querySelector(".cbar"), "a research bar grew under some card").toBeNull();
+    // The name is the last thing on the card, so nothing can creep back under it unseen.
+    expect(card?.lastElementChild?.className).toBe("cname");
+  });
+
+  /**
    * The species page is a DELIBERATE deviation from the legacy skeleton (CLAUDE.md §10):
    * the legacy shape was four identical grey cards, and it was the last screen in the app
    * still wearing it. What is held here is the shape it was rebuilt into — and the ids the

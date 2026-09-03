@@ -731,13 +731,19 @@ boxes now: a fixed head, and a table that scrolls under it.
   the colony number has no ceiling either (§8a).
 - **Every other chip says whether that division is ahead of the player or behind.** Without
   it there is no reason to tap through six divisions the player is not in.
-**A COLLECTION CARD CARRIES THE NAME AND NOTHING UNDER IT.** It used to carry the colony's
-attack and defence as a bare pair — "0.86 · 0.87" — which is two numbers with no label, no
-scale and nothing to compare them against. It was reported as looking like a level, which
-is exactly what an unlabelled figure under a name reads as. Both are a tap away as
-LABELLED chips on the banner above, and the colony's own page draws them as bars measured
-against every other colony (§ the species page). What is lost is comparing two colonies
-without tapping either; the bars are the place that comparison actually belongs.
+**A COLLECTION CARD CARRIES THE NAME AND NOTHING UNDER IT.** Two things used to sit there
+and both were reported as "a line under the name that I guess is the level":
+- the colony's attack and defence as a bare pair — "0.86 · 0.87" — two numbers with no
+  label, no scale and nothing to compare them against, which is exactly what an unlabelled
+  figure under a name reads as. Both are a tap away as LABELLED chips on the banner above,
+  and the colony's own page draws them as bars measured against every other colony. What is
+  lost is comparing two colonies without tapping either; the bars are where that belongs.
+- a RESEARCH BAR, which drew the same number the "LV 15" badge already carries, unlabelled
+  — and only appeared once a colony HAD research, so it showed under two cards out of nine
+  and read as a stray rule rather than as a measure of anything. Hiding it at level zero
+  (which is what it already did) was the half-fix; the badge was always saying it.
+
+A test holds `.cname` as the card's LAST child, so nothing can creep back under it.
 
 - **A rival is a colony, not a string.** The search, the nameplate and the result card all
   give an opponent a head; this was the one screen that did not. Rivals draw a non-premium
