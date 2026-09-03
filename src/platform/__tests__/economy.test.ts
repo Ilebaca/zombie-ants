@@ -25,6 +25,8 @@ import { GRANARY_LEVELS, granaryFull, granaryRate, granaryStored } from "../gran
 import { ROAD_LAST, ROAD_STOPS, chapterOf, freeReward } from "../road";
 import { QUEST_POOL, QUEST_SWEEP_BONUS, QUESTS_PER_DAY, levelReward, xpForLevel } from "../quests";
 import { SPECIES_UNLOCK } from "../catalogue";
+import { FUSE_COST, FUSE_DEALS, FUSE_FUEL, LARVA_MYCEL } from "../exchange";
+import { WIN_LARVA } from "../traits";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const GAMES_PER_DAY = 2.5;
@@ -278,5 +280,79 @@ describe("the granary is a top-up, not a rival", () => {
     const colony = 640;
     expect(chapterOf(colony)).toBeGreaterThanOrEqual(10);
     expect(granaryRate(colony, 2)).toBeGreaterThanOrEqual(1);
+  });
+});
+
+/**
+ * WHERE EACH CURRENCY GOES WHEN THERE IS NOTHING LEFT TO BUY.
+ *
+ * Everything above measures the sinks against the supply. What it cannot measure is that
+ * both sinks END: mycelium's is covered around day 250 of a 440-day road and pheromone's
+ * around day 400, and from those days a number goes up on the top bar for ever and buys
+ * nothing. The two trades in `platform/exchange.ts` are the answer, and what has to be
+ * held about them is that neither one out-earns playing the game.
+ */
+describe("the endless half of the economy", () => {
+  const run = career();
+  /**
+   * Mycelium a day ONCE EVERYTHING BUYABLE HAS BEEN BOUGHT — which is the day's whole
+   * income, because from then on there is nothing to take out of it. Averaging the
+   * leftovers over the road instead would divide a late surplus by the early days that
+   * were spending every coin, and understate it several times over.
+   */
+  const mycelSurplus = run.mycel / run.days;
+  /** The same for pheromone, once the research tree is finished. */
+  const pherSurplus = run.pheromone / run.days;
+
+  /**
+   * BUYING LARVA MUST NOT BEAT PLAYING FOR THEM. A win pays one outright, so at two and a
+   * half matches a day on an even record playing is the main faucet; the surplus is a
+   * top-up. If this flipped, the fastest way to fill the hatch would be to stop.
+   */
+  it("prices a larva so the surplus pays fewer than playing does", () => {
+    const bought = mycelSurplus / LARVA_MYCEL;
+    const played = GAMES_PER_DAY * WIN_RATE * WIN_LARVA;
+    expect(bought, `${bought.toFixed(2)} bought against ${played.toFixed(2)} played`)
+      .toBeLessThan(played);
+    // ...and it is still worth doing. A trade nobody can afford is a dead control.
+    expect(bought).toBeGreaterThan(played * 0.1);
+  });
+
+  /**
+   * IT MUST NOT UNDERCUT THE SHOP EITHER. Larva sells three for a euro, so a day of free
+   * mycelium buying most of a euro's worth would make that shelf pointless.
+   */
+  it("keeps a day of surplus well under what a euro buys", () => {
+    expect(mycelSurplus / LARVA_MYCEL).toBeLessThan(3 / 3);
+  });
+
+  /**
+   * THE FUSE LADDER IS A CHASE, NOT A WEEKEND. The bottom rung is something to do this
+   * week; the top one, fused all the way from commons, is most of a year of surplus.
+   */
+  it("makes the top of the fuse ladder a long way off", () => {
+    const cheapest = FUSE_DEALS[0]!.pheromone;
+    expect(cheapest / pherSurplus, "the first rung is out of reach").toBeLessThan(7);
+
+
+    // What a mythic costs fused from the bottom: each rung needs FUSE_FUEL of the one
+    // below, so the prices multiply up the ladder.
+    let cost = 0;
+    let need = 1;
+    for (let i = FUSE_DEALS.length - 1; i >= 0; i--) {
+      const deal = FUSE_DEALS[i]!;
+      cost += need * FUSE_COST[deal.into];
+      need *= FUSE_FUEL;
+    }
+    const days = cost / pherSurplus;
+    expect(days, `a fused mythic is ${Math.round(days)} days of surplus`).toBeGreaterThan(120);
+    // ...and the fuel it eats is a real collection, not a shopping trip.
+    expect(need).toBe(FUSE_FUEL ** FUSE_DEALS.length);
+  });
+
+  /** Both surpluses have to be REAL, or neither trade is reachable at all. */
+  it("leaves both currencies with something over once their sinks are covered", () => {
+    expect(mycelSurplus, `${mycelSurplus.toFixed(1)} mycelium a day spare`).toBeGreaterThan(5);
+    expect(pherSurplus, `${pherSurplus.toFixed(1)} pheromone a day spare`).toBeGreaterThan(1);
   });
 });

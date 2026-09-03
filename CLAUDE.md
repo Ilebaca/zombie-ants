@@ -965,6 +965,53 @@ winning about half.**
 - Maps: Skirmish 7×7 (wake 10, expected 32), Corridor 9×9 (14/45), Gauntlet 13×13 (18/80).
   The turn figure is an expectation, not a limit — nothing happens when it passes (§4.8).
 
+**8d. WHERE A CURRENCY GOES WHEN THERE IS NOTHING LEFT TO BUY** (`platform/exchange.ts`).
+Every sink in §8c is FINITE, and §8c measured whether they were the right SIZE without ever
+asking what happens after them. Measured on the same tuned player: mycelium's sink (21,865
+— chambers 3,745, colonies 2,120, the granary 16,000) is covered around **day 250** of a
+440-day road, and pheromone's (14,850, the whole research tree) around **day 400**. From
+those days each currency is a number that goes up on the top bar and buys nothing, for
+ever — which is a reward that has stopped being one, and is exactly how it was reported.
+- **THE FIX CANNOT BE MORE THINGS THAT CHANGE A MATCH.** Every match-affecting number here
+  is capped on purpose, because progression must never become mandatory and the AI gets
+  none of it (§4.8). Uncapping a chamber or a research track to make a sink would buy an
+  endless economy with the one rule the game is built on.
+- So the sinks point at the COLLECTION, the only thing here that does not end — and each
+  currency keeps the job it already had. **Mycelium is BREADTH** (more colonies, more
+  chambers, more room), so its endless sink is more ROLLS: `buyLarva()`, at
+  `LARVA_MYCEL`. **Pheromone is DEPTH** (research makes one colony better), so its endless
+  sink is making what you hold better: `fuse()`, three spares of one tier into one of the
+  next.
+- **PLAYING STAYS THE MAIN FAUCET.** A win pays a larva outright — 1.25 a day at two and a
+  half matches on an even record — and the mycelium surplus (about 64 a day) adds a
+  quarter of one at 250 each. At 150 it added nearly half again, which starts to read as
+  the way to GET larva rather than as somewhere for the leftovers to go. It also has to
+  stay clear of the shop, which sells three for a euro: a euro is about five days of this
+  surplus. A test holds both ends.
+- **THREE FUEL, NOT TWO.** The hatch's odds step by roughly 2.4× between rungs, so a
+  two-for-one fuse would be BETTER than rolling — a player would stop wanting the hatch and
+  start wanting commons, which is the opposite of a chase. Three is deliberately worse than
+  the natural rate: fusing is what you do with what the hatch gave you anyway.
+- **A WORN TRAIT IS NEVER FUEL.** `spares()` is bag-minus-benches, and it is what both
+  `canFuse` and `fuse` ask. Burning one off a colony would change a loadout the player
+  chose, silently, from a screen that is not the bench.
+- **And it drains the bag's own end-state.** The hatch pays a Common six times in ten for
+  ever, so a long-running collection is mostly duplicates pressing against `BAG_MAX` with
+  nothing to do but be thrown away. Now they are the fuel.
+- **The prices rise faster than the tiers do.** Against the ~42 pheromone a day left over:
+  an Uncommon is a day and a half, a Rare four days, an Exceptional ten and a Mythic
+  twenty-four — and that is the LAST step only. A Mythic fused from the bottom is 81
+  commons and 5,170 pheromone, about four months of surplus. The low rungs are something to
+  do this week; the top one is something to work toward.
+- **Spending and producing are ONE call**, the same rule `hatch()` follows: a trade that
+  spent and did not produce takes something for nothing, and one that produced and did not
+  spend is free traits for ever.
+- The fuse panel sits at the HEAD of the inventory, not its foot — a control under a list
+  forty tiles long is a control nobody scrolls to, and this is an action on that list. A
+  row appears only once its fuel is held; four rows that mostly say no is a panel that says
+  nothing. It uses the app's own gold buy button, so a price reads the same here as on a
+  chamber.
+
 ## 8a. The colony — the number the game is played for
 
 The ladder was a trophy count: +30 a win, −15 a loss, a fifty-chapter road ending at
@@ -1484,6 +1531,17 @@ Currencies have separate jobs: **mycelium** buys chambers and species, **pheromo
 research. Every purchase goes through a `ProfileStore` method that returns `false` rather
 than throwing when the player cannot afford it, so a screen can tap optimistically and
 nothing ever goes half-spent.
+
+**AND `buyResearch` CHARGED MYCELIUM FOR MONTHS.** That is the legacy build's rule, ported
+with the rest of it, and it meant mycelium bought the chambers, the nine colonies, the
+granary AND all twenty-seven research tracks while **pheromone bought nothing whatever** —
+a currency printed in the top bar of every screen that was a number going up. Every other
+part of the game already said otherwise: the tour tells the player to spend pheromone on
+research, this section has said it since the beginning, and `economy.test.ts` has always
+measured the research tree as the PHEROMONE sink and held the supply to 0.7–1.3× of it.
+So the pacing this build ships was tuned for the rule the code did not have. The species
+page's header shows the purse its own buttons draw on, which is why that chip takes a
+currency now rather than being the mycelium one everywhere.
 
 ## 9a. The deck
 

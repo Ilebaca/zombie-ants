@@ -440,7 +440,7 @@ table tbody tr:hover { background: #f5f1ea; }
     <div class="flag">The spread is intentionally narrow (0.70–1.25). Species change <em>how</em> you win, not how much you win — a 20% edge is a real advantage but never an auto-win against good play.</div>
 
     <h2>Per-species research</h2>
-    <p>Each species levels three independent tracks, paid with Pheromone dust. Research applies only to that species, so investment is a commitment.</p>
+    <p>Each species levels three independent tracks, paid with Pheromone dust — the only thing pheromone buys until the trait bench opens. Research applies only to that species, so investment is a commitment.</p>
     <div class="tw"><table>
       <thead><tr><th>Track</th><th>Effect</th></tr></thead>
       <tbody>
@@ -613,9 +613,9 @@ table tbody tr:hover { background: #f5f1ea; }
       <thead><tr><th>Currency</th><th>Earned from</th><th>Spent on</th></tr></thead>
       <tbody>
         <tr><td><strong>The colony</strong> (troops)</td><td>Wins, losses and the granary</td><td>Not spent — it <em>is</em> the ladder, and it drives the Colony Road</td></tr>
-        <tr><td><strong>Mycel</strong></td><td>Matches, quests, road rewards, shop</td><td>Anthill chambers, granary levels, colony unlocks</td></tr>
-        <tr><td><strong>Pheromone dust</strong></td><td>Quests, road rewards, shop</td><td>Per-species research tracks — and nothing else</td></tr>
-        <tr><td><strong>Larva</strong></td><td><strong>One per win</strong>, and the shop</td><td>Lucky hatch pulls, and nothing else</td></tr>
+        <tr><td><strong>Mycel</strong></td><td>Matches, quests, road rewards, shop</td><td>Anthill chambers, granary levels, colony unlocks, then <strong>buying larva</strong></td></tr>
+        <tr><td><strong>Pheromone dust</strong></td><td>Quests, road rewards, shop</td><td>Per-species research tracks, then <strong>fusing spare traits</strong> up a tier</td></tr>
+        <tr><td><strong>Larva</strong></td><td><strong>One per win</strong>, 250 mycel each, and the shop</td><td>Lucky hatch pulls, and nothing else</td></tr>
       </tbody>
     </table></div>
 
@@ -681,6 +681,26 @@ table tbody tr:hover { background: #f5f1ea; }
       <li><strong>No single faucet may carry the economy.</strong> The level track and the daily sweep bonus arrive without being played for, so both are held under what the quests themselves pay.</li>
       <li><strong>Measured pacing, whole road:</strong> 2 games a day at an even record is <strong>521 days</strong>, 2.5 is <strong>431</strong>, 3 is <strong>368</strong>; at a 60% win rate, 385 / 316 / 268.</li>
       <li><strong>The shop is priced against free income</strong> — around seventy mycel and fifty pheromone a day free, so a euro buys a few days, the largest bundle buys a couple of months, and nothing is more than a fifth of the game.</li>
+    </ul>
+
+    <h2>Where a currency goes when there is nothing left to buy</h2>
+    <p>Everything above measures whether the sinks are the right <em>size</em>. What it never asked is what happens <em>after</em> them, because every one of them is finite. Measured on the same tuned player: the mycel sink (21,865 — chambers 3,745, colony unlocks 2,120, the granary 16,000) is covered around <strong>day 250</strong> of a 440-day road, and the pheromone sink (14,850, the whole research tree across nine colonies) around <strong>day 400</strong>. From those days each currency is a number that goes up on the top bar and buys nothing, for ever.</p>
+    <div class="flag">The fix cannot be more things that change a match. Every match-affecting number in this game is capped on purpose, because progression must never become mandatory and the AI gets none of it. Uncapping a chamber or a research track to make a sink would buy an endless economy with the one rule the game is built on.</div>
+    <p>So the endless sinks point at the <strong>collection</strong>, the only thing here that does not end — and each currency keeps the job it already had.</p>
+    <div class="tw"><table>
+      <thead><tr><th>Currency</th><th>Its job</th><th>Its endless sink</th><th>Price</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Mycel</strong></td><td>Breadth — more colonies, more chambers, more room</td><td>More rolls of the hatch: buy a larva</td><td>250 mycel</td></tr>
+        <tr><td><strong>Pheromone</strong></td><td>Depth — research makes one colony better</td><td>Fuse three spare traits into one of the next tier</td><td>60 / 150 / 400 / 1,000</td></tr>
+      </tbody>
+    </table></div>
+    <ul>
+      <li><strong>Playing stays the main faucet.</strong> A win pays a larva outright — 1.25 a day at two and a half matches on an even record — and the mycel surplus of about 64 a day adds a quarter of one at 250 each. At 150 it added nearly half again, which starts to read as the way to <em>get</em> larva rather than as somewhere for the leftovers to go. It also stays clear of the shop, which sells three for a euro: a euro is about five days of this surplus.</li>
+      <li><strong>Three fuel, not two.</strong> The hatch's odds step by roughly 2.4× between rungs, so a two-for-one fuse would be <em>better</em> than rolling — a player would stop wanting the hatch and start wanting commons, which is the opposite of a chase.</li>
+      <li><strong>A worn trait is never fuel.</strong> Only spares — in the bag, on no bench — can be fused. Burning one off a colony would change a loadout the player chose, silently, from a screen that is not the bench.</li>
+      <li><strong>It drains the collection's own end state.</strong> The hatch pays a Common six times in ten for ever, so a long-running bag is mostly duplicates pressing against the 300-item ceiling with nothing to do but be thrown away. Now they are the fuel.</li>
+      <li><strong>The prices rise faster than the tiers do.</strong> Against the ~42 pheromone a day left over: an Uncommon is a day and a half, a Rare four days, an Exceptional ten and a Mythic twenty-four — and that is the last step only. A Mythic fused all the way from the bottom is 81 commons and 5,170 pheromone, about four months of surplus. The low rungs are something to do this week; the top one is something to work toward.</li>
+      <li><strong>Research is paid in pheromone</strong>, which every other part of the game already said and the code did not do: it charged mycel for months, so mycel bought everything there was and pheromone bought nothing at all while being printed in the top bar of every screen. The economy model had always measured the research tree as the pheromone sink, so the pacing was tuned for the rule the code was missing.</li>
     </ul>
   </div>
 </div>

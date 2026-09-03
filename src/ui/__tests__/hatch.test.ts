@@ -7,7 +7,8 @@
  */
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
-  HATCH_COST, MemoryStore, ProfileStore, TRAITS, TRAITS_CHAPTER, TRAIT_TIER, TRAIT_TIERS, itemDef, tierOdds,
+  HATCH_COST, LARVA_MYCEL, MemoryStore, ProfileStore, TRAITS, TRAITS_CHAPTER, TRAIT_TIER,
+  TRAIT_TIERS, itemDef, tierOdds,
 } from "../../platform";
 import { SKIN_TIERS } from "../../platform";
 import { TIERS, lookById } from "../../engine";
@@ -276,5 +277,52 @@ describe("hatching a skin", () => {
     const said = root.querySelector("#hatchOdds")?.textContent ?? "";
     for (const t of SKIN_TIERS) expect(said).toContain(TIERS[t].name);
     expect(said).toContain("colony skin");
+  });
+});
+
+/**
+ * MYCELIUM BUYS A LARVA.
+ *
+ * The mycelium sink is finite — the chambers, the nine colonies and the granary — and a
+ * player on the record this economy is tuned for owns all of it well before the road ends.
+ * From that day the currency every match pays buys nothing at all, which is a reward that
+ * has stopped being one. The hatch is the only sink in the game with no end, so this row
+ * is where the surplus goes.
+ */
+describe("mycelium into a larva", () => {
+  const withMycel = (mycel: number, larva = 0): ProfileStore => {
+    const s = store(larva);
+    s.update((p) => { p.mycel = mycel; });
+    return s;
+  };
+
+  it("trades the price for one larva and updates the purse on the screen", () => {
+    const s = withMycel(LARVA_MYCEL);
+    const { root, spy } = build(s);
+    tap(root, "hatchTrade");
+
+    expect(s.get().larva).toBe(1);
+    expect(s.get().mycel).toBe(0);
+    expect(root.querySelector("#hatchLarva")?.textContent).toBe("1");
+    expect(spy.changed, "the screen behind has a stale mycelium figure").toBe(1);
+  });
+
+  /** It states what it costs rather than disappearing: a blank control reads as broken. */
+  it("still names the price when it cannot be paid, and takes nothing", () => {
+    const s = withMycel(LARVA_MYCEL - 1);
+    const { root } = build(s);
+    const row = root.querySelector<HTMLButtonElement>("#hatchTrade");
+    expect(row?.textContent).toContain(String(LARVA_MYCEL));
+    expect(row?.className).toContain("out");
+    row?.click();
+    expect(s.get().larva).toBe(0);
+    expect(s.get().mycel).toBe(LARVA_MYCEL - 1);
+  });
+
+  /** Shut with everything else on this screen until the benches it feeds are open. */
+  it("is not offered before the chapter gate", () => {
+    const s = withMycel(1e6);
+    s.update((p) => { p.colony = 40; });
+    expect(build(s).root.querySelector("#hatchTrade")).toBe(null);
   });
 });

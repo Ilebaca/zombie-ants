@@ -83,12 +83,28 @@ describe("buying chambers and research", () => {
     }
   });
 
-  it("pays for research in mycelium, as the colony screens do throughout", () => {
+  /**
+   * PHEROMONE, NOT MYCELIUM — the split every other part of the game already stated.
+   *
+   * It charged mycelium for months, so mycelium bought the chambers, the colonies, the
+   * granary and all twenty-seven research tracks while pheromone bought nothing whatever:
+   * a currency in the top bar of every screen that was a number going up. The tour says
+   * "spend pheromone on research", CLAUDE.md §12 gives the two currencies this split, and
+   * the economy model has always measured the research tree as the PHEROMONE sink.
+   */
+  it("pays for research in pheromone, which is the only thing pheromone buys", () => {
     const s = rich();
-    const pheromone = s.get().pheromone;
+    const mycel = s.get().mycel;
     expect(s.buyResearch("fire", "cuticle")).toBe(true);
-    expect(s.get().mycel).toBe(100000 - researchCost(0));
-    expect(s.get().pheromone).toBe(pheromone);
+    expect(s.get().pheromone).toBe(100000 - researchCost(0));
+    expect(s.get().mycel).toBe(mycel);
+  });
+
+  it("refuses a research level the player cannot pay for in pheromone", () => {
+    const s = rich(100000, 0);
+    expect(s.buyResearch("fire", "cuticle")).toBe(false);
+    expect(s.get().research.fire?.cuticle ?? 0).toBe(0);
+    expect(s.get().mycel).toBe(100000);
   });
 
   it("keeps research per species — levelling Fire leaves Ghost untouched", () => {

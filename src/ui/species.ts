@@ -64,7 +64,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
       backId: "aupBack",
       titleId: "aupTitle",
       subId: "aupSub",
-      mycel: profile.mycel,
+      pheromone: profile.pheromone,
     });
 
     const body = el("div", "screenbody sb-top");
@@ -86,7 +86,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     page.appendChild(el("div", "secthead", "Research"));
     const list = el("div", "spglist");
     for (const track of RESEARCH_TRACKS) {
-      list.appendChild(trackRow(track, research[track.id], profile.mycel));
+      list.appendChild(trackRow(track, research[track.id], profile.pheromone));
     }
     page.appendChild(list);
 
@@ -187,7 +187,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     const cost = researchCost(level);
     const foot = el("div", "chfoot");
     foot.append(pips(level, RESEARCH_MAX), buyButton({
-      icon: "mycel",
+      icon: "pheromone",
       cost,
       maxed,
       affordable: purse >= cost,

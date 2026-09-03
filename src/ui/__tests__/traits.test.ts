@@ -12,7 +12,7 @@ import { MemoryStore } from "../../platform";
 import { buildInventory, buildTraitBench, traitOpener } from "../traits";
 import { buildSpeciesPage } from "../species";
 import { TIERS, basicLook, looksFor } from "../../engine";
-import { ROAD_LAST, SLOT_STEP, slotChapter, stopColony } from "../../platform";
+import { FUSE_COST, FUSE_FUEL, ROAD_LAST, SLOT_STEP, slotChapter, stopColony } from "../../platform";
 import type { TraitScope } from "../../platform";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
@@ -447,3 +447,74 @@ describe("slots that have not opened yet", () => {
   });
 });
 
+
+/* ======================================================================= FUSING
+
+   WHERE PHEROMONE GOES ONCE THE RESEARCH TREE IS BOUGHT.
+
+   The hatch pays a common six times in ten for ever, so a collection that has been running
+   a while is mostly spares pressing against the bag's ceiling with nothing to do but be
+   thrown away. Three of one rarity make one of the next, and the panel that offers it is
+   the only place in the app that says so. */
+describe("fusing spares", () => {
+  const inventory = (s: ProfileStore): HTMLElement => {
+    const root = buildInventory(s, { onBack: () => {}, onOpen: () => {} });
+    document.body.replaceChildren(root);
+    return root;
+  };
+  const rich = (pheromone = 1e6): ProfileStore => {
+    const s = store();
+    s.update((p) => { p.pheromone = pheromone; });
+    return s;
+  };
+  const spares = (s: ProfileStore, n: number): void => {
+    for (let i = 0; i < n; i++) s.findTrait(UNIVERSAL[0]!.id, "common");
+  };
+
+  /**
+   * A ROW ONLY APPEARS WHEN THE FUEL IS HELD. Four rows that mostly say no is a panel
+   * that says nothing, and this one is at the head of the collection where it cannot be
+   * scrolled past.
+   */
+  it("says nothing until there are enough spares to fuse", () => {
+    const s = rich();
+    spares(s, FUSE_FUEL - 1);
+    expect(inventory(s).querySelector("#fuseBox")).toBe(null);
+
+    spares(s, 1);
+    expect(inventory(s).querySelector("#fuseBox [data-fuse='common']")).toBeTruthy();
+  });
+
+  it("fuses three into one of the next tier and redraws the collection", () => {
+    const s = rich(FUSE_COST.uncommon);
+    spares(s, FUSE_FUEL);
+    const root = inventory(s);
+    root.querySelector<HTMLButtonElement>("[data-fuse='common']")?.click();
+
+    expect(s.bag.length).toBe(1);
+    expect(s.bag[0]?.tier).toBe("uncommon");
+    expect(s.get().pheromone).toBe(0);
+    // The tile on the screen is the new one, and the row that made it has gone with its
+    // fuel — the screen is showing the save rather than the save it was built from.
+    expect(root.querySelectorAll(".trtile").length).toBe(1);
+    expect(root.querySelector("#fuseBox")).toBe(null);
+  });
+
+  /**
+   * IT STATES THE PRICE WHETHER OR NOT IT CAN BE PAID. A control that goes blank when a
+   * player cannot afford it reads as broken rather than as priced — the same rule every
+   * other buy in the app follows.
+   */
+  it("prices the trade it cannot make, and makes nothing", () => {
+    const s = rich(FUSE_COST.uncommon - 1);
+    spares(s, FUSE_FUEL);
+    const root = inventory(s);
+    const go = root.querySelector<HTMLButtonElement>("[data-fuse='common']");
+    expect(go?.textContent).toContain(String(FUSE_COST.uncommon));
+    // The app's one buy button, so an unaffordable price wears the same class here as it
+    // does on a chamber or a research level.
+    expect(go?.className).toContain("off");
+    go?.click();
+    expect(s.bag.length).toBe(FUSE_FUEL);
+  });
+});

@@ -100,6 +100,12 @@ export interface HeaderOptions {
   subId?: string;
   /** Adds the gold mycelium chip the Antarium, Anthill and species pages carry. */
   mycel?: number;
+  /**
+   * The pheromone chip, for a screen that SPENDS pheromone — the species page and nothing
+   * else. A header shows the purse the screen's own buttons draw on: showing mycelium over
+   * a list of pheromone prices is the chrome answering a question nobody asked.
+   */
+  pheromone?: number;
 }
 
 export function screenHeader(parent: HTMLElement, opts: HeaderOptions): void {
@@ -120,7 +126,8 @@ export function screenHeader(parent: HTMLElement, opts: HeaderOptions): void {
     if (opts.subId) sub.id = opts.subId;
     top.appendChild(sub);
   }
-  if (opts.mycel !== undefined) top.appendChild(mycelChip(opts.mycel));
+  if (opts.mycel !== undefined) top.appendChild(purseChip("mycel", opts.mycel));
+  if (opts.pheromone !== undefined) top.appendChild(purseChip("pheromone", opts.pheromone));
   parent.appendChild(top);
 }
 
@@ -131,9 +138,10 @@ export function screenHeader(parent: HTMLElement, opts: HeaderOptions): void {
  * icon already names, and it was the widest thing in the header — which pushed the centred
  * title off the middle of the screen to make room for a label nobody reads twice.
  */
-function mycelChip(mycel: number): HTMLElement {
+function purseChip(mark: string, value: number): HTMLElement {
   const chip = el("div", "mycelchip");
-  chip.append(icon("mycel", 18), el("b", "mycelv", String(mycel)));
+  chip.dataset.purse = mark;
+  chip.append(icon(mark, 18), el("b", "mycelv", String(value)));
   return chip;
 }
 

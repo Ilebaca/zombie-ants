@@ -5177,3 +5177,105 @@ button:not(.playbtn):active,
   color: var(--ink-soft);
   max-width: 24em;
 }
+
+/* A header purse wears its OWN currency's colour, the one the top bar gives it.
+   The chip had no colour on its mark at all, so it inherited --you and drew the
+   pheromone drop in the mycelium's salmon — one currency with two colours across
+   two screens, which is the same misalignment the rarity ladder had. The figure
+   goes with it: gold is the mycelium's, and a gold number on a pheromone chip
+   says the same wrong thing more quietly. */
+.mycelchip[data-purse="mycel"] > svg { color: #ff9a7a; }
+.mycelchip[data-purse="pheromone"] > svg { color: var(--sky); }
+.mycelchip[data-purse="pheromone"] b { color: var(--ink); }
+
+/* ==================================================================== SPENDING
+   WHERE A CURRENCY GOES ONCE THERE IS NOTHING LEFT TO BUY.
+
+   Both spendable currencies had FINITE sinks. Mycelium buys the chambers, the
+   nine colonies and the granary, and a player on the tuned record has all of
+   them long before the road ends; pheromone buys research, and that tree ends
+   too. From those days the number a match pays goes up and buys nothing.
+
+   The two trades below are the way out, and each keeps the job its currency
+   already had: mycelium is BREADTH, so it buys another roll of the hatch;
+   pheromone is DEPTH, so it makes what you already hold better. */
+
+/* ---- Mycelium into a larva, under the hatch's own purse ----
+   It is one row rather than a card: the purse above it is the subject, and this
+   is a thing you can do to it. Priced on the left, what you get on the right,
+   the way every trade in the app reads. */
+.hatchtrade {
+  flex: none;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: -4px;
+  padding: 7px 8px 7px 12px;
+  min-height: 34px;
+  border-radius: 99px;
+  background: none;
+  border: 1px dashed var(--line);
+  color: var(--ink-soft);
+  font-family: var(--font);
+  cursor: pointer;
+}
+.hatchtrade > svg { color: var(--muted); }
+.ht-c { display: flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 900; }
+/* Named halves rather than :first-child / :last-of-type — the Trade pill is a span
+   too, so ":last-of-type" was matching IT and the larva side never took a colour.
+   Each side wears the colour that currency already has: mycelium as the top bar
+   draws it, larva as the purse three pixels above draws it. A larva that is gold
+   in the purse and green in the trade under it is one thing with two colours. */
+.ht-c { color: #ff9a7a; }
+.ht-c.ht-to { color: var(--gold); }
+.ht-go {
+  margin-left: 3px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--grass-glow) 18%, transparent);
+  color: var(--grass-glow);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+/* It never goes blank when it cannot be paid: it states the price and stands
+   down, the same as every other buy in the app. */
+.hatchtrade.out { opacity: 0.5; cursor: default; }
+.hatchtrade.out .ht-go { background: none; color: var(--muted); }
+.hatchtrade:not(.out):active { transform: translateY(1px); }
+
+/* ---- Fusing spares, at the head of the inventory ----
+   A control at the foot of a list forty tiles long is a control nobody scrolls
+   to, and this is an action ON that list. A row appears only once its fuel is
+   held: four rows that mostly say no is a panel that says nothing. */
+.fusebox {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border-radius: var(--r-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.fb-h {
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.fb-p { font-size: 11.5px; font-weight: 700; line-height: 1.45; color: var(--muted); }
+.fb-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 10px;
+  padding: 6px 0 0;
+}
+.fb-trade { grid-column: 1; display: flex; align-items: center; gap: 7px; }
+.fb-trade > svg { color: var(--muted); }
+.fb-n { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 800; }
+.fb-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--tier); }
+.fb-sp { grid-column: 1; font-size: 10.5px; font-weight: 800; color: var(--muted); }
+.fb-row .buybtn { grid-column: 2; grid-row: 1 / span 2; }

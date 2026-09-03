@@ -520,14 +520,34 @@ describe("species page", () => {
     expect(root.textContent).toContain(`0 of ${RESEARCH_TOTAL_MAX}`);
   });
 
-  it("buys a research level with mycelium and shows the new one", () => {
-    const s = store(researchCost(0));
+  /**
+   * PHEROMONE. Research charged mycelium for months, which left pheromone — printed in the
+   * top bar of every screen — buying nothing at all; the header on this page shows the
+   * purse its own buttons draw on, so it shows pheromone too.
+   */
+  it("buys a research level with pheromone and shows the new one", () => {
+    const s = store(500, researchCost(0));
     const root = openPage(s);
     click(buyIn(root, ".spgtrack", "Mandible muscle"));
     expect(s.get().research.fire?.mandible).toBe(1);
-    expect(s.get().mycel).toBe(0);
+    expect(s.get().pheromone).toBe(0);
+    expect(s.get().mycel, "research must not touch mycelium").toBe(500);
     expect(root.querySelectorAll(".spgtrack .pip.on").length).toBe(1);
     expect(root.textContent).toContain(`1 of ${RESEARCH_TOTAL_MAX}`);
+  });
+
+  it("shows the pheromone purse in the header, not the mycelium one", () => {
+    const root = openPage(store(500, 77));
+    const chip = root.querySelector<HTMLElement>(".screentop .mycelchip");
+    expect(chip?.dataset.purse).toBe("pheromone");
+    expect(chip?.textContent).toContain("77");
+  });
+
+  it("will not sell a research level the player has no pheromone for", () => {
+    const s = store(100000, 0);
+    const root = openPage(s);
+    click(buyIn(root, ".spgtrack", "Mandible muscle"));
+    expect(s.get().research.fire?.mandible ?? 0).toBe(0);
   });
 
   /**
@@ -535,7 +555,7 @@ describe("species page", () => {
    * never says which level you are on or what the next one buys.
    */
   it("states what a track gives now against what the next level buys", () => {
-    const s = store(100000);
+    const s = store(0, 100000);
     s.buyResearch("fire", "mandible");
     const row = Array.from(openPage(s).querySelectorAll<HTMLElement>(".spgtrack"))
       .find((r) => r.dataset.track === "mandible");
@@ -545,7 +565,7 @@ describe("species page", () => {
 
   // The reservoir does four different things and the old summary named one of them.
   it("spells out everything a reservoir level actually gives", () => {
-    const s = store(100000);
+    const s = store(0, 100000);
     for (let i = 0; i < RESEARCH_MAX; i++) s.buyResearch("fire", "reservoir");
     const row = Array.from(openPage(s).querySelectorAll<HTMLElement>(".spgtrack"))
       .find((r) => r.dataset.track === "reservoir");
@@ -560,7 +580,7 @@ describe("species page", () => {
   });
 
   it("names the permanent leaves on the colony that actually gets them", () => {
-    const s = store(100000);
+    const s = store(0, 100000);
     for (let i = 0; i < 3; i++) s.buyResearch("leafcutter", "reservoir");
     const row = Array.from(openPage(s, "leafcutter").querySelectorAll<HTMLElement>(".spgtrack"))
       .find((r) => r.dataset.track === "reservoir");
@@ -568,7 +588,7 @@ describe("species page", () => {
   });
 
   it("moves the attack figure only after the research is bought", () => {
-    const s = store(100000);
+    const s = store(0, 100000);
     expect(openPage(s).querySelector(".spgstat-v")?.textContent).toBe("0.86");
     s.buyResearch("fire", "mandible");
     expect(openPage(s).querySelector(".spgstat-v")?.textContent).toBe("0.90");
@@ -582,7 +602,7 @@ describe("species page", () => {
    * two widths are actually compared.
    */
   it("grows the bar past the colony's own strength when research buys some", () => {
-    const s = store(100000);
+    const s = store(0, 100000);
     const widths = (): number[] =>
       Array.from(
         Array.from(openPage(s).querySelectorAll<HTMLElement>(".spgstat"))[0]!
@@ -602,7 +622,7 @@ describe("species page", () => {
    * shortens a cooldown.
    */
   it("states the ability cooldown exactly once, and shortens it only at max", () => {
-    const s = store(100000);
+    const s = store(0, 100000);
     const base = SPECIES.fire.ability.cooldown;
     const chips = (): string[] => Array.from(openPage(s).querySelectorAll(".spgchip"))
       .map((c) => c.textContent ?? "");
@@ -615,7 +635,7 @@ describe("species page", () => {
   });
 
   it("keeps research per species — levelling Fire leaves Ghost alone", () => {
-    const s = store(100000);
+    const s = store(0, 100000);
     s.buyResearch("fire", "cuticle");
     expect(openPage(s, "ghost").textContent).toContain(`0 of ${RESEARCH_TOTAL_MAX}`);
   });

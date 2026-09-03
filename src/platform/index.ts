@@ -51,6 +51,9 @@ export {
 export type { GranaryLevel } from "./granary";
 export { SilentFeedback, WebFeedback, makeFeedback } from "./feedback";
 export type { Cue, Feedback, Track } from "./feedback";
+export {
+  FUSE_COST, FUSE_DEALS, FUSE_FUEL, LARVA_MYCEL, fuseDeal, nextTier,
+} from "./exchange";
 export { scoreQuestEvents } from "./scoring";
 export { DemoGateway, SHOP_PRODUCTS, productById } from "./purchases";
 export type { Grant, Product, ProductKind, PurchaseGateway, PurchaseResult } from "./purchases";

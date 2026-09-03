@@ -16,11 +16,11 @@
  */
 import { SPECIES } from "../engine";
 import {
-  ATK_CAP, DEF_CAP, LUCK_CAP, SPECIES_ORDER, TRAITS_CHAPTER, TRAIT_SLOTS, TRAIT_TIER,
-  effectFigure, effectText, fitsScope, itemDef, markOf, scopeName, slotChapter,
+  ATK_CAP, DEF_CAP, FUSE_DEALS, LUCK_CAP, SPECIES_ORDER, TRAITS_CHAPTER, TRAIT_SLOTS,
+  TRAIT_TIER, effectFigure, effectText, fitsScope, itemDef, markOf, scopeName, slotChapter,
 } from "../platform";
 import type { ProfileStore, TraitItem, TraitScope } from "../platform";
-import { el, redraw, screenEl, screenHeader, toast } from "./chrome";
+import { buyButton, el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 
 export interface TraitBenchOptions {
@@ -234,67 +234,155 @@ export interface InventoryOptions {
 
 export function buildInventory(store: ProfileStore, opts: InventoryOptions): HTMLElement {
   const root = screenEl("inventory");
-  screenHeader(root, {
-    title: "Inventory",
-    sub: "Every trait you have found",
-    onBack: opts.onBack,
-    backId: "invBack",
-  });
 
-  const body = el("div", "screenbody sb-top");
-  const wrap = el("div", "trwrap");
-  wrap.id = "invBody";
+  const render = (): void => {
+    redraw(root);
+    screenHeader(root, {
+      title: "Inventory",
+      sub: "Every trait you have found",
+      onBack: opts.onBack,
+      backId: "invBack",
+    });
 
-  // Locked, and it says the chapter rather than showing a padlock — the same thing the
-  // bench openers do, because it is the same gate.
-  if (!store.traitsOpen()) {
-    wrap.appendChild(locked(`Traits open at chapter ${TRAITS_CHAPTER}.`,
-      "They are found in the lucky hatch, and worn five at a time by each colony."));
-    body.appendChild(wrap);
-    root.appendChild(body);
-    return root;
-  }
+    const body = el("div", "screenbody sb-top");
+    const wrap = el("div", "trwrap");
+    wrap.id = "invBody";
 
-  const bag = store.bag;
-  if (bag.length === 0) {
-    wrap.appendChild(locked("Nothing found yet",
-      "Traits come from the lucky hatch. Each colony wears five, and the anthill wears five more."));
-    body.appendChild(wrap);
-    root.appendChild(body);
-    return root;
-  }
-
-  const benches: TraitScope[] = ["hill", ...SPECIES_ORDER];
-  for (const scope of benches) {
-    const mine = bag.filter((i) => fitsScope(i, scope));
-    if (mine.length === 0) continue;
-    const worn = new Set(store.bench(scope).flatMap((i) => (i ? [i.uid] : [])));
-
-    const head = el("button", "invhead") as HTMLButtonElement;
-    head.type = "button";
-    head.dataset.scope = scope;
-    head.append(
-      el("span", "invhead-t", scopeName(scope)),
-      el("span", "invhead-c", `${worn.size} / ${TRAIT_SLOTS} worn · ${mine.length} held`),
-      icon("next", 13),
-    );
-    head.onclick = () => opts.onOpen(scope);
-
-    const grid = el("div", "trgrid");
-    grid.dataset.scope = scope;
-    for (const item of mine) {
-      // A tile here does not equip: it belongs to a bench, and which slot it should go in
-      // is a decision that needs the bench in front of you. Tapping it takes you there.
-      const cell = readOnlyTile(item, () => opts.onOpen(scope));
-      if (worn.has(item.uid)) cell.classList.add("worn");
-      grid.appendChild(cell);
+    // Locked, and it says the chapter rather than showing a padlock — the same thing the
+    // bench openers do, because it is the same gate.
+    if (!store.traitsOpen()) {
+      wrap.appendChild(locked(`Traits open at chapter ${TRAITS_CHAPTER}.`,
+        "They are found in the lucky hatch, and worn five at a time by each colony."));
+      body.appendChild(wrap);
+      root.appendChild(body);
+      return;
     }
-    wrap.append(head, grid);
-  }
 
-  body.appendChild(wrap);
-  root.appendChild(body);
+    const bag = store.bag;
+    if (bag.length === 0) {
+      wrap.appendChild(locked("Nothing found yet",
+        "Traits come from the lucky hatch. Each colony wears five, and the anthill wears five more."));
+      body.appendChild(wrap);
+      root.appendChild(body);
+      return;
+    }
+
+    const fuse = fuseBox();
+    if (fuse) wrap.appendChild(fuse);
+
+    const benches: TraitScope[] = ["hill", ...SPECIES_ORDER];
+    for (const scope of benches) {
+      const mine = bag.filter((i) => fitsScope(i, scope));
+      if (mine.length === 0) continue;
+      const worn = new Set(store.bench(scope).flatMap((i) => (i ? [i.uid] : [])));
+
+      const head = el("button", "invhead") as HTMLButtonElement;
+      head.type = "button";
+      head.dataset.scope = scope;
+      head.append(
+        el("span", "invhead-t", scopeName(scope)),
+        el("span", "invhead-c", `${worn.size} / ${TRAIT_SLOTS} worn · ${mine.length} held`),
+        icon("next", 13),
+      );
+      head.onclick = () => opts.onOpen(scope);
+
+      const grid = el("div", "trgrid");
+      grid.dataset.scope = scope;
+      for (const item of mine) {
+        // A tile here does not equip: it belongs to a bench, and which slot it should go
+        // in is a decision that needs the bench in front of you. Tapping it takes you there.
+        const cell = readOnlyTile(item, () => opts.onOpen(scope));
+        if (worn.has(item.uid)) cell.classList.add("worn");
+        grid.appendChild(cell);
+      }
+      wrap.append(head, grid);
+    }
+
+    body.appendChild(wrap);
+    root.appendChild(body);
+  };
+
+  /**
+   * WHAT THE DUPLICATES ARE FOR.
+   *
+   * The hatch pays a Common six times in ten for ever, so a collection that has been
+   * running a while is mostly spares pressing against the bag's ceiling with nothing to do
+   * but be thrown away. Three of one rarity and some pheromone make one of the next
+   * (platform/exchange.ts) — which is also where pheromone goes once every research level
+   * on every colony is bought, and on the tuned record that happens well inside the road.
+   *
+   * It sits ABOVE the collection rather than under it. A control at the foot of a list
+   * forty tiles long is a control nobody scrolls to, and this is an action ON that list.
+   *
+   * A ROW APPEARS WHEN THE FUEL IS HELD, and is priced whether or not the pheromone is.
+   * Those two are different questions: what you hold is what makes the trade possible at
+   * all, and the price is what makes it possible today. Showing all four rows for ever
+   * would be a panel that mostly says no.
+   */
+  const fuseBox = (): HTMLElement | null => {
+    const live = FUSE_DEALS.filter((d) => store.spares(d.from).length >= d.fuel);
+    if (!live.length) return null;
+
+    const box = el("div", "fusebox");
+    box.id = "fuseBox";
+    box.append(
+      el("div", "fb-h", "Fuse spares"),
+      el("div", "fb-p",
+        "Three spares of one rarity make one of the next. Traits you are wearing are never spent."),
+    );
+    for (const deal of live) box.appendChild(fuseRow(deal));
+    return box;
+  };
+
+  const fuseRow = (deal: typeof FUSE_DEALS[number]): HTMLElement => {
+    const from = TRAIT_TIER[deal.from];
+    const into = TRAIT_TIER[deal.into];
+    const spare = store.spares(deal.from).length;
+
+    const row = el("div", "fb-row");
+    row.dataset.tier = deal.from;
+
+    // THE TRADE ON ONE LINE AND WHAT IT COSTS YOU ON THE NEXT. Laid out across a single
+    // row, "5 spare" was the column that gave — it wrapped to two lines on the widest
+    // trade and not on the others, so two rows of the same panel were different heights.
+    const trade = el("div", "fb-trade");
+    trade.append(
+      tierPip(from.colour, `${deal.fuel} ${from.name}`),
+      icon("next", 12),
+      tierPip(into.colour, `1 ${into.name}`),
+    );
+    row.append(trade, el("div", "fb-sp", `${spare} spare held`));
+
+    // The same gold button every other purchase in the app uses, so a price is a price
+    // wherever it is read (CLAUDE.md §7: one function owns a rule).
+    const go = buyButton({
+      icon: "pheromone",
+      cost: deal.pheromone,
+      maxed: false,
+      affordable: store.canFuse(deal.from),
+      onBuy: () => {
+        const made = store.fuse(deal.from);
+        if (!made) return;
+        const def = itemDef(made);
+        render();
+        toast(root, `${into.name} ${def?.name ?? "trait"}`, "hive");
+      },
+    });
+    go.dataset.fuse = deal.from;
+    row.appendChild(go);
+    return row;
+  };
+
+  render();
   return root;
+}
+
+/** A tier's dot and its name — the one way a rarity is written anywhere in the app. */
+function tierPip(colour: string, text: string): HTMLElement {
+  const pip = el("span", "fb-n");
+  pip.style.setProperty("--tier", colour);
+  pip.append(el("span", "fb-dot"), el("span", undefined, text));
+  return pip;
 }
 
 /** A tile that opens a bench rather than filling one. Same square, everywhere. */

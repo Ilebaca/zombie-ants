@@ -33,11 +33,12 @@ import { DUELS_MAX, seedInvites } from "./duels";
 import { HISTORY_MAX, addToHistory } from "./history";
 import type { MatchLog } from "./history";
 import {
-  HATCH_COST, TRAITS_CHAPTER, TRAIT_SLOTS, TRAIT_TIERS, combine, fitsScope, rollDrop,
+  HATCH_COST, TRAITS_CHAPTER, TRAIT_SLOTS, TRAIT_TIERS, combine, fitsScope, rollDrop, rollTrait,
   slotChapter, slotsOpen, totalsOf, traitDef,
 } from "./traits";
 import type { TraitItem, TraitScope, TraitTier, TraitTotals } from "./traits";
 import { rollSkin, skinTier } from "./skins";
+import { LARVA_MYCEL, fuseDeal } from "./exchange";
 import type { DuelInvite } from "./duels";
 import type { Friend, Person } from "./friends";
 import type { SupportGateway, Ticket, TicketKind } from "./support";
@@ -1275,16 +1276,27 @@ export class ProfileStore {
   }
 
   /**
-   * Level up one research track of one species. Paid in mycelium, as the legacy build
-   * charges for it — mycelium is the one currency the whole colony screen spends.
+   * Level up one research track of one species. Paid in PHEROMONE.
+   *
+   * It charged mycelium for months, which is the legacy build's rule and is why the two
+   * currencies had one job between them: mycelium bought the chambers, the colonies, the
+   * granary AND every research level on all nine of them, while pheromone — earned from
+   * quests, the level track and the Colony Road, and printed in the top bar on every
+   * screen — bought NOTHING AT ALL. A currency with no sink is a number going up.
+   *
+   * Everything else in the game already said otherwise: the tour tells the player to
+   * "spend pheromone on research", CLAUDE.md §12 gives the two currencies exactly this
+   * split, and the economy model (platform/__tests__/economy.test.ts) has always measured
+   * the research tree as the pheromone sink and held the supply to 0.7–1.3× of it. So the
+   * pacing this build ships was tuned for the rule this line now finally applies.
    */
   buyResearch(species: SpeciesId, track: ResearchTrack): boolean {
     const level = this.profile.research[species]?.[track] ?? 0;
     if (level >= RESEARCH_MAX) return false;
     const cost = researchCost(level);
-    if (this.profile.mycel < cost) return false;
+    if (this.profile.pheromone < cost) return false;
     this.update((p) => {
-      p.mycel -= cost;
+      p.pheromone -= cost;
       const r = p.research[species] ?? { reservoir: 0, mandible: 0, cuticle: 0 };
       r[track] = (r[track] ?? 0) + 1;
       p.research[species] = r;
@@ -1402,6 +1414,69 @@ export class ProfileStore {
     }
     const item = this.findTrait(drop.def, drop.tier);
     return item ? { kind: "trait", item } : null;
+  }
+
+  /* ------------------------------------------------------- WHERE A CURRENCY GOES */
+
+  /**
+   * Buy a larva with mycelium.
+   *
+   * The mycelium sink is FINITE — chambers, colonies and the granary come to 21,865, and
+   * a player on the tuned record has bought all of it on day 247 of a 440-day road. From
+   * there the currency a match pays every time buys nothing at all, for ever. This is the
+   * door out: the hatch is the one sink in the game with no end, so the endless currency
+   * is what the endless one converts into (platform/exchange.ts).
+   */
+  buyLarva(): boolean {
+    if (this.profile.mycel < LARVA_MYCEL) return false;
+    this.update((p) => { p.mycel -= LARVA_MYCEL; p.larva += 1; });
+    return true;
+  }
+
+  /** Spare traits of one tier: in the bag, worn nowhere. Only these may be fused. */
+  spares(tier: TraitTier): TraitItem[] {
+    const worn = new Set<string>();
+    for (const bench of Object.values(this.profile.wearing)) {
+      for (const uid of bench ?? []) if (uid) worn.add(uid);
+    }
+    return this.profile.bag.filter((i) => i.tier === tier && !worn.has(i.uid));
+  }
+
+  canFuse(tier: TraitTier): boolean {
+    const deal = fuseDeal(tier);
+    if (!deal) return false;
+    return this.spares(tier).length >= deal.fuel && this.profile.pheromone >= deal.pheromone;
+  }
+
+  /**
+   * Three spare traits of one tier and some pheromone become ONE of the next tier up.
+   *
+   * The pheromone sink is finite too — every research level on all nine colonies is
+   * 14,850, gone by day 374 — and this is where it goes afterwards. It is deliberately the
+   * DEPTH trade to mycelium's breadth: research makes one colony better, and so does this.
+   *
+   * It also empties the bag of what the hatch fills it with. A 60% common rate means a
+   * long-running collection is mostly duplicates pressing against BAG_MAX with nothing to
+   * do but be thrown away; now they are the fuel.
+   *
+   * ONE method, like `hatch`: spending and rolling must never come apart. It takes the
+   * OLDEST spares (the bag is newest-first) so the ones a player has been looking at go
+   * last, and rolls from the same pool the hatch draws from — the universal traits and
+   * every colony they own.
+   */
+  fuse(tier: TraitTier, random: () => number = Math.random): TraitItem | null {
+    const deal = fuseDeal(tier);
+    if (!deal || !this.canFuse(tier)) return null;
+    const def = rollTrait(random, [null, ...this.profile.unlocked]);
+    if (!def) return null;
+    // The bag is checked for room BEFORE anything is spent: three out and one in can
+    // never overflow it, but a refusal after the spend would take the fuel for nothing.
+    const burn = new Set(this.spares(tier).slice(-deal.fuel).map((i) => i.uid));
+    this.update((p) => {
+      p.pheromone -= deal.pheromone;
+      p.bag = p.bag.filter((b) => !burn.has(b.uid));
+    });
+    return this.findTrait(def.id, deal.into);
   }
 
   /** Timestamp of the last daily gift claim, so the shop can offer it once a day. */

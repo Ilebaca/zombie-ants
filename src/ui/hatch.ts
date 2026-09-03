@@ -15,8 +15,8 @@
  * arrives first, which is the whole reason the tiers have colours at all.
  */
 import {
-  HATCH_COST, SKIN_TIERS, TRAITS_CHAPTER, TRAIT_TIER, TRAIT_TIERS, effectText, itemDef,
-  markOf, tierOdds,
+  HATCH_COST, LARVA_MYCEL, SKIN_TIERS, TRAITS_CHAPTER, TRAIT_TIER, TRAIT_TIERS, effectText,
+  itemDef, markOf, tierOdds,
 } from "../platform";
 import type { HatchPrize, ProfileStore, TraitItem } from "../platform";
 import { SPECIES, TIERS } from "../engine";
@@ -66,7 +66,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     // cannot equip on any colony. A shop must never take money against a feature that
     // does not exist yet, and for this player it does not.
     if (!store.traitsOpen()) wrap.appendChild(shut());
-    else wrap.append(purse(), stage(), foot(), odds());
+    else wrap.append(purse(), trade(), stage(), foot(), odds());
 
     body.appendChild(wrap);
     root.appendChild(body);
@@ -113,6 +113,46 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
 
     box.append(mark, n, el("span", "hp-k", "larva"), plus);
     return box;
+  };
+
+  /**
+   * MYCELIUM BUYS A LARVA.
+   *
+   * The mycelium sink is FINITE and always was — the chambers, the nine colonies and the
+   * granary come to about 21,865, and a player on the record this economy is tuned for has
+   * bought every one of them well before the road ends. From that day the currency every
+   * match pays buys nothing at all, for ever, which is a reward that has stopped being one.
+   *
+   * The hatch is the only sink in the game with no end, so this is where the surplus goes.
+   * Priced against the LEFTOVER rather than against income (platform/exchange.ts): about a
+   * larva every four days out of money that was doing nothing. A win still pays one
+   * outright, so playing is never the slow way to hatch.
+   *
+   * It sits under the purse because it is about the purse — the plus sign beside the
+   * figure spends real money, and a player holding nine thousand mycelium should not have
+   * to reach the shop to find that out.
+   */
+  const trade = (): HTMLElement => {
+    const mycel = store.get().mycel;
+    const can = mycel >= LARVA_MYCEL;
+
+    const row = el("button", "hatchtrade" + (can ? "" : " out")) as HTMLButtonElement;
+    row.type = "button";
+    row.id = "hatchTrade";
+
+    const from = el("span", "ht-c");
+    from.append(icon("mycel", 15), el("span", undefined, String(LARVA_MYCEL)));
+    const into = el("span", "ht-c ht-to");
+    into.append(icon("brood", 15), el("span", undefined, "1"));
+    row.append(from, icon("next", 12), into, el("span", "ht-go", "Trade"));
+
+    row.onclick = () => {
+      if (!store.buyLarva()) return;
+      render();
+      opts.onChanged?.();
+    };
+    row.disabled = !can;
+    return row;
   };
 
   /* --------------------------------------------------------------------- THE EGG */
