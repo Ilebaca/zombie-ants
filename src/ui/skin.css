@@ -5279,3 +5279,124 @@ button:not(.playbtn):active,
 .fb-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--tier); }
 .fb-sp { grid-column: 1; font-size: 10.5px; font-weight: 800; color: var(--muted); }
 .fb-row .buybtn { grid-column: 2; grid-row: 1 / span 2; }
+
+/* ==================================================================== SIGN IN
+   THE FIRST SCREEN, and the only one reachable with no save behind it.
+
+   It is a column in the reading measure like every other screen, but it has no
+   header and no tab tray — there is nothing to navigate to until a colony is
+   chosen — so it centres in the viewport instead of starting at the top. */
+#signin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+.siwrap {
+  width: min(100%, var(--page));
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack);
+}
+.si-mark {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: var(--grass-glow);
+  text-align: center;
+}
+.si-h {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--ink);
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+/* ---- Coming back ----
+   A row per colony, each carrying its own head and its SIZE. A list of names
+   says nothing about which save a player has actually been playing; the troop
+   count is the number the whole game is played for, so it is what tells two
+   of them apart at a glance. */
+.silist { display: grid; gap: var(--stack); }
+.sirow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--tap);
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-family: var(--font);
+  text-align: left;
+  cursor: pointer;
+}
+.sirow:active { transform: translateY(1px); }
+.sirow > svg { color: var(--muted); }
+.si-face { width: 36px; height: 36px; }
+.si-txt { min-width: 0; }
+.si-name {
+  font-size: 15px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.si-sub { font-size: 11px; font-weight: 800; color: var(--muted); margin-top: 2px; }
+
+/* ---- Starting, and the code box ---- */
+.sibox {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--r-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.si-field {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 12px;
+  border-radius: var(--r-md);
+  background: var(--bg0);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 800;
+}
+.si-field::placeholder { color: var(--muted); }
+.si-go {
+  min-height: var(--tap);
+  padding: 0 16px;
+  border-radius: var(--r-md);
+  background: var(--grass);
+  border: none;
+  color: #10240f;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.si-go:active { transform: translateY(1px); }
+.si-note { font-size: 11.5px; font-weight: 700; line-height: 1.45; color: var(--muted); margin: 0; }
+/* A quiet second option, never a second Start: one green button per screen. */
+.si-alt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: var(--tap);
+  background: none;
+  border: none;
+  color: var(--grass-glow);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}

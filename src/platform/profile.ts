@@ -45,7 +45,8 @@ import type { SupportGateway, Ticket, TicketKind } from "./support";
 import type { Grant } from "./purchases";
 import { defaultStore, readJson, writeJson, type KeyValueStore } from "./storage";
 
-const KEY = "zombie-ants.profile";
+export const PROFILE_KEY = "zombie-ants.profile";
+const KEY = PROFILE_KEY;
 const VERSION = 1;
 
 /** Anthill chambers. Keys match PlayerMods so upgrades map straight through. */
@@ -756,8 +757,18 @@ function granaryElapsed(since: number, now: number): number {
 export class ProfileStore {
   private profile: Profile;
 
-  constructor(private store: KeyValueStore = defaultStore()) {
-    this.profile = normalise(readJson<Profile>(store, KEY));
+  /**
+   * `key` is which SAVE this store is reading.
+   *
+   * It used to be the module constant and nothing else, which meant one device held exactly
+   * one colony. Accounts (platform/accounts.ts) give each one its own key, so signing out
+   * and back in finds the save where it was left and two colonies on one phone can never
+   * half-merge into each other. The default is still the original key — that is the save
+   * every existing player already has, and it becomes their first account rather than being
+   * orphaned by this change.
+   */
+  constructor(private store: KeyValueStore = defaultStore(), private key: string = KEY) {
+    this.profile = normalise(readJson<Profile>(store, key));
     // Minted here rather than in `defaultProfile`, which is a constant, or in `normalise`,
     // which has to stay a pure function of its input. Exactly once per save.
     if (!this.profile.playerId) {
@@ -781,13 +792,13 @@ export class ProfileStore {
   update(fn: (p: Profile) => void): Readonly<Profile> {
     fn(this.profile);
     this.profile = normalise(this.profile);
-    writeJson(this.store, KEY, this.profile);
+    writeJson(this.store, this.key, this.profile);
     return this.profile;
   }
 
   reset(): Readonly<Profile> {
     this.profile = defaultProfile();
-    writeJson(this.store, KEY, this.profile);
+    writeJson(this.store, this.key, this.profile);
     return this.profile;
   }
 
@@ -801,7 +812,7 @@ export class ProfileStore {
    */
   restore(profile: Profile): Readonly<Profile> {
     this.profile = normalise(profile);
-    writeJson(this.store, KEY, this.profile);
+    writeJson(this.store, this.key, this.profile);
     return this.profile;
   }
 

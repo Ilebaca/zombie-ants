@@ -947,6 +947,17 @@ table tbody tr:hover { background: #f5f1ea; }
       <li><strong>Settings</strong> is grouped by what each row <em>affects</em>, and every row carries a sentence saying so — that sentence is the whole difference between a screen and a list of labels. Two dead switches ("Sound", "Vibration", both disabled, both over nothing) are gone, replaced by three that work. Three rows are things the app could already do and had nowhere to offer: the colony's <strong>name</strong>, printed beside the nest for the whole match; <strong>How to play</strong>; and <strong>reset</strong>, which asks twice on the same button. The build stamp is the foot of the screen rather than a setting pretending to be one.</li>
     </ul>
 
+    <h2>Accounts — a colony you can sign back into</h2>
+    <p>Everything a player had lived in one save under one key, so a device held exactly one colony and there was no such thing as signing in: the game opened whatever was there. An <strong>account</strong> is a save slot on this device with a name and a code on it. Naming a colony is the whole of creating one — one field, no password, no email, and the field is not even required.</p>
+    <div class="flag">There is no server and this does not pretend there is one. An account gets you back into your save; the <em>save code</em> below is what moves one to another phone. They are deliberately different features, and a real account system replaces both — <code>AccountService</code> is the interface it arrives through, the same seam matchmaking, purchases and support already use.</div>
+    <ul>
+      <li><strong>The save that already exists becomes account one</strong>, keeps the key it has always had, and is signed in. Without that, the first launch of this build would show a sign-in screen to a player whose colony was sitting right there with no way to reach it.</li>
+      <li><strong>The code is the one the game already mints</strong> — the player code shown in Support, drawn from an alphabet with the ambiguous characters left out because somebody reads it off a screen. There is no password: nothing local protects a save from anybody, and a password is a way to lose a colony rather than to keep one.</li>
+      <li><strong>The sign-in screen asks for no code.</strong> Every account is local, so the list of colonies already shows everything a code could match — a box that can only find what is on screen beside it is a login form for a server that does not exist. Each row carries the colony's size, because that is the number the whole game is played for and the only thing that tells two saves apart at a glance.</li>
+      <li><strong>Signing out destroys nothing.</strong> That is the whole difference between it and the reset row two headings below it in Settings.</li>
+      <li><strong>An account number only ever goes up</strong>, never derived from the list: forgetting an account would otherwise hand its number, and therefore its save key, to the next colony created — which would open on the deleted one's leftovers.</li>
+    </ul>
+
     <h2>Taking your colony with you</h2>
     <p>Everything a player has is in local storage on one device: a new phone, a cleared browser, or a switch from the web build to the installed one, and all of it is gone. There is no account to hang it on until there is a server, so the save is written out as <strong>one string the player can keep</strong>, offered in Settings and read back on the other side.</p>
     <ul>

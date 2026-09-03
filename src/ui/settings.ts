@@ -44,6 +44,10 @@ export interface SettingsOptions {
   onReset: () => void;
   /** A code was taken. Everything on screen is about a different colony now. */
   onRestored: () => void;
+  /** Leave this colony for the sign-in screen. It destroys nothing. */
+  onSignOut: () => void;
+  /** The player code this colony signs back in with — shown beside the sign-out row. */
+  playerCode: string;
 }
 
 export function buildSettings(opts: SettingsOptions): HTMLElement {
@@ -56,6 +60,17 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
   scroll.append(
     el("div", "secthead", "Your colony"),
     nameRow(opts.profile, root),
+    // SIGNING OUT DESTROYS NOTHING, and the row says so — it sits two headings above the
+    // one that wipes the save, and a control that leaves your colony has to be plainly
+    // different from the one that ends it. The code is on the row rather than a screen
+    // away, because it is what signs this colony back in.
+    goRow({
+      mark: "friends",
+      title: "Sign out",
+      desc: `Back to the colony picker. Nothing is deleted. Your code is ${opts.playerCode}.`,
+      id: "setSignOut",
+      onGo: opts.onSignOut,
+    }),
 
     el("div", "secthead", "The next match"),
     valueRow({

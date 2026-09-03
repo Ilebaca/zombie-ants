@@ -1478,6 +1478,54 @@ is the same twenty bytes a server would verify a result from.
   never removed it — so `canReplay` read `.moves` off a string. Any normaliser that both
   spreads and conditionally re-adds a field has that trap.
 
+**ACCOUNTS — A COLONY YOU CAN SIGN BACK INTO** (`platform/accounts.ts`, `ui/signin.ts`).
+Everything a player had lived in ONE save under one key, so a device held exactly one colony
+and there was no such thing as signing in: the game opened whatever was there. That is fine
+until somebody wants a second colony, hands the phone to a friend, or clears a browser and
+wants to know which of those two things just happened.
+- **THERE IS NO SERVER AND THIS DOES NOT PRETEND THERE IS.** An account is a save SLOT on
+  this device with a name and a code on it. What it buys is real — several colonies on one
+  phone, and a sign-out that destroys nothing — and what it does not buy is carrying a
+  colony to another phone. `backup.ts` is still the honest answer to THAT, and the two are
+  deliberately different features: an account gets you back into your save, a backup code
+  MOVES it. `AccountService` is the interface a real one arrives through, the same seam
+  `Matchmaker`, `PurchaseGateway` and `SupportGateway` already use.
+- **THE SAVE THAT IS ALREADY THERE BECOMES ACCOUNT ONE**, keeps the key it has always had,
+  and is signed in (`adopt`). Without it the first launch of this build shows a sign-in
+  screen to a player whose colony is sitting right there under the old key with no way to
+  reach it — the update would read as the game having deleted everything. It runs once,
+  and a device with no save at all gets a clean sign-in screen exactly as it should.
+- **`ProfileStore` TAKES A KEY.** It was a module constant, which is what made one device
+  one colony. Each account has its own, so two saves can never half-merge.
+- **THE CODE IS THE CREDENTIAL AND IT COMES OFF THE SAVE.** `profile.playerId`, already
+  minted, already printed in Support, already drawn from an alphabet with the ambiguous
+  characters left out because somebody reads it off a screen. A second one minted by the
+  account layer would be two codes for one colony, and the one on the Support screen would
+  not sign the player in. **There is NO password**: nothing local protects a save from
+  anybody, and a password is a way to LOSE a colony rather than to keep one.
+- **AND THE SIGN-IN SCREEN ASKS FOR NO CODE.** One was built and removed. Every account is
+  local, so the roster already lists every colony a code could possibly match — a box that
+  can only find what is on screen beside it is the screen pretending to be a login form for
+  a server that does not exist. The rows ARE the sign-in; the note points at the save code
+  for the thing a code cannot do.
+- **A row carries the colony's SIZE**, read off the save rather than off the account row.
+  A list of names says nothing about which save has been played, and the colony is the
+  number the whole game is played for (§8a). Off the save, because Settings can rename one
+  and a second copy in the roster is one more place for the two to disagree.
+- **AN ACCOUNT NUMBER ONLY EVER GOES UP** (`SEQ_KEY`), never derived from the roster:
+  forgetting an account would otherwise hand its number — and therefore its save KEY — to
+  the next colony created, which would open on the deleted one's leftovers. Same trap
+  `traitSeq` exists for, same fix. `seen` is stamped strictly past every other account too:
+  two sign-ins inside one millisecond are ordinary, and a "most recent first" picker that
+  can tie moves on its own.
+- **Signing out destroys nothing**, which is the whole difference between it and the reset
+  row two headings below it in Settings — and the row says so, with the code on it.
+- **A STORE HANDED TO `App` IS THE COLONY**, and skips the gate. That is what every test
+  and every tool does; left to itself the shell opens the signed-in account and shows the
+  sign-in screen when there is none.
+- **`enter` goes through `signIn`, never straight to `storeFor`.** Opening the store reads
+  the save but signs nobody in, so the next launch would show the picker again.
+
 **TAKING YOUR COLONY WITH YOU** (`platform/backup.ts`). Everything a player has is in
 `localStorage` on one device: a new phone, a cleared browser or a switch from the web build
 to the installed one and all of it is gone. There is no account to hang it on until there

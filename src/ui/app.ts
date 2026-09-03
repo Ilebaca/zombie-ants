@@ -48,6 +48,9 @@ import { buildFormationSelect, buildMapSelect, buildSpeciesSelect, rollAISpecies
 import { buildDuelPick, inviteBar } from "./duel";
 import { ReplayScreen, buildHistory } from "./history";
 import { canReplay } from "../platform";
+import { LocalAccounts } from "../platform";
+import type { Account, AccountService } from "../platform";
+import { buildSignIn } from "./signin";
 import type { Choices, SetupOptions } from "./setup";
 import { buildResultCard } from "./result";
 import { MatchmakingScreen } from "./matchmaking";
@@ -187,12 +190,33 @@ export class App {
    */
   private tour: Tour;
 
-  constructor(private host: HTMLElement, profile = new ProfileStore()) {
+  /**
+   * Which colony is signed in, and the roster behind it (platform/accounts.ts).
+   *
+   * An interface, like every other seam in this layer: today the accounts are save slots
+   * on this device, and a server-backed one is a new class handed in here.
+   */
+  private accounts: AccountService;
+
+  /** True when the caller supplied the save, which is what skips the sign-in screen. */
+  private given: boolean;
+
+  constructor(
+    private host: HTMLElement,
+    profile?: ProfileStore,
+    accounts: AccountService = new LocalAccounts(),
+  ) {
     this.host.replaceChildren();
-    this.profile = profile;
+    this.accounts = accounts;
+    // A STORE HANDED IN IS THE COLONY, and there is nothing to sign into — that is the
+    // path every test and every tool takes. Left to itself the app opens the account that
+    // is signed in, and puts the sign-in screen up when none is; on a device that already
+    // has a save that never happens, because the roster adopts it (platform/accounts.ts).
+    this.given = !!profile;
+    this.profile = profile ?? this.signedInStore();
     this.tour = new Tour(host);
     // Reopen on the player's last setup, so a rematch is two taps.
-    const saved = profile.get();
+    const saved = this.profile.get();
     this.choices = {
       map: saved.lastMap,
       species: saved.lastSpecies,
@@ -229,10 +253,57 @@ export class App {
     // The menu bed goes on at boot. It cannot actually sound until the first press — the
     // device does not exist yet — and `unlock` picks the wish up from there.
     this.feedback.setMusic("menu");
+    // NOTHING OPENS BEFORE A COLONY IS CHOSEN. The tour, the deck and the home artwork all
+    // read the save, so a device with no account signed in gets the sign-in screen and
+    // nothing else — and it hands over to exactly this path once it has one.
+    if (!this.given && !this.accounts.current()) { this.showSignIn(); return; }
     this.show("home");
     // First run only. `tourSeen` is written when the walk finishes OR is skipped, so a
     // player who knows the game sees it once and never again.
     if (this.profile.get().tourSeen < TOUR_VERSION) this.startTour();
+  }
+
+  /** The save behind whoever is signed in, or a throwaway one until somebody is. */
+  private signedInStore(): ProfileStore {
+    const account = this.accounts.current();
+    return account ? this.accounts.storeFor(account) : new ProfileStore();
+  }
+
+  /**
+   * The sign-in screen, and what happens on the other side of it.
+   *
+   * Entering an account SWAPS the store the whole shell reads, so everything held on the
+   * app object beside the save — the difficulty, the last map — has to be taken off the
+   * new one (`adoptProfile`). That is the same trap a restored backup code has, and the
+   * same function fixes it.
+   */
+  private showSignIn(): void {
+    this.host.replaceChildren();
+    this.host.appendChild(buildSignIn(this.accounts, {
+      onEnter: (account: Account) => this.enter(account),
+    }));
+  }
+
+  private enter(account: Account): void {
+    // THROUGH `signIn`, never straight to `storeFor`. Opening the store alone reads the
+    // save but signs nobody in, so the next launch would show the picker again — and the
+    // roster would never learn which colony this device actually plays.
+    const on = this.accounts.signIn(account.id) ?? account;
+    this.profile = this.accounts.storeFor(on);
+    this.adoptProfile();
+    this.applyFeedbackPrefs();
+    this.host.replaceChildren();
+    this.deck = null;
+    this.show("home");
+    if (this.profile.get().tourSeen < TOUR_VERSION) this.startTour();
+  }
+
+  /** Leave the colony without destroying it, and go back to the picker. */
+  private signOut(): void {
+    this.accounts.signOut();
+    this.tour.stop();
+    this.deck = null;
+    this.showSignIn();
   }
 
   /**
@@ -727,6 +798,8 @@ export class App {
         // A restored save is a different colony: the difficulty, the map and the sound
         // switches all came off the code, so the app has to be told rather than left
         // running on the settings of the save that was just replaced.
+        onSignOut: () => this.signOut(),
+        playerCode: this.profile.get().playerId,
         onRestored: () => {
           this.adoptProfile();
           this.applyFeedbackPrefs();
