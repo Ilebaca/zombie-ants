@@ -7,7 +7,7 @@
  * second happen when you do the first.
  */
 import { describe, expect, it, beforeEach } from "vitest";
-import { ProfileStore, TRAITS, TRAIT_SLOTS, TRAIT_TIER } from "../../platform";
+import { ProfileStore, TRAITS, TRAIT_SLOTS, TRAIT_TIER, effectFigure } from "../../platform";
 import { MemoryStore } from "../../platform";
 import { buildInventory, buildTraitBench, traitOpener } from "../traits";
 import { buildSpeciesPage } from "../species";
@@ -133,13 +133,34 @@ describe("the bench", () => {
 });
 
 describe("the row that opens it", () => {
-  it("shows a pip per slot, lit for the ones that are filled", () => {
+  /**
+   * It shows the traits THEMSELVES. A row of dashes said how many and, when one was lit,
+   * that something rare was worn somewhere — never what it did.
+   */
+  it("shows each worn trait, with what it is worth, and holds the empty slots", () => {
     const s = store();
-    s.equipTrait("hill", s.findTrait(UNIVERSAL[0]!.id, "rare")!.uid);
+    const def = UNIVERSAL[0]!;
+    s.equipTrait("hill", s.findTrait(def.id, "rare")!.uid);
     const row = traitOpener(s, "hill", () => {}, null);
-    const pips = row.querySelectorAll(".tropen-pip");
-    expect(pips.length).toBe(TRAIT_SLOTS);
-    expect(row.querySelectorAll(".tropen-pip.on").length).toBe(1);
+
+    expect(row.querySelectorAll(".tropen-slot").length).toBe(TRAIT_SLOTS);
+    expect(row.querySelectorAll(".tropen-slot.filled").length).toBe(1);
+    expect(row.querySelectorAll(".tropen-slot.empty").length).toBe(TRAIT_SLOTS - 1);
+
+    const worn = row.querySelector<HTMLElement>(".tropen-slot.filled");
+    expect(worn?.title, "the trait is not named").toContain(def.name);
+    expect(worn?.title).toContain("Rare");
+    expect(worn?.style.getPropertyValue("--tier")).toBe(TRAIT_TIER.rare.colour);
+    expect(worn?.querySelector(".tropen-slot-v")?.textContent, "what it is worth is missing")
+      .toBe(effectFigure(def, "rare"));
+  });
+
+  /** Nothing equipped still has to SAY nothing is equipped, in words as well as squares. */
+  it("says so in words when the bench is empty", () => {
+    const row = traitOpener(store(), "hill", () => {}, null);
+    expect(row.textContent).toContain("No traits equipped");
+    expect(row.querySelectorAll(".tropen-slot.filled").length).toBe(0);
+    expect(row.querySelectorAll(".tropen-slot.empty").length).toBe(TRAIT_SLOTS);
   });
 
   /** A number is something to play toward. A padlock says only that you cannot. */
@@ -149,8 +170,8 @@ describe("the row that opens it", () => {
     expect(row.textContent).toContain("Chapter 10");
     row.click();
     expect(opened).toBe(0);
-    // A locked bench shows no pips: five empty slots would say it is open and unused.
-    expect(row.querySelectorAll(".tropen-pip").length).toBe(0);
+    // A locked bench shows no slots: five empty squares would say it is open and unused.
+    expect(row.querySelectorAll(".tropen-slot").length).toBe(0);
   });
 
   it("opens when it is not locked", () => {
@@ -250,7 +271,7 @@ describe("where the colony page keeps its traits", () => {
     return s;
   };
 
-  it("puts the row inside the hero card, last, with its pips", () => {
+  it("puts the row inside the hero card, last, with its slots", () => {
     let opened = 0;
     const page = buildSpeciesPage(grown(), {
       species: "fire", onBack: () => {}, onTraits: () => { opened++; },
@@ -259,7 +280,7 @@ describe("where the colony page keeps its traits", () => {
     const row = hero?.querySelector<HTMLElement>("#spgTraits");
     expect(row, "the traits row is not in the hero card").toBeTruthy();
     expect(hero?.lastElementChild, "something was added after it").toBe(row);
-    expect(row?.querySelectorAll(".tropen-pip").length, "the slots are not shown")
+    expect(row?.querySelectorAll(".tropen-slot").length, "the slots are not shown")
       .toBe(TRAIT_SLOTS);
 
     // Still a door.

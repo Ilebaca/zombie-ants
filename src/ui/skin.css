@@ -4780,15 +4780,43 @@ button:not(.playbtn):active,
 .tropen-t { font-size: 13px; font-weight: 900; letter-spacing: .1px; }
 /* The chapter, never a padlock: a number is something to play toward. */
 .tropen-c { font-size: 11px; font-weight: 900; color: var(--gold); }
-.tropen-pips { display: flex; gap: 5px; }
-.tropen-pip {
-  width: 26px;
-  height: 8px;
-  border-radius: 99px;
-  background: rgba(0, 0, 0, .34);
-  border: 1px solid var(--line);
+/* THE FIVE SLOTS, AS THEY ACTUALLY ARE. A row of dashes said how many and a
+   lit one said a rare was worn somewhere; neither said WHAT. This is the
+   bench's own square shrunk to fit a row — five equal columns, so an empty
+   slot holds its place and the loadout reads as a loadout rather than a list
+   of what happens to be filled. */
+.tropen-slots {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
 }
-.tropen-pip.on { background: var(--tier); border-color: var(--tier); }
+.tropen-slot {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1px;
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 2px 1px;
+  border-radius: 8px;
+}
+.tropen-slot.filled {
+  background: color-mix(in srgb, var(--tier) 12%, var(--panel));
+  border: 1px solid var(--tier);
+}
+/* Dashed and colourless while empty: a place for something rather than a thing. */
+.tropen-slot.empty {
+  background: rgba(0, 0, 0, .24);
+  border: 1px dashed var(--line);
+}
+.tropen-slot-i { display: grid; place-items: center; color: var(--tier); }
+.tropen-slot-v {
+  font-size: 8.5px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.2px;
+  color: var(--ink-soft);
+}
 
 /* A found trait's count, under the collection row that counts the slots. */
 .pf-row-note { font-size: 10.5px; font-weight: 800; color: var(--muted); }

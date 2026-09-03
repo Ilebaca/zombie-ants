@@ -304,6 +304,35 @@ function readOnlyTile(item: TraitItem, onTap: () => void): HTMLButtonElement {
   return cell;
 }
 
+/**
+ * The five slots at a glance: the same square as the bench's, small enough to sit on a row.
+ *
+ * A `span` rather than a `button`, because the whole row is already the button — a control
+ * inside a control is a tap that lands on neither. The name still rides on `title` and
+ * `aria-label`, exactly as it does on the full-size tile.
+ */
+function miniBench(worn: readonly (TraitItem | null)[]): HTMLElement {
+  const row = el("div", "tropen-slots");
+  for (const item of worn) {
+    if (!item) {
+      row.appendChild(el("span", "tropen-slot empty"));
+      continue;
+    }
+    const def = itemDef(item);
+    const tier = TRAIT_TIER[item.tier];
+    const cell = el("span", "tropen-slot filled");
+    cell.style.setProperty("--tier", tier.colour);
+    const mark = el("span", "tropen-slot-i");
+    mark.appendChild(icon(def?.icon ?? "star", 16));
+    cell.append(mark, el("span", "tropen-slot-v", def ? effectFigure(def, item.tier) : ""));
+    const label = def ? `${def.name} · ${tier.name} · ${effectText(def, item.tier)}` : tier.name;
+    cell.title = label;
+    cell.setAttribute("aria-label", label);
+    row.appendChild(cell);
+  }
+  return row;
+}
+
 /** A screen with nothing on it has to say WHY, or it reads as one that failed to load. */
 function locked(head: string, note: string): HTMLElement {
   const box = el("div", "trempty");
@@ -314,10 +343,19 @@ function locked(head: string, note: string): HTMLElement {
 /**
  * THE ROW THAT OPENS IT, shown on the species page and in the anthill.
  *
- * It carries the five slots in miniature rather than a count, because "3 / 5" says how
- * many and nothing about WHICH — and which is the whole of what a player wants to check
- * before a match. A locked bench says the chapter, never a padlock: a number is something
- * to play toward.
+ * IT SHOWS THE TRAITS THEMSELVES, not a count and not a row of dashes.
+ *
+ * "3 / 5" says how many and nothing about WHICH, and which is the whole of what a player
+ * checks before a match. The dashes it carried before were only half a step from that: a
+ * lit pip in the tier's colour said a rare one was worn SOMEWHERE, and nothing about what
+ * it did. So the row carries the same square the bench does, shrunk — the trait's own
+ * mark in its tier's colour with what it is worth under it — and an empty slot is drawn
+ * as an empty slot rather than left out, because five squares with two filled is a
+ * loadout and two squares is a list.
+ *
+ * The line above them still states the state, so a bench with nothing on it says so in
+ * words as well as in five empty squares. A locked bench says the chapter, never a
+ * padlock: a number is something to play toward.
  */
 export function traitOpener(
   store: ProfileStore, scope: TraitScope, onOpen: () => void, locked: string | null,
@@ -338,15 +376,7 @@ export function traitOpener(
   if (locked) top.append(el("span", "tropen-c", locked));
   mid.appendChild(top);
 
-  if (!locked) {
-    const pips = el("div", "tropen-pips");
-    for (const item of worn) {
-      const pip = el("span", "tropen-pip" + (item ? " on" : ""));
-      if (item) pip.style.setProperty("--tier", TRAIT_TIER[item.tier].colour);
-      pips.appendChild(pip);
-    }
-    mid.appendChild(pips);
-  }
+  if (!locked) mid.appendChild(miniBench(worn));
 
   const slot = el("span", "tropen-i");
   slot.appendChild(icon(locked ? "lock" : "star", 18));
