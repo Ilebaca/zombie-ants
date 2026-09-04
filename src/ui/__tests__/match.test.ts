@@ -20,7 +20,7 @@ import { MatchScreen, loudestOf } from "../match";
 beforeAll(() => {
   HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
 });
-afterEach(() => { vi.useRealTimers(); });
+afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
 const sig = (s: GameState): string => JSON.stringify(snapshot(s).tiles);
 
@@ -88,6 +88,20 @@ describe("the AI's turn", () => {
    */
   it("sits on its move rather than answering instantly", async () => {
     vi.useFakeTimers();
+    /*
+     * THE PAUSE IS PART REAL CLOCK, and that is what made this flaky on CI.
+     *
+     * `runAI` sits on the answer for the REST of its think time — `thinkFor` minus however
+     * long the search actually took, read off `performance.now()`, which the fake clock does
+     * not move. So on a slow machine the search eats the pause: `thinkFor` rolls near its
+     * 1000 ms floor, a couple of hundred milliseconds of real searching comes off it, and
+     * the move lands inside the 900 ms this test advances. The test was measuring the
+     * runner as much as the code — the same trap the AI's own budgets have (CLAUDE.md §4a).
+     *
+     * Pinning the roll to the top of the range takes the machine out of it: four seconds
+     * of think time survives any search this board can produce.
+     */
+    vi.spyOn(Math, "random").mockReturnValue(1);
     const w = watch();
     const before = sig(w.state);
     w.screen.start();
