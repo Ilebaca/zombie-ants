@@ -1940,8 +1940,8 @@ These differ from the legacy build **on purpose**. Anything else that differs is
 - **`RESEARCH LV NaN`.** The legacy species page reads a field that does not exist. Ours
   counts the levels properly.
 - **Leaderboard "You".** Legacy shows a hardcoded 999 points; ours shows real trophies.
-- **Venom Rain's description** says "10 troops/turn" in the legacy build, but both engines
-  do 7. The text was copied verbatim, so the number is wrong in both — worth deciding.
+- **Venom Rain's description.** The legacy build says "10 troops/turn" and its engine does
+  7. Ours interpolates `VENOM_BITE`, so the sentence cannot disagree with the rule.
 
 **ONE DESIGN, EVERY SIZE** (the responsive block at the end of `src/ui/skin.css`). The app
 was drawn for a phone and stayed drawn for one: a fixed 360px column with chrome running
