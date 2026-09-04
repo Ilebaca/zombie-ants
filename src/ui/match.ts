@@ -115,6 +115,28 @@ export interface MatchOptions {
   tourFrom?: number;
   /** The last step was finished or skipped: the tutorial is over for good. */
   onTutorialDone?: () => void;
+  /**
+   * A MATCH BEING PICKED BACK UP, not started (platform/suspend.ts).
+   *
+   * `state` is already the board it left off on — replayed from the record, so this screen
+   * never rebuilds anything. What it needs told is the two things a board cannot say: the
+   * moves that got it here, so the record it hands back is the WHOLE match rather than the
+   * second half of one, and the wall clock already spent, so the result card reports the
+   * match rather than the sitting.
+   *
+   * It also skips the opening descent. `playIntro()` is a match STARTING, and playing the
+   * camera down onto a board thirty turns old says the wrong thing — the same rule the
+   * history replay follows.
+   */
+  resumed?: { moves: readonly Move[]; playedMs: number };
+  /**
+   * A move was accepted, or the turn changed hands. The shell writes the match down from
+   * here, so an app that is closed between two turns can be opened on the same board.
+   *
+   * It fires from ONE place (`remember`), because a move that is played and not recorded
+   * is a resume onto a board the player never reached.
+   */
+  onProgress?: () => void;
 }
 
 export class MatchScreen {
@@ -186,6 +208,18 @@ export class MatchScreen {
    * kept, so the list always replays (engine/protocol.ts).
    */
   private moves: Move[] = [];
+
+  /**
+   * Write one move down and tell the shell.
+   *
+   * Every action funnels through here rather than pushing for itself: the record and the
+   * suspension have to agree exactly, and six push sites is six chances for one of them to
+   * be the move that is never saved.
+   */
+  private remember(...moves: Move[]): void {
+    this.moves.push(...moves);
+    this.opts.onProgress?.();
+  }
   /**
    * Bumped whenever this match stops caring about an answer still in flight — torn down, or
    * already finished. The AI thinks off the main thread now, so a reply can arrive after the
@@ -194,6 +228,9 @@ export class MatchScreen {
   private generation = 0;
 
   constructor(host: HTMLElement, private opts: MatchOptions) {
+    // A resumed match keeps the moves that got the board here, so the record it hands back
+    // at the end is the whole match rather than the part played after the phone rang.
+    if (opts.resumed) this.moves = [...opts.resumed.moves];
     this.opponent = opts.opponent
       ?? new AiOpponent("ai", opts.difficulty, opts.ctx);
     this.root = document.createElement("div");
@@ -244,6 +281,11 @@ export class MatchScreen {
     // and re-baked the scenery. A blink at the exact moment the opening handed over, with
     // different rocks and sticks on the other side of it.
     this.refreshHUD();
+    // A RESUMED MATCH DOES NOT OPEN, it carries on. `playIntro()` is a match starting, and
+    // flying the camera down onto a board thirty turns old says something that is not true
+    // — the same reason a history replay has no descent either. It goes straight to the
+    // turn, on the board it was left on.
+    if (this.opts.resumed) { this.openMatch(); return; }
     // The camera comes down through the canopy first, and the colonies fill in from their
     // nests when it lands (render/intro.ts). The clock does not start until it is over.
     this.introTimer = window.setTimeout(this.openMatch, this.renderer.playIntro());
@@ -675,7 +717,7 @@ export class MatchScreen {
     }
 
     const events = activateAbility(s, "you", this.opts.mods.you);
-    if (events.length) this.moves.push({ do: "ability" });
+    if (events.length) this.remember({ do: "ability" });
     if (!events.length) {
       return;
     }
@@ -727,7 +769,7 @@ export class MatchScreen {
     this.clearTimers();
     // Recorded like any other move: a replay has no other way to know the turn changed
     // hands, and whose move each one is comes from the board it is replayed onto.
-    this.moves.push({ do: "end" });
+    this.remember({ do: "end" });
     const events = endTurn(this.state, this.opts.mods);
     this.consume(events);
     this.beginTurn();
@@ -765,7 +807,7 @@ export class MatchScreen {
     this.aiTimer = null;
     if (gen !== this.generation) return;
     adopt(this.state, thought.next);
-    this.moves.push(...thought.moves);
+    this.remember(...thought.moves);
     const events = thought.events;
     this.consume(events);
     this.refreshHUD();
@@ -787,8 +829,11 @@ export class MatchScreen {
    */
   /** How long the match has been playable, in milliseconds. Latched once it is over. */
   get playedMs(): number {
-    if (!this.startedAt) return 0;
-    return (this.endedAt || performance.now()) - this.startedAt;
+    // Time already spent on this match before it was put down carries over, or a match
+    // resumed for one turn would report itself as a thirty-second game (platform/suspend.ts).
+    const before = this.opts.resumed?.playedMs ?? 0;
+    if (!this.startedAt) return before;
+    return before + (this.endedAt || performance.now()) - this.startedAt;
   }
 
   private finish(): void {
@@ -840,7 +885,7 @@ export class MatchScreen {
         return;
       }
       this.opts.onAbilityCast?.("tunnel");
-      this.moves.push({ do: "ability", at });
+      this.remember({ do: "ability", at });
       this.consume(events);
       this.refreshHUD();
       // Tunnelling spends the turn — `abilitySpendsTurn` in the engine owns that rule, and
@@ -855,7 +900,7 @@ export class MatchScreen {
       if (t.owner === "you" && isConnected(this.state, t)) {
         const events = rally(this.state, at);
         if (events.length) {
-          this.moves.push({ do: "rally", to: at });
+          this.remember({ do: "rally", to: at });
           this.consume(events);
           // The walkthrough keeps the turn (see the move branch), so the mode has to come
           // back by itself — `handOver` is what normally resets it.
@@ -888,7 +933,7 @@ export class MatchScreen {
 
       this.clearSelection();
       if (events.length) {
-        this.moves.push({ do: adjacent ? "move" : "travel", from, to: at });
+        this.remember({ do: adjacent ? "move" : "travel", from, to: at });
         this.consume(events);
         this.refreshHUD();
         // The step waits for the deed to RESOLVE — `tourSignals`, from the events — so a

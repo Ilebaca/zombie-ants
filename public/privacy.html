@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zombie Ants — Privacy</title>
+<!--
+  THE PRIVACY POLICY, AND IT IS A PLAIN STATIC PAGE ON PURPOSE.
+
+  Google Play requires a policy at a URL that works whether or not anybody has installed
+  the game, so it cannot live inside the bundle's router — it has to be a file the store's
+  reviewer, and anybody else, can open. It sits in `public/`, which Vite copies into the
+  build, so it deploys with everything else and needs no second host.
+
+  IT DESCRIBES WHAT THE CODE ACTUALLY DOES, and the interesting half of that is the list
+  of things it does NOT do. There is no server, no account, no analytics and no ad SDK, so
+  the honest policy is short — and the parts that ARE true (the page is served by GitHub,
+  the fonts come from Google, a support message goes through the player's own mail app)
+  are named rather than buried, because those are the only places a request leaves the
+  device at all.
+
+  The address below is held against `SUPPORT_EMAIL` by a test: two copies of a contact
+  address is one that goes stale, and the stale one is always the one in the policy.
+-->
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0;
+    padding: 32px 20px 64px;
+    background: #0e1a12;
+    color: #e8f2e0;
+    font: 15px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 30px 0 8px; color: #35d6c1; }
+  p, li { color: #cfe0c2; }
+  ul { padding-left: 20px; }
+  a { color: #35d6c1; }
+  .sub { color: #8fa384; font-size: 13px; margin: 0 0 8px; }
+  .lead { font-size: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Privacy</h1>
+  <p class="sub">Zombie Ants · last updated 4 September 2026</p>
+
+  <p class="lead">
+    Zombie Ants does not collect, transmit or sell any personal information. There is no
+    account, no sign-up and no server holding anything about you. Everything the game
+    remembers is stored on your own device.
+  </p>
+
+  <h2>What the game stores, on your device</h2>
+  <p>
+    Your save is written to your device's own app storage — browser storage on the web,
+    Android application storage in the installed app. It contains:
+  </p>
+  <ul>
+    <li>the colony name you chose, and the size of your colony;</li>
+    <li>your mycelium, pheromone and larva, and what you have bought with them;</li>
+    <li>your settings, your progress, and the matches you have played;</li>
+    <li>a player code, generated on your device so a support message can be matched to a
+      save.</li>
+  </ul>
+  <p>
+    None of it is sent anywhere. It is readable only by the game on that device, and it is
+    deleted when you reset your colony in Settings or uninstall the app.
+  </p>
+
+  <h2>What the game does not do</h2>
+  <ul>
+    <li>No analytics, telemetry or crash reporting. Nothing is measured or sent.</li>
+    <li>No advertising and no ad networks.</li>
+    <li>No trackers, no third-party cookies and no advertising identifiers.</li>
+    <li>No location, no contacts, no camera, no microphone, no files.</li>
+    <li>Nothing is sold or shared with anyone, because nothing is collected.</li>
+  </ul>
+
+  <h2>When the device does talk to the internet</h2>
+  <p>There are three, and only three:</p>
+  <ul>
+    <li><b>Loading the game.</b> The web version is hosted on GitHub Pages, which — like
+      any web server — records the request, including your IP address, in its own logs. See
+      <a href="https://docs.github.com/site-policy/privacy-policies/github-privacy-statement">GitHub's
+      privacy statement</a>. The installed Android app is served from inside the app and
+      does not do this.</li>
+    <li><b>Fonts.</b> The page loads its typeface from Google Fonts, so Google receives the
+      request. See <a href="https://policies.google.com/privacy">Google's privacy
+      policy</a>.</li>
+    <li><b>Checking for a newer version.</b> The web version fetches a small file to see
+      whether a newer build has been published, so it can reload onto it rather than
+      leaving you on a stale page. It sends nothing about you.</li>
+  </ul>
+  <p>
+    The game itself is played entirely on your device. Matches are against the computer;
+    nothing about them leaves the device.
+  </p>
+
+  <h2>If you contact support</h2>
+  <p>
+    The Support screen writes your message into your own email app. Nothing is sent until
+    you press send there, and you can see exactly what it contains: your message, the build
+    number, and your player code. If you email us, we have your message and your email
+    address — which we use only to answer you.
+  </p>
+
+  <h2>Purchases</h2>
+  <p>
+    Where the game sells anything, the payment is handled entirely by Google Play. We never
+    see or store your card details, and no payment information is kept on your device
+    beyond what you bought.
+  </p>
+
+  <h2>Children</h2>
+  <p>
+    The game is suitable for all ages and collects no personal information from anybody,
+    children included.
+  </p>
+
+  <h2>Changes</h2>
+  <p>
+    If this policy changes, the date at the top of this page changes with it.
+  </p>
+
+  <h2>Contact</h2>
+  <p>
+    Questions about any of this: <a href="mailto:support@zombie-ants.game">support@zombie-ants.game</a>
+  </p>
+</main>
+</body>
+</html>

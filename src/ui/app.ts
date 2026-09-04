@@ -5,8 +5,8 @@
  * match — a match is created from the choices, handed to MatchScreen, and reported back
  * through `onExit`.
  */
-import { START_SHAPES, arrangeTutorial, createGame } from "../engine";
-import type { MapId, Player, SpeciesId } from "../engine";
+import { MAPS, START_SHAPES, arrangeTutorial, createGame } from "../engine";
+import type { MapId, MatchSetup, Player, SpeciesId } from "../engine";
 import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
 import {
@@ -51,7 +51,9 @@ import { canReplay } from "../platform";
 import { LocalAccounts } from "../platform";
 import type { Account, AccountService } from "../platform";
 import { buildSignIn } from "./signin";
-import { askToPersist, defaultStore, saveRisk } from "../platform";
+import { askToPersist, defaultStore, onHardwareBack, saveRisk } from "../platform";
+import { SuspendStore } from "../platform";
+import type { Resumed, SuspendDifficulty } from "../platform";
 import type { SaveRisk } from "../platform";
 import { buildKeepSafe } from "./keepsafe";
 import type { Choices, SetupOptions } from "./setup";
@@ -172,6 +174,18 @@ export class App {
   private challenge: { index: number; done: boolean; daily: boolean } | null = null;
 
   /**
+   * THE MATCH THIS COLONY LEFT UNFINISHED (platform/suspend.ts).
+   *
+   * Derived from the profile every time rather than held, because signing into another
+   * account changes which save "this colony" means — and a held one would go on writing
+   * the new colony's match into the old colony's slot.
+   */
+  private get suspended(): SuspendStore {
+    const { store, key } = this.profile.slot;
+    return new SuspendStore(store, key);
+  }
+
+  /**
    * WHAT KIND OF MATCH THE SETUP FLOW IS SETTING UP.
    *
    * `null` is the ordinary one, which ends in a search for a stranger. A duel ends
@@ -222,6 +236,9 @@ export class App {
    * exist.
    */
   private risk: SaveRisk = "none";
+
+  /** Unwires the hardware back button. Only the native shell has one. */
+  private dropBack: () => void = () => {};
 
   constructor(
     private host: HTMLElement,
@@ -275,6 +292,10 @@ export class App {
     // The menu bed goes on at boot. It cannot actually sound until the first press — the
     // device does not exist yet — and `unlock` picks the wish up from there.
     this.feedback.setMusic("menu");
+    // ANDROID'S BACK BUTTON. In a WebView there is no history to go back through, so the
+    // shell's own answer to a press is to CLOSE THE APP — anywhere, mid-match included.
+    // A no-op in a browser (platform/back.ts).
+    this.dropBack = onHardwareBack(() => this.goBack());
     // ASK THE BROWSER TO KEEP THE STORAGE, and settle what it said. Chromium grants this
     // silently and a granted origin is never evicted; iOS refuses, which is the answer
     // that puts the prompt on home. It is fire-and-forget: the game must never wait on it.
@@ -287,6 +308,21 @@ export class App {
     // First run only. `tourSeen` is written when the walk finishes OR is skipped, so a
     // player who knows the game sees it once and never again.
     if (this.profile.get().tourSeen < TOUR_VERSION) this.startTour();
+  }
+
+  /**
+   * Tear the shell down.
+   *
+   * There is one of these per page in the shipped app, so this exists for the hardware
+   * back button rather than for tidiness: its listener lives on the far side of the
+   * Capacitor bridge and would otherwise go on calling into an App that is gone.
+   */
+  destroy(): void {
+    this.dropBack();
+    this.dropBack = () => {};
+    this.clearMatch();
+    this.clearReplay();
+    this.clearMatchmaking();
   }
 
   /**
@@ -507,6 +543,55 @@ export class App {
         bubble: "top",
       },
     ];
+  }
+
+  /* ----------------------------------------------------------------------- BACK */
+
+  /**
+   * UP ONE, and whether there was an "up one" to go to.
+   *
+   * `false` is the answer that CLOSES the app, which is why it is only ever given on the
+   * home screen with nothing over it. A back that swallowed every press would be the more
+   * annoying of the two failures: an app you cannot leave with the button that leaves apps.
+   *
+   * The order is the order things are stacked in, and each rung is one the player can see:
+   * the tour is a gate over everything, then the result card, then the drawer, then a
+   * match, then a page over the deck, then the deck itself.
+   *
+   * A MATCH GOES HOME RATHER THAN NOWHERE, and it only can because a match survives being
+   * left now (platform/suspend.ts): it is written down after every move and waiting on the
+   * home screen when the player gets there. Before that, this had to either swallow the
+   * press or throw the game away.
+   */
+  goBack(): boolean {
+    // The tour holds the interface until it gets the tap it asked for. Swallowed rather
+    // than obeyed: closing the app is not the answer to a step somebody is reading.
+    if (this.tour.running) return true;
+    if (this.overlay) { this.clearOverlay(); this.show("home"); return true; }
+    if (this.menu && !this.menu.classList.contains("hidden")) { this.closeMenu(); return true; }
+    if (this.match || this.replay) { this.show("home"); return true; }
+
+    // A PAGE OVER THE DECK GOES WHERE ITS OWN BACK BUTTON GOES. Pressing the one the
+    // player can see is the whole rule: a second table of "which screen is above which"
+    // would be a second answer to a question the screens already answer, and it would be
+    // the one that goes stale.
+    //
+    // A page with NO back arrow still has to go somewhere, and it goes home. How to play
+    // is one — like the legacy build it is dressed as a bottom-nav screen, so it carries
+    // no arrow while being reachable from home and from Settings.
+    for (const [, el] of this.screens) {
+      if (el.classList.contains("hidden")) continue;
+      const back = el.querySelector<HTMLButtonElement>(".backbtn");
+      if (back) back.click();
+      else this.show("home");
+      return true;
+    }
+
+    if (this.deck && !this.deck.hidden && this.deck.at !== "home") {
+      this.show("home");
+      return true;
+    }
+    return false;                     // home, with nothing over it: leave the app
   }
 
   /* --------------------------------------------------------------------- ROUTER */
@@ -1021,6 +1106,73 @@ export class App {
     return row;
   }
 
+  /**
+   * "PICK YOUR MATCH BACK UP" — the one thing on home that is about a game already going.
+   *
+   * A phone call used to cost the whole match; it is written down after every move now
+   * (platform/suspend.ts) and this is the way back into it. It rides in the header block
+   * beside the save guard and wears its row, because they are the same thing seen twice:
+   * one band under the top bar saying something is waiting on the player.
+   *
+   * IT SAYS WHERE IT WAS LEFT. "Resume match" alone is a button somebody presses to find
+   * out what it is; the map and the turn are what make it recognisable as the game they
+   * were losing on the bus.
+   *
+   * AND IT CAN BE PUT DOWN, on the same button, twice — the pattern the reset row and
+   * removing a friend already use. Abandoning a match throws away everything it would have
+   * paid, so it asks; and without a way to say no the band would sit there for ever on a
+   * match the player has decided not to finish. PLAY starts a new one and replaces it,
+   * which is a choice made with this band on screen right above the button.
+   */
+  private resumeBand(): HTMLElement | null {
+    const held = this.suspended.peek();
+    if (!held) return null;
+
+    const row = el("div", "saveguard resumeband");
+    row.id = "resumeBand";
+
+    const go = el("button", "sg-go") as HTMLButtonElement;
+    go.type = "button";
+    go.id = "resumeGo";
+    const wrap = el("div", "rb-w");
+    wrap.append(
+      el("span", "sg-t", "Resume your match"),
+      el("span", "rb-sub", `${MAPS[held.setup.map].name} · turn ${held.turn}`),
+    );
+    go.append(icon("board", 16), wrap, icon("next", 13));
+    go.onclick = () => this.resumeMatch();
+
+    let armed = false;
+    const drop = el("button", "sg-x") as HTMLButtonElement;
+    drop.type = "button";
+    drop.id = "resumeDrop";
+    drop.setAttribute("aria-label", "Abandon this match");
+    drop.appendChild(icon("cross", 14));
+    drop.onclick = () => {
+      if (!armed) {
+        armed = true;
+        drop.replaceChildren(el("span", "sg-t", "Sure?"));
+        drop.style.width = "auto";
+        drop.style.padding = "0 12px";
+        return;
+      }
+      this.suspended.clear();
+      this.rebuildHomeBar();
+    };
+
+    row.append(go, drop);
+    return row;
+  }
+
+  /** Open the match that was left unfinished, on the board it was left on. */
+  private resumeMatch(): void {
+    const held = this.suspended.resume();
+    // A record that will not replay is not resumed onto a board the match never reached
+    // (platform/suspend.ts) — `resume` has already dropped it, so the band goes with it.
+    if (!held) { this.rebuildHomeBar(); return; }
+    this.startMatch(undefined, held);
+  }
+
   private homeBar(root: HTMLElement): HTMLElement {
     const bar = topBar(this.profile.get(), {
       onProfile: () => this.show("profile"),
@@ -1038,6 +1190,8 @@ export class App {
       this.feedback.play("claim");
       toast(root, `Granary → +${compact(got)} troops`, "hive");
     }));
+    const waiting = this.resumeBand();
+    if (waiting) bar.appendChild(waiting);
     const guard = this.saveGuard();
     if (guard) bar.appendChild(guard);
     return bar;
@@ -1200,14 +1354,18 @@ export class App {
 
   /* ---------------------------------------------------------------------- MATCH */
 
-  private startMatch(foe?: Opponent): void {
+  private startMatch(foe?: Opponent, resume?: Resumed): void {
     // The board gets its own bed. `setMusic` is idempotent, so this is safe to call for
     // every match, including a rematch straight off the result card.
     this.feedback.setMusic("match");
     if (this.tour.running) this.tour.signal("shape");
     // Whether this match is the tutorial one, decided once: the board is arranged for it
-    // and the match screen runs the walkthrough on it.
-    const tutorial = this.profile.get().tourSeen < TOUR_VERSION;
+    // and the match screen runs the walkthrough on it. A resumed match is never the
+    // tutorial — the walkthrough is not suspended, so there is nothing to pick up.
+    const tutorial = !resume && this.profile.get().tourSeen < TOUR_VERSION;
+    // A resumed challenge brings its own latch back: the scenario it was being played for,
+    // and whether the reward has already been paid (ui/settle.ts).
+    if (resume) this.challenge = resume.challenge ? { ...resume.challenge } : null;
     // "Play again" comes straight back here, so tear the old match down first — otherwise
     // its render loop and timers keep running behind the new one.
     this.clearMatch();
@@ -1215,19 +1373,28 @@ export class App {
     // A matchmade opponent is fielded as the colony their profile showed: the head on the
     // matchmaking screen has to be the colony that turns up on the board, or the search was
     // showing something it did not mean. Only a match with nobody found rolls one.
-    const aiSpecies = foe?.species ?? rollAISpecies(this.choices.species);
+    // A resumed match fields exactly the colonies it opened with: the setup is the record
+    // (engine/protocol.ts), and a different opponent species would replay a different board.
+    const aiSpecies = resume?.setup.species.ai ?? foe?.species ?? rollAISpecies(this.choices.species);
+    const mySpecies = resume?.setup.species.you ?? this.choices.species;
+    const map = resume?.setup.map ?? this.choices.map;
+    // The one across the board is remembered with the match, so a name and a colony size
+    // on the soil do not change under the player between two sittings.
+    const seated = resume?.foe ?? foe;
     // The skin's palette is part of the colony (engine/skins.ts), so the whole UI takes
     // it — the board, the chips, the buttons. The opponent always fields the basic look:
     // a colony has to read as the species it is, and the one wearing something found is
     // the player's.
-    setFactionColor("you", this.choices.species, this.profile.lookFor(this.choices.species));
+    setFactionColor("you", mySpecies, this.profile.lookFor(mySpecies));
     setFactionColor("ai", aiSpecies);
 
-    // Anthill and research come from the profile; the AI always gets the neutral set.
-    const mods = this.profile.modsFor(this.choices.species);
+    // Anthill and research come from the profile; the AI always gets the neutral set. A
+    // resumed match keeps the ones it was OPENED with: research bought between two sittings
+    // must not change a board that is already half played, or the record stops replaying.
+    const mods = resume?.setup.mods ?? this.profile.modsFor(mySpecies);
     // Counted as the match runs: by the time it ends the surge may have lapsed and the
     // hive handed its tiles back, so the board can no longer say it happened.
-    let queensTaken = 0;
+    let queensTaken = resume?.queens ?? 0;
 
     // Held rather than inlined: the opponent's nameplate is drawn from it too, and the
     // state's own `rng` has moved on by the time the board is built.
@@ -1236,17 +1403,31 @@ export class App {
     // same board or nothing replays and no server can verify it (engine/protocol.ts), so
     // when there is one it comes from whoever set the challenge up. Everything else rolls
     // its own, which is right: nobody else has to agree with it.
-    const seed = this.duelSeed ?? ((Date.now() ^ (Math.random() * 0xffffffff)) | 0);
+    const seed = resume?.setup.seed ?? this.duelSeed
+      ?? ((Date.now() ^ (Math.random() * 0xffffffff)) | 0);
     this.duelSeed = null;
     // Named rather than rolled inline: a record has to carry the enemy's formation too, or
     // replaying it opens a different board (engine/protocol.ts).
-    const enemyShape = START_SHAPES[rollShape()];
-    const state = createGame({
-      map: this.choices.map,
-      species: { you: this.choices.species, ai: aiSpecies },
-      shape: START_SHAPES[this.choices.shape],
+    const enemyShape = resume?.setup.aiShape ?? START_SHAPES[rollShape()];
+    const myShape = resume?.setup.shape ?? START_SHAPES[this.choices.shape];
+    // EVERYTHING NEEDED TO REBUILD THIS OPENING, in one place — it is what the history
+    // entry is written from, and what a suspended match is resumed from. A resumed one
+    // brings its own back verbatim rather than rebuilding a matching copy: two spellings
+    // of one opening is two boards waiting to disagree.
+    const setup: MatchSetup = resume?.setup ?? {
+      map,
+      species: { you: mySpecies, ai: aiSpecies },
+      seed,
+      shape: myShape,
       // The enemy picks its own formation, so the board never opens as a perfect mirror of
       // your own corner. Both sides still get exactly five tiles and identical income.
+      aiShape: enemyShape,
+      mods,
+    };
+    const state = resume?.state ?? createGame({
+      map,
+      species: { you: mySpecies, ai: aiSpecies },
+      shape: myShape,
       aiShape: enemyShape,
       mods,
       seed,
@@ -1257,13 +1438,55 @@ export class App {
     // arranged board where every lesson is available on turn one.
     if (tutorial) arrangeTutorial(state);
 
-    this.profile.update((p) => {
-      p.lastMap = this.choices.map;
-      p.lastSpecies = this.choices.species;
-      p.lastShape = this.choices.shape;
-    });
+    if (!resume) {
+      // A NEW MATCH REPLACES THE OLD ONE. Cleared here rather than left to the first move,
+      // or an app closed on turn one would reopen offering the match before this one.
+      this.suspended.clear();
+      this.profile.update((p) => {
+        p.lastMap = this.choices.map;
+        p.lastSpecies = this.choices.species;
+        p.lastShape = this.choices.shape;
+      });
+    }
+
+    // THE MATCH IS PUT DOWN BEFORE IT IS PLAYED, and rewritten after every move.
+    //
+    // Written from the screen's own record rather than from anything derived, so the board
+    // it is resumed onto is the board the player actually left (platform/suspend.ts). The
+    // tutorial is never suspended: it is a walkthrough with an overlay counting through it,
+    // and half of one is not something to hand back to anybody.
+    const difficulty: SuspendDifficulty =
+      resume?.difficulty ?? (tutorial ? "easy" : seated ? "hard" : this.difficulty);
+    const keep = (): void => {
+      if (tutorial) return;
+      const held = this.match;
+      if (!held) return;
+      this.suspended.save({
+        setup,
+        moves: [...held.record],
+        playedMs: held.playedMs,
+        queens: queensTaken,
+        turn: state.turn,
+        difficulty,
+        ...(seated ? { foe: {
+          name: seated.name, species: seated.species,
+          colony: seated.colony, human: seated.human,
+        } } : {}),
+        ...(this.challenge ? { challenge: { ...this.challenge } } : {}),
+        at: Date.now(),
+      });
+    };
 
     for (const el of this.screens.values()) el.classList.add("hidden");
+    // AND THE DECK, which is not one of them.
+    //
+    // A match reached through the setup flow was already over a hidden deck, because
+    // `show()` hides it for any page. A CHALLENGE is not: `startChallenge` goes straight
+    // here from the Challenges tab, so the strip stayed on screen underneath the board —
+    // and `.challist` sat on top of the action bar, which made End turn, the ability and
+    // Surrender unpressable. Measured in a browser: `elementFromPoint` at the centre of
+    // the End turn button returned the challenge list.
+    if (this.deck) this.deck.hidden = true;
 
     const me = this.profile.get();
 
@@ -1274,14 +1497,14 @@ export class App {
       // WHO IS ACROSS THE BOARD — the one the search seated, so the plate on the soil is
       // the profile the player just watched the reel stop on. A match with nobody found
       // (the tutorial, a challenge) names no one.
-      plates: foe && {
+      plates: seated && {
         you: { name: me.name, colony: me.colony },
-        ai: { name: foe.name, colony: foe.colony },
+        ai: { name: seated.name, colony: seated.colony },
       },
       // The player's colony wears what they chose; the opponent always fields the basic
       // look, so it reads as the species it is. It reaches the nest's shape on the board
       // and, through the palette above, every tile the colony holds.
-      looks: { you: this.profile.lookFor(this.choices.species) },
+      looks: { you: this.profile.lookFor(mySpecies) },
       // The same mods must drive combat, or Mandible/Cuticle research would show up in the
       // income readout but do nothing in a fight.
       ctx: { mods },
@@ -1295,8 +1518,14 @@ export class App {
        * who folds is worse than no opponent at all — the search would be seating someone
        * the player can see is not real. Settings' difficulty still drives a challenge.
        */
-      difficulty: tutorial ? "easy" : foe ? "hard" : this.difficulty,
-      map: this.choices.map,
+      difficulty,
+      map,
+      // Picked back up rather than started: the board is already the one it left off on,
+      // so this is the moves that got it there and the clock already spent on them.
+      ...(resume ? { resumed: { moves: resume.moves, playedMs: resume.playedMs } } : {}),
+      // Every accepted move rewrites the suspension, which is what makes closing the app
+      // mid-turn survivable.
+      onProgress: keep,
       // The meta walk ends on the button that got us here, so the match picks the tutorial
       // up and finishes it. A player who skipped has `tourSeen` written already.
       tutorial,
@@ -1327,6 +1556,10 @@ export class App {
         return attack && attack.type === "combat" ? attack.attacker : null;
       },
       onExit: (winner, reason, played) => {
+        // A FINISHED MATCH IS NOT A SUSPENDED ONE. Cleared before anything is paid: a
+        // settlement that threw would otherwise leave a decided match on the home screen
+        // offering to be played again, and it would pay twice.
+        this.suspended.clear();
         // The settlement is its own subject and lives in its own file: the career, the
         // match record, the quests and the challenge reward all move together and in an
         // order that matters (ui/settle.ts). What stays here is the screen state — the
@@ -1343,22 +1576,15 @@ export class App {
           reason,
           playedMs: played,
           queens: queensTaken,
-          map: this.choices.map,
-          species: this.choices.species,
+          map,
+          species: mySpecies,
           foe: {
             species: aiSpecies,
-            name: foe?.name ?? "",
-            human: foe?.human ?? false,
+            name: seated?.name ?? "",
+            human: seated?.human ?? false,
           },
           record: {
-            setup: {
-              map: this.choices.map,
-              species: { you: this.choices.species, ai: aiSpecies },
-              seed,
-              shape: START_SHAPES[this.choices.shape],
-              aiShape: enemyShape,
-              mods,
-            },
+            setup,
             moves: [...(this.match?.record ?? [])],
           },
           challenge,

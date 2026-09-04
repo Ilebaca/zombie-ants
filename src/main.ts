@@ -1,5 +1,7 @@
 /** App entry point. */
-import { LocalAccounts, defaultStore, goOffline, isNative, loadNative, takeNewerBuild } from "./platform";
+import {
+  LocalAccounts, catchCrashes, defaultStore, goOffline, isNative, loadNative, takeNewerBuild,
+} from "./platform";
 import { App } from "./ui/app";
 
 const host: HTMLElement | null = document.getElementById("app");
@@ -19,6 +21,10 @@ const root: HTMLElement = host;
  * splash screen anyway. A browser never waits.
  */
 async function boot(): Promise<void> {
+  // FIRST, BEFORE ANYTHING CAN THROW. Without it an exception anywhere leaves a board that
+  // no longer answers a tap or a blank page, with no way out but knowing to kill the app —
+  // and on a phone there is no console to find out why (platform/crash.ts).
+  catchCrashes();
   const store = (await loadNative()) ?? defaultStore();
   // The ACCOUNTS are handed over, never a profile. A profile passed here is the caller
   // saying "this is the colony" and skips the sign-in screen entirely (see `App.given`),

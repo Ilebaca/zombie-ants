@@ -1,8 +1,11 @@
 /** Platform surface: storage, profile and progression. */
 export { BUILD } from "./build";
+export { catchCrashes, resetCrash } from "./crash";
 export { takeNewerBuild } from "./freshness";
 export { goOffline, resetOffline } from "./offline";
 export { CapacitorStore, isNative, loadNative } from "./native";
+export { onHardwareBack } from "./back";
+export type { BackHandler } from "./back";
 export { MemoryStore, defaultStore, readJson, writeJson } from "./storage";
 export type { KeyValueStore } from "./storage";
 export {
@@ -70,6 +73,8 @@ export {
   levelProgress, levelReward, msUntilRollover, questDef, rollQuests, unclaimedLevels, xpForLevel,
 } from "./quests";
 export type { LevelProgress, QuestDef, QuestKind, QuestReward, QuestState } from "./quests";
+export { SuspendStore, suspendKey } from "./suspend";
+export type { Resumed, SuspendDifficulty, SuspendFoe, Suspended } from "./suspend";
 export { LocalResults, verify } from "./results";
 export type { MatchOutcome, RecordedResult, ResultsService } from "./results";
 export { HISTORY_MAX, RECORD_MAX_MOVES, addToHistory, canReplay, fitRecord, outcomeOf } from "./history";

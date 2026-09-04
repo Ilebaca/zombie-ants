@@ -127,6 +127,24 @@ export function buildSupport(
       factRow("crown", "Player code", profile.playerId),
       factRow("gear", "Build", BUILD),
     );
+    // THE PRIVACY POLICY IS A REAL PAGE, not a screen in the app (`public/privacy.html`).
+    // A store listing has to point at a URL that works whether or not the game is
+    // installed, so there is exactly one copy of it and this is a link to that copy —
+    // opened in a new tab rather than navigated to, or the game goes away underneath it.
+    const policy = el("a", "spfact spfact-link") as HTMLAnchorElement;
+    policy.id = "privacyLink";
+    // Relative, like every other path in the build: the same bundle runs under the Pages
+    // project path and inside the Capacitor shell (CLAUDE.md, installable).
+    policy.href = "./privacy.html";
+    policy.target = "_blank";
+    policy.rel = "noopener";
+    const slot = el("span", "spfact-i");
+    slot.appendChild(icon("book", 16));
+    policy.append(
+      slot, el("span", "spfact-k", "Privacy"),
+      el("span", "spfact-v", "What the game stores"), icon("next", 13),
+    );
+    contact.appendChild(policy);
     wrap.appendChild(contact);
 
     body.appendChild(wrap);

@@ -799,6 +799,18 @@ export class ProfileStore {
 
   get(): Readonly<Profile> { return this.profile; }
 
+  /**
+   * WHERE THIS SAVE LIVES, offered rather than reached for.
+   *
+   * A match left unfinished (platform/suspend.ts) has to sit BESIDE this exact save and
+   * never inside it — it runs to hundreds of moves, and the backup code is a string a
+   * person copies into a message. Every account has its own key, so the sibling record
+   * needs the same one or two colonies on a phone would resume into each other.
+   */
+  get slot(): { store: KeyValueStore; key: string } {
+    return { store: this.store, key: this.key };
+  }
+
   /** Apply a change and persist. The callback receives a mutable draft. */
   update(fn: (p: Profile) => void): Readonly<Profile> {
     fn(this.profile);

@@ -1143,10 +1143,16 @@ war, and the store is emptied into the colony from the home screen.
    `npm run android`. `android/` is generated and gitignored; `npx cap add android`
    recreates it. The launcher icon comes from `public/icon-512.png` (Android Studio, or
    `capacitor-assets`); it is not committed because the platform directory is not.
-5. RevenueCat in-app purchases — implement `PurchaseGateway` against it and hand it to
+5. Before release, two things are still owed and neither is code: `SUPPORT_EMAIL` in
+   `platform/support.ts` is a placeholder and must be a real address (the privacy page
+   carries the same one, held by a test), and the Android launcher icon has to be set once
+   in Android Studio from `public/icon-512.png` — `android/` is generated and gitignored,
+   so it cannot be committed. The privacy URL for the Play listing is
+   https://ilebaca.github.io/zombie-ants/privacy.html
+6. RevenueCat in-app purchases — implement `PurchaseGateway` against it and hand it to
    `App`; nothing else moves. Needs, from Milan: a Play Console account, the products
    created there with these ids (`platform/purchases.ts`), and a RevenueCat key.
-6. Play Console release
+7. Play Console release
 
 Later, server-backed: async PvP, ranked ladder, seasons. Determinism makes server-side
 verification nearly free — keep it that way. Replays are already built and local (see
@@ -1593,6 +1599,95 @@ because only the build knows the content-hashed filenames it has just emitted.
 - The worker has no module to import, so its rules are asserted against the generator's
   SOURCE with the comments stripped — crude, and better than leaving the most damaging
   failure in the feature held by nothing.
+
+**A MATCH SURVIVES THE APP BEING CLOSED** (`platform/suspend.ts`, the band on home). A
+phone call, a low battery, a swipe away — and twenty minutes of play was gone, with the
+colony unpaid for it. That was the worst thing the game could do to somebody and it did it
+silently: nothing anywhere kept a match that had not finished.
+- **It is nearly free, and only because the engine is pure and seeded (§4.1).** A match in
+  progress is the same twenty bytes a finished one is remembered as — the SETUP and the
+  MOVES (`engine/protocol.ts`) — and `replayMatch` hands the exact board back. No board is
+  ever stored, so nothing here can go stale against a balance change.
+- **What else it carries is what the SCREEN counted, not the board**: the wall clock the
+  result card reports, how many queens have fallen (the surge lapses, so the position can
+  no longer say), who is across the board, which challenge is being attempted and whether
+  its reward has been paid, and the turn number. Every one is something the match counted
+  as it ran and cannot recount from the position.
+- **It sits BESIDE the save, never inside it.** A record runs to hundreds of moves and the
+  backup code is a string a person copies into a message — the same reason the history
+  records were taken out of it. Its key is the profile's key with a suffix, so each account
+  suspends its own match and two colonies on one phone cannot resume into each other's.
+  `ProfileStore.slot` is what offers that key rather than the shell reaching for it.
+- **A record that will not replay is DROPPED, never half-applied**, and so is one whose
+  board is already `over` — that one is reachable, because the record is rewritten on the
+  move that WINS and cleared a moment later when the card goes up. Resuming a finished
+  match would pay for it twice.
+- **ONE function writes a move down** (`MatchScreen.remember`), because a move that is
+  played and not reported resumes onto a board the player never reached — and it is
+  silent: the match plays on perfectly and only the NEXT sitting is wrong.
+- **A resumed match has no opening descent and carries its clock.** `playIntro()` is a match
+  STARTING, and flying the camera down onto a board thirty turns old says something untrue —
+  the same rule the history replay follows. The time already spent is added to `playedMs`,
+  or a match resumed for one turn reports itself as a thirty-second game.
+- **It keeps the mods it OPENED with.** Research bought between two sittings must not change
+  a board that is half played, or the record stops replaying.
+- **The tutorial is never suspended.** It is a walkthrough with an overlay counting through
+  it, and half of one is not something to hand back to anybody.
+- **The band wears the save guard's row**, because they are the same thing seen twice: one
+  strip under the top bar saying something is waiting. It names the map and the turn — a
+  button that only says "resume" is one a player presses to find out what it is — and it
+  can be put down on the same button twice, the pattern the reset row already uses.
+- **A new match replaces it the moment it OPENS**, not on its first move, or an app closed
+  on turn one reopens offering the match before this one.
+
+**ANDROID'S BACK BUTTON** (`platform/back.ts`, `App.goBack`). A WebView has no history to
+go back through, so the shell's own answer to a press is to CLOSE THE APP — anywhere,
+mid-match included. Every Android player expects "up one screen", and every Play reviewer
+checks it.
+- **The app decides; the platform file only asks.** `onHardwareBack` takes a handler that
+  answers one question — did anything consume the press? — and only a `false` exits. A back
+  that swallowed everything is the more annoying of the two failures: an app you cannot
+  leave with the button that leaves apps.
+- **The order is the order things are stacked in**, each rung one the player can see: the
+  tour (swallowed — closing the app is not the answer to a step being read), the result
+  card, the drawer, a match, a page over the deck, the deck itself, then home → exit.
+- **A page goes where its own back button goes.** Pressing the arrow the player can see is
+  the whole rule; a second table of which screen sits above which would be a second answer
+  to a question the screens already answer, and the one that goes stale. A page with no
+  arrow (How to play, dressed as a bottom-nav screen like the legacy build) goes home.
+- **A match goes home rather than nowhere, and it only can because a match survives being
+  left now.** Before the suspension this had to either swallow the press or throw the game
+  away. Leaving is not a defeat: nothing is settled and nothing is paid.
+- **It is a no-op in a browser, deliberately.** A tab's back button is the browser's history
+  and taking it over breaks the one gesture that gets somebody out of a page.
+
+**WHEN SOMETHING THROWS** (`platform/crash.ts`). There was nothing at all: an exception in
+a render loop or a screen builder went to a console nobody has on a phone, and the game
+stopped — a board that no longer answers a tap, or a blank page, indistinguishable from a
+frozen device.
+- **It is the smallest useful thing: say so, and offer the way out.** Not error reporting —
+  nothing is sent anywhere, because there is no server and because a crash panel that
+  quietly uploads is not something to add without saying so (and the privacy page says it
+  does not).
+- **Both halves, and they are different events.** `error` is a throw that reached the top;
+  `unhandledrejection` is a promise nobody caught — and almost everything asynchronous here
+  is the second kind (the search worker, the storage bridge, the build check).
+- **It shows ONCE.** One fault usually becomes many; a broken frame throws sixty times a
+  second, and a panel that redraws itself per frame is a worse fault than the one it reports.
+- **Its styles are written out inline**, because the fault may BE the stylesheet, and a
+  crash panel that cannot be seen is not one.
+- **The reload is an honest offer because the save is already safe** — every currency and
+  the colony are written the moment they change, and the match after every move.
+
+**THE PRIVACY POLICY IS A REAL PAGE** (`public/privacy.html`). Play requires a policy at a
+URL that works whether or not anybody has installed the game, so it cannot be a screen in
+the app; `public/` is copied into the build, so it deploys with everything else and needs
+no second host. It describes what the code actually does, and the interesting half is what
+it does NOT: no server, no account, no analytics, no ads. The three places a request leaves
+the device at all — Pages serving the page, Google Fonts, the version check — are named
+rather than buried. Two tests hold it: its address must be `SUPPORT_EMAIL` (two copies of a
+contact address is one that goes stale, and it is always the one in the policy), and no
+shipped source may mention an analytics SDK while the page says there is none.
 
 **THE ANDROID SHELL** (`capacitor.config.ts`, `platform/native.ts`). Thin on purpose:
 Capacitor serves the same `dist/` in a WebView. What it actually buys is that **the save

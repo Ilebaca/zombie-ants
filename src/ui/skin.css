@@ -5461,6 +5461,38 @@ button:not(.playbtn):active,
   cursor: pointer;
 }
 
+/* The privacy policy is a real page rather than a screen, so its row is an
+   anchor rather than a button — same shape as the facts above it, plus the
+   chevron that says it leads somewhere. */
+.spfact-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* ---- A MATCH LEFT UNFINISHED ----
+   The same row as the save guard above, because it is the same thing seen
+   twice: one band under the top bar that says something is waiting on the
+   player. Only the colour differs, and it has to — amber is a risk and this is
+   an offer, so it wears the mint every "go" in the app wears. */
+.resumeband .sg-go {
+  background: color-mix(in srgb, var(--mint) 14%, var(--panel));
+  border-color: color-mix(in srgb, var(--mint) 45%, transparent);
+  color: var(--mint);
+}
+/* Where it was left, under the name of the thing being offered. Muted and
+   small: the map and the turn are what tell one waiting match from a match, and
+   they are not the line that gets read. */
+.rb-w { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.rb-sub {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ---- The screen ---- */
 .kswrap { display: flex; flex-direction: column; gap: var(--stack); width: 100%; }
 .kscard {

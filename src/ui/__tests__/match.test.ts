@@ -14,7 +14,7 @@ import { describe, expect, it, vi, beforeAll, afterEach } from "vitest";
 import {
   createGame, defaultContext, NEUTRAL_MODS, snapshot,
 } from "../../engine";
-import type { EngineEvent, GameState } from "../../engine";
+import type { EngineEvent, GameState, Move } from "../../engine";
 import { MatchScreen, loudestOf } from "../match";
 
 beforeAll(() => {
@@ -334,5 +334,92 @@ describe("what a batch sounds like", () => {
 
   it("stays quiet for a batch with nothing worth marking", () => {
     expect(cue({ type: "production", owner: "you", gained: 4 })).toBeNull();
+  });
+});
+
+/**
+ * PICKING A MATCH BACK UP (platform/suspend.ts).
+ *
+ * The screen is handed a board that is already thirty turns old, the moves that got it
+ * there, and the clock already spent on them. Three things have to be true or the resumed
+ * match is a different match: the record it hands back at the end must be the WHOLE game,
+ * the result card must report the whole game's length, and every move must be written down
+ * as it is played or the next resume lands on a board the player never reached.
+ */
+describe("a match picked back up", () => {
+  /** The End turn button, which is how a player ends one. */
+  const end = (host: HTMLElement): void => {
+    host.querySelector<HTMLButtonElement>("#bEnd")?.click();
+  };
+
+  const resumed = (moves: Move[], playedMs: number, onProgress?: () => void): {
+    host: HTMLElement; screen: MatchScreen; state: GameState;
+  } => {
+    const state = createGame({ map: "small", species: { you: "fire", ai: "fire" }, seed: 11 });
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const screen = new MatchScreen(host, {
+      state,
+      mods: { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } },
+      ctx: defaultContext(),
+      difficulty: "normal",
+      map: "small",
+      resumed: { moves, playedMs },
+      ...(onProgress ? { onProgress } : {}),
+    });
+    return { host, screen, state };
+  };
+
+  it("hands back the whole match, not the half played after it was picked up", () => {
+    const earlier: Move[] = [{ do: "end" }, { do: "end" }];
+    const { host, screen } = resumed(earlier, 120_000);
+    expect(screen.record).toEqual(earlier);
+
+    screen.start();
+    end(host);
+    expect(screen.record).toHaveLength(3);
+    expect(screen.record[0]).toEqual(earlier[0]);
+    screen.destroy();
+  });
+
+  it("carries the clock over, so the card reports the match and not the sitting", () => {
+    const { screen } = resumed([], 120_000);
+    expect(screen.playedMs).toBe(120_000);
+    screen.destroy();
+  });
+
+  /**
+   * NO OPENING DESCENT. `playIntro()` is a match STARTING, and the clock does not run
+   * during it — so a fresh match is still at zero here while a resumed one is already
+   * counting, which is exactly the difference being asserted.
+   */
+  it("goes straight to the turn instead of flying the camera in", async () => {
+    vi.useFakeTimers();
+    const fresh = watch();
+    fresh.screen.start();
+    const picked = resumed([], 0);
+    picked.screen.start();
+
+    await vi.advanceTimersByTimeAsync(200);
+    expect(picked.screen.playedMs, "the resumed match never started its clock")
+      .toBeGreaterThan(0);
+    expect(fresh.screen.playedMs, "the opening was skipped on a fresh match").toBe(0);
+    fresh.screen.destroy();
+    picked.screen.destroy();
+  });
+
+  /**
+   * ONE PLACE WRITES A MOVE DOWN (`remember`). A move that is played and not reported is a
+   * resume onto a board the player never reached, and it is silent — the match plays on
+   * perfectly and only the NEXT sitting is wrong.
+   */
+  it("reports every accepted move so the shell can write it down", () => {
+    let told = 0;
+    const { host, screen } = resumed([], 0, () => { told++; });
+    screen.start();
+    end(host);
+    expect(told).toBeGreaterThan(0);
+    expect(told).toBe(screen.record.length);
+    screen.destroy();
   });
 });

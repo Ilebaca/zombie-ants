@@ -13,8 +13,9 @@
  * until a player's colony is gone.
  */
 import { describe, expect, it } from "vitest";
-import { readFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { resolve, join } from "node:path";
+import { SUPPORT_EMAIL } from "../../platform";
 
 const root = resolve(__dirname, "../../..");
 const read = (file: string): string => readFileSync(resolve(root, file), "utf8");
@@ -141,3 +142,65 @@ describe("the tags in index.html", () => {
     expect(theme).toBe(manifest().background_color);
   });
 });
+
+/**
+ * THE PRIVACY POLICY (`public/privacy.html`).
+ *
+ * A Play listing has to point at a policy URL that works whether or not anybody has
+ * installed the game, so it is a plain static page that ships with the build rather than a
+ * screen in the app. What is worth holding is that it does not go stale in the two ways a
+ * hand-written page goes stale: a contact address that no longer matches the one the app
+ * prints, and a claim about behaviour the code no longer has.
+ */
+describe("the privacy policy", () => {
+  const page = readFileSync(resolve(__dirname, "../../../public/privacy.html"), "utf8");
+
+  it("ships with the build, at a URL of its own", () => {
+    expect(page).toContain("<title>");
+    expect(page.toLowerCase()).toContain("privacy");
+  });
+
+  /**
+   * ONE CONTACT ADDRESS. Two copies is one that goes stale, and the stale one is always
+   * the one in the policy — where it is also the only route somebody has to ask about it.
+   */
+  it("names the same address the app prints", () => {
+    expect(page).toContain(SUPPORT_EMAIL);
+  });
+
+  /**
+   * IT CLAIMS NO ANALYTICS, so nothing may be added that would make that a lie. This is
+   * the assertion that catches it: a tracker arrives as a script tag or a fetch to
+   * somewhere, and the shipped source has neither.
+   */
+  it("is telling the truth about there being no analytics", () => {
+    // Past the file's own comment, which explains the same thing to whoever edits it.
+    const body = page.slice(page.indexOf("<body"));
+    expect(body).toMatch(/no analytics/i);
+    const src = shipped(resolve(__dirname, "../..")).map((f) => readFileSync(f, "utf8")).join("\n");
+    for (const tracker of ["google-analytics", "gtag(", "googletagmanager", "sentry", "mixpanel", "amplitude", "posthog"]) {
+      expect(src.toLowerCase(), `${tracker} is in the app, and the policy says it is not`)
+        .not.toContain(tracker);
+    }
+  });
+
+  /** Relative, like every path in this build: one bundle runs under a project path and
+   *  inside the Capacitor shell. */
+  it("is linked from the app by a relative path", () => {
+    const support = readFileSync(resolve(__dirname, "../support.ts"), "utf8");
+    expect(support).toContain('"./privacy.html"');
+  });
+});
+
+/** Every `.ts` the app ships, minus the tests that describe it. */
+function shipped(dir: string, out: string[] = []): string[] {
+  for (const name of readdirSync(dir)) {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) {
+      if (name !== "__tests__") shipped(path, out);
+    } else if (name.endsWith(".ts")) {
+      out.push(path);
+    }
+  }
+  return out;
+}
