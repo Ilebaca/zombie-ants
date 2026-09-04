@@ -11,10 +11,22 @@ export interface KeyValueStore {
   get(key: string): string | null;
   set(key: string, value: string): void;
   remove(key: string): void;
+  /**
+   * Does a write survive the app closing?
+   *
+   * DECLARED, never inferred. It was read as `!(store instanceof MemoryStore)`, which is
+   * wrong the first time anybody subclasses the memory store — a subclass inherits the
+   * `instanceof` and would be reported as durable while losing everything on reload. It is
+   * also the one fact a new backend (Capacitor Preferences, §12) has to state about
+   * itself, so the interface is where it belongs.
+   */
+  readonly durable: boolean;
 }
 
 /** In-memory store. Used by tests, and as the fallback when localStorage is unavailable. */
 export class MemoryStore implements KeyValueStore {
+  /** Nothing here outlives the tab, and the app has to be able to say so. */
+  readonly durable = false;
   private data = new Map<string, string>();
   get(key: string): string | null { return this.data.get(key) ?? null; }
   set(key: string, value: string): void { this.data.set(key, value); }
@@ -22,6 +34,7 @@ export class MemoryStore implements KeyValueStore {
 }
 
 class LocalStorageStore implements KeyValueStore {
+  readonly durable = true;
   get(key: string): string | null {
     try { return window.localStorage.getItem(key); } catch { return null; }
   }

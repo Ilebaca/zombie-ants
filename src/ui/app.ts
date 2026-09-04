@@ -51,6 +51,9 @@ import { canReplay } from "../platform";
 import { LocalAccounts } from "../platform";
 import type { Account, AccountService } from "../platform";
 import { buildSignIn } from "./signin";
+import { askToPersist, defaultStore, saveRisk } from "../platform";
+import type { SaveRisk } from "../platform";
+import { buildKeepSafe } from "./keepsafe";
 import type { Choices, SetupOptions } from "./setup";
 import { buildResultCard } from "./result";
 import { MatchmakingScreen } from "./matchmaking";
@@ -71,7 +74,7 @@ type ScreenId =
   | "home" | "mapsel" | "start" | "formation" | "duelpick" | "history"
   | "anthill" | "antarium" | "antup" | "achievements" | "quests" | "profile"
   | "challenges" | "daily" | "rules" | "settings" | "news" | "friends" | "support"
-  | "luckyhatch" | "leaderboard" | "shop" | "traits" | "inventory";
+  | "luckyhatch" | "leaderboard" | "shop" | "traits" | "inventory" | "keepsafe";
 
 /**
  * Is this press on something that ACTS?
@@ -102,6 +105,14 @@ const MAP_ORDER: readonly MapId[] = ["tiny", "small", "mid"];
 const DIFFICULTY_LABEL: Record<Difficulty, string> = { easy: "Easy", normal: "Normal", hard: "Hard" };
 
 /** Setup choices that survive between matches. */
+/**
+ * How many matches before the app mentions keeping the save.
+ *
+ * Three: enough that a player has a colony they would be annoyed to lose, and few enough
+ * that they still have it when they are told.
+ */
+const GUARD_AFTER_GAMES = 3;
+
 export class App {
   private screens = new Map<ScreenId, HTMLElement>();
   private match: MatchScreen | null = null;
@@ -201,6 +212,17 @@ export class App {
   /** True when the caller supplied the save, which is what skips the sign-in screen. */
   private given: boolean;
 
+  /**
+   * What this device is doing to the save (platform/persistence.ts).
+   *
+   * Settled once at boot and kept, because asking the browser to keep the storage is
+   * ASYNCHRONOUS and the home screen cannot await a promise to decide whether to draw a
+   * row — it would draw it a frame late, on the one screen the player is looking at.
+   * "none" until the answer arrives, so nothing warns about a risk that turns out not to
+   * exist.
+   */
+  private risk: SaveRisk = "none";
+
   constructor(
     private host: HTMLElement,
     profile?: ProfileStore,
@@ -253,6 +275,10 @@ export class App {
     // The menu bed goes on at boot. It cannot actually sound until the first press — the
     // device does not exist yet — and `unlock` picks the wish up from there.
     this.feedback.setMusic("menu");
+    // ASK THE BROWSER TO KEEP THE STORAGE, and settle what it said. Chromium grants this
+    // silently and a granted origin is never evicted; iOS refuses, which is the answer
+    // that puts the prompt on home. It is fire-and-forget: the game must never wait on it.
+    void this.settleRisk();
     // NOTHING OPENS BEFORE A COLONY IS CHOSEN. The tour, the deck and the home artwork all
     // read the save, so a device with no account signed in gets the sign-in screen and
     // nothing else — and it hands over to exactly this path once it has one.
@@ -261,6 +287,24 @@ export class App {
     // First run only. `tourSeen` is written when the walk finishes OR is skipped, so a
     // player who knows the game sees it once and never again.
     if (this.profile.get().tourSeen < TOUR_VERSION) this.startTour();
+  }
+
+  /**
+   * Ask for persistent storage, then re-show home if the answer changed anything.
+   *
+   * The redraw is conditional and only touches home: it lands a beat after boot, and
+   * rebuilding a screen the player has already walked away from would take them back.
+   */
+  private async settleRisk(): Promise<void> {
+    const persisted = await askToPersist();
+    const risk = saveRisk(defaultStore(), persisted);
+    if (risk === this.risk) return;
+    this.risk = risk;
+    // Home is a DECK slide, so it is rebuilt through the deck's own `refresh` rather than
+    // by re-showing it: `show("home")` while home is already the slide on screen only
+    // slides the rail, which does not rebuild anything. `refresh` is the one path a deck
+    // screen is ever rebuilt by, which is what keeps this from becoming a second one.
+    this.deck?.refresh("home");
   }
 
   /** The save behind whoever is signed in, or a throwaway one until somebody is. */
@@ -683,6 +727,14 @@ export class App {
     if (id === "anthill") {
       return buildAnthill(this.profile, { onTraits: () => this.openTraits("hill", "anthill") });
     }
+    if (id === "keepsafe") {
+      return buildKeepSafe(this.profile, {
+        risk: this.risk,
+        onBack: () => this.show("home"),
+        // Taking a code answers the prompt, so home must not still be offering it.
+        onChanged: () => this.profile.dismissGuard(),
+      });
+    }
     if (id === "inventory") {
       return buildInventory(this.profile, {
         onBack: () => this.show("home"),
@@ -799,6 +851,7 @@ export class App {
         // switches all came off the code, so the app has to be told rather than left
         // running on the settings of the save that was just replaced.
         onSignOut: () => this.signOut(),
+        onKeepSafe: () => this.show("keepsafe"),
         playerCode: this.profile.get().playerId,
         onRestored: () => {
           this.adoptProfile();
@@ -850,7 +903,13 @@ export class App {
       const fresh = this.homeBar(root);
       bar.replaceWith(fresh);
       bar = fresh;
+      // The three floating buttons are measured off this block's bottom edge, and a
+      // rebuild changes its height — collecting the granary swaps a two-line pill for a
+      // one-line one, and dismissing the guard takes a whole row out. Without this they
+      // stay where the old height put them.
+      requestAnimationFrame(() => syncFabs(root));
     };
+
 
     // Two floating buttons down the right edge. The legacy build sizes and stacks them
     // against the top bar at runtime; syncFabs does the same measurement.
@@ -908,17 +967,79 @@ export class App {
    * Built through a method rather than inline because collecting rebuilds it: the pill
    * pays into the colony, and the colony is the biggest figure on the bar above it.
    */
+  /**
+   * "KEEP YOUR COLONY" — the one thing on home that is about losing it.
+   *
+   * It appears for exactly one player: the one whose device may bin the save
+   * (platform/persistence.ts) and who has never taken a backup code. Everybody else sees
+   * nothing, which is the only way a warning stays believable — a band that is always
+   * there is a band nobody reads, and this one is telling the truth about a real clock.
+   *
+   * It is DISMISSIBLE and never comes back. Nagging somebody every launch about a risk
+   * they have decided to accept is how a player learns to ignore the app; Settings keeps
+   * the route open for ever, and the row there says whether a code was ever taken.
+   */
+  private saveGuard(): HTMLElement | null {
+    const p = this.profile.get();
+    if (this.risk === "none" || p.guardSeen || p.backupAt) return null;
+    // AND NOT UNTIL THERE IS SOMETHING TO LOSE. A colony of forty on its first launch is
+    // not worth a warning, and spending the player's first minute on one is the surest way
+    // to teach them that this band is noise — which is a real cost, because the day it
+    // matters it is the only thing standing between them and losing everything. `unwritable`
+    // is the exception: nothing is being saved AT ALL, and that is worth saying at once.
+    if (this.risk !== "unwritable" && p.stats.games < GUARD_AFTER_GAMES) return null;
+
+    const row = el("div", "saveguard");
+    row.id = "saveGuard";
+
+    const open = el("button", "sg-go") as HTMLButtonElement;
+    open.type = "button";
+    open.id = "saveGuardGo";
+    open.append(
+      icon(this.risk === "unwritable" ? "cross" : "granary", 17),
+      el("span", "sg-t", this.risk === "unwritable"
+        ? "This device is not saving"
+        : "Keep your colony safe"),
+      icon("next", 13),
+    );
+    open.onclick = () => this.show("keepsafe");
+
+    // A dismiss that is its own control, not a corner of the row: a band whose only tap
+    // opens something has no way to say no, and a warning you cannot dismiss is a warning
+    // that gets resented rather than acted on.
+    const no = el("button", "sg-x") as HTMLButtonElement;
+    no.type = "button";
+    no.id = "saveGuardHide";
+    no.setAttribute("aria-label", "Dismiss");
+    no.appendChild(icon("cross", 14));
+    no.onclick = () => {
+      this.profile.dismissGuard();
+      this.rebuildHomeBar();
+    };
+
+    row.append(open, no);
+    return row;
+  }
+
   private homeBar(root: HTMLElement): HTMLElement {
     const bar = topBar(this.profile.get(), {
       onProfile: () => this.show("profile"),
       onColonyRoad: () => this.show("achievements"),
       onShop: () => this.show("shop"),
     });
+    // THE GUARD RIDES IN THE HEADER BLOCK, under the pill.
+    //
+    // Not as a sibling below it: the three floating buttons are positioned by measuring
+    // `.tophead`'s bottom edge (`syncFabs`), so anything laid out after it lands underneath
+    // them — which put the dismiss button behind the menu button, unreachable. Inside, the
+    // stack measures past it and the buttons step down on their own.
     bar.appendChild(granaryPill(this.profile, (got) => {
       this.rebuildHomeBar();
       this.feedback.play("claim");
       toast(root, `Granary → +${compact(got)} troops`, "hive");
     }));
+    const guard = this.saveGuard();
+    if (guard) bar.appendChild(guard);
     return bar;
   }
 

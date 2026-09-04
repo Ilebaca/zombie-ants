@@ -958,6 +958,17 @@ table tbody tr:hover { background: #f5f1ea; }
       <li><strong>An account number only ever goes up</strong>, never derived from the list: forgetting an account would otherwise hand its number, and therefore its save key, to the next colony created — which would open on the deleted one's leftovers.</li>
     </ul>
 
+    <h2>Keeping a save alive</h2>
+    <p>Accounts answer "which colony is mine". The harder problem is the browser deciding the save is disposable, and two do it: <strong>iOS Safari deletes a site's stored data after about seven days without a visit</strong> unless the game is installed to the Home Screen, and any browser can be running with site data blocked — in which case nothing has ever been saved and the game silently forgets a whole evening.</p>
+    <ul>
+      <li><strong>The app asks for persistent storage on every boot.</strong> Chromium grants it silently once a site has engagement, and a granted origin is never evicted. iOS refuses, which is the answer that puts the prompt on the home screen.</li>
+      <li><strong>The warning is deliberately hard to trigger.</strong> Installed is safe, persistence granted is safe, and an un-persisted Android or desktop browser is not warned at all — eviction there needs real storage pressure, and crying wolf at a whole platform is how the player who genuinely is about to lose a colony learns to skip the message.</li>
+      <li><strong>It waits until there is something to lose</strong> — three matches. A colony of forty on its first launch is not worth a warning, and spending a new player's first minute on one teaches them the band is noise. Storage that is not saving at all is the exception: that is said at once.</li>
+      <li><strong>It is dismissible and never comes back.</strong> Settings keeps the route open permanently, and the backup row there now states whether a code has ever been taken rather than describing the feature.</li>
+      <li><strong>The screen leads with the fix.</strong> Installing to the Home Screen is what actually saves an iPhone colony; the backup code is what saves it afterwards. The Share-sheet steps are spelled out, because that is exactly where somebody gives up — and only on the device they apply to.</li>
+    </ul>
+    <div class="flag">None of this is a substitute for a real account. It reduces the chance of losing a colony; it cannot move one to a new phone by itself, and it does not stop somebody else picking a colony off the roster on an unlocked phone. Both need a server.</div>
+
     <h2>Taking your colony with you</h2>
     <p>Everything a player has is in local storage on one device: a new phone, a cleared browser, or a switch from the web build to the installed one, and all of it is gone. There is no account to hang it on until there is a server, so the save is written out as <strong>one string the player can keep</strong>, offered in Settings and read back on the other side.</p>
     <ul>

@@ -253,6 +253,13 @@ export interface Profile {
    * A tour that changes gets a new version and is shown once more.
    */
   tourSeen: number;
+  /**
+   * When a backup code was last taken, so the app can say whether this colony has ever
+   * been written down anywhere but this phone (platform/persistence.ts). Zero means never.
+   */
+  backupAt: number;
+  /** True once the player has dismissed the "keep your colony" prompt on home. */
+  guardSeen: boolean;
 }
 
 /** The tour the current build ships. Bump it to show the walkthrough again. */
@@ -335,6 +342,8 @@ export function defaultProfile(): Profile {
     difficulty: "normal",
     lastShape: "wedge",
     tourSeen: 0,
+    backupAt: 0,
+    guardSeen: false,
   };
 }
 
@@ -489,6 +498,8 @@ export function normalise(raw: unknown): Profile {
     lastShape: typeof p.lastShape === "string" ? p.lastShape : base.lastShape,
     // An old save's `tutorialDone` is deliberately NOT read: see `tourSeen`.
     tourSeen: typeof p.tourSeen === "number" && p.tourSeen > 0 ? Math.floor(p.tourSeen) : 0,
+    backupAt: int(p.backupAt, 0, 1e15, 0),
+    guardSeen: p.guardSeen === true,
   };
 
   // A save with every species stripped would leave nothing to field.
@@ -1488,6 +1499,26 @@ export class ProfileStore {
       p.bag = p.bag.filter((b) => !burn.has(b.uid));
     });
     return this.findTrait(def.id, deal.into);
+  }
+
+  /* ------------------------------------------------------- KEEPING THE SAVE */
+
+  /**
+   * A backup code was taken.
+   *
+   * Stamped when the code is SHOWN rather than when it is copied, because copying cannot
+   * be observed reliably — `writeText` is refused on plain http and in older browsers, and
+   * the fallback is a text selection the player takes with the keyboard, which the page
+   * never hears about. Stamping the showing over-reports a little; stamping the copy would
+   * tell a player who has their code safely in a note that they have never backed up.
+   */
+  markBackedUp(now: number = Date.now()): void {
+    this.update((p) => { p.backupAt = now; });
+  }
+
+  /** The prompt on home has been answered — by taking a code or by dismissing it. */
+  dismissGuard(): void {
+    if (!this.profile.guardSeen) this.update((p) => { p.guardSeen = true; });
   }
 
   /** Timestamp of the last daily gift claim, so the shop can offer it once a day. */

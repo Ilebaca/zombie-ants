@@ -1526,6 +1526,67 @@ wants to know which of those two things just happened.
 - **`enter` goes through `signIn`, never straight to `storeFor`.** Opening the store reads
   the save but signs nobody in, so the next launch would show the picker again.
 
+**KEEPING A SAVE ALIVE ON A DEVICE THAT NEVER PROMISED TO KEEP IT**
+(`platform/persistence.ts`, `ui/keepsafe.ts`). The accounts above answer "which colony is
+mine"; this answers the harder one — the browser deciding the save is disposable. Two do:
+- **iOS Safari deletes all script-writable storage after seven days without a visit**, for
+  any site not installed to the Home Screen. So the player most likely to lose a colony is
+  the one who took a week off, which is also the one least likely to have written anything
+  down. INSTALLING IS THE ONLY THING THAT EXEMPTS THEM and there is no API to ask.
+- Chromium evicts under storage pressure unless the origin is persistent, and
+  `navigator.storage.persist()` is how you ask. It grants silently on engagement, so it is
+  asked for on every boot and costs nothing.
+- And a third that is not eviction at all: **the write never landed.** Private mode, a full
+  quota or site data blocked, and `defaultStore()` falls back to memory — the game plays
+  perfectly for one session and forgets all of it, silently, which is the worst way to lose
+  somebody's evening.
+
+- **`KeyValueStore` DECLARES whether it is durable.** It was read as `!(store instanceof
+  MemoryStore)`, which a subclass inherits — a memory-backed store would have reported as
+  durable while losing everything on reload, the exact failure this module exists to catch.
+  It is also the one fact a Capacitor backend has to state about itself (§12).
+- **`saveRisk` is deliberately hard to trigger.** Installed is safe, persisted is safe, and
+  an un-persisted Android or desktop origin is NOT warned — eviction there needs real
+  storage pressure, and crying wolf at a whole platform is how the one player who is
+  genuinely about to lose a colony learns to skip the message. Only iOS has a clock on it.
+- **The prompt on home waits for something to lose** (`GUARD_AFTER_GAMES`, 3). A colony of
+  forty on its first launch is not worth a warning, and spending a new player's first
+  minute on one teaches them the band is noise. `unwritable` is the exception — nothing is
+  being saved at all, so it says so at once.
+- **It is DISMISSIBLE and never comes back.** Nagging every launch about a risk somebody
+  has decided to accept is how an app gets ignored; Settings keeps the route open for ever,
+  and its Backup row now states whether a code was EVER taken ("Never taken — this colony
+  is only on this phone") rather than describing the feature.
+- **The guard rides INSIDE `.tophead`, under the granary pill.** The three floating buttons
+  are positioned by measuring that block's bottom edge (`syncFabs`), so a sibling laid out
+  after it lands underneath them — which put the dismiss button behind the menu button,
+  unreachable. `rebuildHomeBar` re-runs `syncFabs` for the same reason: collecting the
+  granary or dismissing the guard changes the block's height.
+- **Home is a DECK slide, so it is rebuilt through `Deck.refresh`** when the persistence
+  answer lands. `show("home")` while home is already the slide on screen only moves the
+  rail and rebuilds nothing — and `refresh` is the one path a deck screen is ever rebuilt
+  by, which stops this becoming a second one.
+- **The screen leads with the FIX and puts the code second.** Installing is what saves an
+  iPhone colony; the code is what saves it afterwards. The Share-sheet steps are spelled
+  out because that is exactly where somebody gives up, and they are shown ONLY on the
+  device they apply to — a page that warns an Android player about Safari is a page nobody
+  believes twice.
+- **The code is OPEN here and behind a Show button in Settings.** There it is one offer
+  among a dozen and a wall of base64 reads as a fault; a player who reached this screen came
+  for exactly this, and a second tap is one some of them will not take.
+- **`ui/backupcode.ts` owns the code panel**, because it is offered from two screens now and
+  its rules are the drifting kind: generated when SHOWN rather than when built (a match
+  played in between would hand out a stale colony), a copy fallback that always works, and
+  a stamp on the save. **Stamped on showing, not on copying** — `writeText` is refused on
+  plain http and in older browsers, and the fallback is a selection the page never hears
+  about, so stamping the copy would tell a player with the code safely in a note that they
+  have never backed up.
+
+**STILL NOT SOLVED, and it needs a server:** a password, and an account that survives the
+device. Everything above reduces the chance of losing a colony; none of it stops somebody
+picking another colony off the roster on an unlocked phone, and a password on a local save
+would not either (see ACCOUNTS).
+
 **TAKING YOUR COLONY WITH YOU** (`platform/backup.ts`). Everything a player has is in
 `localStorage` on one device: a new phone, a cleared browser or a switch from the web build
 to the installed one and all of it is gone. There is no account to hang it on until there

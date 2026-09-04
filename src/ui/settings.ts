@@ -22,10 +22,11 @@
  * of the screen, which is where a version belongs — and it has to stay somewhere readable,
  * because a stale cached page and a real bug look identical on a phone without it.
  */
-import { BUILD, exportProfile, importProfile } from "../platform";
+import { BUILD, importProfile } from "../platform";
 import type { ProfileStore } from "../platform";
 import { el, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
+import { codeCopy, codeField, codePanel } from "./backupcode";
 
 export interface SettingsOptions {
   profile: ProfileStore;
@@ -46,6 +47,8 @@ export interface SettingsOptions {
   onRestored: () => void;
   /** Leave this colony for the sign-in screen. It destroys nothing. */
   onSignOut: () => void;
+  /** Opens the screen about where the save lives and what can take it away. */
+  onKeepSafe: () => void;
   /** The player code this colony signs back in with — shown beside the sign-out row. */
   playerCode: string;
 }
@@ -144,6 +147,16 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
     }),
 
     el("div", "secthead", "Your save"),
+    // FIRST in the section, above the code itself: taking a code is the thing you do
+    // AFTER understanding that the save is on one phone, and a player who has not
+    // understood that reads a "backup code" row as a feature for somebody else.
+    goRow({
+      mark: "granary",
+      title: "Where your progress lives",
+      desc: "What keeps this colony safe, and what can take it away.",
+      id: "setKeepSafe",
+      onGo: opts.onKeepSafe,
+    }),
     backupRow(opts.profile, root),
     restoreRow(opts.profile, root, opts.onRestored),
 
@@ -324,47 +337,46 @@ function backupRow(store: ProfileStore, root: HTMLElement): HTMLElement {
   const row = shell({
     mark: "granary",
     title: "Backup code",
-    desc: "Carries this colony to another phone. Saved replays stay behind.",
+    // IT SAYS WHETHER THIS COLONY HAS EVER BEEN WRITTEN DOWN. "Carries this colony to
+    // another phone" describes a feature; "Never taken" is about THIS player's save, and
+    // it is the difference between a row somebody reads past and one they act on — the
+    // whole point of the row is reaching the player who has not used it.
+    desc: backupState(store) + " Saved replays stay behind.",
     id: "setBackupRow",
   }, "div");
 
   const btn = el("button", "setval", "Show");
   btn.id = "setBackup";
-  const panel = el("div", "setpanel");
+  const { panel, fill } = codePanel(store, root, () => {
+    const desc = row.querySelector(".setrow-d");
+    if (desc) desc.textContent = backupState(store) + " Saved replays stay behind.";
+  });
   panel.id = "setBackupPanel";
   panel.hidden = true;
-
-  const field = el("textarea", "setcode") as HTMLTextAreaElement;
-  field.id = "setBackupCode";
-  field.readOnly = true;
-  field.setAttribute("aria-label", "Backup code");
-
-  const copy = el("button", "setval setwide", "Copy") as HTMLButtonElement;
-  copy.id = "setBackupCopy";
-  copy.onclick = (): void => {
-    // Selecting it is the fallback that always works: a page served over http, an older
-    // browser or a denied permission all leave `writeText` unavailable, and a Copy button
-    // that silently does nothing is worse than one that hands the player the selection.
-    field.select();
-    void writeClipboard(field.value).then((ok) => {
-      toast(root, ok ? "Code copied" : "Code selected — copy it", "hive");
-    });
-  };
-
-  panel.append(field, copy);
+  const field = codeField(panel);
+  if (field) field.id = "setBackupCode";
+  const copy = codeCopy(panel);
+  if (copy) copy.id = "setBackupCopy";
 
   btn.onclick = (): void => {
     const open = panel.hidden;
     panel.hidden = !open;
     btn.textContent = open ? "Hide" : "Show";
-    // Written at the moment it is shown, never at build time: the screen is rebuilt on
-    // entry but a match played in between would otherwise hand out a stale colony.
-    if (open) field.value = exportProfile(store.get());
+    if (open) fill();
   };
 
   row.appendChild(btn);
   wrap.append(row, panel);
   return wrap;
+}
+
+/** "Never taken" or when it last was — a fact about this save, not about the feature. */
+function backupState(store: ProfileStore): string {
+  const at = store.get().backupAt;
+  if (!at) return "Never taken — this colony is only on this phone.";
+  const days = Math.floor((Date.now() - at) / 864e5);
+  if (days <= 0) return "Taken today.";
+  return `Taken ${days} day${days === 1 ? "" : "s"} ago.`;
 }
 
 /**
@@ -442,16 +454,6 @@ function whyNot(why: "not-a-code" | "damaged" | "unreadable"): string {
   if (why === "not-a-code") return "That is not a backup code";
   if (why === "damaged") return "That code is incomplete — copy all of it";
   return "That code could not be read";
-}
-
-/** Copy, where copying is allowed. Never throws; says whether it worked. */
-async function writeClipboard(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard?.writeText(text);
-    return !!navigator.clipboard;
-  } catch {
-    return false;
-  }
 }
 
 /** The build, at the foot of the screen where a version belongs. */

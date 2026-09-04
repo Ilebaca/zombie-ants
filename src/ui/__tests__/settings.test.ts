@@ -31,6 +31,7 @@ const build = (store = new ProfileStore(new MemoryStore())): {
     onReset: () => { spy.reset++; },
     onRestored: () => { spy.restored++; },
     onSignOut: () => { spy.signout++; },
+    onKeepSafe: () => {},
     playerCode: store.get().playerId,
   });
   document.body.replaceChildren(root);

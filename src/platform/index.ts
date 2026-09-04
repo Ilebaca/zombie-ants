@@ -55,6 +55,10 @@ export {
   FUSE_COST, FUSE_DEALS, FUSE_FUEL, LARVA_MYCEL, fuseDeal, nextTier,
 } from "./exchange";
 export { LEGACY_ID, LocalAccounts, cleanName, keyFor } from "./accounts";
+export {
+  askToPersist, installSteps, isInstalled, isIos, saveRisk, storageIsDurable,
+} from "./persistence";
+export type { SaveRisk } from "./persistence";
 export type { Account, AccountService } from "./accounts";
 export { scoreQuestEvents } from "./scoring";
 export { DemoGateway, SHOP_PRODUCTS, productById } from "./purchases";
