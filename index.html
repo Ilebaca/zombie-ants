@@ -3,7 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#080c14">
+<!--
+  THE THEME COLOUR IS THE SOIL the whole game is played on, so the status bar and the
+  splash behind an installed app are the same ground as the board rather than a black band.
+-->
+<meta name="theme-color" content="#0e1a12">
+<meta name="description" content="Two ant colonies fight for one grid, and a queen infected with a real parasitic fungus sleeps in the middle.">
+
+<!--
+  INSTALLING IS WHAT KEEPS AN iPHONE COLONY ALIVE (platform/persistence.ts): Safari deletes
+  a site's storage after about a week away, and adding it to the Home Screen is the only
+  thing that exempts it. The app asks players to do exactly that, so the three tags that
+  make it work are not optional decoration:
+
+  - the MANIFEST gives it a name, an icon and `display: standalone`. Without standalone,
+    an installed app opens in browser chrome and `navigator.standalone` stays FALSE — so
+    the app could not tell it had been installed, and the warning would nag for ever at
+    the player who had already done what it asked.
+  - `apple-mobile-web-app-capable` is the same instruction for the versions of iOS that do
+    not read the manifest. Both, because neither covers every phone.
+  - `apple-touch-icon` MUST be a PNG. iOS ignores an SVG here and uses a blurry screenshot
+    of the page instead, which is the difference between an app and a bookmark.
+-->
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Zombie Ants">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <title>Zombie Ants</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

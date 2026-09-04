@@ -28,7 +28,7 @@ const forbid = (...layers) => ({
 });
 
 export default ts.config(
-  { ignores: ["dist/**", "legacy/**", "node_modules/**", "*.config.js"] },
+  { ignores: ["dist/**", "legacy/**", "node_modules/**", "android/**", "*.config.js", "tools/icons.ts"] },
   js.configs.recommended,
   ...ts.configs.recommended,
   {

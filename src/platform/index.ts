@@ -1,6 +1,8 @@
 /** Platform surface: storage, profile and progression. */
 export { BUILD } from "./build";
 export { takeNewerBuild } from "./freshness";
+export { goOffline, resetOffline } from "./offline";
+export { CapacitorStore, isNative, loadNative } from "./native";
 export { MemoryStore, defaultStore, readJson, writeJson } from "./storage";
 export type { KeyValueStore } from "./storage";
 export {

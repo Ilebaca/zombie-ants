@@ -26,6 +26,10 @@
     "src",
     "tools",
     "vite.config.ts",
+    "capacitor.config.ts",
     "eslint.config.js"
+  ],
+  "exclude": [
+    "tools/icons.ts"
   ]
 }

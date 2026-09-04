@@ -1,4 +1,4 @@
-import { DEF, TRAIT_PCT_CAP } from "./config";
+import { ARMOUR_DEF, DEF, FORTIFY_DEF, TRAIT_PCT_CAP } from "./config";
 import { isHiveTerrain } from "./board";
 import { speciesOf } from "./species";
 import type { GameState, Player, PlayerMods, Tile } from "./types";
@@ -45,8 +45,8 @@ export function flatDefence(state: GameState, t: Tile, mods: PlayerMods): number
 
   let mult = 1;
   if (t.struct === "nest") mult *= 1 + mods.soldierCaste * 0.05;      // Soldier Caste
-  if (t.owner && state.shield[t.owner] > 0) mult *= 1.7;              // Carpenter Fortify
-  if (hasArmour(state, t)) mult *= 1.4;                               // withered leaf wall
+  if (t.owner && state.shield[t.owner] > 0) mult *= FORTIFY_DEF;      // Carpenter Fortify
+  if (hasArmour(state, t)) mult *= ARMOUR_DEF;                        // withered leaf wall
   return Math.round(base * mult);
 }
 

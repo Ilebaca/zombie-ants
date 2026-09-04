@@ -8,7 +8,10 @@
  * Scatter effects use the seeded generator on GameState, never `Math.random()`, so search
  * and replays stay deterministic (see random.ts).
  */
-import { RESEARCH_MAX } from "./config";
+import {
+  BUD_MIN, BUD_SHARE, FIRE_TURNS, FLEE_REACH, FORTIFY_GAIN, FORTIFY_TURNS,
+  LEAF_TURNS, RESEARCH_MAX, SWARM_BITE, VENOM_TURNS,
+} from "./config";
 import {
   allTiles, isHiveTerrain, neighbours, nestTile, otherPlayer, tileAt,
 } from "./board";
@@ -23,7 +26,7 @@ import type {
 import { blockedByEnemyLeaf, checkWipe, keepOn, promote } from "./actions";
 
 /** The share of a bordering garrison the Army Ant devours per cast, before research. */
-export const SWARM_BITE = 0.25;
+export { SWARM_BITE } from "./config";
 
 /* ------------------------------------------------------- RESEARCH SCALING */
 
@@ -207,11 +210,11 @@ export function activateAbility(
 function castBud(state: GameState, p: Player, mods: PlayerMods, events: EngineEvent[]): boolean {
   const buds: Array<{ spot: Tile; count: number }> = [];
   for (const t of allTiles(state)) {
-    if (t.owner !== p || t.soldiers < 40) continue;
+    if (t.owner !== p || t.soldiers < BUD_MIN) continue;
     const spot = neighbours(state, t).find(
       (n) => n.owner === null && n.guard === 0 && n.terrain === "ground" && !blockedByEnemyLeaf(state, n, p),
     );
-    if (spot) buds.push({ spot, count: Math.max(2, Math.round(t.soldiers * 0.30 * power(mods))) });
+    if (spot) buds.push({ spot, count: Math.max(2, Math.round(t.soldiers * BUD_SHARE * power(mods))) });
   }
   for (const b of buds) {
     b.spot.owner = p;                     // the parent loses nothing — this is budding, not splitting
@@ -234,7 +237,7 @@ function castLeaf(state: GameState, p: Player, mods: PlayerMods, events: EngineE
     (e) => e.kind === "leaf" && e.owner === p && e.left >= PERMANENT,
   ).length;
 
-  const turns = 4 + bonus(mods);
+  const turns = LEAF_TURNS + bonus(mods);
   const seen = new Set<string>();
   const fresh: Tile[] = [];
 
@@ -277,7 +280,7 @@ function castLeaf(state: GameState, p: Player, mods: PlayerMods, events: EngineE
 
 /** Fire Ant — the border ignites. Burns enemies, wild garrisons and the hive alike. */
 function castFire(state: GameState, p: Player, mods: PlayerMods, events: EngineEvent[]): boolean {
-  const turns = 3 + bonus(mods);
+  const turns = FIRE_TURNS + bonus(mods);
   const seen = new Set<string>();
   for (const t of allTiles(state)) {
     if (t.owner !== p || !isConnected(state, t)) continue;
@@ -379,10 +382,10 @@ function castSpread(state: GameState, p: Player, events: EngineEvent[]): boolean
 
 /** Carpenter — the whole colony braces, and the frontline thickens. Veins are skipped. */
 function castFortify(state: GameState, p: Player, mods: PlayerMods, events: EngineEvent[]): boolean {
-  state.shield[p] = 3 + bonus(mods);
+  state.shield[p] = FORTIFY_TURNS + bonus(mods);
   for (const t of frontline(state, p)) {
     if (t.struct !== "stable" && t.struct !== "nest") continue;    // never a vein (CLAUDE.md §4.5)
-    const gained = Math.max(2, Math.round(t.soldiers * 0.12 * power(mods)));
+    const gained = Math.max(2, Math.round(t.soldiers * FORTIFY_GAIN * power(mods)));
     t.soldiers += gained;
     events.push({ type: "fortified", at: { c: t.c, r: t.r }, owner: p, gained });
   }
@@ -397,7 +400,7 @@ function castVenom(state: GameState, p: Player, mods: PlayerMods, events: Engine
   const pool = allTiles(state).filter((t) => t.terrain !== "blocked" && t.struct !== "nest");
   shuffle(state, pool);
   const hits = Math.max(8, Math.min(20, Math.round(pool.length * 0.10)));
-  const turns = 3 + bonus(mods);
+  const turns = VENOM_TURNS + bonus(mods);
 
   for (const t of pool.slice(0, hits)) {
     if (t.owner === p) continue;                                    // never your own colony
@@ -424,7 +427,7 @@ function castVenom(state: GameState, p: Player, mods: PlayerMods, events: Engine
  */
 function castFlee(state: GameState, p: Player, mods: PlayerMods, events: EngineEvent[]): boolean {
   const enemy = otherPlayer(p);
-  const reach = 3 + bonus(mods);
+  const reach = FLEE_REACH + bonus(mods);
   const mine = allTiles(state).filter((t) => t.owner === p);
   if (!mine.length) return false;
 

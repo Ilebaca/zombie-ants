@@ -14,12 +14,15 @@
     "check": "npm run typecheck && npm run lint && npm test",
     "ladder": "tsx tools/ladder.ts",
     "arena": "tsx tools/arena.ts",
-    "ai:bench": "tsx tools/bench.ts"
+    "ai:bench": "tsx tools/bench.ts",
+    "android": "npm run build && cap sync android",
+    "android:open": "npm run build && cap sync android && cap open android"
   },
   "engines": {
     "node": ">=22"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.1",
     "@types/node": "^26.2.0",
     "eslint": "^9.39.5",
     "jsdom": "^30.0.1",
@@ -28,5 +31,10 @@
     "typescript-eslint": "^8.68.0",
     "vite": "^5.4.10",
     "vitest": "^2.1.4"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/core": "^8.5.1",
+    "@capacitor/preferences": "^8.0.1"
   }
 }

@@ -88,3 +88,43 @@ export const chamberCost = (level: number): number => 60 + level * 55;
 /** Cost of the NEXT research level, given the level already held. */
 export const researchCost = (level: number): number => 40 + level * 35;
 
+
+/* ------------------------------------------------- WHAT THE ABILITIES DO
+
+   THESE NUMBERS ARE ALSO SENTENCES. Every one of them appears in the copy a player reads
+   on the colony's page (`engine/species.ts`), which used to carry its own hand-typed copy
+   of each — and Venom Rain said "10 troops/turn" while the engine took 7, ported verbatim
+   from the legacy build and wrong in both for as long as either existed.
+
+   A number a player counts their attack out with cannot live in two places. They live here,
+   because `config.ts` imports nothing: the rules read them, and the description strings are
+   BUILT from them, so a balance change cannot leave the game lying about itself. It is the
+   same rule the manual already follows (CLAUDE.md: "The numbers are read from
+   engine/config.ts, never typed out"), applied to the one screen that had escaped it. */
+
+/** Troops a venomed tile loses per turn — flat, not a share. */
+export const VENOM_BITE = 7;
+/** Share of a burning garrison lost per turn. A garrison of five or fewer is wiped. */
+export const FIRE_BITE = 0.20;
+/** Share of each bordering garrison the Army Ant devours. */
+export const SWARM_BITE = 0.25;
+/** Turns a fresh venom cloud, a wildfire and a leaf wall last, before research. */
+export const VENOM_TURNS = 3;
+export const FIRE_TURNS = 3;
+export const LEAF_TURNS = 4;
+/** Troops a tile needs before it can bud, and the share that leaves for the new one. */
+export const BUD_MIN = 40;
+export const BUD_SHARE = 0.30;
+/** Fortify: what a frontline tile gains, and what the whole colony defends at. */
+export const FORTIFY_GAIN = 0.12;
+export const FORTIFY_DEF = 1.7;
+export const FORTIFY_TURNS = 3;
+/** Defence multiplier a withered leaf wall leaves behind. */
+export const ARMOUR_DEF = 1.4;
+/** How far the Demon Ant's terror reaches, in tiles. */
+export const FLEE_REACH = 3;
+
+/** A multiplier as the percentage a player reads: 1.7 -> "70". */
+export const asPct = (mult: number): number => Math.round((mult - 1) * 100);
+/** A share as the percentage a player reads: 0.25 -> "25". */
+export const sharePct = (share: number): number => Math.round(share * 100);

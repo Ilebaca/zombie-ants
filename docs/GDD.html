@@ -958,6 +958,15 @@ table tbody tr:hover { background: #f5f1ea; }
       <li><strong>An account number only ever goes up</strong>, never derived from the list: forgetting an account would otherwise hand its number, and therefore its save key, to the next colony created — which would open on the deleted one's leftovers.</li>
     </ul>
 
+    <h2>Installing, and playing offline</h2>
+    <p>The game is a static bundle with everything drawn at runtime and the save on the device — it never needed a network, and until now a tunnel gave a blank page. Two pieces close that, and both also serve the save: an installed app is what stops iOS deleting a colony, and a cached bundle is what lets it open at all.</p>
+    <ul>
+      <li><strong>It is a real installable app</strong> — manifest, icons and the iOS meta tags. <code>display: standalone</code> is the field the app's own logic depends on rather than decoration: without it an installed app opens in browser chrome and the game cannot tell it was installed, so the save-at-risk prompt would nag the one player who had already acted on it.</li>
+      <li><strong>The icon is the one committed image in the project.</strong> Everything else is drawn at runtime; an icon cannot be, because the operating system needs a file before any script runs. It is rendered from the game's own ant head by a tool that is run by hand — an icon has to be stable, because people find an app by its icon.</li>
+      <li><strong>A service worker caches the build</strong>, so a second launch works with no network at all. The one file it never answers from cache is the version stamp: caching that would tell the app it is up to date for ever and pin the device to a stale build, which is the exact problem the auto-update exists to fix.</li>
+      <li><strong>Android is wrapped with Capacitor.</strong> The wrap is thin — the same bundle in a WebView — and what it buys is that the save stops being disposable: native storage is not evicted, so the at-risk warning never appears there.</li>
+    </ul>
+
     <h2>Keeping a save alive</h2>
     <p>Accounts answer "which colony is mine". The harder problem is the browser deciding the save is disposable, and two do it: <strong>iOS Safari deletes a site's stored data after about seven days without a visit</strong> unless the game is installed to the Home Screen, and any browser can be running with site data blocked — in which case nothing has ever been saved and the game silently forgets a whole evening.</p>
     <ul>

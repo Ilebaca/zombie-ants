@@ -15,6 +15,8 @@ import type { KeyValueStore } from "../storage";
 /** A store that says it writes somewhere real — the shape a Capacitor backend would have. */
 const diskStore = (): KeyValueStore => ({
   durable: true,
+  // A browser's storage: it survives the app closing and a browser can still bin it.
+  evictable: true,
   get: () => null,
   set: () => {},
   remove: () => {},

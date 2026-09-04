@@ -1,13 +1,12 @@
 import { isHiveTerrain, otherPlayer, razeTile, tileAt } from "./board";
+import { FIRE_BITE, LEAF_TURNS, VENOM_BITE } from "./config";
 import { recomputeConnectivity } from "./connectivity";
 import { PERMANENT } from "./types";
 import type { EngineEvent, GameState, Player, PlayerMods, Tile, TileEffect } from "./types";
 
-/** Soldiers a venom cloud takes off a tile each turn, before the victim's research. */
-export const VENOM_BITE = 7;
-
-/** The share of a garrison Wildfire takes each turn, before the victim's research. */
-export const FIRE_BITE = 0.20;
+// The bites live in `config.ts` now, beside the sentences that quote them — re-exported
+// here because this is where every caller already looks for them.
+export { VENOM_BITE, FIRE_BITE } from "./config";
 
 /** Metapleural Gland softens fire, venom and hive damage by 5% per level. */
 export const glandCut = (mods: PlayerMods): number => Math.max(0.25, 1 - mods.gland * 0.05);
@@ -151,7 +150,7 @@ export function tickEffects(
     e.left--;
     if (e.left <= 0) {
       // A withered leaf wall leaves defensive armour behind on the tile.
-      if (e.kind === "leaf") addEffect(state, e.c, e.r, "armor", e.owner, 4);
+      if (e.kind === "leaf") addEffect(state, e.c, e.r, "armor", e.owner, LEAF_TURNS);
       state.effects = state.effects.filter((x) => x !== e);
       events.push({ type: "effectExpired", at: { c: e.c, r: e.r }, kind: e.kind });
     }

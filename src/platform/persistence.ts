@@ -96,6 +96,11 @@ export const storageIsDurable = (store: KeyValueStore): boolean => store.durable
  */
 export function saveRisk(store: KeyValueStore, persisted: boolean): SaveRisk {
   if (!storageIsDurable(store)) return "unwritable";
+  // A store nothing can evict is the end of it — that is the native build, where the save
+  // is real application storage rather than a browser's (platform/native.ts). Asked of
+  // `durable` alone this said "eviction" inside the Android shell, warning a player about
+  // a clock that does not run there.
+  if (!store.evictable) return "none";
   if (persisted || isInstalled()) return "none";
   // Only iOS has a CLOCK on it. Everywhere else an un-persisted origin is evicted under
   // real storage pressure, which is rare enough that warning about it would be crying
