@@ -33,6 +33,17 @@ export interface NewsPost {
   /** When it was posted, epoch ms. Sorted newest first by `newsFeed()`. */
   at: number;
   art: NewsArt;
+  /**
+   * IS THIS WORTH STOPPING SOMEBODY FOR?
+   *
+   * A player who has been away is shown the major posts once, over the home screen
+   * (`ui/whatsnew.ts`) — everything else waits quietly behind the badge on the drawer. The
+   * flag is set by whoever writes the post rather than derived from the tag, because
+   * "update" covers both a whole new feature and a button that moved, and only one of those
+   * has earned a card in front of the game. Most posts are not major; a card that appears
+   * every build is a card nobody reads.
+   */
+  major?: boolean;
 }
 
 const DAY = 86_400_000;
@@ -41,7 +52,47 @@ const LATEST = Date.UTC(2026, 7, 30);
 
 export const NEWS: readonly NewsPost[] = [
   {
+    // NOT major, deliberately, and it is the newest post in the table. A card in front of
+    // the game is for something a player would want to be told; a fix they never met is
+    // not, and it waits behind the badge like the rest of the feed.
+    id: "fixes",
+    tag: "update",
+    title: "Fixes",
+    lead: "Challenge matches, and a few smaller things.",
+    at: LATEST + 6 * DAY,
+    art: { kind: "mark", icon: "flask", col: "#4a9eff" },
+    body: [
+      "Starting a challenge from the Challenges tab left the list drawn on top of the "
+      + "action bar, so End turn, the ability and Surrender could not be pressed. Fixed.",
+      "The game now covers itself while it loads instead of showing a blank screen, and "
+      + "the privacy policy is readable from Support.",
+    ],
+  },
+  {
+    id: "resume",
+    tag: "update",
+    major: true,
+    title: "A match now waits for you",
+    lead: "A phone call no longer costs you the game.",
+    at: LATEST + 5 * DAY,
+    art: { kind: "board", map: "small", species: "army" },
+    body: [
+      "Until now, closing the game in the middle of a match lost it — every turn played, "
+      + "and everything it would have paid your colony. It is written down after every move "
+      + "now, so you can put the phone down at any point.",
+      "When you come back it is waiting on the home screen, with the map and the turn you "
+      + "left it on. Pick it up and you carry on from exactly the board you left, with your "
+      + "match time carried over.",
+      "On Android the back button now goes up one screen instead of closing the game — and "
+      + "backing out of a match takes you home rather than ending it. The match is still "
+      + "there when you want it.",
+      "If anything goes wrong, the game now says so and offers to reload rather than "
+      + "quietly stopping. Your colony is saved either way.",
+    ],
+  },
+  {
     id: "granary",
+    major: true,
     tag: "update",
     title: "The granary",
     lead: "Your colony now grows while you are not playing.",
@@ -62,6 +113,7 @@ export const NEWS: readonly NewsPost[] = [
   },
   {
     id: "ladder",
+    major: true,
     tag: "update",
     title: "The ladder tells you where you stand",
     lead: "Divisions, ranks, and the distance to the next band.",
@@ -79,6 +131,7 @@ export const NEWS: readonly NewsPost[] = [
   },
   {
     id: "maps",
+    major: true,
     tag: "update",
     title: "Pick your ground",
     lead: "Real maps in the picker, and an opponent to find.",
@@ -119,6 +172,16 @@ export const newsFeed = (): NewsPost[] => [...NEWS].sort((a, b) => b.at - a.at);
 /** How many posts landed after the last time the player opened the screen. */
 export const unreadNews = (seenAt: number): number =>
   NEWS.filter((p) => p.at > seenAt).length;
+
+/**
+ * The MAJOR posts a player has not seen — what is worth putting in front of them once.
+ *
+ * Newest first, and capped: a player who has been away for three builds should be told
+ * what changed, not handed a reading list. What is left over is still behind the badge on
+ * the drawer, which is where a feed belongs.
+ */
+export const majorSince = (seenAt: number, cap = 3): NewsPost[] =>
+  newsFeed().filter((p) => p.major === true && p.at > seenAt).slice(0, cap);
 
 /** The newest post's stamp — what the screen writes back once it has been read. */
 export const newsLatestAt = (): number => NEWS.reduce((n, p) => Math.max(n, p.at), 0);

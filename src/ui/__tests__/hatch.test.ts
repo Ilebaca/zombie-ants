@@ -11,6 +11,7 @@ import {
   TRAIT_TIERS, itemDef, tierOdds,
 } from "../../platform";
 import { SKIN_TIERS } from "../../platform";
+import type { Cue, Feedback } from "../../platform";
 import { TIERS, lookById } from "../../engine";
 import { buildHatch } from "../hatch";
 
@@ -324,5 +325,72 @@ describe("mycelium into a larva", () => {
     const s = withMycel(1e6);
     s.update((p) => { p.colony = 40; });
     expect(build(s).root.querySelector("#hatchTrade")).toBe(null);
+  });
+});
+
+/**
+ * THE MOMENT HAS A SOUND, AND THE SOUND IS THE TIER.
+ *
+ * The hatch was silent apart from the bed — a feature whose entire point is the beat
+ * between the button and the answer, resolving into a card that appeared without a noise.
+ * The colour is what says "mythic" before the trait is named, and the cue has to say the
+ * same thing or the top two rungs sound exactly like the sixty-in-a-hundred one.
+ */
+describe("what it sounds like", () => {
+  const spyFeedback = (): { cues: string[]; feedback: Feedback } => {
+    const cues: string[] = [];
+    const feedback = {
+      play: (cue: Cue) => { cues.push(cue); },
+      setMusic: () => {}, unlock: () => {}, setSound: () => {},
+      setMusicEnabled: () => {}, setHaptics: () => {}, close: () => {},
+    } satisfies Feedback;
+    return { cues, feedback };
+  };
+
+  const hatchWith = (roll: number): string[] => {
+    vi.useFakeTimers();
+    const { cues, feedback } = spyFeedback();
+    const root = buildHatch(store(), {
+      onBack: () => {}, onBuyLarva: () => {}, onInventory: () => {},
+      random: () => roll, feedback,
+    });
+    document.body.replaceChildren(root);
+    root.querySelector<HTMLButtonElement>("#hatchGo")?.click();
+    vi.runAllTimers();
+    vi.useRealTimers();
+    return cues;
+  };
+
+  /**
+   * THE SHELL FIRST, AND NOT THE PRIZE. Nothing has been revealed while the egg is
+   * rocking, and a sound that gave the answer away there would undo the only thing the
+   * rocking is for.
+   */
+  it("cracks when the egg starts, and names the tier only at the reveal", () => {
+    const cues = hatchWith(0.01);
+    expect(cues[0], "the shell never gave way").toBe("hatch");
+    expect(cues).toHaveLength(2);
+    expect(["prize", "jackpot"]).toContain(cues[1]);
+  });
+
+  /**
+   * A MYTHIC MUST NOT SOUND LIKE A COMMON. `TIER_IDS` decides which, so a retune of the
+   * ladder cannot move a colour on one screen and leave the sound where it was.
+   */
+  it("gives the top two rungs a different cue from the rest", () => {
+    // The weights run common-first, so a roll near zero is a common and one near the top
+    // of the range is a mythic (platform/traits.ts).
+    expect(hatchWith(0.01)[1], "a common got the rare cue").toBe("prize");
+    expect(hatchWith(0.999)[1], "a mythic sounded like a common").toBe("jackpot");
+  });
+
+  it("is silent with no feedback device, rather than broken", () => {
+    vi.useFakeTimers();
+    const { root } = build(store());
+    expect(() => {
+      tap(root, "hatchGo");
+      vi.runAllTimers();
+    }).not.toThrow();
+    vi.useRealTimers();
   });
 });

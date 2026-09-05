@@ -18,8 +18,8 @@ import {
   HATCH_COST, LARVA_MYCEL, SKIN_TIERS, TRAITS_CHAPTER, TRAIT_TIER, TRAIT_TIERS, effectText,
   itemDef, markOf, tierOdds,
 } from "../platform";
-import type { HatchPrize, ProfileStore, TraitItem } from "../platform";
-import { SPECIES, TIERS } from "../engine";
+import type { Cue, Feedback, HatchPrize, ProfileStore, TraitItem } from "../platform";
+import { SPECIES, TIER_IDS, TIERS } from "../engine";
 import type { Look } from "../engine";
 import { antPortrait, el, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
@@ -39,7 +39,24 @@ export interface HatchOptions {
   onColony?: (species: string) => void;
   /** Injected so a test is not a coin flip. */
   random?: () => number;
+  /**
+   * Sound and haptics. Optional: a hatch with none is a quiet hatch, not a broken one,
+   * which is what every test gets.
+   */
+  feedback?: Feedback;
 }
+
+/**
+ * WHICH SOUND A PRIZE MAKES, off the same ladder that decides its colour.
+ *
+ * The top two rungs are the ones a skin can be and the ones a player is hatching FOR —
+ * 5 rolls in 100 — so they get the cue that arrives rather than climbs. Read off
+ * `TIER_IDS` rather than listed here, or a retune of the ladder would move a colour on one
+ * screen and leave the sound where it was.
+ */
+const LOUD = TIER_IDS.slice(-2) as readonly string[];
+const prizeCue = (tier: string | undefined): Cue =>
+  tier && LOUD.includes(tier) ? "jackpot" : "prize";
 
 export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement {
   const root = screenEl("luckyhatch");
@@ -322,10 +339,18 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     if (!item) return;
     found = item;
     busy = true;
+    // The shell first, under the rocking. Not the prize: nothing has been revealed yet,
+    // and a sound that gave the answer away here would undo the only thing the rocking is
+    // for (CLAUDE.md — the moment is the feature).
+    opts.feedback?.play("hatch");
     render();
     window.setTimeout(() => {
       busy = false;
       render();
+      // THE TIER, THE MOMENT THE COLOUR ARRIVES. Same instant as the card, off the same
+      // ladder — a mythic that sounds like a common is the feature failing at the one
+      // moment it exists for.
+      opts.feedback?.play(prizeCue(item.kind === "skin" ? item.look.tier : item.item.tier));
       opts.onChanged?.();
     }, SHAKE_MS);
   };

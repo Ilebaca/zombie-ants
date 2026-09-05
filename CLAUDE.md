@@ -1600,6 +1600,71 @@ because only the build knows the content-hashed filenames it has just emitted.
   SOURCE with the comments stripped — crude, and better than leaving the most damaging
   failure in the feature held by nothing.
 
+**THE COVER OVER A COLD BOOT** (`#splash` in `index.html`, `platform/splash.ts`). `#app` is
+empty until the bundle has been fetched, parsed and run — a bare dark rectangle for most of
+a second on a phone, after a white flash of the shell's own on Android. Nothing said the
+game was starting; it looked broken for a moment.
+- **It is in the DOCUMENT with its styles INLINE**, and it has to be both. Anything the app
+  builds arrives at the moment the app does, which is the moment this stops being needed;
+  and `skin.css` is emitted by the bundler, which is one more file to wait for. The one
+  thing a cover must not do is wait.
+- **It draws the wordmark and loads nothing.** An `<img>` is a second request that can land
+  after the thing it was meant to cover. The type matches home's own mark, so the cover
+  hands over rather than being replaced.
+- **The bar is INDETERMINATE on purpose.** The browser does not tell a page how much of its
+  own script has arrived, so there is no honest percentage — and a fake one that jumps to
+  90% and waits is worse than a sweep that only says "working".
+- **It is REMOVED, never hidden.** A full-screen element left at `opacity: 0` still takes
+  every tap on the home screen — a far worse fault than the blank moment it was added for.
+  And it comes down on a FAILURE too: `catchCrashes` drops it before putting its panel up,
+  or a boot that threw would leave the cover over the one screen that says what went wrong.
+- **The watchdog in the document is the last resort.** A bundle that 404s, a syntax error
+  in an old browser, a throw before anything is armed — in every one of those the cover
+  would sit there for ever. Ten seconds is far longer than any real boot.
+
+**WHAT CHANGED WHILE YOU WERE AWAY** (`ui/whatsnew.ts`, `App.showWhatsNew`). A build goes
+out every few days and nothing told a returning player anything had moved: News sat behind
+the drawer with a small badge, which is the right home for a FEED and no way at all to say
+"the thing that annoyed you is fixed".
+- **`NewsPost.major` is set by whoever writes the post**, never derived from the tag:
+  "update" covers both a new feature and a button that moved, and only one has earned a card
+  in front of the game. A card that appears on every build is one a player learns to dismiss
+  without reading, which costs the build where it mattered. Most posts are not major, and
+  the table deliberately carries a newer minor one — which is also the only reason the
+  partial-read rule below can be tested at all.
+- **It is a CARD, not a screen**: the picture and the lead, never the body. A card that
+  reproduces the article is the feed with an extra tap in front of it, and the way into the
+  real thing is on it. The picture is `newsHero`, the News screen's own, so a post is drawn
+  one way.
+- **It marks read only as far as the NEWEST POST IT SHOWED** (`markNewsRead(at)`). Stamping
+  the whole feed would clear the badge on posts it never showed — the card claiming to have
+  said something it did not.
+- **A BRAND-NEW COLONY HAS MISSED NOTHING.** `newsSeen` is stamped in the store's
+  constructor, beside the player code and the first invitation and for the same reason;
+  without it the whole back catalogue reads as unseen and a first launch opens on a card
+  about a build the player has never seen. The tour is checked FIRST as well — belt and
+  braces on the one screen where getting it wrong is worst.
+- **Reading the rest counts as being told.** A card that comes back because somebody tapped
+  the other half of it is a card that is now in the way.
+- **It borrows the result card's box but NOT the match screen's `.btn`**, which stacks an
+  icon over a label in a column — that put the chevron on a second line and left the gold
+  button looking like plain text.
+
+**THE HATCH HAS A SOUND, AND THE SOUND IS THE TIER.** The whole feature is a moment — the
+egg rocks, then the tier's COLOUR arrives before the trait is named — and it resolved in
+silence. Three cues: `hatch` (the shell giving way, under the rocking), `prize`, and
+`jackpot` for the top two rungs.
+- **The shell first, and not the prize.** Nothing has been revealed while the egg is
+  rocking, and a sound that gave the answer away there would undo the only thing the
+  rocking is for.
+- **A mythic must not sound like a common**, or the cue is saying the opposite of the
+  colour at the one moment the feature exists for. Which cue is read off `TIER_IDS`, so a
+  retune of the ladder cannot move a colour on one screen and leave the sound where it was.
+- **The end of a match was NOT silent** — `MatchScreen.finish()` has always played `win` or
+  `lose` as the wash begins. `ui/__tests__/moments.test.ts` holds the whole path a player
+  takes to it, because the way that breaks is not the cue failing but the app ceasing to
+  reach it. Still silent, and open: the Colony Road, the quests, and every purchase.
+
 **A MATCH SURVIVES THE APP BEING CLOSED** (`platform/suspend.ts`, the band on home). A
 phone call, a low battery, a swipe away — and twenty minutes of play was gone, with the
 colony unpaid for it. That was the worst thing the game could do to somebody and it did it

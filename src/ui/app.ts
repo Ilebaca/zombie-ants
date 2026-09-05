@@ -40,6 +40,7 @@ import { buildQuests } from "./quests";
 import { buildMenu } from "./screens-simple";
 import { buildHatch } from "./hatch";
 import { buildNews } from "./news";
+import { buildWhatsNew } from "./whatsnew";
 import { buildFriends } from "./friends";
 import { buildSupport } from "./support";
 import { buildSettings } from "./settings";
@@ -51,7 +52,7 @@ import { canReplay } from "../platform";
 import { LocalAccounts } from "../platform";
 import type { Account, AccountService } from "../platform";
 import { buildSignIn } from "./signin";
-import { askToPersist, defaultStore, onHardwareBack, saveRisk } from "../platform";
+import { askToPersist, defaultStore, majorSince, onHardwareBack, saveRisk } from "../platform";
 import { SuspendStore } from "../platform";
 import type { Resumed, SuspendDifficulty } from "../platform";
 import type { SaveRisk } from "../platform";
@@ -167,7 +168,7 @@ export class App {
    * UNLOCKED on the first press anywhere — a browser refuses to start audio without a
    * gesture, and the first press is the earliest honest one.
    */
-  private readonly feedback: Feedback = makeFeedback();
+  private readonly feedback: Feedback;
   /** Redraw the home top bar in place. Set when home is built; a no-op before that. */
   private rebuildHomeBar: () => void = () => {};
   /** The challenge being played, if this match is one. */
@@ -244,7 +245,14 @@ export class App {
     private host: HTMLElement,
     profile?: ProfileStore,
     accounts: AccountService = new LocalAccounts(),
+    /**
+     * Sound and haptics. Handed in only by a test that needs to WATCH it — `makeFeedback`
+     * already answers with a silent device where there is no audio, so the shipped app
+     * never passes one.
+     */
+    feedback: Feedback = makeFeedback(),
   ) {
+    this.feedback = feedback;
     this.host.replaceChildren();
     this.accounts = accounts;
     // A STORE HANDED IN IS THE COLONY, and there is nothing to sign into — that is the
@@ -307,7 +315,13 @@ export class App {
     this.show("home");
     // First run only. `tourSeen` is written when the walk finishes OR is skipped, so a
     // player who knows the game sees it once and never again.
-    if (this.profile.get().tourSeen < TOUR_VERSION) this.startTour();
+    if (this.profile.get().tourSeen < TOUR_VERSION) { this.startTour(); return; }
+    // AND ONLY THEN, WHAT CHANGED WHILE THEY WERE AWAY. After the tour check rather than
+    // beside it: a first-run player is being walked through the game and must not meet a
+    // card about a build they have never seen — and their save is stamped as caught up
+    // anyway (platform/profile.ts), so this is belt and braces on the one screen where
+    // getting it wrong is worst.
+    this.showWhatsNew();
   }
 
   /**
@@ -543,6 +557,35 @@ export class App {
         bubble: "top",
       },
     ];
+  }
+
+  /**
+   * "WHAT'S NEW" — the major posts a returning player has not seen (ui/whatsnew.ts).
+   *
+   * A build goes out every few days and nothing told anybody anything had moved: News sat
+   * behind the drawer with a small badge, which is the right home for a FEED and no way at
+   * all to say "the thing that annoyed you is fixed".
+   *
+   * IT MARKS READ ONLY AS FAR AS THE NEWEST POST IT SHOWED. The card carries the majors and
+   * nothing else, so stamping the whole feed would clear the badge on posts it never showed
+   * — the card claiming to have said something it did not.
+   *
+   * And it goes up whether the player presses "Got it" or walks off to read the rest:
+   * either way they have been told, and a card that comes back because somebody tapped the
+   * wrong half of it is a card that is now in the way.
+   */
+  private showWhatsNew(): void {
+    const posts = majorSince(this.profile.get().newsSeen);
+    if (!posts.length) return;
+    const upTo = posts.reduce((n, p) => Math.max(n, p.at), 0);
+    const seen = (): void => { this.profile.markNewsRead(upTo); this.clearOverlay(); };
+
+    const ov = buildWhatsNew(posts, {
+      onAll: () => { seen(); this.show("news"); },
+      onClose: seen,
+    });
+    this.host.appendChild(ov);
+    this.overlay = ov;
   }
 
   /* ----------------------------------------------------------------------- BACK */
@@ -873,6 +916,7 @@ export class App {
     // The one menu entry that really is unbuilt (CLAUDE.md §9: the lucky hatch needs the
     if (id === "luckyhatch") {
       return buildHatch(this.profile, {
+        feedback: this.feedback,
         onBack: () => this.show("home"),
         // The plus is not a general "go shopping": it lands on the larva shelf, because
         // the tap it answers was about larva.

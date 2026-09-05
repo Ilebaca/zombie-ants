@@ -793,6 +793,13 @@ export class ProfileStore {
       this.update((p) => {
         p.playerId = mintPlayerId();
         p.duelsIn = seedInvites(Date.now());
+        // A BRAND-NEW COLONY HAS MISSED NOTHING. Without this stamp `newsSeen` is 0, so
+        // the whole back catalogue reads as unseen and a player's first launch would open
+        // on a card telling them what changed in a game they have never played. Here for
+        // the same reason as the two above: it needs the table, and neither
+        // `defaultProfile` (a constant) nor `normalise` (a pure function of its input) may
+        // read one.
+        p.newsSeen = newsLatestAt();
       });
     }
   }
@@ -1203,10 +1210,17 @@ export class ProfileStore {
   /** Posts landed since the player last opened the feed. */
   unread(): number { return unreadNews(this.profile.newsSeen); }
 
-  /** Mark the feed read up to its newest post. */
-  markNewsRead(): void {
-    const at = newsLatestAt();
-    if (this.profile.newsSeen < at) this.update((p) => { p.newsSeen = at; });
+  /**
+   * Mark the feed read — up to its newest post, or only as far as `upTo`.
+   *
+   * The partial form is for the what's-new card (`ui/whatsnew.ts`), which shows the MAJOR
+   * posts and nothing else: marking everything read there would silently clear the badge on
+   * posts the player has never been shown, and the card would be claiming to have said
+   * something it did not. Stamping only as far as the newest post it actually showed leaves
+   * anything newer still unread, which is exactly right.
+   */
+  markNewsRead(upTo: number = newsLatestAt()): void {
+    if (this.profile.newsSeen < upTo) this.update((p) => { p.newsSeen = upTo; });
   }
 
   /**

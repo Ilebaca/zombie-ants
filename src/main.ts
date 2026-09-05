@@ -1,6 +1,7 @@
 /** App entry point. */
 import {
-  LocalAccounts, catchCrashes, defaultStore, goOffline, isNative, loadNative, takeNewerBuild,
+  LocalAccounts, catchCrashes, defaultStore, goOffline, hideSplash, isNative, loadNative,
+  takeNewerBuild,
 } from "./platform";
 import { App } from "./ui/app";
 
@@ -31,6 +32,10 @@ async function boot(): Promise<void> {
   // which is right for a test and wrong for the real app: the shell has to open the
   // account that is signed in, and the picker when there is none.
   new App(root, undefined, new LocalAccounts(store)).start();
+
+  // THE COVER COMES DOWN ONCE THERE IS A SCREEN UNDER IT, and not before: `start()` builds
+  // home synchronously, so by this line there is one (platform/splash.ts).
+  hideSplash();
 
   // BOTH OF THESE ARE ABOUT BEING A WEB PAGE, so the native build wants neither. Its
   // bundle ships inside the APK — there is no Pages cache to be stale against and nothing

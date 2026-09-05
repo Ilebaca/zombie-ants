@@ -72,6 +72,8 @@ describe("the news screen", () => {
   // The badge is about posts the player has not SEEN, and they are looking at them.
   it("marks the feed read on arrival", () => {
     const s = store();
+    // A new save opens caught up (platform/profile.ts), so this is a returning one.
+    s.update((p) => { p.newsSeen = 0; });
     expect(s.unread()).toBe(NEWS.length);
     build(s);
     expect(s.unread()).toBe(0);

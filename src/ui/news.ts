@@ -66,7 +66,7 @@ function card(post: NewsPost, open: boolean, onToggle: () => void): HTMLElement 
   const head = el("button", "newshead");
   head.type = "button";
   head.setAttribute("aria-expanded", String(open));
-  head.appendChild(hero(post.art));
+  head.appendChild(newsHero(post.art));
 
   const text = el("div", "newstext");
   const meta = el("div", "newsmeta");
@@ -93,8 +93,13 @@ function card(post: NewsPost, open: boolean, onToggle: () => void): HTMLElement 
 
 /* -------------------------------------------------------------------- THE PICTURE */
 
-/** Either a real board, or the mark of the screen the post is about, on a colour plate. */
-function hero(art: NewsArt): HTMLElement {
+/**
+ * Either a real board, or the mark of the screen the post is about, on a colour plate.
+ *
+ * Exported because the what's-new card shows the same posts (`ui/whatsnew.ts`), and a
+ * second way of drawing a post's picture is a second thing to keep in step.
+ */
+export function newsHero(art: NewsArt): HTMLElement {
   const box = el("div", "newshero");
   if (art.kind === "mark") {
     box.classList.add("newshero-mark");

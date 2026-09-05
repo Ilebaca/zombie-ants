@@ -20,6 +20,7 @@
  * reporting.
  */
 import { BUILD } from "./build";
+import { dropSplash } from "./splash";
 
 /** The panel is plain DOM and its own styles: a crash may be the stylesheet's fault. */
 const PANEL_ID = "crashpanel";
@@ -63,6 +64,10 @@ export function catchCrashes(root: Document = document): () => void {
 function report(err: unknown, fallback: string, root: Document): void {
   if (shown) return;
   shown = true;
+  // A BOOT THAT THREW NEVER TOOK THE COVER DOWN, and it sits at a z-index above everything
+  // — so without this the panel explaining what went wrong would be behind it
+  // (platform/splash.ts).
+  dropSplash();
 
   const detail = messageOf(err) || fallback || "Unknown error";
   const box = root.createElement("div");

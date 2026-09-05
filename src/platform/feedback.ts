@@ -38,7 +38,14 @@ export type Cue =
   | "win"
   | "lose"
   | "claim"      // a reward collected: quest, road, granary, gift
-  | "deny";      // a tap the game refused
+  | "deny"       // a tap the game refused
+  // THE HATCH IS THREE CUES, NOT ONE, and that is the point of it. The whole feature is a
+  // moment (CLAUDE.md — the lucky hatch): the egg gives way, and then the TIER arrives
+  // before the trait is named. The colour says it and so should the sound — a mythic that
+  // sounds like a common is the feature failing at the one moment it exists for.
+  | "hatch"      // the shell giving way, under the rocking
+  | "prize"      // a common, uncommon or rare
+  | "jackpot";   // an exceptional or a mythic — the top two rungs, and 5 rolls in 100
 
 /**
  * The two beds. Menu is everything before a match; match is the board.
@@ -91,6 +98,10 @@ const BUZZ: Record<Cue, number | number[]> = {
   lose: 90,
   claim: 14,
   deny: [8, 30, 8],
+  hatch: [10, 40, 16],
+  prize: 22,
+  // Long, and in three: the buzz is the other half of saying this one is rare.
+  jackpot: [30, 60, 30, 60, 90],
 };
 
 /** One voice: a tone that slides from `from` to `to` over `dur`, shaped by an envelope. */
@@ -150,6 +161,26 @@ const VOICES: Record<Cue, Voice[]> = {
   ],
   // Flat and short. A refusal should be felt and forgotten, not announced.
   deny: [{ type: "square", from: 160, to: 120, dur: 0.09, gain: 0.192 }],
+  // The shell giving way: a snap (built as noise below) with a low body under it. Not a
+  // note going up — nothing has been revealed yet, and a rising figure here would answer
+  // the question the next half-second is supposed to be asking.
+  hatch: [{ type: "sine", from: 180, to: 120, dur: 0.2, gain: 0.256 }],
+  // A rising figure, brighter and one note longer than `claim`: this is a thing found
+  // rather than a thing collected.
+  prize: [
+    { type: "triangle", from: 587, to: 587, dur: 0.14, gain: 0.288 },
+    { type: "triangle", from: 784, to: 784, dur: 0.14, gain: 0.288, at: 0.1 },
+    { type: "triangle", from: 988, to: 988, dur: 0.3, gain: 0.32, at: 0.2 },
+  ],
+  // The top two rungs. Wider, longer, and it ARRIVES rather than climbing — a chord under
+  // a shimmer, so the difference from `prize` is audible in the first hundred milliseconds
+  // rather than at the end of the phrase.
+  jackpot: [
+    { type: "triangle", from: 523, to: 523, dur: 0.75, gain: 0.32 },
+    { type: "triangle", from: 784, to: 784, dur: 0.72, gain: 0.288, at: 0.03 },
+    { type: "triangle", from: 1046, to: 1046, dur: 0.7, gain: 0.256, at: 0.06 },
+    { type: "sine", from: 1568, to: 2093, dur: 0.5, gain: 0.16, at: 0.16 },
+  ],
 };
 
 /** How loud the whole thing is, before anything else. Quiet by design. */
@@ -1164,6 +1195,9 @@ export class WebFeedback implements Feedback {
       else if (cue === "travel") this.scurry(ctx, master, now, 0.62, 48);
       else if (cue === "fight") this.crack(ctx, master, now, 0.8);
       else if (cue === "destroy") this.crack(ctx, master, now, 1.35);
+      // The shell breaking is a snap, like a twig — the note in the table is the body
+      // under it, not the break itself.
+      else if (cue === "hatch") this.crack(ctx, master, now, 0.55);
       for (const v of VOICES[cue]) {
         const at = now + (v.at ?? 0);
         const osc = ctx.createOscillator();

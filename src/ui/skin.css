@@ -5470,6 +5470,69 @@ button:not(.playbtn):active,
   cursor: pointer;
 }
 
+/* ======================================================================
+   WHAT CHANGED WHILE YOU WERE AWAY (ui/whatsnew.ts)
+   A card over home, once, carrying only the MAJOR posts. It borrows the
+   result card's box so the two read as the same kind of moment; a row is
+   the news screen's own picture, the title and the lead — never the body,
+   or the card is the feed with an extra tap in front of it.
+   ====================================================================== */
+.wncard { text-align: left; }
+.wncard h1, .wncard .tag { text-align: center; }
+.wnlist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack);
+  margin: 16px 0 4px;
+}
+.wnrow {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 12px;
+  align-items: center;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--bg1);
+  overflow: hidden;
+}
+/* The picture is the news screen's, at the size a card row allows. */
+.wnrow .newshero { width: 64px; min-height: 64px; }
+.wnrow .newshero canvas { width: 64px; height: 64px; }
+.wnwords { min-width: 0; padding: 10px 12px 10px 0; }
+.wnt { font-size: 14px; font-weight: 900; color: var(--ink); }
+.wnl { font-size: 12px; font-weight: 700; color: var(--ink-soft); line-height: 1.4; }
+.wnfoot {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  margin-top: 16px;
+}
+/* The gold button is the page's own `.cta`, which carries a `margin-top` and a
+   full width from the legacy sheet — both wrong inside a row of two. */
+.wnfoot .cta { flex: 1; margin: 0; width: auto; min-height: var(--tap); }
+/* "Read more" is the quieter half: the card has already said the headline, and
+   the way out is the one most players will take. Its own class rather than the
+   match screen's `.btn`, which stacks an icon over a label in a column. */
+.wnghost {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--tap);
+  padding: 0 12px;
+  border-radius: var(--r-md);
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.wnghost:active { transform: translateY(1px); }
+
 /* ---- A MATCH LEFT UNFINISHED ----
    The same row as the save guard above, because it is the same thing seen
    twice: one band under the top bar that says something is waiting on the

@@ -34,12 +34,99 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <title>Zombie Ants</title>
+
+<!--
+  THE COVER, AND IT IS IN THE DOCUMENT WITH ITS STYLES INLINE.
+
+  `#app` is empty until the bundle has been fetched, parsed and run — so a cold load showed
+  a bare dark rectangle for as long as that took, which on a phone is most of a second and
+  on the Android shell comes after a white flash of its own. Nothing said the game was
+  starting; it just looked broken for a moment.
+
+  It cannot be built by the app, for the same reason `#rotate` cannot: whatever the app
+  builds arrives at exactly the moment the app does, which is the moment this stops being
+  needed. And its styles are INLINE rather than in `skin.css`, because that stylesheet is
+  emitted by the bundler and is another file to wait for — the one thing a cover must not
+  do is wait.
+
+  IT IS THE WORDMARK, DRAWN, with no image and no icon file. Everything else in this game
+  is drawn by the code that owns it, and an <img> here would be a second request that can
+  land after the thing it was meant to cover. The type matches the home screen's own mark
+  so the cover hands over to it rather than being replaced by it.
+
+  THE BAR IS INDETERMINATE ON PURPOSE. There is no honest percentage to show — the browser
+  does not tell a page how much of its own script has arrived — and a fake one that jumps
+  to 90% and waits is worse than a sweep that only says "working".
+
+  It is removed by `platform/splash.ts`, never merely hidden, or it would sit over the game
+  swallowing taps. The watchdog at the foot of this file is the failsafe: a cover that can
+  outlive a boot that went wrong is worse than no cover at all.
+-->
+<style>
+  #splash {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    background: #0e1a12;
+    color: #eaf3ea;
+    font-family: Nunito, system-ui, -apple-system, "Segoe UI", sans-serif;
+    transition: opacity .28s ease;
+  }
+  #splash.gone { opacity: 0; pointer-events: none; }
+  #splash .sp-mark {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    line-height: 1;
+  }
+  #splash .sp-mark b { font-size: 34px; font-weight: 900; letter-spacing: -.5px; }
+  #splash .sp-mark span {
+    font-size: 34px;
+    font-weight: 900;
+    letter-spacing: 5px;
+    color: #7ee787;
+  }
+  #splash .sp-bar {
+    width: 132px;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .12);
+    overflow: hidden;
+  }
+  #splash .sp-bar i {
+    display: block;
+    width: 40%;
+    height: 100%;
+    border-radius: 999px;
+    background: #7ee787;
+    animation: sp-sweep 1.15s ease-in-out infinite;
+  }
+  @keyframes sp-sweep {
+    0%   { transform: translateX(-105%); }
+    100% { transform: translateX(355%); }
+  }
+  /* A player who has asked for less movement gets a still bar rather than none: the
+     track still says the game is doing something, it simply does not run. */
+  @media (prefers-reduced-motion: reduce) {
+    #splash .sp-bar i { animation: none; width: 100%; opacity: .55; }
+  }
+</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
 <div id="app"></div>
+
+<div id="splash" aria-hidden="true">
+  <div class="sp-mark"><b>ZOMBIE</b><span>ANTS</span></div>
+  <div class="sp-bar"><i></i></div>
+</div>
 <!--
   THE GAME IS PLAYED UPRIGHT (see skin.css). In the document rather than built
   by the app, so it is on screen before a single line of script has run: a phone
@@ -51,6 +138,20 @@
   <div class="rot-h">Turn your device upright</div>
   <div class="rot-p">Zombie Ants is played in portrait — the board is square and the colony reads down the screen.</div>
 </div>
+<!--
+  THE WATCHDOG. The app takes the cover down when it is ready (platform/splash.ts), and
+  everything here is about the case where it never gets there: a bundle that 404s, a syntax
+  error in an old browser, a boot that throws before the crash panel is armed. In every one
+  of those the cover would sit on screen for ever, hiding the very thing that would say what
+  went wrong. Ten seconds is far longer than any real boot and far shorter than a player's
+  patience with a frozen screen.
+-->
+<script>
+  setTimeout(function () {
+    var el = document.getElementById("splash");
+    if (el) el.remove();
+  }, 10000);
+</script>
 <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

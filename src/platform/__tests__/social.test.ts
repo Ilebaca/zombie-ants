@@ -9,7 +9,8 @@
 import { describe, expect, it } from "vitest";
 import {
   FAQ, FRIEND_MAX, LocalFriendService, LocalSupportGateway, MemoryStore, NEWS, ProfileStore,
-  SUPPORT_EMAIL, agoOf, directory, mailLink, newsFeed, newsLatestAt, personId, seedRequests,
+  SUPPORT_EMAIL, agoOf, directory, mailLink, majorSince, newsFeed, newsLatestAt, personId,
+  seedRequests,
   unreadNews,
 } from "../index";
 import type { Person } from "../index";
@@ -45,12 +46,61 @@ describe("the news feed", () => {
     expect(unreadNews(newsLatestAt())).toBe(0);
   });
 
+  /**
+   * A BRAND-NEW COLONY HAS MISSED NOTHING. `newsSeen` is stamped in the store's
+   * constructor, or the whole back catalogue reads as unseen and a first launch opens on a
+   * card telling somebody what changed in a game they have never played.
+   */
+  it("opens a new save with nothing unread", () => {
+    expect(store().unread()).toBe(0);
+    expect(store().get().newsSeen).toBe(newsLatestAt());
+  });
+
   it("marks the feed read up to its newest post", () => {
     const s = store();
+    s.update((p) => { p.newsSeen = 0; });        // a save from before the newest posts
     expect(s.unread()).toBe(NEWS.length);
     s.markNewsRead();
     expect(s.unread()).toBe(0);
     expect(s.get().newsSeen).toBe(newsLatestAt());
+  });
+
+  /**
+   * THE PARTIAL FORM IS WHAT THE WHAT'S-NEW CARD USES. It shows the MAJOR posts and
+   * nothing else, so marking everything read there would clear the badge on posts the
+   * player has never been shown — the card claiming to have said something it did not.
+   */
+  it("can be marked read only as far as what was actually shown", () => {
+    const s = store();
+    s.update((p) => { p.newsSeen = 0; });
+    const oldest = [...NEWS].sort((a, b) => a.at - b.at)[0];
+    s.markNewsRead(oldest?.at ?? 0);
+    expect(s.unread(), "everything was marked read").toBe(NEWS.length - 1);
+  });
+
+  /** Never backwards: a stale stamp must not un-read what the player has already seen. */
+  it("never moves the mark backwards", () => {
+    const s = store();
+    const at = s.get().newsSeen;
+    s.markNewsRead(0);
+    expect(s.get().newsSeen).toBe(at);
+  });
+
+  /**
+   * MAJOR IS SET BY WHOEVER WRITES THE POST, not derived from the tag: "update" covers a
+   * whole new feature and a button that moved, and only one has earned a card in front of
+   * the game.
+   */
+  it("offers only the major posts a player has not seen, newest first, capped", () => {
+    const all = majorSince(0, 99);
+    expect(all.length, "no post is marked major").toBeGreaterThan(0);
+    expect(all.every((p) => p.major === true)).toBe(true);
+    expect(all.length, "every post is major, so the card is every build").toBeLessThan(NEWS.length);
+    for (let i = 1; i < all.length; i++) {
+      expect((all[i - 1]?.at ?? 0) >= (all[i]?.at ?? 0), "not newest first").toBe(true);
+    }
+    expect(majorSince(0, 2)).toHaveLength(2);
+    expect(majorSince(newsLatestAt()), "a caught-up player was shown something").toEqual([]);
   });
 
   // A date only says whether a post is new to a reader who knows today's date.

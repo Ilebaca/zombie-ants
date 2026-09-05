@@ -1,6 +1,7 @@
 /** Platform surface: storage, profile and progression. */
 export { BUILD } from "./build";
 export { catchCrashes, resetCrash } from "./crash";
+export { dropSplash, hideSplash, resetSplash } from "./splash";
 export { takeNewerBuild } from "./freshness";
 export { goOffline, resetOffline } from "./offline";
 export { CapacitorStore, isNative, loadNative } from "./native";
@@ -16,7 +17,7 @@ export type {
   ChamberId, Equipped, GranaryState, HatchPrize, Profile, Research, Stats,
 } from "./profile";
 export {
-  NEWS, agoOf, newsFeed, newsLatestAt, unreadNews,
+  NEWS, agoOf, majorSince, newsFeed, newsLatestAt, unreadNews,
 } from "./news";
 export type { NewsArt, NewsPost, NewsTag } from "./news";
 export {
