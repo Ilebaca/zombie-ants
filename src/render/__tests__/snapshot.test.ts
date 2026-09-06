@@ -13,12 +13,26 @@ import type { GameState } from "../../engine";
 import { drawSnapshot } from "../snapshot";
 import { makeRecorder } from "./recorder";
 
-/** A canvas whose context is the recorder, so the draw calls can be read back. */
+/**
+ * A canvas whose context is the recorder, so the draw calls can be read back.
+ *
+ * It carries `setAttribute`/`removeAttribute` because a real one does and `drawSnapshot`
+ * uses them: a canvas holds no text, so it is either labelled for a screen reader or
+ * explicitly hidden from one (`ui/__tests__/a11y.test.ts`). A stub that pretends to be a
+ * canvas and is missing them is the stub being wrong, not the code.
+ */
 function canvasOf(rec: ReturnType<typeof makeRecorder>): HTMLCanvasElement {
   return {
     style: {} as CSSStyleDeclaration,
     width: 0, height: 0,
     getContext: () => rec.ctx,
+    attrs: {} as Record<string, string>,
+    setAttribute(this: { attrs: Record<string, string> }, k: string, v: string) {
+      this.attrs[k] = v;
+    },
+    removeAttribute(this: { attrs: Record<string, string> }, k: string) {
+      delete this.attrs[k];
+    },
   } as unknown as HTMLCanvasElement;
 }
 
@@ -74,6 +88,7 @@ describe("a still of the board", () => {
   it("gives up quietly on a canvas with no context", () => {
     const dead = {
       style: {} as CSSStyleDeclaration, width: 0, height: 0, getContext: () => null,
+      setAttribute: () => {}, removeAttribute: () => {},
     } as unknown as HTMLCanvasElement;
     expect(drawSnapshot(dead, board())).toBe(false);
   });

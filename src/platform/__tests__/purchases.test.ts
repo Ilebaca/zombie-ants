@@ -11,7 +11,7 @@ import { SPECIES } from "../../engine";
 import { MemoryStore } from "../storage";
 import { ProfileStore } from "../profile";
 import { DemoGateway, SHOP_PRODUCTS, productById } from "../purchases";
-import type { PurchaseGateway, PurchaseResult } from "../purchases";
+import type { Product, PurchaseGateway, PurchaseResult } from "../purchases";
 
 const store = (): ProfileStore => {
   const s = new ProfileStore(new MemoryStore());
@@ -112,6 +112,7 @@ describe("granting what was bought", () => {
     const failing: PurchaseGateway = {
       live: true,
       buy: async (): Promise<PurchaseResult> => ({ ok: false, note: "cancelled" }),
+      restore: async () => ({ ok: false }),
     };
     const s = store();
     s.update((p) => { p.mycel = 42; });
@@ -144,5 +145,73 @@ describe("the daily gift", () => {
 
     expect(s.claimDailyGift(now + 864e5)).toBe(true);
     expect(s.get().mycel).toBeGreaterThan(banked);
+  });
+});
+
+/** Larva is not currency in the same units; it only has to be a positive weight here, so
+ *  a larva pack is compared against other larva packs and never against mycelium. */
+const LARVA_UNITS = 1;
+
+/**
+ * WHAT A PRICE TAG IS ALLOWED TO CLAIM.
+ *
+ * "BEST VALUE" sat on the Brood Bundle while the Queen's Hoard gave 340 units per euro
+ * against its 281, with the Colony Pass on top — the label was not merely unmeasured, it
+ * was false. And "MOST POPULAR" was a claim about a population that does not exist: nobody
+ * else is playing this game, because the ladder and the friends list are generated on the
+ * device. Both stores act on unsupported claims in a storefront, and it is dishonest
+ * regardless of who is watching.
+ *
+ * So a ribbon may only say something the catalogue itself proves, and this recomputes it
+ * rather than trusting the table.
+ */
+describe("what a shop tile claims", () => {
+  /** Everything a product hands over, as one comparable figure. */
+  const units = (p: Product): number =>
+    (p.grant.mycel ?? 0) + (p.grant.pheromone ?? 0) + (p.grant.larva ?? 0) * LARVA_UNITS;
+  const euros = (p: Product): number => Number(p.price.replace(/[^\d.]/g, ""));
+  /** A shelf is what the shop shows as one row: a kind, and for currency its icon too. */
+  const shelf = (p: Product): string => `${p.kind}:${p.kind === "currency" ? p.icon : ""}`;
+
+  it("only ever calls a tile the best value when it is", () => {
+    const claiming = SHOP_PRODUCTS.filter((p) => /best value/i.test(p.ribbon ?? ""));
+    expect(claiming.length, "nothing claims to be the best value any more").toBeGreaterThan(0);
+
+    for (const winner of claiming) {
+      const rivals = SHOP_PRODUCTS.filter((p) => shelf(p) === shelf(winner) && units(p) > 0);
+      const rate = (p: Product): number => units(p) / euros(p);
+      for (const other of rivals) {
+        expect(rate(winner), `${other.id} beats ${winner.id}, which claims the best value`)
+          .toBeGreaterThanOrEqual(rate(other));
+      }
+    }
+  });
+
+  /**
+   * A CLAIM THIS GAME CANNOT SUPPORT. There is no telemetry (the privacy page says so in
+   * as many words) and no other players, so nothing here can be popular, best-selling,
+   * limited or ending soon.
+   */
+  it("makes no claim the game has no way to know", () => {
+    for (const p of SHOP_PRODUCTS) {
+      const words = `${p.ribbon ?? ""} ${p.title ?? ""} ${p.sub ?? ""}`;
+      expect(words, `${p.id} claims something unmeasurable`)
+        .not.toMatch(/popular|best.?sell|everyone|most bought|limited|last chance|ending soon/i);
+    }
+  });
+
+  /**
+   * THE ID IS THE PLAY CONSOLE SKU and is named for what it grants, precisely so nobody
+   * wiring up the real store has to check — which is worth nothing if one of them lies.
+   * `pher.1300` handed over 900 for months.
+   */
+  it("names each currency SKU for the amount it really hands over", () => {
+    for (const p of SHOP_PRODUCTS) {
+      const named = /\.(\d+)$/.exec(p.id);
+      if (!named || p.kind !== "currency") continue;
+      const amount = units(p) / (p.grant.larva ? LARVA_UNITS : 1);
+      expect(amount, `${p.id} does not grant the amount its id promises`)
+        .toBe(Number(named[1]));
+    }
   });
 });

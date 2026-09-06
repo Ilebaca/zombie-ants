@@ -204,3 +204,85 @@ function shipped(dir: string, out: string[] = []): string[] {
   }
   return out;
 }
+
+/**
+ * THE TYPEFACE IS OURS, and that is a privacy fix before it is a performance one.
+ *
+ * It came from Google's CDN, which meant every player's IP address reached Google before a
+ * line of the game ran — no consent asked for and none of it necessary, which is the
+ * textbook GDPR problem with hosted webfonts. It was also the app's only third-party embed,
+ * and the reason the privacy page had to list Google as a recipient at all.
+ */
+describe("the typeface", () => {
+  const html = readFileSync(resolve(root, "index.html"), "utf8");
+
+  it("is served from this build rather than from a CDN", () => {
+    // Past the comments: the one above the @font-face block explains what was removed and
+    // names the CDN to do it. Same trap the service worker's rules have.
+    const markup = html.replace(/<!--[\s\S]*?-->/g, "");
+    expect(markup).not.toMatch(/fonts\.googleapis\.com|fonts\.gstatic\.com/);
+    expect(html).toContain("@font-face");
+    expect(html).toMatch(/url\(\.\/fonts\/nunito-latin\.woff2\)/);
+  });
+
+  it("ships the files it names", () => {
+    for (const f of ["fonts/nunito-latin.woff2", "fonts/nunito-latin-ext.woff2"]) {
+      expect(existsSync(resolve(root, "public", f)), `${f} is missing`).toBe(true);
+    }
+  });
+
+  /** Precached like everything else now — a first launch with no network should not render
+   *  in Arial. It could not be, while it lived on somebody else's server. */
+  it("is precached by the offline worker", () => {
+    const config = readFileSync(resolve(root, "vite.config.ts"), "utf8");
+    expect(config).toContain("./fonts/nunito-latin.woff2");
+  });
+
+  /** And the policy no longer claims a request that does not happen. A privacy page that
+   *  over-discloses is as wrong as one that under-discloses. */
+  it("is no longer named as a third party in the privacy policy", () => {
+    const page = readFileSync(resolve(root, "public/privacy.html"), "utf8");
+    const body = page.slice(page.indexOf("<body"));
+    expect(body).not.toMatch(/loads its typeface from Google/i);
+  });
+});
+
+/**
+ * THE TERMS, beside the privacy policy. A store listing has a field for the URL and Apple
+ * expects an app that sells anything to point at them; like the policy it is a plain static
+ * page that ships with the build rather than a screen in the app.
+ */
+describe("the terms of use", () => {
+  const page = readFileSync(resolve(root, "public/terms.html"), "utf8");
+
+  it("ships with the build, at a URL of its own", () => {
+    expect(page).toContain("<title>");
+    expect(page.toLowerCase()).toContain("terms");
+  });
+
+  it("names the same address the app prints", () => {
+    expect(page).toContain(SUPPORT_EMAIL);
+  });
+
+  /**
+   * THE PARTS A PLAYER ACTUALLY NEEDS. Refunds go through the store, because we take no
+   * payment and hold no card details — and saying where is the whole point of the section.
+   */
+  it("says who handles refunds and where to ask", () => {
+    expect(page).toMatch(/refund/i);
+    expect(page).toContain("reportaproblem.apple.com");
+    expect(page).toMatch(/google play/i);
+  });
+
+  /** It must not contradict the game: the odds are printed, and the opponents are not
+   *  people. Two claims the app makes on screen, restated where they are binding. */
+  it("agrees with what the game says about odds and opponents", () => {
+    expect(page).toMatch(/odds are printed|odds.*printed/i);
+    expect(page).toMatch(/every opponent is the computer/i);
+  });
+
+  it("is linked from the app by a relative path", () => {
+    const support = readFileSync(resolve(root, "src/ui/support.ts"), "utf8");
+    expect(support).toContain('"./terms.html"');
+  });
+});

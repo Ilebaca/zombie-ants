@@ -5470,6 +5470,83 @@ button:not(.playbtn):active,
   cursor: pointer;
 }
 
+/* ---- Saying what is simulated ----
+   The ladder's rivals and the friends directory are generated on the device
+   (there is no server yet), and a screen that lets a player believe they are
+   other people is the most misleading thing this app could do. The ladder's
+   note sits under its table, where somebody who has read it arrives; the
+   friends note sits above the tabs, because somebody about to send a request
+   needs it before they send one. */
+.lbnote,
+.frnote {
+  margin: var(--stack) 0 0;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--bg1);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.frnote { margin: 0 0 var(--stack); }
+
+/* ---- "Computer opponent" ----
+   Under the seated colony, never over it: the head and the name are who is
+   across the board and this is a fact about them. Quiet enough not to be the
+   headline and plain enough that nobody can miss it, which is the whole
+   requirement — the app must not let a player believe a bot is a person. */
+.mmk-bot {
+  margin-top: 6px;
+  padding: 2px 9px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ---- RESTORE PURCHASES ----
+   Apple requires the mechanism ("make sure you have a restore mechanism for
+   any restorable in-app purchases") and it belongs under Unlocks, which is
+   what it can restore. Quiet: it is a safety net, not an offer, and a
+   storefront that shouts about it is a storefront selling it. */
+.restorerow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: var(--stack);
+  text-align: center;
+}
+.restorebtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: var(--tap);
+  padding: 0 18px;
+  border-radius: var(--r-md);
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.restorebtn:active { transform: translateY(1px); }
+.restorebtn:disabled { opacity: .5; }
+.restorenote {
+  max-width: 300px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
 /* ======================================================================
    WHAT CHANGED WHILE YOU WERE AWAY (ui/whatsnew.ts)
    A card over home, once, carrying only the MAJOR posts. It borrows the

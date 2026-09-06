@@ -16,6 +16,7 @@ import { DAILY_GIFT, SHOP_PRODUCTS } from "../platform";
 import type { ProfileStore, Product, PurchaseGateway } from "../platform";
 import { el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
+import { buildOdds } from "./odds";
 
 export function buildShop(
   store: ProfileStore, gateway: PurchaseGateway, onBack: () => void,
@@ -55,8 +56,22 @@ export function buildShop(
     const larva = section("Larva", "Hatched in the lucky hatch");
     larva[0]?.setAttribute("id", "shopLarva");
     wrap.append(...larva, row(byKind("currency", "brood")));
+    /*
+     * THE ODDS, BESIDE THE THING THAT BUYS THE ROLL, AND BOTH STORES REQUIRE IT THERE.
+     *
+     * Google Play and Apple say the same thing in almost the same words: an app offering a
+     * mechanism that provides randomised virtual items for purchase must disclose the odds
+     * of each outcome PRIOR TO PURCHASE. They were printed on the hatch, which is where a
+     * player rolls — and the purchase is here, two screens away from any statement of what
+     * a larva is worth. That gap is the whole of the requirement.
+     *
+     * It is the same panel the hatch shows (`ui/odds.ts`), derived from the weights the
+     * roll really uses, so there is one set of numbers rather than two that can drift.
+     */
+    wrap.appendChild(buildOdds("What a larva can hatch"));
 
     wrap.append(...section("Unlocks"), row([...byKind("pass"), ...byKind("species")]));
+    wrap.appendChild(restoreRow());
 
     body.appendChild(wrap);
     root.appendChild(body);
@@ -134,6 +149,51 @@ export function buildShop(
       })
       .catch(() => toast(root, "The store could not be reached.", "bad"))
       .finally(() => { busy = false; });
+  };
+
+  /**
+   * PUT BACK WHAT WAS ALREADY BOUGHT — and Apple requires the button in so many words:
+   * "you should make sure you have a restore mechanism for any restorable in-app purchases".
+   *
+   * It sits under Unlocks because those are the two things it can restore. It says so, too:
+   * currency is consumable and is spent, no store hands it back, and a button that implied
+   * otherwise would be the shop promising something it cannot do.
+   *
+   * It matters here more than in most games. A colony lives in `localStorage` on one device
+   * (platform/backup.ts), so a player who reinstalls has genuinely paid for something the
+   * game can no longer see — and without this their only route out is a support email.
+   */
+  const restoreRow = (): HTMLElement => {
+    const box = el("div", "restorerow");
+    const go = el("button", "restorebtn") as HTMLButtonElement;
+    go.type = "button";
+    go.id = "shopRestore";
+    go.append(icon("granary", 15), el("span", undefined, "Restore purchases"));
+    go.onclick = () => restore(go);
+    box.append(go, el("div", "restorenote",
+      "Brings back the Colony Pass and any colony you have bought. Mycelium, pheromone and "
+      + "larva are spent as you use them and cannot be restored."));
+    return box;
+  };
+
+  const restore = (btn: HTMLButtonElement): void => {
+    if (busy) return;
+    busy = true;
+    btn.disabled = true;
+    void gateway.restore()
+      .then((result) => {
+        // A restore that found nothing is not a failure — it is the commonest answer, and
+        // the note the gateway wrote is the honest thing to show.
+        if (!result.ok || !result.grant) {
+          toast(root, result.note ?? "Nothing to restore.", "warn");
+          return;
+        }
+        store.applyGrant(result.grant);
+        render();
+        toast(root, "Your purchases are back.", "hive");
+      })
+      .catch(() => toast(root, "The store could not be reached.", "bad"))
+      .finally(() => { busy = false; btn.disabled = false; });
   };
 
   const dailyGift = (): HTMLElement => {

@@ -86,8 +86,22 @@ export class MatchmakingScreen {
     this.foeCard = el("div", "mmk-found");
     right.append(this.reel, this.foeCard);
 
+    /*
+     * IT NEVER SAYS SOMEBODY ELSE IS THERE, because nobody is.
+     *
+     * `LocalMatchmaker` seats a computer opponent every time — there is no server yet
+     * (platform/matchmaking.ts) — and "Searching for an opponent…" over that is the app
+     * claiming to be looking through other players. Both stores treat that as deceptive
+     * (Apple 2.3.1: an app's functionality "should be clear to end users"), and it is
+     * simply untrue, which is the better reason.
+     *
+     * What is kept is the MOMENT: the reel really does choose, from a real roster of the
+     * colonies this chapter fields, and stopping on one really does decide who is across
+     * the board. Only the claim goes. A duel names the person, and that one IS a person —
+     * they are on this device's own friends list.
+     */
     this.status = el("div", "mmk-status",
-      opts.awaiting ? `Waiting for ${opts.awaiting}…` : "Searching for an opponent…");
+      opts.awaiting ? `Waiting for ${opts.awaiting}…` : "Choosing your opponent…");
 
     this.root.append(left, right, this.status);
     host.appendChild(this.root);
@@ -140,9 +154,14 @@ export class MatchmakingScreen {
   /** Somebody is seated: stop dead, show them, hold, then part. */
   private land(foe: Opponent): void {
     this.reel.remove();
-    this.foeCard.appendChild(seatCard(foe));
+    // TAGGED AS WHAT IT IS. A duel is a real person off this device's friends list and
+    // carries no tag; everything else is the computer, and a colony seated without saying
+    // so is the screen letting the player believe otherwise.
+    this.foeCard.appendChild(seatCard(foe, !this.opts.awaiting));
     this.foeCard.classList.add("on");
-    this.status.textContent = this.opts.awaiting ? `${this.opts.awaiting} is ready` : "Opponent found";
+    this.status.textContent = this.opts.awaiting
+      ? `${this.opts.awaiting} is ready`
+      : "Your opponent";
     this.root.classList.add("found");
 
     this.after(HOLD_MS, () => {
@@ -173,7 +192,7 @@ export class MatchmakingScreen {
 }
 
 /** One profile: the colony's head, the name, the size. The same card on both halves. */
-function seatCard(seat: Seat): HTMLElement {
+function seatCard(seat: Seat, bot = false): HTMLElement {
   const card = el("div", "mmk-card");
   const troops = el("div", "mmk-colony", `${compact(seat.colony)} troops`);
   // Each figure takes ITS OWN colony's colour rather than the board's you/enemy pair. The
@@ -181,6 +200,7 @@ function seatCard(seat: Seat): HTMLElement {
   // still the last match's — and a player is their colony here, not a side.
   troops.style.color = (SPECIES_COL[seat.species] ?? SPECIES_COL.fire)[1] as string;
   card.append(antPortrait(seat.species, 108, "mmk-head"), el("div", "mmk-name", seat.name), troops);
+  if (bot) card.appendChild(el("div", "mmk-bot", "Computer opponent"));
   return card;
 }
 

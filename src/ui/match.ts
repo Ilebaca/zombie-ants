@@ -1179,7 +1179,7 @@ const MARKUP = `
     <div class="timelabel" id="timeLabel">Your turn · Turn 1</div>
   </div>
   <main>
-    <canvas id="cv"></canvas>
+    <canvas id="cv" role="img" aria-label="The board. Both armies and the turn are read out above it."></canvas>
     <div class="hint" id="hint">Tap one of your cells, then tap where to act.</div>
   </main>
   <footer>

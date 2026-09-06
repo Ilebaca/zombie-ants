@@ -980,6 +980,16 @@ export class App {
         // switches all came off the code, so the app has to be told rather than left
         // running on the settings of the save that was just replaced.
         onSignOut: () => this.signOut(),
+        // ACCOUNT DELETION, which both stores require to exist inside the app. The save is
+        // erased and the account leaves the picker, so the device is back to how it was
+        // before this colony — and the sign-in screen is where that leaves the player,
+        // because there may be no colony left to show a home screen for.
+        onDelete: () => {
+          const on = this.accounts.current();
+          if (on) this.accounts.forget(on.id);
+          this.accounts.signOut();
+          this.showSignIn();
+        },
         onKeepSafe: () => this.show("keepsafe"),
         playerCode: this.profile.get().playerId,
         onRestored: () => {

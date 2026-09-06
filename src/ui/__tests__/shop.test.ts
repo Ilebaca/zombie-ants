@@ -28,7 +28,11 @@ const gateway = (answer: (id: string) => PurchaseResult, live = false): {
   const asked: string[] = [];
   return {
     asked,
-    gw: { live, buy: (id: string) => { asked.push(id); return Promise.resolve(answer(id)); } },
+    gw: {
+      live,
+      buy: (id: string) => { asked.push(id); return Promise.resolve(answer(id)); },
+      restore: () => Promise.resolve({ ok: false, note: "nothing to restore" }),
+    },
   };
 };
 
@@ -122,7 +126,11 @@ describe("buying", () => {
 
   it("grants nothing when the gateway throws", async () => {
     const s = store();
-    const gw: PurchaseGateway = { live: false, buy: () => Promise.reject(new Error("offline")) };
+    const gw: PurchaseGateway = {
+      live: false,
+      buy: () => Promise.reject(new Error("offline")),
+      restore: () => Promise.resolve({ ok: false }),
+    };
     const root = build(s, gw);
     buyIn(root, "mycel.650")?.click();
     await vi.waitFor(() => expect(root.textContent).toMatch(/could not be reached/i));
@@ -137,6 +145,7 @@ describe("buying", () => {
     const gw: PurchaseGateway = {
       live: false,
       buy: (id) => { asked.push(id); return new Promise<PurchaseResult>((r) => { release = r; }); },
+      restore: () => Promise.resolve({ ok: false }),
     };
     const root = build(s, gw);
     buyIn(root, "mycel.650")?.click();

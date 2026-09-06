@@ -116,9 +116,52 @@
     #splash .sp-bar i { animation: none; width: 100%; opacity: .55; }
   }
 </style>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<!--
+  THE TYPEFACE IS OURS NOW, and taking it off Google's CDN was the point.
+
+  It was two `preconnect`s and a stylesheet from fonts.googleapis.com, which is the one
+  third-party embed this app had — and it meant every player's IP address reached Google
+  before a line of the game ran, with no consent asked for and none of it necessary. That
+  is the textbook GDPR problem with hosted webfonts, and a German court has already ruled
+  on exactly it. The privacy page had to list Google as a recipient purely because of these
+  three lines. It does not any more.
+
+  It also made two other things true rather than nearly true. The game claims to play with
+  no network; it now does, including inside the Android shell, where this was a call over
+  the internet to render the first screen. And a render-blocking stylesheet on somebody
+  else's server was the slowest thing in the boot.
+
+  ONE VARIABLE FILE PER SUBSET, latin and latin-ext, 80 KB the build serves itself. Google
+  returns the SAME woff2 for 400, 700, 800 and 900 — four identical downloads behind four
+  rules — so declaring the weight RANGE is what makes it one file. Anything outside those
+  two subsets falls to the stack below, which is what a fallback is for.
+-->
+<style>
+/* latin-ext */
+@font-face {
+  font-family: Nunito;
+  font-style: normal;
+  /* ONE VARIABLE FILE COVERS THE WHOLE RANGE. Google serves the same woff2 for 400, 700,
+     800 and 900 — four identical downloads under four @font-face rules. Declaring the
+     range is what makes it one file instead. */
+  font-weight: 400 900;
+  font-display: swap;
+  src: url(./fonts/nunito-latin-ext.woff2) format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: Nunito;
+  font-style: normal;
+  /* ONE VARIABLE FILE COVERS THE WHOLE RANGE. Google serves the same woff2 for 400, 700,
+     800 and 900 — four identical downloads under four @font-face rules. Declaring the
+     range is what makes it one file instead. */
+  font-weight: 400 900;
+  font-display: swap;
+  src: url(./fonts/nunito-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
 </head>
 <body>
 <div id="app"></div>

@@ -1143,12 +1143,15 @@ war, and the store is emptied into the colony from the home screen.
    `npm run android`. `android/` is generated and gitignored; `npx cap add android`
    recreates it. The launcher icon comes from `public/icon-512.png` (Android Studio, or
    `capacitor-assets`); it is not committed because the platform directory is not.
-5. Before release, two things are still owed and neither is code: `SUPPORT_EMAIL` in
+5. Before release, some things are still owed and none of them is code: `SUPPORT_EMAIL` in
    `platform/support.ts` is a placeholder and must be a real address (the privacy page
    carries the same one, held by a test), and the Android launcher icon has to be set once
    in Android Studio from `public/icon-512.png` — `android/` is generated and gitignored,
-   so it cannot be committed. The privacy URL for the Play listing is
-   https://ilebaca.github.io/zombie-ants/privacy.html
+   so it cannot be committed. The privacy URL for both listings is
+   https://ilebaca.github.io/zombie-ants/privacy.html — and the Play Data safety form and
+   Apple's privacy labels both need answering with "nothing collected, nothing shared",
+   plus an IARC content rating. See "WHAT THE TWO STORES REQUIRE" for what the code side
+   of that already holds.
 6. RevenueCat in-app purchases — implement `PurchaseGateway` against it and hand it to
    `App`; nothing else moves. Needs, from Milan: a Play Console account, the products
    created there with these ids (`platform/purchases.ts`), and a RevenueCat key.
@@ -1753,6 +1756,108 @@ the device at all — Pages serving the page, Google Fonts, the version check �
 rather than buried. Two tests hold it: its address must be `SUPPORT_EMAIL` (two copies of a
 contact address is one that goes stale, and it is always the one in the policy), and no
 shipped source may mention an analytics SDK while the page says there is none.
+
+**WHAT THE TWO STORES REQUIRE** (`src/ui/__tests__/store-policy.test.ts`). Every rule here
+comes from Google Play's Developer Programme Policy or Apple's App Review Guidelines, and
+none of them is a gameplay rule — no player will ever notice one, which is exactly why they
+rot. A screen gets rebuilt, a panel moves, and the app is out of compliance with nothing
+failing. The test file names the requirement beside each assertion.
+
+- **LOOT BOX ODDS GO BEFORE THE PURCHASE, not where the roll happens.** Apple 3.1.1: "Apps
+  offering 'loot boxes' or other mechanisms that provide randomized virtual items for
+  purchase must disclose the odds of receiving each type of item to customers prior to
+  purchase"; Google has required the same since 2019. They were printed on the HATCH, which
+  is where a player rolls — and the purchase is LARVA, two screens away in the shop. That
+  gap is the whole of the requirement, and it is why the panel became `ui/odds.ts` rather
+  than a closure inside the hatch: one panel, derived from the weights the roll really uses,
+  shown in both places.
+- **APPLE REQUIRES A RESTORE MECHANISM** — "make sure you have a restore mechanism for any
+  restorable in-app purchases". `PurchaseGateway.restore()` is the seam; the shop's button
+  sits under Unlocks, which is what it can restore. It SAYS what it cannot do: currency is
+  consumable and is spent, no store hands it back, and a button implying otherwise would be
+  the shop promising a refund. `DemoGateway.restore()` gives NOTHING — there is no store
+  behind it, so there is no purchase to find, and handing over the pass would be the one
+  thing a restore button must never do. It matters here more than in most games: a colony
+  lives in `localStorage` on one device, so a player who reinstalls has genuinely paid for
+  something the game can no longer see.
+- **ACCOUNT DELETION HAS TO BE IN THE APP.** Google requires it of any app that lets
+  somebody create an account; Apple says the same in 5.1.1(v). `AccountService.forget` had
+  existed for months with nothing calling it. Settings now has TWO destructive rows and they
+  are different: Reset starts this colony over and leaves it signed in; **Delete this
+  colony** erases the save and takes it off the picker. Each says what it LEAVES BEHIND
+  rather than only what it takes, and each asks twice on its own button. The privacy page
+  spells out the routes, because it is where a player who cannot find the button will look.
+- **NOTHING MAY CLAIM A SIMULATION IS OTHER PEOPLE.** This is the one that was a real risk
+  rather than a missing control. There is no server, so the opponent, the ladder and the
+  friends list are all generated on the device — and the app said "Searching for an
+  opponent…", then "Opponent found", under a Leaderboard headed "World ranking", beside a
+  Friends screen whose requests go nowhere. Apple 2.3.1 requires that an app's
+  "functionality should be clear to end users"; more to the point it was untrue.
+  - The search says **"Choosing your opponent…"** and the seated card carries **"Computer
+    opponent"**. The moment is kept — the reel really does choose, from the roster this
+    chapter fields, and where it stops really is who turns up. Only the claim goes. A DUEL
+    carries no tag, because that one is a real person off this device's own friends list.
+  - The ladder is a **"Practice ladder"** with a line under the table saying the colonies
+    are generated here and that ranking against other players arrives with online matches.
+  - Friends says so **above the tabs**, not below the list: somebody about to send a
+    request needs it before they send one.
+  When the server lands, these three lines are what has to change with it.
+- **NO CLAIM THE GAME CANNOT SUPPORT.** The shop said "MOST POPULAR" on a mycelium tile —
+  a claim about a population that does not exist, since nobody else is playing — and "BEST
+  VALUE" on the Brood Bundle, which gives 281 units per euro against the Queen's Hoard's
+  340 with the Colony Pass on top. That one was simply FALSE. `purchases.test.ts` recomputes
+  value per euro per shelf now rather than trusting the table, and greps every ribbon,
+  title and subtitle for words the game has no way to measure. Found with them: `pher.1300`
+  granted 900 — and the ids ARE the Play Console SKUs, named for what they hand over
+  precisely so nobody wiring up the real store has to check, which is worth nothing if one
+  of them lies. It is `pher.900`.
+- **EVERY CONTROL SAYS WHAT IT IS** (`ui/__tests__/a11y.test.ts`). This app is drawn: the
+  chrome is unlabelled SVG marks and half its pictures are canvases, which carry no text at
+  all. Every BUTTON already had a name — that part was already right — and no canvas did.
+  The rule is that a canvas either carries a name or is explicitly `aria-hidden`, and
+  silence is the correct answer for most of them: a portrait sits inside a row that is
+  already named, and the manual's figures illustrate a numbered rule written out beside
+  them. An unlabelled graphic announced as "graphic" is worse than one that says nothing,
+  and an invented label is worse than both. So `antPortrait` hides its canvas, `drawSnapshot`
+  takes an optional `label` and hides by default, and the BOARD is the one canvas that
+  carries a name — everything else illustrates words already on the screen; the board IS
+  the screen. The test walks the real app rather than building screens directly, because a
+  screen built directly is a screen whose chrome never ran.
+- **CONTRAST IS MEASURED, NOT ASSUMED.** Every text node on the five deck screens and the
+  manual, in a real browser, against the background actually painted behind it: all pass
+  WCAG AA. Worth re-running after a palette change — `--muted` on a dark panel has been
+  under AA once already (§ the Anthill).
+- **THE TYPEFACE IS OURS** (`public/fonts/`, the `@font-face` block in `index.html`). It
+  came from Google's CDN, which was this app's only third-party embed and meant every
+  player's IP reached Google before a line of the game ran — no consent asked for, none of
+  it necessary, and the textbook GDPR problem with hosted webfonts. Two variable woff2 files
+  (latin and latin-ext, 80 KB) now ship with the build. Google serves the SAME file for 400,
+  700, 800 and 900, so declaring the weight RANGE is what makes it one download instead of
+  four. It is precached like everything else — it could not be while it lived on somebody
+  else's server — so a first launch offline no longer renders in Arial, and the privacy page
+  no longer names Google at all. A page that over-discloses is as wrong as one that
+  under-discloses, and a test holds that line too.
+- **THE TERMS ARE A REAL PAGE** (`public/terms.html`), beside the privacy policy and for the
+  same reason: a store listing has a field for the URL and Apple expects an app that sells
+  anything to point at them. It says what is true of THIS game rather than reciting a
+  template — a licence not property, currency that does not expire, odds that are printed
+  and read from the table the game rolls against, restoring, and that the store handles the
+  money and therefore the refunds (we take no payment and hold no card details, so we cannot
+  issue one). Tests hold it against `SUPPORT_EMAIL` and against the two claims the app makes
+  on screen, so the binding document cannot contradict the game.
+- **NO COOKIES, and the policy says so plainly.** The game sets none; the save is the
+  device's own storage, which is the game working rather than anything watching, and is why
+  no banner asks about it. Strictly-necessary storage needs no consent — but a player
+  looking for the answer has to find it, so it is a heading rather than a footnote.
+- **STILL OWED, and neither is code:** `SUPPORT_EMAIL` is a placeholder and both stores
+  require a working support contact — a test asserts it is STILL the placeholder, so it
+  fails on the day somebody sets a real one, which is the day to delete the test. And the
+  Play listing needs the Data safety form answered (nothing collected, nothing shared,
+  nothing transmitted) plus an IARC content rating; Apple needs the privacy labels saying
+  the same. The privacy page at `/privacy.html` is the URL both of them want.
+- **No ads SDK, no analytics, no tracking, so no `AD_ID` permission** — worth checking once
+  in the generated `android/` manifest before the first upload, since a dependency can add
+  it and Play then requires a declaration for a thing the game does not do.
 
 **THE ANDROID SHELL** (`capacitor.config.ts`, `platform/native.ts`). Thin on purpose:
 Capacitor serves the same `dist/` in a WebView. What it actually buys is that **the save

@@ -12,17 +12,24 @@ import { buildSettings } from "../settings";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
 
-interface Spy { rules: number; tour: number; reset: number; board: number; diff: number; feedback: number; restored: number; signout: number }
+interface Spy {
+  rules: number; tour: number; reset: number; board: number; diff: number;
+  feedback: number; restored: number; signout: number; deleted: number;
+}
 
 const build = (store = new ProfileStore(new MemoryStore())): {
   root: HTMLElement; store: ProfileStore; spy: Spy;
 } => {
-  const spy: Spy = { rules: 0, tour: 0, reset: 0, board: 0, diff: 0, feedback: 0, restored: 0, signout: 0 };
+  const spy: Spy = {
+    rules: 0, tour: 0, reset: 0, board: 0, diff: 0,
+    feedback: 0, restored: 0, signout: 0, deleted: 0,
+  };
   const root = buildSettings({
     profile: store,
     onBack: () => {},
     board: "Corridor (9×9)",
     difficulty: "Normal",
+    onDelete: () => { spy.deleted++; },
     onCycleBoard: () => { spy.board++; },
     onCycleDifficulty: () => { spy.diff++; },
     onHowToPlay: () => { spy.rules++; },

@@ -168,6 +168,7 @@ export function topBar(profile: Readonly<Profile>, opts: TopBarOptions): HTMLEle
   const av = el("span", "tn-av");
   const canvas = el("canvas", "topav");
   canvas.id = "topav_0";
+  canvas.setAttribute("aria-hidden", "true");   // the button around it carries the name
   canvas.width = 46; canvas.height = 46;
   drawAvatar(canvas);
   av.appendChild(canvas);
@@ -477,6 +478,11 @@ export function antPortrait(
   cv.width = size;
   cv.height = size;
   if (cls) cv.className = cls;
+  // DECORATION, and marked as such. A drawn face always sits inside something that is
+  // already named — a button, a row, a card with the colony's name beside it — so a screen
+  // reader announcing it a second time as an unlabelled graphic is noise rather than
+  // access. Silent is the correct answer for a picture the text already gives.
+  cv.setAttribute("aria-hidden", "true");
   const g = cv.getContext("2d");
   // A look carries its own colours as well as its overlay, and `lookCol` is the one place
   // that decides which wins — so a portrait and the board can never disagree about what a

@@ -72,12 +72,16 @@ export const SHOP_PRODUCTS: readonly Product[] = [
   {
     id: "bundle.brood", kind: "bundle", price: "€4.99", icon: "brood",
     title: "Brood Bundle", sub: "Chambers & research",
-    ribbon: "BEST VALUE", ribbonClass: "best",
     grant: { mycel: 900, pheromone: 500 },
   },
   {
     id: "bundle.hoard", kind: "bundle", price: "€9.99", icon: "crown",
     title: "Queen's Hoard", sub: "The whole anthill",
+    // ON THE TILE THAT REALLY IS THE BEST VALUE. It sat on the Brood Bundle, which is 281
+    // units per euro against this one's 340 — with the Colony Pass on top. The label was
+    // simply false, and a false claim on a price is the kind both stores act on.
+    // `purchases.test.ts` recomputes it now rather than trusting the table.
+    ribbon: "BEST VALUE", ribbonClass: "best",
     grant: { mycel: 2200, pheromone: 1200, pass: true },
   },
 
@@ -86,13 +90,20 @@ export const SHOP_PRODUCTS: readonly Product[] = [
   { id: "mycel.650", kind: "currency", price: "€2.49", icon: "mycel", grant: { mycel: 650 } },
   {
     id: "mycel.1500", kind: "currency", price: "€4.99", icon: "mycel",
-    ribbon: "MOST POPULAR", ribbonClass: "best", grant: { mycel: 1500 },
+    // NOT "MOST POPULAR", WHICH THIS GAME CANNOT KNOW. Nobody else is playing it — the
+    // ladder and the friends list are generated on the device — so a popularity claim was
+    // not merely unmeasured, it was about a population that does not exist. What is left
+    // is arithmetic anybody can check: 301 mycelium per euro against 261 and 222.
+    ribbon: "BEST VALUE", ribbonClass: "best", grant: { mycel: 1500 },
   },
 
   // ---- pheromone -------------------------------------------------------------------
   { id: "pher.130", kind: "currency", price: "€0.99", icon: "pheromone", grant: { pheromone: 130 } },
   { id: "pher.420", kind: "currency", price: "€2.99", icon: "pheromone", grant: { pheromone: 420 } },
-  { id: "pher.1300", kind: "currency", price: "€4.99", icon: "pheromone", grant: { pheromone: 900 } },
+  // `pher.900`, not `pher.1300`: the id said 1300 and the grant was 900. The ids are the
+  // Play Console SKUs and are named for what they hand over precisely so nobody wiring up
+  // the real store has to check — which is worth nothing if one of them lies.
+  { id: "pher.900", kind: "currency", price: "€4.99", icon: "pheromone", grant: { pheromone: 900 } },
 
   // ---- larva -----------------------------------------------------------------------
   // Priced so a hatch is a real decision rather than a habit: a single is about the cost
@@ -129,10 +140,32 @@ export interface PurchaseResult {
   note?: string;
 }
 
+/** What a restore found: the non-consumables this account has already paid for. */
+export interface RestoreResult {
+  ok: boolean;
+  /** Everything owned, merged. Empty when nothing was found or the restore failed. */
+  grant?: Grant;
+  note?: string;
+}
+
 export interface PurchaseGateway {
   /** False when real purchases cannot happen here — the shop says so rather than pretending. */
   readonly live: boolean;
   buy(productId: string): Promise<PurchaseResult>;
+  /**
+   * PUT BACK WHAT WAS ALREADY BOUGHT, AND APPLE REQUIRES IT IN SO MANY WORDS: "you should
+   * make sure you have a restore mechanism for any restorable in-app purchases".
+   *
+   * It applies to the NON-CONSUMABLES — the Colony Pass and the premium colony. Currency is
+   * consumable and is spent, so it is not restorable and no store will hand it back; a
+   * button claiming otherwise would be the shop lying about what it can do.
+   *
+   * It matters here more than in most games, because a colony lives in `localStorage` on
+   * one device (platform/backup.ts). A player who reinstalls, or whose browser bins the
+   * save, has genuinely paid for something the game can no longer see — and without this
+   * their only route is a support email.
+   */
+  restore(): Promise<RestoreResult>;
 }
 
 /**
@@ -149,4 +182,24 @@ export class DemoGateway implements PurchaseGateway {
     if (!product) return { ok: false, note: "That product is not in the catalogue." };
     return { ok: true, grant: product.grant, note: "Demo purchase — no payment was taken." };
   }
+
+  /**
+   * Nothing to restore, and it SAYS so rather than pretending to have looked.
+   *
+   * There is no store behind this gateway, so there is no record of a purchase anywhere to
+   * find. A demo restore that quietly handed over the pass would be the one thing a restore
+   * button must never do — give away what somebody else paid for.
+   */
+  async restore(): Promise<RestoreResult> {
+    return { ok: false, note: "No purchases to restore — nothing has been charged here." };
+  }
 }
+
+/**
+ * THE NON-CONSUMABLES, which is what a restore is ever about.
+ *
+ * Derived from the catalogue rather than listed, so a second premium unlock added to
+ * `SHOP_PRODUCTS` is restorable the day it ships instead of the day somebody remembers.
+ */
+export const RESTORABLE: readonly Product[] =
+  SHOP_PRODUCTS.filter((p) => p.kind === "pass" || p.kind === "species");

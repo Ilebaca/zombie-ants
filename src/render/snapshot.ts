@@ -25,6 +25,17 @@ import type { Look } from "./art";
 
 export interface SnapshotOptions {
   /**
+   * WHAT THIS PICTURE IS, for somebody who cannot see it.
+   *
+   * A canvas carries no text, so without one a screen reader meets an unlabelled graphic
+   * and says so — which is worse than saying nothing. So the default is SILENCE
+   * (`aria-hidden`), and that is the right default here: nearly every snapshot in the app
+   * illustrates prose that already says the same thing — a rule in the manual, a news post,
+   * a map whose name is printed under it. Pass a label only where the picture carries
+   * something the words around it do not.
+   */
+  label?: string;
+  /**
    * Paint the soil and the feathered clearing under the board, the way the real ground
    * does (terrain.ts) — but no scenery. Between flat and `terrain`.
    */
@@ -91,6 +102,14 @@ export function drawSnapshot(
   const view = opts.view ?? { c: 0, r: 0, cols: state.size, rows: state.size };
   const w = ts * view.cols + pad * 2;
   const h = ts * view.rows + pad * 2;
+  if (opts.label) {
+    canvas.setAttribute("role", "img");
+    canvas.setAttribute("aria-label", opts.label);
+    canvas.removeAttribute("aria-hidden");
+  } else {
+    canvas.setAttribute("aria-hidden", "true");
+    canvas.removeAttribute("role");
+  }
 
   const dpr = Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, 2);
   if (!opts.fluid) {

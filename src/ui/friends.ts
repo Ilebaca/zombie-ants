@@ -38,9 +38,18 @@ export function buildFriends(
   const render = (): void => {
     const profile = store.get();
     redraw(root);
-    screenHeader(root, { title: "Friends", sub: "Your colonies", onBack });
+    screenHeader(root, { title: "Friends", sub: "Colonies on this device", onBack });
 
     const body = el("div", "screenbody sb-top frbody");
+
+    // SAID BEFORE THE LIST, not after it: this one is not a fact about the ranking, it is
+    // a fact about who these people ARE, and somebody about to send a request needs it
+    // first. Nothing here reaches another person — there is no server (platform/friends.ts)
+    // — and a screen that let a player believe a request had been sent to somebody would be
+    // the most misleading thing in the app.
+    body.appendChild(el("div", "frnote",
+      "Everyone here is generated on your device. Requests and challenges stay on this "
+      + "phone until online play arrives."));
 
     const bar = el("div", "frtabs");
     for (const t of TABS) {

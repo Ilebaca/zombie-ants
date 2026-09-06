@@ -43,6 +43,12 @@ export interface SettingsOptions {
   onReplayTutorial: () => void;
   /** Everything erased and the app sent home. Asked twice before it is called. */
   onReset: () => void;
+  /**
+   * DELETE THIS COLONY AND THE ACCOUNT IT BELONGS TO, which is a requirement rather than a
+   * courtesy: Google Play requires an app that lets somebody create an account to offer a
+   * way to delete it from INSIDE the app, and Apple says the same in 5.1.1(v).
+   */
+  onDelete: () => void;
   /** A code was taken. Everything on screen is about a different colony now. */
   onRestored: () => void;
   /** Leave this colony for the sign-in screen. It destroys nothing. */
@@ -162,6 +168,7 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
 
     el("div", "secthead", "Start over"),
     resetRow(opts.onReset),
+    deleteRow(opts.onDelete),
   );
 
   scroll.appendChild(buildFoot());
@@ -274,6 +281,47 @@ function resetRow(onReset: () => void): HTMLElement {
       return;
     }
     onReset();
+  };
+  row.appendChild(btn);
+  return row;
+}
+
+/**
+ * DELETING THE COLONY, which is not the same control as resetting it.
+ *
+ * Reset starts this colony over and leaves it on the device, signed in. This ENDS it: the
+ * save is erased and the account goes off the picker, so the device is back to how it was
+ * before the colony existed. Both stores require the second one specifically — Google Play
+ * asks for in-app account deletion from any app that lets somebody create an account, and
+ * Apple 5.1.1(v) says the same.
+ *
+ * Two destructive rows one after the other is a real risk of the wrong tap, which is why
+ * each states what it leaves behind rather than only what it takes, and why this one asks
+ * twice on its own button exactly as Reset does.
+ */
+function deleteRow(onDelete: () => void): HTMLElement {
+  const row = shell({
+    mark: "trash",
+    title: "Delete this colony",
+    desc: "Erases the save and removes it from the colony picker. Nothing is kept.",
+    id: "setDelete",
+  }, "div");
+
+  row.classList.add("setrow-danger");
+  const btn = el("button", "setval setdanger", "Delete");
+  btn.id = "setDelete";
+  row.id = "setDeleteRow";
+  let armed = false;
+  btn.onclick = (): void => {
+    if (!armed) {
+      armed = true;
+      btn.textContent = "Tap to confirm";
+      btn.classList.add("armed");
+      const desc = row.querySelector(".setrow-d");
+      if (desc) desc.textContent = "This cannot be undone. Take your save code first.";
+      return;
+    }
+    onDelete();
   };
   row.appendChild(btn);
   return row;

@@ -15,14 +15,14 @@
  * arrives first, which is the whole reason the tiers have colours at all.
  */
 import {
-  HATCH_COST, LARVA_MYCEL, SKIN_TIERS, TRAITS_CHAPTER, TRAIT_TIER, TRAIT_TIERS, effectText,
-  itemDef, markOf, tierOdds,
+  HATCH_COST, LARVA_MYCEL, TRAITS_CHAPTER, TRAIT_TIER, effectText, itemDef, markOf,
 } from "../platform";
 import type { Cue, Feedback, HatchPrize, ProfileStore, TraitItem } from "../platform";
 import { SPECIES, TIER_IDS, TIERS } from "../engine";
 import type { Look } from "../engine";
 import { antPortrait, el, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
+import { buildOdds } from "./odds";
 
 /** How long the egg rocks before it gives an answer. */
 const SHAKE_MS = 900;
@@ -280,26 +280,8 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
    * the shape of that before they read any number on it.
    */
   const odds = (): HTMLElement => {
-    const box = el("div", "hatchodds");
+    const box = buildOdds();
     box.id = "hatchOdds";
-    box.appendChild(el("div", "ho-h", "Chances"));
-    for (const id of TRAIT_TIERS) {
-      const tier = TRAIT_TIER[id];
-      const row = el("div", "ho-row");
-      row.style.setProperty("--tier", tier.colour);
-      row.append(
-        el("span", "ho-dot"),
-        el("span", "ho-n", tier.name),
-        el("span", "ho-p", `${trim(tierOdds(id))}%`),
-      );
-      box.appendChild(row);
-    }
-    // A skin has no chance of its own — it IS the top of this row (platform/skins.ts) —
-    // so the note names the tiers rather than a second number. Printed all the same: an
-    // outcome a player can get and was never told about is what this panel prevents.
-    const named = SKIN_TIERS.map((t) => TIERS[t].name).join(" and ");
-    box.appendChild(el("div", "ho-note",
-      `${named} hatches pay a colony skin, while you still have one to find.`));
     return box;
   };
 
@@ -358,7 +340,3 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
   render();
   return root;
 }
-
-/** A whole number where it is one, a decimal only where the figure needs it. */
-const trim = (pct: number): string =>
-  pct >= 10 || Number.isInteger(pct) ? String(Math.round(pct)) : pct.toFixed(1);

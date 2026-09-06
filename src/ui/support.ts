@@ -145,6 +145,23 @@ export function buildSupport(
       el("span", "spfact-v", "What the game stores"), icon("next", 13),
     );
     contact.appendChild(policy);
+
+    // THE TERMS, beside the policy and for the same reason: a store listing has a field for
+    // the URL, and Apple expects an app that sells anything to point at them. Same shape as
+    // the row above it — one page is not more important than the other, and a player
+    // looking for either will look here.
+    const terms = el("a", "spfact spfact-link") as HTMLAnchorElement;
+    terms.id = "termsLink";
+    terms.href = "./terms.html";
+    terms.target = "_blank";
+    terms.rel = "noopener";
+    const tslot = el("span", "spfact-i");
+    tslot.appendChild(icon("flag", 16));
+    terms.append(
+      tslot, el("span", "spfact-k", "Terms"),
+      el("span", "spfact-v", "Purchases and refunds"), icon("next", 13),
+    );
+    contact.appendChild(terms);
     wrap.appendChild(contact);
 
     body.appendChild(wrap);

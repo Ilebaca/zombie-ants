@@ -121,7 +121,13 @@ export function buildLeaderboard(you: LadderYou, onBack: () => void): HTMLElemen
 
   const render = (): void => {
     redraw(root);
-    screenHeader(root, { title: "Biggest colonies", sub: "World ranking", onBack });
+    // NOT "World ranking", because there is no world here. The rivals are generated on
+    // this device (there is no server yet), and a table of invented names under a heading
+    // claiming a global standing is the app telling a player something untrue about where
+    // they stand — which both stores read as deceptive, and which is dishonest either way.
+    // The screen still does its job: it says where this colony sits on the scale it is
+    // measured by. It just does not claim the neighbours are people.
+    screenHeader(root, { title: "Biggest colonies", sub: "Practice ladder", onBack });
 
     const body = el("div", "screenbody lbbody");
     body.id = "lbBody";
@@ -150,6 +156,9 @@ export function buildLeaderboard(you: LadderYou, onBack: () => void): HTMLElemen
       list.appendChild(ladderRow(row, i + 1));
     });
     body.appendChild(list);
+    body.appendChild(el("div", "lbnote",
+      "These colonies are generated on your device to give the scale a shape. Ranking "
+      + "against other players arrives with online matches."));
     root.appendChild(body);
 
     // Only the TABLE scrolls, and only to the player's own row. The chips and the banner
