@@ -19,6 +19,7 @@ import {
 import { basicLook, type Look } from "./art";
 import { MAP, loadColors, ownerCol, setFactionColor } from "./palette";
 import { drawPlates, rowsOf, type Plate } from "./plates";
+import { TiltShift } from "./depth";
 import {
   drawBackground, drawFillets, drawFlood, drawSelection, drawSurge, drawTile, drawTileBevels,
   drawTrails, seedMotes,
@@ -46,6 +47,11 @@ export class BoardRenderer {
   /** The opening's supply lines: when they started, and how long the whole opening runs. */
   private supply: { start: number; dur: number } | null = null;
   private fx = new FxLayer();
+  /**
+   * The depth of field: a pass over the FINISHED frame, so nothing above it changes and
+   * a platform with no offscreen canvas simply gets a board with everything in focus.
+   */
+  private depth = new TiltShift();
   private motes: Mote[] = [];
   private raf = 0;
   private startedAt = performance.now();
@@ -387,6 +393,16 @@ export class BoardRenderer {
         ctx.restore();
       }
       this.fx.draw(ctx, this.layout);
+
+      // LAST OF ALL, and only a composite: the clearing stays sharp and the forest above
+      // and below it goes soft. It draws OVER the finished frame and touches neither the
+      // board nor the layout, so a tap still lands on the cell under the finger — the same
+      // rule the opening camera and the winning flood follow.
+      const board = this.layout.ts * this.layout.size;
+      this.depth.compose(
+        ctx, this.canvas, this.layout.width, this.layout.height,
+        this.layout.oy, this.layout.oy + board,
+      );
     } catch (err) {
       // A bad frame must never kill the loop — recover on the next tick (e.g. mid-resize).
       if (!this.warnedOnce) {

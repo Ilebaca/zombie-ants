@@ -491,6 +491,40 @@ Each of these cost a debugging round. Do not repeat them.
   reachable from a queen falling, a surrender and a challenge objective — and `destroy()`
   cancels the pending card, so a screen torn down mid-wash never hands one out.
 
+- **THE BOARD IS PHOTOGRAPHED, NOT DIAGRAMMED** (`render/depth.ts`). A tilt-shift: a band
+  across the middle is sharp and the forest above and below it goes soft, tilted a few
+  degrees so the plane of focus is not the screen's own edge. Like the opening camera and
+  the winning flood it is a VIEW — it draws over the finished frame and touches neither the
+  board nor the layout, so a tap still lands on the cell under the finger.
+  - **THE SHARP BAND IS THE BOARD, never a fraction of the screen.** A 7×7 map and a 13×13
+    map fill very different amounts of the canvas, so a fixed "middle third" would blur
+    half the playfield on one and none of the scenery on the other. It is measured off
+    `layout`'s own rectangle — which is also what keeps a garrison count legible, and those
+    numbers are what a player counts out before committing (§4.1). A board that fills the
+    canvas comes out entirely sharp, which is the right picture and not a special case.
+  - **THE BLUR IS A DOWNSCALE, NOT `ctx.filter`.** The filter reached Safari only in 17, so
+    on an older iPhone the effect would silently not happen; and a full-canvas gaussian
+    every frame is the most expensive thing that could be put on it. Drawing the frame into
+    a canvas a ninth the size and blowing it back up IS a blur — the browser's own filter,
+    in hardware, over 1.2% of the pixels — and it works everywhere. `imageSmoothingQuality`
+    is "high" going DOWN, because averaging the dropped pixels rather than picking one is
+    the difference between a blur and a mosaic, and "low" coming back up, where there is no
+    detail left for a better filter to preserve and the draw is the expensive one.
+  - **AND IT READS THE SCREEN, rather than a copy of it.** The first version drew the whole
+    frame into an offscreen canvas and blitted it back, and that DOUBLED the frame:
+    **16.7 ms without, 39.1 ms with**, measured on a 13×13 board. There was never a need
+    for the copy — the finished frame is already on the canvas, so the small canvas takes
+    its pixels. With that and painting back only the two bands that are actually soft
+    (`softBands`), the sharp middle is never touched and the cost is **back inside the
+    frame**: 16.7 ms either way, p95 17.4 against 18.1.
+  - **The tilt is a ROTATION of the mask, not a projected gradient.** The gradient stays a
+    plain vertical one in its own rotated frame, so its stops are exact rather than
+    something to reason about a projection of — and the fill is oversized, because a
+    rotated rect leaves the corners of an upright canvas uncovered and an uncovered corner
+    is a hard square of perfectly sharp forest. The bands painted back are widened by how
+    far the rotation carries the boundary, or the slanted edge is clipped square.
+  - **No canvas means no depth of field, never a broken frame** — the same rule the scenery
+    bake follows, and it is why every test in the suite runs without it (jsdom has none).
 - **A destroyed tile has to outlive the engine.** The rules clear it the instant it dies, so
   without the `crumble` effect a venom hit that eats a four-tile trail leaves no trace at
   all — the biggest thing that can happen on a turn, invisible. The effect draws over ground
