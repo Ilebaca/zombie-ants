@@ -28,7 +28,14 @@ interface Watch {
   host: HTMLElement; screen: MatchScreen; state: GameState; log: string[]; exits: number;
 }
 
-/** A match sitting on the AI's turn, with the board sampled on every observation. */
+/**
+ * A match sitting on the AI's turn, with the board sampled on every observation.
+ *
+ * Which is also a match OPENING on the AI's turn, now that a coin decides who moves first
+ * (engine/state.ts, `startsFirst`): `start()` runs the opening and `beginTurn` sets the AI
+ * going, so a board handed over with the enemy to move plays itself rather than sitting
+ * there waiting for a tap that would do nothing.
+ */
 function watch(): Watch {
   const state = createGame({ map: "small", species: { you: "fire", ai: "fire" }, seed: 11 });
   state.current = "ai";

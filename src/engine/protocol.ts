@@ -62,6 +62,18 @@ export interface MatchSetup {
   aiShape?: ReadonlyArray<readonly [number, number]>;
   /** Anthill and research, per side. Omitted means neither had any. */
   mods?: Record<Player, PlayerMods>;
+  /**
+   * Who moved first.
+   *
+   * CARRIED RATHER THAN DERIVED, even though a live match draws it from the seed
+   * (`startsFirst`). A record has to replay to the board it was played on for ever, and a
+   * derivation is a rule that can be retuned — the day the flip changed, every match ever
+   * stored would replay as a different game. The formation is in here for the same reason.
+   *
+   * ABSENT MEANS "you", NOT "draw one". Every record written before there was a coin was
+   * played with the player first, so that is what an old one has to replay as.
+   */
+  first?: Player;
 }
 
 /** A whole match, as data. Setup plus the moves, in the order they were played. */
@@ -156,6 +168,9 @@ export function openingBoard(setup: MatchSetup): GameState {
     ...(setup.shape ? { shape: setup.shape } : {}),
     ...(setup.aiShape ? { aiShape: setup.aiShape } : {}),
     ...(setup.mods ? { mods: setup.mods } : {}),
+    // See `MatchSetup.first`: an absent starter is an old record, and every one of those
+    // was played with the player moving first.
+    first: setup.first ?? "you",
   });
 }
 

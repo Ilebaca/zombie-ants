@@ -27,7 +27,12 @@ export function playGame(
   youAI: Difficulty, aiAI: Difficulty, seed: number, map: MapId,
   species: Record<Player, SpeciesId>,
 ): GameResult {
-  const state: GameState = createGame({ map, species, seed });
+  // THE STARTER IS NAMED, not drawn. A shipped match flips a coin for it (engine/state.ts,
+  // `startsFirst`), and this harness cancels the first-move advantage by swapping SIDES
+  // between games — which only works if the side that moves first is the same one every
+  // time. Left to the coin, half the swaps would cancel nothing and the ladder would be
+  // measuring the seed.
+  const state: GameState = createGame({ map, species, seed, first: "you" });
   let guard = 0;
   let reason = "";
   /*

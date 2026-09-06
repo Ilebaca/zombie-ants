@@ -453,11 +453,10 @@ describe("a batch of captures", () => {
     reveal.reduced = false;
     animate(spread(12), { reveal, fx: new FxLayer() });
 
-    const step = reveal.stepMs(12);
-    expect(step * 12).toBeLessThanOrEqual(1600);
+    expect(reveal.runMs(12)).toBeLessThanOrEqual(1600);
 
     const start = performance.now();
-    reveal.step(start + step * 0.5);
+    reveal.step(start + reveal.slotMs(0.5, 12));
     expect(reveal.progress(0, 3)).toBeGreaterThan(0);
     expect(reveal.progress(1, 3)).toBe(0);       // never two at once
   });
@@ -560,11 +559,10 @@ describe("sending troops down a row", () => {
   it("opens exactly one reveal for the whole path", () => {
     // Each extra group is a second front racing the first — that was the visible symptom.
     const { reveal } = sendAlongRow();
-    const step = reveal.stepMs(4);
     const start = performance.now();
     // Just past the end of the FIRST tile's slot. With per-vein groups every trail tile
     // would already be settled here; with one front only tile 2 is.
-    reveal.step(start + step * 1.1);
+    reveal.step(start + reveal.slotMs(1.1, 4));
     expect(reveal.progress(1, 0)).toBe(1);
     expect(reveal.progress(2, 0)).toBeLessThan(1);
     expect(reveal.progress(3, 0)).toBe(0);
@@ -592,17 +590,17 @@ describe("capturing the Hive", () => {
   it("fills the five tiles one at a time, starting at the queen", () => {
     const { reveal } = captured();
     const start = performance.now();
-    const step = reveal.stepMs(5);
+    const at = (slot: number): void => { reveal.step(start + reveal.slotMs(slot, 5)); };
 
     // Mid-way through the first slot: the queen is filling, the guards have not begun.
-    reveal.step(start + step * 0.5);
+    at(0.5);
     expect(reveal.progress(4, 4)).toBeGreaterThan(0);
     expect(reveal.progress(4, 4)).toBeLessThan(1);
     expect(reveal.progress(4, 3)).toBe(0);
     expect(reveal.progress(3, 4)).toBe(0);
 
     // ...and the last guard only lands at the end of the run.
-    reveal.step(start + step * 4.5);
+    at(4.5);
     const guards = [[4, 3], [3, 4], [5, 4], [4, 5]] as const;
     expect(guards.filter(([c, r]) => reveal.progress(c, r) < 1).length).toBe(1);
   });

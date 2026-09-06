@@ -44,6 +44,10 @@ const placeable = (t: Tile): boolean =>
   !t.owner && t.guard === 0 && !isHiveTerrain(t) && (t.terrain === "ground" || t.terrain === "resource");
 
 export function arrangeTutorial(state: GameState): void {
+  // THE WALKTHROUGH OPENS ON THE PLAYER'S TURN, whatever the coin said. Its first
+  // instruction is "move into that tile"; handed a board where the enemy goes first, the
+  // tour would ask for a move on somebody else's turn and stand there for ever.
+  state.current = "you";
   // She is up from the first turn: the walkthrough ends on taking her, and a tutorial that
   // asked the player to wait ten turns for its last step would not be one.
   state.limits.awakenTurn = 1;

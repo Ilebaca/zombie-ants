@@ -21,48 +21,6 @@ import type { Coord, Direction, Player } from "../engine";
 export const REVEAL_MS_PER_TILE = 260;
 
 /**
- * THE FRONT LEAVES FAST AND SETTLES — it does not run at a constant rate.
- *
- * It used to, and there was a test insisting on it: equal ground in equal time, so a single
- * capture and the tenth step of a long send extended identically. That is the honest way to
- * animate a thing with no mass, and it is exactly what it looked like — a bar filling. What
- * is actually moving is a column of ants, and anything that moves under its own power leaves
- * quickly and arrives slowly.
- *
- * It is a BLEND of linear and ease-out rather than a plain one, and that is the whole of the
- * tuning. A pure ease-out arrives with ZERO speed, so the last tile of a send never quite
- * lands — it asymptotes, which reads as the animation stalling rather than settling. Mixing
- * in a straight line puts a floor under the final speed: at `FRONT_EASE` the front leaves at
- * 1.6x its average and arrives at 0.4x, a four-to-one spread with nothing standing still.
- *
- * Turn `FRONT_EASE` alone to change how hard it decelerates: 0 is the old constant rate, 1 is
- * a full ease-out that stalls at the end.
- */
-export const FRONT_EASE = 0.6;
-
-/** Where the front is, 0..1 along the run, at fraction `p` of the run's time. */
-export function frontEase(p: number): number {
-  const t = p <= 0 ? 0 : (p >= 1 ? 1 : p);
-  return (1 - FRONT_EASE) * t + FRONT_EASE * (1 - (1 - t) * (1 - t));
-}
-
-/**
- * The inverse: what fraction of the time puts the front `e` of the way along.
- *
- * The animator needs it. Every flourish — the streak, the clash, the pop — is scheduled for
- * the moment the front reaches its tile, and multiplying an index by an average step only
- * answers that while the front is steady. Solved exactly rather than searched, because the
- * curve is a quadratic and this runs once per tile of every batch.
- */
-export function frontEaseAt(e: number): number {
-  const t = e <= 0 ? 0 : (e >= 1 ? 1 : e);
-  if (FRONT_EASE <= 0) return t;
-  const lin = 1 - FRONT_EASE;
-  const back = (-lin + Math.sqrt(lin * lin + 4 * FRONT_EASE * (1 - t))) / (2 * FRONT_EASE);
-  return 1 - back;
-}
-
-/**
  * A long run would otherwise hold the player up: ten tiles at full speed is two and a half
  * seconds of watching. Past six tiles the per-tile time shortens so the whole run lands
  * within about a second and a half, still strictly one tile after another.
@@ -72,6 +30,64 @@ export const REVEAL_MAX_MS = 1560;
 export function revealStepMs(tiles: number): number {
   if (tiles <= 6) return REVEAL_MS_PER_TILE;
   return Math.max(110, REVEAL_MAX_MS / tiles);
+}
+
+/**
+ * THE FRONT LEAVES FAST AND SETTLES — it does not run at a constant rate.
+ *
+ * It used to, and there was a test insisting on it: equal ground in equal time, so a single
+ * capture and the tenth step of a long send extended identically. That is the honest way to
+ * animate a thing with no mass, and it is exactly what it looked like — a bar filling. What
+ * is actually moving is a column of ants, and anything that moves under its own power
+ * leaves quickly and arrives slowly.
+ *
+ * IT HAS TO BE STEEP TO BE SEEN AT ALL. The first version was a gentle four-to-one and the
+ * honest report from the phone was "I don't see any difference" — which makes sense: most
+ * of what a player does is a SINGLE tile, a quarter of a second end to end, and a mild
+ * curve inside a quarter of a second is not something an eye picks up. At the numbers below
+ * the front leaves at 2.6x its average and arrives at 0.2x: half the distance is covered in
+ * the first quarter of the time.
+ *
+ * It is a BLEND of a straight line and an ease-out, and that is the whole of the tuning. A
+ * pure ease-out arrives with ZERO speed, so the last tile of a send never quite lands — it
+ * asymptotes, which reads as the animation stalling rather than settling. The line mixed
+ * back in is what puts a floor under the final speed.
+ *
+ * Two dials. `FRONT_EASE` is how much of the curve is ease rather than line — 0 is the old
+ * constant rate, 1 stalls at the end. `FRONT_POWER` is how sharply that ease falls away:
+ * 2 is gentle, 3 is what a thrown thing does, higher is a lunge.
+ */
+export const FRONT_EASE = 0.8;
+export const FRONT_POWER = 3;
+
+/** Where the front is, 0..1 along the run, at fraction `p` of the run's time. */
+export function frontEase(p: number): number {
+  const t = p <= 0 ? 0 : (p >= 1 ? 1 : p);
+  return (1 - FRONT_EASE) * t + FRONT_EASE * (1 - Math.pow(1 - t, FRONT_POWER));
+}
+
+/**
+ * The inverse: what fraction of the time puts the front `e` of the way along.
+ *
+ * The animator needs it. Every flourish — the streak, the clash, the pop — is scheduled for
+ * the moment the front reaches its tile, and multiplying an index by an average step only
+ * answers that while the front is steady.
+ *
+ * SEARCHED RATHER THAN SOLVED, on purpose. The curve is a cubic and inverting one in closed
+ * form is Cardano's formula — which would then have to be rewritten the day `FRONT_POWER`
+ * moves, and the whole point of that constant is that it is a dial. `frontEase` rises
+ * strictly, so forty halvings land within a millionth of a millionth either way, and this
+ * runs once per tile of a batch rather than per frame.
+ */
+export function frontEaseAt(e: number): number {
+  const want = e <= 0 ? 0 : (e >= 1 ? 1 : e);
+  if (want === 0 || want === 1) return want;
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (frontEase(mid) < want) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
 }
 
 /** Which edge of the cell the fill grows FROM. */

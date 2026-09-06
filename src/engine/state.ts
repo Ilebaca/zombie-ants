@@ -7,7 +7,7 @@ import { pruneAllVeins, recomputeConnectivity } from "./connectivity";
 import { setHiveDefence, hiveTick } from "./hive";
 import { runProduction } from "./production";
 import { tickEffects } from "./effects";
-import { nextRandom } from "./random";
+import { nextRandom, seeded } from "./random";
 import { speciesOf } from "./species";
 import { NEUTRAL_MODS } from "./types";
 import type {
@@ -24,6 +24,37 @@ export interface NewGameOptions {
   mods?: Record<Player, PlayerMods>;
   /** Seeds ability scatter. The same seed and moves replay identically. */
   seed?: number;
+  /**
+   * Who moves first. Omitted, it is DRAWN — see `startsFirst`.
+   *
+   * Set it where the answer is not a fair coin: the tutorial has to open on the player's
+   * turn because the walkthrough's first instruction is a move, and the measurement tools
+   * cancel the first-move advantage by swapping SIDES, which a random starter would turn
+   * back into noise.
+   */
+  first?: Player;
+}
+
+/**
+ * WHO MOVES FIRST, DRAWN FROM THE SEED.
+ *
+ * Moving first is worth roughly two to one (CLAUDE.md §8), and for the whole life of this
+ * game the player has had it in every single match. Against a bot that is merely a habit;
+ * between two people it is the match decided before either of them touches the board, so
+ * it has to be a coin.
+ *
+ * DERIVED FROM THE SEED RATHER THAN DRAWN OFF `state.rng`, and that is the whole reason
+ * this is a function and not two lines inside `createGame`. The board's own stream is
+ * consumed by ability scatter, and taking one number out of it here would shift every
+ * later draw — so every match already recorded, suspended or replayable would come back
+ * a different game. A pure function of the seed changes nothing that has already been
+ * played, and still replays identically because the seed travels with the record.
+ *
+ * The seed is offset before it is used: the board's stream starts from the same number, so
+ * without it the flip would be correlated with the first thing an ability scatters.
+ */
+export function startsFirst(seed: number): Player {
+  return seeded(seed ^ 0x5f356495)() < 0.5 ? "you" : "ai";
 }
 
 /** The 12 starting formations. Every one is exactly five tiles (CLAUDE.md §5). */
@@ -52,7 +83,7 @@ export function createGame(opts: NewGameOptions): GameState {
     grid,
     size: def.size,
     turn: 1,
-    current: "you",
+    current: opts.first ?? startsFirst(opts.seed ?? 0x9e3779b9),
     over: false,
     winner: null,
     hive: { phase: "dormant", level: 1, owner: null, buffLeft: 0, coolLeft: 0, banked: 0, awokeTurn: null },

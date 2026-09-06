@@ -181,6 +181,33 @@ These were each decided deliberately, several after bugs. Changing one silently 
    engine's own `NEUTRAL_MODS` rather than writing the fields out, or a field added there
    is silently zero here and reads as a deliberate neutral value.
 
+11. **WHO MOVES FIRST IS A COIN** (`startsFirst` in `engine/state.ts`). Moving first is worth
+   roughly two to one (§8) and for the whole life of this game the player had it in every
+   single match. Against a bot that is a habit; between two people it is the match decided
+   before either of them touches the board.
+   - **DERIVED FROM THE SEED, never drawn off `state.rng`.** The board's own stream is what
+     ability scatter consumes, so taking one number out of it here would shift every later
+     draw — and every match already recorded, suspended or replayable would come back a
+     different game. A pure function of the seed changes nothing that has already been
+     played and still replays identically, because the seed travels with the record. The
+     seed is offset before use, or the flip would be correlated with the first scatter.
+   - **And the record CARRIES it** (`MatchSetup.first`), rather than re-deriving it on
+     replay. A derivation is a rule that can be retuned; the day the flip changed, every
+     stored match would replay as a different game — the same reason the enemy's formation
+     is in there. **An absent field means "you"**, because every record written before there
+     was a coin was played with the player first.
+   - **THREE THINGS OPT OUT, and they are the same thing: a SCENARIO is not an opponent.**
+     The tutorial's first instruction is a move, so a board where the enemy opens leaves the
+     walkthrough asking for something the player cannot do (`arrangeTutorial` sets it, and
+     so does the router). A CHALLENGE is a fixed position judged against an objective, so a
+     coin would quietly make the same challenge a different difficulty on different days.
+     And the measurement tools cancel the first-move advantage by swapping SIDES between
+     games, which only works while the side that opens is the same one every time — left to
+     the coin, half the swaps cancel nothing and the ladder measures the seed.
+   - **`blankGame` in the test helpers opts out too**, and that is not tidiness: `canActFrom`
+     gates every action on whose turn it is, so a test board left to the coin would refuse
+     half its own moves depending on the map's default seed.
+
 ## 4a. The AI
 
 `src/ai/` is three files: `evaluate.ts` (what a position is worth), `moves.ts` (what can be
@@ -372,14 +399,24 @@ Each of these cost a debugging round. Do not repeat them.
   equal ground in equal time, so a single capture and the tenth step of a long send extended
   identically. That is the honest way to animate something with no mass, and it is exactly
   what it looked like — a bar filling. What is actually moving is a column of ants, and
-  anything moving under its own power leaves quickly and arrives slowly. Measured on a
-  four-tile send: the first tile fills in 180 ms and the last takes 400.
-  - **It is a BLEND of linear and ease-out, and that is the whole of the tuning.** A pure
-    ease-out arrives with ZERO speed, so the last tile of a send never quite lands — it
-    asymptotes, which reads as the animation stalling rather than settling. Mixing a
-    straight line back in puts a floor under the final speed: at `FRONT_EASE` (0.6) the
-    front leaves at 1.6× its average and arrives at 0.4×, four to one with nothing standing
-    still. That one number is the dial; 0 is the old constant rate.
+  anything moving under its own power leaves quickly and arrives slowly.
+  - **IT HAS TO BE STEEP TO BE SEEN AT ALL.** The first attempt was a gentle four-to-one
+    and the honest report from the phone was "I don't see any difference" — which is fair:
+    most of what a player does is a SINGLE tile, a quarter of a second end to end, and a
+    mild curve inside a quarter of a second is not something an eye picks up. Measured in
+    the browser on a four-tile send, before and after: **180 ms / 400 ms** for the first
+    and last tile, against **110 ms / 580 ms** now. Half the distance is covered in the
+    first quarter of the time.
+  - **It is a BLEND of a straight line and an ease-out, and that is the whole of the
+    tuning.** A pure ease-out arrives with ZERO speed, so the last tile of a send never
+    quite lands — it asymptotes, which reads as the animation stalling rather than
+    settling. The line mixed back in puts a floor under the final speed. Two dials:
+    `FRONT_EASE` (0.8) is how much of the curve is ease rather than line — 0 is the old
+    constant rate, 1 stalls — and `FRONT_POWER` (3) is how sharply the ease falls away.
+  - **The inverse is SEARCHED, not solved.** Inverting the cubic in closed form is
+    Cardano's formula, which would have to be rewritten the day `FRONT_POWER` moves — and
+    the whole point of that constant is that it is a dial. Forty halvings land well inside
+    a rounding error, and it runs once per tile of a batch rather than per frame.
   - **How long a run TAKES did not change** — `REVEAL_MS_PER_TILE` is an average now, and
     `revealStepMs` still shortens it past six tiles so a long send lands inside a second and
     a half. Only the pacing within the run moved.
@@ -980,9 +1017,9 @@ provisional and say so if asked.
   percentage, and not a rounding of it.
 - **Moving first is worth roughly two to one.** Same difficulty, same species, both sides:
   the bottom-left corner (the player's) wins about 8 of 12 on the small board. The maps
-  are 180°-symmetric and tested to be — so this is the move order, not the ground. Whether
-  to compensate the second player is an open design question; note that the AI always plays
-  second, so every match a player sees is one the AI starts behind in.
+  are 180°-symmetric and tested to be — so this is the move order, not the ground. Which is
+  why **it is a coin now** (§4.11): the player used to have it in every match ever played.
+  Whether to compensate the second player beyond that is still an open design question.
 - The colony: a win pays **a share of itself that tapers as it grows** — 20% of a young
   colony, 7% of a thousand, about 1% of five million (at least +8) — and a loss costs
   **36% of what a win there pays**, so an even record still gains about a third of a win

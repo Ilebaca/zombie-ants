@@ -5,7 +5,7 @@
  * match — a match is created from the choices, handed to MatchScreen, and reported back
  * through `onExit`.
  */
-import { MAPS, START_SHAPES, arrangeTutorial, createGame } from "../engine";
+import { MAPS, START_SHAPES, arrangeTutorial, createGame, startsFirst } from "../engine";
 import type { MapId, MatchSetup, Player, SpeciesId } from "../engine";
 import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
@@ -1460,6 +1460,20 @@ export class App {
     const seed = resume?.setup.seed ?? this.duelSeed
       ?? ((Date.now() ^ (Math.random() * 0xffffffff)) | 0);
     this.duelSeed = null;
+    /*
+     * WHO MOVES FIRST.
+     *
+     * A coin, off the seed (engine/state.ts) — moving first is worth roughly two to one
+     * and the player has had it in every match this game has ever played.
+     *
+     * TWO EXCEPTIONS, and both are the same one: a SCENARIO is not an opponent. The
+     * tutorial's first instruction is a move, so a board where the enemy opens would leave
+     * the walkthrough asking for something the player cannot do; and a challenge is a fixed
+     * position judged against an objective, so a coin would quietly make the same challenge
+     * a different difficulty on different days.
+     */
+    const first: Player = resume?.setup.first
+      ?? (tutorial || this.challenge ? "you" : startsFirst(seed));
     // Named rather than rolled inline: a record has to carry the enemy's formation too, or
     // replaying it opens a different board (engine/protocol.ts).
     const enemyShape = resume?.setup.aiShape ?? START_SHAPES[rollShape()];
@@ -1477,6 +1491,7 @@ export class App {
       // your own corner. Both sides still get exactly five tiles and identical income.
       aiShape: enemyShape,
       mods,
+      first,
     };
     const state = resume?.state ?? createGame({
       map,
@@ -1485,6 +1500,7 @@ export class App {
       aiShape: enemyShape,
       mods,
       seed,
+      first,
     });
 
     // A first match played straight cannot teach the game: the Hive sleeps for ten turns

@@ -51,6 +51,28 @@ function playSome(host: HTMLElement): void {
   }
 }
 
+describe("who moves first", () => {
+  /**
+   * A CHALLENGE IS A SCENARIO, NOT AN OPPONENT. A live match flips a coin for the opening
+   * turn — moving first is worth roughly two to one — but a challenge is a fixed position
+   * judged against an objective, so a coin would quietly make the same challenge a
+   * different difficulty on different days. Read off the suspended record, which is what
+   * the match was actually opened from.
+   */
+  it("always gives a challenge to the player", () => {
+    vi.useFakeTimers();
+    // The seed is rolled per match, so this is only worth anything run more than once.
+    for (let i = 0; i < 8; i++) {
+      const store = new MemoryStore();
+      const host = mount();
+      new App(host, played(store)).start();
+      playSome(host);
+      expect(new SuspendStore(store, PROFILE_KEY).peek()?.setup.first).toBe("you");
+      document.body.replaceChildren();
+    }
+  });
+});
+
 describe("closing the app mid-match", () => {
   it("writes the match down and offers it back on home", () => {
     vi.useFakeTimers();

@@ -6,7 +6,12 @@ import type { MapId } from "../config";
 export function blankGame(map: MapId = "mid", species: Record<Player, SpeciesId> = { you: "fire", ai: "fire" }): GameState {
   // The hive's terrain stays: most rule tests want the middle of the map to be what the
   // real map has there, and the ones that do not clear it themselves.
-  return clearBoard(createGame({ map, species }), true);
+  //
+  // AND THE PLAYER ALWAYS MOVES FIRST HERE. A live match flips a coin for it
+  // (`startsFirst`), and `canActFrom` gates every action on whose turn it is — so a test
+  // board left to the coin would refuse half its own moves depending on the map's default
+  // seed, which is a landmine rather than a test.
+  return clearBoard(createGame({ map, species, first: "you" }), true);
 }
 
 export interface PlaceOpts {
