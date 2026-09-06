@@ -1751,11 +1751,12 @@ frozen device.
 URL that works whether or not anybody has installed the game, so it cannot be a screen in
 the app; `public/` is copied into the build, so it deploys with everything else and needs
 no second host. It describes what the code actually does, and the interesting half is what
-it does NOT: no server, no account, no analytics, no ads. The three places a request leaves
-the device at all — Pages serving the page, Google Fonts, the version check — are named
-rather than buried. Two tests hold it: its address must be `SUPPORT_EMAIL` (two copies of a
-contact address is one that goes stale, and it is always the one in the policy), and no
-shipped source may mention an analytics SDK while the page says there is none.
+it does NOT: no server, no account, no analytics, no ads. The two places a request leaves
+the device at all — Pages serving the page and the version check — are named rather than
+buried, and the third that used to be there (Google Fonts) is named as gone. Two tests
+hold it: its address must be `SUPPORT_EMAIL` (two copies of a contact address is one that
+goes stale, and it is always the one in the policy), and no shipped source may mention an
+analytics SDK while the page says there is none.
 
 **WHAT THE TWO STORES REQUIRE** (`src/ui/__tests__/store-policy.test.ts`). Every rule here
 comes from Google Play's Developer Programme Policy or Apple's App Review Guidelines, and
@@ -1858,6 +1859,46 @@ failing. The test file names the requirement beside each assertion.
 - **No ads SDK, no analytics, no tracking, so no `AD_ID` permission** — worth checking once
   in the generated `android/` manifest before the first upload, since a dependency can add
   it and Play then requires a declaration for a thing the game does not do.
+
+**THE SECURITY AUDIT, AND WHY MOST OF IT DOES NOT APPLY** (`src/ui/__tests__/hostile.test.
+ts`). A standard backend checklist was run against this build — auth, sessions, rate
+limits, SQL injection, CSRF, file uploads, admin routes, secrets in environment variables,
+CORS, TLS, audit logs. **Fourteen of the twenty items have no subject here**, and that is
+worth writing down rather than re-deriving: there is no server, no database, no API, no
+account and no upload. What runs is a static bundle and a save in `localStorage`, and
+GitHub Pages serves it over TLS with the headers it chooses. The remaining six were
+checked, and two of them are rules the suite now holds.
+- **THE ATTACKER IS THE PLAYER, and the thing they can edit is the SAVE.** That is the
+  whole threat model: `localStorage` is theirs, so a hand-edited profile is not an attack
+  to prevent but an input to survive. `normalise()` has always been the trust boundary
+  (§12) and it holds — a save with a string where a currency goes, a negative colony, a
+  research level of 500 and a `look` naming another colony's skin comes back as a playable
+  profile with every number finite and every level inside its cap. What it CANNOT do is
+  stop somebody giving themselves mycelium, and it must not try: there is nothing to
+  cheat at, no ladder anybody else is on, and a client that refuses its own save is a
+  colony deleted. The day there is a server, `platform/results.ts` is already the half
+  that decides who won (§9b).
+- **A COLONY'S NAME IS ATTACKER TEXT, and it is drawn on eight screens.** It goes on the
+  plates beside the nest, the profile, the leaderboard, Settings, the sign-in roster and
+  the top bar. Every one of them builds nodes and sets `textContent`, so a name of
+  `<img src=x onerror=...>` renders as those characters — verified in a real browser
+  (0 dialogs, 0 injected elements, 0 page errors) and held by a test that walks all five
+  deck tabs plus Settings and the Leaderboard. The rule underneath it is the one worth
+  keeping: **the only `innerHTML` in the app is the match screen's static `MARKUP`
+  constant**, and a test greps every shipped file for an assignment with anything else on
+  the right-hand side. A screen that starts building its rows from a template string is
+  how this stops being true.
+- **THE DEPENDENCY ADVISORIES ARE ALL DEV-ONLY, and they are not being chased.**
+  `npm audit --omit=dev` is **zero** — nothing that ships to a player has a known
+  vulnerability, because almost nothing ships: the bundle is our own code. The eight in
+  the dev tree are the vite dev server, the vitest UI server and a uuid bound, none of
+  which exists in `dist/`, and every fix is a major bump (vite 5→8, vitest 2→5). A
+  speculative major upgrade of the build tool to silence advisories about a server that
+  never runs for anybody but us is a real risk taken for no gain. Re-check with
+  `--omit=dev` after any dependency change; that is the number that matters.
+- **The git history is clean of secrets**, checked across every blob rather than the
+  working tree — there is nothing to leak, since the app authenticates against nothing,
+  but a key pasted into a config once lives in the history for ever.
 
 **THE ANDROID SHELL** (`capacitor.config.ts`, `platform/native.ts`). Thin on purpose:
 Capacitor serves the same `dist/` in a WebView. What it actually buys is that **the save
