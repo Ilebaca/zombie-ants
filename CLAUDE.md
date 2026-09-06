@@ -367,6 +367,34 @@ Each of these cost a debugging round. Do not repeat them.
   starting on the same frame, so a four-tile send flashed its whole trail in at once instead
   of filling tile by tile. `animate()` now pre-scans the batch for travel paths before
   walking it. Any new event that participates in a group has the same hazard — scan first.
+- **THE FILL FRONT LEAVES FAST AND SETTLES — it is not a constant rate** (`frontEase` in
+  `render/reveal.ts`). It ran at one for a long time and there was a test insisting on it:
+  equal ground in equal time, so a single capture and the tenth step of a long send extended
+  identically. That is the honest way to animate something with no mass, and it is exactly
+  what it looked like — a bar filling. What is actually moving is a column of ants, and
+  anything moving under its own power leaves quickly and arrives slowly. Measured on a
+  four-tile send: the first tile fills in 180 ms and the last takes 400.
+  - **It is a BLEND of linear and ease-out, and that is the whole of the tuning.** A pure
+    ease-out arrives with ZERO speed, so the last tile of a send never quite lands — it
+    asymptotes, which reads as the animation stalling rather than settling. Mixing a
+    straight line back in puts a floor under the final speed: at `FRONT_EASE` (0.6) the
+    front leaves at 1.6× its average and arrives at 0.4×, four to one with nothing standing
+    still. That one number is the dial; 0 is the old constant rate.
+  - **How long a run TAKES did not change** — `REVEAL_MS_PER_TILE` is an average now, and
+    `revealStepMs` still shortens it past six tiles so a long send lands inside a second and
+    a half. Only the pacing within the run moved.
+  - **EVERY FLOURISH IS SCHEDULED AGAINST THE FRONT, not against an index.** The streak, the
+    clash, the white-out and the pop were spaced by `i * stepMs`, which was the same answer
+    while the front was steady and is wrong now: the streak for the fourth tile would set
+    off well after the ground under it had filled. `slotMs` answers "when does the front
+    reach this slot", inverting the curve exactly rather than searching it, and `animate.ts`
+    asks that. Nothing about this shows up in a test of the reveal alone — the fill looks
+    right and the effects drift off it — so `render.test.ts` holds the delays.
+  - **And the comet rides the same curve** (`fx.ts`). It also stopped keeping its own copy
+    of the step time: `FLOW_MS_PER_STEP` was 260 with a comment saying it matched
+    `REVEAL_MS_PER_TILE`, but `revealStepMs` SHORTENS past six tiles and the copy did not —
+    so on a ten-step Travel the streak was still crawling a second after the trail it was
+    supposed to be laying had finished filling. Two places spelling out one rule (§7).
 - **Scenery is baked once, not drawn per frame.** The undergrowth around the playfield
   (`render/terrain.ts`) is a still life — rocks, logs, ferns — and redrawing it sixty times
   a second was by far the most expensive thing on the frame. It renders to an offscreen

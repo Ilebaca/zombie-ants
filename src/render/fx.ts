@@ -7,6 +7,7 @@
 import type { Coord, Player } from "../engine";
 import type { Layout } from "./layout";
 import { COL, hexA, ownerCol } from "./palette";
+import { frontEase, revealStepMs } from "./reveal";
 import { rrect } from "./shapes";
 
 type Fx =
@@ -18,8 +19,15 @@ type Fx =
 
 const TAU = 6.283;
 
-/** Milliseconds the streak takes to cross one tile. Matches REVEAL_MS_PER_TILE. */
-const FLOW_MS_PER_STEP = 260;
+/**
+ * Milliseconds the streak takes to cross one tile.
+ *
+ * Read off `revealStepMs` rather than restated, which is not tidiness: that function
+ * SHORTENS the step past six tiles so a long send lands inside a second and a half, and a
+ * copy of the constant here did not — so on a ten-step Travel the comet was still crawling
+ * a second after the ground it was supposed to be laying had finished filling.
+ */
+const flowStepMs = (steps: number): number => revealStepMs(steps);
 
 /**
  * How long a destroyed tile takes to go.
@@ -57,7 +65,7 @@ export class FxLayer {
     const steps = Math.max(1, path.length - 1);
     this.items.push({
       type: "flow", path: path.slice(), owner, t: performance.now() + delay,
-      dur: this.reduced ? 1 : FLOW_MS_PER_STEP * steps,
+      dur: this.reduced ? 1 : flowStepMs(steps) * steps,
     });
   }
 
@@ -115,7 +123,9 @@ export class FxLayer {
         // four trailing dots, each lagging the head slightly, make a comet tail
         for (let d = 0; d < 4; d++) {
           const lag = Math.max(0, k - d * 0.08);
-          const seg = (pts.length - 1) * lag;
+          // The head rides the fill front's own curve — away fast, settling at the end —
+          // or the comet and the ground it is laying would be moving at different speeds.
+          const seg = (pts.length - 1) * frontEase(lag);
           const i = Math.min(pts.length - 2, Math.floor(seg));
           const lt = seg - i;
           const a = pts[i] as { x: number; y: number };

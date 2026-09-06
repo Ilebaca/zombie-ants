@@ -26,8 +26,6 @@ export function sourceOf(at: Coord, movement: Direction): Coord {
 /** How many rally source lines to draw before it becomes visual noise. */
 const MAX_RALLY_FLOWS = 14;
 
-/** One streak step, matching FLOW_MS_PER_STEP in fx.ts. */
-const FLOW_MS_PER_STEP = 260;
 
 /**
  * Stagger between tiles dying in the same batch, and the point it stops growing.
@@ -111,7 +109,7 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
         );
         fx.flow(e.path, e.owner);
         // The troops land when the front reaches the far end, not when the send is ordered.
-        fx.pop(e.path[e.path.length - 1] as Coord, e.owner, reveal.stepMs(steps.length) * steps.length);
+        fx.pop(e.path[e.path.length - 1] as Coord, e.owner, reveal.runMs(steps.length));
         break;
       }
 
@@ -173,8 +171,7 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
         // fills the same way every other capture does instead of snapping over.
         const cells = orderedFromQueen(e.cells);
         reveal.begin(cells.map((at) => ({ at, edge: "L" as RevealEdge, prev: null })));
-        const step = reveal.stepMs(cells.length);
-        cells.forEach((at, i) => fx.pop(at, e.owner, i * step + step));
+        cells.forEach((at, i) => fx.pop(at, e.owner, reveal.slotMs(i + 1, cells.length)));
         break;
       }
 
@@ -191,22 +188,25 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
     reveal.begin(captures.map(({ at, edge, prev }) => ({ at, edge, prev })));
     // Each flourish leaves as its tile's turn comes round, so they stay in step with the
     // fill rather than all firing on the first frame.
-    const step = reveal.stepMs(captures.length);
+    // WHEN the front reaches each tile, not the index times an average: the front leaves
+    // fast and settles (reveal.ts), so an evenly-spaced flourish drifts off the fill it is
+    // supposed to be part of — a streak setting off over ground already filled in.
+    const arrives = (slot: number): number => reveal.slotMs(slot, captures.length);
     captures.forEach(({ src, at, owner, prev }, i) => {
       const k = key(at.c, at.r);
       const fight = clashes.get(k);
       if (fight) {
         clashes.delete(k);
-        fx.flow([fight.src, fight.at], fight.attacker, i * step);
-        fx.clash(fight.at, i * step + step);
+        fx.flow([fight.src, fight.at], fight.attacker, arrives(i));
+        fx.clash(fight.at, arrives(i + 1));
       } else {
-        fx.flow([src, at], owner, i * step);
+        fx.flow([src, at], owner, arrives(i));
       }
       // Ground that had to be beaten blanks out the way a destroyed tile does, and the
       // colony that beat it is filling underneath as the flash clears. Empty ground
       // destroys nothing, so it simply fills.
-      if (prev || beaten.has(k)) fx.blink(at, prev, i * step);
-      fx.pop(at, owner, i * step + step);
+      if (prev || beaten.has(k)) fx.blink(at, prev, arrives(i));
+      fx.pop(at, owner, arrives(i + 1));
     });
   }
 
@@ -226,18 +226,18 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
     reveal.begin(routed.filter((r) => r.claimed).map((r) => ({
       at: r.to, edge: edgeAlongPath([r.from, r.to], 1), prev: null,
     })));
-    const step = reveal.stepMs(routed.length);
     routed.forEach(({ from, to, owner }, i) => {
-      fx.flow([from, to], owner, i * step);
-      if (!landed.has(key(from.c, from.r))) fx.blink(from, owner, i * step);
-      fx.pop(to, owner, i * step + step);
+      const at = reveal.slotMs(i, routed.length);
+      fx.flow([from, to], owner, at);
+      if (!landed.has(key(from.c, from.r))) fx.blink(from, owner, at);
+      fx.pop(to, owner, reveal.slotMs(i + 1, routed.length));
     });
   }
 
   // Fights that took no ground still have to be seen.
   for (const fight of clashes.values()) {
     fx.flow([fight.src, fight.at], fight.attacker);
-    fx.clash(fight.at, FLOW_MS_PER_STEP);
+    fx.clash(fight.at, reveal.runMs(1));
   }
 }
 

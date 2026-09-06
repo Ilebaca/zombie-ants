@@ -3,7 +3,7 @@ import { blankGame, put } from "../../engine/__tests__/helpers";
 import { addEffect, hiveCells, recomputeConnectivity, tile, travel } from "../../engine";
 import type { Coord, EngineEvent, GameState, Tile } from "../../engine";
 import { Layout } from "../layout";
-import { REVEAL_MS_PER_TILE, RevealTracker, edgeFor } from "../reveal";
+import { REVEAL_MS_PER_TILE, RevealTracker, edgeFor, frontEase } from "../reveal";
 import { CRUMBLE_MS, FxLayer } from "../fx";
 import { animate, sourceOf } from "../animate";
 import { basicLook } from "../art";
@@ -117,11 +117,13 @@ describe("animate: events to animation", () => {
 
     // ...and the new ground still fills at its own place in the path, not immediately:
     // the front has five slots to cross and the first new tile sits at the third.
+    // Probed by WHERE THE FRONT IS, never by an index times an average step: the front
+    // leaves fast and settles (reveal.ts), so those two stopped being the same answer.
     const start = performance.now();
-    const step = s.reveal.stepMs(5);
-    s.reveal.step(start + step * 1.5);
+    const at = (slot: number): void => { s.reveal.step(start + s.reveal.slotMs(slot, 5)); };
+    at(1.5);
     expect(s.reveal.progress(3, 0), "lit up before the troops got there").toBe(0);
-    s.reveal.step(start + step * 3.5);
+    at(3.5);
     expect(s.reveal.progress(3, 0)).toBe(1);
     expect(s.reveal.progress(4, 0)).toBeGreaterThan(0);
     expect(s.reveal.progress(4, 0)).toBeLessThan(1);
@@ -353,11 +355,11 @@ describe("the troop-count badge", () => {
 
 describe("the reveal front", () => {
   /**
-   * "Smooth and linear, extending from the point of attack": the front must cover equal
-   * ground in equal time, and the first tile of a long push must not sprint ahead of the
-   * last. An eased front fails both.
+   * IT LEAVES FAST AND SETTLES. This test used to insist on the opposite — equal ground in
+   * equal time — and a constant rate is what made the growth read as a bar filling rather
+   * than as something moving under its own power.
    */
-  it("advances at a constant rate", () => {
+  it("leaves fast and settles, rather than running at a constant rate", () => {
     const reveal = new RevealTracker();
     reveal.reduced = false;
     reveal.begin([{ at: { c: 0, r: 0 }, edge: "L", prev: null }]);
@@ -367,25 +369,35 @@ describe("the reveal front", () => {
       reveal.step(start + REVEAL_MS_PER_TILE * fraction);
       return reveal.progress(0, 0);
     };
-    // Quarter of the time, quarter of the tile — within a hair of exact.
-    expect(at(0.25)).toBeCloseTo(0.25, 2);
-    expect(at(0.5)).toBeCloseTo(0.5, 2);
-    expect(at(0.75)).toBeCloseTo(0.75, 2);
+    // Half the time is well past half the distance, and the last quarter of the distance
+    // takes far longer than the first.
+    const half = at(0.5);
+    expect(half).toBeGreaterThan(0.6);
+    expect(at(0.75)).toBeGreaterThan(0.85);
+    expect(at(1)).toBe(1);
   });
 
-  it("crosses every tile of a long push at the same speed as a single one", () => {
-    const one = new RevealTracker(); one.reduced = false;
-    one.begin([{ at: { c: 0, r: 0 }, edge: "L", prev: null }]);
+  it("never STOPS at the end — a stall reads as a broken animation, not a settle", () => {
+    // A pure ease-out arrives with zero speed, so the last of a send never quite lands.
+    // The blend in `frontEase` is what puts a floor under the final speed.
+    const near = frontEase(0.98);
+    const end = frontEase(1);
+    expect(end - near).toBeGreaterThan(0.002);
+    // And it really is slower than the start, or there is no deceleration at all.
+    expect(frontEase(0.02)).toBeGreaterThan(end - near);
+  });
 
+  it("takes the same time per tile whatever the length of the run", () => {
+    // The pacing WITHIN a run changed; how long a run lasts did not. A ten-step send must
+    // not take ten times as long to watch as a one-step one feels.
+    const reveal = new RevealTracker();
+    expect(reveal.runMs(1)).toBe(REVEAL_MS_PER_TILE);
+    expect(reveal.runMs(4)).toBe(REVEAL_MS_PER_TILE * 4);
+    // ...and nothing beyond the first tile starts before the front gets there.
     const many = new RevealTracker(); many.reduced = false;
     many.begin([0, 1, 2, 3].map((c) => ({ at: { c, r: 0 }, edge: "L" as const, prev: null })));
-
-    const t0 = performance.now();
-    one.step(t0 + REVEAL_MS_PER_TILE * 0.5);
-    many.step(t0 + REVEAL_MS_PER_TILE * 0.5);
-    // Half a tile-time in, both have filled half of their first tile.
-    expect(many.progress(0, 0)).toBeCloseTo(one.progress(0, 0), 2);
-    // ...and nothing beyond it has started.
+    many.step(performance.now() + many.slotMs(0.9, 4));
+    expect(many.progress(0, 0)).toBeLessThan(1);
     expect(many.progress(1, 0)).toBe(0);
   });
 
@@ -417,10 +429,10 @@ describe("a batch of captures", () => {
     animate(spread(4), { reveal, fx });
 
     const start = performance.now();
-    const step = reveal.stepMs(4);
+    const at = (slot: number): void => { reveal.step(start + reveal.slotMs(slot, 4)); };
 
     // A third of the way into the first tile's slot: it is filling, the rest have not begun.
-    reveal.step(start + step * 0.33);
+    at(0.33);
     expect(reveal.progress(0, 3)).toBeGreaterThan(0);
     expect(reveal.progress(0, 3)).toBeLessThan(1);
     expect(reveal.progress(1, 3)).toBe(0);
@@ -428,7 +440,7 @@ describe("a batch of captures", () => {
     expect(reveal.progress(3, 3)).toBe(0);
 
     // Into the third slot: the first two are done, the third is filling, the fourth waits.
-    reveal.step(start + step * 2.5);
+    at(2.5);
     expect(reveal.progress(0, 3)).toBe(1);
     expect(reveal.progress(1, 3)).toBe(1);
     expect(reveal.progress(2, 3)).toBeGreaterThan(0);
@@ -450,11 +462,39 @@ describe("a batch of captures", () => {
     expect(reveal.progress(1, 3)).toBe(0);       // never two at once
   });
 
+  /**
+   * EVERY FLOURISH IS SCHEDULED FOR THE MOMENT THE FRONT REACHES ITS TILE.
+   *
+   * They used to be spaced by an index times the average step, which was the same answer
+   * while the front ran at a constant rate and is wrong now: the streak for the fourth tile
+   * of a run would set off long after the ground under it had filled in. Nothing about that
+   * is visible in a unit test of the reveal alone — the fill would look right and the
+   * effects would drift off it — so it is held here.
+   */
+  it("sets each flourish off as the front reaches its tile, not on an even beat", () => {
+    const reveal = new RevealTracker();
+    reveal.reduced = false;
+    const fx = new FxLayer();
+    const flow = vi.spyOn(fx, "flow");
+    animate(spread(4), { reveal, fx });
+
+    const delays = flow.mock.calls.map((c) => c[2] ?? 0);
+    expect(delays).toHaveLength(4);
+    for (let i = 0; i < 4; i++) expect(delays[i]).toBeCloseTo(reveal.slotMs(i, 4), 3);
+
+    // The front decelerates, so the gaps GROW. Evenly spaced would make them all equal.
+    const gaps = delays.slice(1).map((d, i) => d - (delays[i] ?? 0));
+    for (let i = 1; i < gaps.length; i++) {
+      expect(gaps[i]).toBeGreaterThan(gaps[i - 1] ?? 0);
+    }
+    flow.mockRestore();
+  });
+
   it("leaves a single capture animating immediately", () => {
     const reveal = new RevealTracker();
     reveal.reduced = false;
     animate(spread(1), { reveal, fx: new FxLayer() });
-    reveal.step(performance.now() + reveal.stepMs(1) * 0.5);
+    reveal.step(performance.now() + reveal.slotMs(0.5, 1));
     expect(reveal.progress(0, 3)).toBeCloseTo(0.5, 1);
   });
 });
@@ -493,10 +533,10 @@ describe("sending troops down a row", () => {
   it("fills the trail one tile at a time, in path order", () => {
     const { reveal } = sendAlongRow();
     const start = performance.now();
-    const step = reveal.stepMs(4);
+    const at = (slot: number): void => { reveal.step(start + reveal.slotMs(slot, 4)); };
 
     // Mid-way through the first step: tile 2 is filling and NOTHING else has started.
-    reveal.step(start + step * 0.5);
+    at(0.5);
     expect(reveal.progress(1, 0)).toBeGreaterThan(0);
     expect(reveal.progress(1, 0)).toBeLessThan(1);
     expect(reveal.progress(2, 0)).toBe(0);
@@ -504,7 +544,7 @@ describe("sending troops down a row", () => {
     expect(reveal.progress(4, 0)).toBe(0);
 
     // Mid-way through the third step: two are settled, the third is filling, the last waits.
-    reveal.step(start + step * 2.5);
+    at(2.5);
     expect(reveal.progress(1, 0)).toBe(1);
     expect(reveal.progress(2, 0)).toBe(1);
     expect(reveal.progress(3, 0)).toBeGreaterThan(0);
@@ -512,7 +552,7 @@ describe("sending troops down a row", () => {
     expect(reveal.progress(4, 0)).toBe(0);
 
     // The far end only lands at the very end of the run.
-    reveal.step(start + step * 3.5);
+    at(3.5);
     expect(reveal.progress(4, 0)).toBeGreaterThan(0);
     expect(reveal.progress(4, 0)).toBeLessThan(1);
   });

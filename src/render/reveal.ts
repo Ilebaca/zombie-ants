@@ -13,13 +13,54 @@ import { key } from "../engine";
 import type { Coord, Direction, Player } from "../engine";
 
 /**
- * How long the fill front takes to cross ONE tile.
+ * How long the fill front takes to cross ONE tile, ON AVERAGE.
  *
- * The front moves at this speed whatever the length of the group, so a single capture and
- * the tenth step of a long Travel extend at exactly the same rate — that constant speed is
- * what makes the growth read as one body moving rather than tiles popping.
+ * Every run takes this long per tile whatever its length, so a single capture and a ten-step
+ * Travel are paced the same way — but WITHIN a run the front is not steady (see `frontEase`).
  */
 export const REVEAL_MS_PER_TILE = 260;
+
+/**
+ * THE FRONT LEAVES FAST AND SETTLES — it does not run at a constant rate.
+ *
+ * It used to, and there was a test insisting on it: equal ground in equal time, so a single
+ * capture and the tenth step of a long send extended identically. That is the honest way to
+ * animate a thing with no mass, and it is exactly what it looked like — a bar filling. What
+ * is actually moving is a column of ants, and anything that moves under its own power leaves
+ * quickly and arrives slowly.
+ *
+ * It is a BLEND of linear and ease-out rather than a plain one, and that is the whole of the
+ * tuning. A pure ease-out arrives with ZERO speed, so the last tile of a send never quite
+ * lands — it asymptotes, which reads as the animation stalling rather than settling. Mixing
+ * in a straight line puts a floor under the final speed: at `FRONT_EASE` the front leaves at
+ * 1.6x its average and arrives at 0.4x, a four-to-one spread with nothing standing still.
+ *
+ * Turn `FRONT_EASE` alone to change how hard it decelerates: 0 is the old constant rate, 1 is
+ * a full ease-out that stalls at the end.
+ */
+export const FRONT_EASE = 0.6;
+
+/** Where the front is, 0..1 along the run, at fraction `p` of the run's time. */
+export function frontEase(p: number): number {
+  const t = p <= 0 ? 0 : (p >= 1 ? 1 : p);
+  return (1 - FRONT_EASE) * t + FRONT_EASE * (1 - (1 - t) * (1 - t));
+}
+
+/**
+ * The inverse: what fraction of the time puts the front `e` of the way along.
+ *
+ * The animator needs it. Every flourish — the streak, the clash, the pop — is scheduled for
+ * the moment the front reaches its tile, and multiplying an index by an average step only
+ * answers that while the front is steady. Solved exactly rather than searched, because the
+ * curve is a quadratic and this runs once per tile of every batch.
+ */
+export function frontEaseAt(e: number): number {
+  const t = e <= 0 ? 0 : (e >= 1 ? 1 : e);
+  if (FRONT_EASE <= 0) return t;
+  const lin = 1 - FRONT_EASE;
+  const back = (-lin + Math.sqrt(lin * lin + 4 * FRONT_EASE * (1 - t))) / (2 * FRONT_EASE);
+  return 1 - back;
+}
 
 /**
  * A long run would otherwise hold the player up: ten tiles at full speed is two and a half
@@ -120,8 +161,8 @@ export class RevealTracker {
       const g = this.groups[i] as Group;
       const raw = (now - g.start) / g.dur;
       const p = raw <= 0 ? 0 : (raw >= 1 ? 1 : raw);
-      // Linear: one front advancing along the path at a constant tile-per-second rate.
-      const front = p * g.span;
+      // ONE front along the path, leaving fast and settling at the far end (`frontEase`).
+      const front = frontEase(p) * g.span;
 
       for (let j = 0; j < g.keys.length; j++) {
         const st = this.states.get(g.keys[j] as string);
@@ -136,8 +177,26 @@ export class RevealTracker {
     }
   }
 
-  /** How long one tile of a run of `n` takes to fill — the caller's cue for its flourishes. */
+  /** The AVERAGE time one tile of a run of `n` takes to fill. */
   stepMs(tiles: number): number { return revealStepMs(tiles); }
+
+  /** How long the whole run takes, front to back. */
+  runMs(tiles: number): number {
+    const span = Math.max(1, tiles);
+    return revealStepMs(span) * span;
+  }
+
+  /**
+   * When the front reaches `slot`, in milliseconds from the run's start.
+   *
+   * This is what a flourish is scheduled against. Multiplying the slot by `stepMs` was the
+   * same answer while the front ran at a constant rate and is wrong now — the streak would
+   * set off after the ground under it had already filled.
+   */
+  slotMs(slot: number, tiles: number): number {
+    const span = Math.max(1, tiles);
+    return frontEaseAt(slot / span) * this.runMs(span);
+  }
 
   /** Reveal state for a tile, or undefined when it is settled (draw at full opacity). */
   get(c: number, r: number): RevealState | undefined {
