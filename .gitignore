@@ -5,3 +5,9 @@ dist/
 android/
 ios/
 dist-old/
+
+# Screenshots taken for a design review. They are OUTPUT, not source: every picture in
+# this app is drawn by the code that owns it, and a folder of PNGs of the app is the one
+# thing here that goes stale the moment a screen changes. Re-take them instead.
+shots/
+*.zip
