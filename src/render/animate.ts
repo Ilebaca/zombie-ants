@@ -74,7 +74,21 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
     if (e.type === "travel") for (const p of e.path) onTravelPath.add(key(p.c, p.r));
     if (e.type === "veinLaid") claimed.add(key(e.at.c, e.at.r));
   }
-  const covered = (at: Coord): boolean => onTravelPath.has(key(at.c, at.r));
+  /**
+   * Is this tile inside a travel's OWN reveal run?
+   *
+   * Being on the path is not enough, and reading it that way was a real bug. The travel's
+   * run is filtered to the tiles it CLAIMED — the ones that got a `veinLaid`, which only
+   * fires over ground that was empty. A tile the same turn had already taken off the other
+   * colony (an ability is a free extra action, §4.10) is on the path and NOT in that run,
+   * so skipping its capture left it with no fill and no white-out: it was simply the other
+   * colour on the next frame, under a comet flying across it. From the sofa that reads as
+   * the enemy moving straight through your line, which is exactly how it was reported.
+   */
+  const inTravelRun = (at: Coord): boolean => {
+    const k = key(at.c, at.r);
+    return onTravelPath.has(k) && claimed.has(k);
+  };
 
   // Captures outside a travel are gathered so they can be revealed as one ordered run.
   const captures: Array<{
@@ -115,7 +129,7 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
 
       case "veinLaid":
         // Part of a travel's trail: already inside that group's single sweep.
-        if (!covered(e.at)) reveal.begin([{ at: e.at, edge: "L", prev: null }]);
+        if (!inTravelRun(e.at)) reveal.begin([{ at: e.at, edge: "L", prev: null }]);
         break;
 
       case "combat":
@@ -128,7 +142,7 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
         break;
 
       case "capture": {
-        if (covered(e.at)) { fx.pop(e.at, e.owner); break; }
+        if (inTravelRun(e.at)) { fx.pop(e.at, e.owner); break; }
         captures.push({
           at: e.at, edge: edgeFor(e.from), prev: e.previous,
           src: sourceOf(e.at, e.from), owner: e.owner,

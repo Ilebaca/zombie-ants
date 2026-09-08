@@ -14,6 +14,7 @@
     "check": "npm run typecheck && npm run lint && npm test",
     "ladder": "tsx tools/ladder.ts",
     "arena": "tsx tools/arena.ts",
+    "reach": "tsx tools/reach.ts",
     "ai:bench": "tsx tools/bench.ts",
     "android": "npm run build && cap sync android",
     "android:open": "npm run build && cap sync android && cap open android"

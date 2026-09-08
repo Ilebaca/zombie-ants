@@ -432,6 +432,40 @@ Each of these cost a debugging round. Do not repeat them.
     `REVEAL_MS_PER_TILE`, but `revealStepMs` SHORTENS past six tiles and the copy did not —
     so on a ten-step Travel the streak was still crawling a second after the trail it was
     supposed to be laying had finished filling. Two places spelling out one rule (§7).
+- **A TILE TAKEN OFF THE PLAYER MUST BE SEEN TO BE TAKEN, even under a travel**
+  (`inTravelRun` in `render/animate.ts`). Reported from a real match: "the enemy played his
+  tile across mine, through my line of tiles, destroying one in the process."
+  - **The ENGINE was innocent, and proving that is what found the real fault.** An ability
+    is a free extra action (§4.10), so ONE turn can eat a tile out of the middle of a line
+    and then send a column along the ground it just took. Both halves are legal; together
+    they look like somebody walking through your colony.
+  - **The animator skipped any capture that merely sat on the travel PATH.** But a travel's
+    reveal run is filtered to the tiles it CLAIMED — the ones that got a `veinLaid`, which
+    only fires over ground that was EMPTY. So the tile the same turn had just taken off the
+    other colony was on the path, not in the run, and got neither: no fill, no white-out.
+    It was simply the other colour on the next frame, under a comet flying across it.
+  - The predicate is "on the path AND claimed" now, and **both halves are load-bearing** —
+    on-the-path alone is the bug, and claimed alone stops a vein laid by anything OTHER
+    than a travel from ever filling in. A mutation of each fails a different test.
+- **AND THE WAY THAT WAS SETTLED IS ITS OWN TOOL** (`npm run reach`, and
+  `engine/__tests__/reach.test.ts` as the tripwire). Every rule test in the suite builds the
+  one board it is about; nothing played whole games and watched the WHOLE grid. This does,
+  after every single action, against two rules: **every tile that changed hands was named
+  by an event** (the renderer draws from events and nothing else, §3 — so a tile that
+  changes owner unannounced changes on screen with no animation), and **an action only
+  reaches where its kind can** (a move touches two ADJACENT tiles; a travel's path is
+  orthogonal steps, no longer than the range, over ground that is empty or already its own).
+  - **Ownership is carried forward EVENT BY EVENT, never read off a snapshot taken at the
+    start of the turn.** That is the first thing it found, and it was a false alarm — the
+    ability had taken the tile earlier in the same turn. Worth keeping in mind: on this
+    board "the enemy reached too far" and "the enemy did two legal things in one turn" look
+    identical from a snapshot, and identical on the sofa.
+  - **The difficulty decides what is audited**, because it decides which actions are played
+    at all: `easy` generates no travel, `normal` no rally, and only `hard` plays the whole
+    set (§4a). Run it at hard before concluding anything about rally. The engine came back
+    clean over **81 games and 8,362 turns** at normal. The suite carries one short game per
+    map, because the search is synchronous and a full 13x13 game is most of vitest's RPC
+    budget spent on a tail where nothing new happens.
 - **Scenery is baked once, not drawn per frame.** The undergrowth around the playfield
   (`render/terrain.ts`) is a still life — rocks, logs, ferns — and redrawing it sixty times
   a second was by far the most expensive thing on the frame. It renders to an offscreen

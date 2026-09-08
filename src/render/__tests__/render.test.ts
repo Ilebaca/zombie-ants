@@ -1310,3 +1310,84 @@ describe("animating a rout", () => {
     vi.useRealTimers();
   });
 });
+
+/**
+ * A TILE TAKEN OFF THE PLAYER MUST BE SEEN TO BE TAKEN — even when a travel crosses it.
+ *
+ * Reported from a real match: "the enemy played his tile across mine, through my line of
+ * tiles, destroying one in the process." The engine turned out to be innocent — eight
+ * thousand audited turns found no action reaching anywhere it should not
+ * (`engine/__tests__/reach.test.ts`). This is what was actually happening, and it is a
+ * drawing bug.
+ *
+ * An ability is a free extra action (§4.10), so one turn can EAT a tile out of the middle
+ * of a line and then send a column along the ground it just took. `travel()` lays a
+ * `veinLaid` only over ground that was EMPTY, so the tile it just captured is not in the
+ * travel's reveal run — but the animator skipped any capture that merely sat on the travel
+ * PATH. So that tile got no fill and no white-out: it simply was the other colour on the
+ * next frame, under a comet flying across it. Which is exactly what "he went through my
+ * line" looks like from the sofa.
+ */
+describe("a capture under a travel", () => {
+  const eaten: Coord = { c: 2, r: 2 };
+  const batch = (): EngineEvent[] => [
+    { type: "abilityCast", owner: "ai", kind: "swarm", name: "Feeding Swarm" },
+    { type: "devoured", at: eaten, into: { c: 2, r: 3 }, owner: "ai", count: 4 },
+    { type: "capture", at: eaten, owner: "ai", from: "R", previous: "you" },
+    // Empty ground further along the send, which IS the travel's own reveal run.
+    { type: "veinLaid", at: { c: 2, r: 1 }, owner: "ai" },
+    {
+      type: "travel", owner: "ai", count: 9,
+      path: [{ c: 0, r: 2 }, { c: 1, r: 2 }, eaten, { c: 2, r: 1 }],
+    },
+  ];
+
+  it("fills the tile it took, rather than snapping it to the new colour", () => {
+    const reveal = new RevealTracker();
+    reveal.reduced = false;
+    animate(batch(), { reveal, fx: new FxLayer() });
+    // Mid-animation it must be part-filled. Settled (1) means it never animated at all.
+    reveal.step(performance.now() + 10);
+    expect(reveal.progress(eaten.c, eaten.r), "the captured tile never filled in").toBeLessThan(1);
+  });
+
+  it("whites the tile out, so the ground reads as beaten rather than repainted", () => {
+    const reveal = new RevealTracker();
+    reveal.reduced = false;
+    const fx = new FxLayer();
+    const blink = vi.spyOn(fx, "blink");
+    animate(batch(), { reveal, fx });
+    const hit = blink.mock.calls.some(([at]) => at.c === eaten.c && at.r === eaten.r);
+    expect(hit, "the tile changed hands with no white-out").toBe(true);
+    blink.mockRestore();
+  });
+
+  it("still fills a vein that no travel laid", () => {
+    /*
+     * The other half of the same predicate, and it is load-bearing: "is this tile in a
+     * travel's reveal run" is BOTH "on the path" and "claimed". A vein laid with no travel
+     * in the batch at all — an ability's trail — is claimed and on no path, so it has to
+     * open its own reveal or it would never fill in.
+     */
+    const reveal = new RevealTracker();
+    reveal.reduced = false;
+    animate([{ type: "veinLaid", at: { c: 5, r: 5 }, owner: "you" }], {
+      reveal, fx: new FxLayer(),
+    });
+    reveal.step(performance.now() + 10);
+    expect(reveal.progress(5, 5), "a lone vein never filled").toBeLessThan(1);
+  });
+
+  it("still leaves the travel's OWN new ground to the travel's single sweep", () => {
+    // The fix must not go the other way and open a second front over the trail — that is
+    // the bug the pre-scan exists to prevent (§5, "a travel's trail is emitted BEFORE").
+    const reveal = new RevealTracker();
+    reveal.reduced = false;
+    const begin = vi.spyOn(reveal, "begin");
+    animate(batch(), { reveal, fx: new FxLayer() });
+    const trailRuns = begin.mock.calls.filter(([tiles]) =>
+      tiles.some((t) => t.at.c === 2 && t.at.r === 1));
+    expect(trailRuns, "the trail opened more than one reveal").toHaveLength(1);
+    begin.mockRestore();
+  });
+});
