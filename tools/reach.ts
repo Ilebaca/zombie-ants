@@ -24,9 +24,9 @@
  *
  * THE DIFFICULTY IS NOT COSMETIC HERE — it decides which ACTIONS get played at all, so it
  * decides what is audited. `easy` generates no travel; `normal` generates no rally and does
- * not search its ability; only `hard` plays the whole action set. Run it at hard before
- * concluding anything about rally. The engine came back clean over 81 games and 8,362 turns
- * at normal.
+ * not search its ability; only `hard` plays the whole action set — so a clean run at normal
+ * says nothing whatever about rally. Clean at both when this was written: 81 games / 8,362
+ * turns at normal, and 54 games / 5,609 turns at hard, the second of which took 41 minutes.
  *
  * `src/engine/__tests__/reach.test.ts` is the tripwire version — one short game per map, so
  * the suite carries it without spending a minute on it. This is where to come when

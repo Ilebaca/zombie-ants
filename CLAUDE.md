@@ -462,10 +462,12 @@ Each of these cost a debugging round. Do not repeat them.
     identical from a snapshot, and identical on the sofa.
   - **The difficulty decides what is audited**, because it decides which actions are played
     at all: `easy` generates no travel, `normal` no rally, and only `hard` plays the whole
-    set (§4a). Run it at hard before concluding anything about rally. The engine came back
-    clean over **81 games and 8,362 turns** at normal. The suite carries one short game per
-    map, because the search is synchronous and a full 13x13 game is most of vitest's RPC
-    budget spent on a tail where nothing new happens.
+    set (§4a) — so a clean run at normal says nothing whatever about rally, and the sweep
+    has to be run at hard before it means anything. The engine came back clean at both:
+    **81 games / 8,362 turns at normal, and 54 games / 5,609 turns at hard** (41 minutes —
+    which is why it is a tool and not a test). The suite carries one short game per map,
+    because the search is synchronous and a full 13x13 game is most of vitest's RPC budget
+    spent on a tail where nothing new happens.
 - **Scenery is baked once, not drawn per frame.** The undergrowth around the playfield
   (`render/terrain.ts`) is a still life — rocks, logs, ferns — and redrawing it sixty times
   a second was by far the most expensive thing on the frame. It renders to an offscreen
