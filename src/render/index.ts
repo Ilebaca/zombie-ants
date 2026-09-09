@@ -2,7 +2,7 @@
 export { BoardRenderer } from "./renderer";
 export type { RendererOptions } from "./renderer";
 export { Layout } from "./layout";
-export { animate, sourceOf } from "./animate";
+export { actGapOf, animate, sourceOf } from "./animate";
 export {
   antGlyph, antSkinOverlay, antHead, antHeadSkin, nestArt, basicLook, looksFor,
 } from "./art";

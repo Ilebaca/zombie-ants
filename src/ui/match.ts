@@ -21,7 +21,7 @@ import { AiOpponent } from "./opponent";
 import type { OpponentSource } from "./opponent";
 import type { Thought } from "../ai/thinker";
 import type { Difficulty } from "../ai/search";
-import { BoardRenderer } from "../render";
+import { BoardRenderer, actGapOf } from "../render";
 // How a colony size is written, handed to the renderer rather than reached for by it: the
 // board draws the figure, and the progression layer decides what it looks like.
 import { compact } from "../platform";
@@ -812,8 +812,11 @@ export class MatchScreen {
     this.consume(events);
     this.refreshHUD();
     // Let the reveal finish before handing over — flipping the turn mid-sweep cuts the
-    // animation off.
-    this.aiTimer = window.setTimeout(() => this.handOver(), events.length ? 700 : 200);
+    // animation off. A turn that CAST and then marched plays for a beat longer, because the
+    // march waits for the cast to be seen (render/animate.ts), and the hand-over has to
+    // wait with it or the second half is cut off exactly where it matters.
+    const play = events.length ? 700 + actGapOf(events) : 200;
+    this.aiTimer = window.setTimeout(() => this.handOver(), play);
   }
 
   /**

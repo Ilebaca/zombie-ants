@@ -5,7 +5,7 @@ import type { Coord, EngineEvent, GameState, Tile } from "../../engine";
 import { Layout } from "../layout";
 import { REVEAL_MS_PER_TILE, RevealTracker, edgeFor, frontEase } from "../reveal";
 import { CRUMBLE_MS, FxLayer } from "../fx";
-import { animate, sourceOf } from "../animate";
+import { actGapOf, animate, sourceOf } from "../animate";
 import { basicLook } from "../art";
 import { drawFillets, drawSurge, drawTile, drawTileEffects, drawTrails, type Scene } from "../board";
 import { MAP, hexA, ownerCol } from "../palette";
@@ -128,6 +128,44 @@ describe("animate: events to animation", () => {
     expect(s.reveal.progress(4, 0)).toBeGreaterThan(0);
     expect(s.reveal.progress(4, 0)).toBeLessThan(1);
     expect(s.reveal.progress(5, 0)).toBe(0);
+  });
+
+  /**
+   * TWO ACTIONS IN ONE TURN ARE TWO THINGS ON SCREEN.
+   *
+   * An ability is a free extra action, so one enemy turn can destroy a tile out of the
+   * middle of a line and then march along the ground it opened. Both halves are legal and
+   * they arrive as ONE batch — played on the same frame, the tile dies under the comet,
+   * which from the sofa is the long move doing the destroying. Reported twice from real
+   * matches in exactly those words.
+   */
+  it("holds the march back until the cast has been seen", () => {
+    const s = sinks();
+    s.reveal.reduced = false;
+    const flow = vi.spyOn(s.fx, "flow");
+    const crumble = vi.spyOn(s.fx, "crumble");
+    const path: Coord[] = [{ c: 0, r: 0 }, { c: 0, r: 1 }, { c: 0, r: 2 }, { c: 0, r: 3 }];
+    animate([
+      { type: "effectDamage", at: { c: 1, r: 1 }, kind: "venom", lost: 4, wiped: true, owner: "you" },
+      { type: "veinLaid", at: { c: 0, r: 1 }, owner: "ai" },
+      { type: "veinLaid", at: { c: 0, r: 2 }, owner: "ai" },
+      { type: "veinLaid", at: { c: 0, r: 3 }, owner: "ai" },
+      { type: "travel", path, owner: "ai", count: 9 },
+    ], s);
+
+    // The tile that was destroyed goes at once — it is the first thing that happened.
+    expect(crumble.mock.calls[0]?.[3], "the cast waited for something").toBe(0);
+    const gap = actGapOf([{ type: "move", from: { c: 0, r: 0 }, to: { c: 1, r: 0 }, owner: "ai", count: 1 }]);
+    expect(gap, "a plain march waits for nothing").toBe(0);
+    const held = flow.mock.calls[0]?.[2] ?? 0;
+    expect(held, "the column set off on top of the destruction").toBeGreaterThan(0);
+
+    // ...and the ground the march claims is not filling in the meantime either.
+    const start = performance.now();
+    s.reveal.step(start + held - 1);
+    expect(s.reveal.progress(0, 1), "the trail filled before the troops set off").toBe(0);
+    s.reveal.step(start + held + s.reveal.slotMs(1.5, 3));
+    expect(s.reveal.progress(0, 1)).toBeGreaterThan(0);
   });
 
   it("does not double-reveal veins that a travel already covered", () => {

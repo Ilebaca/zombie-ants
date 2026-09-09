@@ -61,6 +61,15 @@ function names(events: readonly EngineEvent[]): Set<string> {
 }
 
 let problems = 0;
+/**
+ * HOW OFTEN THE CONFUSING TURN HAPPENS.
+ *
+ * Not a fault — an ability is a free extra action (§4.10) — but it is what gets reported,
+ * so it is worth a number rather than a shrug: a turn that takes ground off the other
+ * colony AND then marches through the gap. The animator plays those as two acts now
+ * (`render/animate.ts`), and this says how much of the game that covers.
+ */
+let twoActs = 0;
 function check(events: readonly EngineEvent[], was: Map<string,string>, where: string): void {
   const own = new Map<string,string>();
   for (const [k,v] of was) own.set(k, v.split("/")[0] as string);
@@ -125,6 +134,11 @@ for (const map of ["small"] as MapId[]) {
           }
         }
         check(evs, was, where);
+        const marched = evs.some((e) => e.type === "travel" || e.type === "move" || e.type === "rally");
+        const tookGround = evs.some((e) =>
+          (e.type === "effectDamage" && e.wiped) || e.type === "veinPruned"
+          || (e.type === "capture" && e.previous !== null && e.previous !== e.owner));
+        if (marched && tookGround) twoActs++;
         turns++;
         if (state.over) break;
         endTurn(state, ctx.mods);
@@ -135,3 +149,4 @@ for (const map of ["small"] as MapId[]) {
 }
 console.log(`\n${games} games, ${turns} turns, ${diff}, ${((Date.now()-t0)/1000).toFixed(0)}s`);
 console.log(`problems: ${problems} (unnamed changes: ${unnamed})`);
+console.log(`turns that took ground AND marched: ${twoActs} (${(100*twoActs/turns).toFixed(1)}%)`);

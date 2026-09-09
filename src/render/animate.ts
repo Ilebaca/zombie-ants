@@ -26,6 +26,41 @@ export function sourceOf(at: Coord, movement: Direction): Coord {
 /** How many rally source lines to draw before it becomes visual noise. */
 const MAX_RALLY_FLOWS = 14;
 
+/**
+ * TWO ACTIONS IN ONE TURN HAVE TO READ AS TWO THINGS.
+ *
+ * An ability is a free extra action (§4.10), so one enemy turn can destroy a tile out of
+ * the middle of a line and then march a column along the ground that opened. Both halves
+ * are legal, they arrive as ONE batch, and played on the same frame the destruction
+ * happens under the comet — which from the sofa is the long move doing the destroying.
+ * Reported twice from real matches in exactly those words.
+ *
+ * So the march waits. The cast resolves, the tile is seen to go, and only then do the
+ * troops set off. It is a delay on the FLOURISHES and the fill, never on the board: the
+ * engine has already finished the turn and the searched board lands whole (§ the AI's move
+ * lands in the same tick as the events).
+ */
+const SECOND_ACT_MS = 420;
+
+/** The verbs an ARMY plays. Everything before the first of them in a batch is the cast. */
+const MARCH = new Set<EngineEvent["type"]>(["move", "travel", "rally"]);
+
+/**
+ * How long the march in this batch waits for the cast in front of it.
+ *
+ * Exported because the SCREEN has to know too: it holds the turn open for the animation to
+ * finish, and a batch that plays for a beat longer needs that beat before the board is
+ * handed back (`ui/match.ts`).
+ */
+export function actGapOf(events: readonly EngineEvent[]): number {
+  const march = events.findIndex((e) => MARCH.has(e.type));
+  if (march <= 0) return 0;
+  // A TRAVEL'S OWN TRAIL DOES NOT COUNT AS A CAST. `travel()` pushes one `veinLaid` per
+  // step and only then the travel itself, so those always sit in front of the march and
+  // belong to it — counted as a first act, every long send would wait for itself.
+  return events.slice(0, march).some((e) => e.type !== "veinLaid") ? SECOND_ACT_MS : 0;
+}
+
 
 /**
  * Stagger between tiles dying in the same batch, and the point it stops growing.
@@ -90,9 +125,27 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
     return onTravelPath.has(k) && claimed.has(k);
   };
 
+  /**
+   * Where the army's half of the turn starts.
+   *
+   * `aiTurn` casts first and moves second, so everything before the first march verb is
+   * what the ability did. A turn that only moves has its march at index 0 and waits for
+   * nothing; a turn that only casts has no march at all.
+   */
+  const march = events.findIndex((e) => MARCH.has(e.type));
+  const actGap = actGapOf(events);
+  /**
+   * The march's half of the batch starts at the first march verb — but a travel's own
+   * `veinLaid` trail is emitted just before it and belongs with it, so the boundary walks
+   * back over those.
+   */
+  const secondAct = actGap ? backOverTrail(events, march) : -1;
+  /** How long this event waits: nothing for the cast, a beat for the march after it. */
+  const waitAt = (i: number): number => (secondAct >= 0 && i >= secondAct ? actGap : 0);
+
   // Captures outside a travel are gathered so they can be revealed as one ordered run.
   const captures: Array<{
-    at: Coord; edge: RevealEdge; prev: Player | null; src: Coord; owner: Player;
+    at: Coord; edge: RevealEdge; prev: Player | null; src: Coord; owner: Player; late: number;
   }> = [];
   /** Tiles a fight was won on, so a wild garrison beaten off blanks out like an enemy tile. */
   const beaten = new Set<string>();
@@ -100,15 +153,16 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
   const routed: Array<{ from: Coord; to: Coord; owner: Player; claimed: boolean }> = [];
   // A won fight emits `combat` then `capture` for the same tile. The clash has to wait for
   // that tile's turn in the run, so it is held here and released with the capture.
-  const clashes = new Map<string, { at: Coord; src: Coord; attacker: Player }>();
+  const clashes = new Map<string, { at: Coord; src: Coord; attacker: Player; late: number }>();
   /** How many tiles have already been destroyed in this batch, for the collapse stagger. */
   let ruins = 0;
 
-  for (const e of events) {
+  for (const [i, e] of events.entries()) {
+    const late = waitAt(i);
     switch (e.type) {
       case "move":
         // Reinforcing our own tile: troops surge across, but nothing changes hands.
-        fx.flow([e.from, e.to], e.owner);
+        fx.flow([e.from, e.to], e.owner, late);
         break;
 
       case "travel": {
@@ -118,18 +172,21 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
         const steps = e.path.slice(1);
         reveal.begin(
           steps
-            .map((at, i) => ({ at, edge: edgeAlongPath(e.path, i + 1), prev: null, slot: i }))
+            .map((at, n) => ({ at, edge: edgeAlongPath(e.path, n + 1), prev: null, slot: n }))
             .filter((t) => claimed.has(key(t.at.c, t.at.r))),
+          performance.now() + late,
         );
-        fx.flow(e.path, e.owner);
+        fx.flow(e.path, e.owner, late);
         // The troops land when the front reaches the far end, not when the send is ordered.
-        fx.pop(e.path[e.path.length - 1] as Coord, e.owner, reveal.runMs(steps.length));
+        fx.pop(e.path[e.path.length - 1] as Coord, e.owner, late + reveal.runMs(steps.length));
         break;
       }
 
       case "veinLaid":
         // Part of a travel's trail: already inside that group's single sweep.
-        if (!inTravelRun(e.at)) reveal.begin([{ at: e.at, edge: "L", prev: null }]);
+        if (!inTravelRun(e.at)) {
+          reveal.begin([{ at: e.at, edge: "L", prev: null }], performance.now() + late);
+        }
         break;
 
       case "combat":
@@ -137,30 +194,30 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
         // did not take the tile has no capture, so it is released at the end.
         if (e.won) beaten.add(key(e.at.c, e.at.r));
         clashes.set(key(e.at.c, e.at.r), {
-          at: e.at, src: sourceOf(e.at, e.from), attacker: e.attacker,
+          at: e.at, src: sourceOf(e.at, e.from), attacker: e.attacker, late,
         });
         break;
 
       case "capture": {
-        if (inTravelRun(e.at)) { fx.pop(e.at, e.owner); break; }
+        if (inTravelRun(e.at)) { fx.pop(e.at, e.owner, late); break; }
         captures.push({
           at: e.at, edge: edgeFor(e.from), prev: e.previous,
-          src: sourceOf(e.at, e.from), owner: e.owner,
+          src: sourceOf(e.at, e.from), owner: e.owner, late,
         });
         break;
       }
 
       case "rally": {
-        for (const s of e.sources.slice(0, MAX_RALLY_FLOWS)) fx.flow([s, e.to], e.owner);
-        fx.pop(e.to, e.owner);
+        for (const s of e.sources.slice(0, MAX_RALLY_FLOWS)) fx.flow([s, e.to], e.owner, late);
+        fx.pop(e.to, e.owner, late);
         break;
       }
 
       case "effectDamage":
         // A hit that killed the tile gets the destruction, not the clash: the tile has
         // already gone from the board and this is the only thing that says it was there.
-        if (e.wiped) fx.crumble(e.at, e.owner, false, ruin(ruins++));
-        else fx.clash(e.at);
+        if (e.wiped) fx.crumble(e.at, e.owner, false, late + ruin(ruins++));
+        else fx.clash(e.at, late);
         break;
 
       case "fled":
@@ -172,7 +229,7 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
         // A trail losing an anchor collapses back to the nearest held tile, and the pruner
         // emits one pass at a time — so staggering by arrival makes the chain reaction read
         // as one thing unravelling rather than a row of tiles blinking out together.
-        fx.crumble(e.at, e.owner, true, ruin(ruins++));
+        fx.crumble(e.at, e.owner, true, late + ruin(ruins++));
         break;
 
       case "effectApplied":
@@ -184,8 +241,11 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
         // for any of them. Reveal them as one ordered group, queen first, so the hive
         // fills the same way every other capture does instead of snapping over.
         const cells = orderedFromQueen(e.cells);
-        reveal.begin(cells.map((at) => ({ at, edge: "L" as RevealEdge, prev: null })));
-        cells.forEach((at, i) => fx.pop(at, e.owner, reveal.slotMs(i + 1, cells.length)));
+        reveal.begin(
+          cells.map((at) => ({ at, edge: "L" as RevealEdge, prev: null })),
+          performance.now() + late,
+        );
+        cells.forEach((at, n) => fx.pop(at, e.owner, late + reveal.slotMs(n + 1, cells.length)));
         break;
       }
 
@@ -198,15 +258,27 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
     }
   }
 
-  if (captures.length) {
-    reveal.begin(captures.map(({ at, edge, prev }) => ({ at, edge, prev })));
+  /**
+   * One ordered run of captures, filling tile after tile.
+   *
+   * The two ACTS run separately: ground the ability took fills at once, and ground the
+   * march took fills a beat later, so a turn that did both is two things rather than one.
+   * One group carrying both would have to fill them in one sweep, which is the very thing
+   * that made a cast and a march look like a single move.
+   */
+  const fillRun = (run: typeof captures, late: number): void => {
+    if (!run.length) return;
+    reveal.begin(
+      run.map(({ at, edge, prev }) => ({ at, edge, prev })),
+      performance.now() + late,
+    );
     // Each flourish leaves as its tile's turn comes round, so they stay in step with the
     // fill rather than all firing on the first frame.
     // WHEN the front reaches each tile, not the index times an average: the front leaves
     // fast and settles (reveal.ts), so an evenly-spaced flourish drifts off the fill it is
     // supposed to be part of — a streak setting off over ground already filled in.
-    const arrives = (slot: number): number => reveal.slotMs(slot, captures.length);
-    captures.forEach(({ src, at, owner, prev }, i) => {
+    const arrives = (slot: number): number => late + reveal.slotMs(slot, run.length);
+    run.forEach(({ src, at, owner, prev }, i) => {
       const k = key(at.c, at.r);
       const fight = clashes.get(k);
       if (fight) {
@@ -222,7 +294,9 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
       if (prev || beaten.has(k)) fx.blink(at, prev, arrives(i));
       fx.pop(at, owner, arrives(i + 1));
     });
-  }
+  };
+  fillRun(captures.filter((c) => !c.late), 0);
+  fillRun(captures.filter((c) => c.late > 0), actGap);
 
   /*
    * THE ROUT.
@@ -250,8 +324,8 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
 
   // Fights that took no ground still have to be seen.
   for (const fight of clashes.values()) {
-    fx.flow([fight.src, fight.at], fight.attacker);
-    fx.clash(fight.at, reveal.runMs(1));
+    fx.flow([fight.src, fight.at], fight.attacker, fight.late);
+    fx.clash(fight.at, fight.late + reveal.runMs(1));
   }
 }
 
@@ -266,6 +340,13 @@ function orderedFromQueen(cells: readonly Coord[]): Coord[] {
   const cy = cells.reduce((n, p) => n + p.r, 0) / cells.length;
   return cells.slice().sort((a, b) =>
     (Math.abs(a.c - cx) + Math.abs(a.r - cy)) - (Math.abs(b.c - cx) + Math.abs(b.r - cy)));
+}
+
+/** The first event of the march, counting a travel's trail as part of the travel. */
+function backOverTrail(events: readonly EngineEvent[], march: number): number {
+  let i = march;
+  while (i > 0 && events[i - 1]?.type === "veinLaid") i--;
+  return i;
 }
 
 /** Direction of travel into `path[i]`, as a fill edge. */

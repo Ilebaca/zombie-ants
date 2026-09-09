@@ -447,6 +447,32 @@ Each of these cost a debugging round. Do not repeat them.
   - The predicate is "on the path AND claimed" now, and **both halves are load-bearing** —
     on-the-path alone is the bug, and claimed alone stops a vein laid by anything OTHER
     than a travel from ever filling in. A mutation of each fails a different test.
+  - **AND IT CAME BACK, because the tile being SEEN to go was only half of it.** Reported
+    again from a real match — "he was able to cut my line with his long move, long move
+    should not be able to attack", twice in ten games. The engine was innocent again:
+    `travelTargets`/`pathTo` only ever step onto ground that is EMPTY or already the
+    mover's, and the audit came back clean at hard over **18 games / 1,555 turns**. What
+    the player saw was ONE TURN DOING TWO THINGS ON ONE FRAME — the ability destroys a
+    tile out of the middle of a line and the column sets off along the gap in the same
+    batch, so the tile dies under the comet.
+  - **SO THE MARCH WAITS FOR THE CAST** (`SECOND_ACT_MS`, `actGapOf`). Everything before
+    the first march verb (`move`, `travel`, `rally`) is the cast; it plays at once and the
+    march — its fill, its streak, its pop, its captures — is held back a beat. It is a
+    delay on the ANIMATION only: the engine has finished the turn and the searched board
+    lands whole, which is why this could not be done by playing the two halves as two
+    board updates.
+  - **A TRAVEL'S OWN TRAIL IS NOT A CAST.** `travel()` emits one `veinLaid` per step and
+    only then the travel itself, so those always sit in front of the march — counted as a
+    first act, every long send would wait for itself. Three existing tests failed exactly
+    that way, which is how the rule was found rather than shipped.
+  - **The hand-over waits with it.** `MatchScreen.playAI` holds the turn open for the
+    animation; a batch that plays a beat longer needs that beat, or the second half is cut
+    off precisely where it matters.
+  - **AND IT IS RARE, WHICH IS WHY IT LOOKED LIKE A BUG.** `npm run reach` counts the
+    pattern now: **3 turns in 773 at hard, 0.4%** — about one turn in every three matches,
+    against a player who has seen the other two hundred turns behave. Milan reported it
+    twice in ten games, which is the same number. A thing that happens once in three
+    matches and looks illegal is worse than one that happens constantly.
 - **AND THE WAY THAT WAS SETTLED IS ITS OWN TOOL** (`npm run reach`, and
   `engine/__tests__/reach.test.ts` as the tripwire). Every rule test in the suite builds the
   one board it is about; nothing played whole games and watched the WHOLE grid. This does,
