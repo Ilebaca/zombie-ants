@@ -27,7 +27,7 @@ import type { Coord, GameState, Player } from "../engine";
  * How fast the front crosses the board, in tiles per second.
  *
  * The same idea as the Hive's surge (board.ts) and the reveal: a constant tiles-per-second
- * front, so a 7×7 skirmish and a 13×13 gauntlet look the same rather than one crawling and
+ * front, so a four-tile colony and a forty-tile one look the same rather than one crawling and
  * the other streaking. The clamps below keep the whole thing inside a beat the player will
  * sit through — nobody wants three seconds of animation between them and the result.
  */

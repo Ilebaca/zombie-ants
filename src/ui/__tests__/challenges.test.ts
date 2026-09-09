@@ -96,14 +96,18 @@ describe("the challenges screen", () => {
    * every other card says too. The map, the colony and the difficulty are what tell one
    * challenge from another, so a card is held to carrying all three.
    */
-  it("draws one card per position, each naming its map, colony and difficulty", () => {
+  /**
+   * NO BOARD CHIP. There is one board (engine/config.ts), so naming it on all five cards
+   * is five copies of a fact that tells them apart from nothing.
+   */
+  it("draws one card per position, each naming its colony and difficulty", () => {
     const root = list(store());
     expect(cards(root).length).toBe(CHALLENGES.length);
     cards(root).forEach((card, i) => {
       const c = CHALLENGES[i]!;
       const chips = Array.from(card.querySelectorAll(".chalchip")).map((x) => x.textContent);
-      expect(chips.join(" "), c.id).toContain(MAPS[c.map].name);
       expect(chips.join(" "), c.id).toContain(SPECIES[c.species].name);
+      expect(chips.join(" "), c.id).not.toContain(MAPS[c.map].name);
       expect(card.querySelectorAll(".chalstar.on").length, c.id).toBe(c.stars);
       expect(card.querySelector(".chalshot"), "the preview came back").toBeNull();
     });

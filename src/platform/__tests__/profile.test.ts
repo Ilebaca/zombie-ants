@@ -194,7 +194,7 @@ describe("a brand-new profile", () => {
     const fresh = normalise({});
     const fields = [
       "name", "colony", "mycel", "pheromone", "xp", "tourSeen",
-      "lastSpecies", "lastMap", "lastShape", "difficulty", "pass",
+      "lastSpecies", "lastShape", "difficulty", "pass",
     ] as const;
     for (const key of fields) expect(fresh[key], key).toEqual(base[key]);
   });

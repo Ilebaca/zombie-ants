@@ -10,7 +10,7 @@ import type { GameState, PlayerMods, SpeciesId } from "../index";
 const mods = (over: Partial<PlayerMods> = {}): PlayerMods => ({ ...NEUTRAL_MODS, ...over });
 
 /** A blank board with `you` fielding `species` and a nest already placed. */
-function withSpecies(species: SpeciesId, map: "tiny" | "mid" = "mid"): GameState {
+function withSpecies(species: SpeciesId, map: "small" | "small" = "small"): GameState {
   const s = blankGame(map, { you: species, ai: "fire" });
   s.current = "you";
   s.cooldown.you = 0;
@@ -48,11 +48,11 @@ describe("a leaf wall stops a tunnel too", () => {
    * past the ARMY in front of a wall, not a loophole in the wall itself.
    */
   const walledBoard = () => {
-    const s = blankGame("mid", { you: "ghost", ai: "leafcutter" });
+    const s = blankGame("small", { you: "ghost", ai: "leafcutter" });
     s.current = "you";
     s.cooldown.you = 0;
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 40 });
-    put(s, 11, 11, { owner: "ai", struct: "nest", soldiers: 10 });
+    put(s, 7, 7, { owner: "ai", struct: "nest", soldiers: 10 });
     recomputeConnectivity(s);
     addEffect(s, 4, 7, "leaf", "ai", 4);
     return s;
@@ -88,7 +88,7 @@ describe("leaf (Leafcutter)", () => {
     const s = withSpecies("leafcutter");
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     put(s, 2, 1, { owner: "you", struct: "stable", soldiers: 5 });
-    put(s, 11, 11, { owner: "ai", struct: "nest", soldiers: 10 });   // or checkWipe ends it
+    put(s, 7, 7, { owner: "ai", struct: "nest", soldiers: 10 });   // or checkWipe ends it
     recomputeConnectivity(s);
 
     const permanentCount = (): number =>
@@ -265,10 +265,10 @@ describe("flee (Demon)", () => {
   it("leaves the enemy's trail structure intact", () => {
     const s = withSpecies("demon");
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
-    put(s, 6, 10, { owner: "ai", struct: "nest", soldiers: 10 });
-    const trail = [put(s, 5, 10, { owner: "ai", struct: "vein", soldiers: 0 }),
-                   put(s, 4, 10, { owner: "ai", struct: "vein", soldiers: 0 })];
-    put(s, 3, 10, { owner: "ai", struct: "stable", soldiers: 5 });   // the far anchor
+    put(s, 6, 7, { owner: "ai", struct: "nest", soldiers: 10 });
+    const trail = [put(s, 5, 7, { owner: "ai", struct: "vein", soldiers: 0 }),
+                   put(s, 4, 7, { owner: "ai", struct: "vein", soldiers: 0 })];
+    put(s, 3, 7, { owner: "ai", struct: "stable", soldiers: 5 });    // the far anchor
     put(s, 3, 1, { owner: "ai", struct: "stable", soldiers: 6 });    // the one that panics
     recomputeConnectivity(s);
 
@@ -290,7 +290,7 @@ describe("flee (Demon)", () => {
   it("prunes a trail whose anchor the ability took away", () => {
     const s = withSpecies("demon");
     put(s, 1, 2, { owner: "you", struct: "nest", soldiers: 30 });
-    put(s, 1, 10, { owner: "ai", struct: "nest", soldiers: 20 });
+    put(s, 1, 7, { owner: "ai", struct: "nest", soldiers: 20 });
     put(s, 2, 2, { owner: "ai", struct: "stable", soldiers: 6 });    // the anchor, in reach
     const trail = [put(s, 3, 2, { owner: "ai", struct: "vein", soldiers: 0 }),
                    put(s, 4, 2, { owner: "ai", struct: "vein", soldiers: 0 })];
@@ -491,7 +491,7 @@ describe("determinism", () => {
    */
   it("replays identically from the same seed", () => {
     const run = (): string => {
-      const s = blankGame("mid", { you: "bullet", ai: "fire" });
+      const s = blankGame("small", { you: "bullet", ai: "fire" });
       s.rng = 12345;
       s.current = "you";
       put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
@@ -505,7 +505,7 @@ describe("determinism", () => {
 
   it("gives different scatter for different seeds", () => {
     const run = (seed: number): string => {
-      const s = blankGame("mid", { you: "bullet", ai: "fire" });
+      const s = blankGame("small", { you: "bullet", ai: "fire" });
       s.rng = seed;
       s.current = "you";
       put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
@@ -518,7 +518,7 @@ describe("determinism", () => {
 
   /** Simulation must not advance the real match's stream (CLAUDE.md §5). */
   it("restores the generator with the board", () => {
-    const s = blankGame("mid", { you: "bullet", ai: "fire" });
+    const s = blankGame("small", { you: "bullet", ai: "fire" });
     s.rng = 4242;
     s.current = "you";
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });

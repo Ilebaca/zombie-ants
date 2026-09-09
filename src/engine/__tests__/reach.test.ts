@@ -147,16 +147,16 @@ const SPECIES: SpeciesId[] = [
 ];
 
 /**
- * ONE GAME PER MAP, and one `it` each — never a loop over all of them in a single test.
+ * THREE GAMES, one `it` each — never a loop over all of them in a single test.
  *
  * The search is synchronous, so while a game runs the worker cannot answer the reporter and
  * vitest's RPC gives up at sixty seconds (§4a). A game is about five of those, so three of
  * them in one block is most of the budget spent for no extra coverage; three blocks hand the
- * loop back in between. The WIDE sweep — every colony on every map, hundreds of games — is
+ * loop back in between. The WIDE sweep — every colony, hundreds of games — is
  * `npm run reach`, which is where to go when something like this is reported again.
  */
-for (const [map, i] of [["tiny", 2], ["small", 5], ["mid", 7]] as const) {
-  describe(`a full game on ${map}`, () => {
+for (const [map, i] of [["small", 2], ["small", 5], ["small", 7]] as const) {
+  describe(`a full game (${map}, colony ${i})`, () => {
     it("never lets an action reach ground it cannot", () => {
       audit(9000 + i, map, {
         you: SPECIES[i] as SpeciesId,

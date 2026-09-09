@@ -7,7 +7,7 @@ import type { Difficulty } from "../src/ai/search";
 const mods = { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } };
 const ctx = defaultContext();
 
-for (const map of ["tiny", "small", "mid"] as MapId[]) {
+for (const map of ["small"] as MapId[]) {
   for (const d of ["easy", "normal", "hard"] as Difficulty[]) {
     const s = createGame({ map, species: { you: "fire", ai: "leafcutter" }, seed: 7 });
     // Play twelve turns of the same difficulty so the board is a real mid-game.

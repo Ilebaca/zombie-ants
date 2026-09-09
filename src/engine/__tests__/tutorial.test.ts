@@ -5,7 +5,7 @@
  * and the queen — each on its own turn with the enemy replying in between. A step that asks
  * for something the board cannot deliver leaves the tutorial stuck with nothing but Skip.
  * Combat is deterministic (CLAUDE.md §4.1), so this is not a matter of odds: either the
- * arrangement makes every lesson available on every map, for every colony, or it does not.
+ * arrangement makes every lesson available for every colony, or it does not.
  *
  * This plays the whole thing in the order the tour plays it, taking the same tiles the
  * tour's own helpers pick, and it plays it as ALL NINE species — the fist has to beat the

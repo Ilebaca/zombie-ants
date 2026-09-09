@@ -47,7 +47,7 @@ describe("tracing a colony's outline", () => {
   it("gives a detached group its own loop", () => {
     const s = blankGame();
     put(s, 1, 1, { owner: "you", struct: "stable", soldiers: 2 });
-    put(s, 9, 9, { owner: "you", struct: "stable", soldiers: 2 });
+    put(s, 7, 7, { owner: "you", struct: "stable", soldiers: 2 });
     recomputeConnectivity(s);
     expect(territoryLoops(s, "you")).toHaveLength(2);
   });

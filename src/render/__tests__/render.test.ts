@@ -161,7 +161,7 @@ describe("animate: events to animation", () => {
    * The legacy build stored reveal progress on the tile, which the AI's snapshot copied.
    */
   it("never mutates game state", () => {
-    const state = blankGame("tiny");
+    const state = blankGame("small");
     put(state, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     recomputeConnectivity(state);
     const before = JSON.stringify(state.grid);
@@ -176,7 +176,7 @@ describe("animate: events to animation", () => {
   });
 
   it("keeps reveal progress off the tiles", () => {
-    const state = blankGame("tiny");
+    const state = blankGame("small");
     const s = sinks();
     s.reveal.reduced = false;
     animate([{ type: "capture", at: { c: 2, r: 1 }, owner: "you", from: "R", previous: null }], s);
@@ -186,7 +186,7 @@ describe("animate: events to animation", () => {
 
 describe("drawTile", () => {
   it("draws a rock for blocked terrain and nothing else", () => {
-    const state = blankGame("tiny");
+    const state = blankGame("small");
     const t = put(state, 1, 1, { terrain: "blocked" });
     const rec = draw(state, t);
     // Palette-driven rather than a literal colour, so a recolour does not fail the test
@@ -200,7 +200,7 @@ describe("drawTile", () => {
    * Flattening one back to a single fill is the exact regression this catches.
    */
   it("builds a rock from its ground shade, its side and its top", () => {
-    const state = blankGame("tiny");
+    const state = blankGame("small");
     const t = put(state, 1, 1, { terrain: "blocked" });
     const fills = draw(state, t).fills();
     for (const layer of [MAP.groundShade, MAP.rockEdge, MAP.rock, MAP.rockTop]) {
@@ -209,7 +209,7 @@ describe("drawTile", () => {
   });
 
   it("draws a resource as a gem with a facet, over a shaded base", () => {
-    const state = blankGame("tiny");
+    const state = blankGame("small");
     const t = put(state, 2, 2, { terrain: "resource" });
     const fills = draw(state, t).fills();
     for (const layer of [MAP.gemEdge, MAP.gem, MAP.gemTop]) {
@@ -222,7 +222,7 @@ describe("drawTile", () => {
    * trail of bars, never as a filled cell — a filled vein reads as captured ground.
    */
   it("draws a vein as connecting bars, not a filled cell", () => {
-    const state = blankGame("tiny");
+    const state = blankGame("small");
     put(state, 1, 1, { owner: "you", struct: "nest", soldiers: 5 });
     const vein = put(state, 2, 1, { owner: "you", struct: "vein", soldiers: 0 });
     recomputeConnectivity(state);
@@ -235,7 +235,7 @@ describe("drawTile", () => {
   });
 
   it("draws captured territory as a filled cell", () => {
-    const state = blankGame("tiny");
+    const state = blankGame("small");
     put(state, 1, 1, { owner: "you", struct: "nest", soldiers: 5 });
     const stable = put(state, 2, 1, { owner: "you", struct: "stable", soldiers: 4 });
     recomputeConnectivity(state);
@@ -245,7 +245,7 @@ describe("drawTile", () => {
   });
 
   it("greys out a tile cut off from the nest", () => {
-    const state = blankGame("tiny");
+    const state = blankGame("small");
     put(state, 1, 1, { owner: "you", struct: "nest", soldiers: 5 });
     const island = put(state, 5, 5, { owner: "you", struct: "stable", soldiers: 7 });
     recomputeConnectivity(state);
@@ -254,7 +254,7 @@ describe("drawTile", () => {
   });
 
   it("hides every count during the win-flood finale", () => {
-    const state = blankGame("tiny");
+    const state = blankGame("small");
     const t = put(state, 1, 1, { owner: "you", struct: "stable", soldiers: 9 });
     recomputeConnectivity(state);
     expect(draw(state, t).texts()).toContain("9");
@@ -262,14 +262,14 @@ describe("drawTile", () => {
   });
 
   it("stamps a shield badge on a wild garrison", () => {
-    const state = blankGame("tiny");
+    const state = blankGame("small");
     const t = put(state, 3, 3, { owner: null, guard: 6, terrain: "ground" });
     const rec = draw(state, t);
     expect(rec.texts().some((s) => s.includes("6"))).toBe(true);
   });
 
   it("draws the nest illustration only on the queen's tile", () => {
-    const state = blankGame("tiny");
+    const state = blankGame("small");
     const nest = put(state, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     const stable = put(state, 2, 1, { owner: "you", struct: "stable", soldiers: 3 });
     recomputeConnectivity(state);
@@ -312,7 +312,7 @@ describe("the troop-count badge", () => {
   };
 
   const badgeFor = (count: number): { w: number; h: number } => {
-    const s = blankGame("tiny");
+    const s = blankGame("small");
     const t = put(s, 2, 2, { owner: "you", struct: "stable", soldiers: count });
     recomputeConnectivity(s);
     const box = badgeBox(draw(s, t));
@@ -336,7 +336,7 @@ describe("the troop-count badge", () => {
   });
 
   it("keeps the corner radius at half the height, so it stays a pill", () => {
-    const s = blankGame("tiny");
+    const s = blankGame("small");
     const t = put(s, 2, 2, { owner: "you", struct: "stable", soldiers: 128 });
     recomputeConnectivity(s);
     const rec = draw(s, t);
@@ -346,7 +346,7 @@ describe("the troop-count badge", () => {
   });
 
   it("still shows the wild garrison's strength on an unowned tile", () => {
-    const s = blankGame("tiny");
+    const s = blankGame("small");
     const t = put(s, 2, 2, { owner: null, guard: 4 });
     const rec = draw(s, t);
     expect(rec.texts().join(" ")).toContain("4");

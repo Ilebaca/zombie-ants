@@ -6,7 +6,7 @@ const mods = { ...NEUTRAL_MODS };
 
 describe("production", () => {
   it("pays nest 2, stable 1, resource 3", () => {
-    const s = blankGame("mid", { you: "weaver", ai: "fire" });  // weaver prod = 1.0
+    const s = blankGame("small", { you: "weaver", ai: "fire" });  // weaver prod = 1.0
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     put(s, 2, 1, { owner: "you", struct: "stable", soldiers: 3 });
     put(s, 3, 1, { owner: "you", struct: "stable", soldiers: 3, terrain: "resource" });
@@ -15,7 +15,7 @@ describe("production", () => {
   });
 
   it("pays nothing for veins", () => {
-    const s = blankGame("mid", { you: "weaver", ai: "fire" });
+    const s = blankGame("small", { you: "weaver", ai: "fire" });
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     put(s, 2, 1, { owner: "you", struct: "vein", soldiers: 0 });
     recomputeConnectivity(s);
@@ -23,15 +23,15 @@ describe("production", () => {
   });
 
   it("pays nothing for tiles detached from the queen", () => {
-    const s = blankGame("mid", { you: "weaver", ai: "fire" });
+    const s = blankGame("small", { you: "weaver", ai: "fire" });
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
-    put(s, 1, 10, { owner: "you", struct: "stable", soldiers: 3 });   // floating
+    put(s, 1, 7, { owner: "you", struct: "stable", soldiers: 3 });   // floating
     recomputeConnectivity(s);
     expect(incomeOf(s, "you", mods)).toBe(2);
   });
 
   it("scales resources with Fungal Cultivation, up to double", () => {
-    const s = blankGame("mid", { you: "weaver", ai: "fire" });
+    const s = blankGame("small", { you: "weaver", ai: "fire" });
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     put(s, 2, 1, { owner: "you", struct: "stable", soldiers: 3, terrain: "resource" });
     recomputeConnectivity(s);
@@ -40,7 +40,7 @@ describe("production", () => {
   });
 
   it("carries fractional growth instead of rounding it away", () => {
-    const s = blankGame("mid", { you: "bullet", ai: "fire" });   // prod 0.70
+    const s = blankGame("small", { you: "bullet", ai: "fire" });   // prod 0.70
     put(s, 1, 1, { owner: "you", struct: "stable", soldiers: 1 });
     put(s, 1, 2, { owner: "you", struct: "nest", soldiers: 10 });
     recomputeConnectivity(s);
@@ -50,7 +50,7 @@ describe("production", () => {
   });
 
   it("hatches Brood Nursery soldiers into the nest", () => {
-    const s = blankGame("mid", { you: "weaver", ai: "fire" });
+    const s = blankGame("small", { you: "weaver", ai: "fire" });
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     recomputeConnectivity(s);
     runProduction(s, "you", { ...mods, brood: 3 });

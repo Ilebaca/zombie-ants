@@ -80,7 +80,7 @@ describe("the button that starts the setup flow", () => {
     play.click();
     expect(host.querySelector(".tourcount")?.textContent, "the tour did not follow the app")
       .not.toBe(at);
-    expect(host.querySelector("#mapsel"), "the setup flow never opened").not.toBeNull();
+    expect(host.querySelector("#formation"), "the setup flow never opened").not.toBeNull();
   });
 });
 
@@ -150,9 +150,8 @@ describe("the first match", () => {
 
     walkTo(host, "Into a match");
     host.querySelector<HTMLButtonElement>("#goPlay")?.click();
-    host.querySelector<HTMLButtonElement>("#mapNext")?.click();
-    host.querySelector<HTMLButtonElement>("#toFormation")?.click();
-    host.querySelector<HTMLButtonElement>("#begin")?.click();
+    host.querySelector<HTMLButtonElement>("#setupGo")?.click();   // the formation
+    host.querySelector<HTMLButtonElement>("#setupGo")?.click();   // the colony, then play
 
     const match = (app as unknown as {
       match: { opts: { difficulty: string }; destroy: () => void };

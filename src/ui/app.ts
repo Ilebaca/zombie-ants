@@ -6,11 +6,11 @@
  * through `onExit`.
  */
 import { MAPS, START_SHAPES, arrangeTutorial, createGame, startsFirst } from "../engine";
-import type { MapId, MatchSetup, Player, SpeciesId } from "../engine";
+import type { MatchSetup, Player, SpeciesId } from "../engine";
 import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
 import {
-  DEFAULT_SPECIES, DemoGateway, LocalDuels, LocalFriendService, LocalMatchmaker, LocalSupportGateway,
+  DemoGateway, LocalDuels, LocalFriendService, LocalMatchmaker, LocalSupportGateway,
   ProfileStore, TOUR_VERSION, botsForChapter, chapterOf, compact, makeFeedback,
   scoreQuestEvents,
 } from "../platform";
@@ -45,7 +45,7 @@ import { buildFriends } from "./friends";
 import { buildSupport } from "./support";
 import { buildSettings } from "./settings";
 import { buildRules } from "./rules";
-import { buildFormationSelect, buildMapSelect, buildSpeciesSelect, rollAISpecies, rollShape } from "./setup";
+import { buildSetup, rollAISpecies, rollShape } from "./setup";
 import { buildDuelPick, inviteBar } from "./duel";
 import { ReplayScreen, buildHistory } from "./history";
 import { canReplay } from "../platform";
@@ -74,7 +74,7 @@ import "./skin.css";   // the look, layered over the structure
  * its rules select by id, so these names are load-bearing.
  */
 type ScreenId =
-  | "home" | "mapsel" | "start" | "formation" | "duelpick" | "history"
+  | "home" | "formation" | "duelpick" | "history"
   | "anthill" | "antarium" | "antup" | "achievements" | "quests" | "profile"
   | "challenges" | "daily" | "rules" | "settings" | "news" | "friends" | "support"
   | "luckyhatch" | "leaderboard" | "shop" | "traits" | "inventory" | "keepsafe";
@@ -101,10 +101,6 @@ const DECK = ["shop", "anthill", "home", "antarium", "challenges"] as const;
 type DeckId = (typeof DECK)[number];
 const isDeck = (id: string): id is DeckId => (DECK as readonly string[]).includes(id);
 
-/** Short names for the settings screen, as the legacy build labels them. */
-const MAP_LABEL: Record<MapId, string> = { tiny: "Skirmish", small: "Corridor", mid: "Gauntlet" };
-/** The three maps, in the order Settings cycles through them. */
-const MAP_ORDER: readonly MapId[] = ["tiny", "small", "mid"];
 const DIFFICULTY_LABEL: Record<Difficulty, string> = { easy: "Easy", normal: "Normal", hard: "Hard" };
 
 /** Setup choices that survive between matches. */
@@ -265,7 +261,7 @@ export class App {
     // Reopen on the player's last setup, so a rematch is two taps.
     const saved = this.profile.get();
     this.choices = {
-      map: saved.lastMap,
+      map: "small",
       species: saved.lastSpecies,
       shape: (saved.lastShape in START_SHAPES ? saved.lastShape : "wedge") as ShapeId,
     };
@@ -409,7 +405,6 @@ export class App {
    */
   private adoptProfile(): void {
     this.difficulty = this.profile.get().difficulty;
-    this.choices.map = this.profile.get().lastMap;
   }
 
   /** Push the saved switches into the device. Called at boot and whenever one is flipped. */
@@ -520,38 +515,27 @@ export class App {
         // but Skip. The router says when the setup flow really opened.
         advance: "signal",
       },
-      // One step per setup screen, lighting the WHOLE box. Lighting only the Next button
-      // asked the player to "pick the one you want" with the picker itself in the dark;
-      // these advance when the screen actually changes, not on the first tap inside.
+      // ONE STEP PER CHOICE, on the one screen that asks them both. They light the whole
+      // picker rather than its Next button — lighting only Next asked the player to "pick
+      // the one you want" with the thing to pick from in the dark — and they end on a
+      // SIGNAL, so a tap inside the picker cannot march the tour on without the player.
       {
-        id: "map",
-        title: "The board",
-        text: "Bigger boards mean longer matches and a Hive that wakes later. Skirmish is "
-          + "the quickest. Pick one, then tap Next.",
-        find: find("#mapsel .setupbox"),
+        id: "shape",
+        title: "Your opening",
+        text: "Where your first five tiles sit in the corner. A wedge pushes out, a wall "
+          + "holds ground. Step through them with the arrows, then tap Next.",
+        find: find("#formation .setupfoot"),
         advance: "signal",
         pad: 4,
-        // A whole picker has no room beside it, so the bubble settles in the MIDDLE — on
-        // top of the very cards the step is asking the player to choose between. Pinned to
-        // the top it covers the screen's own heading, which the step is already saying.
         bubble: "top",
       },
       {
         id: "species",
         title: "Your colony",
         text: "Leafcutters farm fungus, fire ants sting in a swarm, carpenters tunnel. The "
-          + "ability is the species. Choose one, then tap Next.",
-        find: find("#start .setupbox"),
-        advance: "signal",
-        pad: 4,
-        bubble: "top",
-      },
-      {
-        id: "shape",
-        title: "Your opening",
-        text: "Where your first five tiles sit in the corner. A wedge pushes out, a wall "
-          + "holds ground. Pick one and begin — I will walk you through the first turn.",
-        find: find("#formation .setupbox"),
+          + "ability is the species. Choose one and play — I will walk you through the "
+          + "first turn.",
+        find: find("#formation .setupfoot"),
         advance: "signal",
         pad: 4,
         bubble: "top",
@@ -640,13 +624,10 @@ export class App {
   /* --------------------------------------------------------------------- ROUTER */
 
   private show(id: ScreenId): void {
-    // The setup steps end when the player LEAVES the screen they are about, so the whole
-    // screen can stay live under the tour rather than only its Next button.
-    if (this.tour.running) {
-      if (id === "mapsel") this.tour.signal("play");
-      else if (id === "start") this.tour.signal("map");
-      else if (id === "formation") this.tour.signal("species");
-    }
+    // The tour's PLAY step ends when the setup flow actually opens, never on the press:
+    // a press the app did not act on left the tutorial asking for a screen that was never
+    // coming. The two steps INSIDE that screen report themselves (`onStep`).
+    if (this.tour.running && id === "formation") this.tour.signal("play");
     this.clearMatch();
     this.clearReplay();
     // Navigating away abandons a search in flight — the finder is told, so a promise that
@@ -810,39 +791,22 @@ export class App {
 
   private build(id: ScreenId): HTMLElement {
     if (id === "home") return this.buildHome();
-    if (id === "mapsel") {
-      // Set BEFORE the picker is built: `buildMapSelect` opens its deck on `choices.map`
-      // while it is being constructed, so choosing the ground afterwards moves nothing.
+    if (id === "formation") {
+      // THE INVITATION SITS ON THE SCREEN IT REPLACES. It used to ride the map picker,
+      // because the ground was the one choice an invitation had already made; with one
+      // board what it has chosen is the OPPONENT, and this is the screen standing between
+      // the player and playing them.
       const invite = this.profile.duels[0];
-      if (invite) this.choices.map = invite.map;
-      const screen = buildMapSelect(this.setup(() => this.show("home"), "start"));
-      // THE INVITATION SITS ON THE SCREEN IT REPLACES. A challenge starts by choosing the
-      // ground; an invitation has already chosen it, so the bar goes on top of that
-      // choice rather than on a screen of its own.
+      const screen = buildSetup(this.setup(() => this.show("home")));
       if (invite) {
-        // THE BOARD BEHIND THE BAR IS THE ONE BEING OFFERED. The bar names their ground,
-        // and a picker sitting on the player's own last choice underneath it says two
-        // different things about the same match. Opening on theirs makes the screen SHOW
-        // the invitation rather than only describe it — and the player can still swipe
-        // away, which is what declining and choosing your own looks like.
         screen.classList.add("hasinvite");
         screen.prepend(inviteBar({
           invite,
           onAccept: () => this.acceptDuel(invite.id),
-          onDecline: () => { this.profile.answerDuel(invite.id); this.show("mapsel"); },
+          onDecline: () => { this.profile.answerDuel(invite.id); this.show("formation"); },
         }));
       }
       return screen;
-    }
-    if (id === "start") {
-      // Every new play opens on the first colony by rarity, exactly as the legacy build
-      // does — the picker is a fresh choice each time, not a memory of the last match.
-      this.choices.species = DEFAULT_SPECIES;
-      this.paintYou();
-      return buildSpeciesSelect(this.setup(() => this.show("mapsel"), "formation"));
-    }
-    if (id === "formation") {
-      return buildFormationSelect(this.setup(() => this.show("start"), "formation"));
     }
     if (id === "duelpick") {
       return buildDuelPick({
@@ -942,14 +906,7 @@ export class App {
       return buildSettings({
         profile: this.profile,
         onBack: () => this.show("home"),
-        board: MAP_LABEL[this.choices.map],
         difficulty: DIFFICULTY_LABEL[this.difficulty],
-        onCycleBoard: () => {
-          const next = MAP_ORDER[(MAP_ORDER.indexOf(this.choices.map) + 1) % MAP_ORDER.length];
-          this.choices.map = next as MapId;
-          this.profile.update((p) => { p.lastMap = this.choices.map; });
-          this.show("settings");
-        },
         onCycleDifficulty: () => {
           const order: Difficulty[] = ["easy", "normal", "hard"];
           this.difficulty = order[(order.indexOf(this.difficulty) + 1) % order.length] as Difficulty;
@@ -1082,7 +1039,7 @@ export class App {
 
     const btn = el("button", "playbtn", "PLAY");
     btn.id = "goPlay";
-    btn.onclick = () => this.show("mapsel");
+    btn.onclick = () => this.show("formation");
     play.appendChild(btn);
 
     const how = el("button", "howtolink");
@@ -1252,12 +1209,14 @@ export class App {
    * The flow is three screens in a row, so the shell decides the row and they decide
    * nothing about it (ui/setup.ts).
    */
-  private setup(onBack: () => void, next: ScreenId): SetupOptions {
+  private setup(onBack: () => void): SetupOptions {
     return {
       choices: this.choices,
       profile: this.profile,
       onBack,
-      onNext: () => this.show(next),
+      // The tour walks this screen a step at a time and the screen does not know it
+      // exists: it reports the step it finished and the tour decides what that means.
+      onStep: (step) => { if (this.tour.running) this.tour.signal(step); },
       onBegin: () => {
         this.challenge = null;
         // A duel does not go looking for a stranger. Hosting one asks WHO next; accepting
@@ -1383,18 +1342,17 @@ export class App {
    */
   private openDuels(): void {
     this.duel = { host: true };
-    this.show("mapsel");
+    this.show("formation");
   }
 
-  /** Take an invitation: the ground is theirs, the colony and the shape are still yours. */
+  /** Take an invitation: the opponent is theirs, the colony and the shape are still yours. */
   private acceptDuel(id: string): void {
     const invite = this.profile.answerDuel(id);
     // Gone already — accepted on another screen, or a stale button. Rebuild rather than
     // start a match against an invitation that is no longer there.
-    if (!invite) { this.show("mapsel"); return; }
+    if (!invite) { this.show("formation"); return; }
     this.duel = { host: false, invite };
-    this.choices.map = invite.map;
-    this.show("start");
+    this.show("formation");
   }
 
   private clearMatchmaking(): void {
@@ -1511,7 +1469,6 @@ export class App {
       // or an app closed on turn one would reopen offering the match before this one.
       this.suspended.clear();
       this.profile.update((p) => {
-        p.lastMap = this.choices.map;
         p.lastSpecies = this.choices.species;
         p.lastShape = this.choices.shape;
       });
@@ -1691,7 +1648,7 @@ export class App {
       // Another match is another opponent: "play again" goes back through the search
       // rather than re-seating whoever was just beaten.
       onAgain: () => { this.clearOverlay(); this.findOpponent(); },
-      onChangeColony: () => { this.clearOverlay(); this.show("start"); },
+      onChangeColony: () => { this.clearOverlay(); this.show("formation"); },
       onHome: () => { this.clearOverlay(); this.show("home"); },
     });
     this.host.appendChild(ov);

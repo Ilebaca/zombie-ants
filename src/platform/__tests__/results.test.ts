@@ -15,7 +15,7 @@ import { actionTargets, applyMove, openingBoard } from "../../engine";
 import type { MatchSetup, Move } from "../../engine";
 
 const setup: MatchSetup = {
-  map: "tiny",
+  map: "small",
   species: { you: "fire", ai: "ghost" },
   seed: 1,
 };
@@ -34,7 +34,7 @@ function playedOut(): { moves: Move[]; winner: "you" | "ai" } {
   let rng = 1;
   const rand = (): number => ((rng = (rng * 1664525 + 1013904223) >>> 0) / 4294967296);
 
-  for (let i = 0; i < 20_000 && !state.over; i++) {
+  for (let i = 0; i < 60_000 && !state.over; i++) {
     const options: Move[] = [];
     for (const row of state.grid) {
       for (const tile of row) {
@@ -44,7 +44,11 @@ function playedOut(): { moves: Move[]; winner: "you" | "ai" } {
         }
       }
     }
-    const pick: Move = options.length > 0 && rand() < 0.75
+    // ALWAYS ACT WHEN THERE IS AN ACTION. Passing three times in four finished a match on
+    // the old 7×7 board and does not on the one board there is now (engine/config.ts): a
+    // nest carries +6 defence and two players who mostly pass never build a fist that can
+    // crack one, so the loop ran out with nothing decided.
+    const pick: Move = options.length > 0
       ? (options[Math.floor(rand() * options.length)] as Move)
       : { do: "end" };
     const move = applyMove(state, state.current, pick).ok ? pick : { do: "end" as const };

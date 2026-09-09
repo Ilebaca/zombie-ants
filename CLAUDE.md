@@ -465,9 +465,9 @@ Each of these cost a debugging round. Do not repeat them.
     set (§4a) — so a clean run at normal says nothing whatever about rally, and the sweep
     has to be run at hard before it means anything. The engine came back clean at both:
     **81 games / 8,362 turns at normal, and 54 games / 5,609 turns at hard** (41 minutes —
-    which is why it is a tool and not a test). The suite carries one short game per map,
-    because the search is synchronous and a full 13x13 game is most of vitest's RPC budget
-    spent on a tail where nothing new happens.
+    which is why it is a tool and not a test). The suite carries one short game,
+    because the search is synchronous and a full game is most of vitest's RPC budget spent
+    on a tail where nothing new happens.
 - **Scenery is baked once, not drawn per frame.** The undergrowth around the playfield
   (`render/terrain.ts`) is a still life — rocks, logs, ferns — and redrawing it sixty times
   a second was by far the most expensive thing on the frame. It renders to an offscreen
@@ -597,9 +597,9 @@ Each of these cost a debugging round. Do not repeat them.
   degrees so the plane of focus is not the screen's own edge. Like the opening camera and
   the winning flood it is a VIEW — it draws over the finished frame and touches neither the
   board nor the layout, so a tap still lands on the cell under the finger.
-  - **THE SHARP BAND IS THE BOARD, never a fraction of the screen.** A 7×7 map and a 13×13
-    map fill very different amounts of the canvas, so a fixed "middle third" would blur
-    half the playfield on one and none of the scenery on the other. It is measured off
+  - **THE SHARP BAND IS THE BOARD, never a fraction of the screen.** A board fills very
+    different amounts of a phone and a tablet, so a fixed "middle third" would blur half
+    the playfield on one and none of the scenery on the other. It is measured off
     `layout`'s own rectangle — which is also what keeps a garrison count legible, and those
     numbers are what a player counts out before committing (§4.1). A board that fills the
     canvas comes out entirely sharp, which is the right picture and not a special case.
@@ -613,7 +613,7 @@ Each of these cost a debugging round. Do not repeat them.
     detail left for a better filter to preserve and the draw is the expensive one.
   - **AND IT READS THE SCREEN, rather than a copy of it.** The first version drew the whole
     frame into an offscreen canvas and blitted it back, and that DOUBLED the frame:
-    **16.7 ms without, 39.1 ms with**, measured on a 13×13 board. There was never a need
+    **16.7 ms without, 39.1 ms with**, measured on the largest board of the day (13×13). There was never a need
     for the copy — the finished frame is already on the canvas, so the small canvas takes
     its pixels. With that and painting back only the two bands that are actually soft
     (`softBands`), the sharp middle is never touched and the cost is **back inside the
@@ -702,28 +702,37 @@ research, each a count with a bar and a way in), so another thing to collect is 
   credits a capture the profile does not is two numbers disagreeing on screen. The fastest
   win ignores a loss and an untimed match — a zero would win every comparison for ever.
 
-**THE PICKERS SHOW THE GAME, NOT A DIAGRAM OF IT** (`ui/setup.ts`). The map picker was
-three cards with a thumbnail of coloured squares and the formation picker was five rounded
-squares on a 72px canvas. Both are `render/snapshot.ts` over a REAL `GameState` now — the
-same drawing code the board uses — so the gems, rocks, water, the Hive and both colonies
-are where they will actually be, and a change to how a nest is drawn reaches the pickers on
-the same commit.
-- **The map picker IS the map.** Full screen, everything floating on it, and choosing is
-  dragging from one to the next — the same `Deck` the home screens ride, because the
-  gesture handling there is the expensive part (§9a) and this is the same object. It takes
-  a class and id so it can be styled apart from the home strip.
-- **FIT, not cover.** Sizing the tile off the longer side filled the screen with the middle
-  of a 13×13 board, which is a texture rather than a map. Fitted to the narrow side, all of
-  it is there — and a bigger map honestly draws smaller tiles.
-- **A preview needs soil around it** (`padTiles`). The clearing is a feathered radial, and
-  a canvas cropped to the board cuts that gradient off mid-fade — a visible line straight
-  across the picture.
-- **A formation preview is the formation ONLY.** A real map puts the Hive in the middle and
-  wild garrisons about; twelve two-inch cards with all of that behind them are twelve
-  pictures of the map. Everything that is not the player's own colony is razed first.
-- **A card in a grid sizes its own canvas** (`fluid`). `drawSnapshot` writes the exact
-  pixel size inline, which is right for a figure and wrong in a grid: `max-width: 100%`
-  squeezed the width while the inline height stood, and a square picture came out tall.
+**ONE BOARD, AND ONE SCREEN THAT ASKS THE OTHER TWO QUESTIONS** (`engine/config.ts`,
+`ui/setup.ts`). There were three maps — 7×7 Skirmish, 9×9 Corridor, 13×13 Gauntlet — and
+choosing between them was the FIRST thing the game asked of somebody who did not yet know
+what a Hive was, or what a longer match was going to cost them in time. Corridor is the
+one that survived.
+- **The type stays a union of ONE, and the setup keeps its `map` field.** A match record
+  carries it (`engine/protocol.ts`), so every stored match still says what it was played
+  on, and a second board is a line in `MAPS` plus a block in `buildMap` rather than a shape
+  change through the whole app. `maps.test.ts` holds that nothing assumed more than one.
+- **Everything that NAMED the board stopped saying anything.** The Settings row that cycled
+  boards is gone (a control that cycles a list of one is a screen lying about itself, the
+  same fault as the dead Sound and Vibration switches), the board chip is off the challenge
+  cards, and `profile.lastMap` is gone — a memory of a choice that no longer exists.
+- **The setup is now ONE screen with TWO steps** (`buildSetup`), and Next does not
+  navigate: the same row starts naming colonies instead of formations, the tiles on the
+  board recolour, and the button becomes Play. The picture never moves, so the player is
+  watching the thing they are deciding about rather than two screens of cards.
+- **The board is drawn by the BOARD'S OWN CODE** (`render/snapshot.ts`) over a real
+  `GameState`, so the gems, rocks, water and the Hive are where they will actually be, and
+  a change to how a nest is drawn reaches this screen on the same commit. FIT, not cover —
+  the whole board, with a hair of soil around it (`padTiles`), because a canvas cropped to
+  the last tile cuts the clearing's feathered edge off mid-fade.
+- **NO ENEMY ON IT.** Their corner is the one thing in the picture that is not the choice
+  being made, and at this size a second colony reads as part of the formation.
+- **An arrow may not step onto something the screen will then REFUSE.** The grid of cards
+  it replaced showed locked colonies so the goal was visible and turned them down with a
+  toast; a stepper that lands on one is a dead end with nothing to say. It walks what the
+  player owns, and the Antarium is where the rest are seen.
+- **The step it finished is REPORTED, never assumed** (`onStep`). The tour walks this
+  screen and the screen does not know the tour exists — the same seam every other screen
+  uses, and it is what lets a step advance on the deed rather than on the press.
 
 **HOW TO PLAY IS A MANUAL** (`src/ui/rules.ts`). It was seven lines of prose, which cannot
 carry a game with deterministic combat a player is meant to count out, supply lines that
@@ -746,7 +755,7 @@ Ten numbered sections now, with a picture beside the rules that need one.
   and the ones outside land off the canvas, which is what keeps a colony's fillets and
   trails correct at the edge of the picture.
 - **The hive terrain is cleared from every figure that is not about it.** It sits in the
-  middle of every map, which is inside most of these windows.
+  middle of the board, which is inside most of these windows.
 
 **CHALLENGES ARE A LADDER, AND BEATING ONE IS REMEMBERED** (`src/ui/challenges.ts`). Five
 identical cards — a title, a run-on grey sentence, a green Play button — and nothing
@@ -953,12 +962,11 @@ setup flow with one step added and one step skipped:
   carries the count of invitations waiting. A separate "invitations" screen would be a
   control that is empty almost every time it is opened, and the badge is the only thing on
   the home screen that can say somebody is waiting on an answer.
-- **THE INVITATION SITS ON THE SCREEN IT REPLACES.** The bar rides on the MAP PICKER,
-  because the ground is the one choice an invitation has already made — the person who
-  sends a challenge picks it, since there is no negotiating a position between two people
-  who are not both looking at a screen. The picker opens ON their map too: a bar naming
-  Gauntlet over a board showing Corridor says two things about one match. `choices.map` has
-  to be set BEFORE `buildMapSelect`, which opens its deck during construction.
+- **THE INVITATION SITS ON THE SCREEN IT INTERRUPTS.** The bar used to ride the MAP
+  PICKER, because the ground was the one choice an invitation had already made. With one
+  board what it has settled is the OPPONENT, so it rides the SETUP screen — the one thing
+  standing between the player and playing them — and the screen makes its own room for it
+  (`#formation.hasinvite`) rather than being covered by it.
 - **Accept AND decline.** An invitation you can only accept is a demand.
 - **An invitation is answered exactly ONCE.** `answerDuel` returns it and removes it, and a
   null means somebody already did — the same reason a challenge reward returns a boolean:
@@ -1151,8 +1159,9 @@ winning about half.**
 - Measured pacing, whole road: 2 games/day at an even record **521 days**, 2.5 **431**,
   3 **368**; at 60% it is 385/316/268. That is the spread to check against after any
   balance change.
-- Maps: Skirmish 7×7 (wake 10, expected 32), Corridor 9×9 (14/45), Gauntlet 13×13 (18/80).
-  The turn figure is an expectation, not a limit — nothing happens when it passes (§4.8).
+- The board: Corridor 9×9, the Hive waking on turn 14, a match expected to run about 45
+  turns. The turn figure is an expectation, not a limit — nothing happens when it passes
+  (§4.8). There were two others and they are gone (§ ONE BOARD).
 
 **8d. WHERE A CURRENCY GOES WHEN THERE IS NOTHING LEFT TO BUY** (`platform/exchange.ts`).
 Every sink in §8c is FINITE, and §8c measured whether they were the right SIZE without ever
@@ -2823,9 +2832,9 @@ played straight cannot teach the game: the Hive sleeps for ten turns, the enemy 
 tiles away, and five tiles of three soldiers cannot crack anything, so the walkthrough could
 only ever demonstrate "move onto empty ground". `arrangeTutorial` runs a supply line from the
 colony to a camp beside the Hive and puts an ENEMY TILE ON THE GUARD in front of the queen —
-on whatever map the player picked, so it never contradicts their choice. It changes no rules;
+on the board every match is played on. It changes no rules;
 it decides where things START, the way a formation does. `src/engine/__tests__/tutorial.test.
-ts` plays the whole walkthrough on every map as all nine species, because a step asking for
+ts` plays the whole walkthrough as all nine species, because a step asking for
 something the board cannot deliver leaves the tutorial stuck with nothing but Skip.
 
 - **The enemy stands on the guard because the queen has no doorstep.** Her only neighbours

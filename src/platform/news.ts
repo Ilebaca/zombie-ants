@@ -52,6 +52,29 @@ const LATEST = Date.UTC(2026, 7, 30);
 
 export const NEWS: readonly NewsPost[] = [
   {
+    // MAJOR: two boards are gone and the way into a match changed shape. A returning
+    // player who is not told will go looking for the map picker.
+    id: "oneboard",
+    major: true,
+    tag: "update",
+    title: "One board, one setup screen",
+    lead: "Skirmish and Gauntlet are gone; the setup is now a single screen.",
+    at: LATEST + 12 * DAY,
+    art: { kind: "board", map: "small", species: "leafcutter" },
+    body: [
+      "The 7×7 and 13×13 boards have been removed. Every match is played on Corridor, the "
+      + "9×9 board — one place to learn, and the one the Hive, the resources and the "
+      + "supply lines were all tuned around.",
+      "Choosing a board was the first thing the game asked of anybody who had never played "
+      + "it, before they knew what a Hive was or what a longer match would cost them. What "
+      + "you choose now is how you play: your formation, and your colony.",
+      "Both are on ONE screen. The board is drawn in the middle with your five tiles on "
+      + "it; the arrows either side of the name step through the twelve formations. Tap "
+      + "Next and the same arrows step through your colonies instead — the tiles recolour "
+      + "as you go — and the button becomes Play.",
+    ],
+  },
+  {
     // NOT major: a sound is something a player meets by playing, not something to stop
     // them at the door with.
     id: "fanfare",

@@ -1,5 +1,5 @@
 /**
- * The boards themselves: corners, symmetry, and the terrain each map is supposed to carry.
+ * The board itself: corners, symmetry, and the terrain it is supposed to carry.
  *
  * These are the rules a player feels before they make a single move — which corner is mine,
  * is the other side's ground the same as mine, is there anything worth taking. Nothing here
@@ -13,7 +13,7 @@ import {
 import { NEUTRAL_MODS } from "../index";
 import type { GameState, MapId, Tile } from "../index";
 
-const MAP_IDS: readonly MapId[] = ["tiny", "small", "mid"];
+const MAP_IDS: readonly MapId[] = ["small", "small", "small"];
 const game = (map: MapId): GameState => createGame({ map, species: { you: "fire", ai: "fire" } });
 
 /** The 180° partner of a cell: the same ground from the other colony's point of view. */
@@ -21,7 +21,7 @@ const rotated = (s: GameState, t: Tile): Tile | undefined =>
   tileAt(s, s.size - 1 - t.c, s.size - 1 - t.r);
 
 describe("colony corners", () => {
-  it("puts you bottom-left and the enemy top-right on every map", () => {
+  it("puts you bottom-left and the enemy top-right", () => {
     for (const map of MAP_IDS) {
       const s = game(map);
       const you = nestTile(s, "you")!;
@@ -121,11 +121,11 @@ describe("map symmetry", () => {
   });
 });
 
-describe("what each map carries", () => {
+describe("what the board carries", () => {
   const terrainCount = (s: GameState, kind: Tile["terrain"]): number =>
     allTiles(s).filter((t) => t.terrain === kind).length;
 
-  it("gives every map resource tiles, in mirrored pairs", () => {
+  it("gives the board resource tiles, in mirrored pairs", () => {
     for (const map of MAP_IDS) {
       const s = game(map);
       const resources = allTiles(s).filter((t) => t.terrain === "resource");
@@ -135,37 +135,30 @@ describe("what each map carries", () => {
   });
 
   /** The exact layouts, so a well-meaning "tidy-up" cannot quietly reshape a board. */
-  it("lays each map out the way it was designed", () => {
-    const tiny = game("tiny");
-    expect(terrainCount(tiny, "resource")).toBe(2);
-    expect(terrainCount(tiny, "blocked")).toBe(2);
-    expect(tileAt(tiny, 1, 3)?.guard).toBe(5);
-    expect(tileAt(tiny, 5, 3)?.guard).toBe(5);
-    expect(tileAt(tiny, 3, 1)?.guard).toBe(4);      // wild garrisons on open ground
-    expect(tileAt(tiny, 3, 5)?.guard).toBe(4);
-
-    const small = game("small");
-    expect(terrainCount(small, "resource")).toBe(4);
-    expect(terrainCount(small, "blocked")).toBe(4);
-    expect(tileAt(small, 1, 3)?.guard).toBe(6);     // the defended pair
-    expect(tileAt(small, 7, 5)?.guard).toBe(6);
-    expect(tileAt(small, 5, 1)?.guard).toBe(0);     // and the two open ones
-    expect(tileAt(small, 3, 7)?.guard).toBe(0);
-    expect(tileAt(small, 5, 3)?.guard).toBe(4);
-    expect(tileAt(small, 3, 5)?.guard).toBe(4);
-
-    const mid = game("mid");
-    expect(terrainCount(mid, "resource")).toBe(6);
-    expect(tileAt(mid, 4, 6)?.guard).toBe(6);
-    expect(tileAt(mid, 8, 6)?.guard).toBe(6);
-    // The two lakes: a semicircle bitten out of each side wall.
-    expect(tileAt(mid, 0, 6)?.terrain).toBe("blocked");
-    expect(tileAt(mid, 12, 6)?.terrain).toBe("blocked");
-    expect(tileAt(mid, 3, 6)?.terrain).toBe("blocked");
-    expect(tileAt(mid, 6, 6)?.terrain).toBe("hiveQ");   // the channel between them stays open
+  it("lays the board out the way it was designed", () => {
+    const board = game("small");
+    expect(terrainCount(board, "resource")).toBe(4);
+    expect(terrainCount(board, "blocked")).toBe(4);
+    expect(tileAt(board, 1, 3)?.guard).toBe(6);     // the defended pair
+    expect(tileAt(board, 7, 5)?.guard).toBe(6);
+    expect(tileAt(board, 5, 1)?.guard).toBe(0);     // and the two open ones
+    expect(tileAt(board, 3, 7)?.guard).toBe(0);
+    expect(tileAt(board, 5, 3)?.guard).toBe(4);     // wild garrisons on open ground
+    expect(tileAt(board, 3, 5)?.guard).toBe(4);
+    expect(tileAt(board, 4, 4)?.terrain).toBe("hiveQ");
   });
 
-  it("keeps every board size odd, so the hive has a true centre", () => {
+  /**
+   * ONE BOARD, and the table says so. There were three, and choosing between them was the
+   * first thing the game asked of somebody who did not yet know what a Hive was — so the
+   * setup asks about the FORMATION and the COLONY instead (ui/setup.ts). A second board is
+   * a line in `MAPS` and a block in `buildMap`; this holds that nothing else assumed more.
+   */
+  it("ships exactly one board", () => {
+    expect(Object.keys(MAPS)).toEqual(["small"]);
+  });
+
+  it("keeps the board size odd, so the hive has a true centre", () => {
     for (const map of MAP_IDS) expect(MAPS[map].size % 2).toBe(1);
   });
 });
@@ -175,7 +168,7 @@ describe("a fair start", () => {
    * Both colonies open on the same numbers. A difference here is a thumb on the scale that
    * no amount of good play corrects, and it would be invisible in a normal match.
    */
-  it("gives both sides the same army and the same income on every map and formation", () => {
+  it("gives both sides the same army and the same income on every formation", () => {
     const mods = { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } };
     for (const map of MAP_IDS) {
       for (const [name, shape] of Object.entries(START_SHAPES)) {

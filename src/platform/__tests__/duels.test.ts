@@ -64,7 +64,7 @@ describe("asking a friend for a match", () => {
    */
   it("reports an accept and a decline as outcomes", async () => {
     const duels = new LocalDuels(1);
-    const invite = inviteFrom("Kestra", 1200, "mid", 5000);
+    const invite = inviteFrom("Kestra", 1200, "small", 5000);
     const yes = await duels.answer(invite, true);
     expect(yes.kind).toBe("accepted");
     if (yes.kind === "accepted") expect(yes.who.name).toBe("Kestra");
@@ -125,7 +125,7 @@ describe("invitations on the profile", () => {
 
   it("takes a new one, and refuses a duplicate", () => {
     const s = store();
-    const invite = inviteFrom("Kestra", 1200, "mid", 5000);
+    const invite = inviteFrom("Kestra", 1200, "small", 5000);
     expect(s.addDuel(invite)).toBe(true);
     expect(s.addDuel(invite), "the same invitation arrived twice").toBe(false);
   });

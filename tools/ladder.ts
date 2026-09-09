@@ -7,9 +7,10 @@
  */
 import { match } from "./arena";
 import { PROFILES } from "../src/ai/search";
+import type { MapId } from "../src/engine";
 
 const N = Number(process.argv[2] ?? 20);
-const MAP = (process.argv[3] ?? "small") as "tiny" | "small" | "mid";
+const MAP = (process.argv[3] ?? "small") as MapId;
 const SPEED = Number(process.argv[4] ?? 1);
 // Budget by NODES, never by the clock. The shipped budgets are wall-clock so a slow phone
 // thinks less rather than stuttering — which also means a busy machine thinks less, and a

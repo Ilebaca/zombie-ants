@@ -38,7 +38,7 @@ function canvasOf(rec: ReturnType<typeof makeRecorder>): HTMLCanvasElement {
 
 const board = (): GameState => {
   const s = clearBoard(
-    createGame({ map: "tiny", species: { you: "fire", ai: "leafcutter" }, seed: 3 }),
+    createGame({ map: "small", species: { you: "fire", ai: "leafcutter" }, seed: 3 }),
   );
   const t = tile(s, 1, 1);
   t.owner = "you"; t.struct = "nest"; t.soldiers = 10;
@@ -70,7 +70,7 @@ describe("a still of the board", () => {
     // No window means the whole board, at the same tile size — it never scales to fit.
     const wide = canvasOf(makeRecorder());
     drawSnapshot(wide, board(), { tile: 20 });
-    expect(wide.style.width).toBe(`${7 * 20 + PAD}px`);
+    expect(wide.style.width).toBe(`${9 * 20 + PAD}px`);
   });
 
   it("shows a tile as picked up when it is asked to", () => {

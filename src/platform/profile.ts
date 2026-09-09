@@ -13,7 +13,7 @@ import {
   looksFor, researchCost,
 } from "../engine";
 import { COLONY_START, grownColony } from "./colony";
-import type { Look, MapId, Player, PlayerMods, SpeciesId } from "../engine";
+import type { Look, Player, PlayerMods, SpeciesId } from "../engine";
 import { SPECIES_UNLOCK, type ResearchTrack } from "./catalogue";
 import {
   QUEST_SWEEP_BONUS, dayIndex, isClaimable, levelProgress, levelReward, questDef, rollQuests,
@@ -254,7 +254,6 @@ export interface Profile {
   claimedLevels: number[];
   /** Last setup choices, so the pickers open where the player left off. */
   lastSpecies: SpeciesId;
-  lastMap: MapId;
   /** The difficulty the player last chose. Kept here so it survives a reload. */
   difficulty: "easy" | "normal" | "hard";
   lastShape: string;
@@ -355,7 +354,6 @@ export function defaultProfile(): Profile {
     // itself always opens on the first colony by rarity (DEFAULT_SPECIES); this is the
     // "currently fielded" slot, and the legacy build starts it on Fire.
     lastSpecies: "fire",
-    lastMap: "small",
     difficulty: "normal",
     lastShape: "wedge",
     tourSeen: 0,
@@ -510,7 +508,6 @@ export function normalise(raw: unknown): Profile {
           .map((l) => Math.floor(l)))]
       : [],
     lastSpecies: isSpecies(p.lastSpecies) ? p.lastSpecies : base.lastSpecies,
-    lastMap: p.lastMap === "tiny" || p.lastMap === "small" || p.lastMap === "mid" ? p.lastMap : base.lastMap,
     difficulty: p.difficulty === "easy" || p.difficulty === "normal" || p.difficulty === "hard"
       ? p.difficulty : base.difficulty,
     lastShape: typeof p.lastShape === "string" ? p.lastShape : base.lastShape,

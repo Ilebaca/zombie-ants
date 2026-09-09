@@ -96,13 +96,13 @@ describe("connectivity is anchored to the queen", () => {
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     put(s, 2, 1, { owner: "you", struct: "stable", soldiers: 3 });
     // floating cluster far from the nest, in a corner away from the hive
-    put(s, 1, 10, { owner: "you", struct: "stable", soldiers: 3 });
-    put(s, 2, 10, { owner: "you", struct: "stable", soldiers: 3 });
+    put(s, 1, 7, { owner: "you", struct: "stable", soldiers: 3 });
+    put(s, 2, 7, { owner: "you", struct: "stable", soldiers: 3 });
     recomputeConnectivity(s);
 
     expect(isConnected(s, tile(s, 2, 1))).toBe(true);
-    expect(isConnected(s, tile(s, 1, 10))).toBe(false);
-    expect(isConnected(s, tile(s, 2, 10))).toBe(false);
+    expect(isConnected(s, tile(s, 1, 7))).toBe(false);
+    expect(isConnected(s, tile(s, 2, 7))).toBe(false);
   });
 
   it("conducts connectivity through veins", () => {
@@ -118,9 +118,9 @@ describe("connectivity is anchored to the queen", () => {
   it("keeps a lone tunnel gallery connected", () => {
     const s = blankGame();
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
-    put(s, 9, 9, { owner: "you", struct: "stable", soldiers: 5, tunnel: true });
+    put(s, 7, 7, { owner: "you", struct: "stable", soldiers: 5, tunnel: true });
     recomputeConnectivity(s);
-    expect(isConnected(s, tile(s, 9, 9))).toBe(true);
+    expect(isConnected(s, tile(s, 7, 7))).toBe(true);
   });
 });
 

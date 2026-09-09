@@ -22,7 +22,7 @@
  * facts that tell one challenge from another, so they are what the card carries.
  */
 import type { MapId, ShapeId, SpeciesId } from "../engine";
-import { MAPS, SPECIES } from "../engine";
+import { SPECIES } from "../engine";
 import type { ProfileStore } from "../platform";
 import { el, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
@@ -45,7 +45,6 @@ export interface Challenge {
   species: SpeciesId;
   shape: ShapeId;
   goal: ChallengeGoal;
-  desc: string;
 }
 
 /**
@@ -56,23 +55,23 @@ export interface Challenge {
 export const CHALLENGES: readonly Challenge[] = [
   {
     id: "first-blood", name: "First Blood", stars: 1, map: "small", species: "fire", shape: "wedge",
-    goal: "attackFirst", desc: "Corridor · Fire Ant · strike the enemy before they strike you.",
+    goal: "attackFirst",
   },
   {
     id: "hold-the-line", name: "Hold the Line", stars: 2, map: "small", species: "weaver", shape: "line",
-    goal: "eliminate", desc: "Corridor · Weaver Ant · survive the early swarm, then wipe them out.",
+    goal: "eliminate",
   },
   {
-    id: "hive-siege", name: "Hive Siege", stars: 3, map: "mid", species: "army", shape: "arrow",
-    goal: "eliminate", desc: "Gauntlet · Army Ant · break the wall and destroy the enemy colony.",
+    id: "hive-siege", name: "Hive Siege", stars: 3, map: "small", species: "army", shape: "arrow",
+    goal: "eliminate",
   },
   {
-    id: "outnumbered", name: "Outnumbered", stars: 4, map: "mid", species: "bullet", shape: "column",
-    goal: "eliminate", desc: "Gauntlet · Bullet Ant · claw back a win from the corner.",
+    id: "outnumbered", name: "Outnumbered", stars: 4, map: "small", species: "bullet", shape: "column",
+    goal: "eliminate",
   },
   {
-    id: "ghost-protocol", name: "Ghost Protocol", stars: 5, map: "mid", species: "ghost", shape: "tower",
-    goal: "attackFirst", desc: "Gauntlet · Ghost Ant · cloak, flank, and land the first hit.",
+    id: "ghost-protocol", name: "Ghost Protocol", stars: 5, map: "small", species: "ghost", shape: "tower",
+    goal: "attackFirst",
   },
 ];
 
@@ -177,7 +176,7 @@ function challengeCard(c: Challenge, index: number, state: CardState): HTMLEleme
   card.appendChild(top);
 
   const chips = el("div", "chalchips");
-  chips.append(chip("board", MAPS[c.map].name), chip("antarium", speciesName(c.species)));
+  chips.append(chip("antarium", speciesName(c.species)));
   card.appendChild(chips);
 
   card.appendChild(el("p", "chalgoal", GOAL_TEXT[c.goal]));
@@ -231,7 +230,7 @@ export function buildDaily(
   top.append(el("b", "chalname", challenge.name), starRow(challenge.stars));
   card.appendChild(top);
   const chips = el("div", "chalchips");
-  chips.append(chip("board", MAPS[challenge.map].name), chip("antarium", speciesName(challenge.species)));
+  chips.append(chip("antarium", speciesName(challenge.species)));
   card.appendChild(chips);
 
   card.appendChild(el("p", "chalgoal", GOAL_TEXT[challenge.goal]));

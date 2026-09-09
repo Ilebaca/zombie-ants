@@ -92,7 +92,7 @@ describe("a real game never reaches a state the rules cannot read", () => {
   for (let i = 0; i < SPECIES.length; i++) {
     const you = SPECIES[i] as SpeciesId;
     const ai = SPECIES[(i * 4 + 3) % SPECIES.length] as SpeciesId;
-    const map = (["tiny", "small", "mid"] as const)[i % 3] as "tiny" | "small" | "mid";
+    const map = (["small", "small", "small"] as const)[i % 3] as "small" | "small" | "small";
 
     it(`holds through a ${map} game as ${you} against ${ai}`, () => {
       const s = createGame({ map, species: { you, ai }, seed: 400 + i });

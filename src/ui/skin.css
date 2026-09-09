@@ -2934,131 +2934,99 @@ button:not(.playbtn):active,
 }
 
 /* ============================================================================
-   ==  THE MAP PICKER IS THE MAP  =============================================
+   ==  THE SETUP: ONE SCREEN, TWO CHOICES  ====================================
    ============================================================================
 
-   Three cards with a thumbnail of coloured squares told a player nothing: a
-   diagram of a board rather than a board. What is being chosen is a PLACE, and
-   the game can draw it — every slide is a real opening position rendered by the
-   board's own code, so the gems, rocks, water, the Hive and both colonies are
-   where they will actually be.
+   It was three screens — a map picker, a colony picker and a formation picker.
+   There is one board now (engine/config.ts), so the map screen had nothing left
+   to ask, and what remained was two pickers of the same shape for two facts
+   about the same five tiles.
 
-   The picture fills the screen and the controls float on it. Choosing is
-   dragging from one map to the next.
+   One board, drawn once, with the player's own formation on it; under it a row
+   that steps through the choice; under that the button that moves on. Pressing
+   it does not navigate — the row starts naming colonies instead, the tiles
+   recolour, and the button becomes Play. The picture never moves, so the player
+   is watching the thing they are deciding about.
    ============================================================================ */
-.mapstage { position: absolute; inset: 0; overflow: hidden; }
+#formation {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.setuptop { flex: none; }
 
-/* The picker's own strip, under the chrome rather than over the whole app. */
-.deck.mapdeck { position: absolute; z-index: 0; }
-
-/* Centred in what the chrome LEAVES, not in the viewport: the header takes 62px
-   off the top and the name, dots, hint and button take 178 off the bottom, so a
-   picture centred on the page sits low — crowding the name, with a hole under the
-   title. The two numbers mirror the blocks above and below, and this is the only
-   rule on the screen that has to know their size. */
-.mapshot {
-  position: absolute;
-  inset: 0;
+/* THE BOARD TAKES WHAT IS LEFT, and is centred in it. The picture is sized in
+   JS off the viewport, so this only has to give it the room and the middle. */
+.setupstage {
+  flex: 1;
+  min-height: 0;
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: var(--bg2);
-  padding: calc(env(safe-area-inset-top) + 62px) 0 calc(env(safe-area-inset-bottom) + 178px);
+  padding: 4px 16px;
 }
-/* The picture is the PLAYFIELD and a hair of soil — not a fill. Ground carried to
-   the corners made all three maps the same photograph of undergrowth with a board
-   somewhere in it; a plate the size of the board is the board. Sized in JS. */
-.mapshot canvas {
+/* The picture is the PLAYFIELD and a hair of soil, never a fill: ground carried
+   to the corners of the screen is a photograph of undergrowth with a board
+   somewhere in it. `max-width: none` because the canvas carries its own exact
+   pixel size (render/snapshot.ts). */
+.setupstage canvas {
   max-width: none;
   border-radius: var(--r-lg);
 }
 
-/*
-   THE CHROME FLOATS. One layer over the picture: the header at the top, the
-   name and the button at the bottom, and nothing between them — the middle of
-   the screen is the map, which is the thing being chosen.
-
-   It does not take the pointer except where there is something to press, or the
-   layer would swallow the drag that turns the page.
-*/
-.mapchrome {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  pointer-events: none;
-}
-.mapchrome > * { pointer-events: none; }
-.mapchrome button,
-.mapchrome .backbtn { pointer-events: auto; }
-
-/* Both ends used to carry a wash, to keep the title and the name readable where
-   the board ran under them. Neither ever DREW: the app nulls every background
-   image with `!important` (see the top of this file), so a `background:
-   linear-gradient` here loses to it — two rules that looked like they were doing
-   the work and were not. The picture is centred in the gap between these blocks
-   now (`.mapshot`), so nothing runs under either, and neither needs one. */
-.maptop { padding-bottom: 34px; }
-.mapchrome .screentop { padding-top: calc(env(safe-area-inset-top) + 10px); }
-.mapchrome .setupsteps { margin: 0 auto; }
-.mapfoot {
+.setupfoot {
+  flex: none;
   display: grid;
   justify-items: center;
-  gap: 6px;
-  padding: 0 16px calc(env(safe-area-inset-bottom) + 18px);
+  gap: 10px;
+  width: min(100%, var(--page));
+  margin-inline: auto;
+  padding: 6px 16px calc(env(safe-area-inset-bottom) + 16px);
 }
-.mapname {
+/* ARROW, NAME, ARROW — a three-column grid rather than a flex row, so the name
+   sits in the MIDDLE of the screen whatever its length: laid out by content, a
+   long colony name pushes the arrows apart and they move under the thumb that
+   is stepping through twelve of them. */
+.pickrow {
+  display: grid;
+  grid-template-columns: var(--tap) 1fr var(--tap);
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.pickarrow {
+  width: var(--tap);
+  height: var(--tap);
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--panel-hi);
+  color: var(--ink);
+  cursor: pointer;
+}
+.pickarrow:active { background: var(--panel-edge); }
+.pickname {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
   font-size: 21px;
   font-weight: 900;
   letter-spacing: -.3px;
   color: var(--ink);
 }
-.mapmeta {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: .2px;
-  color: var(--muted);
-}
-/* Which of the three, and how many there are — the one thing a swipeable row
-   cannot say for itself. */
-.mapdots { display: flex; gap: 7px; margin: 6px 0 10px; }
-.mapdots i {
-  width: 7px;
-  height: 7px;
-  border-radius: 99px;
-  background: var(--panel-edge);
-  transition: background 160ms linear, width 160ms ease;
-}
-.mapdots i.on { width: 20px; background: var(--grass-glow); }
-/* How to reach the other two. Quiet — it is an instruction, not a label. */
-.maphint {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: .3px;
-  color: var(--muted);
-  margin-bottom: 10px;
-}
-.mapfoot .cta { width: min(100%, var(--page)); margin: 0; }
+.picktext { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Drawn at twice the size it is shown at, which is what keeps it sharp on a
+   phone — the same rule `antPortrait` follows. */
+.pickface { width: 32px; height: 32px; display: block; }
+.setupfoot .cta { width: 100%; margin: 0; }
 
-/* ---------------------------------------------------------- THE FORMATIONS
-   Same change, same reason: five rounded squares on a 72px canvas is a diagram
-   of a shape. Each is a real opening position now, windowed onto the player's
-   own corner, so the picture is what the board will show. */
-/* THREE across, not four. At four the picture is seventy pixels of a five-tile
-   board and the nest's mound is a smudge; at three it is half again as big and
-   the twelve still fit the screen in four rows. */
-.shapepick { grid-template-columns: repeat(3, 1fr); align-items: start; gap: 12px; }
-/* The card hugs its picture. The grid used to stretch its rows, which left a
-   square formation floating in a tall box of empty ground. */
-.shp { aspect-ratio: 1; padding: 6px; }
-.shp canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: var(--r-md);
-}
+/* The invitation bar sits above all of it, so the screen's own furniture starts
+   below the bar rather than under it. The bar is absolutely positioned, so the
+   room has to be made on the screen itself. */
+#formation.hasinvite .setuptop { padding-top: 78px; }
 
 /* ============================================================================
    ==  THE GRANARY  ===========================================================
@@ -4524,8 +4492,9 @@ button:not(.playbtn):active,
 }
 
 /* ---------------------------------------------------------------- THE INVITATION
-   It rides on the map picker, which is a full-screen deck of boards, so
-   it floats over the top of it rather than pushing it down. */
+   It rides the setup screen — the one thing standing between the player and
+   playing the person who sent it — and floats over the top of it rather than
+   pushing it down; the screen makes its own room (`#formation.hasinvite`). */
 .invbar {
   position: absolute;
   top: 0;
@@ -4555,7 +4524,11 @@ button:not(.playbtn):active,
 /* The name can shrink and ellipsise; the words after it are dropped whole
    rather than cut, because half a sentence reads as a rendering fault. */
 .invname { font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.invverb { flex: 0 1 auto; font-weight: 700; color: var(--ink-soft); white-space: nowrap; overflow: hidden; }
+/* NEVER SHRINKS. It was `flex: 0 1 auto`, so a long colony name pushed "challenged
+   you" down to "challenged yc" — half a word, which reads as a rendering fault. The
+   NAME is the part that ellipsises, which is what the line above says and what this
+   now does. */
+.invverb { flex: none; font-weight: 700; color: var(--ink-soft); white-space: nowrap; }
 .invwhat {
   font-size: 10.5px;
   font-weight: 700;
@@ -4622,11 +4595,6 @@ button:not(.playbtn):active,
   line-height: 1.45;
   margin-bottom: 16px;
 }
-
-/* The picker's own furniture starts below the bar, or the invitation covers
-   the step indicator of the very flow it is interrupting. The bar is
-   absolutely positioned, so the room has to be made on the screen itself. */
-#mapsel.hasinvite { padding-top: 78px; }
 
 /* ============================================================================
    ==  RECENT MATCHES, AND WATCHING ONE BACK  =================================

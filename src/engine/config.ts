@@ -52,7 +52,21 @@ export const HIVE_LEVEL_GROWTH = 1.55;
  */
 export const HIVE_COOLDOWN = 4;
 
-export type MapId = "tiny" | "small" | "mid";
+/**
+ * THE BOARD. There is exactly one, and that is a design decision rather than a shortcut.
+ *
+ * There were three — 7×7, 9×9 and 13×13 — and choosing between them was the first thing
+ * the game asked anybody to do, before they knew what a Hive was or what a longer match
+ * costs them. Every screen that reports a match then had to name which board it was on,
+ * the tutorial had to be arranged on all three, and the AI's ladder had to be measured on
+ * each. What a player actually chooses between now is a FORMATION and a COLONY, which are
+ * choices about how they play rather than about how long they will be sitting there.
+ *
+ * The type stays a union of one and the setup keeps its `map` field: a match record
+ * carries it (engine/protocol.ts), so every stored match still says what it was played on,
+ * and a second board is a line in this table rather than a shape change everywhere.
+ */
+export type MapId = "small";
 
 export interface MapDef extends MapLimits {
   id: MapId;
@@ -61,9 +75,7 @@ export interface MapDef extends MapLimits {
 }
 
 export const MAPS: Record<MapId, MapDef> = {
-  tiny:  { id: "tiny",  name: "Skirmish (7×7)",    size: 7,  awakenTurn: 10, turnLimit: 32, buffTurns: 3 },
-  small: { id: "small", name: "Corridor (9×9)",    size: 9,  awakenTurn: 14, turnLimit: 45, buffTurns: 4 },
-  mid:   { id: "mid",   name: "Gauntlet (13×13)",  size: 13, awakenTurn: 18, turnLimit: 80, buffTurns: 5 },
+  small: { id: "small", name: "Corridor (9×9)", size: 9, awakenTurn: 14, turnLimit: 45, buffTurns: 4 },
 };
 
 /** Per-species research cap. At max, an ability's cooldown drops by exactly one turn. */

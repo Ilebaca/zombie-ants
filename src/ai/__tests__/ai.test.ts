@@ -17,7 +17,7 @@ const sig = (s: ReturnType<typeof blankGame>) =>
 
 describe("snapshot / restore", () => {
   it("restores the board exactly after a simulated move", () => {
-    const s = createGame({ map: "mid", species: { you: "fire", ai: "fire" } });
+    const s = createGame({ map: "small", species: { you: "fire", ai: "fire" } });
     const before = sig(s);
     const snap = snapshot(s);
 
@@ -36,7 +36,7 @@ describe("search quality", () => {
     const s = blankGame();
     put(s, 4, 4, { owner: "ai", struct: "nest", soldiers: 60 });
     put(s, 5, 4, { owner: "you", struct: "nest", soldiers: 3 });
-    put(s, 1, 10, { owner: "you", struct: "stable", soldiers: 5 });
+    put(s, 1, 7, { owner: "you", struct: "stable", soldiers: 5 });
     recomputeConnectivity(s);
     s.current = "ai";
 
@@ -51,7 +51,7 @@ describe("search quality", () => {
     put(s, 3, 3, { owner: "ai", struct: "stable", soldiers: 12 });
     put(s, 4, 3, { owner: "you", struct: "stable", soldiers: 3 });    // bait
     put(s, 4, 2, { owner: "you", struct: "stable", soldiers: 60 });   // punisher
-    put(s, 9, 9, { owner: "you", struct: "nest", soldiers: 10 });
+    put(s, 7, 7, { owner: "you", struct: "nest", soldiers: 10 });
     recomputeConnectivity(s);
     s.current = "ai";
 
@@ -102,7 +102,7 @@ describe("search quality", () => {
     put(s, 1, 2, { owner: "ai", struct: "stable", soldiers: 20 });
     put(s, 0, 2, { terrain: "resource" });
     put(s, 2, 2, { terrain: "ground" });
-    put(s, 11, 11, { owner: "you", struct: "nest", soldiers: 10 });
+    put(s, 7, 7, { owner: "you", struct: "nest", soldiers: 10 });
     recomputeConnectivity(s);
     s.current = "ai";
 
@@ -160,7 +160,7 @@ describe("difficulty", () => {
   });
 
   it("searching does not mutate the real board", () => {
-    const s = createGame({ map: "mid", species: { you: "fire", ai: "fire" } });
+    const s = createGame({ map: "small", species: { you: "fire", ai: "fire" } });
     const before = sig(s);
     chooseMove(s, "ai", "hard", ctx);
     expect(sig(s)).toBe(before);
@@ -170,7 +170,7 @@ describe("difficulty", () => {
     const s = blankGame();
     put(s, 1, 1, { owner: "ai", struct: "nest", soldiers: 50 });
     put(s, 2, 1, { owner: "ai", struct: "stable", soldiers: 30 });
-    put(s, 9, 9, { owner: "you", struct: "nest", soldiers: 5 });
+    put(s, 7, 7, { owner: "you", struct: "nest", soldiers: 5 });
     recomputeConnectivity(s);
     expect(evaluate(s, "ai", mods)).toBeGreaterThan(0);
     expect(evaluate(s, "you", mods)).toBeLessThan(0);

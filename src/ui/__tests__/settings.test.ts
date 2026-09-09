@@ -13,7 +13,7 @@ import { buildSettings } from "../settings";
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
 
 interface Spy {
-  rules: number; tour: number; reset: number; board: number; diff: number;
+  rules: number; tour: number; reset: number; diff: number;
   feedback: number; restored: number; signout: number; deleted: number;
 }
 
@@ -21,16 +21,14 @@ const build = (store = new ProfileStore(new MemoryStore())): {
   root: HTMLElement; store: ProfileStore; spy: Spy;
 } => {
   const spy: Spy = {
-    rules: 0, tour: 0, reset: 0, board: 0, diff: 0,
+    rules: 0, tour: 0, reset: 0, diff: 0,
     feedback: 0, restored: 0, signout: 0, deleted: 0,
   };
   const root = buildSettings({
     profile: store,
     onBack: () => {},
-    board: "Corridor (9×9)",
     difficulty: "Normal",
     onDelete: () => { spy.deleted++; },
-    onCycleBoard: () => { spy.board++; },
     onCycleDifficulty: () => { spy.diff++; },
     onHowToPlay: () => { spy.rules++; },
     onFeedbackChanged: () => { spy.feedback++; },
@@ -98,17 +96,26 @@ describe("the settings screen", () => {
 
   it("wires every row it does show", () => {
     const { root, spy } = build();
-    press(root, "setBoard");
     press(root, "setDiff");
     press(root, "setRules");
     press(root, "setTutorial");
-    expect(spy).toMatchObject({ board: 1, diff: 1, rules: 1, tour: 1 });
+    expect(spy).toMatchObject({ diff: 1, rules: 1, tour: 1 });
   });
 
-  it("shows the current board and difficulty as the value of their rows", () => {
+  it("shows the current difficulty as the value of its row", () => {
     const { root } = build();
-    expect(root.querySelector("#setBoard")?.textContent).toBe("Corridor (9×9)");
     expect(root.querySelector("#setDiff")?.textContent).toBe("Normal");
+  });
+
+  /**
+   * NO BOARD ROW. There is one board (engine/config.ts), so a row that cycled through a
+   * list of one would be a control that cannot change anything — the same fault as the
+   * dead Sound and Vibration switches this screen was rebuilt to remove.
+   */
+  it("offers no board to choose, because there is one", () => {
+    const { root } = build();
+    expect(root.querySelector("#setBoard")).toBeNull();
+    expect(root.textContent).not.toMatch(/board/i);
   });
 
   // Every row says what it affects. That is the whole difference between a screen and a

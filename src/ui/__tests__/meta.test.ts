@@ -1048,7 +1048,7 @@ describe("the manual", () => {
     expect(said).toContain(`${PROD.stable} a turn, +${DEF.stable} defence`);
     expect(said).toContain(`${PROD.resourceStable} a turn, +${DEF.resourceOwned} defence`);
     expect(said).toContain(`${TRAVEL_RANGE} tiles`);
-    expect(said).toContain(`turn ${MAPS.tiny.awakenTurn}`);
+    expect(said).toContain(`turn ${MAPS.small.awakenTurn}`);
     expect(said).toContain(`every ${HIVE_GROW_EVERY} turns`);
     expect(said).toContain(`gone for ${HIVE_COOLDOWN} turns`);
     expect(said).toContain(`${KEEP_NORMAL} soldier`);

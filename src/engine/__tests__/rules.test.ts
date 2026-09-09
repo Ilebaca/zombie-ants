@@ -23,7 +23,7 @@ describe("the defender bonus table", () => {
     flatDefence(s, tile(s, c, r)!, mods);
 
   it("matches the GDD row for row", () => {
-    const s = blankGame("mid");
+    const s = blankGame("small");
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     put(s, 2, 1, { owner: "you", struct: "stable", soldiers: 3 });
     put(s, 3, 1, { owner: "you", struct: "stable", soldiers: 3, terrain: "resource" });
@@ -36,7 +36,7 @@ describe("the defender bonus table", () => {
   });
 
   it("gives the hive queen and her guards no bonus — they defend with their garrison", () => {
-    const s = blankGame("mid");
+    const s = blankGame("small");
     const mid = Math.floor(s.size / 2);
     expect(bonusOn(s, mid, mid)).toBe(0);
     expect(bonusOn(s, mid + 1, mid)).toBe(0);
@@ -44,7 +44,7 @@ describe("the defender bonus table", () => {
 
   /** A garrison on a resource is the one worth fighting for; open ground is a speed bump. */
   it("digs a wild garrison in harder when it sits on a resource", () => {
-    const s = blankGame("mid");
+    const s = blankGame("small");
     const ground = put(s, 2, 2, { owner: null, guard: 4 });
     const rich = put(s, 3, 2, { owner: null, guard: 4, terrain: "resource" });
     expect(guardDefence(ground)).toBe(2);
@@ -53,7 +53,7 @@ describe("the defender bonus table", () => {
   });
 
   it("multiplies the nest bonus by Soldier Caste, and only the nest", () => {
-    const s = blankGame("mid");
+    const s = blankGame("small");
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     put(s, 2, 1, { owner: "you", struct: "stable", soldiers: 3 });
     const caste: PlayerMods = { ...NEUTRAL_MODS, soldierCaste: 4 };   // +20%
@@ -62,7 +62,7 @@ describe("the defender bonus table", () => {
   });
 
   it("multiplies by Fortify's shield while it is up", () => {
-    const s = blankGame("mid");
+    const s = blankGame("small");
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     const plain = flatDefence(s, tile(s, 1, 1)!, mods);
     s.shield.you = 3;
@@ -72,7 +72,7 @@ describe("the defender bonus table", () => {
 
 describe("special resolutions", () => {
   it("takes an enemy vein instantly, with no losses, and makes it a stable", () => {
-    const s = blankGame("mid");
+    const s = blankGame("small");
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 9 });
     put(s, 2, 1, { owner: "ai", struct: "vein", soldiers: 40 });   // no defence whatsoever
     recomputeConnectivity(s);
@@ -87,7 +87,7 @@ describe("special resolutions", () => {
   });
 
   it("claims empty ground directly and promotes it to a stable", () => {
-    const s = blankGame("mid");
+    const s = blankGame("small");
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 5 });
     recomputeConnectivity(s);
     s.current = "you";
@@ -97,7 +97,7 @@ describe("special resolutions", () => {
   });
 
   it("leaves a beaten wild garrison weakened, never regenerated", () => {
-    const s = blankGame("mid");
+    const s = blankGame("small");
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 4 });
     put(s, 2, 1, { owner: null, guard: 20 });
     recomputeConnectivity(s);
@@ -112,7 +112,7 @@ describe("special resolutions", () => {
 
 describe("long sends", () => {
   it("reaches exactly the range the GDD states, and no further", () => {
-    const s = blankGame("mid");
+    const s = blankGame("small");
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 30 });
     recomputeConnectivity(s);
     s.current = "you";
@@ -124,7 +124,7 @@ describe("long sends", () => {
   });
 
   it("lays the trail behind it as veins, not as territory", () => {
-    const s = blankGame("mid");
+    const s = blankGame("small");
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 30 });
     recomputeConnectivity(s);
     s.current = "you";
@@ -160,7 +160,7 @@ describe("how a match ends", () => {
   });
 
   it("still runs turns long after it", () => {
-    const s = createGame({ map: "tiny", species: { you: "fire", ai: "fire" } });
+    const s = createGame({ map: "small", species: { you: "fire", ai: "fire" } });
     for (let i = 0; i < s.limits.turnLimit * 4; i++) endTurn(s, both);
     expect(s.over).toBe(false);
     expect(s.turn).toBeGreaterThan(s.limits.turnLimit * 1.5);
@@ -230,7 +230,7 @@ describe("a razed tile", () => {
  */
 describe("clearing a board", () => {
   it("strips the colonies, the wild garrisons and the effects", () => {
-    const played = createGame({ map: "tiny", species: { you: "fire", ai: "fire" }, seed: 1 });
+    const played = createGame({ map: "small", species: { you: "fire", ai: "fire" }, seed: 1 });
     played.effects.push({ c: 0, r: 0, kind: "leaf", owner: "you", left: 3 });
     clearBoard(played);
 
@@ -245,7 +245,7 @@ describe("clearing a board", () => {
     const hive = (s: GameState): number =>
       allTiles(s).filter((t) => t.terrain === "hiveQ" || t.terrain === "hiveG").length;
     const fresh = (): GameState =>
-      createGame({ map: "tiny", species: { you: "fire", ai: "fire" }, seed: 1 });
+      createGame({ map: "small", species: { you: "fire", ai: "fire" }, seed: 1 });
     expect(hive(clearBoard(fresh(), true))).toBe(5);
     expect(hive(clearBoard(fresh()))).toBe(0);
   });

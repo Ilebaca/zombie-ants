@@ -185,7 +185,7 @@ describe("the finale", () => {
    * that has just fallen. The renderer snapshots both nests while the board is untouched.
    */
   it("washes from the nest the winner started on, not the one they just took", () => {
-    const state = blankGame("tiny");
+    const state = blankGame("small");
     put(state, 0, 6, { owner: "you", struct: "nest", soldiers: 9 });
     put(state, 6, 0, { owner: "ai", struct: "nest", soldiers: 9 });
     const { r } = make(state);

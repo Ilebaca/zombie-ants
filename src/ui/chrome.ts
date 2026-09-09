@@ -453,9 +453,9 @@ export function toast(host: HTMLElement, msg: string, kind: ToastKind = "good"):
  * The flow gave no sign it WAS a flow: three screens, each with a back arrow and a quiet
  * "Next", and nothing saying how many more there were.
  */
-export function setupSteps(current: number): HTMLElement {
+export function setupSteps(current: number, total = 2): HTMLElement {
   const row = el("div", "setupsteps");
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < total; i++) {
     row.appendChild(el("span", "sstep" + (i === current ? " on" : i < current ? " done" : "")));
   }
   return row;

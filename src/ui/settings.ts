@@ -32,9 +32,7 @@ export interface SettingsOptions {
   profile: ProfileStore;
   onBack: () => void;
   /** Current values, shown on the rows that cycle. */
-  board: string;
   difficulty: string;
-  onCycleBoard: () => void;
   onCycleDifficulty: () => void;
   onHowToPlay: () => void;
   /** Flipping a switch writes the profile AND tells the live device — see `App`. */
@@ -81,15 +79,10 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
       onGo: opts.onSignOut,
     }),
 
+    // NO BOARD ROW. There is one board now (engine/config.ts), and a control that cycles
+    // through a list of one is a screen lying about itself — the same reason the dead
+    // Sound and Vibration switches were taken out before there was audio behind them.
     el("div", "secthead", "The next match"),
-    valueRow({
-      mark: "board",
-      title: "Board",
-      desc: "Where a quick match is played.",
-      value: opts.board,
-      id: "setBoard",
-      onPick: opts.onCycleBoard,
-    }),
     valueRow({
       mark: "attack",
       title: "Enemy AI",

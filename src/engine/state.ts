@@ -172,14 +172,14 @@ function startCell(
 }
 
 /**
- * The three maps, laid out cell by cell exactly as the legacy build authors them.
+ * THE BOARD, laid out cell by cell exactly as the legacy build authors it.
  *
- * They are hand-placed rather than generated: each one is a specific piece of level design
- * — where the lanes are, which resource is worth fighting for, where the wild garrisons sit
- * — and a generator produced bland, samey boards instead.
+ * Hand-placed rather than generated: it is a specific piece of level design — where the
+ * lanes are, which resource is worth fighting for, where the wild garrisons sit — and a
+ * generator produced bland, samey boards instead. There were three (config.ts); this is
+ * the one that survived, and a second one is another block here.
  */
 function buildMap(state: GameState, reserved: Set<string>): void {
-  const n = state.size;
 
   const set = (c: number, r: number, fn: (t: Tile) => void): void => {
     const t = tileAt(state, c, r);
@@ -205,36 +205,7 @@ function buildMap(state: GameState, reserved: Set<string>): void {
     setFree(c, r, (t) => { t.terrain = "blocked"; });
   };
 
-  if (n === 7) {
-    // Skirmish — a tight duel: everyone meets in the middle within a few turns.
-    hive(3, 3);
-    resource(1, 3, 5); resource(5, 3, 5);          // one contested resource each side
-    wild(3, 1, 4); wild(3, 5, 4);                  // a wild garrison on each flank
-    rock(1, 1); rock(5, 5);                        // lanes instead of an open square
-    return;
-  }
-
-  if (n === 13) {
-    // Gauntlet — two side lakes funnel everyone through the Queen's channel.
-    hive(6, 6);
-    resource(3, 2, 5); resource(9, 10, 5);         // corner resources
-    resource(6, 2, 4); resource(6, 10, 4);         // top and bottom lanes
-    resource(4, 6, 6); resource(8, 6, 6);          // flanking the Queen's channel
-    // Lakes last, and only over open ground: a semicircle bulging in from each side wall.
-    const R = 3, cr = 6;
-    for (let r = 0; r < n; r++) {
-      for (let c = 0; c < n; c++) {
-        const t = tileAt(state, c, r);
-        if (!t || t.terrain !== "ground") continue;
-        const left = c * c + (r - cr) * (r - cr);
-        const right = (c - (n - 1)) * (c - (n - 1)) + (r - cr) * (r - cr);
-        if (left <= R * R || right <= R * R) rock(c, r);
-      }
-    }
-    return;
-  }
-
-  // Corridor (9×9) — the original board.
+  // Corridor (9×9) — the one board (config.ts).
   hive(4, 4);
   rock(2, 3); rock(6, 5); rock(6, 3); rock(2, 5);
   resource(1, 3, 6); resource(7, 5, 6);            // the defended pair

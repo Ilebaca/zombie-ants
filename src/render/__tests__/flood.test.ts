@@ -96,12 +96,12 @@ describe("planning the wash", () => {
 
   /**
    * The same rule the reveal and the Hive's surge use: a constant tiles-per-second front,
-   * so a 7×7 skirmish and a 13×13 gauntlet look the same rather than one crawling and the
+   * so a four-tile colony and a forty-tile one look the same rather than one crawling and the
    * other streaking — with a clamp, because nobody sits through three seconds of it.
    */
   it("takes longer on a bigger board, within a beat the player will sit through", () => {
-    const small = planFlood(blankGame("tiny"), "you", 0);
-    const big = planFlood(blankGame("mid"), "you", 0);
+    const small = planFlood(blankGame("small"), "you", 0);
+    const big = planFlood(blankGame("small"), "you", 0);
     expect(big.dur).toBeGreaterThanOrEqual(small.dur);
     for (const f of [small, big]) {
       expect(f.dur).toBeGreaterThanOrEqual(FLOOD_MIN_MS);

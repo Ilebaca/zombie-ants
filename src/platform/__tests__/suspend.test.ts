@@ -18,7 +18,7 @@ import { aiTurn } from "../../ai/search";
 import type { MatchSetup, Move } from "../../engine";
 
 const SETUP: MatchSetup = {
-  map: "tiny",
+  map: "small",
   species: { you: "fire", ai: "carpenter" },
   seed: 12345,
   shape: START_SHAPES.wedge,

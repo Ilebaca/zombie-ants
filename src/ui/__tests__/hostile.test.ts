@@ -59,8 +59,8 @@ describe("text a player types never becomes markup", () => {
   it("survives the name on the screens that print it back", () => {
     for (const build of [
       () => buildSettings({
-        profile: named(), onBack: () => {}, board: "Corridor (9×9)", difficulty: "Normal",
-        onCycleBoard: () => {}, onCycleDifficulty: () => {}, onHowToPlay: () => {},
+        profile: named(), onBack: () => {}, difficulty: "Normal",
+        onCycleDifficulty: () => {}, onHowToPlay: () => {},
         onFeedbackChanged: () => {}, onReplayTutorial: () => {}, onReset: () => {},
         onDelete: () => {}, onSignOut: () => {}, onKeepSafe: () => {}, onRestored: () => {},
         playerCode: "ZA-TEST-TEST",

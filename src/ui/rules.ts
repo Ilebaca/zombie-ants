@@ -84,7 +84,7 @@ interface Section { title: string; blocks: Block[] }
  */
 function blank(keepHive = false): GameState {
   return clearBoard(
-    createGame({ map: "tiny", species: { you: "leafcutter", ai: "fire" }, seed: 7 }),
+    createGame({ map: "small", species: { you: "leafcutter", ai: "fire" }, seed: 7 }),
     keepHive,
   );
 }
@@ -106,7 +106,7 @@ const put = (s: GameState, c: number, r: number, o: Put): void => {
   if (o.guard !== undefined) t.guard = o.guard;
 };
 
-const TINY = MAPS.tiny;
+const BOARD = MAPS.small;
 
 const SECTIONS: Section[] = [
   {
@@ -299,7 +299,7 @@ const SECTIONS: Section[] = [
       { p: [
         "In the middle sleeps a wild queen infected with ", { hv: "Ophiocordyceps" },
         " — the real fungus that hollows out an ant and drives the husk. She wakes on turn ",
-        { b: String(TINY.awakenTurn) }, " on the small board, and her garrison hardens every ",
+        { b: String(BOARD.awakenTurn) }, ", and her garrison hardens every ",
         { b: `${HIVE_GROW_EVERY} turns` }, " after that. Leave her too long and she is a wall.",
       ] },
       { p: [
@@ -316,7 +316,7 @@ const SECTIONS: Section[] = [
         hive: true,
         build: (s) => {
           // Awake, on the turn she wakes: the engine sets her garrison, not this screen.
-          s.turn = TINY.awakenTurn;
+          s.turn = BOARD.awakenTurn;
           hiveTick(s, "you");
           recomputeConnectivity(s);
         },

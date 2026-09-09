@@ -103,7 +103,7 @@ const ctx = defaultContext();
 let games = 0, turns = 0, unnamed = 0;
 const t0 = Date.now();
 
-for (const map of ["tiny","small","mid"] as MapId[]) {
+for (const map of ["small"] as MapId[]) {
   for (let i = 0; i < SPECIES.length; i++) {
     for (let g = 0; g < perPair; g++) {
       const you = SPECIES[i] as SpeciesId, ai = SPECIES[(i+4+g) % SPECIES.length] as SpeciesId;

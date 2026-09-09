@@ -161,9 +161,7 @@ table tbody tr:hover { background: #f5f1ea; }
     <div class="tw"><table>
       <thead><tr><th>Format</th><th>Map</th><th>Typical length</th></tr></thead>
       <tbody>
-        <tr><td>Skirmish</td><td>7×7</td><td>~3 minutes</td></tr>
         <tr><td>Corridor</td><td>9×9</td><td>~5 minutes</td></tr>
-        <tr><td>Gauntlet</td><td>13×13</td><td>~8–10 minutes</td></tr>
       </tbody>
     </table></div>
 
@@ -352,7 +350,7 @@ table tbody tr:hover { background: #f5f1ea; }
     <div class="tw"><table>
       <thead><tr><th>Species</th><th>Ability</th><th>CD</th><th>Effect (as built)</th></tr></thead>
       <tbody>
-        <tr><td>Ghost Ant</td><td><strong>Tunnelling</strong></td><td>5</td><td>Digs a gallery to a chosen empty tile anywhere on the field. The mouth is yours instantly with 5 workers, is <em>always connected</em> even if surrounded, and can be rallied to or expanded from. Costs the whole turn. Starts on cooldown.</td></tr>
+        <tr><td>Ghost Ant · Tower</td><td><strong>Tunnelling</strong></td><td>5</td><td>Digs a gallery to a chosen empty tile anywhere on the field. The mouth is yours instantly with 5 workers, is <em>always connected</em> even if surrounded, and can be rallied to or expanded from. Costs the whole turn. Starts on cooldown.</td></tr>
         <tr><td>Pharaoh Ant</td><td><strong>Bud</strong></td><td>6</td><td>Every tile holding 40+ troops buds a new colony onto an adjacent empty tile, free.</td></tr>
         <tr><td>Leafcutter</td><td><strong>Fungal Garden</strong></td><td>6</td><td>Grows leaf walls on your borders — impassable to the enemy for 4 turns, then leave +40% defence on the tile. Research Lv 2–4 makes <strong>one wall per cast permanent</strong>, accumulating to a total of 1/2/3.</td></tr>
         <tr><td>Fire Ant</td><td><strong>Wildfire</strong></td><td>7</td><td>Your borders ignite for 3 turns. Enemy tiles burning lose <strong>20%</strong> of their garrison per turn; garrisons of 5 or fewer are wiped out entirely. Your own fire also burns wild garrisons and the Hive. Detached tiles don't ignite.</td></tr>
@@ -383,7 +381,7 @@ table tbody tr:hover { background: #f5f1ea; }
   <div class="page">
     <div class="eyebrow">The Hive</div>
     <h1>The infected queen</h1>
-    <p>A five-tile plus-shape at the centre of every map: a <strong>Queen</strong> and four <strong>guards</strong>. She is the map's shared objective and its clock.</p>
+    <p>A five-tile plus-shape at the centre of the board: a <strong>Queen</strong> and four <strong>guards</strong>. She is the map's shared objective and its clock.</p>
 
     <h2>Phases</h2>
     <ol>
@@ -470,9 +468,8 @@ table tbody tr:hover { background: #f5f1ea; }
     <h2>Pre-match</h2>
     <ol>
       <li><strong>PLAY</strong> from the home screen.</li>
-      <li><strong>Map select</strong> — Skirmish 7×7, Corridor 9×9, or Gauntlet 13×13.</li>
-      <li><strong>Species select</strong> — any unlocked colony; the picker always opens on your first species.</li>
-      <li><strong>Starting formation</strong> — choose from 12 five-tile shapes (Wedge, Line, Hook, Arrow, Zigzag, Column, Corner, Tower, Fan, Step, Claw, Spire).</li>
+      <li><strong>Formation</strong> — one screen showing the board with your five tiles on it; arrows step through the 12 five-tile shapes (Wedge, Line, Hook, Arrow, Zigzag, Column, Corner, Tower, Fan, Step, Claw, Spire).</li>
+      <li><strong>Colony</strong> — the same screen, the same arrows: any unlocked colony, with the tiles recoloured as you step through them.</li>
     </ol>
 
     <h2>Starting position</h2>
@@ -516,14 +513,12 @@ table tbody tr:hover { background: #f5f1ea; }
 <div id="maps" class="tab-panel">
   <div class="page">
     <div class="eyebrow">Maps</div>
-    <h1>Three boards</h1>
+    <h1>One board</h1>
 
     <div class="tw"><table>
       <thead><tr><th>Map</th><th>Grid</th><th>Hive wakes</th><th>Expected length</th><th>Surge length</th><th>Feel</th></tr></thead>
       <tbody>
-        <tr><td><strong>Skirmish</strong></td><td>7×7</td><td>Turn 10</td><td>32</td><td>3 turns</td><td>Knife fight. Contact almost immediately, the Hive is always relevant.</td></tr>
-        <tr><td><strong>Corridor</strong></td><td>9×9</td><td>Turn 14</td><td>45</td><td>4 turns</td><td>The default duel — room for one economic decision before the fighting.</td></tr>
-        <tr><td><strong>Gauntlet</strong></td><td>13×13</td><td>Turn 18</td><td>80</td><td>5 turns</td><td>Full strategic game: real economy, long supply lines, multiple fronts.</td></tr>
+        <tr><td><strong>Corridor</strong></td><td>9×9</td><td>Turn 14</td><td>45</td><td>4 turns</td><td>The duel — room for one economic decision before the fighting.</td></tr>
       </tbody>
     </table></div>
 
@@ -536,7 +531,7 @@ table tbody tr:hover { background: #f5f1ea; }
     </ul>
 
     <h2>Long-range reach</h2>
-    <p>Travel reach is <strong>4 tiles</strong> on every map, so relative distance — and therefore the value of a vein network — grows with the board.</p>
+    <p>Travel reach is <strong>4 tiles</strong>, which is what makes a vein network worth building across a 9×9 board.</p>
   </div>
 </div>
 
@@ -880,11 +875,11 @@ table tbody tr:hover { background: #f5f1ea; }
     <div class="tw"><table>
       <thead><tr><th>#</th><th>Challenge</th><th>Setup</th><th>Objective</th></tr></thead>
       <tbody>
-        <tr><td>1</td><td><strong>First Blood</strong></td><td>Corridor · Fire Ant · Wedge</td><td>Strike the enemy before they strike you</td></tr>
-        <tr><td>2</td><td><strong>Hold the Line</strong></td><td>Corridor · Weaver Ant · Line</td><td>Survive the early swarm, then wipe them out</td></tr>
-        <tr><td>3</td><td><strong>Hive Siege</strong></td><td>Gauntlet · Army Ant · Arrow</td><td>Break the wall and destroy the enemy colony</td></tr>
-        <tr><td>4</td><td><strong>Outnumbered</strong></td><td>Gauntlet · Bullet Ant · Column</td><td>Claw back a win from the corner</td></tr>
-        <tr><td>5</td><td><strong>Ghost Protocol</strong></td><td>Ghost Ant</td><td>Win using tunnels and stealth</td></tr>
+        <tr><td>1</td><td><strong>First Blood</strong></td><td>Fire Ant · Wedge</td><td>Strike the enemy before they strike you</td></tr>
+        <tr><td>2</td><td><strong>Hold the Line</strong></td><td>Weaver Ant · Line</td><td>Survive the early swarm, then wipe them out</td></tr>
+        <tr><td>3</td><td><strong>Hive Siege</strong></td><td>Army Ant · Arrow</td><td>Break the wall and destroy the enemy colony</td></tr>
+        <tr><td>4</td><td><strong>Outnumbered</strong></td><td>Bullet Ant · Column</td><td>Claw back a win from the corner</td></tr>
+        <tr><td>5</td><td><strong>Ghost Protocol</strong></td><td>Ghost Ant · Tower</td><td>Win using tunnels and stealth</td></tr>
       </tbody>
     </table></div>
 

@@ -231,7 +231,7 @@ interface BadgeOptions {
  * A single digit draws as a CIRCLE, and the badge only grows sideways once the number needs
  * the room — the corner radius stays at half the height, so 7, 42 and 128 read as the same
  * shape stretched, not as three different badges. Sizes are in tile units so it holds up on
- * a 7×7 board and a 13×13 one alike.
+ * a small colony and a board-wide one alike.
  */
 function countBadge(scene: Scene, o: BadgeOptions): void {
   const { ctx, layout } = scene;

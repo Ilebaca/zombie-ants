@@ -3,7 +3,7 @@ import type { GameState, Player, SpeciesId, Structure, Terrain } from "../index"
 import type { MapId } from "../config";
 
 /** A blank board with no colonies placed, for precise rule tests. */
-export function blankGame(map: MapId = "mid", species: Record<Player, SpeciesId> = { you: "fire", ai: "fire" }): GameState {
+export function blankGame(map: MapId = "small", species: Record<Player, SpeciesId> = { you: "fire", ai: "fire" }): GameState {
   // The hive's terrain stays: most rule tests want the middle of the map to be what the
   // real map has there, and the ones that do not clear it themselves.
   //
