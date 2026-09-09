@@ -28,7 +28,9 @@ import {
   COLONY_START, LEAGUES, LEAGUE_SIZE, PAID_PLACES, compact, exact, globalTable,
   leagueChapters, msLeftInWeek, prizeFor, prizeText, seasonScore, table, weekProgress,
 } from "../platform";
-import type { GlobalRow, League, ProfileStore, SeasonResult, Standing } from "../platform";
+import type {
+  GlobalRow, League, Prize, ProfileStore, SeasonResult, Standing,
+} from "../platform";
 import { antPortrait, el, redraw, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 
@@ -175,18 +177,43 @@ function lastWeek(r: SeasonResult): HTMLElement {
   return box;
 }
 
-/** One colony's week: its place, its face, its name, and what it gained. */
+/** One colony's week: its place, its face, its name, what it pays, and what it gained. */
 function weekRow(row: Standing, rank: number): HTMLElement {
-  const line = el("div", "lbrow" + (row.you ? " you" : "")
-    + (rank <= PAID_PLACES ? " paid" : ""));
+  const prize = prizeFor(rank);
+  const line = el("div", "lbrow" + (row.you ? " you" : "") + (prize ? " paid" : ""));
   const place = el("div", "lbrank" + medalClass(rank), String(rank));
   const face = el("div", "lbface");
   face.appendChild(antPortrait(row.species, 60));
+  const who = el("div", "lbpname");
+  who.appendChild(el("span", "lbwho", row.name));
+  // WHAT THIS PLACE PAYS, ON THE PLACE ITSELF. Stating it only for the row the player is
+  // standing on says what THIS week is worth and nothing about what climbing is worth —
+  // and the prize tapers, so the whole reason to climb is the difference between one row
+  // and the row above it. Marks and figures rather than words: three currencies spelled
+  // out is a line and a half in a row that is one line tall.
+  if (prize) who.appendChild(prizeMarks(prize));
   const gain = el("div", "lbpts" + (row.score < 0 ? " down" : ""),
     `${row.score < 0 ? "−" : "+"}${compact(Math.abs(row.score))}`);
   if (row.you) gain.title = `${exact(row.score)} troops this week`;
-  line.append(place, face, el("div", "lbpname", row.name), gain);
+  line.append(place, face, who, gain);
   return line;
+}
+
+/** A prize as three marks and three figures, with the words kept for the screen reader. */
+function prizeMarks(prize: Prize): HTMLElement {
+  const box = el("span", "lbpay");
+  box.title = prizeText(prize);
+  box.setAttribute("aria-label", `Pays ${prizeText(prize)}`);
+  const pairs: ReadonlyArray<[string, number]> = [
+    ["mycel", prize.mycel ?? 0],
+    ["pheromone", prize.pheromone ?? 0],
+    ["brood", prize.larva ?? 0],
+  ];
+  for (const [mark, amount] of pairs) {
+    if (!amount) continue;
+    box.append(icon(mark, 11), el("span", undefined, String(amount)));
+  }
+  return box;
 }
 
 /** How long the season has left, in the largest unit that still says something useful. */

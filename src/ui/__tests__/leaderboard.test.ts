@@ -119,6 +119,34 @@ describe("this week", () => {
     else expect(next).toMatch(/^Finishing here pays /);
   });
 
+  /**
+   * WHAT EACH PLACE PAYS, ON THE PLACE. Stating it only for the row the player stands on
+   * says what THIS week is worth and nothing about what climbing is worth — and the prize
+   * tapers, so the difference between one row and the row above it IS the reason to climb.
+   */
+  it("prints the prize on every paid place, and on no other", () => {
+    const root = build(store(24_000));
+    const list = rows(root);
+    for (let i = 0; i < list.length; i++) {
+      const pay = list[i]!.querySelector(".lbpay");
+      if (i < PAID_PLACES) expect(pay, `place ${i + 1} does not say what it pays`).toBeTruthy();
+      else expect(pay, `place ${i + 1} is paid and should not be`).toBeNull();
+    }
+  });
+
+  it("pays the top place more than the tenth, in figures on the rows", () => {
+    const list = rows(build(store(24_000)));
+    const figures = (i: number): number[] =>
+      Array.from(list[i]!.querySelectorAll(".lbpay span")).map((s) => Number(s.textContent));
+    const first = figures(0);
+    const tenth = figures(PAID_PLACES - 1);
+    expect(first.length).toBeGreaterThan(0);
+    expect(first[0]).toBeGreaterThan(tenth[0] as number);
+    // Every currency the prize pays is named for a reader who cannot see the marks.
+    expect(list[0]!.querySelector(".lbpay")?.getAttribute("aria-label"))
+      .toMatch(/mycelium.*pheromone.*larva/);
+  });
+
   it("says how long the season has left", () => {
     expect(build(store(24_000)).querySelector(".lbclock")?.textContent).toMatch(/\d+[dhm]/);
   });

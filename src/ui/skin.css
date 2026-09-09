@@ -3429,6 +3429,26 @@ button:not(.playbtn):active,
    line under it. */
 .lbrow.paid { border-left: 3px solid var(--gold); }
 
+/* ---- What a place pays, on the place ----
+   Under the name, in the gold the prize is paid in, so the ten rows worth
+   playing for are readable as a ladder rather than as ten identical rows with
+   a stripe. `svg` sizing is stated because the mark inherits the row's font
+   size otherwise and lands a pixel off the figure beside it. */
+.lbpay {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 2px;
+  font-size: 10.5px;
+  font-weight: 900;
+  color: var(--gold-glow);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.lbpay svg { flex: none; opacity: .95; }
+.lbpay span { margin-right: 5px; }
+.lbpay span:last-child { margin-right: 0; }
+
 /* ---- The career table ----
    Two lines in the name cell: who, and the chapter they have reached. That is
    the whole of what this tab shows about a colony. */

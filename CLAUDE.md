@@ -909,6 +909,12 @@ rather than a detail:
   trying to be both answers neither, which is what the old one did. It tops out at the
   ROAD'S LAST RUNG — past five million every row reads "Chapter 50", so a list that ran to
   twenty million had the one fact it exists to carry blank at the end everybody looks at.
+- **EVERY PAID PLACE PRINTS WHAT IT PAYS, on the row.** Stating it only for the row the
+  player is standing on says what THIS week is worth and nothing about what climbing is
+  worth — and the prize TAPERS, so the difference between one row and the row above it is
+  the whole reason to climb. Marks and figures rather than words: three currencies written
+  out is a line and a half in a row that is one line tall, and the words survive as the
+  row's `title` and `aria-label`.
 - **The distance to a prize is counted FORWARDS.** It was `PAID_PLACES - place + 1`, which
   is places-left-inside-the-paid-ten — positive only for somebody already being paid, so
   everybody else was told they were "−27 places to a prize".
