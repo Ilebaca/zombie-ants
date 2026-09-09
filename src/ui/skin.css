@@ -2951,15 +2951,16 @@ button:not(.playbtn):active,
 #formation {
   display: flex;
   flex-direction: column;
-  /* THE PICTURE, ITS NAME AND THE BUTTON ARE ONE GROUP IN THE MIDDLE OF THE SCREEN.
-     Centred in what is left UNDER the header instead, the group sits low — the header is
-     eighty pixels of it — so the header is lifted out of the flow and the group is centred
-     on the screen itself. There is nothing behind the header to cover: the ground above
-     the board is empty. NOTE the screen is NOT given `position: relative` for the header
-     to hang off — `.screen` is already `position: absolute; inset: 0` (the legacy rule),
-     and overriding that takes it out of its own full-height box, which collapses the
-     whole screen to the height of its content. */
-  justify-content: center;
+  /* THE PICTURE AND ITS NAME SIT IN THE MIDDLE; THE BUTTON HOLDS THE BOTTOM.
+     Two flexible gaps, one above the board and one under the name, split what is left
+     over equally — so the board rides near the middle of the screen and the button stays
+     where a primary action belongs, with air between it and the thing it acts on. The
+     header is lifted out of the flow so the middle is the SCREEN'S middle rather than the
+     middle of what is under the header, which sat the picture low. There is nothing
+     behind the header to cover: the ground above the board is empty. NOTE the screen is
+     NOT given `position: relative` for the header to hang off — `.screen` is already
+     `position: absolute; inset: 0` (the legacy rule), and overriding that takes it out of
+     its own full-height box, which collapses the whole screen to its content. */
   min-height: 0;
 }
 .setuptop {
@@ -2972,7 +2973,10 @@ button:not(.playbtn):active,
 /* THE BOARD TAKES WHAT IS LEFT, and is centred in it. The picture is sized in
    JS off the viewport, so this only has to give it the room and the middle. */
 .setupstage {
-  flex: 0 1 auto;
+  /* `1 1 auto`, never `flex: 1`: a basis of ZERO splits the whole screen by grow factor
+     rather than sharing out what is SPARE, which sizes the box without reference to the
+     board in it and runs the picture up under the header. */
+  flex: 1 1 auto;
   min-height: 0;
   display: grid;
   justify-items: center;
@@ -2995,7 +2999,10 @@ button:not(.playbtn):active,
 }
 
 .setupfoot {
-  flex: none;
+  /* It takes the same share of the spare room as the stage, and the button rides its
+     bottom — which is the bottom of the screen. */
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3046,21 +3053,18 @@ button:not(.playbtn):active,
 /* Drawn at twice the size it is shown at, which is what keeps it sharp on a
    phone — the same rule `antPortrait` follows. */
 .pickface { width: 32px; height: 32px; display: block; }
-.setupfoot .cta { width: 100%; margin: 0; }
+/* THE BUTTON IS SEPARATE FROM THE PICKER, not the last row of it. It stays inside the
+   footer so the tour's one hole can hold both controls live. */
+.setupfoot .cta { width: 100%; margin: auto 0 0; }
 
 /* The invitation bar sits above all of it, so the screen's own furniture starts
    below the bar rather than under it. The bar is absolutely positioned, so the
    room has to be made on the screen itself. */
 /* AN INVITATION IS SOMETHING THAT TAKES ROOM, so with one up the header goes back into the
-   flow and the group centres in what is LEFT under it. Lifted out, the bar and the header
-   together are a third of a short screen and the picture is centred straight through them.
-   The auto margins are what centre the group once the container no longer can: with the
-   header in the flow, `justify-content: center` would centre that too and lift it off the
-   top of the screen, away from the bar it is meant to sit under. */
-#formation.hasinvite { justify-content: flex-start; }
+   flow and everything below shares what is LEFT under it. Lifted out, the bar and the
+   header together are a third of a short screen and the picture would ride up through
+   them. */
 #formation.hasinvite .setuptop { position: static; padding-top: 78px; }
-#formation.hasinvite .setupstage { margin-top: auto; }
-#formation.hasinvite .setupfoot { margin-bottom: auto; }
 
 /* ============================================================================
    ==  THE GRANARY  ===========================================================

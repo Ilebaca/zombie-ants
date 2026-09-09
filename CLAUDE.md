@@ -733,18 +733,22 @@ one that survived.
 - **The step it finished is REPORTED, never assumed** (`onStep`). The tour walks this
   screen and the screen does not know the tour exists — the same seam every other screen
   uses, and it is what lets a step advance on the deed rather than on the press.
-- **THE PICTURE, ITS NAME AND THE BUTTON ARE ONE GROUP IN THE MIDDLE OF THE SCREEN.** The
-  name and the arrows sit 20px under the board's bottom edge, because they are what the
-  picture is being stepped through with. The board is square and a phone is not, so there
-  is always slack, and centring the group in what is left UNDER the header put it low —
-  the header is eighty pixels of the answer. The header is lifted out of the flow instead
-  and the group is centred on the screen itself; there is nothing behind it to cover,
-  because the ground above the board is empty. Two things it costs: the screen must NOT be
-  given `position: relative` for the header to hang off (`.screen` is already
-  `position: absolute; inset: 0`, and overriding that collapses the screen to the height
-  of its content), and an INVITATION puts the header back in the flow — the bar and the
-  header together are a third of a short screen, and the picture would be centred straight
-  through them.
+- **THE PICTURE AND ITS NAME SIT IN THE MIDDLE; THE BUTTON HOLDS THE BOTTOM.** The name
+  and the arrows sit 20px under the board's bottom edge, because they are what the picture
+  is being stepped through with — and the button is SEPARATE from them, where a primary
+  action belongs. The board is square and a phone is not, so there is always slack: two
+  flexible gaps, one above the board and one under the name, share it equally. `flex: 1 1
+  auto` on both, never `flex: 1` — a basis of zero splits the whole screen by grow factor
+  rather than sharing out what is spare, which sizes each box without reference to what is
+  in it and runs the picture up under the header. The header is LIFTED OUT of the flow, so
+  the middle is the screen's middle rather than the middle of what is under the header,
+  which sat the picture low; there is nothing behind it to cover, because the ground above
+  the board is empty. Two things it costs: the screen must NOT be given `position:
+  relative` for the header to hang off (`.screen` is already `position: absolute; inset:
+  0`, and overriding that collapses the screen to the height of its content), and an
+  INVITATION puts the header back in the flow — the bar and the header together are a
+  third of a short screen, and the picture would ride up through them. The button stays
+  INSIDE the footer with the picker, so the tour's one hole can hold both controls live.
 - **AND THE PICTURE IS SIZED AGAINST THE BOX IT SITS IN.** The tile is measured in JS off
   the viewport minus the screen's own gutter and the chrome above and below, so the stage
   may add NO inset of its own: a board wider than its column does not centre, it overflows
