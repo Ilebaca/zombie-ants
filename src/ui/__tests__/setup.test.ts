@@ -1,8 +1,12 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { MAPS, SPECIES, START_SHAPES } from "../../engine";
 import type { ShapeId, SpeciesId } from "../../engine";
 import { MemoryStore, ProfileStore, SPECIES_ORDER } from "../../platform";
 import { MAP_PAD_TILES, buildSetup, rollAISpecies, shapeName } from "../setup";
+import { App } from "../app";
+import { TOUR_VERSION } from "../../platform";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
 
@@ -177,5 +181,49 @@ describe("the setup screen", () => {
     // Square, because the board is: the padding is the same on every side.
     expect(w).toBeCloseTo(h, 0);
     expect(w / (MAPS.small.size + 2 * MAP_PAD_TILES)).toBeGreaterThan(12);
+  });
+
+  /**
+   * THE PICTURE IS SIZED AGAINST THE BOX IT SITS IN. The board is measured in JS off the
+   * viewport minus the screen's own gutter — so a second inset on the stage makes it wider
+   * than its own column, and a grid item wider than its track does not centre: it
+   * overflows the END and is clipped there. Reported as "the map is cut off to the right".
+   */
+  it("gives the stage no side inset of its own", () => {
+    const css = readFileSync(resolve(__dirname, "..", "skin.css"), "utf8");
+    const rule = /\.setupstage \{([^}]*)\}/.exec(css)?.[1] ?? "";
+    expect(rule, "no .setupstage rule").not.toBe("");
+    for (const decl of rule.split(";")) {
+      const [prop, value] = decl.split(":").map((x) => x.trim());
+      if (!prop?.startsWith("padding")) continue;
+      const sides = prop === "padding"
+        ? (value ?? "").split(/\s+/)
+        : /inline|left|right/.test(prop) ? [value ?? ""] : [];
+      // `padding: a b c` — the second value is both sides; one value is all four.
+      const across = prop === "padding" ? [sides[1] ?? sides[0] ?? "0"] : sides;
+      for (const v of across) {
+        expect(parseFloat(v) || 0, `.setupstage insets the picture with ${decl.trim()}`).toBe(0);
+      }
+    }
+  });
+});
+
+/**
+ * THE BUTTON THAT OPENS IT NAMES THE BOARD. There is one board now (§ ONE BOARD), so the
+ * screen that used to ask which is gone — and with it the only place the player was ever
+ * told what they were about to play on. It is read off the map, never typed, so a second
+ * board cannot leave the home screen lying about the first.
+ */
+describe("the way in", () => {
+  it("says which board PLAY plays on", () => {
+    const store = new ProfileStore(new MemoryStore());
+    store.update((p) => { p.tourSeen = TOUR_VERSION; });
+    const host = document.createElement("div");
+    host.id = "app";
+    document.body.replaceChildren(host);
+    new App(host, store).start();
+    const label = host.querySelector(".playbtn")?.textContent ?? "";
+    expect(label).toContain("PLAY");
+    expect(label).toContain(`${MAPS.small.size}\u00d7${MAPS.small.size}`);
   });
 });

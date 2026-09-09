@@ -56,6 +56,22 @@ const SHAPE_IDS = Object.keys(START_SHAPES) as ShapeId[];
 /** Soil left around the playfield, in tiles — enough for the clearing's feathered edge. */
 export const MAP_PAD_TILES = 0.9;
 
+/** `.screen`'s own inset, which the stage does not add to (skin.css). */
+const GUTTER_PX = 16;
+/**
+ * The header above the picture and the picker + PLAY below it. A measured constant rather
+ * than a reading, because the board is drawn while the screen is still being built and has
+ * no layout to measure; it only has to be near enough that the picture never outgrows the
+ * room, which the bottom-aligned stage then takes up from below.
+ */
+const CHROME_PX = 330;
+/**
+ * A ceiling, for a tablet. Left to the width alone the board grows past the reading column
+ * the name and the button underneath it are held to, and a picture wider than its own
+ * controls reads as two screens stacked.
+ */
+const MAX_BOARD_PX = 520;
+
 export function buildSetup(o: SetupOptions): HTMLElement {
   const root = screenEl("formation");
   let step: Step = "shape";
@@ -188,10 +204,14 @@ function drawBoard(canvas: HTMLCanvasElement, shape: ShapeId, species: SpeciesId
   }
   const w = window.innerWidth || 390;
   const h = window.innerHeight || 780;
-  // The picture is the middle of the screen: the header and the picker take the rest, so
-  // the tile is sized off whichever of the two runs out first.
+  // The picture is the middle of the screen, and it is sized against what is ACTUALLY
+  // left: the screen's own 16px gutter either side, and the header and the picker row
+  // above and below it. Sized off a fraction of the viewport instead, the board came out
+  // wider than the box it is centred in — and a picture wider than its column does not
+  // centre, it overflows to the right and is clipped there.
   const across = state.size + 2 * MAP_PAD_TILES;
-  const tile = Math.max(12, Math.floor(Math.min(w - 32, h * 0.5) / across));
+  const room = Math.min(w - GUTTER_PX * 2, h - CHROME_PX, MAX_BOARD_PX);
+  const tile = Math.max(12, Math.floor(room / across));
   drawSnapshot(canvas, state, { tile, terrain: true, padTiles: MAP_PAD_TILES });
 }
 

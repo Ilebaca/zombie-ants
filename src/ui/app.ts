@@ -1037,7 +1037,10 @@ export class App {
     play.appendChild(mark);
     play.appendChild(el("div", "hometag", "Spread · Surround · Consume"));
 
-    const btn = el("button", "playbtn", "PLAY");
+    // The board's SIZE, read off the map rather than typed: there is one board and the
+    // button is where the player is told which (§ ONE BOARD).
+    const board = MAPS.small.size;
+    const btn = el("button", "playbtn", `PLAY ${board}\u00d7${board}`);
     btn.id = "goPlay";
     btn.onclick = () => this.show("formation");
     play.appendChild(btn);

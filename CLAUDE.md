@@ -733,6 +733,26 @@ one that survived.
 - **The step it finished is REPORTED, never assumed** (`onStep`). The tour walks this
   screen and the screen does not know the tour exists — the same seam every other screen
   uses, and it is what lets a step advance on the deed rather than on the press.
+- **THE PICTURE, ITS NAME AND THE BUTTON ARE ONE GROUP IN THE MIDDLE OF THE SCREEN.** The
+  name and the arrows sit 20px under the board's bottom edge, because they are what the
+  picture is being stepped through with. The board is square and a phone is not, so there
+  is always slack, and centring the group in what is left UNDER the header put it low —
+  the header is eighty pixels of the answer. The header is lifted out of the flow instead
+  and the group is centred on the screen itself; there is nothing behind it to cover,
+  because the ground above the board is empty. Two things it costs: the screen must NOT be
+  given `position: relative` for the header to hang off (`.screen` is already
+  `position: absolute; inset: 0`, and overriding that collapses the screen to the height
+  of its content), and an INVITATION puts the header back in the flow — the bar and the
+  header together are a third of a short screen, and the picture would be centred straight
+  through them.
+- **AND THE PICTURE IS SIZED AGAINST THE BOX IT SITS IN.** The tile is measured in JS off
+  the viewport minus the screen's own gutter and the chrome above and below, so the stage
+  may add NO inset of its own: a board wider than its column does not centre, it overflows
+  the END and is clipped there — reported as "the map is cut off to the right". A test
+  reads the rule out of `skin.css`, because nothing else can see it.
+- **The way in NAMES THE BOARD.** Home's button reads PLAY 9×9, read off `MAPS`. The screen
+  that used to ask which board is gone, so that button is the only place the player is told
+  what they are about to play on.
 
 **HOW TO PLAY IS A MANUAL** (`src/ui/rules.ts`). It was seven lines of prose, which cannot
 carry a game with deterministic combat a player is meant to count out, supply lines that
@@ -955,8 +975,8 @@ A test holds `.cname` as the card's LAST child, so nothing can creep back under 
 whoever the finder seats; a DUEL is against a named person. It is deliberately the ORDINARY
 setup flow with one step added and one step skipped:
 
-    challenging   home → map → colony → formation → WHO → the match
-    invited       the bar → colony → formation → the match, on their ground
+    challenging   home → formation → colony → WHO → the match
+    invited       the bar → formation → colony → the match, on their ground
 
 - **ONE BUTTON, BOTH HALVES.** A third floating button under Daily opens the flow, and it
   carries the count of invitations waiting. A separate "invitations" screen would be a

@@ -2951,19 +2951,39 @@ button:not(.playbtn):active,
 #formation {
   display: flex;
   flex-direction: column;
+  /* THE PICTURE, ITS NAME AND THE BUTTON ARE ONE GROUP IN THE MIDDLE OF THE SCREEN.
+     Centred in what is left UNDER the header instead, the group sits low — the header is
+     eighty pixels of it — so the header is lifted out of the flow and the group is centred
+     on the screen itself. There is nothing behind the header to cover: the ground above
+     the board is empty. NOTE the screen is NOT given `position: relative` for the header
+     to hang off — `.screen` is already `position: absolute; inset: 0` (the legacy rule),
+     and overriding that takes it out of its own full-height box, which collapses the
+     whole screen to the height of its content. */
+  justify-content: center;
   min-height: 0;
 }
-.setuptop { flex: none; }
+.setuptop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
 
 /* THE BOARD TAKES WHAT IS LEFT, and is centred in it. The picture is sized in
    JS off the viewport, so this only has to give it the room and the middle. */
 .setupstage {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
   display: grid;
-  place-items: center;
+  justify-items: center;
+  /* The board sits on the BOTTOM of its box, because the name and the arrows belong
+     directly under the picture they are stepping through. */
+  align-items: end;
   overflow: hidden;
-  padding: 4px 16px;
+  /* NO SIDE INSET OF ITS OWN: `.screen` already carries the 16px gutter and the picture is
+     sized against that in JS. A second inset makes the board wider than its own column —
+     and a grid item wider than its track does not centre, it overflows the END and is
+     clipped there. */
 }
 /* The picture is the PLAYFIELD and a hair of soil, never a fill: ground carried
    to the corners of the screen is a photograph of undergrowth with a board
@@ -2976,12 +2996,15 @@ button:not(.playbtn):active,
 
 .setupfoot {
   flex: none;
-  display: grid;
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 10px;
   width: min(100%, var(--page));
   margin-inline: auto;
-  padding: 6px 16px calc(env(safe-area-inset-bottom) + 16px);
+  /* The 20px Milan asked for, measured from the bottom edge of the picture. `.screen`
+     owns the bottom inset and the safe area. */
+  padding: 20px 0 0;
 }
 /* ARROW, NAME, ARROW — a three-column grid rather than a flex row, so the name
    sits in the MIDDLE of the screen whatever its length: laid out by content, a
@@ -3000,12 +3023,14 @@ button:not(.playbtn):active,
   display: grid;
   place-items: center;
   border: none;
-  border-radius: var(--r-pill);
+  /* The same square-with-a-radius as the back button: it is the same kind of control, a
+     mark on a tray that moves you through something. */
+  border-radius: var(--r-md);
   background: var(--panel-hi);
   color: var(--ink);
   cursor: pointer;
 }
-.pickarrow:active { background: var(--panel-edge); }
+.pickarrow:active { filter: brightness(.9); }
 .pickname {
   display: flex;
   align-items: center;
@@ -3026,7 +3051,16 @@ button:not(.playbtn):active,
 /* The invitation bar sits above all of it, so the screen's own furniture starts
    below the bar rather than under it. The bar is absolutely positioned, so the
    room has to be made on the screen itself. */
-#formation.hasinvite .setuptop { padding-top: 78px; }
+/* AN INVITATION IS SOMETHING THAT TAKES ROOM, so with one up the header goes back into the
+   flow and the group centres in what is LEFT under it. Lifted out, the bar and the header
+   together are a third of a short screen and the picture is centred straight through them.
+   The auto margins are what centre the group once the container no longer can: with the
+   header in the flow, `justify-content: center` would centre that too and lift it off the
+   top of the screen, away from the bar it is meant to sit under. */
+#formation.hasinvite { justify-content: flex-start; }
+#formation.hasinvite .setuptop { position: static; padding-top: 78px; }
+#formation.hasinvite .setupstage { margin-top: auto; }
+#formation.hasinvite .setupfoot { margin-bottom: auto; }
 
 /* ============================================================================
    ==  THE GRANARY  ===========================================================

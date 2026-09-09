@@ -4,8 +4,8 @@
  * The feature is two paths through the SAME setup flow, and what has to be true is that
  * each one ends somewhere different:
  *
- *   challenging  map → colony → formation → WHO → the match
- *   invited      the bar → colony → formation → the match, on their ground
+ *   challenging  formation → colony → WHO → the match
+ *   invited      the bar → formation → colony → the match, on their ground
  *
  * So these tests press the real buttons on the real screens rather than calling methods.
  * A flow that ends in the wrong place is the whole failure mode here, and only walking it
