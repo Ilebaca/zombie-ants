@@ -93,6 +93,22 @@ describe("challenging somebody", () => {
     expect(host.querySelectorAll("#duelpick .duelrow").length).toBe(2);
   });
 
+  /**
+   * ABANDONING A CHALLENGE ABANDONS IT. The friends button marks the setup screen as a
+   * challenge and nothing unmarked it, so backing out to home and pressing PLAY landed on
+   * the friend picker instead of a search — the ordinary flow silently still being the one
+   * before it.
+   */
+  it("does not leave the next ordinary match asking who to play", () => {
+    const host = mount(ready());
+    press(host, ".duelfab");
+    press(host, "#setupBack");          // out of the challenge, back to home
+    press(host, ".playbtn");
+    press(host, "#setupGo");
+    press(host, "#setupGo");
+    expect(visible(host, "#duelpick"), "Play still asked which friend").toBeNull();
+  });
+
   /** ...and Play, from the same home screen, still does not. */
   it("leaves the ordinary flow alone", () => {
     const host = mount(ready());

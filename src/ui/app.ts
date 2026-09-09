@@ -797,7 +797,7 @@ export class App {
       // board what it has chosen is the OPPONENT, and this is the screen standing between
       // the player and playing them.
       const invite = this.profile.duels[0];
-      const screen = buildSetup(this.setup(() => this.show("home")));
+      const screen = buildSetup(this.setup(() => this.leaveSetup()));
       if (invite) {
         screen.classList.add("hasinvite");
         screen.prepend(inviteBar({
@@ -1042,7 +1042,7 @@ export class App {
     const board = MAPS.small.size;
     const btn = el("button", "playbtn", `PLAY ${board}\u00d7${board}`);
     btn.id = "goPlay";
-    btn.onclick = () => this.show("formation");
+    btn.onclick = () => this.playOrdinary();
     play.appendChild(btn);
 
     const how = el("button", "howtolink");
@@ -1346,6 +1346,23 @@ export class App {
   private openDuels(): void {
     this.duel = { host: true };
     this.show("formation");
+  }
+
+  /**
+   * THE SETUP SCREEN IS TWO FLOWS AND THE WAY IN DECIDES WHICH, so the way in has to SAY
+   * so. `openDuels` marks the screen as a challenge and nothing unmarked it: backing out
+   * to home and pressing PLAY landed on "who do you want to play?" instead of a search —
+   * the ordinary flow silently still being the one before it.
+   */
+  private playOrdinary(): void {
+    this.duel = null;
+    this.show("formation");
+  }
+
+  /** Leaving the setup screen abandons whatever flow it was opened for. */
+  private leaveSetup(): void {
+    this.duel = null;
+    this.show("home");
   }
 
   /** Take an invitation: the opponent is theirs, the colony and the shape are still yours. */

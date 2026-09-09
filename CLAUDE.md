@@ -652,6 +652,16 @@ Each of these cost a debugging round. Do not repeat them.
   colony's boundary into real loops so one dash offset carries the whole way round. Stroking
   each boundary edge separately is far simpler and looks wrong: every edge restarts the dash
   pattern, so the marks sit still at corners and march in contradictory directions.
+- **A HIDDEN SCREEN IS HIDDEN — and an ID RULE OUTRANKS THE RULE THAT HIDES IT.** The
+  router shows one page by putting `.hidden` on every other one, and the legacy rule that
+  acts on it is `.screen.hidden { display: none }` — TWO CLASSES, which any per-screen rule
+  keyed on an id beats. `#formation { display: flex }`, added when the setup screen became a
+  flex column, left that screen standing on top of the match it had just started: two things
+  on screen at once, and still there on the way back. `.screen.hidden` carries `!important`
+  now rather than the id rule being rewritten, because the next screen that needs a display
+  of its own walks into exactly the same trap. `ui/__tests__/hidden.test.ts` puts both
+  stylesheets into jsdom and asks for the COMPUTED display of every id `skin.css` styles —
+  reading the file cannot see a cascade, which is the whole fault.
 - **A rule hung on the wrong class does nothing where it was meant to and something
   where it was not.** The home artwork's vignette was written as `.hillwrap::after` — and
   `.hillwrap` is the ANTHILL's scroller. So it darkened the top and bottom of the chamber
@@ -1007,6 +1017,12 @@ setup flow with one step added and one step skipped:
 - **Leaving abandons it.** `challenge` takes the screen's abort signal, exactly as the
   opponent search does, so a promise that resolves after the player walked away cannot
   start a match behind whatever they went to.
+- **AND ABANDONING THE FLOW ABANDONS IT TOO.** The friends button MARKS the setup screen
+  as a challenge (`duel`), and nothing unmarked it — so backing out to home and pressing
+  PLAY landed on "who do you want to play?" instead of a search: the ordinary flow
+  silently still being the one before it. Both ordinary ways in say which flow they are
+  (`playOrdinary`, `leaveSetup`), because the screen is two flows and the way in is the
+  only thing that can decide.
 - **`waitingFor` is not `agoOf`.** A news post lives for weeks and is dated in days, so
   "Today" is right for one. A challenge lives for minutes, and "Today" says nothing about
   whether the person who sent it is still sitting there.

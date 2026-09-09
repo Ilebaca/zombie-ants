@@ -146,6 +146,16 @@ body {
   color: var(--ink);
 }
 
+/* A HIDDEN SCREEN IS HIDDEN, WHATEVER ELSE IS SAID ABOUT IT.
+   The router shows one page at a time by putting `.hidden` on every other one, and the
+   legacy rule that acts on it — `.screen.hidden { display: none }` — is TWO CLASSES. Any
+   per-screen rule keyed on an id outranks it: `#formation { display: flex }`, added when
+   the setup screen became a flex column, left that screen standing on top of the match it
+   had just started. Two things on screen at once, and still there on the way back.
+   `!important` here rather than rewriting the id rule, because the next screen that needs
+   a display of its own would walk into exactly the same trap. */
+.screen.hidden { display: none !important; }
+
 .screen {
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%23a8e08a' fill-opacity='.035'%3E%3Crect x='10' y='14' width='16' height='16' rx='5'/%3E%3Crect x='42' y='60' width='11' height='11' rx='3.5'/%3E%3Crect x='86' y='26' width='14' height='14' rx='4.5'/%3E%3Crect x='66' y='96' width='9' height='9' rx='3'/%3E%3Crect x='16' y='84' width='12' height='12' rx='4'/%3E%3C/g%3E%3C/svg%3E"),
