@@ -899,13 +899,9 @@ export class App {
     }
     if (id === "rules") return buildRules();
     if (id === "shop") return buildShop(this.profile, this.purchases, () => this.show("home"));
-    if (id === "leaderboard") {
-      const me = this.profile.get();
-      return buildLeaderboard(
-        { name: me.name, colony: me.colony, species: me.lastSpecies },
-        () => this.show("home"),
-      );
-    }
+    // THE STORE, not a copy of three fields off it: the screen settles the week that has
+    // ended and pays what it was worth (platform/league.ts), which is a write.
+    if (id === "leaderboard") return buildLeaderboard(this.profile, () => this.show("home"));
     if (id === "challenges") return buildChallenges(this.profile, (i) => this.startChallenge(i));
     if (id === "daily") {
       return buildDaily(

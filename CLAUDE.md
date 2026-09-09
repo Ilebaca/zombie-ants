@@ -856,16 +856,64 @@ and one line in `App`.
 
 **THE LADDER'S HEAD DOES NOT SCROLL** (`src/ui/leaderboard.ts`). The body was one
 scroller and the screen opened by scrolling the player's own row into the middle of it,
-which took the division chips and the banner off the top with it — so a player arrived at a
-column of strangers' names with nothing on screen saying what they were a ranking OF. Two
-boxes now: a fixed head, and a table that scrolls under it.
+which took the chips and the banner off the top with it — so a player arrived at a column
+of strangers' names with nothing on screen saying what they were a ranking OF. Two boxes
+now: a fixed head, and a table that scrolls under it.
 - **A ladder exists to say WHERE YOU STAND**, and a highlighted row never said what place
-  that was. The banner carries the rank in words, a bar through the division on a LOG scale
-  (the bands are orders of magnitude wide — linearly the bar sits near empty for most of
-  one), and the distance to the next band. The top band promises nothing beyond it, because
-  the colony number has no ceiling either (§8a).
-- **Every other chip says whether that division is ahead of the player or behind.** Without
-  it there is no reason to tap through six divisions the player is not in.
+  that was. The banner carries the rank in words, the score, the distance to a prize and
+  how much of the week is left.
+- **The note under the table scrolls WITH it.** Pinned to the foot of the screen it took a
+  fifth of the page for ever and left five rows of a fifty-colony league showing. The HEAD
+  is what has to stay put; a disclosure is read once.
+
+**THE WEEKLY LEAGUE — the ladder was seven names and nothing behind them**
+(`platform/league.ts`, the two tabs in `ui/leaderboard.ts`). A colony sat in Forager or
+Raider because of its size and that was the whole of it: nothing to win, nothing to lose,
+and no way for a week of playing to show up anywhere. Four decisions, each of them a rule
+rather than a detail:
+- **THE SCORE IS WHAT YOU GAINED THIS WEEK, never what you hold.** Ranking by total troops
+  ranks by how long somebody has played — a table decided before the week starts, with the
+  biggest colony winning it for ever. Gain is the one measure a young colony and an old one
+  compete at on the same terms, because a win already pays a SHARE of the colony (§8a): 12%
+  of a small one and 3% of a large one are both a good week. And a DEFEAT SHRINKS THE
+  COLONY, so the score falls by itself — which is exactly why it is a difference between
+  two readings (`seasonScore`) and not a tally somebody has to remember to decrement.
+  Nothing in the match settler knows this feature exists.
+- **THE LEAGUE IS THE SIZE BAND**, so everybody in one is playing for the same kind of
+  number, and it NAMES THE CHAPTERS it spans — a band that does not tie back to the road is
+  a second scale to learn. The bands moved out of the screen and into `platform/` because
+  what a week is worth is a progression decision, not a screen's private business (§7).
+- **FIFTY COLONIES, TOP TEN PAID, and the prize tapers.** The prizes are FLAT ACROSS THE
+  LEAGUES on purpose: the currencies buy the same chambers and the same research whatever
+  the colony is worth, so a prize scaled by band would be worth most to the players who
+  need it least. Sized against what playing pays — first place is about half a week of
+  quests and tenth is a rounding error on it — and `economy.test.ts` holds that ceiling, in
+  larva as well, or finishing a league would beat playing as the way to reach the hatch.
+- **A SEASON IS SETTLED ONCE.** `ProfileStore.rollSeason` closes a week that has ENDED,
+  pays it and opens the next; it answers null while one is still running, so the screen has
+  something to announce exactly once. Same shape as the challenge rewards and the road
+  claims, and the only thing making the prize pay once. It is opened LAZILY rather than in
+  the store's constructor — that block is gated on `!playerId`, so seeding a season there
+  would give one to brand-new colonies and to nobody else, which is every player who has
+  ever opened the game.
+- **The finished table is built at the END of the week it settles**, not at the moment
+  somebody opens the screen. The rivals reveal their gains across the week, so reading them
+  on Monday morning would score a finished season against a field that had barely started.
+- **The rivals are seeded on the WEEK AND THE LEAGUE**, so it is a standing table — the
+  same names all week rather than a fresh cast per visit — and their gains come in ACROSS
+  the week with a pace of their own, which is what makes it something to climb rather than
+  a picture taken on Monday.
+- **The second tab is a different question, and that is why it is a second tab.** Biggest
+  Colonies is every colony by TOTAL troops with the chapter it has reached: no bands, no
+  prize, no reset. A week rewards playing now and a career rewards having played; one table
+  trying to be both answers neither, which is what the old one did. It tops out at the
+  ROAD'S LAST RUNG — past five million every row reads "Chapter 50", so a list that ran to
+  twenty million had the one fact it exists to carry blank at the end everybody looks at.
+- **The distance to a prize is counted FORWARDS.** It was `PAID_PLACES - place + 1`, which
+  is places-left-inside-the-paid-ten — positive only for somebody already being paid, so
+  everybody else was told they were "−27 places to a prize".
+- Both tabs still say the other colonies are generated on the device (§ WHAT THE TWO STORES
+  REQUIRE). What is NOT invented is the player's own score, their place and the prize.
 **A COLLECTION CARD CARRIES THE NAME AND NOTHING UNDER IT.** Two things used to sit there
 and both were reported as "a line under the name that I guess is the level":
 - the colony's attack and defence as a bare pair — "0.86 · 0.87" — two numbers with no

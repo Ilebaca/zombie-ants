@@ -47,6 +47,12 @@ export {
 export type { RoadReward, RoadStop, RoadTrack } from "./road";
 export { RIVAL_NAMES } from "./rival";
 export {
+  LEAGUES, LEAGUE_SIZE, PAID_PLACES, globalTable, leagueChapters, leagueOf, msLeftInWeek,
+  openSeason, placeOf, prizeFor, prizeText, rivals, seasonScore, table, weekIndex,
+  weekProgress,
+} from "./league";
+export type { GlobalRow, League, Prize, Season, SeasonResult, Standing } from "./league";
+export {
   BOTS_PER_CHAPTER, LocalMatchmaker, SEARCH_MS, botsForChapter,
 } from "./matchmaking";
 export type { Matchmaker, Opponent } from "./matchmaking";

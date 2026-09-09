@@ -21,6 +21,10 @@ import {
 } from "./quests";
 import { newsLatestAt, unreadNews } from "./news";
 import {
+  LEAGUES, openSeason, placeOf, prizeFor, seasonScore, table, weekIndex,
+} from "./league";
+import type { Season, SeasonResult } from "./league";
+import {
   ROAD_STOPS, chapterOf, freeReward, isPassKey, passReward, rewardFor, roadColony, stopReached,
 } from "./road";
 import {
@@ -165,6 +169,16 @@ export interface Profile {
    * to survive a reload — a badge that forgets what it was counting is worse than none.
    */
   duelsIn: DuelInvite[];
+  /**
+   * THE WEEKLY LEAGUE season in progress, or null before the first one opens.
+   *
+   * It holds what the colony was worth when the week began, because the score is the
+   * DIFFERENCE (league.ts) — a defeat shrinks the colony, so a week's standing falls by
+   * itself and nothing has to remember to subtract. Null in `defaultProfile`, which is a
+   * constant and may not read a clock; the store opens one in its constructor, beside the
+   * player code and the first invitation and for the same reason.
+   */
+  season: Season | null;
   /**
    * The last few matches, newest first.
    *
@@ -315,6 +329,9 @@ export function defaultProfile(): Profile {
     // Empty here, and seeded by the store's constructor instead: an invitation carries the
     // time it arrived, and this function is a CONSTANT — it may not read a clock.
     duelsIn: [],
+    // Opened by the store's constructor: a season is stamped with the week it belongs to,
+    // and this function may not read a clock.
+    season: null,
     history: [],
     bag: [],
     wearing: {},
@@ -455,6 +472,7 @@ export function normalise(raw: unknown): Profile {
     friendsIn: people(p.friendsIn, base.friendsIn),
     friendsOut: people(p.friendsOut, base.friendsOut),
     duelsIn: invites(p.duelsIn),
+    season: season(p.season),
     history: matchLogs(p.history),
     ...bagAndBenches(p),
     ...skinsAndLooks(p),
@@ -563,6 +581,29 @@ function people<T extends Person>(raw: unknown, fallback: T[]): T[] {
  * every field here reaches a screen as text, as a map lookup or as a colour lookup, and a
  * malformed one would put `undefined` on the page or index off the end of a table.
  */
+/**
+ * A season off the save, or null.
+ *
+ * The three fields are the three that decide a whole week's standing, so each is clamped:
+ * a `startColony` a hand-edited save had set to something absurd would report a fortune
+ * gained or lost, and a league index outside the table would index nothing. A season that
+ * cannot be read is dropped rather than repaired — the store opens a fresh one on the next
+ * read, which costs the current week and is right for ever after.
+ */
+function season(raw: unknown): Season | null {
+  if (!raw || typeof raw !== "object") return null;
+  const s = raw as Partial<Season>;
+  const week = Number(s.week);
+  const start = Number(s.startColony);
+  if (!Number.isFinite(week) || week <= 0) return null;
+  if (!Number.isFinite(start) || start < 0) return null;
+  return {
+    week: Math.round(week),
+    startColony: Math.min(1e15, Math.round(start)),
+    league: Math.min(LEAGUES.length - 1, Math.max(0, Math.round(Number(s.league) || 0))),
+  };
+}
+
 function invites(raw: unknown): DuelInvite[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter((d): d is DuelInvite => !!d && typeof d === "object"
@@ -1114,6 +1155,66 @@ export class ProfileStore {
     if (this.profile.duelsIn.some((d) => d.id === invite.id)) return false;
     this.update((p) => { p.duelsIn = [invite, ...p.duelsIn].slice(0, DUELS_MAX); });
     return true;
+  }
+
+  /* --------------------------------------------------------- THE WEEKLY LEAGUE */
+
+  /**
+   * The season in progress, opening one if there is not one yet.
+   *
+   * LAZY RATHER THAN MINTED IN THE CONSTRUCTOR, which is where the player code and the
+   * first invitation are seeded — and the difference matters. Those two are once-per-save
+   * and the constructor's gate is `!playerId`, so a save that already HAS a code never
+   * runs that block again: seeding a season there would give one to new colonies and to
+   * nobody else, which is every player who has ever opened the game. Opened on first ask
+   * instead, so an existing save joins the week it next looks at the ladder in.
+   */
+  season(now: number = Date.now()): Season {
+    const have = this.profile.season;
+    if (have) return have;
+    const fresh = openSeason(this.profile.colony, now);
+    this.update((p) => { p.season = fresh; });
+    return fresh;
+  }
+
+  /**
+   * Close a finished week, pay what it was worth, and open the next one.
+   *
+   * Returns what the week came to when one really ended, and null when the season is still
+   * running — so the screen has something to announce exactly once. SETTLED ONCE by
+   * construction: the new season carries the new week, so a second call finds nothing to
+   * close. That is the same shape the challenge rewards and the road claims use, and it is
+   * the only thing making the prize pay once.
+   *
+   * The table is built at the END of the week that is being settled, not at the moment
+   * somebody happens to open the screen — the rivals reveal their gains across the week
+   * (league.ts), so reading them on Monday morning would score a finished season against a
+   * field that had barely started.
+   */
+  rollSeason(now: number = Date.now()): SeasonResult | null {
+    const current = this.season(now);
+    if (current.week === weekIndex(now)) return null;
+
+    const ended = (current.week + 1) * 604_800_000 - 1;
+    const rows = table(current, {
+      name: this.profile.name,
+      species: this.profile.lastSpecies,
+      colony: this.profile.colony,
+    }, ended);
+    const place = placeOf(rows);
+    const prize = prizeFor(place);
+    const result: SeasonResult = {
+      week: current.week,
+      league: current.league,
+      place,
+      score: seasonScore(current, this.profile.colony),
+      prize,
+    };
+    if (prize) this.applyGrant(prize);
+    // Opened at what the colony is worth NOW, so the new week starts from zero rather than
+    // carrying last week's gain into it.
+    this.update((p) => { p.season = openSeason(p.colony, now); });
+    return result;
   }
 
   /* ----------------------------------------------------------- CHALLENGES */

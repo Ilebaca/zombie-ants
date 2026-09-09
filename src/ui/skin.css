@@ -3349,8 +3349,92 @@ button:not(.playbtn):active,
   font-variant-numeric: tabular-nums;
 }
 
-/* The division the player is actually in stays findable in a row of seven. */
-.lbchip.mine:not(.on) { border-color: var(--c); }
+/* ---- The two tabs ----
+   A WEEK and a CAREER are two different measures, so they are two tables. The
+   control is one segmented pill rather than two buttons: they are alternatives,
+   and a pair of separate buttons reads as two things to press rather than one
+   thing to choose. */
+.lbtabs {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: var(--stack);
+  border-radius: var(--r-pill);
+  background: var(--bg1);
+  border: 1px solid var(--line);
+}
+.lbtab {
+  min-height: 36px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 900;
+  letter-spacing: .2px;
+  cursor: pointer;
+}
+.lbtab.on { background: var(--panel-hi); color: var(--ink); }
+
+/* ---- The week's gain ----
+   The score the whole league is played for, so it is the biggest thing in the
+   banner. A losing week is printed in the losing colour, exactly as a defeat is
+   on the result card: the number really does go down. */
+.lbgain {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--grass-glow);
+  font-variant-numeric: tabular-nums;
+}
+.lbgain.down { color: var(--danger); }
+.lbpts.down { color: var(--danger); }
+
+/* The clock rides BESIDE the track that draws the same thing rather than under it: the
+   banner already carries five lines, and a sixth for four characters is a line spent. */
+.lbtime { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.lbtime .lbtrack { flex: 1; margin-top: 0; }
+.lbclock {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- What last week came to ----
+   Shown on the one open where it is news. It sits ABOVE the banner because it
+   is about a week that is over, and the banner is about the one running. */
+.lblast {
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.lblast.paid { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 12%, var(--panel)); }
+.lblastname { font-size: 11px; font-weight: 800; color: var(--muted); letter-spacing: .3px; }
+.lblastplace {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.lblastprize { font-size: 12px; font-weight: 800; color: var(--ink-soft); margin-top: 2px; }
+.lblast.paid .lblastprize { color: var(--gold-glow); }
+
+/* A paid place is marked on the row itself: the ten that are playing for
+   something have to be visible from the middle of the table, not only from the
+   line under it. */
+.lbrow.paid { border-left: 3px solid var(--gold); }
+
+/* ---- The career table ----
+   Two lines in the name cell: who, and the chapter they have reached. That is
+   the whole of what this tab shows about a colony. */
+.lbpname { display: flex; flex-direction: column; justify-content: center; gap: 1px; }
+.lbwho { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lbch { font-size: 10.5px; font-weight: 800; color: var(--muted); }
 
 /* A rival is a colony, not a string: every other screen in the game gives an
    opponent a head, and this was the one that did not. */

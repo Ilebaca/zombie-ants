@@ -27,6 +27,7 @@ import { QUEST_POOL, QUEST_SWEEP_BONUS, QUESTS_PER_DAY, levelReward, xpForLevel 
 import { SPECIES_UNLOCK } from "../catalogue";
 import { FUSE_COST, FUSE_DEALS, FUSE_FUEL, LARVA_MYCEL } from "../exchange";
 import { WIN_LARVA } from "../traits";
+import { PAID_PLACES, prizeFor } from "../league";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const GAMES_PER_DAY = 2.5;
@@ -194,6 +195,41 @@ describe("no single faucet carries the economy", () => {
 
     expect(levelMycel, "levelling pays more mycelium than playing does").toBeLessThan(questMycel);
     expect(levelPher, "levelling pays more pheromone than playing does").toBeLessThan(questPher);
+  });
+
+  /**
+   * THE WEEKLY LEAGUE IS THE NEWEST FAUCET, and it is the shape that has gone wrong here
+   * before: it arrives for having played rather than for anything bought, it pays all three
+   * currencies at once, and nobody counts it. So first place — the largest prize there is —
+   * is held under what a WEEK of quests pays, and its larva under what a week of WINNING
+   * pays, or the fastest route to the hatch would be to finish a league rather than to play.
+   */
+  it("keeps a winning week under what a week of playing pays", () => {
+    const avg = (k: "mycel" | "pheromone"): number => {
+      const paid = QUEST_POOL.map((q) => q.reward[k] ?? 0).filter((v) => v > 0);
+      return paid.reduce((a, b) => a + b, 0) / paid.length;
+    };
+    const mycelShare = QUEST_POOL.filter((q) => q.reward.mycel).length / QUEST_POOL.length;
+    const weekMycel = 7 * (QUESTS_PER_DAY * mycelShare * avg("mycel") + QUEST_SWEEP_BONUS.mycel);
+    const weekPher = 7 * QUESTS_PER_DAY * (1 - mycelShare) * avg("pheromone");
+    const weekLarva = 7 * GAMES_PER_DAY * WIN_RATE * WIN_LARVA;
+
+    const first = prizeFor(1) as { mycel: number; pheromone: number; larva: number };
+    expect(first.mycel, "first place pays more mycelium than a week of playing")
+      .toBeLessThan(weekMycel);
+    expect(first.pheromone, "first place pays more pheromone than a week of playing")
+      .toBeLessThan(weekPher);
+    expect(first.larva, "first place pays more larva than a week of winning")
+      .toBeLessThan(weekLarva);
+
+    // ...and every place below it pays less than the one above, so the taper cannot be
+    // undone by a retune that only looks at the top.
+    for (let place = 2; place <= PAID_PLACES; place++) {
+      const here = prizeFor(place) as { mycel: number };
+      const above = prizeFor(place - 1) as { mycel: number };
+      expect(here.mycel, `place ${place} pays more than ${place - 1}`)
+        .toBeLessThanOrEqual(above.mycel);
+    }
   });
 
   /** ...and the same for the bonus paid for clearing the day, which was the worst offender. */

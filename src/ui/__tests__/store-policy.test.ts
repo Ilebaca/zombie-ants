@@ -172,7 +172,7 @@ describe("never claiming a simulation is other people", () => {
   });
 
   it("does not call the generated ladder a world ranking", () => {
-    const root = buildLeaderboard({ name: "Ridgeback", colony: 2_000_000, species: "fire" }, () => {});
+    const root = buildLeaderboard(store(), () => {});
     expect(root.textContent).not.toMatch(/world ranking/i);
     expect(root.textContent, "the ladder does not say its rivals are generated")
       .toMatch(/generated on your device/i);

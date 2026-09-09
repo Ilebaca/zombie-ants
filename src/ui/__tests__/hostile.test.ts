@@ -65,7 +65,7 @@ describe("text a player types never becomes markup", () => {
         onDelete: () => {}, onSignOut: () => {}, onKeepSafe: () => {}, onRestored: () => {},
         playerCode: "ZA-TEST-TEST",
       }),
-      () => buildLeaderboard({ name: NASTY, colony: 2_000_000, species: "fire" }, () => {}),
+      () => buildLeaderboard(named(), () => {}),
     ]) {
       const root = build();
       document.body.replaceChildren(root);

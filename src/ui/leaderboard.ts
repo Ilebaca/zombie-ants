@@ -1,171 +1,75 @@
 /**
- * BIGGEST COLONIES: the ranking the whole game is played for.
+ * THE LADDER, IN TWO TABS — because it was being asked two different questions at once.
  *
- * Divisions are bands of colony SIZE rather than rating brackets, and because a colony
- * compounds (platform/colony.ts) the bands are orders of magnitude apart. That is the
- * shape the number actually has, and it is why the names are sizes of nest rather than
- * military ranks.
+ * **THIS WEEK** is a league: fifty colonies of a similar size, ranked by what they GAINED
+ * over the week, top ten paid when it ends. That is the half that was missing — the bands
+ * had names and nothing behind them, so a colony sat in Forager or Raider by size alone,
+ * there was nothing to win or lose, and no reason to open the screen twice. The rules of it
+ * live in `platform/league.ts`, because what a week is worth is a progression decision and
+ * not a screen's private business (§7); this file draws them.
  *
- * The rivals are generated, not fetched: there is no server yet (roadmap — async PvP and a
- * real ladder come later). They are derived from the division index so the same division
- * always shows the same table, which reads as a standing ladder rather than reshuffling on
- * every open. When the server exists this file swaps its source and nothing else moves.
+ * **BIGGEST COLONIES** is the other question, and it is deliberately NOT a competition: one
+ * list of everybody by total troops with the chapter they have reached. No bands, no prize,
+ * no reset. Ranking a WEEK and ranking a CAREER are different measures — one rewards
+ * playing now, the other rewards having played — and a single table trying to be both
+ * answers neither, which is what the old one did.
  *
- * THE TOP OF THE SCREEN DOES NOT SCROLL, and that is the fix this rebuild is mostly about.
- * The whole body was one scroller, and it opened by scrolling the player's own row into
- * the middle of it — which pushed the division chips and the banner off the top, so the
- * screen a player arrived at was a column of strangers' names with nothing saying what
- * they were a ranking OF. The chips and the banner are fixed now and only the table moves.
+ * THE TOP OF THE SCREEN DOES NOT SCROLL. The body used to be one scroller that opened by
+ * bringing the player's own row to the middle, which pushed the chips and the banner off
+ * the top: the screen a player arrived at was a column of strangers' names with nothing
+ * saying what they were a ranking OF.
  *
- * Three other things the old table could not say, all of which a ladder exists to answer:
- * WHERE the player stands (their rank, in words, not just a highlighted row), how far the
- * next division is, and who a rival actually is — every other screen in the game gives an
- * opponent a colony and a face (matchmaking.ts, render/plates.ts) and here they were bare
- * strings.
+ * The neighbours are generated on this device — there is no server yet (roadmap) — and both
+ * tabs say so, because a table of invented names under a heading claiming a global standing
+ * is the app telling a player something untrue (§ WHAT THE TWO STORES REQUIRE). What is NOT
+ * invented is the player's own score, their place in the week, and the prize it pays.
  */
-import { COLONY_START, RIVAL_NAMES, compact, exact } from "../platform";
-import type { SpeciesId } from "../engine";
-import { SPECIES } from "../engine";
+import {
+  COLONY_START, LEAGUES, LEAGUE_SIZE, PAID_PLACES, compact, exact, globalTable,
+  leagueChapters, msLeftInWeek, prizeFor, prizeText, seasonScore, table, weekProgress,
+} from "../platform";
+import type { GlobalRow, League, ProfileStore, SeasonResult, Standing } from "../platform";
 import { antPortrait, el, redraw, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 
-export interface Division {
-  name: string;
-  min: number;
-  max: number;
-  icon: string;
-  col: string;
-}
+type Tab = "week" | "all";
 
-/**
- * Seven bands spanning the range a career actually covers.
- *
- * They are pinned to the ROAD, not to round powers of ten for their own sake: the road
- * ends at five million troops (platform/road.ts), so Supercolony is the band a player is
- * in as they finish it and Continental is what lies past it. Bands sized for the old
- * trillion-troop road left the top three empty for everyone.
- *
- * Every mark is from the icon family — the legacy build put a compass, crossed swords, a
- * medal and a crown in this row, four glyphs from four illustrators (CLAUDE.md §10).
- */
-export const DIVISIONS: readonly Division[] = [
-  { name: "Forager", min: 0, max: 1e3, icon: "antarium", col: "#c08457" },
-  { name: "Scout", min: 1e3, max: 1e4, icon: "next", col: "#9fb0c8" },
-  { name: "Raider", min: 1e4, max: 1e5, icon: "attack", col: "#e7b53a" },
-  { name: "Garrison", min: 1e5, max: 5e5, icon: "defence", col: "#27d3bd" },
-  { name: "Warren", min: 5e5, max: 2e6, icon: "anthill", col: "#4a9eff" },
-  { name: "Supercolony", min: 2e6, max: 1e7, icon: "brood", col: "#b14de0" },
-  { name: "Continental", min: 1e7, max: Infinity, icon: "crown", col: "#f24fc8" },
-];
-
-export interface LadderRow {
-  name: string;
-  points: number;
-  species: SpeciesId;
-  you: boolean;
-}
-
-/** Who is looking at the ladder. Their own row is drawn from this, not invented. */
-export interface LadderYou {
-  name: string;
-  colony: number;
-  species: SpeciesId;
-}
-
-export const divisionOf = (colony: number): number => {
-  const i = DIVISIONS.findIndex((d) => colony >= d.min && colony < d.max);
-  return i < 0 ? DIVISIONS.length - 1 : i;
-};
-
-/** Non-premium colonies only: a rival is somebody playing the game, not a shop window. */
-const LADDER_SPECIES = (Object.keys(SPECIES) as SpeciesId[])
-  .filter((id) => !SPECIES[id].premium);
-
-/**
- * Fifteen rivals spread across the division, plus the player when they belong in it.
- *
- * Spread GEOMETRICALLY, not evenly: a division runs from a hundred thousand to five
- * hundred thousand, and fifteen colonies laid out at equal intervals across that would put
- * most of them in the top of the band and read as a table of one number.
- *
- * Each rival gets a colony of their own, seeded off their place in the table, because a
- * ladder of names with no faces is the one screen in this game where an opponent is a
- * string — the search, the nameplate and the result card all give them a head.
- */
-export function standings(divisionIndex: number, you: LadderYou): LadderRow[] {
-  const d = DIVISIONS[divisionIndex] as Division;
-  const low = Math.max(1, d.min);
-  const high = d.max === Infinity ? low * 100 : d.max;
-  const rows: LadderRow[] = [];
-  for (let i = 0; i < 15; i++) {
-    const spread = ((i * 53 + 17) % 100) / 100;
-    rows.push({
-      name: (RIVAL_NAMES[(i + divisionIndex * 5) % RIVAL_NAMES.length] as string)
-        + (((i * 7 + divisionIndex * 3) % 89) + 11),
-      points: Math.round(low * (high / low) ** spread),
-      species: LADDER_SPECIES[(i * 3 + divisionIndex) % LADDER_SPECIES.length] as SpeciesId,
-      you: false,
-    });
-  }
-  if (divisionIndex === divisionOf(you.colony)) {
-    rows.push({ name: you.name, points: you.colony, species: you.species, you: true });
-  }
-  return rows.sort((a, b) => b.points - a.points);
-}
-
-export function buildLeaderboard(you: LadderYou, onBack: () => void): HTMLElement {
+export function buildLeaderboard(store: ProfileStore, onBack: () => void): HTMLElement {
   const root = screenEl("leaderboard");
-  const home = divisionOf(you.colony);
-  /** Which division is on screen. Starts on the player's own. */
-  let selected = home;
+  /**
+   * SETTLE BEFORE DRAWING, and exactly once. `rollSeason` closes a week that has ended,
+   * pays what it was worth and opens the next one; it answers null while the season is
+   * still running, so there is something to announce on the first open after a Sunday and
+   * nothing on the second (platform/profile.ts).
+   */
+  const finished: SeasonResult | null = store.rollSeason();
+  let tab: Tab = "week";
 
   const render = (): void => {
     redraw(root);
-    // NOT "World ranking", because there is no world here. The rivals are generated on
-    // this device (there is no server yet), and a table of invented names under a heading
-    // claiming a global standing is the app telling a player something untrue about where
-    // they stand — which both stores read as deceptive, and which is dishonest either way.
-    // The screen still does its job: it says where this colony sits on the scale it is
-    // measured by. It just does not claim the neighbours are people.
-    screenHeader(root, { title: "Biggest colonies", sub: "Practice ladder", onBack });
+    screenHeader(root, {
+      title: tab === "week" ? "This week" : "Biggest colonies",
+      sub: tab === "week" ? "League season" : "Every colony, by size",
+      onBack,
+    });
 
     const body = el("div", "screenbody lbbody");
     body.id = "lbBody";
-    const division = DIVISIONS[selected] as Division;
 
-    // FIXED: the chips and the banner say what the table below is a ranking of, so they
-    // cannot be the first thing scrolled away when the player's own row is brought up.
-    const top = el("div", "lbtop");
-
-    const chips = el("div", "lbchips");
-    DIVISIONS.forEach((d, i) => {
-      const chip = el("button", "lbchip" + (i === selected ? " on" : "")
-        + (i === home ? " mine" : ""));
-      chip.style.setProperty("--c", d.col);
-      chip.append(icon(d.icon, 14), document.createTextNode(d.name));
-      chip.onclick = () => { selected = i; render(); };
-      chips.appendChild(chip);
+    const tabs = el("div", "lbtabs");
+    ([["week", "This week"], ["all", "Biggest colonies"]] as const).forEach(([id, label]) => {
+      const b = el("button", "lbtab" + (tab === id ? " on" : ""), label);
+      b.onclick = () => { tab = id; render(); };
+      tabs.appendChild(b);
     });
-    top.appendChild(chips);
-    top.appendChild(banner(division, selected, home, you));
-    body.appendChild(top);
+    body.appendChild(tabs);
 
-    const list = el("div", "lblist");
-    const table = standings(selected, you);
-    table.forEach((row, i) => {
-      list.appendChild(ladderRow(row, i + 1));
-    });
-    body.appendChild(list);
-    body.appendChild(el("div", "lbnote",
-      "These colonies are generated on your device to give the scale a shape. Ranking "
-      + "against other players arrives with online matches."));
+    if (tab === "week") weekTab(body, store, finished);
+    else allTab(body, store);
+
     root.appendChild(body);
-
-    // Only the TABLE scrolls, and only to the player's own row. The chips and the banner
-    // are outside it and stay where they are.
     requestAnimationFrame(() => {
-      chips.querySelector(".lbchip.on")?.scrollIntoView?.({ inline: "center", block: "nearest" });
-      list.querySelector(".lbrow.you")?.scrollIntoView?.({ block: "center" });
+      body.querySelector(".lblist .lbrow.you")?.scrollIntoView?.({ block: "center" });
     });
   };
 
@@ -173,92 +77,190 @@ export function buildLeaderboard(you: LadderYou, onBack: () => void): HTMLElemen
   return root;
 }
 
-/* ------------------------------------------------------------------ THE BANNER */
+/* --------------------------------------------------------------------- THIS WEEK */
+
+function weekTab(body: HTMLElement, store: ProfileStore, finished: SeasonResult | null): void {
+  const me = store.get();
+  const season = store.season();
+  const rows = table(season, { name: me.name, species: me.lastSpecies, colony: me.colony });
+  const place = rows.findIndex((r) => r.you) + 1;
+  const band = LEAGUES[season.league] as League;
+
+  const top = el("div", "lbtop");
+  // WHAT LAST WEEK CAME TO, on the one open where it is news. A season that paid out and
+  // said nothing is a reward the player never sees arrive.
+  if (finished) top.appendChild(lastWeek(finished));
+  top.appendChild(seasonBanner(band, season.league, place, seasonScore(season, me.colony)));
+  body.appendChild(top);
+
+  const list = el("div", "lblist");
+  rows.forEach((row, i) => list.appendChild(weekRow(row, i + 1)));
+  // UNDER THE TABLE AND INSIDE IT. Pinned to the foot of the screen it took a fifth of the
+  // page for ever and left five rows of a fifty-colony league on show; the head is what has
+  // to stay put, and this is a thing read once.
+  list.appendChild(el("div", "lbnote",
+    `Fifty colonies of about your size play each week. The top ${PAID_PLACES} are paid when `
+    + "it ends. These colonies are generated on your device; playing against other people "
+    + "arrives with online matches."));
+  body.appendChild(list);
+}
 
 /**
- * The division, what it takes to be in it, and where the player stands against it.
+ * The league, the clock, and where the player stands in it.
  *
- * The third part is the one the old screen never answered. On the player's own division it
- * is their rank and the distance to the next band; on any other it says whether that band
- * is ahead of them or behind, which is what makes the chips worth tapping through.
+ * The CHAPTERS are on it because a band that does not tie back to the road is a second
+ * scale to learn: "Raider, chapters 21–30" says where this sits in a career, and
+ * "10K–100K troops" says what it takes to be here.
  */
-function banner(d: Division, index: number, home: number, you: LadderYou): HTMLElement {
+function seasonBanner(band: League, index: number, place: number, score: number): HTMLElement {
   const box = el("div", "lbbanner");
-  box.style.setProperty("--c", d.col);
+  box.style.setProperty("--c", band.col);
 
   const badge = el("div", "lbbadge");
-  badge.appendChild(icon(d.icon, 26));
+  badge.appendChild(icon(band.icon, 26));
   box.appendChild(badge);
 
   const text = el("div", "lbmeta");
-  text.append(el("div", "lbname", d.name), el("div", "lbrange", range(d)));
+  const chapters = leagueChapters(index);
+  text.append(
+    el("div", "lbname", band.name),
+    el("div", "lbrange", `${range(band)} · ${chapterRange(chapters)}`),
+    el("div", "lbstand", `You are ${ordinal(place)} of ${LEAGUE_SIZE}`),
+  );
 
-  if (index === home) {
-    const rank = standings(index, you).findIndex((r) => r.you) + 1;
-    const total = standings(index, you).length;
-    text.appendChild(el("div", "lbstand", `You are ${ordinal(rank)} of ${total}`));
+  // THE SCORE IS THE WEEK'S GAIN, and a losing week is printed as one. A defeat shrinks the
+  // colony (§8a), so this goes negative by itself — which is the whole reason the score is
+  // a difference between two readings rather than a tally somebody has to decrement.
+  const gain = el("div", "lbgain" + (score < 0 ? " down" : ""),
+    `${score < 0 ? "−" : "+"}${compact(Math.abs(score))} troops this week`);
+  text.appendChild(gain);
 
-    const track = el("div", "lbtrack");
-    const fill = el("i");
-    fill.style.width = `${Math.round(progress(d, you.colony) * 100)}%`;
-    track.appendChild(fill);
-    text.appendChild(track);
-
-    const next = DIVISIONS[index + 1];
-    // The top band has no ceiling, which is the point of it — the colony number has none
-    // either (CLAUDE.md §8a), so there is nothing to promise beyond it.
-    text.appendChild(el("div", "lbnext", next
-      ? `${compact(Math.max(0, d.max - you.colony))} troops to ${next.name}`
-      : "The largest colonies there are"));
-  } else {
-    text.appendChild(el("div", "lbstand" + (index < home ? " past" : ""), index < home
-      ? "You have outgrown this division"
-      : `${compact(Math.max(0, d.min - you.colony))} troops to reach it`));
-  }
+  // HOW FAR THE PRIZE IS, counted the right way round. It was `PAID_PLACES - place + 1`,
+  // which is places-remaining-in-the-paid-ten — a number that is only positive for somebody
+  // who is already being paid, so everybody else read "−27 places to a prize".
+  const prize = prizeFor(place);
+  const climb = place - PAID_PLACES;
+  text.appendChild(el("div", "lbnext", prize
+    ? `Finishing here pays ${prizeText(prize)}`
+    : `${climb} ${climb === 1 ? "place" : "places"} to a prize`));
+  // HOW MUCH OF THE WEEK IS LEFT, drawn as well as written. A score is only worth reading
+  // against the time there is to improve it: second place with a day to go and second place
+  // with an hour to go are two different positions.
+  const track = el("div", "lbtrack");
+  const run = el("i");
+  run.style.width = `${Math.round(weekProgress() * 100)}%`;
+  track.appendChild(run);
+  const time = el("div", "lbtime");
+  time.append(track, el("span", "lbclock", `${untilEnd()} left`));
+  text.appendChild(time);
 
   box.appendChild(text);
   return box;
 }
 
-/**
- * How far through the band a colony is — on a LOG scale, because the bands are orders of
- * magnitude wide. Linearly, a colony of a hundred thousand in a band running to five
- * hundred thousand fills nothing, and the bar would sit near empty for most of a division.
- */
-function progress(d: Division, colony: number): number {
-  const low = Math.max(COLONY_START, d.min);
-  const high = d.max === Infinity ? low * 100 : d.max;
-  if (colony <= low) return 0;
-  const pct = Math.log(colony / low) / Math.log(high / low);
-  return Math.max(0, Math.min(1, pct));
+/** What the week that just ended came to. */
+function lastWeek(r: SeasonResult): HTMLElement {
+  const box = el("div", "lblast" + (r.prize ? " paid" : ""));
+  const band = LEAGUES[r.league] as League;
+  box.append(
+    el("div", "lblastname", `Last week in ${band.name}`),
+    el("div", "lblastplace", `${ordinal(r.place)} of ${LEAGUE_SIZE}`
+      + ` · ${r.score < 0 ? "−" : "+"}${compact(Math.abs(r.score))} troops`),
+  );
+  // A place outside the paid ten still gets a line: "you were not paid" is information, and
+  // a banner that only ever appears on a win teaches a player to expect one.
+  box.appendChild(el("div", "lblastprize", r.prize
+    ? `Paid ${prizeText(r.prize)}`
+    : `Top ${PAID_PLACES} are paid — closer next week`));
+  return box;
 }
 
-/* ------------------------------------------------------------------- THE TABLE */
+/** One colony's week: its place, its face, its name, and what it gained. */
+function weekRow(row: Standing, rank: number): HTMLElement {
+  const line = el("div", "lbrow" + (row.you ? " you" : "")
+    + (rank <= PAID_PLACES ? " paid" : ""));
+  const place = el("div", "lbrank" + medalClass(rank), String(rank));
+  const face = el("div", "lbface");
+  face.appendChild(antPortrait(row.species, 60));
+  const gain = el("div", "lbpts" + (row.score < 0 ? " down" : ""),
+    `${row.score < 0 ? "−" : "+"}${compact(Math.abs(row.score))}`);
+  if (row.you) gain.title = `${exact(row.score)} troops this week`;
+  line.append(place, face, el("div", "lbpname", row.name), gain);
+  return line;
+}
 
-/** One colony on the ladder: its place, its face, its name and its size. */
-function ladderRow(row: LadderRow, rank: number): HTMLElement {
+/** How long the season has left, in the largest unit that still says something useful. */
+function untilEnd(now: number = Date.now()): string {
+  const ms = msLeftInWeek(now);
+  const hours = Math.floor(ms / 3_600_000);
+  if (hours >= 24) return `${Math.floor(hours / 24)}d ${hours % 24}h`;
+  if (hours >= 1) return `${hours}h`;
+  return `${Math.max(1, Math.floor(ms / 60_000))}m`;
+}
+
+/* -------------------------------------------------------------- BIGGEST COLONIES */
+
+function allTab(body: HTMLElement, store: ProfileStore): void {
+  const me = store.get();
+  const rows = globalTable({ name: me.name, species: me.lastSpecies, colony: me.colony });
+  const place = rows.findIndex((r) => r.you) + 1;
+
+  const top = el("div", "lbtop");
+  const box = el("div", "lbbanner");
+  box.style.setProperty("--c", "#8fe36a");
+  const badge = el("div", "lbbadge");
+  badge.appendChild(icon("crown", 26));
+  box.appendChild(badge);
+  const text = el("div", "lbmeta");
+  text.append(
+    el("div", "lbname", me.name),
+    el("div", "lbrange", `${exact(me.colony)} troops`),
+    el("div", "lbstand", `${ordinal(place)} of ${rows.length}`),
+    el("div", "lbnext", `Chapter ${rows.find((r) => r.you)?.chapter ?? 1}`),
+  );
+  box.appendChild(text);
+  top.appendChild(box);
+  body.appendChild(top);
+
+  const list = el("div", "lblist");
+  rows.forEach((row, i) => list.appendChild(globalRow(row, i + 1)));
+  list.appendChild(el("div", "lbnote",
+    "Every colony by total troops, with the chapter it has reached. Nothing here resets and "
+    + "nothing here is paid — that is the weekly league. These colonies are generated on "
+    + "your device."));
+  body.appendChild(list);
+}
+
+/** One colony's career: its place, its face, its name, its size and its chapter. */
+function globalRow(row: GlobalRow, rank: number): HTMLElement {
   const line = el("div", "lbrow" + (row.you ? " you" : ""));
   const place = el("div", "lbrank" + medalClass(rank), String(rank));
   const face = el("div", "lbface");
-  // Drawn at twice the size it is shown at and scaled down by the stylesheet, the way the
-  // species page and the map picker do it: a 30px canvas on a phone is a 60px picture.
   face.appendChild(antPortrait(row.species, 60));
-  const troops = el("div", "lbpts", compact(row.points));
-  // The full figure is one long press away on the player's own row, where it means
-  // something: a colony of "1.2M" is a colony of exactly 1,238,441 troops.
-  if (row.you) troops.title = `${exact(row.points)} troops`;
-  line.append(place, face, el("div", "lbpname", row.name), troops);
+  const who = el("div", "lbpname");
+  who.append(
+    el("span", "lbwho", row.name),
+    el("small", "lbch", `Chapter ${row.chapter}`),
+  );
+  const troops = el("div", "lbpts", compact(row.colony));
+  if (row.you) troops.title = `${exact(row.colony)} troops`;
+  line.append(place, face, who, troops);
   return line;
 }
+
+/* ------------------------------------------------------------------------ SHARED */
 
 /** The top three are the only ranks worth marking; below that a number is a number. */
 const medalClass = (rank: number): string =>
   rank === 1 ? " gold" : rank === 2 ? " silver" : rank === 3 ? " bronze" : "";
 
-const range = (d: Division): string =>
+const range = (d: League): string =>
   d.max === Infinity
     ? `${compact(d.min)}+ troops`
-    : `${compact(d.min)}–${compact(d.max - 1)} troops`;
+    : `${compact(Math.max(COLONY_START, d.min))}–${compact(d.max - 1)} troops`;
+
+const chapterRange = (c: { from: number; to: number }): string =>
+  c.from === c.to ? `chapter ${c.from}` : `chapters ${c.from}–${c.to}`;
 
 /** 1st, 2nd, 3rd, 4th — a rank reads as a placing, not as a count. */
 export function ordinal(n: number): string {

@@ -52,6 +52,31 @@ const LATEST = Date.UTC(2026, 7, 30);
 
 export const NEWS: readonly NewsPost[] = [
   {
+    // MAJOR: a whole system arriving, with a clock on it. A player who does not know the
+    // week ends on Sunday cannot play for it.
+    id: "league",
+    major: true,
+    tag: "update",
+    title: "A league every week",
+    lead: "Fifty colonies your size, one week, the top ten paid.",
+    at: LATEST + 9 * DAY,
+    art: { kind: "mark", icon: "trophy", col: "#e7b53a" },
+    body: [
+      "The ladder's bands were names and nothing else. From this build they are leagues, "
+      + "and each one runs a season a week long.",
+      "You are seeded with forty-nine colonies of about your own size, and what is ranked "
+      + "is what you GAIN over the week — not what you already hold. A big colony and a "
+      + "young one are playing for the same thing, and a defeat takes troops off your "
+      + "score the same way it takes them off your colony.",
+      "The top ten are paid when the week ends, first place best: mycelium, pheromone and "
+      + "larva for the hatch. Your placing is waiting on the ladder the next time you open "
+      + "it, and the next season is already running.",
+      "Biggest Colonies is the second tab now — every colony by total troops with the "
+      + "chapter it has reached. Nothing there resets and nothing there is paid; that is "
+      + "what the week is for.",
+    ],
+  },
+  {
     // NOT major, deliberately, and it is the newest post in the table. A card in front of
     // the game is for something a player would want to be told; a fix they never met is
     // not, and it waits behind the badge like the rest of the feed.
