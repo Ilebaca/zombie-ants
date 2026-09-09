@@ -1842,6 +1842,29 @@ the drawer with a small badge, which is the right home for a FEED and no way at 
   icon over a label in a column — that put the chevron on a second line and left the gold
   button looking like plain text.
 
+**WINNING HAS A SOUND, AND THE BED GETS OUT OF ITS WAY.** The end of a match was three
+triangle notes — the sound a puzzle game makes when a row clears — playing on top of the
+war bed's drum kit, on the one moment a whole match was played for.
+- **A TRUMPET IS A FILTER SWEEP, not a waveform.** `brass()` is a sawtooth pair through a
+  lowpass whose cutoff opens over the attack and settles as the note is held; that sweep is
+  what a brass player's lips do and the entire difference between a horn and a buzzer. The
+  cue table carries a waveform, a pitch and an envelope and nothing that could hold a
+  filter, which is why `fanfare()` is BUILT rather than listed — the same reason the noise
+  cues are. A phone with no biquad gets the notes unfiltered: thinner, never silent.
+- **It ARRIVES.** Three short notes climbing and one that lands, dotted so it reads as a
+  CALL rather than as a scale — and the landing is a CHORD, because one horn is a signal
+  and three are a celebration. It is the only thing in the file allowed past a second: it
+  plays over the winner's colour washing the whole board, and a shorter cue leaves the
+  finale in silence. Measured against the other cues in a browser: **−7.3 dBFS peak**,
+  beside `jackpot` at −6.5 and the match bed at −1.6.
+- **THE BED STOPS BEFORE THE CUE, and that is `MatchScreen.finish`'s job.** A fanfare over
+  a drum kit is two pieces of music at once and neither of them wins. What comes next is
+  the app's: the menu bed on the way home (`clearMatch`), the war bed on the next match.
+- **AND THE WAR BED IS ASKED FOR AFTER THE OLD MATCH IS TORN DOWN.** `startMatch` asked
+  first and called `clearMatch` second — which puts the MENU bed back — so **"Play again"
+  ran a whole match under menu music**. Order, not idempotency, is what makes it right, and
+  `moments.test.ts` holds all three transitions.
+
 **THE HATCH HAS A SOUND, AND THE SOUND IS THE TIER.** The whole feature is a moment — the
 egg rocks, then the tier's COLOUR arrives before the trait is named — and it resolved in
 silence. Three cues: `hatch` (the shell giving way, under the rocking), `prize`, and

@@ -144,12 +144,10 @@ const VOICES: Record<Cue, Voice[]> = {
     { type: "sine", from: 392, to: 466, dur: 0.6, gain: 0.192, at: 0.1 },
   ],
   endTurn: [{ type: "sine", from: 300, to: 220, dur: 0.11, gain: 0.24 }],
-  // Up: a major arpeggio, which is the shortest way to say "that went well".
-  win: [
-    { type: "triangle", from: 523, to: 523, dur: 0.16, gain: 0.32 },
-    { type: "triangle", from: 659, to: 659, dur: 0.16, gain: 0.32, at: 0.12 },
-    { type: "triangle", from: 784, to: 784, dur: 0.34, gain: 0.352, at: 0.24 },
-  ],
+  // A BRASS FANFARE, built in `fanfare()` rather than listed here — a trumpet is a filter
+  // sweep and this table cannot hold one. It was three triangle notes, which is the sound
+  // a puzzle game makes when a row clears, on the one moment the whole match was played for.
+  win: [],
   // Down, and slower. Not a buzzer: a defeat is disappointing, not an error.
   lose: [
     { type: "sine", from: 392, to: 392, dur: 0.2, gain: 0.288 },
@@ -1075,6 +1073,60 @@ export class WebFeedback implements Feedback {
    * scattered ticks, which is the part that says something fell apart rather than merely
    * being hit.
    */
+  /**
+   * ONE BRASS NOTE — a sawtooth through a filter that OPENS and settles.
+   *
+   * That sweep IS the instrument: a brass player's lips crack the note open bright and it
+   * mellows as it is held, and without it a sawtooth is a buzzer. The cue table carries a
+   * waveform, a pitch and an envelope, and nothing that could hold a filter, which is why
+   * this is built here — the same reason the noise cues are.
+   *
+   * A phone with no biquad gets the note unfiltered rather than nothing: thinner, never
+   * silent, the rule every feature-guarded piece of this file follows.
+   */
+  private brass(
+    ctx: AudioContext, out: AudioNode, freq: number, at: number, dur: number, gain: number,
+  ): void {
+    let dest = out;
+    if (typeof ctx.createBiquadFilter === "function") {
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.Q.setValueAtTime(1.2, at);
+      lp.frequency.setValueAtTime(freq * 1.6, at);
+      lp.frequency.linearRampToValueAtTime(freq * 7, at + 0.05);
+      lp.frequency.exponentialRampToValueAtTime(freq * 2.4, at + dur);
+      lp.connect(out);
+      dest = lp;
+    }
+    // Detuned in pairs, and a held note wobbles: perfectly in tune and perfectly steady is
+    // the sound of a machine, which is the note above about the music applied to a cue.
+    this.voice(ctx, dest, "sawtooth", freq, at, dur, gain, {
+      detune: 7, vibrato: dur > 0.3 ? 0.7 : 0,
+    });
+  }
+
+  /**
+   * THE VICTORY CALL.
+   *
+   * A rising major arpeggio to a held top note, dotted so it reads as a CALL rather than as
+   * a scale — three short notes and one that arrives. The last one is a CHORD, because one
+   * horn is a signal and three are a celebration, and it is the only thing in this file
+   * allowed to run past a second: it plays over the winner's colour washing across the
+   * whole board, and a cue shorter than that leaves the finale in silence.
+   *
+   * The match bed is stopped by the screen before this fires (`MatchScreen.finish`). A
+   * fanfare over a war drum is two pieces of music at once, and neither of them wins.
+   */
+  private fanfare(ctx: AudioContext, out: AudioNode, at: number): void {
+    const G4 = 392, C5 = 523.25, E5 = 659.25, G5 = 784;
+    this.brass(ctx, out, G4, at, 0.15, 0.26);
+    this.brass(ctx, out, C5, at + 0.13, 0.15, 0.26);
+    this.brass(ctx, out, E5, at + 0.26, 0.15, 0.26);
+    this.brass(ctx, out, G5, at + 0.40, 0.62, 0.28);
+    this.brass(ctx, out, C5, at + 0.40, 0.62, 0.17);
+    this.brass(ctx, out, E5, at + 0.42, 0.60, 0.13);
+  }
+
   private crack(ctx: AudioContext, out: AudioNode, at: number, size: number): void {
     const rand = this.rand;
     this.tick(ctx, out, at, 1400 * size, 0.07 * size, 3.4, 0.7, 200 * size);
@@ -1198,6 +1250,8 @@ export class WebFeedback implements Feedback {
       // The shell breaking is a snap, like a twig — the note in the table is the body
       // under it, not the break itself.
       else if (cue === "hatch") this.crack(ctx, master, now, 0.55);
+      // The one cue that is a whole phrase, and the only one that earns it.
+      else if (cue === "win") this.fanfare(ctx, master, now);
       for (const v of VOICES[cue]) {
         const at = now + (v.at ?? 0);
         const osc = ctx.createOscillator();

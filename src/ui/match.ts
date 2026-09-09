@@ -845,6 +845,11 @@ export class MatchScreen {
     const winner = this.state.winner;
     this.updateTimerUI();
 
+    // THE BED STOPS WHERE THE MATCH DOES, and it has to stop BEFORE the cue. The war bed
+    // is a drum kit and an ostinato; a fanfare played over it is two pieces of music at
+    // once and neither of them wins. What comes next is decided by the app — the menu bed
+    // on the way home, the war bed again on the next match.
+    this.opts.feedback?.setMusic(null);
     this.cue(winner === "you" ? "win" : "lose");
     const wait = winner ? this.renderer.floodWin(winner) : 0;
     // `destroy()` cancels this, so a screen torn down mid-wash never hands out a card.

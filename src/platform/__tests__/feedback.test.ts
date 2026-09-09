@@ -173,6 +173,89 @@ describe("before the first gesture", () => {
   });
 });
 
+/**
+ * THE VICTORY FANFARE. It was three triangle notes — the sound a puzzle game makes when a
+ * row clears — on the one moment a whole match was played for.
+ */
+describe("the end of a match", () => {
+  const win = (full = true) => {
+    const fake = fakeAudio("running", full);
+    const fb = new WebFeedback(() => fake.ctx as unknown as AudioContext, () => {});
+    fb.unlock();
+    fake.started.length = 0;
+    fake.freqs.length = 0;
+    fake.nodes.filters = 0;
+    fb.play("win");
+    return fake;
+  };
+
+  /**
+   * The fake records one frequency and one start per oscillator, in that order, so the two
+   * arrays line up note for note — which is the only way to ask whether the call RISES
+   * rather than merely which pitches are in it. The slow wobbles are dropped: a vibrato
+   * runs at a few hertz and is not a note.
+   */
+  const phrase = (fake: ReturnType<typeof win>): { f: number; t: number }[] =>
+    fake.freqs.map((f, i) => ({ f, t: fake.started[i] as number })).filter((n) => n.f > 20);
+
+  it("is a brass call that ARRIVES: it ends higher than it climbs", () => {
+    const notes = phrase(win());
+    expect(new Set(notes.map((n) => n.f)).size, "one note is a beep, not a fanfare")
+      .toBeGreaterThanOrEqual(4);
+    const opening = Math.min(...notes.map((n) => n.t));
+    const climb = notes.filter((n) => n.t < opening + 0.35);
+    const landing = notes.filter((n) => n.t >= opening + 0.35);
+    expect(landing.length, "the call never lands").toBeGreaterThan(0);
+    expect(Math.max(...landing.map((n) => n.f)), "the call ends under its own approach")
+      .toBeGreaterThan(Math.max(...climb.map((n) => n.f)));
+  });
+
+  // One horn is a signal; the last note is a chord because three are a celebration.
+  it("lands on a chord rather than one note", () => {
+    const notes = phrase(win());
+    const opening = Math.min(...notes.map((n) => n.t));
+    const landing = notes.filter((n) => n.t >= opening + 0.35);
+    expect(new Set(landing.map((n) => n.f)).size).toBeGreaterThanOrEqual(3);
+  });
+
+  it("is a phrase, not a chord — the notes are spaced across a second", () => {
+    const { started } = win();
+    const span = Math.max(...started) - Math.min(...started);
+    expect(span, "every note started together").toBeGreaterThan(0.2);
+    expect(span, "the call runs longer than the wash it plays over").toBeLessThan(1.2);
+  });
+
+  /**
+   * THE SWEEP IS THE INSTRUMENT. A brass note opens bright and settles; a sawtooth with no
+   * filter moving on it is a buzzer, which is the difference between a horn and an error
+   * tone. One filter per note.
+   */
+  it("puts a filter on every note", () => {
+    const { nodes } = win();
+    expect(nodes.filters, "the call is an unfiltered sawtooth").toBeGreaterThanOrEqual(4);
+  });
+
+  /** And a phone with no biquad gets the notes unfiltered rather than nothing. */
+  it("still calls on a device with no filter at all", () => {
+    const { started, nodes } = win(false);
+    expect(nodes.filters).toBe(0);
+    expect(started.length, "a device without a filter went silent").toBeGreaterThan(4);
+  });
+
+  // A defeat is disappointing, not triumphant: it must not be the same phrase.
+  it("does not play the fanfare for a defeat", () => {
+    const fake = fakeAudio("running", true);
+    const fb = new WebFeedback(() => fake.ctx as unknown as AudioContext, () => {});
+    fb.unlock();
+    fake.started.length = 0;
+    fb.play("lose");
+    const lost = fake.started.length;
+    fake.started.length = 0;
+    fb.play("win");
+    expect(fake.started.length, "a loss sounds like a win").toBeGreaterThan(lost);
+  });
+});
+
 describe("a device that cannot do this", () => {
   it("stays silent rather than throwing, with no audio at all", () => {
     const buzzed: (number | number[])[] = [];

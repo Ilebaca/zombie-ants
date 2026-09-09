@@ -52,6 +52,23 @@ const LATEST = Date.UTC(2026, 7, 30);
 
 export const NEWS: readonly NewsPost[] = [
   {
+    // NOT major: a sound is something a player meets by playing, not something to stop
+    // them at the door with.
+    id: "fanfare",
+    tag: "update",
+    title: "Winning has a sound",
+    lead: "A brass call when the board is yours.",
+    at: LATEST + 10 * DAY,
+    art: { kind: "mark", icon: "music", col: "#e7b53a" },
+    body: [
+      "A victory now ends on a fanfare — a short brass call over the wash of your colour "
+      + "taking the board. It was three flat notes before.",
+      "The match music stops the moment a match is decided, so the call has the room to "
+      + "itself. The menu music comes back when you head home, and the war drums start "
+      + "again with your next match.",
+    ],
+  },
+  {
     // MAJOR: a whole system arriving, with a clock on it. A player who does not know the
     // week ends on Sunday cannot play for it.
     id: "league",

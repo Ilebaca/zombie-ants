@@ -1405,9 +1405,6 @@ export class App {
   /* ---------------------------------------------------------------------- MATCH */
 
   private startMatch(foe?: Opponent, resume?: Resumed): void {
-    // The board gets its own bed. `setMusic` is idempotent, so this is safe to call for
-    // every match, including a rematch straight off the result card.
-    this.feedback.setMusic("match");
     if (this.tour.running) this.tour.signal("shape");
     // Whether this match is the tutorial one, decided once: the board is arranged for it
     // and the match screen runs the walkthrough on it. A resumed match is never the
@@ -1419,6 +1416,11 @@ export class App {
     // "Play again" comes straight back here, so tear the old match down first — otherwise
     // its render loop and timers keep running behind the new one.
     this.clearMatch();
+    // THE BED IS SET AFTER THE OLD MATCH IS TORN DOWN, never before. `clearMatch` puts the
+    // MENU bed back — that is what a surrender or the card's Home button wants — so asking
+    // for the war bed first and clearing second left "Play again" playing menu music over a
+    // whole match. Order, not idempotency, is what makes this right.
+    this.feedback.setMusic("match");
     this.syncNav(null);          // the nav is hidden during a match
     // A matchmade opponent is fielded as the colony their profile showed: the head on the
     // matchmaking screen has to be the colony that turns up on the board, or the search was
