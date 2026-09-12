@@ -30,6 +30,8 @@
     "eslint.config.js"
   ],
   "exclude": [
-    "tools/icons.ts"
+    "tools/icons.ts",
+    "tools/mapshot.ts",
+    "tools/mapshot/main.ts"
   ]
 }

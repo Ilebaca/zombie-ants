@@ -1860,16 +1860,43 @@ nagging the one player who had already done what it asked.**
   mandibles barely below, so centring the drawing's origin clipped the one feature that
   says "ant".
 
-**THE HOME ARTWORK IS A FILE, AND IT IS THE ONLY PICTURE IN THE APP THAT IS NOT DRAWN**
-(`src/ui/home.webp`, the `#home` rules in `skin.css`). The legacy stylesheet carries its
-own artwork as a base64 JPEG, and `game.css` is a VERBATIM copy of that sheet with a test
-comparing the two line by line (§10) — so the picture cannot be swapped there. It is
+**THE HOME ARTWORK IS A FILE — the only picture in the app that is not drawn**
+(`src/ui/backdrops/`, `src/ui/backdrops.ts`, the `#home` rules in `skin.css`). The legacy
+stylesheet carries its own artwork as a base64 JPEG, and `game.css` is a VERBATIM copy of
+that sheet with a test comparing the two line by line (§10) — so the picture cannot be
+swapped there. It is
 overridden in `skin.css` instead, which also keeps the swap to one declaration.
-- **BUNDLED FROM `src/ui/`, never dropped in `public/`.** Vite hashes the name, so a
-  cached picture cannot go stale; it emits a RELATIVE url under `base: "./"`, which is the
-  rule the whole build follows (an absolute one points at nothing inside the Capacitor
+- **BUNDLED FROM `src/ui/backdrops/`, never dropped in `public/`.** Vite hashes the name,
+  so a cached picture cannot go stale; it emits a RELATIVE url under `base: "./"`, which is
+  the rule the whole build follows (an absolute one points at nothing inside the Capacitor
   shell); and the service worker precaches everything the build emitted, so the artwork
   comes with the offline install rather than being the one thing missing from it.
+- **ONE PICTURE PER CHAPTER, AND THE FOLDER IS THE TABLE** (`src/ui/backdrops.ts`). The
+  screen a player opens every time said nothing about how far they had come, so the ground
+  follows the road: fifty chapters, fifty pictures. `src/ui/backdrops/ch07.webp` IS chapter
+  seven's — the glob resolves at BUILD time, so dropping a file in with the right name is
+  the WHOLE change. No import to add, no list to keep in step, and no way for a table to
+  name a file that is not there. The convention is `ch<NN>.webp`, two digits, 01 to 50.
+  - **EVERY CHAPTER WITHOUT ONE FALLS BACK TO `home.webp`**, the picture the game ships
+    with. That is what let the structure land before the art did: today all fifty resolve
+    to the same image, a build is never missing a background, and each real one starts
+    being used on the commit it arrives on. `backdrops.test.ts` asks every chapter on the
+    road for its ground, and holds that a chapter with no file of its own answers with the
+    default rather than inventing one.
+  - **It is set INLINE on `#home`, from the chapter the banner already names.** Fifty
+    rules in a stylesheet for fifty files the stylesheet cannot see is a second table to
+    keep in step — and `skin.css` still carries the default, so the screen is never bare
+    if the script never runs.
+  - **`backdropFor` takes the CHAPTER, not the colony.** Home already knows which chapter
+    it is announcing; two places deriving that from the colony is two places to disagree.
+- **THE BOARD'S GROUND CAN BE EXPORTED** (`npx tsx tools/mapshot.ts [out] [w] [h] [scale]`).
+  It drives a real Vite server and a real browser against `render/terrain.ts` itself, so
+  the PNG cannot drift from the board, and it draws the ground and NOTHING else — no tiles,
+  no colonies, no veins, no hive, no chrome. It hands back the WHOLE plate, overhang
+  included: the scenery is baked past the canvas so the opening camera never sees its edge,
+  and cropping to the canvas would hand back less picture than the game has. A TOOL, not a
+  build step, excluded from typecheck and lint like `tools/icons.ts` because it imports
+  Playwright (§11).
 - **THE PICTURE IS THE TITLE SCREEN, so it carries NO TITLE and NO WASH.** The wordmark
   and the tagline used to sit over it and the wash existed to give them ground; both are
   gone, and a tint over the whole artwork was darkening the thing it was there to protect.

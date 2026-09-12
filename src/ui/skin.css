@@ -1145,7 +1145,7 @@ body,
    `base: "./"` — the rule the whole build follows, or the Capacitor shell points at
    nothing — and the service worker precaches it with everything else it emitted. */
 #home {
-  background-image: url("./home.webp");
+  background-image: url("./backdrops/home.webp");
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;

@@ -44,6 +44,7 @@ import { buildWhatsNew } from "./whatsnew";
 import { buildFriends } from "./friends";
 import { buildSupport } from "./support";
 import { buildSettings } from "./settings";
+import { backdropFor } from "./backdrops";
 import { buildRules } from "./rules";
 import { buildSetup, rollAISpecies, rollShape } from "./setup";
 import { inviteBar } from "./duel";
@@ -984,6 +985,14 @@ export class App {
 
   private buildHome(): HTMLElement {
     const root = screenEl("home");
+
+    // THE GROUND CHANGES WITH THE CHAPTER (`ui/backdrops.ts`). Home is one full-screen
+    // picture and it was the same picture for ever, so the screen a player opens every
+    // time said nothing about how far they had come. Written INLINE rather than through a
+    // class per chapter: fifty rules in the stylesheet for fifty files the stylesheet
+    // cannot see is a second table to keep in step, and `skin.css` still carries the
+    // default so the screen is never bare if this never runs.
+    root.style.backgroundImage = `url("${backdropFor(chapterOf(this.profile.get().colony))}")`;
 
     /*
      * The bar, and the granary emptied directly under the figure it pays into.
