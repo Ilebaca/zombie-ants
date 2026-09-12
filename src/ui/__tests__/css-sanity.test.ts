@@ -112,7 +112,7 @@ describe("the design scales", () => {
    */
   it("puts everything on home on one gutter", () => {
     const css = code(read("skin.css"));
-    expect(ruleFor(css, "#home"), "home has no gutter of its own").toMatch(/--gutter:\s*\d+px/);
+    expect(rulesFor(css, "#home"), "home has no gutter of its own").toMatch(/--gutter:\s*\d+px/);
     for (const sel of ["#home #colonyHero,\n#home .granpill", "#home .homeplay"]) {
       expect(ruleFor(css, sel), `${sel} is not on home's gutter`)
         .toMatch(/var\(--gutter\)|var\(--homemax\)/);
@@ -197,6 +197,21 @@ describe("the game is played upright", () => {
  * appears as `.slide .challist` — a different rule about overscroll — and a plain
  * `indexOf` finds that one first and reads a rule the check is not about.
  */
+/**
+ * EVERY block for a selector, not the first one.
+ *
+ * `#home` is written twice on purpose — the artwork in the HOME section and the gutter in
+ * the responsive one — and a helper that stops at the first block asserted against
+ * whichever happened to come first in the file.
+ */
+const rulesFor = (css: string, selector: string): string => {
+  const head = new RegExp(`^${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\{`, "gm");
+  const out: string[] = [];
+  for (const m of css.matchAll(head)) out.push(css.slice(m.index, css.indexOf("}", m.index)));
+  expect(out.length, `${selector} is not in the stylesheet any more`).toBeGreaterThan(0);
+  return out.join("\n");
+};
+
 const ruleFor = (css: string, selector: string): string => {
   const at = css.search(new RegExp(`^${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\{`, "m"));
   expect(at, `${selector} is not in the stylesheet any more`).toBeGreaterThan(-1);

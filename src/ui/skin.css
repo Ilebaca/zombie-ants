@@ -129,7 +129,10 @@
    with green text on it. Early, it is only a floor, and anything later
    in this file still wins.
    ====================================================================== */
-*:not(#home), *::before, *::after { background-image: none !important; }
+/* `#home`'s own `::after` is exempt with it: that is the wash over the artwork, and with
+   a BRIGHT picture behind the wordmark it has to be a gradient rather than one flat tint
+   (see HOME below). Everything else's ::after is still nulled. */
+*:not(#home), *::before, *:not(#home)::after { background-image: none !important; }
 
 /* Surfaces the legacy sheet fills with a gradient and this file does not
    otherwise dress. */
@@ -1135,15 +1138,42 @@ body,
    The artwork runs the whole screen, so the controls need ground to sit on:
    a wash down from the top for the bar, and a deeper one up from the bottom
    for the wordmark, the tagline and the button. */
+/* THE ARTWORK IS THE ONE PICTURE IN THE APP THAT IS NOT DRAWN, and it is a FILE rather
+   than the legacy stylesheet's base64 JPEG. `game.css` is a verbatim copy of the legacy
+   `<style>` block and a test compares the two line by line (§10), so the picture it
+   carries cannot be edited there — it is overridden here instead, which is also what keeps
+   the swap to one line. Bundled from `src/ui/` rather than dropped in `public/`, so Vite
+   hashes the name (a cached picture cannot go stale), emits a RELATIVE url under
+   `base: "./"` — the rule the whole build follows, or the Capacitor shell points at
+   nothing — and the service worker precaches it with everything else it emitted. */
+#home {
+  background-image: url("./home.webp");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
 #home::after {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  /* One flat wash over the artwork: the wordmark, the tagline and the two
-     floating buttons still need ground, and a fade is what is being removed. */
-  background: rgba(10, 18, 12, .34);
+  /* GROUND FOR THE TYPE, AND ONLY WHERE THE TYPE IS.
+     A flat tint was right while the artwork was a dark green clearing. The desert is
+     bright — measured in a browser, the wordmark came out at 1.9:1 against the sand and
+     the tagline at 1.9 as well, both far under AA (§ CONTRAST IS MEASURED) — and lifting
+     one flat tint far enough to fix that drowns the picture it is over. So it is a
+     gradient again: deep at the FOOT where the wordmark, the tagline and the button sit,
+     a touch at the head for the bar, and barely anything across the middle, which is the
+     part of the picture worth seeing. */
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 18, 12, .46) 0,
+    rgba(10, 18, 12, .20) 16%,
+    rgba(10, 18, 12, .20) 38%,
+    rgba(10, 18, 12, .82) 68%,
+    rgba(10, 18, 12, .92) 100%
+  );
 }
 /* Lift the content above the wash — WITHOUT touching `position`, which the two floating
    buttons rely on being `absolute`. Setting it on every child put them back in the flow

@@ -1833,9 +1833,9 @@ nagging the one player who had already done what it asked.**
 - **Every path is RELATIVE.** The build sets `base: "./"` so one bundle runs under the
   Pages project path and inside the Capacitor shell; an absolute `/zombie-ants/` points at
   nothing in the second. A test holds it, and it was checked against a real sub-path server.
-- **THE ICON IS THE ONE COMMITTED IMAGE IN THE REPO, and that is deliberate.** Everything
-  else is drawn at runtime; an icon cannot be, because the OS needs a file before a line of
-  our script runs. `tools/icons.ts` renders it from the game's own `antHead` through headless
+- **THE ICON IS A COMMITTED IMAGE, and that is deliberate.** Almost everything else is
+  drawn at runtime; an icon cannot be, because the OS needs a file before a line of our
+  script runs. (The home artwork is the other one — § THE HOME ARTWORK.) `tools/icons.ts` renders it from the game's own `antHead` through headless
   Chromium — so it is not a second drawing that can drift — but it is a TOOL, not a build
   step: an icon has to be stable, because people find an app by its icon, and one that
   redrew itself whenever `render/art.ts` changed would be a different app every few weeks.
@@ -1844,6 +1844,34 @@ nagging the one player who had already done what it asked.**
 - The head is nudged DOWN in the frame: the antennae reach well above its centre and the
   mandibles barely below, so centring the drawing's origin clipped the one feature that
   says "ant".
+
+**THE HOME ARTWORK IS A FILE, AND IT IS THE ONLY PICTURE IN THE APP THAT IS NOT DRAWN**
+(`src/ui/home.webp`, the `#home` rules in `skin.css`). The legacy stylesheet carries its
+own artwork as a base64 JPEG, and `game.css` is a VERBATIM copy of that sheet with a test
+comparing the two line by line (§10) — so the picture cannot be swapped there. It is
+overridden in `skin.css` instead, which also keeps the swap to one declaration.
+- **BUNDLED FROM `src/ui/`, never dropped in `public/`.** Vite hashes the name, so a
+  cached picture cannot go stale; it emits a RELATIVE url under `base: "./"`, which is the
+  rule the whole build follows (an absolute one points at nothing inside the Capacitor
+  shell); and the service worker precaches everything the build emitted, so the artwork
+  comes with the offline install rather than being the one thing missing from it.
+- **A BRIGHT PICTURE NEEDS ITS OWN GROUND, and the wash had to become a gradient again.**
+  One flat tint was right while the artwork was a dark green clearing. Measured in a
+  browser over the desert, the wordmark came out at **1.9:1** and the tagline at 1.9 —
+  both far under AA (§ CONTRAST IS MEASURED) — and one flat tint deep enough to fix that
+  drowns the picture it is over. It is deep at the FOOT where the wordmark, the tagline
+  and the button sit, a touch at the head for the bar, and barely anything across the
+  middle, which is the part worth seeing: **3.4 / 4.8 / 4.5 / 9.2** for the two halves of
+  the wordmark, the tagline and How to play.
+- **`#home::after` had to be EXEMPTED from the blanket that clears every background
+  image.** That rule is `*:not(#home), *::before, *::after`, and a gradient is a background
+  IMAGE — so the wash could only ever be a flat colour, silently. It reads
+  `*:not(#home)::after` now, which extends the exemption `#home` already had to the wash
+  that belongs to it.
+- **A second `#home` block is why `css-sanity` reads EVERY rule for a selector** and not
+  the first one it finds. `rulesFor` exists for that: the artwork is written in the HOME
+  section and the gutter in the responsive one, and a helper that stops at the first block
+  asserted against whichever happened to come first in the file.
 
 **PLAYING WITH NO NETWORK** (`platform/offline.ts`, the worker generated in
 `vite.config.ts`). The game is a static bundle and a save on the device — it never needed
