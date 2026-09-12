@@ -129,10 +129,7 @@
    with green text on it. Early, it is only a floor, and anything later
    in this file still wins.
    ====================================================================== */
-/* `#home`'s own `::after` is exempt with it: that is the wash over the artwork, and with
-   a BRIGHT picture behind the wordmark it has to be a gradient rather than one flat tint
-   (see HOME below). Everything else's ::after is still nulled. */
-*:not(#home), *::before, *:not(#home)::after { background-image: none !important; }
+*:not(#home), *::before, *::after { background-image: none !important; }
 
 /* Surfaces the legacy sheet fills with a gradient and this file does not
    otherwise dress. */
@@ -1046,8 +1043,9 @@ body,
    The vignette that used to be written here was hung on `.hillwrap` — and
    `.hillwrap` is the ANTHILL's scroller, not the home artwork. So it was
    darkening the top and bottom of the chamber list and doing nothing at
-   all on home, which is the screen it was for. `#home::after` below is the
-   rule that actually does the job. */
+   all on home, which is the screen it was for. There is no vignette on home
+   at all now — the artwork is the title screen and nothing is written over
+   it (see HOME below). */
 .hilltag {
   font-size: 11px;
   font-weight: 900;
@@ -1152,62 +1150,24 @@ body,
   background-size: cover;
   background-repeat: no-repeat;
 }
-#home::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  /* GROUND FOR THE TYPE, AND ONLY WHERE THE TYPE IS.
-     A flat tint was right while the artwork was a dark green clearing. The desert is
-     bright — measured in a browser, the wordmark came out at 1.9:1 against the sand and
-     the tagline at 1.9 as well, both far under AA (§ CONTRAST IS MEASURED) — and lifting
-     one flat tint far enough to fix that drowns the picture it is over. So it is a
-     gradient again: deep at the FOOT where the wordmark, the tagline and the button sit,
-     a touch at the head for the bar, and barely anything across the middle, which is the
-     part of the picture worth seeing. */
-  background: linear-gradient(
-    to bottom,
-    rgba(10, 18, 12, .46) 0,
-    rgba(10, 18, 12, .20) 16%,
-    rgba(10, 18, 12, .20) 38%,
-    rgba(10, 18, 12, .82) 68%,
-    rgba(10, 18, 12, .92) 100%
-  );
-}
+/* NO WASH OVER THE ARTWORK. There was one — a gradient, deep at the foot — and it was
+   ground for the WORDMARK and the tagline, which are gone: the picture is the title
+   screen now, and a tint over all of it was darkening the thing it was protecting.
+   Everything left on this screen brings its own: the banner, the granary pill and the
+   three floating buttons are cards, PLAY is a solid slab, and How to play carries a
+   shadow. If one is ever needed again it cannot be a gradient on `#home::after` without
+   exempting that from the blanket above — a gradient is a background IMAGE, and the
+   blanket clears every one of those with `!important`, silently. */
 /* Lift the content above the wash — WITHOUT touching `position`, which the two floating
    buttons rely on being `absolute`. Setting it on every child put them back in the flow
    and they stretched to the full width of the screen. */
 .tophead, .homeplay { position: relative; z-index: 1; }
 .settingsfab, .dailyfab { z-index: 6; }
 
-.homemark {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: -4px;
-  line-height: 1;
-  text-shadow: 0 3px 14px rgba(0, 0, 0, .75);
-}
-.homemark b {
-  font-size: 34px;
-  font-weight: 900;
-  letter-spacing: -.5px;
-  color: var(--ink);
-}
-.homemark span {
-  font-size: 34px;
-  font-weight: 900;
-  letter-spacing: 5px;
-  color: var(--grass-glow);
-}
-.hometag {
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 3px;
-  color: var(--ink-soft);
-  text-shadow: 0 2px 10px rgba(0, 0, 0, .85);
-}
+/* The wordmark and the tagline that used to sit here are GONE — the artwork is the title
+   screen and it carries no title — so the rules that dressed them went with them. The
+   legacy sheet still has its own `.homemark`/`.hometag`, and it can: nothing emits either
+   class any more. */
 .homeplay { gap: 14px; padding-bottom: 10px; }
 
 /* NO FILL AT ALL. It was a pill under the PLAY button, which put two things
@@ -1222,7 +1182,14 @@ body,
   padding: 9px 16px;
   border: none;
   background: none;
-  color: var(--ink-soft);
+  /* DARK INK, because the ground under it is BRIGHT. It is the one piece of text on home
+     written straight onto the artwork — everything else is a card or a slab — and in the
+     app's pale `--ink-soft` it measured 1.7:1 against the sand, which is a control the
+     player cannot read (§ CONTRAST IS MEASURED). The soft light halo is what carries it
+     across a rock or a tuft of grass without giving it a fill: a pill under PLAY is two
+     things shaped like buttons on a screen that offers one action (§10). */
+  color: rgba(14, 26, 16, .88);
+  text-shadow: 0 1px 6px rgba(255, 240, 200, .55);
   font-size: 12.5px;
   font-weight: 800;
   letter-spacing: .3px;

@@ -1855,19 +1855,21 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
   rule the whole build follows (an absolute one points at nothing inside the Capacitor
   shell); and the service worker precaches everything the build emitted, so the artwork
   comes with the offline install rather than being the one thing missing from it.
-- **A BRIGHT PICTURE NEEDS ITS OWN GROUND, and the wash had to become a gradient again.**
-  One flat tint was right while the artwork was a dark green clearing. Measured in a
-  browser over the desert, the wordmark came out at **1.9:1** and the tagline at 1.9 —
-  both far under AA (§ CONTRAST IS MEASURED) — and one flat tint deep enough to fix that
-  drowns the picture it is over. It is deep at the FOOT where the wordmark, the tagline
-  and the button sit, a touch at the head for the bar, and barely anything across the
-  middle, which is the part worth seeing: **3.4 / 4.8 / 4.5 / 9.2** for the two halves of
-  the wordmark, the tagline and How to play.
-- **`#home::after` had to be EXEMPTED from the blanket that clears every background
-  image.** That rule is `*:not(#home), *::before, *::after`, and a gradient is a background
-  IMAGE — so the wash could only ever be a flat colour, silently. It reads
-  `*:not(#home)::after` now, which extends the exemption `#home` already had to the wash
-  that belongs to it.
+- **THE PICTURE IS THE TITLE SCREEN, so it carries NO TITLE and NO WASH.** The wordmark
+  and the tagline used to sit over it and the wash existed to give them ground; both are
+  gone, and a tint over the whole artwork was darkening the thing it was there to protect.
+  What is left brings its own ground: the banner, the granary pill and the three floating
+  buttons are cards, PLAY is a solid slab. The name now lives on the cover over a cold
+  boot (`#splash`), which is the only place it is still written.
+- **HOW TO PLAY IS THE ONE PIECE OF TEXT WRITTEN STRAIGHT ONTO THE ARTWORK, so it is DARK
+  INK.** In the app's pale `--ink-soft` it measured **1.7:1** against the sand — a control
+  the player cannot read (§ CONTRAST IS MEASURED). Dark ink with a soft light halo is
+  **5.8:1** and needs no fill; a pill under PLAY would be two things shaped like buttons
+  on a screen that offers one action (§10). Every other screen keeps the pale colour.
+- **A GRADIENT CANNOT BE PAINTED ON `#home::after` WITHOUT EXEMPTING IT** from the blanket
+  that clears every background image (`*:not(#home), *::before, *::after`) — a gradient IS
+  a background image, so a wash written there is a flat colour or nothing at all,
+  silently. Worth knowing before writing one back.
 - **A second `#home` block is why `css-sanity` reads EVERY rule for a selector** and not
   the first one it finds. `rulesFor` exists for that: the artwork is written in the HOME
   section and the gutter in the responsive one, and a helper that stops at the first block

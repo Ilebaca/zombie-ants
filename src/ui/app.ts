@@ -1029,13 +1029,11 @@ export class App {
     daily.onclick = () => this.show("daily");
     root.append(settings, daily, duels);
 
+    // THE ARTWORK IS THE TITLE SCREEN, and it carries no title. The name and the tagline
+    // used to sit here, over the picture; what is left is the one action the screen exists
+    // to offer and the way into the manual. The cover over a cold boot still draws the
+    // wordmark (`#splash`), which is where the name is now.
     const play = el("div", "homeplay");
-    // The app had no name on its own front page. The artwork is the title screen; this is
-    // the title.
-    const mark = el("div", "homemark");
-    mark.append(el("b", undefined, "ZOMBIE"), el("span", undefined, "ANTS"));
-    play.appendChild(mark);
-    play.appendChild(el("div", "hometag", "Spread · Surround · Consume"));
 
     // The board's SIZE, read off the map rather than typed: there is one board and the
     // button is where the player is told which (§ ONE BOARD).
