@@ -27,6 +27,14 @@ const TABS: readonly { id: Tab; label: string }[] = [
 
 export function buildFriends(
   store: ProfileStore, service: FriendService, onBack: () => void,
+  /**
+   * Play one of them.
+   *
+   * The screen does not know what a challenge IS — it hands back the friend and `App` runs
+   * the same flow the home screen's own button used to start (§ CHALLENGING A FRIEND), the
+   * seam every other screen here uses.
+   */
+  onChallenge: (friend: Friend) => void = () => {},
 ): HTMLElement {
   const root = screenEl("friends");
   let tab: Tab = "list";
@@ -66,7 +74,7 @@ export function buildFriends(
     body.appendChild(bar);
 
     const panel = el("div", "frpanel");
-    if (tab === "list") listPanel(panel, store, render, root);
+    if (tab === "list") listPanel(panel, store, render, root, onChallenge);
     else if (tab === "requests") requestPanel(panel, store, render, root);
     else findPanel(panel);
     body.appendChild(panel);
@@ -128,6 +136,7 @@ export function buildFriends(
 
 function listPanel(
   panel: HTMLElement, store: ProfileStore, render: () => void, root: HTMLElement,
+  onChallenge: (friend: Friend) => void,
 ): void {
   const friends = [...store.get().friends].sort((a, b) => b.colony - a.colony);
   if (!friends.length) {
@@ -137,7 +146,9 @@ function listPanel(
   }
   panel.appendChild(el("div", "secthead", `${friends.length} of ${FRIEND_MAX}`));
   const list = el("div", "frlist");
-  for (const friend of friends) list.appendChild(friendRow(friend, store, render, root));
+  for (const friend of friends) {
+    list.appendChild(friendRow(friend, store, render, root, onChallenge));
+  }
   panel.appendChild(list);
 }
 
@@ -242,31 +253,59 @@ function outgoingRow(
 }
 
 /**
- * A friend, with the one control that can go wrong on the screen.
+ * A friend, and the two things you can do to one.
  *
- * Removing asks twice on the same button, the way Settings' reset does: a confirm dialog
- * for one row would be an overlay over a list, and an accidental tap in a list of fifty is
- * exactly the thing to guard.
+ * BOTH ARE MARKS RATHER THAN WORDS: crossed swords to play them, an X to drop them. A row
+ * carrying a face, a name, a colony size and two words as well is a row that wraps on a
+ * 320px phone, and these two are the pair of verbs this list exists for — the icon is what
+ * makes them read at a glance. Neither is unlabelled: the name is on `aria-label` and
+ * `title`, which is what a screen reader gets and what the rest of the app's drawn chrome
+ * already does (§ EVERY CONTROL SAYS WHAT IT IS).
+ *
+ * REMOVING ASKS, and it asks IN THE ROW. A confirm dialog for one row of a list would be
+ * an overlay over the thing it is about; the row turns into the question instead, with a
+ * way to say no — which the old "tap it twice" version did not have, and an accidental tap
+ * in a list of fifty is exactly the thing being guarded against.
  */
 function friendRow(
   friend: Friend, store: ProfileStore, render: () => void, root: HTMLElement,
+  onChallenge: (friend: Friend) => void,
 ): HTMLElement {
   const row = personRow(friend, `${compact(friend.colony)} troops`);
-  const drop = el("button", "frbtn frghost", "Remove");
-  let armed = false;
+  const pair = el("div", "frpair");
+
+  const fight = markButton("swords", `Challenge ${friend.name}`, "frfight");
+  fight.onclick = () => onChallenge(friend);
+
+  const drop = markButton("cross", `Remove ${friend.name}`, "frdrop");
   drop.onclick = () => {
-    if (!armed) {
-      armed = true;
-      drop.textContent = "Sure?";
-      drop.classList.add("armed");
-      return;
-    }
-    store.removeFriend(friend.id);
-    render();
-    toast(root, `Removed ${friend.name}`, "bad");
+    // The question replaces the controls it is about, so the row says what is being asked
+    // and nothing else on it can be pressed by mistake while it is up.
+    pair.replaceChildren();
+    const ask = el("span", "frask", "Remove?");
+    const yes = markButton("check", `Yes, remove ${friend.name}`, "frdrop armed");
+    yes.onclick = () => {
+      store.removeFriend(friend.id);
+      render();
+      toast(root, `Removed ${friend.name}`, "bad");
+    };
+    const no = markButton("cross", `Keep ${friend.name}`, "frkeep");
+    no.onclick = () => render();
+    pair.append(ask, yes, no);
   };
-  row.appendChild(drop);
+
+  pair.append(fight, drop);
+  row.appendChild(pair);
   return row;
+}
+
+/** A control that is a MARK: the icon is the label, and the label is on the element. */
+function markButton(mark: string, label: string, cls: string): HTMLButtonElement {
+  const btn = el("button", `frbtn frmark ${cls}`) as HTMLButtonElement;
+  btn.appendChild(icon(mark, 22));
+  btn.title = label;
+  btn.setAttribute("aria-label", label);
+  return btn;
 }
 
 /** What an empty panel says. Never nothing: a blank panel reads as a broken one. */

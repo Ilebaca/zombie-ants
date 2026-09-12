@@ -905,8 +905,10 @@ and one line in `App`.
   does not move between searches. **A new colony arrives to two requests**: nothing can ever
   arrive on its own without a server, and accept/decline nobody can reach is a screen nobody
   can tell is finished. Adding somebody who has already asked YOU accepts instead of sending
-  one back — two people tapping Add should end up friends, not with a request each. Removing
-  asks twice on the same button, as Settings' reset does.
+  one back — two people tapping Add should end up friends, not with a request each. A friend
+  row carries two marks — the crossed swords that challenge them and the X that drops them
+  (§ CHALLENGING A FRIEND) — and removing turns the row into the question rather than asking
+  twice on one button.
 - **Support** (`platform/support.ts`, `ui/support.ts`) leads with the FAQ, because the
   question a player has is usually one somebody has asked; then the composer; then the build
   and the player's code, which whoever reads a message needs and should never have to ask
@@ -1011,17 +1013,30 @@ A test holds `.cname` as the card's LAST child, so nothing can creep back under 
   is four places to fix when the drawing changes (§7). A face drawn at twice the size it is
   shown at and scaled by the stylesheet is what keeps it sharp on a phone.
 
-**CHALLENGING A FRIEND** (`platform/duels.ts`, `ui/duel.ts`). A ranked match is against
-whoever the finder seats; a DUEL is against a named person. It is deliberately the ORDINARY
-setup flow with one step added and one step skipped:
+**CHALLENGING A FRIEND** (`platform/duels.ts`, `ui/duel.ts`, the row in `ui/friends.ts`).
+A ranked match is against whoever the finder seats; a DUEL is against a named person. It is
+deliberately the ORDINARY setup flow, entered from the friend rather than from home:
 
-    challenging   home → formation → colony → WHO → the match
+    challenging   the drawer → Friends → crossed swords → formation → colony → the match
     invited       the bar → formation → colony → the match, on their ground
 
-- **ONE BUTTON, BOTH HALVES.** A third floating button under Daily opens the flow, and it
-  carries the count of invitations waiting. A separate "invitations" screen would be a
-  control that is empty almost every time it is opened, and the badge is the only thing on
-  the home screen that can say somebody is waiting on an answer.
+- **IT STARTS ON THE FRIEND, and that is why a screen went away.** There was a third
+  floating button on home which opened a PICKER of friends — a whole screen whose only job
+  was to ask a question the friends list is already an answer to, and home was carrying a
+  button for a feature most players open once a week. The challenge is a control on the
+  ROW now (`buildFriends`'s `onChallenge`), beside the one that removes them: the two
+  verbs this list exists for, in the one place every friend is already shown.
+- **BOTH ARE MARKS, NOT WORDS.** Crossed swords to play them, an X to drop them. A row
+  carrying a face, a name, a colony size and two words as well wraps on a 320px phone;
+  neither is unlabelled, because `title` and `aria-label` carry the name (§ EVERY CONTROL
+  SAYS WHAT IT IS).
+- **REMOVING ASKS, AND IT ASKS IN THE ROW.** The question replaces the two marks it is
+  about, so nothing else on that row can be pressed by mistake while it is up, and it can
+  be answered NO — which the old "press the same button twice" version could not. A confirm
+  dialog for one row of a list would be an overlay over the thing it is about.
+- **THE BADGE MOVED WITH THE FLOW.** The count of invitations waiting rode that floating
+  button; it is on the drawer's Friends entry now, which is the only route to the list. A
+  badge nowhere at all is an invitation nobody can be told about.
 - **THE INVITATION SITS ON THE SCREEN IT INTERRUPTS.** The bar used to ride the MAP
   PICKER, because the ground was the one choice an invitation had already made. With one
   board what it has settled is the OPPONENT, so it rides the SETUP screen — the one thing
@@ -1043,12 +1058,12 @@ setup flow with one step added and one step skipped:
 - **Leaving abandons it.** `challenge` takes the screen's abort signal, exactly as the
   opponent search does, so a promise that resolves after the player walked away cannot
   start a match behind whatever they went to.
-- **AND ABANDONING THE FLOW ABANDONS IT TOO.** The friends button MARKS the setup screen
-  as a challenge (`duel`), and nothing unmarked it — so backing out to home and pressing
-  PLAY landed on "who do you want to play?" instead of a search: the ordinary flow
-  silently still being the one before it. Both ordinary ways in say which flow they are
-  (`playOrdinary`, `leaveSetup`), because the screen is two flows and the way in is the
-  only thing that can decide.
+- **AND ABANDONING THE FLOW ABANDONS IT TOO.** The swords MARK the setup screen as a
+  challenge (`duel`), and nothing unmarked it — so backing out to home and pressing PLAY
+  played whoever was seated last instead of searching: the ordinary flow silently still
+  being the one before it. Both ordinary ways in say which flow they are (`playOrdinary`,
+  `leaveSetup`), because the screen is two flows and the way in is the only thing that can
+  decide.
 - **`waitingFor` is not `agoOf`.** A news post lives for weeks and is dated in days, so
   "Today" is right for one. A challenge lives for minutes, and "Today" says nothing about
   whether the person who sent it is still sitting there.

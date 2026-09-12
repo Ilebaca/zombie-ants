@@ -4,8 +4,8 @@
  * The feature is two paths through the SAME setup flow, and what has to be true is that
  * each one ends somewhere different:
  *
- *   challenging  formation → colony → WHO → the match
- *   invited      the bar → formation → colony → the match, on their ground
+ *   challenging  the drawer → Friends → the crossed swords → formation → colony → the match
+ *   invited      the bar on the setup screen → formation → colony → the match
  *
  * So these tests press the real buttons on the real screens rather than calling methods.
  * A flow that ends in the wrong place is the whole failure mode here, and only walking it
@@ -14,7 +14,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { MemoryStore, ProfileStore, TOUR_VERSION, inviteFrom } from "../../platform";
 import { App } from "../app";
-import { buildDuelPick, waitingFor } from "../duel";
+import { waitingFor } from "../duel";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
 
@@ -50,87 +50,128 @@ const press = (host: HTMLElement, sel: string): void => {
   el?.click();
 };
 
-describe("the button under Daily", () => {
-  it("is on the home screen and opens the flow that sets a challenge up", () => {
+/** The route a player takes to the list: the hamburger, then the drawer's Friends entry. */
+const openFriends = (host: HTMLElement): void => {
+  press(host, ".settingsfab");
+  press(host, '.menuitem[data-go="friends"]');
+};
+
+/** The row for one friend, found by the name written on it. */
+const rowFor = (host: HTMLElement, name: string): HTMLElement | undefined =>
+  Array.from(host.querySelectorAll<HTMLElement>("#friends .frlist > *"))
+    .find((r) => r.textContent?.includes(name));
+
+describe("the way to a challenge", () => {
+  /**
+   * IT STARTS ON THE FRIEND. There was a floating button on home that opened a picker of
+   * friends — a screen whose whole job was to ask a question the friends list is already
+   * an answer to. The challenge is a button on the row now.
+   */
+  it("is a button on each friend, and it opens the setup flow", () => {
     const host = mount(ready());
-    const button = visible<HTMLButtonElement>(host, ".duelfab");
-    expect(button, "there is no way to challenge a friend").toBeTruthy();
-    button?.click();
+    openFriends(host);
+    const row = rowFor(host, "Kestra");
+    expect(row, "the friends list has no row for Kestra").toBeTruthy();
+    row?.querySelector<HTMLButtonElement>(".frfight")?.click();
     expect(visible(host, "#formation"), "the challenge flow did not open").toBeTruthy();
   });
 
+  /** ...and home no longer carries a button for it at all. */
+  it("is not a third floating button on home", () => {
+    const host = mount(ready());
+    expect(visible(host, ".duelfab"), "the home screen still asks about friends").toBeNull();
+  });
+
   /**
-   * THE BADGE IS THE WHOLE RECEIVING HALF. Nothing else on the home screen can say that
-   * somebody is waiting on an answer, so if this is not here the invitation is unreachable.
+   * THE BADGE IS THE WHOLE RECEIVING HALF. It rode the floating button; with that gone the
+   * count belongs on the drawer's Friends entry, which is the only route to the list — a
+   * badge nowhere at all makes an invitation unreachable.
    */
-  it("counts the invitations waiting", () => {
+  it("counts the invitations waiting, on the way to the list", () => {
     const store = ready();
     expect(store.duels.length, "a new colony has nothing to accept").toBeGreaterThan(0);
     const host = mount(store);
-    expect(visible(host, ".duelfab .fabdot")?.textContent).toBe(String(store.duels.length));
+    press(host, ".settingsfab");
+    expect(visible(host, '.menuitem[data-go="friends"] .menudot')?.textContent)
+      .toBe(String(store.duels.length));
   });
 
   it("carries no badge once they are answered", () => {
     const store = ready();
     for (const d of [...store.duels]) store.answerDuel(d.id);
     const host = mount(store);
-    expect(visible(host, ".duelfab"), "the button went away with the badge").toBeTruthy();
-    expect(visible(host, ".fabdot"), "a badge with nothing behind it").toBeNull();
+    press(host, ".settingsfab");
+    expect(visible(host, '.menuitem[data-go="friends"]'), "the way in went with the badge")
+      .toBeTruthy();
+    expect(visible(host, '.menuitem[data-go="friends"] .menudot'),
+      "a badge with nothing behind it").toBeNull();
+  });
+});
+
+describe("removing somebody", () => {
+  /** The most destructive thing on the screen asks twice, on its own button. */
+  it("asks before it does it", () => {
+    const store = ready();
+    const host = mount(store);
+    openFriends(host);
+    rowFor(host, "Vela")?.querySelector<HTMLButtonElement>(".frdrop")?.click();
+    expect(store.get().friends.length, "one tap removed a friend").toBe(2);
+    expect(rowFor(host, "Vela")?.textContent).toContain("Remove?");
+    rowFor(host, "Vela")?.querySelector<HTMLButtonElement>(".frdrop.armed")?.click();
+    expect(store.get().friends.map((f) => f.name)).toEqual(["Kestra"]);
+  });
+
+  /** And the question can be answered no, or it is not a question. */
+  it("can be called off", () => {
+    const store = ready();
+    const host = mount(store);
+    openFriends(host);
+    rowFor(host, "Vela")?.querySelector<HTMLButtonElement>(".frdrop")?.click();
+    rowFor(host, "Vela")?.querySelector<HTMLButtonElement>(".frkeep")?.click();
+    expect(store.get().friends.length).toBe(2);
+    expect(rowFor(host, "Vela")?.querySelector(".frfight"), "the row lost its challenge")
+      .toBeTruthy();
   });
 });
 
 describe("challenging somebody", () => {
   /**
-   * The flow is the ORDINARY one until its last step, and then it asks who instead of
-   * going looking for a stranger.
+   * ABANDONING A CHALLENGE ABANDONS IT. The way in marks the setup screen as a challenge
+   * and nothing unmarked it, so backing out to home and pressing PLAY played whoever was
+   * seated last — the ordinary flow silently still being the one before it.
    */
-  it("ends at the friend picker rather than at a search", () => {
+  it("does not leave the next ordinary match against the friend", async () => {
     const host = mount(ready());
-    press(host, ".duelfab");
-    press(host, "#setupGo");            // the formation
-    press(host, "#setupGo");            // the colony, and then: who?
-    expect(visible(host, "#duelpick"), "a challenge went looking for a stranger").toBeTruthy();
-    expect(host.querySelectorAll("#duelpick .duelrow").length).toBe(2);
-  });
-
-  /**
-   * ABANDONING A CHALLENGE ABANDONS IT. The friends button marks the setup screen as a
-   * challenge and nothing unmarked it, so backing out to home and pressing PLAY landed on
-   * the friend picker instead of a search — the ordinary flow silently still being the one
-   * before it.
-   */
-  it("does not leave the next ordinary match asking who to play", () => {
-    const host = mount(ready());
-    press(host, ".duelfab");
+    openFriends(host);
+    rowFor(host, "Kestra")?.querySelector<HTMLButtonElement>(".frfight")?.click();
     press(host, "#setupBack");          // out of the challenge, back to home
     press(host, ".playbtn");
     press(host, "#setupGo");
     press(host, "#setupGo");
-    expect(visible(host, "#duelpick"), "Play still asked which friend").toBeNull();
+    await Promise.resolve();
+    const status = host.querySelector(".mmk-status")?.textContent ?? "";
+    expect(status, `the ordinary match said: ${status}`).not.toContain("Kestra");
   });
 
-  /** ...and Play, from the same home screen, still does not. */
-  it("leaves the ordinary flow alone", () => {
+  /** ...and Play, from the same home screen, goes looking for a stranger. */
+  it("leaves the ordinary flow alone", async () => {
     const host = mount(ready());
     press(host, ".playbtn");
     press(host, "#setupGo");
     press(host, "#setupGo");
-    expect(visible(host, "#duelpick"), "Play asked which friend to play").toBeNull();
+    await Promise.resolve();
+    const status = host.querySelector(".mmk-status")?.textContent ?? "";
+    expect(status, "Play named a friend").not.toContain("Kestra");
   });
 
-  it("offers a way to get friends rather than an empty list", () => {
+  it("says how to get friends rather than showing an empty list", () => {
     const store = ready();
     store.update((p) => { p.friends = []; });
-    let found = false;
-    const screen = buildDuelPick({
-      profile: store,
-      onBack: () => {},
-      onPick: () => {},
-      onFindFriends: () => { found = true; },
-    });
-    expect(screen.querySelector(".duelrow")).toBeNull();
-    screen.querySelector<HTMLButtonElement>(".duelempty .cta")?.click();
-    expect(found, "the empty list is a dead end").toBe(true);
+    const host = mount(store);
+    openFriends(host);
+    expect(visible(host, "#friends .frfight"), "a challenge with nobody to challenge")
+      .toBeNull();
+    expect(visible(host, "#friends")?.textContent).toContain("No friends yet");
   });
 });
 
@@ -146,7 +187,7 @@ describe("being invited", () => {
     for (const d of [...store.duels]) store.answerDuel(d.id);
     store.addDuel(inviteFrom("Vela", 900, "small", Date.now()));
     const host = mount(store);
-    press(host, ".duelfab");
+    press(host, ".playbtn");
     const bar = visible(host, "#formation .invbar");
     expect(bar, "an invitation arrived with nowhere to read it").toBeTruthy();
     expect(bar?.textContent).toContain("Vela");
@@ -162,7 +203,7 @@ describe("being invited", () => {
     for (const d of [...store.duels]) store.answerDuel(d.id);
     store.addDuel(inviteFrom("Vela", 900, "small", Date.now()));
     const host = mount(store);
-    press(host, ".duelfab");
+    press(host, ".playbtn");
     press(host, "#formation .invbtn");
     expect(visible(host, "#formation"), "accepting left the setup").toBeTruthy();
     expect(visible(host, "#formation .invbar"), "the bar outlived the answer").toBeNull();
@@ -175,7 +216,7 @@ describe("being invited", () => {
     for (const d of [...store.duels]) store.answerDuel(d.id);
     store.addDuel(inviteFrom("Vela", 900, "small", Date.now()));
     const host = mount(store);
-    press(host, ".duelfab");
+    press(host, ".playbtn");
     press(host, "#formation .invghost");
     expect(store.duels.length).toBe(0);
     expect(visible(host, "#formation .invbar"), "the bar outlived the invitation").toBeNull();
@@ -190,12 +231,10 @@ describe("the wait", () => {
    */
   it("names the person being waited for", async () => {
     const host = mount(ready());
-    press(host, ".duelfab");
+    openFriends(host);
+    rowFor(host, "Kestra")?.querySelector<HTMLButtonElement>(".frfight")?.click();
     press(host, "#setupGo");
     press(host, "#setupGo");
-    const row = Array.from(host.querySelectorAll<HTMLElement>(".duelrow"))
-      .find((r) => r.textContent?.includes("Kestra"));
-    row?.click();
     await Promise.resolve();
     const status = host.querySelector(".mmk-status")?.textContent ?? "";
     expect(status, `the wait said: ${status}`).toContain("Kestra");

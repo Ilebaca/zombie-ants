@@ -54,6 +54,22 @@ const PATHS: Record<string, string | string[]> = {
     "M10.6 19.8h2.8v2.4a1.4 1.4 0 0 1-2.8 0z",
   ],
   defence: "M12 1.8 3.6 4.9a1 1 0 0 0-.7 1v6.3c0 4.4 3.5 8.2 9.1 10 5.6-1.8 9.1-5.6 9.1-10V5.9a1 1 0 0 0-.7-1z",
+  /* TWO CROSSED SWORDS: a challenge, and the one place the app can afford them. The chip
+     above says two turn to scribble below about 28px — true, and this is a 22px mark in a
+     44px button on a list row rather than a 16px one inside a chip. Each sword is the
+     upright one rotated 45° about the middle, so the pair is symmetrical by construction;
+     they are separate paths, which is what lets them OVERLAP at the cross rather than
+     cancelling each other out under `fill-rule: evenodd`. */
+  swords: [
+    "M19.4 4.6 18.7 7.4 11.2 14.9 9.1 12.8 16.6 5.3Z",
+    "M6.6 10.9 13.1 17.4 11.7 18.8 5.2 12.3Z",
+    "M7.5 14.9 9.1 16.5 6.4 19.1 4.9 17.6Z",
+    "M4.4 17.1 6.9 19.6 5.8 20.8 3.2 18.2Z",
+    "M4.6 4.6 7.4 5.3 14.9 12.8 12.8 14.9 5.3 7.4Z",
+    "M10.9 17.4 17.4 10.9 18.8 12.3 12.3 18.8Z",
+    "M14.9 16.5 16.5 14.9 19.1 17.6 17.6 19.1Z",
+    "M17.1 19.6 19.6 17.1 20.8 18.2 18.2 20.8Z",
+  ],
   // A seed store: a domed roof over a squat bin. Harvester ants really do keep one, and it
   // is the one mark on this screen that has to read as a PLACE rather than an effect.
   // A spark: the mark for casting an ability. Four rays and a core, so it reads at 18px

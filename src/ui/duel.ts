@@ -4,85 +4,24 @@
  * Two screens' worth of parts, both small, because the duel flow is deliberately the
  * ORDINARY flow with one step added and one step skipped:
  *
- *   challenging  home → map → colony → formation → WHO → the match
- *   invited      the invitation bar → colony → formation → the match
+ *   challenging  the Friends list → formation → colony → the match
+ *   invited      the invitation bar → formation → colony → the match
  *
- * The guest does not pick the ground. The person who sends the challenge picks it, and the
- * bar tells the guest which one it is — there is no negotiating a position between two
- * people who are not both looking at a screen, and asking the guest to choose one too
- * would mean one of the two answers was thrown away.
+ * THE "WHO" STEP IS GONE and this file is what is left of it. It was a screen at the end
+ * of the flow — a list of your friends with a Challenge button on each — because the way
+ * in was a button on home that said only "a friend". The challenge starts ON the friend
+ * now (`ui/friends.ts`), which is the same list with the same button, in the one place
+ * that already knew who these people are: a screen asking "which friend?" after you have
+ * pressed a friend is a question already answered.
  *
  * Everything here is DOM and nothing here decides anything: `App` owns the flow, this file
  * owns what it looks like, and `platform/duels.ts` owns what a challenge IS.
  */
 import { MAPS } from "../engine";
 import { compact } from "../platform";
-import type { DuelInvite, Friend, ProfileStore } from "../platform";
-import { antPortrait, el, screenEl, screenHeader } from "./chrome";
+import type { DuelInvite } from "../platform";
+import { antPortrait, el } from "./chrome";
 import { icon } from "./icons";
-
-export interface DuelPickOptions {
-  profile: ProfileStore;
-  onBack: () => void;
-  /** The friend to play. The match starts from here. */
-  onPick: (friend: Friend) => void;
-  /** No friends yet: the screen offers the way to get some rather than a dead end. */
-  onFindFriends: () => void;
-}
-
-/**
- * WHO TO PLAY — the last step of setting a challenge up.
- *
- * A list of the player's own friends and nothing else. There is deliberately no search
- * here: a challenge goes to somebody you have already added, and putting the directory on
- * this screen would make it a second Friends screen with a different button on it.
- */
-export function buildDuelPick(opts: DuelPickOptions): HTMLElement {
-  const root = screenEl("duelpick");
-  screenHeader(root, {
-    title: "Who to play",
-    sub: "Challenge a friend to this match",
-    onBack: opts.onBack,
-    backId: "duelBack",
-  });
-
-  const body = el("div", "screenbody");
-  const friends = opts.profile.get().friends;
-
-  if (friends.length === 0) {
-    // A dead end with an explanation is still a dead end: the empty state carries the way
-    // out of it, which is the same rule the Friends screen's own empty tabs follow.
-    const empty = el("div", "duelempty");
-    empty.append(
-      el("div", "duelemptyh", "No friends yet"),
-      el("div", "duelemptyp", "A challenge goes to somebody on your list. Find a colony and add them first."),
-    );
-    const go = el("button", "cta", "Find colonies");
-    go.onclick = opts.onFindFriends;
-    empty.appendChild(go);
-    body.appendChild(empty);
-  } else {
-    for (const friend of friends) body.appendChild(friendRow(friend, () => opts.onPick(friend)));
-  }
-
-  root.appendChild(body);
-  return root;
-}
-
-function friendRow(friend: Friend, onPick: () => void): HTMLElement {
-  const row = el("button", "duelrow");
-  row.dataset.friend = friend.id;
-  const face = el("div", "duelface");
-  face.appendChild(antPortrait(friend.species, 72));
-  const mid = el("div", "duelmid");
-  mid.append(
-    el("div", "duelname", friend.name),
-    el("div", "duelsub", `${compact(friend.colony)} troops`),
-  );
-  row.append(face, mid, el("span", "duelgo", "Challenge"));
-  row.onclick = onPick;
-  return row;
-}
 
 export interface InviteBarOptions {
   invite: DuelInvite;

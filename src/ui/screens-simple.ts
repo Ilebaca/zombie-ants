@@ -36,6 +36,14 @@ export const MENU_ENTRIES: readonly MenuEntry[] = [
 
 export function buildMenu(
   onPick: (id: string) => void, onDismiss: () => void, unreadNews = 0,
+  /**
+   * Invitations waiting on an answer.
+   *
+   * It rode a floating button on home while a challenge started there; a challenge starts
+   * on the FRIEND now, so the count belongs on the way to the list — and the drawer is the
+   * only route to it. A badge nowhere is a feature nobody can tell has anything in it.
+   */
+  waitingDuels = 0,
 ): HTMLElement {
   const wrap = el("div", "menuwrap");
   wrap.id = "menuPop";
@@ -50,6 +58,9 @@ export function buildMenu(
     // app ever says a post has landed.
     if (entry.id === "news" && unreadNews > 0) {
       item.appendChild(el("span", "menudot", String(unreadNews)));
+    }
+    if (entry.id === "friends" && waitingDuels > 0) {
+      item.appendChild(el("span", "menudot", String(waitingDuels)));
     }
     item.onclick = () => onPick(entry.id);
     draw.appendChild(item);

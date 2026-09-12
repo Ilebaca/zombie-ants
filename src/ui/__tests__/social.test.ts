@@ -162,18 +162,42 @@ describe("the friends screen", () => {
     expect(root.querySelector(".frhint")?.textContent).toMatch(/nothing waiting/i);
   });
 
-  /** Removing asks twice, the way Settings' reset does: a stray tap in a list is easy. */
-  it("asks twice before removing a friend", () => {
+  /**
+   * Removing asks, the way Settings' reset does: a stray tap in a list is easy. It asks IN
+   * THE ROW — the question replaces the two marks it is about — and it can be answered no,
+   * which the old "tap the same button twice" version had no way to do.
+   */
+  it("asks before removing a friend, and takes no for an answer", () => {
     const s = store();
     const person = s.get().friendsIn[0] as Person;
     s.acceptFriend(person.id);
     const { root } = build(s);
-    const btn = root.querySelector<HTMLElement>(`.frrow[data-person="${person.id}"] .frghost`);
-    click(btn);
+    const row = (): HTMLElement | null =>
+      root.querySelector<HTMLElement>(`.frrow[data-person="${person.id}"]`);
+    click(row()?.querySelector(".frdrop"));
     expect(s.get().friends.length, "removed on the first tap").toBe(1);
-    expect(btn?.textContent).toMatch(/sure/i);
-    click(root.querySelector(`.frrow[data-person="${person.id}"] .frghost`));
+    expect(row()?.textContent).toMatch(/remove\?/i);
+
+    click(row()?.querySelector(".frkeep"));
+    expect(s.get().friends.length, "saying no removed them anyway").toBe(1);
+    expect(row()?.querySelector(".frfight"), "the row did not come back").toBeTruthy();
+
+    click(row()?.querySelector(".frdrop"));
+    click(row()?.querySelector(".frdrop.armed"));
     expect(s.get().friends.length).toBe(0);
+  });
+
+  /** The other half of the row: the crossed swords are what start a challenge. */
+  it("offers a challenge on every friend", () => {
+    const s = store();
+    const person = s.get().friendsIn[0] as Person;
+    s.acceptFriend(person.id);
+    let challenged = "";
+    const root = buildFriends(s, new LocalFriendService(), () => {},
+      (f) => { challenged = f.name; });
+    document.body.replaceChildren(root);
+    click(root.querySelector(`.frrow[data-person="${person.id}"] .frfight`));
+    expect(challenged, "the swords did not challenge anybody").toBe(person.name);
   });
 });
 

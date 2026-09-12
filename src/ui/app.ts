@@ -46,7 +46,7 @@ import { buildSupport } from "./support";
 import { buildSettings } from "./settings";
 import { buildRules } from "./rules";
 import { buildSetup, rollAISpecies, rollShape } from "./setup";
-import { buildDuelPick, inviteBar } from "./duel";
+import { inviteBar } from "./duel";
 import { ReplayScreen, buildHistory } from "./history";
 import { canReplay } from "../platform";
 import { LocalAccounts } from "../platform";
@@ -74,7 +74,7 @@ import "./skin.css";   // the look, layered over the structure
  * its rules select by id, so these names are load-bearing.
  */
 type ScreenId =
-  | "home" | "formation" | "duelpick" | "history"
+  | "home" | "formation" | "history"
   | "anthill" | "antarium" | "antup" | "achievements" | "quests" | "profile"
   | "challenges" | "daily" | "rules" | "settings" | "news" | "friends" | "support"
   | "luckyhatch" | "leaderboard" | "shop" | "traits" | "inventory" | "keepsafe";
@@ -185,12 +185,19 @@ export class App {
   /**
    * WHAT KIND OF MATCH THE SETUP FLOW IS SETTING UP.
    *
-   * `null` is the ordinary one, which ends in a search for a stranger. A duel ends
-   * somewhere else — either at the friend picker (you are the one challenging) or straight
-   * at the board with the person who invited you — so the flow has to know before it
-   * reaches the end of itself, and only the shell can know.
+   * `null` is the ordinary one, which ends in a search for a stranger. A duel ends at the
+   * board with ONE named person — the friend whose row you pressed the swords on, or the
+   * one who invited you — so the flow has to know before it reaches the end of itself, and
+   * only the shell can know.
+   *
+   * The WHO used to be a screen of its own at the end of the flow, because the way in was
+   * a button on home that said only "a friend". It is chosen before the flow starts now
+   * (the Friends list is that screen), so a challenge always carries its opponent.
    */
-  private duel: { host: true } | { host: false; invite: DuelInvite } | null = null;
+  private duel:
+    | { host: true; seat: Friend }
+    | { host: false; invite: DuelInvite }
+    | null = null;
 
   /**
    * The seed the two players share for a duel.
@@ -756,6 +763,7 @@ export class App {
       (id) => { this.closeMenu(); this.show(id as ScreenId); },
       () => this.closeMenu(),
       this.profile.unread(),
+      this.profile.duels.length,
     );
     this.host.appendChild(this.menu);
     this.menu.classList.remove("hidden");
@@ -807,14 +815,6 @@ export class App {
         }));
       }
       return screen;
-    }
-    if (id === "duelpick") {
-      return buildDuelPick({
-        profile: this.profile,
-        onBack: () => this.show("formation"),
-        onPick: (friend) => this.playDuel(friend),
-        onFindFriends: () => this.show("friends"),
-      });
     }
     if (id === "anthill") {
       return buildAnthill(this.profile, { onTraits: () => this.openTraits("hill", "anthill") });
@@ -897,7 +897,10 @@ export class App {
     }
     if (id === "news") return buildNews(this.profile, () => this.show("home"));
     if (id === "friends") {
-      return buildFriends(this.profile, this.friends, () => this.show("home"));
+      return buildFriends(
+        this.profile, this.friends, () => this.show("home"),
+        (friend) => this.challengeFriend(friend),
+      );
     }
     if (id === "support") {
       return buildSupport(this.profile, this.support, () => this.show("home"));
@@ -1013,21 +1016,15 @@ export class App {
     settings.appendChild(icon("menu", 19));
     settings.onclick = () => this.openMenu();
 
-    const duels = el("button", "duelfab");
-    duels.title = "Challenge a friend";
-    duels.setAttribute("aria-label", "Challenge a friend");
-    duels.append(icon("friends", 17), el("small", undefined, "Friends"));
-    // The badge is the whole receiving half of the feature: nothing else on the home
-    // screen can say that somebody is waiting for an answer.
-    const waiting = this.profile.duels.length;
-    if (waiting > 0) duels.appendChild(el("i", "fabdot", String(waiting)));
-    duels.onclick = () => this.openDuels();
-
+    // A CHALLENGE STARTS ON THE FRIEND, not on a button that says "a friend". This used
+    // to be a third floating button here, and the count of invitations waiting rode it —
+    // that count is on the drawer's Friends entry now (`openMenu`), which is the route to
+    // the list the challenge is started from.
     const daily = el("button", "dailyfab");
     daily.title = "Daily challenges";
     daily.append(icon("calendar", 17), el("small", undefined, "Daily"));
     daily.onclick = () => this.show("daily");
-    root.append(settings, daily, duels);
+    root.append(settings, daily);
 
     // THE ARTWORK IS THE TITLE SCREEN, and it carries no title. The name and the tagline
     // used to sit here, over the picture; what is left is the one action the screen exists
@@ -1222,7 +1219,7 @@ export class App {
         this.challenge = null;
         // A duel does not go looking for a stranger. Hosting one asks WHO next; accepting
         // one already knows, and goes straight to the board with them.
-        if (this.duel?.host === true) { this.show("duelpick"); return; }
+        if (this.duel?.host === true) { this.playDuel(this.duel.seat); return; }
         if (this.duel) { this.playDuel(this.duel.invite.from); return; }
         this.findOpponent();
       },
@@ -1341,15 +1338,15 @@ export class App {
    * choice — the ground is already picked. A second button for "invitations" would be a
    * screen that is empty almost every time it is opened.
    */
-  private openDuels(): void {
-    this.duel = { host: true };
+  private challengeFriend(seat: Friend): void {
+    this.duel = { host: true, seat };
     this.show("formation");
   }
 
   /**
    * THE SETUP SCREEN IS TWO FLOWS AND THE WAY IN DECIDES WHICH, so the way in has to SAY
-   * so. `openDuels` marks the screen as a challenge and nothing unmarked it: backing out
-   * to home and pressing PLAY landed on "who do you want to play?" instead of a search —
+   * so. `challengeFriend` marks the screen as a challenge and nothing unmarked it: backing
+   * out to home and pressing PLAY started a match against whoever was seated last —
    * the ordinary flow silently still being the one before it.
    */
   private playOrdinary(): void {
@@ -1693,7 +1690,6 @@ export class App {
 function syncFabs(home: HTMLElement): void {
   const daily = home.querySelector<HTMLElement>(".dailyfab");
   const settings = home.querySelector<HTMLElement>(".settingsfab");
-  const duels = home.querySelector<HTMLElement>(".duelfab");
   const head = home.querySelector<HTMLElement>(".tophead");
   if (!daily || !settings) return;
   const box = daily.getBoundingClientRect();
@@ -1703,11 +1699,10 @@ function syncFabs(home: HTMLElement): void {
   settings.style.height = `${box.height}px`;
   const top = home.getBoundingClientRect().top;
   const y = head ? head.getBoundingClientRect().bottom - top + 10 : 84;
-  // Measured and stacked rather than given percentages in the stylesheet, so a third
-  // button is a third step down the same column and not a fourth guess at a percentage.
+  // Measured and stacked rather than given percentages in the stylesheet, so another
+  // button is another step down the same column and not a third guess at a percentage.
   settings.style.top = `${y}px`;
   daily.style.top = `${y + (box.height + 10)}px`;
-  if (duels) duels.style.top = `${y + (box.height + 10) * 2}px`;
 }
 
 /**
