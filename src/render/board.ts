@@ -79,12 +79,12 @@ export function seedMotes(reduced: boolean): Mote[] {
  */
 export function drawBackground(
   ctx: CanvasRenderingContext2D, layout: Layout, motes: Mote[], startedAt: number,
-  reserve: readonly Rect[] = [],
+  reserve: readonly Rect[] = [], ground?: string | null,
 ): void {
   // The ground and everything growing on it, baked once and blitted (terrain.ts). The
   // reserved boxes are where the nameplates are written: scenery baked under one reads as
   // clutter over the text, so those props are dropped and no others.
-  drawTerrain(ctx, layout, reserve);
+  drawTerrain(ctx, layout, reserve, { ground });
 
   const w = layout.width, h = layout.height;
   const t = (performance.now() - startedAt) / 1000;

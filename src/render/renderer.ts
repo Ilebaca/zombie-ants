@@ -38,6 +38,15 @@ export interface RendererOptions {
   plates?: Partial<Record<Player, Plate>>;
   /** How a colony size is written. Passed in: the renderer reads no progression code. */
   colonySize?: (n: number) => string;
+  /**
+   * THE GROUND THIS MATCH IS PLAYED ON: a url, or nothing for the ground the game draws.
+   *
+   * A url rather than a region or a chapter, because which picture belongs to which
+   * stretch of the road is a progression decision and `render/` may not read one (§3).
+   * It arrives late — an image decodes asynchronously — and until it does the drawn
+   * ground is what is on screen, so a match never waits on a file.
+   */
+  ground?: string | null;
 }
 
 export class BoardRenderer {
@@ -340,7 +349,8 @@ export class BoardRenderer {
       // The scenery is baked around the names as well as around the board: a fern grown
       // where a name is written reads as clutter over the text. Measured here rather than
       // guessed, so only the props that actually overlap are dropped.
-      drawBackground(ctx, this.layout, this.motes, this.startedAt, this.plateBoxes(ctx));
+      drawBackground(ctx, this.layout, this.motes, this.startedAt, this.plateBoxes(ctx),
+        this.opts.ground);
       // UNDER the tiles: a colony's nest sits ON the end of its line, which is what makes
       // the five tiles in the corner read as connected to something past the clearing.
       this.drawSupplyLines(ctx, now, descent);

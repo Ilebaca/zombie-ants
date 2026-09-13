@@ -64,19 +64,79 @@ export function terrainBleed(layout: Layout): number {
  * under one reads as clutter over the text. ONLY what actually overlaps goes: the boxes are
  * the measured rows and nothing wider, so the ring around the tiles keeps its density.
  */
+export interface TerrainOptions {
+  /** The region's painted ground, as a url. Absent means the ground the game draws. */
+  ground?: string | null;
+  /**
+   * Whether to mark the cells. True everywhere in the game; the export tool
+   * (`tools/mapshot.ts`) turns it off because a REGION PICTURE is the ground WITHOUT the
+   * board's markings — the chequer is drawn over it at the tile size of the screen it is
+   * played on, and squares baked into a picture would line up on exactly one phone.
+   */
+  grid?: boolean;
+}
+
 export function drawTerrain(
   ctx: CanvasRenderingContext2D, layout: Layout, reserve: readonly Rect[] = [],
+  opts: TerrainOptions = {},
 ): void {
   // No DOM (a node test, a worker) means no offscreen canvas to bake into. Draw nothing
   // rather than throwing: the scenery is decoration, and everything that matters is drawn
   // by the passes after this one.
   if (typeof document === "undefined") return;
   const bleed = terrainBleed(layout);
-  const key = `${sceneKey(layout)}:${bleed}:${reserveKey(reserve)}`;
-  if (!cache || cache.key !== key) cache = bake(layout, key, bleed, reserve);
+  // A PAINTED GROUND ARRIVES LATE, so the key carries whether it is HERE rather than
+  // whether it was asked for: the first frames of a match bake the drawn ground, the
+  // picture lands, the key changes and the plate is baked again with it. Without that the
+  // first bake would be kept for the whole match and the artwork would never appear.
+  const grid = opts.grid !== false;
+  const art = opts.ground ? groundArt(opts.ground) : null;
+  const key = `${sceneKey(layout)}:${bleed}:${reserveKey(reserve)}:${art ? opts.ground : ""}:${grid}`;
+  if (!cache || cache.key !== key) cache = bake(layout, key, bleed, reserve, art, grid);
   // Blitted 1:1 and hung off the top-left corner, so the overhang falls outside the canvas
   // and is simply clipped away until the camera pulls back far enough to want it.
   if (cache) ctx.drawImage(cache.canvas, -bleed, -bleed);
+}
+
+/**
+ * THE REGION'S PICTURE, ONCE IT HAS LANDED.
+ *
+ * Every draw is synchronous and an image is not, so this answers null until the file is
+ * decoded and the same element for ever after. A load that FAILS is remembered as failed
+ * and never asked for again — a picture retried every frame is a request per frame, and
+ * the drawn ground is a perfectly good board to play on.
+ */
+const loaded = new Map<string, HTMLImageElement | "failed">();
+
+function groundArt(src: string): HTMLImageElement | null {
+  const held = loaded.get(src);
+  if (held) return held === "failed" ? null : (held.complete ? held : null);
+  if (typeof Image === "undefined") return null;
+  const img = new Image();
+  img.onerror = (): void => { loaded.set(src, "failed"); };
+  img.src = src;
+  loaded.set(src, img);
+  return null;
+}
+
+/** Forget what has been loaded — tests only. */
+export function resetGroundArt(): void { loaded.clear(); }
+
+/**
+ * Where a picture lands when it has to COVER the plate.
+ *
+ * Cover, never fit: a letterboxed background would draw the plate's own bare colour down
+ * two edges, which is the hard rectangle the bleed exists to avoid. Centred, because the
+ * clearing sits in the middle of the plate and the middle of the picture is what an
+ * artist will have put the interesting part in.
+ */
+export function groundCover(
+  pw: number, ph: number, iw: number, ih: number,
+): { x: number; y: number; w: number; h: number } {
+  if (iw <= 0 || ih <= 0) return { x: 0, y: 0, w: pw, h: ph };
+  const scale = Math.max(pw / iw, ph / ih);
+  const w = iw * scale, h = ih * scale;
+  return { x: (pw - w) / 2, y: (ph - h) / 2, w, h };
 }
 
 /** Throw the cached scenery away — used by tests and on a species recolour. */
@@ -89,6 +149,7 @@ const reserveKey = (reserve: readonly Rect[]): string =>
 
 function bake(
   layout: Layout, key: string, bleed: number, reserve: readonly Rect[],
+  art: HTMLImageElement | null, grid: boolean,
 ): Cached | null {
   const w = Math.max(1, Math.round(layout.width));
   const h = Math.max(1, Math.round(layout.height));
@@ -101,16 +162,36 @@ function bake(
   // Everything below is written in CANVAS coordinates — the same ones the board is drawn
   // in — so the overhang is just negative space off the top and left of them.
   ctx.translate(bleed, bleed);
-  paintGround(ctx, layout, w, h, bleed);
-  paintScenery(ctx, layout, w, h, bleed, reserve);
+  if (art) {
+    // A PAINTED REGION REPLACES THE SOIL AND EVERYTHING GROWING ON IT. A picture already
+    // has its own rocks and ferns, and drawing ours over them is two forests at once.
+    paintArt(ctx, art, w, h, bleed);
+  } else {
+    paintGround(ctx, layout, w, h, bleed);
+    paintScenery(ctx, layout, w, h, bleed, reserve);
+  }
+  // THE CHEQUER IS NOT PART OF THE PICTURE. It marks where the cells are, so it is drawn
+  // over whatever ground is underneath — a painted board with the squares baked into it
+  // would be a grid that no longer lines up the moment the tile size changes.
+  if (grid) paintChequer(ctx, layout);
   return { canvas, key };
 }
 
+/** The region's own ground, covering the plate, overhang included. */
+function paintArt(
+  ctx: CanvasRenderingContext2D, art: HTMLImageElement, w: number, h: number, bleed: number,
+): void {
+  const W = w + bleed * 2, H = h + bleed * 2;
+  const at = groundCover(W, H, art.naturalWidth || art.width, art.naturalHeight || art.height);
+  ctx.drawImage(art, at.x - bleed, at.y - bleed, at.w, at.h);
+}
+
 /**
- * The soil, everywhere, with the grid's checkerboard laid over the middle of it.
+ * The soil, everywhere, and the cleared patch the board sits in.
  *
- * The checker squares fade toward the edge of the grid so the playfield has no border —
- * it simply stops being chequered and carries on being ground.
+ * This is the ground the game DRAWS, which is what a region with no picture of its own
+ * wears. The chequer is a pass of its own (`paintChequer`) because it marks the cells
+ * rather than the ground, and it goes over a painted region too.
  */
 function paintGround(
   ctx: CanvasRenderingContext2D, layout: Layout, w: number, h: number, bleed: number,
@@ -147,7 +228,16 @@ function paintGround(
   ctx.fillStyle = clear;
   ctx.fillRect(bx - bw * 0.4, by - bh * 0.4, bw * 1.8, bh * 1.8);
 
-  // The chequer, fading out toward the rim of the grid so there is no hard border.
+}
+
+/**
+ * The chequer, fading out toward the rim of the grid so there is no hard border.
+ *
+ * Its own pass, because it belongs to the BOARD rather than to the ground: a painted
+ * region replaces the soil under it and still needs its cells marked.
+ */
+function paintChequer(ctx: CanvasRenderingContext2D, layout: Layout): void {
+  const n = layout.size, ts = layout.ts;
   for (let r = 0; r < n; r++) {
     for (let c = 0; c < n; c++) {
       if ((r + c) % 2 === 0) continue;

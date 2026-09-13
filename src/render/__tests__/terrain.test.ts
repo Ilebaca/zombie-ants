@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { Layout } from "../layout";
-import { plateFor, scatter, terrainBleed } from "../terrain";
+import { groundCover, plateFor, scatter, terrainBleed } from "../terrain";
 import type { Rect } from "../terrain";
 
 /** A phone-shaped board, laid out the way `measure` lays one out. */
@@ -136,5 +136,53 @@ describe("scenery around the names", () => {
     expect(props(layout, [])).toEqual(
       scatter(layout, plateFor(layout), 0xfe271d, 18, SIZE).map((p) => ({ x: p.x, y: p.y })),
     );
+  });
+});
+/**
+ * A REGION'S PAINTED GROUND (ui/regions.ts) has to cover the plate, and the plate is a
+ * different shape on every phone. Cover, never fit: a letterboxed background draws the
+ * plate's own bare colour down two edges, which is the hard rectangle the bleed exists to
+ * avoid in the first place.
+ */
+describe("a painted ground covering the plate", () => {
+  const shapes: ReadonlyArray<readonly [number, number, number, number]> = [
+    [1000, 1400, 1000, 1400],   // exactly the same shape
+    [1000, 1400, 2000, 1000],   // a wide picture on a tall plate
+    [1400, 1000, 900, 1900],    // a tall picture on a wide plate
+    [812, 1000, 2678, 3158],    // the placeholder, on a small plate
+  ];
+
+  it("never leaves a gap, whatever shape the picture is", () => {
+    for (const [pw, ph, iw, ih] of shapes) {
+      const at = groundCover(pw, ph, iw, ih);
+      expect(at.w, `${iw}x${ih} is narrower than the plate`).toBeGreaterThanOrEqual(pw - 0.001);
+      expect(at.h, `${iw}x${ih} is shorter than the plate`).toBeGreaterThanOrEqual(ph - 0.001);
+      expect(at.x).toBeLessThanOrEqual(0.001);
+      expect(at.y).toBeLessThanOrEqual(0.001);
+    }
+  });
+
+  /** And it keeps the picture's own shape: a stretched background reads as a mistake. */
+  it("does not stretch", () => {
+    for (const [pw, ph, iw, ih] of shapes) {
+      const at = groundCover(pw, ph, iw, ih);
+      expect(at.w / at.h).toBeCloseTo(iw / ih, 5);
+    }
+  });
+
+  /**
+   * CENTRED, because the clearing sits in the middle of the plate — so whatever an artist
+   * put in the middle of the picture is what ends up under the board.
+   */
+  it("centres the overflow", () => {
+    const at = groundCover(1000, 1400, 2000, 1000);
+    expect(at.x + at.w / 2).toBeCloseTo(500, 5);
+    expect(at.y + at.h / 2).toBeCloseTo(700, 5);
+  });
+
+  /** A picture that has not decoded reports 0x0, and must not produce a NaN draw. */
+  it("survives a picture with no size", () => {
+    const at = groundCover(1000, 1400, 0, 0);
+    expect(at).toEqual({ x: 0, y: 0, w: 1000, h: 1400 });
   });
 });

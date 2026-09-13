@@ -111,6 +111,14 @@ export interface MatchOptions {
    * progression layer exists, and an opponent always fields the basic look anyway.
    */
   looks?: Partial<Record<Player, Look>>;
+  /**
+   * THE GROUND THIS MATCH IS PLAYED ON, as a url (`ui/regions.ts`).
+   *
+   * Handed in like the plates and the looks: this screen does not read the profile, so it
+   * does not know which chapter the colony is on and therefore which region it is
+   * fighting through. Absent means the ground the game draws.
+   */
+  ground?: string | null;
   /** Steps the meta walk already showed, so this half's counter carries on from it. */
   tourFrom?: number;
   /** The last step was finished or skipped: the tutorial is over for good. */
@@ -268,6 +276,7 @@ export class MatchScreen {
       },
       colonySize: compact,
       looks: opts.looks,
+      ground: opts.ground,
     });
   }
 

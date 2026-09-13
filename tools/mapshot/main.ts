@@ -9,6 +9,11 @@
  * It exports the WHOLE PLATE, overhang included. The scenery is baked bigger than the
  * canvas so the opening camera never sees its edge (render/terrain.ts), and that overhang
  * is real ground — cropping to the canvas would hand back less picture than the game has.
+ *
+ * And it leaves the CHEQUER OFF by default (`grid=1` puts it back). What this exports is a
+ * REGION PICTURE (`ui/regions.ts`): the ground, with the board's own markings drawn over it
+ * at the tile size of whatever screen it is played on. Squares baked into the picture would
+ * line up on exactly one phone.
  */
 import { MAPS } from "../../src/engine";
 import { Layout } from "../../src/render";
@@ -20,6 +25,7 @@ const num = (k: string, fallback: number): number => Number(q.get(k) ?? fallback
 const w = num("w", 1000);           // the match canvas, in CSS pixels
 const h = num("h", 1300);
 const scale = num("scale", 2);      // how many output pixels per CSS pixel
+const grid = q.get("grid") === "1";  // the cells marked, as the game draws them
 
 // A canvas the shape of the one the match draws into, measured exactly as the renderer
 // measures it — the board's size and origin are what decide where the clearing lands.
@@ -36,7 +42,7 @@ if (ctx) {
   // `drawTerrain` blits its plate at (-bleed, -bleed) of the current transform, so the
   // translate is what puts the overhang inside the picture instead of off the edge of it.
   ctx.setTransform(scale, 0, 0, scale, bleed * scale, bleed * scale);
-  drawTerrain(ctx, layout);
+  drawTerrain(ctx, layout, [], { grid });
 }
 
 // The driver waits on this rather than on a timeout: the bake is synchronous, but a page

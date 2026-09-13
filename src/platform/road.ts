@@ -154,6 +154,35 @@ export function stopReached(colony: number): number {
 }
 
 /**
+ * THE ROAD RUNS THROUGH TEN PLACES, five chapters each.
+ *
+ * A region is what the board LOOKS like — the ground a match is played on is painted per
+ * region rather than per chapter (`ui/regions.ts`), so climbing the road changes the world
+ * every five chapters instead of every one. Ten pictures is a set somebody can actually
+ * paint; fifty is not.
+ *
+ * It lives beside `chapterOf` for the same reason that does: it is a fact about the road,
+ * and the screen that draws the ground and anything that ever NAMES the place have to get
+ * the same answer. The width is derived, never written twice — `road.test.ts` holds that
+ * the ten of them cover the fifty chapters exactly.
+ */
+export const REGIONS = [
+  "Forest floor", "Desert", "Volcano", "Rainforest canopy", "Mangrove wetland",
+  "Savanna grassland", "Cave system", "Permafrost tundra", "Amber deposit", "Fungal bloom",
+] as const;
+
+/** How many chapters one region spans. */
+export const REGION_CHAPTERS = ROAD_CHAPTERS / REGIONS.length;
+
+/** Which region a chapter is played in, 1-based. Clamped, so a broken save still draws. */
+export const regionOf = (chapter: number): number =>
+  Math.min(REGIONS.length, Math.max(1, Math.ceil(Math.round(chapter) / REGION_CHAPTERS)));
+
+/** Its name, for anything that says where the player is. */
+export const regionName = (region: number): string =>
+  REGIONS[Math.min(REGIONS.length, Math.max(1, Math.round(region))) - 1] ?? REGIONS[0];
+
+/**
  * Which chapter of the road a colony this size is playing through.
  *
  * It lives here rather than beside the thing that first needed it (the opponent search):

@@ -1889,14 +1889,52 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
     if the script never runs.
   - **`backdropFor` takes the CHAPTER, not the colony.** Home already knows which chapter
     it is announcing; two places deriving that from the colony is two places to disagree.
-- **THE BOARD'S GROUND CAN BE EXPORTED** (`npx tsx tools/mapshot.ts [out] [w] [h] [scale]`).
+- **THE BOARD'S GROUND IS PAINTED PER REGION, five chapters at a time** (`ui/regions.ts`,
+  `REGIONS` in `platform/road.ts`). The ground a match is played on was DRAWN — soil, a
+  clearing, rocks and ferns (`render/terrain.ts`) — and it was the same forest floor on
+  chapter 1 and chapter 50. The road runs through ten places now: Forest floor, Desert,
+  Volcano, Rainforest canopy, Mangrove wetland, Savanna grassland, Cave system, Permafrost
+  tundra, Amber deposit, Fungal bloom.
+  - **TEN AND NOT FIFTY.** Ten is a set somebody can actually paint, and a world that
+    changed every chapter would change before the player had finished looking at it. Five
+    chapters is roughly a fortnight of play (§8c).
+  - **THE FOLDER IS THE TABLE**, the same rule the home artwork follows:
+    `src/ui/regions/rg03.webp` IS the Volcano's ground, resolved by a build-time glob. The
+    NUMBER is what is read, so `rg03-volcano.webp` works too and says what it is in the
+    folder listing. Every region without one wears `ground.webp` — the game's own drawn
+    ground, exported through the tool below — so the board looks exactly as it always has
+    until the art lands.
+  - **THE CHEQUER IS NOT PART OF THE PICTURE.** It marks the cells, so it is drawn OVER
+    whatever ground is underneath (`paintChequer`, its own pass since this landed): the
+    tile size depends on the screen, so squares baked into a picture would line up on
+    exactly one phone. That is also why the exported placeholder has none.
+  - **A PAINTED REGION REPLACES THE SOIL AND THE SCENERY BOTH.** A picture has its own
+    rocks and ferns; drawing ours over them is two forests at once.
+  - **IT ARRIVES LATE, and the plate's cache key says whether it is HERE rather than
+    whether it was asked for.** An image decodes asynchronously and every draw is
+    synchronous, so the first frames of a match bake the drawn ground; when the file lands
+    the key changes and the plate is baked again with it. Keyed on "asked for", the first
+    bake would be kept for the whole match and the artwork would never appear. A load that
+    FAILS is remembered as failed and never retried — a picture re-requested every frame is
+    a request per frame, and the drawn ground is a perfectly good board.
+  - **COVER, NEVER FIT** (`groundCover`). A letterboxed background draws the plate's own
+    bare colour down two edges, which is the hard rectangle the bleed exists to avoid.
+    Centred, because the clearing is in the middle of the plate.
+  - **What crosses into `render/` is a URL**, never a region or a chapter: which picture
+    belongs to which stretch of the road is a progression decision, and the renderer may
+    not read one (§3). `app.ts` reads the colony, asks `groundFor(chapterOf(colony))` and
+    hands the match a string.
+- **THE BOARD'S GROUND CAN BE EXPORTED** (`npx tsx tools/mapshot.ts [out] [w] [h] [scale] [grid]`).
   It drives a real Vite server and a real browser against `render/terrain.ts` itself, so
   the PNG cannot drift from the board, and it draws the ground and NOTHING else — no tiles,
   no colonies, no veins, no hive, no chrome. It hands back the WHOLE plate, overhang
   included: the scenery is baked past the canvas so the opening camera never sees its edge,
-  and cropping to the canvas would hand back less picture than the game has. A TOOL, not a
-  build step, excluded from typecheck and lint like `tools/icons.ts` because it imports
-  Playwright (§11).
+  and cropping to the canvas would hand back less picture than the game has. The file type
+  follows the extension — webp for anything that ships in the bundle, png for a picture
+  somebody is going to paint over — and the CHEQUER IS OFF unless `grid` is `1`, because
+  what this exports is a region picture. It is what made `src/ui/regions/ground.webp`. A
+  TOOL, not a build step, excluded from typecheck and lint like `tools/icons.ts` because it
+  imports Playwright (§11).
 - **THE PICTURE IS THE TITLE SCREEN, so it carries NO TITLE and NO WASH.** The wordmark
   and the tagline used to sit over it and the wash existed to give them ground; both are
   gone, and a tint over the whole artwork was darkening the thing it was there to protect.

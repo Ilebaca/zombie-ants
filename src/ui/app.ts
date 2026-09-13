@@ -45,6 +45,7 @@ import { buildFriends } from "./friends";
 import { buildSupport } from "./support";
 import { buildSettings } from "./settings";
 import { backdropFor } from "./backdrops";
+import { groundFor } from "./regions";
 import { buildRules } from "./rules";
 import { buildSetup, rollAISpecies, rollShape } from "./setup";
 import { inviteBar } from "./duel";
@@ -1554,6 +1555,10 @@ export class App {
       // look, so it reads as the species it is. It reaches the nest's shape on the board
       // and, through the palette above, every tile the colony holds.
       looks: { you: this.profile.lookFor(mySpecies) },
+      // THE GROUND IS THE REGION THE COLONY HAS CLIMBED TO (ui/regions.ts). Read here
+      // because the match screen does not know the profile exists — and read from the
+      // COLONY, so a match resumed after a chapter was gained is played on the new one.
+      ground: groundFor(chapterOf(me.colony)),
       // The same mods must drive combat, or Mandible/Cuticle research would show up in the
       // income readout but do nothing in a fight.
       ctx: { mods },
