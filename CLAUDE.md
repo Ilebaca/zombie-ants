@@ -739,6 +739,21 @@ one that survived.
   a change to how a nest is drawn reaches this screen on the same commit. FIT, not cover —
   the whole board, with a hair of soil around it (`padTiles`), because a canvas cropped to
   the last tile cuts the clearing's feathered edge off mid-fade.
+- **AND IT IS THE GROUND THE MATCH WILL BE PLAYED ON.** It wore the game's own DRAWN
+  forest floor on every chapter while the match itself is played on the region's painting
+  (§ THE BOARD'S GROUND IS PAINTED PER REGION) — so the picture a player picked a formation
+  on was a different place from the one they then played in. `drawSnapshot` takes an `art`
+  url and hands it to `drawTerrain`; the lookup (`groundFor(chapterOf(colony))`) is done in
+  the SCREEN, because which picture belongs to which stretch of the road is a progression
+  decision and `render/` may not read one (§3).
+  - **A STILL HAS TO BE REDRAWN WHEN THE PICTURE LANDS** (`groundReady`). The board redraws
+    every frame and simply picks the file up on whichever frame it arrives; a snapshot is
+    drawn ONCE, and the file always lands a beat after that one draw — so without a redraw
+    the screen keeps the drawn ground for ever. The redraw reads the choices LIVE, or a
+    picture arriving after the player has stepped on would put the previous formation back.
+  - **The manual's figures and the news pictures leave `art` unset on purpose.** They
+    illustrate a RULE, which is true on every ground there is; dressing one in a chapter's
+    artwork would say the rule belongs to that chapter.
 - **NO ENEMY ON IT.** Their corner is the one thing in the picture that is not the choice
   being made, and at this size a second colony reads as part of the formation.
 - **IT OPENS ON THE LAST PICK.** It used to reset to the first formation on every open —

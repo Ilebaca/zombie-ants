@@ -1,12 +1,30 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+/**
+ * The picture is drawn by the BOARD'S own code, so the only way to see what the screen
+ * asked for is to watch the call. Everything else in `../../render` passes straight
+ * through — the screen wants `setFactionColor`, `antHead` and `lookCol` for real.
+ */
+const shots: { art?: string | null; terrain?: boolean }[] = [];
+vi.mock("../../render", async (real) => {
+  const mod = await real<typeof import("../../render")>();
+  return {
+    ...mod,
+    drawSnapshot: (c: HTMLCanvasElement, s: never, o: { art?: string | null } = {}) => {
+      shots.push(o);
+      return mod.drawSnapshot(c, s, o);
+    },
+  };
+});
 import { MAPS, SPECIES, START_SHAPES } from "../../engine";
 import type { ShapeId, SpeciesId } from "../../engine";
 import { MemoryStore, ProfileStore, SPECIES_ORDER } from "../../platform";
 import { MAP_PAD_TILES, buildSetup, rollAISpecies, shapeName } from "../setup";
 import { App } from "../app";
-import { TOUR_VERSION } from "../../platform";
+import { TOUR_VERSION, chapterOf } from "../../platform";
+import { groundFor } from "../regions";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
 
@@ -274,4 +292,36 @@ describe("the last pick", () => {
     setup?.querySelector<HTMLButtonElement>("#setupGo")?.click();
     expect(setup?.querySelector(".picktext")?.textContent).toBe(SPECIES.carpenter.name);
   });
+});
+
+/**
+ * THE PICTURE IS THE GROUND THE MATCH WILL BE PLAYED ON.
+ *
+ * The board a player picks a formation on was the game's own drawn forest floor on every
+ * chapter, while the match itself is played on the region's painted ground (§ THE BOARD'S
+ * GROUND IS PAINTED PER REGION). They are choosing a formation FOR a place, so the picture
+ * has to be that place.
+ */
+describe("the ground under the setup board", () => {
+  it("is the region the player's chapter plays on", () => {
+    for (const colony of [40, 5_000, 5_000_000]) {
+      shots.length = 0;
+      const store = new ProfileStore(new MemoryStore());
+      store.update((p) => { p.colony = colony; });
+      buildSetup({
+        choices: { map: "small", species: "fire" as SpeciesId, shape: "wedge" as ShapeId },
+        profile: store, onBack: () => {}, onBegin: () => {},
+      });
+      const asked = shots[shots.length - 1];
+      expect(asked, "the board was never drawn").toBeTruthy();
+      expect(asked?.terrain, "the setup board lost its ground").toBe(true);
+      expect(asked?.art, "the setup board drew no region at all").toBeTruthy();
+      expect(asked?.art, `chapter ${chapterOf(colony)} drew the wrong ground`)
+        .toBe(groundFor(chapterOf(colony)));
+      // Today every unpainted region falls back to one placeholder, so an exact match
+      // between two chapters proves little — what this holds NOW is that the screen asks
+      // for a region at all, and it starts telling them apart the day a second is painted.
+    }
+  });
+
 });

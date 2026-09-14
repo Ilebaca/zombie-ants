@@ -23,9 +23,10 @@
  */
 import { SPECIES, START_SHAPES, createGame, razeTile } from "../engine";
 import type { MapId, ShapeId, SpeciesId } from "../engine";
-import { SPECIES_ORDER } from "../platform";
+import { SPECIES_ORDER, chapterOf } from "../platform";
 import type { ProfileStore } from "../platform";
-import { antHead, drawSnapshot, lookCol, setFactionColor } from "../render";
+import { groundFor } from "./regions";
+import { antHead, drawSnapshot, groundReady, lookCol, setFactionColor } from "../render";
 import { el, screenEl, screenHeader, setupSteps } from "./chrome";
 import { icon } from "./icons";
 
@@ -116,7 +117,19 @@ export function buildSetup(o: SetupOptions): HTMLElement {
     // The whole UI takes the colony's colours — the button, the chips, the board — so the
     // recolour has to happen before the picture is drawn, not after (§ skins).
     setFactionColor("you", o.choices.species, o.profile.lookFor(o.choices.species));
-    drawBoard(shot, o.choices.shape, o.choices.species);
+    // THE GROUND THE MATCH WILL BE PLAYED ON, not a generic one: the player is choosing a
+    // formation FOR a place, and the region is decided by the chapter they are standing on
+    // (§ THE BOARD'S GROUND IS PAINTED PER REGION). The lookup is done HERE because the
+    // renderer may not read the progression layer — what crosses is a url.
+    const art = groundFor(chapterOf(o.profile.get().colony));
+    drawBoard(shot, o.choices.shape, o.choices.species, art);
+    // A STILL IS DRAWN ONCE, and the picture is a file that lands a beat later — so
+    // without this the screen keeps the drawn ground for ever while the match it opens
+    // plays on the painting. The redraw reads the choices LIVE, or a picture arriving
+    // after the player has stepped on would put the previous formation back.
+    void groundReady(art).then(() => {
+      if (shot.isConnected) drawBoard(shot, o.choices.shape, o.choices.species, art);
+    });
   };
 
   const render = (): void => {
@@ -188,7 +201,9 @@ export const shapeName = (id: ShapeId): string => id.charAt(0).toUpperCase() + i
  * nest is drawn reaches this screen on the same commit. The ENEMY is razed off it: their
  * corner is the one thing in the picture that is not the choice being made.
  */
-function drawBoard(canvas: HTMLCanvasElement, shape: ShapeId, species: SpeciesId): void {
+function drawBoard(
+  canvas: HTMLCanvasElement, shape: ShapeId, species: SpeciesId, art: string,
+): void {
   const state = createGame({
     map: "small",
     species: { you: species, ai: species },
@@ -214,7 +229,7 @@ function drawBoard(canvas: HTMLCanvasElement, shape: ShapeId, species: SpeciesId
   const across = state.size + 2 * MAP_PAD_TILES;
   const room = Math.min(w - GUTTER_PX * 2, h - CHROME_PX, MAX_BOARD_PX);
   const tile = Math.max(12, Math.floor(room / across));
-  drawSnapshot(canvas, state, { tile, terrain: true, padTiles: MAP_PAD_TILES });
+  drawSnapshot(canvas, state, { tile, terrain: true, art, padTiles: MAP_PAD_TILES });
 }
 
 /** One of the two stepper buttons. A mark and a name, never a glyph (§10). */

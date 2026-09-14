@@ -113,15 +113,38 @@ export function drawTerrain(
  */
 const loaded = new Map<string, HTMLImageElement | "failed">();
 
-function groundArt(src: string): HTMLImageElement | null {
+function imageFor(src: string): HTMLImageElement | "failed" | null {
   const held = loaded.get(src);
-  if (held) return held === "failed" ? null : (held.complete ? held : null);
+  if (held) return held;
   if (typeof Image === "undefined") return null;
   const img = new Image();
   img.onerror = (): void => { loaded.set(src, "failed"); };
   img.src = src;
   loaded.set(src, img);
-  return null;
+  return img;
+}
+
+function groundArt(src: string): HTMLImageElement | null {
+  const held = imageFor(src);
+  return held && held !== "failed" && held.complete ? held : null;
+}
+
+/**
+ * WHEN THE REGION'S PICTURE HAS LANDED — or failed, which counts as landed.
+ *
+ * The BOARD does not need this: it redraws every frame, so it simply picks the picture up
+ * on whichever frame it arrives. A STILL is drawn once (`drawSnapshot`), so without this
+ * the setup screen would show the drawn ground for ever — the file always lands a beat
+ * after the one draw it had. The caller redraws; nothing here does, because a module that
+ * decides when a screen repaints is a module reaching into the screen.
+ */
+export function groundReady(src: string): Promise<void> {
+  const held = imageFor(src);
+  if (!held || held === "failed" || held.complete) return Promise.resolve();
+  return new Promise<void>((done) => {
+    held.addEventListener("load", () => done(), { once: true });
+    held.addEventListener("error", () => done(), { once: true });
+  });
 }
 
 /** Forget what has been loaded — tests only. */

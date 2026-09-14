@@ -9,4 +9,7 @@ export {
 export type { Look, HillStyle, SkinStyle } from "./art";
 export { COL, MAP, SPECIES_COL, hexA, loadColors, lookCol, ownerCol, setFactionColor } from "./palette";
 export { drawSnapshot } from "./snapshot";
+// A STILL has to be redrawn when the region's picture lands; the board, which redraws
+// every frame, does not (§ terrain.ts).
+export { groundReady } from "./terrain";
 export type { SnapshotOptions } from "./snapshot";

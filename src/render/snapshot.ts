@@ -50,6 +50,20 @@ export interface SnapshotOptions {
    */
   terrain?: boolean;
   /**
+   * THE REGION'S PICTURE, as a url — the same one the match plays on (`ui/regions.ts`).
+   *
+   * With `terrain`, this is what makes the setup screen's board the ground the player is
+   * about to play on rather than a generic forest floor: they are choosing a formation FOR
+   * a place, and the picture should be that place. A url rather than a chapter or a region,
+   * because which picture belongs to which stretch of the road is a progression decision
+   * and `render/` may not read one (§3) — the caller does the lookup.
+   *
+   * The manual's figures and the news pictures leave it unset on purpose. They illustrate a
+   * RULE, which is true on every ground there is, so dressing them in one chapter's
+   * artwork would say the rule belongs to that chapter.
+   */
+  art?: string | null;
+  /**
    * Extra soil around the board, in TILES.
    *
    * The clearing is a feathered radial (terrain.ts) and it needs room to reach nothing: a
@@ -140,8 +154,9 @@ export function drawSnapshot(
 
   if (opts.terrain) {
     // Exactly what the board paints under itself: soil, drift, the feathered clearing, the
-    // chequer, and the scenery baked around the playfield.
-    drawTerrain(ctx, layout);
+    // chequer, and the scenery baked around the playfield — or the region's own picture in
+    // place of all of it, which is what the real board does when one has landed.
+    drawTerrain(ctx, layout, [], { ground: opts.art });
   } else if (opts.ground) {
     // The same two coats the board itself gets: soil everywhere, then the cleared patch
     // lit over it with a feathered edge, so the playfield has no hard border.
