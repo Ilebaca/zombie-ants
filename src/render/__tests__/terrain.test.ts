@@ -7,7 +7,9 @@
  */
 import { describe, expect, it } from "vitest";
 import { Layout } from "../layout";
-import { groundCover, plateFor, scatter, terrainBleed, tileMark } from "../terrain";
+import { drawTerrain, groundCover, plateFor, resetTerrain, scatter, terrainBleed, tileMark }
+  from "../terrain";
+import { makeRecorder } from "./recorder";
 import type { Rect } from "../terrain";
 
 /** A phone-shaped board, laid out the way `measure` lays one out. */
@@ -224,5 +226,59 @@ describe("the tile indicators", () => {
   it("clamps", () => {
     expect(tileMark(true, 4).alpha).toBe(tileMark(true, 1).alpha);
     expect(tileMark(true, -2).alpha).toBe(tileMark(true, 0).alpha);
+  });
+});
+
+/**
+ * THE PLATE IS BAKED AT DEVICE RESOLUTION.
+ *
+ * The board's own context is scaled by `dpr`, so a plate baked one canvas pixel per CSS
+ * pixel is blown up two- or three-fold on the way in — every pixel of the ground averaged
+ * with its neighbours. That was invisible while the ground was DRAWN (soil and ferns are
+ * soft shapes anyway) and it is the whole picture once a region is PAINTED: reported as a
+ * blur on the map, after the tilt-shift that used to be blamed for it was removed.
+ */
+describe("the plate's resolution", () => {
+  /** Stub every offscreen canvas with a recorder, and hand back the ones that were baked. */
+  function bakeWith(dpr: number): { plate: HTMLCanvasElement; blit: unknown[] } {
+    const real = HTMLCanvasElement.prototype.getContext;
+    const made: HTMLCanvasElement[] = [];
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement) {
+      made.push(this);
+      return makeRecorder().ctx;
+    } as unknown as HTMLCanvasElement["getContext"];
+    try {
+      resetTerrain();
+      const layout = phone();
+      layout.dpr = dpr;
+      const target = makeRecorder();
+      drawTerrain(target.ctx, layout);
+      const plate = made[0];
+      expect(plate, "nothing was baked").toBeTruthy();
+      return { plate: plate as HTMLCanvasElement, blit: target.of("drawImage")[0]?.args ?? [] };
+    } finally {
+      HTMLCanvasElement.prototype.getContext = real;
+      resetTerrain();
+    }
+  }
+
+  it("gives the backing store one pixel per DEVICE pixel", () => {
+    const layout = phone();
+    const bleed = terrainBleed(layout);
+    const css = Math.round(layout.width) + bleed * 2;
+    expect(bakeWith(1).plate.width).toBe(css);
+    expect(bakeWith(2).plate.width).toBe(css * 2);
+  });
+
+  /** ...and it is still blitted at its CSS size, or the plate would land twice as wide. */
+  it("blits it back at its CSS size", () => {
+    const layout = phone();
+    const bleed = terrainBleed(layout);
+    const { blit } = bakeWith(2);
+    expect(blit.slice(1)).toEqual([
+      -bleed, -bleed,
+      Math.round(layout.width) + bleed * 2,
+      Math.round(layout.height) + bleed * 2,
+    ]);
   });
 });

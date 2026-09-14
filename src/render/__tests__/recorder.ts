@@ -29,7 +29,7 @@ const METHODS = [
   "save", "restore", "beginPath", "closePath", "moveTo", "lineTo", "arc", "arcTo", "ellipse",
   "rect", "fill", "stroke", "fillRect", "strokeRect", "clearRect", "clip", "fillText",
   "strokeText", "setLineDash", "quadraticCurveTo", "bezierCurveTo", "translate", "rotate",
-  "scale", "setTransform", "resetTransform",
+  "scale", "setTransform", "resetTransform", "drawImage",
 ] as const;
 
 export function makeRecorder(): Recorder {

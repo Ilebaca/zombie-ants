@@ -128,6 +128,10 @@ export function drawSnapshot(
   // just an ORIGIN — every tile is still drawn, and the ones outside land off the canvas,
   // which is what keeps a colony's edges (fillets, trails) correct at the crop.
   const layout = new Layout(state.size);
+  // The figure's own density, so the ground plate bakes at the resolution it will be drawn
+  // at rather than being blown up on the way in (§ terrain.ts). A figure left at 1 here is
+  // a soft picture on every phone.
+  layout.dpr = dpr;
   layout.ts = ts;
   layout.ox = pad - view.c * ts;
   layout.oy = pad - view.r * ts;

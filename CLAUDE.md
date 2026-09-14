@@ -1913,6 +1913,23 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
     bake would be kept for the whole match and the artwork would never appear. A load that
     FAILS is remembered as failed and never retried — a picture re-requested every frame is
     a request per frame, and the drawn ground is a perfectly good board.
+  - **THE PLATE BAKES AT DEVICE RESOLUTION, never at CSS size.** `Layout.measure` scales
+    the board's context by `dpr`, so a plate baked one canvas pixel per CSS pixel is blown
+    up two- or threefold on the way in: on this phone the 1696x2000 picture was squeezed
+    onto a 674x826 plate and then re-interpolated back to 1401x1652 on screen — half the
+    detail thrown away and guessed back. It was invisible for as long as the ground was
+    DRAWN, because soil and ferns are soft shapes with nothing to lose, and it is the whole
+    picture once a region is PAINTED. `bake` sets a `dpr` transform and the blit is given
+    the plate's CSS size, so it lands one real pixel per real pixel. It costs memory — a
+    plate is four times the pixels on a 2x screen — and that is one cached canvas.
+  - **And `drawSnapshot` hands its figures the same `dpr`.** A `Layout` built by hand
+    defaults to 1, so the setup board, the manual's figures and the news pictures were
+    baking their ground at half the resolution they are drawn at.
+  - **A FLAT ILLUSTRATION HIDES THIS, so do not measure it with one.** The detail in the
+    frame (mean laplacian over a ground-only band) was IDENTICAL to three decimals before
+    and after — the current forest floor is flat colour with a few hard-edged rocks, and
+    there is no high-frequency content for a resample to lose. The defect is real
+    regardless, and a painted or photographic region is where it would show.
   - **COVER, NEVER FIT** (`groundCover`). A letterboxed background draws the plate's own
     bare colour down two edges, which is the hard rectangle the bleed exists to avoid.
     Centred, because the clearing is in the middle of the plate.

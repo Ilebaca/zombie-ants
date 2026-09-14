@@ -33,13 +33,16 @@ const TAU = 6.283185307;
 /** A tiny deterministic generator — the engine's rng is off-limits to the renderer. */
 interface Cached {
   canvas: HTMLCanvasElement;
+  /** What the plate measures in CSS pixels — the backing store is `dpr` times this. */
+  w: number;
+  h: number;
   key: string;
 }
 let cache: Cached | null = null;
 
 /** Everything static about the scene, so the cache knows when to redraw. */
 const sceneKey = (layout: Layout): string =>
-  `${Math.round(layout.width)}x${Math.round(layout.height)}:${layout.size}:${layout.ts}:${layout.ox},${layout.oy}`;
+  `${Math.round(layout.width)}x${Math.round(layout.height)}:${layout.dpr}:${layout.size}:${layout.ts}:${layout.ox},${layout.oy}`;
 
 /**
  * How far past each edge of the canvas the ground is painted.
@@ -93,9 +96,11 @@ export function drawTerrain(
   const art = opts.ground ? groundArt(opts.ground) : null;
   const key = `${sceneKey(layout)}:${bleed}:${reserveKey(reserve)}:${art ? opts.ground : ""}:${grid}`;
   if (!cache || cache.key !== key) cache = bake(layout, key, bleed, reserve, art, grid);
-  // Blitted 1:1 and hung off the top-left corner, so the overhang falls outside the canvas
-  // and is simply clipped away until the camera pulls back far enough to want it.
-  if (cache) ctx.drawImage(cache.canvas, -bleed, -bleed);
+  // Hung off the top-left corner, so the overhang falls outside the canvas and is simply
+  // clipped away until the camera pulls back far enough to want it. The SIZE is given in
+  // CSS pixels: the plate's backing store is `dpr` times that (see `bake`), and the
+  // context it lands in is already scaled by `dpr`, so this is a 1:1 blit of real pixels.
+  if (cache) ctx.drawImage(cache.canvas, -bleed, -bleed, cache.w, cache.h);
 }
 
 /**
@@ -153,14 +158,22 @@ function bake(
 ): Cached | null {
   const w = Math.max(1, Math.round(layout.width));
   const h = Math.max(1, Math.round(layout.height));
+  // THE PLATE IS BAKED AT DEVICE RESOLUTION, never at CSS size. The board's own context is
+  // scaled by `dpr`, so a plate baked one canvas pixel per CSS pixel is blown up two- or
+  // three-fold on the way in — every pixel of the ground averaged with its neighbours.
+  // That was invisible while the ground was DRAWN, because soil and ferns are soft shapes
+  // anyway; a painted region is a photograph, and it came out soft over the whole board.
+  const dpr = Math.max(1, layout.dpr || 1);
   const canvas = document.createElement("canvas");
-  canvas.width = w + bleed * 2;
-  canvas.height = h + bleed * 2;
+  canvas.width = Math.round((w + bleed * 2) * dpr);
+  canvas.height = Math.round((h + bleed * 2) * dpr);
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
   // Everything below is written in CANVAS coordinates — the same ones the board is drawn
-  // in — so the overhang is just negative space off the top and left of them.
+  // in — so the overhang is just negative space off the top and left of them, and the
+  // scale is what puts those coordinates onto the denser backing store.
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.translate(bleed, bleed);
   if (art) {
     // A PAINTED REGION REPLACES THE SOIL AND EVERYTHING GROWING ON IT. A picture already
@@ -174,7 +187,7 @@ function bake(
   // over whatever ground is underneath — a painted board with the squares baked into it
   // would be a grid that no longer lines up the moment the tile size changes.
   if (grid) paintChequer(ctx, layout, art !== null);
-  return { canvas, key };
+  return { canvas, w: w + bleed * 2, h: h + bleed * 2, key };
 }
 
 /** The region's own ground, covering the plate, overhang included. */
@@ -183,6 +196,10 @@ function paintArt(
 ): void {
   const W = w + bleed * 2, H = h + bleed * 2;
   const at = groundCover(W, H, art.naturalWidth || art.width, art.naturalHeight || art.height);
+  // The picture is usually being scaled DOWN onto the plate, where averaging the dropped
+  // pixels rather than picking one is the whole difference between a photograph and a
+  // mosaic of it.
+  ctx.imageSmoothingQuality = "high";
   ctx.drawImage(art, at.x - bleed, at.y - bleed, at.w, at.h);
 }
 

@@ -179,6 +179,8 @@ export default defineConfig({
     environmentMatchGlobs: [
       ["src/ui/**", "jsdom"],
       ["src/render/__tests__/renderer.test.ts", "jsdom"],
+      // The ground plate bakes into an offscreen canvas, so its own tests need a document.
+      ["src/render/__tests__/terrain.test.ts", "jsdom"],
     ],
   },
 });
