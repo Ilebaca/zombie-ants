@@ -91,18 +91,38 @@ describe("the setup screen", () => {
     expect(root.querySelector(".screenh")?.textContent).toBe("Formation");
     expect(root.querySelector("#setupBoard"), "no board").toBeTruthy();
     expect(root.querySelector("#setupGo")?.textContent).toBe("Next");
+  });
+
+  /**
+   * IT OPENS ON THE LAST PICK. It used to reset to the first formation on every open, so a
+   * player with a favourite re-stepped to it before every single match. What it still has
+   * to do is refuse a choice the build no longer carries.
+   */
+  it("opens on the formation it was handed", () => {
+    const { root } = build();
+    expect(name(root)).toBe(shapeName("corner"));
+  });
+
+  it("falls back to the first formation when the saved one is gone", () => {
+    const choices = { map: "small" as const, species: "fire" as SpeciesId, shape: "ziggurat" as ShapeId };
+    const root = buildSetup({
+      choices, profile: new ProfileStore(new MemoryStore()),
+      onBack: () => {}, onBegin: () => {},
+    });
+    expect(choices.shape).toBe(Object.keys(START_SHAPES)[0]);
     expect(name(root)).toBe(shapeName(Object.keys(START_SHAPES)[0] as ShapeId));
   });
 
   it("steps through every formation with the arrows, both ways", () => {
     const { root, choices } = build();
     const shapes = Object.keys(START_SHAPES) as ShapeId[];
+    const from = choices.shape;
     const seen = new Set<string>();
     for (let i = 0; i < shapes.length; i++) { seen.add(choices.shape); press(root, "pickNext"); }
     expect(seen.size, "the arrows do not reach every formation").toBe(shapes.length);
-    expect(choices.shape, "a full loop did not come back round").toBe(shapes[0]);
+    expect(choices.shape, "a full loop did not come back round").toBe(from);
     press(root, "pickPrev");
-    expect(choices.shape).toBe(shapes[shapes.length - 1]);
+    expect(choices.shape).toBe(shapes[(shapes.indexOf(from) + shapes.length - 1) % shapes.length]);
   });
 
   // Next does not navigate: the same row starts naming colonies, and the button becomes
@@ -225,5 +245,33 @@ describe("the way in", () => {
     const label = host.querySelector(".playbtn")?.textContent ?? "";
     expect(label).toContain("PLAY");
     expect(label).toContain(`${MAPS.small.size}\u00d7${MAPS.small.size}`);
+  });
+});
+
+/**
+ * THE PICKER REMEMBERS. The choice is written to the save when a match starts, and the
+ * shell reads it back into the setup's choices — so the whole round trip is save → App →
+ * screen, and the screen's own reset was what defeated it for as long as it existed.
+ */
+describe("the last pick", () => {
+  it("is what the setup opens on next time", () => {
+    const store = new ProfileStore(new MemoryStore());
+    store.update((p) => {
+      p.tourSeen = TOUR_VERSION;
+      p.lastSpecies = "carpenter";
+      p.lastShape = "zigzag";
+    });
+    const host = document.createElement("div");
+    host.id = "app";
+    document.body.replaceChildren(host);
+    new App(host, store).start();
+    host.querySelector<HTMLButtonElement>(".playbtn")?.click();
+
+    const setup = host.querySelector<HTMLElement>("#formation");
+    expect(setup, "the setup screen did not open").toBeTruthy();
+    expect(setup?.querySelector(".picktext")?.textContent).toBe(shapeName("zigzag"));
+    // ...and the colony step opens on the colony last fielded.
+    setup?.querySelector<HTMLButtonElement>("#setupGo")?.click();
+    expect(setup?.querySelector(".picktext")?.textContent).toBe(SPECIES.carpenter.name);
   });
 });

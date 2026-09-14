@@ -618,40 +618,19 @@ Each of these cost a debugging round. Do not repeat them.
   reachable from a queen falling, a surrender and a challenge objective — and `destroy()`
   cancels the pending card, so a screen torn down mid-wash never hands one out.
 
-- **THE BOARD IS PHOTOGRAPHED, NOT DIAGRAMMED** (`render/depth.ts`). A tilt-shift: a band
-  across the middle is sharp and the forest above and below it goes soft, tilted a few
-  degrees so the plane of focus is not the screen's own edge. Like the opening camera and
-  the winning flood it is a VIEW — it draws over the finished frame and touches neither the
-  board nor the layout, so a tap still lands on the cell under the finger.
-  - **THE SHARP BAND IS THE BOARD, never a fraction of the screen.** A board fills very
-    different amounts of a phone and a tablet, so a fixed "middle third" would blur half
-    the playfield on one and none of the scenery on the other. It is measured off
-    `layout`'s own rectangle — which is also what keeps a garrison count legible, and those
-    numbers are what a player counts out before committing (§4.1). A board that fills the
-    canvas comes out entirely sharp, which is the right picture and not a special case.
-  - **THE BLUR IS A DOWNSCALE, NOT `ctx.filter`.** The filter reached Safari only in 17, so
-    on an older iPhone the effect would silently not happen; and a full-canvas gaussian
-    every frame is the most expensive thing that could be put on it. Drawing the frame into
-    a canvas a ninth the size and blowing it back up IS a blur — the browser's own filter,
-    in hardware, over 1.2% of the pixels — and it works everywhere. `imageSmoothingQuality`
-    is "high" going DOWN, because averaging the dropped pixels rather than picking one is
-    the difference between a blur and a mosaic, and "low" coming back up, where there is no
-    detail left for a better filter to preserve and the draw is the expensive one.
-  - **AND IT READS THE SCREEN, rather than a copy of it.** The first version drew the whole
-    frame into an offscreen canvas and blitted it back, and that DOUBLED the frame:
-    **16.7 ms without, 39.1 ms with**, measured on the largest board of the day (13×13). There was never a need
-    for the copy — the finished frame is already on the canvas, so the small canvas takes
-    its pixels. With that and painting back only the two bands that are actually soft
-    (`softBands`), the sharp middle is never touched and the cost is **back inside the
-    frame**: 16.7 ms either way, p95 17.4 against 18.1.
-  - **The tilt is a ROTATION of the mask, not a projected gradient.** The gradient stays a
-    plain vertical one in its own rotated frame, so its stops are exact rather than
-    something to reason about a projection of — and the fill is oversized, because a
-    rotated rect leaves the corners of an upright canvas uncovered and an uncovered corner
-    is a hard square of perfectly sharp forest. The bands painted back are widened by how
-    far the rotation carries the boundary, or the slanted edge is clipped square.
-  - **No canvas means no depth of field, never a broken frame** — the same rule the scenery
-    bake follows, and it is why every test in the suite runs without it (jsdom has none).
+- **THE BOARD IS DRAWN SHARP, AND THE DEPTH OF FIELD IS GONE** (`render/depth.ts`, deleted).
+  It was a tilt-shift: a band across the middle sharp, the forest above and below it soft,
+  tilted a few degrees. It was cheap — it read the finished frame rather than a copy of it
+  and painted back only the two soft bands, so the frame cost 16.7 ms either way — and it
+  was a VIEW like the opening camera and the winning flood, touching neither the board nor
+  the layout. It is gone because the ground under the board is a PAINTED REGION now, and
+  blurring the top and bottom of somebody's artwork is the renderer throwing the picture
+  away. Reported as "remove blur effect we have". Written down rather than left as a hole,
+  because it is the kind of thing that gets rediscovered as missing: if it ever comes back,
+  its sharp band has to be measured off `layout`'s own rectangle rather than a fraction of
+  the screen (a board fills very different amounts of a phone and a tablet), and the blur
+  has to be a DOWNSCALE rather than `ctx.filter`, which reached Safari only in 17.
+
 - **A destroyed tile has to outlive the engine.** The rules clear it the instant it dies, so
   without the `crumble` effect a venom hit that eats a four-tile trail leaves no trace at
   all — the biggest thing that can happen on a turn, invisible. The effect draws over ground
@@ -762,6 +741,12 @@ one that survived.
   the last tile cuts the clearing's feathered edge off mid-fade.
 - **NO ENEMY ON IT.** Their corner is the one thing in the picture that is not the choice
   being made, and at this size a second colony reads as part of the formation.
+- **IT OPENS ON THE LAST PICK.** It used to reset to the first formation on every open —
+  "a fresh choice each time, exactly as the legacy build opens" — so a player with a
+  favourite re-stepped to it before every single match, twelve formations round. The choice
+  already lived on the save (`lastShape`/`lastSpecies`, written when a match starts) and the
+  shell already read it back; the SCREEN was what threw it away. All it does now is refuse a
+  formation the build no longer carries, which is the same rule the colony step follows.
 - **An arrow may not step onto something the screen will then REFUSE.** The grid of cards
   it replaced showed locked colonies so the goal was visible and turned them down with a
   toast; a stepper that lands on one is a dead end with nothing to say. It walks what the

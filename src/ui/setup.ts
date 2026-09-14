@@ -82,9 +82,11 @@ export function buildSetup(o: SetupOptions): HTMLElement {
   // dead end, so the row walks what they own; the Antarium is where the rest are seen.
   const owned = SPECIES_ORDER.filter((id) => o.profile.isUnlocked(id));
   if (!owned.includes(o.choices.species)) o.choices.species = owned[0] as SpeciesId;
-  // A fresh choice each time, exactly as the legacy build opens: the picker is not a
-  // memory of the last match.
-  o.choices.shape = SHAPE_IDS[0] as ShapeId;
+  // THE PICKER OPENS ON THE LAST PICK. It used to reset to the first formation every time,
+  // which meant a player with a favourite re-stepped to it before every single match. The
+  // choice is carried on the profile (`lastShape`/`lastSpecies`, written when a match
+  // starts), so all this screen does is refuse one the build no longer has.
+  if (!SHAPE_IDS.includes(o.choices.shape)) o.choices.shape = SHAPE_IDS[0] as ShapeId;
 
   const head = el("div", "setuptop");
   root.appendChild(head);
