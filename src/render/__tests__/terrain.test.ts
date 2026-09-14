@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { Layout } from "../layout";
-import { groundCover, plateFor, scatter, terrainBleed } from "../terrain";
+import { groundCover, plateFor, scatter, terrainBleed, tileMark } from "../terrain";
 import type { Rect } from "../terrain";
 
 /** A phone-shaped board, laid out the way `measure` lays one out. */
@@ -184,5 +184,45 @@ describe("a painted ground covering the plate", () => {
   it("survives a picture with no size", () => {
     const at = groundCover(1000, 1400, 0, 0);
     expect(at).toEqual({ x: 0, y: 0, w: 1000, h: 1400 });
+  });
+});
+
+/**
+ * THE TILE INDICATORS ARE A LAYER, NOT PART OF THE GROUND (`tileMark`).
+ *
+ * They mark where the cells are, so they go over whatever is underneath — the drawn floor
+ * or a painted region (`ui/regions.ts`). The colour cannot be the floor's own: `groundA`
+ * is light against the soil it was picked for and DARK against a bright painted map,
+ * which would put muddy patches where light tiles should be.
+ */
+describe("the tile indicators", () => {
+  it("lightens a painted ground rather than tinting it with the soil's colour", () => {
+    expect(tileMark(true, 0).fill).toBe("#ffffff");
+    expect(tileMark(false, 0).fill).not.toBe("#ffffff");
+  });
+
+  /**
+   * And FAR fainter, because white is a much stronger mark than brown on brown. Measured
+   * on the board: a marked cell differs from an unmarked one by about five levels out of
+   * 255 either way. Anything like the soil's own alpha is a whitewash.
+   */
+  it("is much fainter over a picture than over the drawn floor", () => {
+    expect(tileMark(true, 0).alpha).toBeLessThan(tileMark(false, 0).alpha / 4);
+    expect(tileMark(true, 0).alpha).toBeGreaterThan(0.01);
+  });
+
+  /** The rim fades either way, or the playfield gets a hard border. */
+  it("fades toward the edge of the grid, by the same proportion on both", () => {
+    for (const light of [true, false]) {
+      const mid = tileMark(light, 0).alpha, rim = tileMark(light, 1).alpha;
+      expect(rim).toBeLessThan(mid);
+      expect(rim / mid).toBeCloseTo(0.58, 2);
+    }
+  });
+
+  /** A cell outside the grid cannot ask for more than the middle's strength. */
+  it("clamps", () => {
+    expect(tileMark(true, 4).alpha).toBe(tileMark(true, 1).alpha);
+    expect(tileMark(true, -2).alpha).toBe(tileMark(true, 0).alpha);
   });
 });

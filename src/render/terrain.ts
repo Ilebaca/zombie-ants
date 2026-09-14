@@ -173,7 +173,7 @@ function bake(
   // THE CHEQUER IS NOT PART OF THE PICTURE. It marks where the cells are, so it is drawn
   // over whatever ground is underneath — a painted board with the squares baked into it
   // would be a grid that no longer lines up the moment the tile size changes.
-  if (grid) paintChequer(ctx, layout);
+  if (grid) paintChequer(ctx, layout, art !== null);
   return { canvas, key };
 }
 
@@ -231,21 +231,49 @@ function paintGround(
 }
 
 /**
- * The chequer, fading out toward the rim of the grid so there is no hard border.
+ * THE TILE INDICATORS: a chequer of light cells, fading out toward the rim of the grid so
+ * the playfield has no hard border.
  *
- * Its own pass, because it belongs to the BOARD rather than to the ground: a painted
- * region replaces the soil under it and still needs its cells marked.
+ * Its own layer, over whatever ground is underneath. That matters most for a PAINTED
+ * region (`ui/regions.ts`), which replaces the soil and still has to say where the cells
+ * are — and it is why the colour is not one of the ground's own.
+ *
+ * OVER A PICTURE IT IS WHITE, because a tint is only "light" against the shade it was
+ * chosen for: `MAP.groundA` is the drawn floor's lighter soil, and the same fill over a
+ * bright painted map is a DARKER square — muddy brown patches where light tiles should
+ * be. White lightens any ground there will ever be.
+ *
+ * AND MUCH FAINTER, because white is a far stronger mark than brown-on-brown. Measured on
+ * the drawn board, a marked cell differs from an unmarked one by about five levels out of
+ * 255; `ART_TILE` is set so a marked cell over the artwork lands in the same place. Louder
+ * than that and the board reads as a chessboard somebody has painted a picture behind.
  */
-function paintChequer(ctx: CanvasRenderingContext2D, layout: Layout): void {
+const ART_TILE = 0.055;
+const SOIL_TILE = 0.46;
+
+/**
+ * What a marked cell is painted with, `edge` being how far out it sits (0 middle, 1 rim).
+ *
+ * Pulled out of the drawing so the rule can be tested: there is no canvas in a node test
+ * and the plate bakes into one of its own, so this is the only part of the layer anything
+ * else can see.
+ */
+export function tileMark(light: boolean, edge: number): { fill: string; alpha: number } {
+  const peak = light ? ART_TILE : SOIL_TILE;
+  const at = Math.min(1, Math.max(0, edge));
+  return { fill: light ? "#ffffff" : MAP.groundA, alpha: peak * (1 - at * 0.42) };
+}
+
+function paintChequer(ctx: CanvasRenderingContext2D, layout: Layout, light: boolean): void {
   const n = layout.size, ts = layout.ts;
   for (let r = 0; r < n; r++) {
     for (let c = 0; c < n; c++) {
       if ((r + c) % 2 === 0) continue;
       const dc = Math.abs(c - (n - 1) / 2) / ((n - 1) / 2 || 1);
       const dr = Math.abs(r - (n - 1) / 2) / ((n - 1) / 2 || 1);
-      const edge = Math.max(dc, dr);
-      ctx.globalAlpha = 0.46 * (1 - edge * 0.42);
-      ctx.fillStyle = MAP.groundA;
+      const mark = tileMark(light, Math.max(dc, dr));
+      ctx.globalAlpha = mark.alpha;
+      ctx.fillStyle = mark.fill;
       ctx.fillRect(layout.x0(c), layout.y0(r), ts, ts);
     }
   }

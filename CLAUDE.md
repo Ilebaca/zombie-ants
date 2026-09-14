@@ -1904,10 +1904,21 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
     folder listing. Every region without one wears `ground.webp` — the game's own drawn
     ground, exported through the tool below — so the board looks exactly as it always has
     until the art lands.
-  - **THE CHEQUER IS NOT PART OF THE PICTURE.** It marks the cells, so it is drawn OVER
-    whatever ground is underneath (`paintChequer`, its own pass since this landed): the
-    tile size depends on the screen, so squares baked into a picture would line up on
-    exactly one phone. That is also why the exported placeholder has none.
+  - **THE TILE INDICATORS ARE NOT PART OF THE PICTURE.** They mark the cells, so they are
+    a LAYER over whatever ground is underneath (`paintChequer`, `tileMark`): the tile size
+    depends on the screen, so squares baked into a picture would line up on exactly one
+    phone. That is also why the exported placeholder has none.
+    - **OVER A PICTURE THEY ARE WHITE, and that is not a detail.** The drawn floor's mark
+      is `MAP.groundA` — light against the soil it was picked for and DARK against a
+      bright painted map, so the same fill over the artwork puts muddy brown patches where
+      light tiles should be. White lightens any ground there will ever be.
+    - **AND MUCH FAINTER** (`ART_TILE`, 0.055 against the soil's 0.46), because white is a
+      far stronger mark than brown on brown. Measured on the board either way, a marked
+      cell differs from an unmarked one by about **five levels out of 255** — louder than
+      that and the board reads as a chessboard with a picture behind it.
+    - `tileMark` is pulled out of the drawing so the rule has a test: the plate bakes into
+      a canvas of its own and a node test has no canvas at all, so that function is the
+      only part of this layer anything else can see.
   - **A PAINTED REGION REPLACES THE SOIL AND THE SCENERY BOTH.** A picture has its own
     rocks and ferns; drawing ours over them is two forests at once.
   - **IT ARRIVES LATE, and the plate's cache key says whether it is HERE rather than
@@ -1920,6 +1931,12 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
   - **COVER, NEVER FIT** (`groundCover`). A letterboxed background draws the plate's own
     bare colour down two edges, which is the hard rectangle the bleed exists to avoid.
     Centred, because the clearing is in the middle of the plate.
+  - **THE MIDDLE TWO THIRDS IS WHAT A PLAYER SEES.** The plate is sized off the height the
+    opening camera STARTS at (`terrainBleed`, 1/`INTRO_FROM`), so it runs about half as far
+    again as the canvas in every direction — and the picture covers the plate. Everything
+    outside that middle is only ever seen during the descent. Worth saying to whoever
+    paints one: scenery composed around the edges of the file lands off screen for the
+    whole match.
   - **What crosses into `render/` is a URL**, never a region or a chapter: which picture
     belongs to which stretch of the road is a progression decision, and the renderer may
     not read one (§3). `app.ts` reads the colony, asks `groundFor(chapterOf(colony))` and
