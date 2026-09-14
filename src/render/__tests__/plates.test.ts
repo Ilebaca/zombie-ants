@@ -1,10 +1,11 @@
 /**
  * WHO IS PLAYING, on the forest floor.
  *
- * What matters here is WHERE it lands, because that is the whole point of the change: a
- * name centred on the screen points at the middle of the board, and each of these names is
- * about one corner of it. The enemy's base is top-right and the player's is bottom-left, so
- * each row is lined up with the tiles at its own end and sits clear of the board.
+ * What matters here is WHERE it lands. Each row sits on the same side of the board as the
+ * base it names — the enemy over the top edge, the player under the bottom one — and both
+ * are CENTRED on the board, so they line up with each other and the board reads as two
+ * players facing off across it. They were pushed out to opposite corners once, which on a
+ * wide screen read as two labels flung to the ends of it rather than as a pair.
  */
 import { describe, expect, it } from "vitest";
 import { Layout } from "../layout";
@@ -69,21 +70,37 @@ describe("names on the ground", () => {
   });
 
   /**
-   * LINED UP WITH THE TILES, not with the screen. Centred, each row would point at the
-   * middle of the board rather than at the corner it is about.
+   * CENTRED ON THE BOARD, never on the canvas. The board is what the row is about, and on
+   * a screen wider than the playfield a canvas-centred row would drift off its end.
    */
-  it("aligns each row to the board edge its base is on", () => {
+  it("centres each row on the board", () => {
     const at = texts({ you, ai });
-    const left = 55, right = 55 + 40 * 7;
-    // The player's row starts at the board's left edge (its head is drawn first, so the
-    // name sits a little in from it) and stays well left of the middle.
+    const left = 55, board = 40 * 7, mid = left + board / 2;
+    // Each row runs head, name, figure — so its own middle is halfway between where the
+    // head starts and where the figure ends, and that has to land on the board's middle.
+    for (const [name, troops] of [["Milan", "1.3M"], ["Formica42", "1.1M"]] as const) {
+      const n = at.find((t) => t.s === name);
+      const f = at.filter((t) => t.s === troops).pop();
+      expect(n, `no row for ${name}`).toBeTruthy();
+      // The head is drawn before the name, one icon plus a gap wide (icon = font * 1.5,
+      // gap = font * 0.5, font = 40 * 0.34 = 13.6), so the row starts there.
+      const font = Math.max(11, Math.min(15, 40 * 0.34));
+      const start = (n?.x ?? 0) - font * 1.5 - font * 0.5;
+      const end = (f?.x ?? 0) + font * 2; // the figure's own width, roughly
+      expect(Math.abs((start + end) / 2 - mid), `${name} is not centred on the board`)
+        .toBeLessThan(font * 1.5);
+    }
+  });
+
+  /** ...and the two rows line up with EACH OTHER, which is the point of centring them. */
+  it("lines the two rows up with one another", () => {
+    const at = texts({ you, ai });
     const mine = at.find((t) => t.s === "Milan");
-    expect(mine?.x).toBeGreaterThanOrEqual(left);
-    expect(mine?.x).toBeLessThan(left + 80);
-    // The enemy's row ENDS at the board's right edge, so its last word finishes there.
-    const troops = at.filter((t) => t.s === "1.1M").pop();
-    expect(troops?.x).toBeGreaterThan(right - 80);
-    expect(troops?.x).toBeLessThan(right);
+    const theirs = at.find((t) => t.s === "Formica42");
+    // Not the same x — the names are different lengths — but their MIDDLES agree, and
+    // the old corner layout put them a whole board apart.
+    expect(Math.abs((mine?.x ?? 0) - (theirs?.x ?? 0)), "the rows are flung apart")
+      .toBeLessThan(40 * 7 / 2);
   });
 
   it("draws only the side it was given", () => {

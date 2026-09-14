@@ -1093,10 +1093,13 @@ name, and its size.
   row — and the canvas had to be given its own box, because `BoardRenderer` measures the
   canvas's PARENT and would otherwise lay the board straight over them. On the soil there
   is nothing to measure, nothing to swallow a tap, and no band eating the playfield.
-- **Each row is aligned to its OWN base**, not to the screen: the player's nest is in the
-  bottom-left corner so their name sits under the board's LEFT edge, and the enemy's is
-  top-right so theirs sits over the RIGHT edge. Centred, both would point at the middle of
-  the board rather than at the corner they are about.
+- **Each row sits on the side of the board its base is on**, and both are CENTRED on the
+  board. They were pushed out to the corner each base stands in — the player's to the left,
+  the enemy's to the right — on the argument that a label belongs to the corner it is
+  about. On a 9x9 board that reads as two labels flung to opposite ends of a wide screen
+  rather than as a pair, and which side is which is already said by the half of the board
+  the row is on. Centred on the BOARD, never on the canvas: on a screen wider than the
+  playfield a canvas-centred row drifts off its end.
 - **It goes under the finale.** Drawn before `drawFlood`, and faded with the outlines, or a
   name left standing would be the one thing the winner's colour did not reach.
 - **The scenery is baked around the names too.** A fern or a fallen log grown where a name

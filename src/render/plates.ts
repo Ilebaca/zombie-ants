@@ -11,10 +11,13 @@
  * already has a header, a turn bar and an action row; a name sitting on the soil beside a
  * nest belongs to the nest. No plate, no panel, no background — a mark and two words.
  *
- * Each side is aligned to its OWN base: the player's nest is in the bottom-left corner, so
- * their name sits under the board's left edge; the enemy's is top-right, so theirs sits
- * over the board's right edge. Lined up with the tiles, not with the screen — the label is
- * about that corner of the board, and centring it would point at the middle instead.
+ * Both rows are CENTRED on the board: the enemy over its top edge, the player under its
+ * bottom one. They used to be pushed out to the corner each base stands in — the player's
+ * to the left, the enemy's to the right — on the argument that a label belongs to the
+ * corner it is about. On a 9x9 board that reads as two labels flung to opposite ends of a
+ * wide screen rather than as a pair, and which side is which is already said by the half
+ * of the board the row sits on. Centred they line up with each other, and the board reads
+ * as two players facing off across it.
  *
  * `rowsOf` is the geometry on its own, because the scenery needs it too: a fern or a fallen
  * log baked where the name goes reads as clutter over the text, so `terrain.ts` keeps those
@@ -73,12 +76,13 @@ export function rowsOf(
     const nameW = ctx.measureText(plate.name).width;
     const w = icon + gap + nameW + gap + ctx.measureText(troops).width;
     // The enemy's nest is at the top of the board and the player's at the bottom, so each
-    // row sits on the same side of the board as the base it names — and is aligned to that
-    // base's own edge rather than to the middle of the screen.
+    // row sits on the same side of the board as the base it names.
     const y = who === "ai"
       ? layout.oy - ts * GAP - icon
       : layout.oy + board + ts * GAP;
-    const x = who === "ai" ? layout.ox + board - w : layout.ox;
+    // Centred on the BOARD, never on the canvas: the board is what the row is about, and
+    // on a screen wider than the playfield the two would otherwise drift off its ends.
+    const x = layout.ox + (board - w) / 2;
     rows.push({ who, plate, troops, font, icon, gap, nameW, x, y, w, h: icon });
   }
   ctx.restore();
