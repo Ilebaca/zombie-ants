@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Zombie Ants · GDD v1.0</title>
+<title>Zombie Ants · GDD v3.1</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: Georgia, serif; background: #faf9f7; color: #1a1a1a; font-size: 15px; line-height: 1.7; padding: 0 0 80px; }
@@ -134,7 +134,7 @@ table tbody tr:hover { background: #f5f1ea; }
   <div class="hero">
     <div class="tagline">Two colonies. One Hive. Spread, surround, consume.</div>
     <h1>Zombie Ants</h1>
-    <p>Game Design Document v3.0 · Milan Kujundzic · <span id="ts"></span></p>
+    <p>Game Design Document v3.1 · Milan Kujundzic · <span id="ts"></span></p>
   </div>
   <div class="page">
     <div class="eyebrow">Concept</div>
@@ -168,7 +168,7 @@ table tbody tr:hover { background: #f5f1ea; }
     <h2>Current build status</h2>
     <p><strong>TypeScript, built with Vite, and layered.</strong> The original single-file HTML build still exists as the visual and behavioural reference, but the shipping game is a strictly layered source tree: a <strong>pure engine</strong> (no DOM, no canvas, no clock, and no randomness beyond one seeded generator carried on the board), an <strong>AI</strong> that consumes only the engine, a <strong>canvas renderer</strong> driven by engine <em>events</em>, the <strong>screens</strong>, and a <strong>platform</strong> layer owning storage and purchases. The dependency direction is one-way and enforced by lint rules, not by memory — an import across a boundary fails the build.</p>
 
-    <p>Playable end to end: the full match loop, 9 species with abilities, 3 maps, the Hive, wild garrisons, the anthill, the granary, per-species research, equippable traits, the lucky hatch, the Colony Road, daily quests, challenges, the shop, matchmaking, duels, match replays, a guided tour, and a searching AI opponent that runs in a Web Worker. Over a thousand tests gate every deploy.</p>
+    <p>Playable end to end: the full match loop, 9 species with abilities, one board, the Hive, wild garrisons, the anthill, the granary, per-species research, equippable traits, the lucky hatch, the Colony Road, daily quests, challenges, the shop, matchmaking, duels, match replays, a guided tour, and a searching AI opponent that runs in a Web Worker. Over thirteen hundred tests gate every deploy.</p>
     <div class="flag">This document describes the game <strong>as built</strong>. Every number below is taken from the live build, not from intent.</div>
   </div>
 </div>
@@ -189,6 +189,10 @@ table tbody tr:hover { background: #f5f1ea; }
       <li><strong>Production.</strong> Every connected producing tile adds soldiers.</li>
       <li><strong>Your action.</strong> Move/Attack, Rally, or Travel — plus an optional ability.</li>
     </ol>
+
+    <h2>Who moves first is a coin</h2>
+    <p>Moving first is worth <strong>roughly two to one</strong> (see the AI section), and for the whole life of the game the player had it in every single match. Against a bot that is a habit; between two people it is the match decided before either of them touches the board. It is a coin flip now, and it is <strong>derived from the match seed</strong> rather than drawn from the board's own random stream &mdash; that stream is what ability scatter consumes, so taking one number out of it here would shift every later draw and every match already recorded, suspended or replayable would come back a different game. The record <em>carries</em> the result rather than re-deriving it, so a future retune of the flip cannot change a match already played.</p>
+    <p><strong>Three things opt out, and they are the same thing: a scenario is not an opponent.</strong> The tutorial's first instruction is a move, so a board where the enemy opens asks for something the player cannot do. A challenge is a fixed position judged against an objective, so a coin would quietly make the same challenge a different difficulty on different days. And the measurement tools cancel the first-move advantage by swapping <em>sides</em> between games, which only works while the side that opens is the same one every time.</p>
 
     <h2>The three actions</h2>
     <div class="tw"><table>
@@ -218,7 +222,7 @@ table tbody tr:hover { background: #f5f1ea; }
     <ul>
       <li><strong>Queen fall (primary).</strong> Capture the enemy nest tile and you win immediately — no matter how many tiles they still hold. Losing your own nest loses you the match the same way.</li>
       <li><strong>Wipe.</strong> A colony reduced to zero tiles is eliminated.</li>
-      <li><strong>No turn limit.</strong> A match runs until a queen falls. The per-map turn figures (32 / 45 / 80) are how long a match is <em>expected</em> to last — they pace the Hive and the AI's reading of income — but reaching one does not end anything. Awarding the win to the larger colony when the clock ran out decided matches nobody had won.</li>
+      <li><strong>No turn limit.</strong> A match runs until a queen falls. The turn figure (45) is how long a match is <em>expected</em> to last — it paces the Hive and the AI's reading of income — but reaching one does not end anything. Awarding the win to the larger colony when the clock ran out decided matches nobody had won.</li>
       <li><strong>Surrender.</strong> Available from the match HUD.</li>
     </ul>
 
@@ -307,7 +311,7 @@ table tbody tr:hover { background: #f5f1ea; }
         <tr><td>Nest</td><td>+6</td></tr>
         <tr><td>Stable</td><td>+1</td></tr>
         <tr><td>Stable on a resource</td><td>+2</td></tr>
-        <tr><td>Wild garrison</td><td>+1</td></tr>
+        <tr><td>Wild garrison</td><td>+2 on open ground, <strong>+5 on a resource</strong></td></tr>
         <tr><td>Vein</td><td><strong>0 — no defence at all</strong></td></tr>
         <tr><td>Hive queen / guards</td><td>0 — they defend purely with their garrison</td></tr>
       </tbody>
@@ -388,7 +392,7 @@ table tbody tr:hover { background: #f5f1ea; }
       <li><strong>Dormant.</strong> From turn 1 until the map's awaken turn. Defended <strong>1.5×</strong> harder than when awake — tough, but never impossible for an early all-in.</li>
       <li><strong>Awake.</strong> The queen becomes the obvious prize. The hive <em>spreads a dividing wall</em> across the board, reshaping lanes as the match goes long.</li>
       <li><strong>Captured (surge).</strong> Only the <strong>queen</strong> — the middle tile — grants the surge; beating a guard simply takes that tile. Capturing her hands the capturing colony all 5 tiles as stables, with the troops standing on them, for the buff duration.</li>
-      <li><strong>Cooling.</strong> When the surge ends the tiles revert to bare ground and the queen is <strong>gone for 4 turns</strong>. There is nothing there to fight and nothing to capture — walking onto the middle tile during this window claims ordinary ground and grants no surge. Anything left standing on the five tiles, at the lapse or during the wait, is <em>absorbed</em>: it comes back as part of the next garrison instead of being destroyed.</li>
+      <li><strong>Cooling.</strong> When the surge ends the tiles revert to bare ground and the queen is <strong>gone for 4 turns</strong> — a turn longer for every hive level above the first, for the same reason the surge is. There is nothing there to fight and nothing to capture — walking onto the middle tile during this window claims ordinary ground and grants no surge. Anything left standing on the five tiles, at the lapse or during the wait, is <em>absorbed</em>: it comes back as part of the next garrison instead of being destroyed.</li>
       <li><strong>Respawn.</strong> She grows back neutral and <strong>one level stronger</strong>, plus whatever the hive absorbed.</li>
     </ol>
 
@@ -402,7 +406,7 @@ table tbody tr:hover { background: #f5f1ea; }
       <tbody>
         <tr><td>Production multiplier</td><td>× (hive level + 1) — ×2 on the first capture, ×3 on the second, and so on</td></tr>
         <tr><td>Combat surge</td><td>+50% attack <em>and</em> defence for the whole colony</td></tr>
-        <tr><td>Duration</td><td>3 / 4 / 5 turns by map size</td></tr>
+        <tr><td>Duration</td><td>4 turns, and a turn longer for every hive level above the first</td></tr>
         <tr><td>Territory</td><td>All 5 hive tiles held as your stables during the surge</td></tr>
       </tbody>
     </table></div>
@@ -484,7 +488,7 @@ table tbody tr:hover { background: #f5f1ea; }
 
     <h2>In-match HUD</h2>
     <ul>
-      <li><strong>Who is playing is written on the ground</strong>, not in a header: each colony's own head, its name and its size, drawn on the forest floor beside the nest it belongs to — the player's under the board's left edge, the opponent's over the right. The header used to count two armies and call them "You" and "Enemy", which is a scoreboard rather than an opponent, and the colony — the number the whole game is played for — was never once in front of the player while they played for it.</li>
+      <li><strong>Who is playing is written on the ground</strong>, not in a header: each colony's own head, its name and its size, drawn on the forest floor on the same side of the board as the nest it belongs to — the opponent's over the top edge, the player's under the bottom one, both centred so the pair reads as two players facing off across the board. The header used to count two armies and call them "You" and "Enemy", which is a scoreboard rather than an opponent, and the colony — the number the whole game is played for — was never once in front of the player while they played for it.</li>
       <li><strong>Turn banner:</strong> whose turn, the turn number, and the Hive's countdown or state.</li>
       <li><strong>Action bar:</strong> Move/Attack · Rally · Ability (naming it, with its ready state and cooldown) · End turn.</li>
       <li><strong>Surrender</strong> below the action bar.</li>
@@ -718,9 +722,9 @@ table tbody tr:hover { background: #f5f1ea; }
       <thead><tr><th>Colony size</th><th>A win pays</th></tr></thead>
       <tbody>
         <tr><td>40 (a new colony)</td><td>~20%, at least +8</td></tr>
-        <tr><td>1,000</td><td>~9%</td></tr>
-        <tr><td>100,000</td><td>~5%</td></tr>
-        <tr><td>5,000,000</td><td>~3%</td></tr>
+        <tr><td>1,000</td><td>~7%</td></tr>
+        <tr><td>100,000</td><td>~2.5%</td></tr>
+        <tr><td>5,000,000</td><td>~1%</td></tr>
       </tbody>
     </table></div>
     <p>A loss costs <strong>36% of what a win there pays</strong>, so an even record still gains about a third of a win every match. The colony never falls below its starting 40.</p>
@@ -906,6 +910,10 @@ table tbody tr:hover { background: #f5f1ea; }
     <p>The avatar used to open the quest screen, so the one place a player goes to look at <em>themselves</em> showed a to-do list, while every number the game kept about their career sat in the save and on no screen at all. Who, then what has happened, then what has been collected — the last is a list of doors (colonies, chambers, research, traits, each a count with a bar and a way in), so another thing to collect is another row.</p>
     <p>The career is counted from what a match actually <em>did</em>: turns, clock, Hive queens taken, and whether a win was a nest capture. One tested function credits the quest and the career total off one count, because a quest that credits a capture the profile does not is two numbers disagreeing on screen.</p>
 
+    <h2>A match survives the app being closed</h2>
+    <p>A phone call, a low battery, a swipe away &mdash; and twenty minutes of play was gone, with the colony unpaid for it. That was the worst thing the game could do to somebody, and it did it silently. It is nearly free, and only because the engine is pure and seeded: a match in progress is the same twenty bytes a finished one is remembered as &mdash; the setup and the moves &mdash; and replaying them hands the exact board back. <strong>No board is ever stored</strong>, so nothing here can go stale against a balance change.</p>
+    <p>What else it carries is what the <em>screen</em> counted rather than what the board can say: the wall clock the result card reports, how many queens have fallen (the surge lapses, so the position no longer knows), who is across the board, which challenge is being attempted and whether its reward has been paid, and the turn number. It keeps the research and chambers it <em>opened</em> with, or a level bought between two sittings would change a board that is half played and the record would stop replaying. A resumed match plays no opening descent &mdash; flying the camera down onto a board thirty turns old says something untrue &mdash; and carries its clock forward. The tutorial is never suspended: half a walkthrough is not something to hand back to anybody. A band under the top bar on Home names the board and the turn and offers it back.</p>
+
     <h2>Match history — every match is remembered, and can be watched back</h2>
     <p>Nothing kept a finished match: the card came up, the colony moved, and every game a player had ever played was gone. Determinism makes this nearly free — the record is the <strong>setup and the moves</strong>, and the engine rebuilds the board from them, so a replay is the same twenty bytes a server would verify a result from.</p>
     <ul>
@@ -929,7 +937,7 @@ table tbody tr:hover { background: #f5f1ea; }
     </table></div>
     <ul>
       <li><strong>One button, both halves.</strong> A floating button on Home opens the flow and carries the count of invitations waiting. A separate "invitations" screen would be a control that is empty almost every time it is opened.</li>
-      <li><strong>The invitation sits on the screen it replaces</strong> — the map picker — because the ground is the one choice an invitation has already made, and the picker opens on <em>their</em> map. There is no negotiating a position between two people who are not both looking at a screen.</li>
+      <li><strong>The invitation sits on the screen it interrupts</strong> — the setup screen, the one thing standing between the player and playing them. With one board, what an invitation has already settled is the <em>opponent</em>; the screen makes its own room for the bar rather than being covered by it. There is no negotiating a position between two people who are not both looking at a screen.</li>
       <li><strong>Accept and decline.</strong> An invitation you can only accept is a demand. And an invitation is answered exactly once: accepting is what starts a match, so one that could be taken twice would start two.</li>
       <li>A challenge <em>ends in an outcome, not a person</em> — declined, timed out, offline and abandoned are ordinary answers a real opponent gives.</li>
       <li>Friends is three tabs, because stacking them buries the requests — the one part waiting on the player — under a list that only grows. A new colony arrives to two requests, because nothing can arrive on its own without a server and an Accept button nobody can reach is a feature nobody can tell is finished.</li>
@@ -962,6 +970,10 @@ table tbody tr:hover { background: #f5f1ea; }
       <li><strong>Android is wrapped with Capacitor.</strong> The wrap is thin — the same bundle in a WebView — and what it buys is that the save stops being disposable: native storage is not evicted, so the at-risk warning never appears there.</li>
     </ul>
 
+    <h2>Android's back button, and what happens when something throws</h2>
+    <p><strong>A WebView has no history to go back through</strong>, so the shell's own answer to a back press is to close the app &mdash; anywhere, mid-match included. Every Android player expects "up one screen" and every store reviewer checks it. The app answers one question per press &mdash; did anything consume it? &mdash; and only a <em>no</em> exits, walking back down the rungs a player can actually see: the tour, the result card, the drawer, a match, a page over the strip, the strip itself, then home. A page goes where its own visible back arrow goes, rather than through a second table of which screen sits above which. A match goes home rather than nowhere, and it only can because a match survives being left now: leaving settles nothing and pays nothing. In a browser it is deliberately a no-op, because a tab's back button is the browser's history and taking it over breaks the one gesture that gets somebody out of a page.</p>
+    <p><strong>When something throws there is a panel.</strong> Before it there was nothing at all: an exception in a render loop or a screen builder went to a console nobody has on a phone, and the game simply stopped &mdash; indistinguishable from a frozen device. It is the smallest useful thing: say so, and offer a reload. Both halves are caught, because they are different events and almost everything asynchronous here is the second kind &mdash; a throw that reached the top, and a promise nobody caught. It shows <em>once</em>, since one fault usually becomes many and a broken frame throws sixty times a second. Its styles are written out inline, because the fault may <em>be</em> the stylesheet. Nothing is sent anywhere: there is no server, and a crash panel that quietly uploads is not something to add without saying so.</p>
+
     <h2>Keeping a save alive</h2>
     <p>Accounts answer "which colony is mine". The harder problem is the browser deciding the save is disposable, and two do it: <strong>iOS Safari deletes a site's stored data after about seven days without a visit</strong> unless the game is installed to the Home Screen, and any browser can be running with site data blocked — in which case nothing has ever been saved and the game silently forgets a whole evening.</p>
     <ul>
@@ -981,6 +993,20 @@ table tbody tr:hover { background: #f5f1ea; }
       <li>Importing goes through the same trust boundary every other read does, and the screen asks twice before replacing a save, because overwriting a colony is the most destructive thing in the app.</li>
     </ul>
 
+    <h2>What the two stores require</h2>
+    <p>None of this is a gameplay rule and no player will ever notice one, which is exactly why it rots: a screen gets rebuilt, a panel moves, and the app is out of compliance with nothing failing. Each rule below comes from Google Play's Developer Programme Policy or Apple's App Review Guidelines, and each is held by a test that names the requirement beside the assertion.</p>
+    <ul>
+      <li><strong>Loot box odds go before the purchase, not where the roll happens.</strong> They were printed on the hatch, which is where a player rolls &mdash; and the purchase is <em>larva</em>, two screens away in the shop. That gap is the whole of the requirement, so the odds are one panel, derived from the weights the roll really uses, shown in both places.</li>
+      <li><strong>A restore mechanism</strong>, under Unlocks, which is what it can restore. It says what it <em>cannot</em> do: currency is consumable and is spent, no store hands it back, and a button implying otherwise would be the shop promising a refund.</li>
+      <li><strong>Account deletion in the app.</strong> Two destructive rows, and they are different: reset starts this colony over and leaves it signed in; delete erases the save and takes it off the picker. Each says what it <em>leaves behind</em> rather than only what it takes, and each asks twice on its own button.</li>
+      <li><strong>Nothing may claim a simulation is other people.</strong> This was the one that was a real risk rather than a missing control. There is no server, so the opponent, the ladder and the friends list are generated on the device &mdash; and the app said "Searching for an opponent", then "Opponent found", under a leaderboard headed "World ranking". The search says "Choosing your opponent" now and the seated card carries "Computer opponent"; the ladder is a practice ladder and says the colonies are generated here; the friends screen says so above the tabs, where somebody about to send a request will read it. The moment is kept &mdash; the reel really does choose, and where it stops really is who turns up. Only the claim goes.</li>
+      <li><strong>No claim the game cannot support.</strong> The shop said "most popular" on a tile &mdash; a claim about a population that does not exist &mdash; and "best value" on a bundle that was not the best value. Value per euro is recomputed per shelf now rather than trusted, and every ribbon and subtitle is searched for words the game has no way to measure.</li>
+      <li><strong>A privacy policy and terms at real URLs</strong>, served with the build rather than as screens in the app, because a store needs them to work whether or not anybody has installed the game. They describe what the code actually does, and the interesting half is what it does <em>not</em>: no server, no account, no analytics, no ads, no cookies. The two places a request leaves the device at all are named rather than buried.</li>
+      <li><strong>The typeface is ours.</strong> It came from a CDN, which was the app's only third-party embed and meant every player's IP reached someone else before a line of the game ran &mdash; no consent asked for and none of it necessary. It ships with the build now, is precached like everything else, and the privacy page no longer names anybody: a page that over-discloses is as wrong as one that under-discloses.</li>
+      <li><strong>Every control says what it is.</strong> This app is drawn: the chrome is unlabelled marks and half its pictures are canvases, which carry no text at all. A canvas either carries a name or is explicitly hidden from a screen reader, and silence is the right answer for most of them &mdash; a portrait sits in a row that is already named. The board is the one canvas that carries a name, because everything else illustrates words already on the screen and the board <em>is</em> the screen.</li>
+      <li><strong>Contrast is measured, not assumed</strong> &mdash; every text node on every screen, in a real browser, against the background actually painted behind it.</li>
+    </ul>
+
     <h2>How to play — a manual</h2>
     <p>It was seven lines of prose, which cannot carry a game with deterministic combat a player is meant to count out, supply lines that freeze a colony that ignores them, veins with rules of their own, and a Hive on a clock. Ten numbered sections now, with a picture beside the rules that need one.</p>
     <ul>
@@ -990,7 +1016,7 @@ table tbody tr:hover { background: #f5f1ea; }
     </ul>
 
     <h2>The pickers show the game, not a diagram of it</h2>
-    <p>The map picker was three cards with a thumbnail of coloured squares and the formation picker was five rounded squares on a small canvas. Both are the real renderer over a real board now — the gems, rocks, water, the Hive and both colonies are where they will actually be, and a change to how a nest is drawn reaches the pickers on the same commit. The map picker <em>is</em> the map: full screen, and choosing is dragging from one to the next. A formation preview is the formation only — everything that is not the player's own colony is razed first, or twelve two-inch cards are twelve pictures of the same map.</p>
+    <p>The formation picker was five rounded squares on a small canvas. It is the real renderer over a real board now &mdash; the gems, rocks, water and the Hive are where they will actually be, and a change to how a nest is drawn reaches the picker on the same commit. It is also <strong>the ground the match will be played on</strong>: the region belonging to the chapter the player is standing on, the same painting the board itself wears, because they are choosing a formation for a place. The enemy is razed off it &mdash; their corner is the one thing in the picture that is not the choice being made, and at that size a second colony reads as part of the formation. A still is drawn once where the board redraws every frame, so it has to be redrawn when the picture lands, or it would keep the drawn ground for ever.</p>
   </div>
 </div>
 
@@ -1020,6 +1046,11 @@ table tbody tr:hover { background: #f5f1ea; }
       <li><strong>Marching ants need closed loops, not edges.</strong> Each colony's boundary is traced into real loops so one dash offset carries the whole way round; stroking each boundary edge separately restarts the pattern at every corner and looks wrong. Two cells touching only at a <em>corner</em> are not connected — four boundary edges arrive at that one point and the naive walk fuses them into a figure-eight.</li>
       <li><strong>The outline is traced against the reveal, not the engine.</strong> A tile is the player's the instant the move resolves but it fills in over the next quarter-second, so tracing off engine state alone snapped the whole boundary out to the far end of a long send while the troops were still on tile one.</li>
       <li><strong>Reveal progress never lives on a tile.</strong> The legacy build stored it on the tile, which put view state inside the engine where snapshot and restore would copy it.</li>
+      <li><strong>The ground is painted per region, five chapters at a time.</strong> The floor a match is played on was drawn &mdash; soil, a clearing, rocks and ferns &mdash; and it was the same forest floor on chapter 1 and chapter 50. The road runs through <strong>ten places</strong> now: Forest floor, Desert, Volcano, Rainforest canopy, Mangrove wetland, Savanna grassland, Cave system, Permafrost tundra, Amber deposit, Fungal bloom. Ten rather than fifty because ten is a set somebody can actually paint, and a world that changed every chapter would change before the player had finished looking at it. A region with no picture yet wears the drawn ground, so a build is never missing a board. The <strong>home screen's artwork follows the chapter</strong> the same way, and so does the board on the formation and colony picker &mdash; a player choosing a formation is choosing it for a place, and the picture is that place.</li>
+      <li><strong>The tile indicators are a layer over the ground, never part of the picture.</strong> The tile size depends on the screen, so squares baked into a painting would line up on exactly one phone. Over artwork they are <em>white</em> and far fainter than the brown used on the drawn soil &mdash; light is only light against the shade it was picked for, and the same fill over a bright map puts muddy patches where light tiles should be. Measured either way, a marked cell differs from an unmarked one by about five levels out of 255.</li>
+      <li><strong>The plate bakes at device resolution.</strong> The board's context is scaled by the device pixel ratio, so a plate baked one canvas pixel per CSS pixel is blown up two- or threefold on the way in &mdash; half the detail of a painted region thrown away and guessed back. Invisible while the ground was drawn, because soil and ferns have nothing to lose.</li>
+      <li><strong>The board is drawn sharp.</strong> A tilt-shift depth of field was built and then removed: it was cheap and it was a view like the opening camera, but blurring the top and bottom of somebody's artwork is the renderer throwing the picture away.</li>
+      <li><strong>Where a tile may go is marked in white</strong>, not in the mover's own colour. No single hue reads against every painted region there will ever be, and a pale colony skin put the offer in the same colour as the colony making it.</li>
       <li><strong>Scenery is baked once, not drawn per frame.</strong> The undergrowth around the playfield is a still life, and redrawing it sixty times a second was by far the most expensive thing on the frame. Placement is seeded, and every prop is placed from its <em>own</em> seeded sequence keyed on its index, or a few pixels of relayout reshuffles every prop after the first difference.</li>
       <li>Captures animate as a directional fill wipe; long travels flow along the whole path as a single front, filling only the ground they actually <em>claim</em>.</li>
       <li><strong>A destroyed tile has to outlive the engine.</strong> The rules clear it the instant it dies, so without a crumble effect drawn over ground the engine has already cleared, a venom hit that eats a four-tile trail leaves no trace at all — the biggest thing that can happen on a turn, invisible.</li>
@@ -1153,7 +1184,7 @@ table tbody tr:hover { background: #f5f1ea; }
 
     <h2>Built and playable</h2>
     <ul>
-      <li>Complete match loop across three maps with all win conditions, and no turn limit</li>
+      <li>Complete match loop on one board with all win conditions, no turn limit, and a coin for who opens</li>
       <li>Nine colonies with distinct stats, signatures and abilities</li>
       <li>The Hive: dormant / awake / surge / cooling / respawn, with escalating levels and a banked garrison</li>
       <li>Vein supply network with both pruning rules and queen-anchored connectivity</li>
@@ -1171,13 +1202,16 @@ table tbody tr:hover { background: #f5f1ea; }
       <li>The opening descent, the victory flood, and the colonies' names written on the forest floor</li>
       <li>Synthesised music, sound cues and haptics, with a manifest for replacing any of them with real recordings</li>
       <li>Full mobile UI: a dragged deck of five screens, one design at every size, portrait-locked</li>
-      <li>Over a thousand tests, gating every deploy</li>
+      <li>A Capacitor shell for Android, with the save moved onto real application storage rather than the browser's</li>
+      <li>Installable and fully playable offline, with a generated service worker and a self-hosted typeface &mdash; no third-party request before a line of the game runs</li>
+      <li>A match that survives the app being closed, an Android back button that walks back up the screens, and a panel when something throws</li>
+      <li>What the two stores require: a privacy policy and terms at real URLs, hatch odds shown before the purchase as well as at the roll, a restore mechanism, in-app account deletion, and nothing anywhere claiming a simulated opponent is a person</li>
+      <li>Over thirteen hundred tests, gating every deploy</li>
     </ul>
 
     <h2>Next</h2>
     <ul>
       <li><strong>Human playtesting &amp; balance.</strong> Current tuning is AI-vs-AI verified. Species win rates need real players before any number is considered final — and the AI cannot answer the one open question it raised: <em>moving first is worth roughly two to one</em>, and whether to compensate the second player is a design decision, not a measurement.</li>
-      <li><strong>Capacitor wrap → an Android build.</strong></li>
       <li><strong>Real in-app purchases.</strong> Implement the existing purchase gateway against a real store and hand it to the app; nothing else moves. Needs a Play Console account, the products created there with the ids already in the source, and a store key.</li>
       <li><strong>Play Console release.</strong></li>
     </ul>
@@ -1187,7 +1221,7 @@ table tbody tr:hover { background: #f5f1ea; }
       <li><strong>Asynchronous PvP.</strong> Turn-based by nature, so matches can be played over hours without holding a connection. The wire format, the move validator, the single landing path for a remote turn and the result verifier are all built and tested; what is missing is the transport, accounts, and a turn clock.</li>
       <li><strong>Ranked ladder and leagues</strong> built on the colony metric, which already has no ceiling and a curve that flattens.</li>
       <li><strong>Seasons.</strong> The Colony Road already has the shape of a seasonal pass; add reset and rotating rewards.</li>
-      <li><strong>Accounts, replacing the save code.</strong> The save lives on one device and the transfer code is the honest stand-in until there is somewhere to put it.</li>
+      <li><strong>Accounts that survive the device.</strong> Accounts are built and local: several colonies on one phone, each its own save slot, signed into from a roster, with a sign-out that destroys nothing. What a local account cannot do is carry a colony to another phone &mdash; the transfer code is the honest stand-in for that until there is somewhere to put it &mdash; and no password on a local save would protect anything.</li>
       <li><strong>Server-stored replays.</strong> They are already built and local — a server only has to keep the records.</li>
       <li><strong>More to collect.</strong> Skins are built — two per colony, found in the hatch — and so are traits. What is still not built is anything <em>sold</em> as a cosmetic: there is no shop shelf for looks, and the Antarium's old "Customize" tab was removed rather than left to raise a toast. Whether a skin should ever be purchasable is a design decision, not an omission.</li>
     </ul>

@@ -134,6 +134,11 @@ These were each decided deliberately, several after bugs. Changing one silently 
    (4) before growing back one level stronger. That gap is deliberate — without it the
    colony that just rode a surge walks straight onto a fresh queen. The GDD describes the
    respawn but sets no gap, so the number is a design decision, not a port.
+   - **BOTH LENGTHS STRETCH A TURN PER LEVEL** (`surgeTurns`, `surgeCooldown`), which this
+     paragraph did not say for a long time and the GDD still printed as flat. A level-3
+     queen costs far more to crack than a level-1 one, so the swing she pays out has to
+     grow with her; and the gap before she returns has to grow with it, or the board spends
+     more and more of the match with a surge running on it.
    - **While she is dead there is nothing there.** Her tiles are ordinary ground: no
      garrison, no fight, and no surge for stepping on them. They still LOOK like hive tiles,
      which is why the combat path has to ask `queenIsTakeable` rather than checking the terrain
@@ -1310,10 +1315,17 @@ ceiling — only a curve that flattens.
   compounding ran away from a road with a hundred rungs on it: the last chapter paid a
   hundred and thirty-six BILLION troops for one victory, which is not a reward, it is a
   number that has stopped meaning anything. Raising the colony to a power below one
-  (`COLONY_TAPER`, 0.87) makes the growth polynomial instead: a win pays 13% of a young
-  colony, 9% of a thousand, 5% of a hundred thousand and 3% of five million. That is the
+  (`COLONY_TAPER`, 0.78) makes the growth polynomial instead: a win pays 20% of a young
+  colony, 7% of a thousand, 2.5% of a hundred thousand and 1% of five million. That is the
   one number to turn if the late road feels wrong, and it moves the whole curve rather
   than one end of it.
+  - **Those four figures are HELD BY A TEST** (`colony.test.ts`), because they were wrong
+    here for as long as the taper existed: this paragraph said 0.87 and 13 / 9 / 5 / 3
+    while the code ran 0.78 and paid 20 / 7 / 2.5 / 1, and §8 four hundred lines up printed
+    the right ones — two passages of this file disagreeing about the number the whole game
+    is played for. The shape test that already existed passes either way; it only asks that
+    the share FALLS. A reader cannot tell a measured number from a guessed one, so the
+    curve is now pinned to the sentence that publishes it.
 - **A loss costs a share of the WIN, not of the colony** (`COLONY_LOSS_SHARE`). With a
   flat percentage off for a defeat, a colony big enough for the win share to have tapered
   below it would shrink on an even record. Tying the two together keeps the break-even

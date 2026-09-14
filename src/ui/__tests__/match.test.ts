@@ -193,6 +193,50 @@ describe("how long the match took", () => {
   });
 });
 
+/**
+ * A SURRENDER HAS TO SAY IT WAS A SURRENDER.
+ *
+ * The button handed its events straight to the RENDERER, and `MatchScreen.consume` is the
+ * one place that reads the `gameOver` reason off a batch — so the reason stayed null and
+ * the result card fell through to its other line: "the enemy reached your queen". A card
+ * lying about how the match ended, on the one screen that reports the match. The same slip
+ * skipped the cue and the app's own listeners, which is how a surrender fed nothing to the
+ * quest counters either.
+ */
+describe("giving up", () => {
+  it("reports the reason as a surrender, not as a queen that fell", async () => {
+    vi.useFakeTimers();
+    const w = watch();
+    w.state.current = "you";
+    let said: string | null = "untouched";
+    (w.screen as unknown as { opts: { onExit: (a: unknown, b: string | null) => void } })
+      .opts.onExit = (_a, reason) => { said = reason; };
+    w.screen.start();
+    opened(w);
+
+    quit(w);
+    await vi.advanceTimersByTimeAsync(6000);
+    expect(said, "the card was told nothing about how the match ended").not.toBe("untouched");
+    expect(said, "a surrender was reported as something else").toBe("surrender");
+    w.screen.destroy();
+  });
+
+  /** ...and the batch reaches the app, which is what credits a quest and plays the cue. */
+  it("tells the app's listeners about it", async () => {
+    vi.useFakeTimers();
+    const w = watch();
+    w.state.current = "you";
+    w.screen.start();
+    opened(w);
+    const before = w.log.length;
+
+    quit(w);
+    expect(w.log.length, "the surrender never reached onEvents").toBeGreaterThan(before);
+    await vi.advanceTimersByTimeAsync(6000);
+    w.screen.destroy();
+  });
+});
+
 describe("the end of a match", () => {
   it("plays the winner's wash before the result card", async () => {
     vi.useFakeTimers();

@@ -49,6 +49,26 @@ describe("colony growth", () => {
     expect(winnings(5e6)).toBeGreaterThan(winnings(1e6));
   });
 
+  /**
+   * THE PUBLISHED FIGURES ARE HELD HERE, because nothing held them and they went stale.
+   *
+   * CLAUDE.md §8 and the GDD both print this curve, and §8a printed a DIFFERENT one — 13 /
+   * 9 / 5 / 3 against a real 20 / 7 / 2.5 / 1 — for as long as the taper has existed. The
+   * shape test above passes either way: it only asks that the share falls. A reader has no
+   * way to tell a number that was measured from one that was guessed, so the day the taper
+   * moves, this is what says the prose has to move with it.
+   */
+  it("pays the share the documents say it does", () => {
+    const pct = (c: number): number => (winnings(c) / c) * 100;
+    const published: [number, number][] = [[40, 20], [1e3, 7], [1e5, 2.5], [5e6, 1]];
+    for (const [colony, said] of published) {
+      expect(pct(colony), `a win at ${colony} pays ${pct(colony).toFixed(1)}%, not ${said}%`)
+        .toBeCloseTo(said, 0);
+    }
+    // ...and the floor under a young colony's win, which the same sentence promises.
+    expect(winnings(40), "the win floor moved").toBe(8);
+  });
+
   /** The end of the road is a reward a player can read, not a wall of digits. */
   it("keeps the biggest win on the road under a million troops", () => {
     expect(winnings(ROAD_LAST)).toBeLessThan(1e6);

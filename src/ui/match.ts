@@ -1016,7 +1016,12 @@ export class MatchScreen {
       return;
     }
     this.disarmSurrender();
-    this.renderer.consume(surrender(this.state, "you"));
+    // THROUGH THE SCREEN'S OWN SINK, never straight at the renderer. `consume` is the one
+    // place that reads the `gameOver` REASON off the batch, and it went to the renderer
+    // here — so a surrender left the reason null and the result card fell through to "the
+    // enemy reached your queen", which is a card lying about how the match ended. It is
+    // also what plays the cue and tells the app's listeners, both of which were skipped.
+    this.consume(surrender(this.state, "you"));
     this.finish();
   }
 
