@@ -7,7 +7,9 @@ import { REVEAL_MS_PER_TILE, RevealTracker, edgeFor, frontEase } from "../reveal
 import { CRUMBLE_MS, FxLayer } from "../fx";
 import { actGapOf, animate, sourceOf } from "../animate";
 import { basicLook } from "../art";
-import { drawFillets, drawSurge, drawTile, drawTileEffects, drawTrails, type Scene } from "../board";
+import {
+  drawFillets, drawSelection, drawSurge, drawTile, drawTileEffects, drawTrails, type Scene,
+} from "../board";
 import { MAP, hexA, ownerCol } from "../palette";
 import { innerCorners } from "../shapes";
 import { makeRecorder, type Call, type Recorder } from "./recorder";
@@ -1427,5 +1429,42 @@ describe("a capture under a travel", () => {
       tiles.some((t) => t.at.c === 2 && t.at.r === 1));
     expect(trailRuns, "the trail opened more than one reveal").toHaveLength(1);
     begin.mockRestore();
+  });
+});
+
+/**
+ * WHERE YOU MAY GO IS WHITE.
+ *
+ * The rings marking a move's legal targets were drawn in the mover's own glow. That was
+ * fine on one drawn forest floor and is not fine now: the ground is a painted region, so
+ * no single hue reads against every map, and a pale skin puts the offer in the same colour
+ * as the colony making it. White is the one mark that stands out over anything, and it is
+ * what the SELECTION ring already uses — so the pair reads as one language.
+ */
+describe("the move targets", () => {
+  const ringColours = (rec: Recorder): string[] =>
+    rec.of("stroke").map((c) => (c.stroke ?? "").toLowerCase());
+
+  it("are stroked white, whichever colony is moving", () => {
+    for (const current of ["you", "ai"] as const) {
+      const state = blankGame();
+      const { s, rec } = scene(state, {
+        current, selection: { c: 1, r: 1 }, valid: [{ c: 2, r: 1 }, { c: 1, r: 2 }],
+      });
+      drawSelection(s);
+      const strokes = ringColours(rec);
+      expect(strokes.length, "nothing was stroked").toBeGreaterThan(0);
+      for (const col of strokes) expect(col, `${current} drew a target in ${col}`).toBe("#ffffff");
+      expect(strokes).not.toContain(ownerCol(current, "glow").toLowerCase());
+    }
+  });
+
+  /** ...and they are still DASHED, which is what tells a target from the tile picked up. */
+  it("are dashed, and the selection ring is not", () => {
+    const state = blankGame();
+    const { s, rec } = scene(state, { selection: { c: 1, r: 1 }, valid: [{ c: 2, r: 1 }] });
+    drawSelection(s);
+    const dashes = rec.of("setLineDash").map((c) => c.args[0] as number[]);
+    expect(dashes.some((d) => d.length > 0 && d.every((n) => n > 0)), "no dashed ring").toBe(true);
   });
 });

@@ -824,18 +824,23 @@ export function drawSelection(scene: Scene): void {
     const x = layout.x0(selection.c) + 2, y = layout.y0(selection.r) + 2;
     const w = ts - 4, h = ts - 4, r = Math.max(6, ts * 0.18);
     ctx.save();
-    ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
-    ctx.shadowColor = "#fff"; ctx.shadowBlur = 10;
+    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 3;
+    ctx.shadowColor = "#ffffff"; ctx.shadowBlur = 10;
     rrect(ctx, x, y, w, h, r); ctx.stroke();
     ctx.restore();
   }
 
+  // WHERE YOU MAY GO IS WHITE, never the colony's own colour. It was drawn in the mover's
+  // glow, which is the same colour as the ground it is being offered over once a colony
+  // wears a pale skin — and the board's ground is a painted region now, so "a colour that
+  // reads against the soil" is no longer a thing any one hue can be. White is the one mark
+  // that stands out against every map there will ever be, and it is what the SELECTION ring
+  // above already uses, so the pair reads as one language: this tile, and where it can go.
   const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 250);
-  const col = ownerCol(scene.current, "glow");
   for (const v of valid) {
     ctx.save();
     ctx.globalAlpha = 0.4 + 0.4 * pulse;
-    ctx.strokeStyle = col; ctx.lineWidth = 3;
+    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 3;
     ctx.setLineDash([ts * 0.12, ts * 0.10]);
     ctx.beginPath(); ctx.arc(layout.cx(v.c), layout.cy(v.r), ts * 0.34, 0, TAU); ctx.stroke();
     ctx.restore();
