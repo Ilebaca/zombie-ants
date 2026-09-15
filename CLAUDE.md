@@ -474,10 +474,12 @@ Each of these cost a debugging round. Do not repeat them.
     animation; a batch that plays a beat longer needs that beat, or the second half is cut
     off precisely where it matters.
   - **AND IT IS RARE, WHICH IS WHY IT LOOKED LIKE A BUG.** `npm run reach` counts the
-    pattern now: **3 turns in 773 at hard, 0.4%** — about one turn in every three matches,
-    against a player who has seen the other two hundred turns behave. Milan reported it
-    twice in ten games, which is the same number. A thing that happens once in three
-    matches and looks illegal is worse than one that happens constantly.
+    pattern now, and the number has been re-measured on a sample twelve times the size:
+    **74 turns in 9,371 at hard, 0.8%** (it read 0.4% off 773 turns, which is the sort of
+    thing a three-figure sample gets wrong). Call it one turn in forty-five — about one a
+    match — against a player who has seen every other turn behave. Milan reported it twice
+    in ten games, which is the same order. A thing that happens about once a match and
+    looks illegal is worse than one that happens constantly.
 - **AND THE WAY THAT WAS SETTLED IS ITS OWN TOOL** (`npm run reach`, and
   `engine/__tests__/reach.test.ts` as the tripwire). Every rule test in the suite builds the
   one board it is about; nothing played whole games and watched the WHOLE grid. This does,
@@ -495,8 +497,9 @@ Each of these cost a debugging round. Do not repeat them.
     at all: `easy` generates no travel, `normal` no rally, and only `hard` plays the whole
     set (§4a) — so a clean run at normal says nothing whatever about rally, and the sweep
     has to be run at hard before it means anything. The engine came back clean at both:
-    **81 games / 8,362 turns at normal, and 54 games / 5,609 turns at hard** (41 minutes —
-    which is why it is a tool and not a test). The suite carries one short game,
+    **81 games / 8,362 turns at normal, and 108 games / 9,371 turns at hard** — the second
+    re-run since, still zero unnamed changes and zero over-reaches, in 57 minutes (which is
+    why it is a tool and not a test). The suite carries one short game,
     because the search is synchronous and a full game is most of vitest's RPC budget spent
     on a tail where nothing new happens.
 - **Scenery is baked once, not drawn per frame.** The undergrowth around the playfield
