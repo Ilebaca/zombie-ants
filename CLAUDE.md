@@ -2397,7 +2397,7 @@ mine"; this answers the harder one — the browser deciding the save is disposab
   has decided to accept is how an app gets ignored; Settings keeps the route open for ever,
   and its Backup row now states whether a code was EVER taken ("Never taken — this colony
   is only on this phone") rather than describing the feature.
-- **The guard rides INSIDE `.tophead`, under the granary pill.** The three floating buttons
+- **The guard rides INSIDE `.tophead`, under the granary pill.** The two floating buttons
   are positioned by measuring that block's bottom edge (`syncFabs`), so a sibling laid out
   after it lands underneath them — which put the dismiss button behind the menu button,
   unreachable. `rebuildHomeBar` re-runs `syncFabs` for the same reason: collecting the
@@ -2720,7 +2720,7 @@ stranded in a big screen.
   of cards that wants the app's 16px; home is one picture with a banner over it and a
   button under it, and a card gutter framed all three in a border of nothing. `#home`
   carries `--gutter: 12px` and `--homemax: 640px`, and the top bar's contents, the banner,
-  the granary pill, the hero and the three floating buttons all answer to those two — one
+  the granary pill, the hero and the two floating buttons all answer to those two — one
   pair of edges for the whole screen, at every width.
   - **Not zero.** Taking the tab tray's gutter off dropped the banner and the granary pill
     to nothing while the hero under them stayed at the gutter: three insets on one screen,
