@@ -1930,10 +1930,15 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
       is `MAP.groundA` — light against the soil it was picked for and DARK against a
       bright painted map, so the same fill over the artwork puts muddy brown patches where
       light tiles should be. White lightens any ground there will ever be.
-    - **AND MUCH FAINTER** (`ART_TILE`, 0.055 against the soil's 0.46), because white is a
-      far stronger mark than brown on brown. Measured on the board either way, a marked
-      cell differs from an unmarked one by about **five levels out of 255** — louder than
-      that and the board reads as a chessboard with a picture behind it.
+    - **AND MUCH FAINTER** (`ART_TILE`, 0.12 against the soil's 0.46), because white is a
+      far stronger mark than brown on brown — a third of the alpha for four times the
+      effect. Measured on the board, a marked cell differs from an unmarked one by about
+      **twelve levels out of 255** over a painted region and three over the drawn floor.
+      It was 0.055 and five levels, which was reported as tiles not standing out: at that
+      strength the grid reads on a flat patch of soil and vanishes wherever the picture
+      has anything going on, and every region is a picture now (the fallback `ground.webp`
+      is one too), so the white mark is the only one a player ever sees. Much louder than
+      this and the board reads as a chessboard with a picture behind it.
     - `tileMark` is pulled out of the drawing so the rule has a test: the plate bakes into
       a canvas of its own and a node test has no canvas at all, so that function is the
       only part of this layer anything else can see.

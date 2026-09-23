@@ -283,12 +283,16 @@ function paintGround(
  * bright painted map is a DARKER square — muddy brown patches where light tiles should
  * be. White lightens any ground there will ever be.
  *
- * AND MUCH FAINTER, because white is a far stronger mark than brown-on-brown. Measured on
- * the drawn board, a marked cell differs from an unmarked one by about five levels out of
- * 255; `ART_TILE` is set so a marked cell over the artwork lands in the same place. Louder
- * than that and the board reads as a chessboard somebody has painted a picture behind.
+ * AND MUCH FAINTER THAN THE SOIL'S OWN MARK, because white is a far stronger mark than
+ * brown-on-brown: a third of the alpha for twice the effect. Measured on the board, a
+ * marked cell differs from an unmarked one by about twelve levels out of 255 over the
+ * artwork and by three over the drawn floor. It was five, and it was reported as tiles
+ * that do not stand out enough — at that strength the grid reads on a flat patch of soil
+ * and disappears wherever the picture has anything going on. Twice that is a grid a
+ * player can follow across the whole board; much louder and the board reads as a
+ * chessboard somebody has painted a picture behind.
  */
-const ART_TILE = 0.055;
+const ART_TILE = 0.12;
 const SOIL_TILE = 0.46;
 
 /**

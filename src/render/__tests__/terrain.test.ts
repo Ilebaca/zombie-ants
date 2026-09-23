@@ -204,13 +204,15 @@ describe("the tile indicators", () => {
   });
 
   /**
-   * And FAR fainter, because white is a much stronger mark than brown on brown. Measured
-   * on the board: a marked cell differs from an unmarked one by about five levels out of
-   * 255 either way. Anything like the soil's own alpha is a whitewash.
+   * And FAR fainter, because white is a much stronger mark than brown on brown: measured
+   * on the board, a third of the alpha gives about four times the effect (twelve levels
+   * out of 255 over the artwork against three over the drawn floor). Anything like the
+   * soil's own alpha is a whitewash — and anything under a few percent is the grid the
+   * player asked to be able to see.
    */
   it("is much fainter over a picture than over the drawn floor", () => {
-    expect(tileMark(true, 0).alpha).toBeLessThan(tileMark(false, 0).alpha / 4);
-    expect(tileMark(true, 0).alpha).toBeGreaterThan(0.01);
+    expect(tileMark(true, 0).alpha).toBeLessThan(tileMark(false, 0).alpha / 3);
+    expect(tileMark(true, 0).alpha).toBeGreaterThan(0.08);
   });
 
   /** The rim fades either way, or the playfield gets a hard border. */
