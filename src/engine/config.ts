@@ -133,8 +133,17 @@ export const FORTIFY_DEF = 1.7;
 export const FORTIFY_TURNS = 3;
 /** Defence multiplier a withered leaf wall leaves behind. */
 export const ARMOUR_DEF = 1.4;
-/** How far the Demon Ant's terror reaches, in tiles. */
-export const FLEE_REACH = 3;
+/**
+ * How far the Demon Ant's terror reaches, in tiles — which enemy garrisons panic, and how
+ * far each of them runs before it stops.
+ *
+ * TWO, and it was three. At three a cast shoved every enemy garrison within three tiles of
+ * anything this colony owned, up to three tiles each: on a 9x9 board with two colonies in
+ * contact that is most of the front line rearranged in one tap, and the board a player was
+ * reading a moment ago is gone. Two is the tiles NEIGHBOURING the colony being pushed a
+ * step clear of it, which is what the ability is for.
+ */
+export const FLEE_REACH = 2;
 
 /** A multiplier as the percentage a player reads: 1.7 -> "70". */
 export const asPct = (mult: number): number => Math.round((mult - 1) * 100);

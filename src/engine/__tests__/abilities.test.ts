@@ -289,16 +289,18 @@ describe("flee (Demon)", () => {
    */
   it("prunes a trail whose anchor the ability took away", () => {
     const s = withSpecies("demon");
-    put(s, 1, 2, { owner: "you", struct: "nest", soldiers: 30 });
+    put(s, 2, 1, { owner: "you", struct: "nest", soldiers: 30 });
     put(s, 1, 7, { owner: "ai", struct: "nest", soldiers: 20 });
-    put(s, 2, 2, { owner: "ai", struct: "stable", soldiers: 6 });    // the anchor, in reach
-    const trail = [put(s, 3, 2, { owner: "ai", struct: "vein", soldiers: 0 }),
-                   put(s, 4, 2, { owner: "ai", struct: "vein", soldiers: 0 })];
-    put(s, 5, 2, { owner: "ai", struct: "stable", soldiers: 4 });
+    // The trail runs ACROSS the way the anchor will run, so the runner cannot land on its
+    // own veins and hold them up — what is being tested is the pruning, not the walk.
+    put(s, 2, 3, { owner: "ai", struct: "stable", soldiers: 6 });    // the anchor, in reach
+    const trail = [put(s, 3, 3, { owner: "ai", struct: "vein", soldiers: 0 }),
+                   put(s, 4, 3, { owner: "ai", struct: "vein", soldiers: 0 })];
+    put(s, 5, 3, { owner: "ai", struct: "stable", soldiers: 4 });
     recomputeConnectivity(s);
 
     const events = activateAbility(s, "you", mods());
-    expect(tile(s, 2, 2).owner, "the anchor never moved").toBeNull();
+    expect(tile(s, 2, 3).owner, "the anchor never moved").toBeNull();
     for (const v of trail) {
       expect(v.owner, `the trail at ${v.c},${v.r} is still standing on nothing`).toBeNull();
     }
@@ -413,18 +415,62 @@ describe("flee (Demon)", () => {
     expect(tile(s, 3, 2).soldiers).toBe(6);
   });
 
+  /**
+   * A CUT-OFF TILE CASTS NO FEAR.
+   *
+   * The caster's whole colony was measured against — connected or not — so one stranded
+   * outpost (§4.2: producing nothing, defending nothing) panicked a garrison nowhere near
+   * the colony, and set the direction it ran in. That is most of what read as the ability
+   * being broken.
+   */
+  it("is not cast by a tile cut off from the nest", () => {
+    const s = withSpecies("demon");
+    put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
+    put(s, 7, 7, { owner: "you", struct: "stable", soldiers: 4 });   // stranded, no trail home
+    const far = put(s, 7, 5, { owner: "ai", struct: "stable", soldiers: 6 });
+    recomputeConnectivity(s);
+
+    expect(activateAbility(s, "you", mods()), "the outpost frightened it").toHaveLength(0);
+    expect(far.owner).toBe("ai");
+    expect(far.soldiers).toBe(6);
+    expect(s.cooldown.you, "a cast that did nothing burnt the cooldown").toBe(0);
+  });
+
+  /**
+   * THE REACH IS TWO (`FLEE_REACH`): the tiles NEIGHBOURING the colony, pushed a step
+   * clear of it. At three, one tap rearranged most of a front line.
+   */
+  it("leaves a garrison three tiles out where it stands", () => {
+    // Alone on the board, so nothing else can be pushed onto it and make it look untouched.
+    const far = withSpecies("demon");
+    put(far, 1, 2, { owner: "you", struct: "nest", soldiers: 10 });
+    const out = put(far, 4, 2, { owner: "ai", struct: "stable", soldiers: 5 });
+    recomputeConnectivity(far);
+    expect(activateAbility(far, "you", mods()), "a tile three out panicked").toHaveLength(0);
+    expect(out.owner).toBe("ai");
+    expect(out.soldiers).toBe(5);
+
+    // And two out is exactly what the ability is for.
+    const near = withSpecies("demon");
+    put(near, 1, 2, { owner: "you", struct: "nest", soldiers: 10 });
+    put(near, 3, 2, { owner: "ai", struct: "stable", soldiers: 6 });
+    recomputeConnectivity(near);
+    activateAbility(near, "you", mods());
+    expect(tile(near, 3, 2).owner, "the neighbour was not pushed").toBeNull();
+  });
+
   /** Re-filling ground the colony already held makes it look rebuilt from scratch. */
   it("says whether the runner took new ground or merged into its own", () => {
     const s = withSpecies("demon");
     put(s, 1, 2, { owner: "you", struct: "nest", soldiers: 10 });
     put(s, 3, 2, { owner: "ai", struct: "stable", soldiers: 6 });
-    put(s, 5, 2, { owner: "ai", struct: "stable", soldiers: 2 });
+    put(s, 4, 2, { owner: "ai", struct: "stable", soldiers: 2 });
     recomputeConnectivity(s);
 
     const events = activateAbility(s, "you", mods());
-    const onto5 = events.find((e) => e.type === "fled" && e.to?.c === 5 && e.to?.r === 2);
-    expect(onto5, "nothing was pushed onto the tile they already held").toBeDefined();
-    expect(onto5 && onto5.type === "fled" ? onto5.claimed : true).toBe(false);
+    const onto = events.find((e) => e.type === "fled" && e.to?.c === 4 && e.to?.r === 2);
+    expect(onto, "nothing was pushed onto the tile they already held").toBeDefined();
+    expect(onto && onto.type === "fled" ? onto.claimed : true).toBe(false);
   });
 });
 

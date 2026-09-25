@@ -353,6 +353,23 @@ Each of these cost a debugging round. Do not repeat them.
 - **Never prune veins on Flee.** Flee relocates mobile garrisons only. Pruning during flee
   destroyed trails and detached units. Flee must not break structure at all.
 - **Flee cannot push:** veins, tunnels, resources, hive queen/guards, blocked tiles.
+- **A CUT-OFF TILE CASTS NO TERROR, and the reach is TWO.** Reported as "terror is bugged,
+  doesn't work well", and it was two separate faults with one symptom — a garrison ending
+  up somewhere the player could not account for.
+  - `castFlee` measured against EVERY tile the caster owned, connected or not, and that
+    set decides both which enemy garrisons panic AND which way each one runs. So a single
+    stranded outpost (§4.2: producing nothing, defending nothing) frightened a garrison
+    nowhere near the colony and shoved it in a direction that made no sense from anything
+    on screen. `mine` is filtered by `isConnected` now.
+  - `FLEE_REACH` was 3, which is "every enemy garrison within three tiles of anything I
+    own, pushed up to three tiles". On a 9x9 board with two colonies in contact that is
+    most of a front line rearranged in one tap, and the position the player was reading a
+    moment ago is gone. Two is the tiles NEIGHBOURING the colony pushed a step clear of
+    it, which is what the ability is for.
+  - Two existing tests had to have their BOARDS moved rather than their assertions
+    weakened — at reach 2 the runner stops one tile earlier, so one landed on the trail it
+    was supposed to strand and the other never reached the tile it was meant to merge
+    into. A test whose board only worked at the old number is a test of the number.
 - **Flee is a rout, not a teleport.** The walk ported from the legacy build stepped
   DIAGONALLY (the one movement this game never makes), ran straight through rocks, leaf
   walls and the caster's own tiles, and asked "am I clear yet?" of the caster's whole

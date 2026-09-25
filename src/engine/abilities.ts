@@ -424,11 +424,18 @@ function castVenom(state: GameState, p: Player, mods: PlayerMods, events: Engine
  * Flee relocates garrisons ONLY. It must never prune veins or break structure: doing so
  * destroyed trails and detached units (CLAUDE.md §5). Veins, tunnels, resources, nests and
  * hive tiles cannot be pushed.
+ *
+ * A CUT-OFF TILE CASTS NO FEAR. `mine` was every tile this colony owned, connected or not,
+ * and both halves of the ability measure against it — which enemy garrisons panic, and
+ * which way each of them runs. So one stranded outpost on the far side of the board,
+ * producing nothing and defending nothing (§4.2), panicked a garrison nowhere near the
+ * colony and shoved it in a direction that made no sense from anything the player could
+ * see. That is most of what "terror is bugged" was.
  */
 function castFlee(state: GameState, p: Player, mods: PlayerMods, events: EngineEvent[]): boolean {
   const enemy = otherPlayer(p);
   const reach = FLEE_REACH + bonus(mods);
-  const mine = allTiles(state).filter((t) => t.owner === p);
+  const mine = allTiles(state).filter((t) => t.owner === p && isConnected(state, t));
   if (!mine.length) return false;
 
   const distanceToMe = (c: number, r: number): number => {
