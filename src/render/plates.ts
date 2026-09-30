@@ -27,7 +27,7 @@ import type { Player, SpeciesId } from "../engine";
 import type { Layout } from "./layout";
 import { antHead } from "./art";
 import type { Look } from "../engine";
-import { COL, lookCol, ownerCol } from "./palette";
+import { COL, lookCol } from "./palette";
 
 /** One side's identity. Settled when the match starts and never written again. */
 export interface Plate {
@@ -113,11 +113,14 @@ export function drawPlates(
     const look = looks[row.who];
     antHead(ctx, row.x + row.icon / 2, mid, row.icon * 0.46, lookCol(row.plate.species, look), look);
 
-    // The name reads in the page's own ink; the figure in that side's colour, which is the
-    // colour its ground is drawn in — so the row belongs to the half of the board it is on.
+    // THE NAME AND THE FIGURE ARE ONE LINE, so they are one colour — the page's own ink.
+    // The figure used to be drawn in that side's colony colour, which made it read as a
+    // second thing rather than as part of the name, and put a dark orange or blue number
+    // on ground the picture chooses: the ink is what is legible on every region there is,
+    // and which side the row belongs to is already said by the half of the board it sits
+    // on and by the head at the start of it.
     ctx.fillStyle = COL.ink || "#e8f0e4";
     ctx.fillText(row.plate.name, row.x + row.icon + row.gap, mid);
-    ctx.fillStyle = ownerCol(row.who);
     ctx.fillText(row.troops, row.x + row.icon + row.gap + row.nameW + row.gap, mid);
   }
   ctx.restore();

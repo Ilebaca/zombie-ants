@@ -104,7 +104,13 @@ export function moveOrAttack(
    * ordinary tiles of whoever holds them — they can be fought for like any other, but taking
    * them does not hand the growth over.
    */
-  const onHive = isHiveTerrain(dst) && queenIsTakeable(state);
+  // AND ONLY WHILE NOBODY OWNS IT. A colony can hold one of the five while she is standing
+  // — a captured guard, or a camp that held its ground when she grew back — and reading the
+  // TERRAIN alone made that tile defend as the neutral hive does: no species multiplier and
+  // no flat defence, on ground its owner had paid for. "Is this a hive tile?" almost always
+  // means "is this the NEUTRAL hive?" (§5a). It is also what stops a colony camped on the
+  // queen's own square paying out a full surge to whoever beats them.
+  const onHive = isHiveTerrain(dst) && !dst.owner && queenIsTakeable(state);
 
   // Unowned tile held by a neutral wild garrison — beat it first.
   if (!dst.owner && dst.guard > 0 && !onHive) {

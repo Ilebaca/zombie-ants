@@ -212,28 +212,98 @@ describe("the queen's strength across levels", () => {
     expect(garrison(fed) - garrison(bare)).toBe(200);
   });
 
-  it("absorbs troops camped on the bare ground during the cooldown", () => {
+  /**
+   * SHE FIGHTS FOR GROUND SOMEBODY IS STANDING ON.
+   *
+   * Camping used to be answered by the camper being eaten — the garrison banked into the
+   * fresh queen and the tile handed over, whatever was standing there. That was the one
+   * thing on this board that took a tile off a colony with no fight. It is resolved through
+   * `fight()` now, the same arithmetic as any attack.
+   */
+  const campOnQueen = (soldiers: number): GameState => {
     const s = longStanding();
     captureQueen(s, "you");
     for (const t of hiveCells(s)) t.soldiers = 1;
-    for (let i = 0; i < s.limits.buffTurns; i++) hiveTick(s, "you");
+    for (let i = 0; i < 40 && s.hive.phase === "buff"; i++) hiveTick(s, "you");
     expect(s.hive.phase).toBe("cooling");
+    expect(garrison(s), "she is gone while she is cooling").toBe(0);
 
-    const control = garrison(s);            // 0 — she is gone
-    expect(control).toBe(0);
     const q = hiveCells(s).find((t) => t.terrain === "hiveQ") as { c: number; r: number };
-    put(s, q.c, q.r, { owner: "you", struct: "stable", soldiers: 60 });
-
+    put(s, q.c, q.r, { owner: "you", struct: "stable", soldiers });
+    // Exactly the wait, so this is ONE attempt on the camp. Driving to "awake" instead
+    // would let her come back round after round until she ground the camp down.
     for (let i = 0; i < HIVE_COOLDOWN; i++) { hiveTick(s, "you"); hiveTick(s, "ai"); }
+    return s;
+  };
+
+  it("takes a camp she can beat, and keeps only what the fight left her", () => {
+    const s = campOnQueen(60);
     expect(s.hive.phase).toBe("awake");
-    for (const t of hiveCells(s)) expect(t.owner, "sitting on her does not keep the ground").toBeNull();
+    for (const t of hiveCells(s)) expect(t.owner, "a camp she beat kept the ground").toBeNull();
 
     const clean = longStanding();
     captureQueen(clean, "you");
     for (const t of hiveCells(clean)) t.soldiers = 1;
     cycle(clean);
-    // Both runs banked the five tokens left at the lapse; only these 60 are extra.
-    expect(garrison(s) - garrison(clean)).toBe(60);
+    // The camp is a COST now rather than a meal: she arrives weaker than she would have on
+    // empty ground, where the old rule had her arrive 60 stronger.
+    expect(garrison(s)).toBeLessThan(garrison(clean));
+    expect(queenOf(s), "she was wiped out by the camp she beat").toBeGreaterThan(0);
+  });
+
+  it("is DENIED by a camp she cannot beat, and comes at it again", () => {
+    const s = campOnQueen(4000);
+    const q = hiveCells(s).find((t) => t.terrain === "hiveQ") as { owner: string | null; soldiers: number };
+    expect(q.owner, "she walked through a garrison that beat her").toBe("you");
+    expect(q.soldiers, "the camp took no losses holding her off").toBeLessThan(4000);
+    expect(s.hive.phase, "she is awake and not there").toBe("cooling");
+    expect(s.hive.level, "a respawn that never happened still levelled her up").toBe(1);
+    for (const t of hiveCells(s)) {
+      if (t === (q as unknown)) continue;
+      expect(t.owner, "a guard moved in an attempt she lost").toBeNull();
+      expect(t.soldiers, "a guard grew back while she was still dead").toBe(0);
+    }
+
+    // And she keeps coming: each round is another attempt on the same camp.
+    const before = q.soldiers;
+    hiveTick(s, "you"); hiveTick(s, "ai");
+    expect(q.soldiers).toBeLessThan(before);
+  });
+
+  /**
+   * A HIVE TILE A COLONY HOLDS IS THEIR TILE (§5a: "is this a hive tile?" almost always
+   * means "is this the NEUTRAL hive?"). Read off the terrain alone, a captured guard — or a
+   * camp that held its ground when she grew back — defended with NO species multiplier and
+   * NO flat defence, on ground its owner had fought for.
+   */
+  it("defends a hive tile its owner holds exactly as it defends any other tile", () => {
+    const attack = (hiveGround: boolean): { owner: string | null; soldiers: number } => {
+      const s = blankGame("small");
+      s.hive.phase = "awake"; s.hive.awokeTurn = 1; s.turn = 30;
+      const q = hiveCells(s).find((t) => t.terrain === "hiveQ") as { c: number; r: number };
+      // A guard tile beside the queen, held as the stable a captured hive tile becomes.
+      const at = { c: q.c + 1, r: q.r };
+      put(s, at.c, at.r, { owner: "you", struct: "stable", soldiers: 10 });
+      if (!hiveGround) tile(s, at.c, at.r).terrain = "ground";
+      put(s, at.c + 1, at.r, { owner: "ai", struct: "nest", soldiers: 200 });
+      put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 5 });
+      recomputeConnectivity(s);
+      s.current = "ai";
+      moveOrAttack(s, { c: at.c + 1, r: at.r }, at, defaultContext());
+      return { owner: tile(s, at.c, at.r).owner, soldiers: tile(s, at.c, at.r).soldiers };
+    };
+    expect(attack(true)).toEqual(attack(false));
+  });
+
+  it("never lets a camp on the queen's square pay out a surge", () => {
+    const s = campOnQueen(4000);
+    const q = hiveCells(s).find((t) => t.terrain === "hiveQ") as { c: number; r: number };
+    put(s, q.c - 1, q.r, { owner: "ai", struct: "stable", soldiers: 9000 });
+    recomputeConnectivity(s);
+    s.current = "ai";
+    moveOrAttack(s, { c: q.c - 1, r: q.r }, { c: q.c, r: q.r }, defaultContext());
+    expect(tile(s, q.c, q.r).owner, "the camp was not beaten").toBe("ai");
+    expect(s.hive.phase, "beating a colony on her square handed out her surge").toBe("cooling");
   });
 
   it("hands the banked soldiers out without losing or inventing any", () => {

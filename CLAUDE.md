@@ -156,12 +156,30 @@ These were each decided deliberately, several after bugs. Changing one silently 
      to sit on. The front travels at a constant tiles-per-second and the gap behind it is
      measured in tiles too, so a four-tile colony and a forty-tile one look the same; a
      fixed period would crawl early and streak across the board late.
-   - **The Hive eats what is left standing on it.** Troops on the five tiles when the surge
-     lapses, and troops camped on the bare ground when she returns, are banked
-     (`hive.banked`) and come back as part of the next garrison, split in proportion to what
-     each tile is already worth. Deleting them was a garrison the player had paid for
-     vanishing with no explanation, and camping the grave now feeds her rather than denying
-     the respawn.
+   - **The Hive eats what is left standing on it WHEN THE SURGE LAPSES.** Troops on the five
+     tiles at that moment are banked (`hive.banked`) and come back as part of the next
+     garrison, split in proportion to what each tile is already worth. Deleting them was a
+     garrison the player had paid for vanishing with no explanation.
+   - **BUT SHE HAS TO FIGHT FOR GROUND SOMEBODY IS STANDING ON WHEN SHE GROWS BACK.** Troops
+     camped on the bare grave used to be banked the same way — the tile handed over whatever
+     was on it, which was the one thing on this board that took a tile off a colony with no
+     fight. Every contested tile goes through `fight()` now (`storm` in `hive.ts`): she
+     attacks with the garrison that would have stood there, the colony defends as it defends
+     anything, a camp that holds KEEPS the ground and its structure, and one that loses
+     leaves her with only what the fight left her. Same arithmetic as any attack, which is
+     exactly what was asked for.
+     - **The force is worked out BEFORE anything is resolved** (`returningForce`), banked
+       pool included, or the tiles she fought for would attack with a share of a pool that
+       had already been spent on the tiles she did not.
+     - **HER OWN TILE DECIDES, and losing it DENIES the respawn.** She stays dead, the pool
+       goes back, `coolLeft` is 1 and she comes at the same camp next round — nothing else
+       on the five tiles moves in an attempt she lost. Without that rule the board spends
+       the rest of the match with a queen who is "awake" and not there: `setHiveDefence`
+       skips an owned tile, so she would never garrison her own square again.
+     - **It is why `onHive` had to mean the NEUTRAL hive** (see §5a's lesson). A colony can
+       now hold the middle tile while she is standing, and reading the terrain alone both
+       made that tile defend with no species multiplier and no flat defence AND paid a full
+       surge to whoever beat the camp — a surge out of a queen who was not there.
 
 8. **Losing your nest loses the match** — immediately, regardless of how much else you hold.
    Capturing the enemy nest wins it the same way. **There is no turn limit.** The clock used
@@ -725,6 +743,12 @@ was looking for turned up at once:
 
 The lesson worth keeping: three of the four were the hive's terrain outliving its ownership.
 Anything that asks "is this a hive tile?" almost always means "is this the NEUTRAL hive?".
+**Two more were found by that sentence** — `onHive` in `actions.ts` and `flatDefence` in
+`combat.ts`, both reading the terrain alone. A colony HOLDS hive tiles routinely (a captured
+guard becomes a stable, §5) and both of them made such a tile defend as the neutral hive
+does: no species multiplier, no flat defence, on ground its owner had fought for. Each takes
+`!t.owner` now, and a test attacks the same garrison on hive terrain and on plain ground and
+holds the two answers identical.
 
 **The Profile is the career, and the room for a collection** (`src/ui/profile.ts`). The
 avatar used to open the Colony screen — a level badge and today's three quests — so the one
@@ -1149,6 +1173,13 @@ name, and its size.
   (§5), so removing one cannot shift the next.
 - **The renderer is handed the figure's formatter, never the progression layer.** `plates`
   and `colonySize` are options; `render/` still imports nothing from `platform/`.
+- **THE NAME AND THE FIGURE ARE ONE LINE, so they are ONE COLOUR.** The figure was drawn in
+  that side's colony colour on the argument that it belonged to that half of the board — but
+  which half it belongs to is already said by the half it sits on and by the head at the
+  start of the row, and the colour made the number read as a second thing stuck on the end
+  of the name. It is the page's ink like the name now, which is also the only colour that
+  stays legible on every region there will ever be (a dark orange or blue number sits on
+  whatever the artwork chose to put there).
 - **The opponent is generated** (`platform/rival.ts`), because there is no server yet — a
   name from the same pool the Leaderboard draws its rivals from, and a colony near the
   player's own, which is what a ranked ladder would serve them. Keyed by the match seed, so

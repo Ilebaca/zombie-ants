@@ -1176,6 +1176,9 @@ export function loudestOf(events: readonly EngineEvent[]): Cue | null {
   };
   for (const e of events) {
     if (e.type === "hiveCaptured") take("hive");
+    // A queen growing back onto a colony that camped on her grave is a fight, and a tile
+    // she takes off them is ground coming apart. A respawn onto empty ground stays quiet.
+    else if (e.type === "hiveRespawn") for (const h of e.stormed) take(h.taken ? "destroy" : "fight");
     // Ground coming apart outranks a fight: a trail collapsing or a garrison burned off
     // the map is the bigger thing that happened, even when a fight caused it.
     else if (e.type === "veinPruned") take("destroy");

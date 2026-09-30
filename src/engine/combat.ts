@@ -36,7 +36,10 @@ export function fight(
  * Hive tiles get zero too: they defend purely with their garrison.
  */
 export function flatDefence(state: GameState, t: Tile, mods: PlayerMods): number {
-  if (isHiveTerrain(t)) return 0;
+  // The NEUTRAL hive defends purely with its garrison. A hive tile a colony HOLDS is an
+  // ordinary stable of theirs and gets a stable's bonus — terrain alone was answering for
+  // both, so ground somebody had fought for defended as if nobody owned it (§5a).
+  if (isHiveTerrain(t) && !t.owner) return 0;
   if (t.struct === "vein") return 0;
 
   let base = 0;

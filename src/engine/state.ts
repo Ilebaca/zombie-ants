@@ -263,7 +263,7 @@ export function startTurn(state: GameState, mods: Record<Player, PlayerMods>): E
   if (state.cooldown[p] > 0) state.cooldown[p]--;
   if (state.shield[p] > 0) state.shield[p]--;
   if (state.cloak[p] > 0) state.cloak[p]--;
-  hiveTick(state, p, events);
+  hiveTick(state, p, events, mods);
   // The hive hands five tiles over and takes them back again — a surge lapsing, a queen
   // growing back — so the colony has to be re-examined before production reads it. A colony
   // that reached its nest only through captured hive ground is cut off the moment she takes

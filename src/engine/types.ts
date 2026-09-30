@@ -230,7 +230,14 @@ export type EngineEvent =
   | { type: "hiveCaptured"; owner: Player; level: number; cells: Coord[] }
   /** The surge lapsed. The tiles stay with whoever took them; only the bonus ends. */
   | { type: "hiveSurgeEnded"; level: number }
-  | { type: "hiveRespawn"; level: number }
+  /**
+   * `stormed` names every one of the five tiles a colony was standing on when she came
+   * back, and whether she took it. The renderer draws from events and nothing else (§3),
+   * so a tile she takes off a colony has to be named here or it changes colour with no
+   * animation — and one that HELD has to be named too, or a fight the player won on the
+   * grave happens in silence.
+   */
+  | { type: "hiveRespawn"; level: number; stormed: readonly { at: Coord; owner: Player; taken: boolean }[] }
   | { type: "gameOver"; winner: Player; reason: GameOverReason };
 
 /**

@@ -249,9 +249,19 @@ export function animate(events: readonly EngineEvent[], sinks: AnimationSinks): 
         break;
       }
 
+      case "hiveRespawn":
+        // She fights for any of her five tiles somebody is standing on (§4.7). A tile she
+        // TOOK goes from a colony's colour to bare hive ground with nothing else to say it
+        // happened, which is the same fault the crumble effect exists for; one that HELD
+        // gets the clash, or a fight the player won on the grave passes in silence.
+        for (const hit of e.stormed) {
+          if (hit.taken) fx.crumble(hit.at, hit.owner, false, late + ruin(ruins++));
+          else fx.clash(hit.at, late);
+        }
+        break;
+
       case "hiveAwake":
       case "hiveSurgeEnded":
-      case "hiveRespawn":
       case "production":
       case "gameOver":
         break;
