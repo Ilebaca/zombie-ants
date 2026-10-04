@@ -198,27 +198,59 @@ describe("a painted ground covering the plate", () => {
  * which would put muddy patches where light tiles should be.
  */
 describe("the tile indicators", () => {
-  it("lightens a painted ground rather than tinting it with the soil's colour", () => {
-    expect(tileMark(true, 0).fill).toBe("#ffffff");
-    expect(tileMark(false, 0).fill).not.toBe("#ffffff");
+  /** What compositing `mark` over a ground of `lum` actually moves it by, in levels. */
+  const shift = (lum: number): number => {
+    const mark = tileMark(lum, 0);
+    const to = mark.fill === "#ffffff" ? 255 : 0;
+    return Math.abs(to - lum) * mark.alpha;
+  };
+
+  /**
+   * THE MARK IS SOLVED AGAINST THE GROUND. A fixed white at a fixed alpha read as twelve
+   * levels on the forest floor's soil and five on the desert's sand — under half as
+   * visible on the map chapter 6 is played on, which is how "tiles do not stand out"
+   * comes back one region at a time as the art lands.
+   */
+  it("moves every ground by about the same amount", () => {
+    for (const lum of [20, 60, 100, 140, 180, 205, 235]) {
+      expect(shift(lum), `a ground at ${lum} moved by ${shift(lum).toFixed(1)} levels`)
+        .toBeCloseTo(19, 0);
+    }
   });
 
   /**
-   * And FAR fainter, because white is a much stronger mark than brown on brown: measured
-   * on the board, a third of the alpha gives about four times the effect (twelve levels
-   * out of 255 over the artwork against three over the drawn floor). Anything like the
-   * soil's own alpha is a whitewash — and anything under a few percent is the grid the
-   * player asked to be able to see.
+   * And the DIRECTION follows the ground: lighten a dark map, darken a bright one. White
+   * on sand would need a quarter of an alpha for the same shift, which is a wash that
+   * takes the colour out with it; black multiplies every channel alike, so sand stays sand.
    */
-  it("is much fainter over a picture than over the drawn floor", () => {
-    expect(tileMark(true, 0).alpha).toBeLessThan(tileMark(false, 0).alpha / 3);
-    expect(tileMark(true, 0).alpha).toBeGreaterThan(0.08);
+  it("lightens a dark ground and darkens a bright one", () => {
+    expect(tileMark(40, 0).fill).toBe("#ffffff");
+    expect(tileMark(205, 0).fill).toBe("#000000");
+    expect(tileMark(205, 0).alpha).toBeLessThan(0.1);
+  });
+
+  /**
+   * NO CAP IS NEEDED, which is why there is not one. Picking the side with the room means
+   * the headroom is never under half, so the extremes ask for twice the least and no more.
+   */
+  it("never asks a near-black or near-white ground for a wash", () => {
+    for (const lum of [0, 255]) expect(tileMark(lum, 0).alpha).toBeLessThan(0.2);
+  });
+
+  /**
+   * The DRAWN floor keeps its own colour. `MAP.groundA` is a shade picked for that soil
+   * rather than a tint solved for it — it is the one ground this code knows.
+   */
+  it("marks the drawn floor with the soil's own lighter colour", () => {
+    expect(tileMark(null, 0).fill).not.toBe("#ffffff");
+    expect(tileMark(null, 0).fill).not.toBe("#000000");
+    expect(tileMark(null, 0).alpha).toBeGreaterThan(tileMark(120, 0).alpha);
   });
 
   /** The rim fades either way, or the playfield gets a hard border. */
   it("fades toward the edge of the grid, by the same proportion on both", () => {
-    for (const light of [true, false]) {
-      const mid = tileMark(light, 0).alpha, rim = tileMark(light, 1).alpha;
+    for (const ground of [null, 120]) {
+      const mid = tileMark(ground, 0).alpha, rim = tileMark(ground, 1).alpha;
       expect(rim).toBeLessThan(mid);
       expect(rim / mid).toBeCloseTo(0.58, 2);
     }
@@ -226,8 +258,8 @@ describe("the tile indicators", () => {
 
   /** A cell outside the grid cannot ask for more than the middle's strength. */
   it("clamps", () => {
-    expect(tileMark(true, 4).alpha).toBe(tileMark(true, 1).alpha);
-    expect(tileMark(true, -2).alpha).toBe(tileMark(true, 0).alpha);
+    expect(tileMark(120, 4).alpha).toBe(tileMark(120, 1).alpha);
+    expect(tileMark(120, -2).alpha).toBe(tileMark(120, 0).alpha);
   });
 });
 

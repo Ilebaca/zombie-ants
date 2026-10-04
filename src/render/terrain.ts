@@ -209,7 +209,7 @@ function bake(
   // THE CHEQUER IS NOT PART OF THE PICTURE. It marks where the cells are, so it is drawn
   // over whatever ground is underneath — a painted board with the squares baked into it
   // would be a grid that no longer lines up the moment the tile size changes.
-  if (grid) paintChequer(ctx, layout, art !== null);
+  if (grid) paintChequer(ctx, layout, art !== null, bleed);
   return { canvas, w: w + bleed * 2, h: h + bleed * 2, key };
 }
 
@@ -271,51 +271,107 @@ function paintGround(
 }
 
 /**
- * THE TILE INDICATORS: a chequer of light cells, fading out toward the rim of the grid so
+ * THE TILE INDICATORS: a chequer of marked cells, fading out toward the rim of the grid so
  * the playfield has no hard border.
  *
  * Its own layer, over whatever ground is underneath. That matters most for a PAINTED
  * region (`ui/regions.ts`), which replaces the soil and still has to say where the cells
  * are — and it is why the colour is not one of the ground's own.
  *
- * OVER A PICTURE IT IS WHITE, because a tint is only "light" against the shade it was
- * chosen for: `MAP.groundA` is the drawn floor's lighter soil, and the same fill over a
- * bright painted map is a DARKER square — muddy brown patches where light tiles should
- * be. White lightens any ground there will ever be.
+ * THE MARK IS MEASURED AGAINST THE GROUND IT LANDS ON, and that is the whole of it. It was
+ * a fixed white at a fixed alpha, which is a mark whose strength depends entirely on how
+ * dark the picture under it happens to be: the same 12% white read as **twelve levels out
+ * of 255** on the forest floor's brown soil and **five** on the desert's bright sand, which
+ * is under half as visible on the map a player reaches at chapter 6. Tiles not standing out
+ * was reported once already and a fixed alpha was always going to bring it back, one region
+ * at a time, as the art landed.
  *
- * AND MUCH FAINTER THAN THE SOIL'S OWN MARK, because white is a far stronger mark than
- * brown-on-brown: a third of the alpha for twice the effect. Measured on the board, a
- * marked cell differs from an unmarked one by about twelve levels out of 255 over the
- * artwork and by three over the drawn floor. It was five, and it was reported as tiles
- * that do not stand out enough — at that strength the grid reads on a flat patch of soil
- * and disappears wherever the picture has anything going on. Twice that is a grid a
- * player can follow across the whole board; much louder and the board reads as a
- * chessboard somebody has painted a picture behind.
+ * So the cell's own ground is SAMPLED off the plate and the fill is solved for: the target
+ * is a constant difference (`ART_STEP`), and compositing a colour at alpha `a` over
+ * luminance `L` moves it by `a * |C - L|`, so the alpha falls straight out of the headroom.
+ * NINETEEN is what the forest floor was already shipping at the middle of the board — the
+ * map that was checked and signed off — so the ground a player has been looking at does not
+ * move and every other one comes up to meet it. Measured over the whole grid, rim fade
+ * included: forest **12.3 before, 12.5 after**; desert **5.1 before, 12.9 after**.
+ *
+ * AND THE DIRECTION FOLLOWS THE GROUND TOO. Lighten a dark map, DARKEN a bright one —
+ * whichever has the room. On sand, white would need a quarter of an alpha to shift twelve
+ * levels and that is a wash that takes the colour out with it; black needs six percent and
+ * multiplies every channel by the same amount, so the sand stays sand. (The drawn floor's
+ * own mark is still `MAP.groundA`, which is a colour rather than a tint and is not solved
+ * for: it is the one ground this code knows the shade of.)
  */
-const ART_TILE = 0.12;
+const ART_STEP = 19;      // levels out of 255 a marked cell differs by, on any ground
+const ART_FALLBACK = 110; // a plate that will not hand its pixels back (see `groundLuma`)
 const SOIL_TILE = 0.46;
 
 /**
- * What a marked cell is painted with, `edge` being how far out it sits (0 middle, 1 rim).
+ * What a marked cell is painted with. `ground` is the mean luminance already there, 0–255,
+ * or null for the game's own DRAWN floor; `edge` is how far out the cell sits (0 middle,
+ * 1 rim).
  *
  * Pulled out of the drawing so the rule can be tested: there is no canvas in a node test
  * and the plate bakes into one of its own, so this is the only part of the layer anything
  * else can see.
  */
-export function tileMark(light: boolean, edge: number): { fill: string; alpha: number } {
-  const peak = light ? ART_TILE : SOIL_TILE;
-  const at = Math.min(1, Math.max(0, edge));
-  return { fill: light ? "#ffffff" : MAP.groundA, alpha: peak * (1 - at * 0.42) };
+export function tileMark(ground: number | null, edge: number): { fill: string; alpha: number } {
+  const fade = 1 - Math.min(1, Math.max(0, edge)) * 0.42;
+  if (ground === null) return { fill: MAP.groundA, alpha: SOIL_TILE * fade };
+
+  const lum = Math.min(255, Math.max(0, ground));
+  const lighten = lum < 128;
+  // How far the ground can be pushed that way before it runs out of range. NO CAP IS
+  // NEEDED and one was written and taken out again: picking the side with the room means
+  // the headroom is never below half, so the worst a ground can ever ask for is twice the
+  // least — about 15% on pure black or pure white. A cap that can never bind is a rule
+  // nothing holds, and the mutation that removed it passed every test.
+  const headroom = lighten ? 255 - lum : lum;
+  return { fill: lighten ? "#ffffff" : "#000000", alpha: (ART_STEP / headroom) * fade };
 }
 
-function paintChequer(ctx: CanvasRenderingContext2D, layout: Layout, light: boolean): void {
+/**
+ * The mean luminance of one cell of the plate, or null when the plate will not say.
+ *
+ * `getImageData` reads DEVICE pixels and ignores the transform, so the cell's canvas
+ * coordinates have to be put back through the bleed and the dpr by hand. It throws on a
+ * tainted canvas — which cannot happen with a bundled picture, and is caught anyway,
+ * because a board that will not draw its grid is worse than one that guesses at it.
+ */
+function groundLuma(
+  ctx: CanvasRenderingContext2D, layout: Layout, bleed: number, c: number, r: number,
+): number | null {
+  const dpr = Math.max(1, layout.dpr || 1);
+  const n = Math.max(1, Math.round(layout.ts * dpr));
+  const x = Math.round((layout.x0(c) + bleed) * dpr);
+  const y = Math.round((layout.y0(r) + bleed) * dpr);
+  let px: Uint8ClampedArray;
+  try {
+    px = ctx.getImageData(x, y, n, n).data;
+  } catch {
+    return null;
+  }
+  // About sixty samples spread across the cell rather than every pixel: this runs per cell
+  // per bake, and the answer it feeds is rounded to an alpha either way.
+  const step = 4 * Math.max(1, Math.floor((n * n) / 64));
+  let sum = 0, seen = 0;
+  for (let i = 0; i + 2 < px.length; i += step) {
+    sum += 0.2126 * (px[i] ?? 0) + 0.7152 * (px[i + 1] ?? 0) + 0.0722 * (px[i + 2] ?? 0);
+    seen++;
+  }
+  return seen ? sum / seen : null;
+}
+
+function paintChequer(
+  ctx: CanvasRenderingContext2D, layout: Layout, art: boolean, bleed: number,
+): void {
   const n = layout.size, ts = layout.ts;
   for (let r = 0; r < n; r++) {
     for (let c = 0; c < n; c++) {
       if ((r + c) % 2 === 0) continue;
       const dc = Math.abs(c - (n - 1) / 2) / ((n - 1) / 2 || 1);
       const dr = Math.abs(r - (n - 1) / 2) / ((n - 1) / 2 || 1);
-      const mark = tileMark(light, Math.max(dc, dr));
+      const ground = art ? groundLuma(ctx, layout, bleed, c, r) ?? ART_FALLBACK : null;
+      const mark = tileMark(ground, Math.max(dc, dr));
       ctx.globalAlpha = mark.alpha;
       ctx.fillStyle = mark.fill;
       ctx.fillRect(layout.x0(c), layout.y0(r), ts, ts);

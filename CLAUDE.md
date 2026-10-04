@@ -1969,27 +1969,44 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
     NUMBER is what is read, so `rg03-volcano.webp` works too and says what it is in the
     folder listing. Every region without one wears `ground.webp` — the game's own drawn
     ground, exported through the tool below — so the board looks exactly as it always has
-    until the art lands.
+    until the art lands. **Painted so far: 1 Forest floor, 2 Desert.**
   - **THE TILE INDICATORS ARE NOT PART OF THE PICTURE.** They mark the cells, so they are
     a LAYER over whatever ground is underneath (`paintChequer`, `tileMark`): the tile size
     depends on the screen, so squares baked into a picture would line up on exactly one
     phone. That is also why the exported placeholder has none.
-    - **OVER A PICTURE THEY ARE WHITE, and that is not a detail.** The drawn floor's mark
-      is `MAP.groundA` — light against the soil it was picked for and DARK against a
-      bright painted map, so the same fill over the artwork puts muddy brown patches where
-      light tiles should be. White lightens any ground there will ever be.
-    - **AND MUCH FAINTER** (`ART_TILE`, 0.12 against the soil's 0.46), because white is a
-      far stronger mark than brown on brown — a third of the alpha for four times the
-      effect. Measured on the board, a marked cell differs from an unmarked one by about
-      **twelve levels out of 255** over a painted region and three over the drawn floor.
-      It was 0.055 and five levels, which was reported as tiles not standing out: at that
-      strength the grid reads on a flat patch of soil and vanishes wherever the picture
-      has anything going on, and every region is a picture now (the fallback `ground.webp`
-      is one too), so the white mark is the only one a player ever sees. Much louder than
-      this and the board reads as a chessboard with a picture behind it.
+    - **THE MARK IS SOLVED AGAINST THE GROUND IT LANDS ON** (`tileMark`, `groundLuma`),
+      and getting there took two goes. It was `MAP.groundA` — the drawn floor's lighter
+      soil, which over a BRIGHT painted map is a darker square, so muddy brown patches
+      where light tiles should be. Then it was a fixed WHITE at a fixed alpha, which is a
+      mark whose strength depends entirely on how dark the picture under it happens to be:
+      the same 12% read as **twelve levels out of 255** on the forest floor's brown soil
+      and **five** on the desert's sand. Tiles not standing out had already been reported
+      once at five levels, and a fixed alpha was always going to bring it back one region
+      at a time as the art landed — which is exactly what the desert did on the commit it
+      arrived on.
+      - So the cell's own ground is SAMPLED off the plate and the fill solved for it:
+        compositing a colour at alpha `a` over luminance `L` moves it by `a·|C−L|`, so the
+        alpha falls out of the headroom. `ART_STEP` is **19** because that is what the
+        forest floor was already shipping at the middle of the board — the map that was
+        checked and signed off — so the ground a player has been looking at does not move
+        and every other one comes up to meet it. Measured over the whole grid, rim fade
+        included: forest **12.3 → 12.5**, desert **5.1 → 12.9**.
+      - **THE DIRECTION FOLLOWS THE GROUND TOO**: lighten a dark map, DARKEN a bright one.
+        On sand, white needs a quarter of an alpha for that shift and it is a wash that
+        takes the colour out with it; black needs six percent and multiplies every channel
+        alike, so the sand stays sand.
+      - **NO CAP IS NEEDED**, and one was written and removed. Picking the side with the
+        room means the headroom is never under half, so pure black or pure white asks for
+        twice the least and no more — the mutation that deleted the cap passed every test,
+        which is how it was found. A rule nothing holds is not a rule.
+      - The DRAWN floor keeps `MAP.groundA` rather than being solved for: it is a shade
+        picked for that soil, and the one ground this code knows the colour of.
     - `tileMark` is pulled out of the drawing so the rule has a test: the plate bakes into
       a canvas of its own and a node test has no canvas at all, so that function is the
-      only part of this layer anything else can see.
+      only part of this layer anything else can see. It takes a LUMINANCE now rather than
+      a boolean, which is what keeps it pure while the sampling stays in the drawing —
+      and `groundLuma` catches `getImageData`, because a board that will not draw its grid
+      is worse than one that guesses at it (`ART_FALLBACK`).
   - **A PAINTED REGION REPLACES THE SOIL AND THE SCENERY BOTH.** A picture has its own
     rocks and ferns; drawing ours over them is two forests at once.
   - **IT ARRIVES LATE, and the plate's cache key says whether it is HERE rather than
