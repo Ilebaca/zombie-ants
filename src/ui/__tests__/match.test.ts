@@ -341,6 +341,50 @@ describe("the opening", () => {
     w.screen.destroy();
   });
 
+  /**
+   * THE ABILITY CARD HOLDS THE MATCH STILL.
+   *
+   * It was purely decorative: the turn clock ran down behind three seconds of animation
+   * nobody could play through, and the card is fixed over the middle of the board, so a tap
+   * aimed at what is under it landed on a tile the player could not see.
+   *
+   * The clock is PAUSED, never restarted — handing the turn's full length back would make
+   * casting an ability a way to buy another thirty seconds.
+   */
+  it("stops the clock and the screen while the ability card plays", async () => {
+    vi.useFakeTimers();
+    const w = watch();
+    w.state.current = "you";
+    w.state.cooldown.you = 0;
+    w.screen.start();
+    opened(w);
+    await vi.advanceTimersByTimeAsync(4000);            // the camera lands, the clock runs
+    const ticking = clock(w);
+    expect(ticking, "the clock never started").not.toBe("scaleX(1)");
+
+    w.host.querySelector<HTMLButtonElement>("#bAbility")?.click();
+    expect(w.host.querySelector(".match.casting"), "the screen stayed live under the card")
+      .not.toBeNull();
+
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(clock(w), "the clock ran down behind the card").toBe(ticking);
+    // And the footer is refused while it is up: End turn would hand the turn over from
+    // under an animation the player is being asked to read.
+    const before = w.state.current;
+    w.host.querySelector<HTMLButtonElement>("#bEnd")?.click();
+    expect(w.state.current, "a press landed through the card").toBe(before);
+
+    // jsdom runs no animations, so the watchdog is what releases it here — and the advance
+    // stops just past it, because every millisecond after the release is the clock running
+    // again and this is about what it did BEFORE that.
+    await vi.advanceTimersByTimeAsync(3100);
+    expect(w.host.querySelector(".match.casting"), "the hold never let go").toBeNull();
+    expect(clock(w), "the card handed the turn its full length back").toBe(ticking);
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(clock(w), "the clock never picked up again").not.toBe(ticking);
+    w.screen.destroy();
+  });
+
   /** A match with nobody named draws no names, rather than throwing. */
   it("survives a match with nobody named", () => {
     vi.useFakeTimers();

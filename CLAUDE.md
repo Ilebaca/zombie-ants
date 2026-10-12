@@ -1185,6 +1185,42 @@ name, and its size.
   player's own, which is what a ranked ladder would serve them. Keyed by the match seed, so
   it does not change under the player mid-match.
 
+**THE ABILITY CARD HOLDS THE MATCH STILL** (`showSpellCard`, `holdFor`, `.match.casting`).
+It slid in, held and slid out and was marked "purely decorative", which was two faults at
+once: the turn clock ran down behind three seconds of animation nobody could play through,
+and the card is `position: fixed` over the MIDDLE of the board — so a tap aimed at what is
+under it landed on a tile the player could not see. Reading what your own ability just did
+must not cost the turn and must not take a move you did not mean to make, which is the rule
+a tutorial step already follows (§10a).
+- **THE CLOCK IS PAUSED, NEVER RESTARTED.** `startTimer` resets the turn to its full
+  length, so resuming through it would make casting an ability a way to buy another thirty
+  seconds. `runClock(restart)` is the split: `startTimer` is `runClock(true)` and a resume
+  is `runClock(false)`.
+- **AND THE GUARD IS THE MECHANISM, not a second one.** `holdFor` arms the watchdog FIRST
+  and then calls `runClock(false)`, so `casting` is already true and the clock is stopped
+  by `runClock`'s own guard rather than by reaching past it to `stopTimer`. Written the
+  other way round the guard was unreachable — the mutation that deleted it passed every
+  test — and a `startTimer` landing during a hold would have quietly un-paused AND reset.
+  One function decides whether the clock may run (§7).
+- **THE CSS OWNS THE LENGTH, so `animationend` is what releases the hold.** A duration in
+  the TypeScript would be the animation's length written down twice. `CARD_WATCHDOG_MS` is
+  not that number: it is far longer than any card, and it exists because a screen left
+  inert for ever by an event that never arrived is a far worse fault than the one this
+  fixes — the same reasoning as the splash watchdog. jsdom runs no animations at all, so in
+  a test the watchdog is always what releases it.
+- **A SECOND CAST RESTARTS THE HOLD** rather than stacking one on another, and `castSeq` is
+  what makes the first card's listener harmless when it finally fires.
+- **A PRESS DOES NOT SKIP IT**, unlike the opening descent. The card is on screen precisely
+  because the player is meant to read it, and a tap that dismissed it would be the
+  accidental press this exists to prevent.
+- The JS gates REFUSE the action (`acting`, `onPointerDown`); `.match.casting > *` stops the
+  press being taken at all, so a button does not light up for something that will not
+  happen. DIRECT CHILDREN, because `.match` is `display: contents` and generates no box —
+  a rule on the wrapper would be relying on `pointer-events` inheriting through an element
+  that is not there.
+- **Tunnelling shows no card and is not held.** It is cast from a target tap and spends the
+  turn (§4.10), so the turn hands over immediately and there is no clock left to pause.
+
 **The match clock is the SCREEN's, never the engine's.** Wall time from the moment the
 opening hands over to the moment the match is decided, latched there so a result card
 sitting on screen does not keep counting, and reported to the app through `onExit`. It

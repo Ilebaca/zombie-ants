@@ -33,6 +33,14 @@ import { el } from "./chrome";
 /** Seconds a player gets per move before the turn passes automatically. */
 const MOVE_SECONDS = 15;
 /**
+ * How long the ability card is allowed to hold the screen before it is released anyway.
+ *
+ * It is NOT the card's length — the CSS owns that and `animationend` is what normally
+ * ends the hold. This is the deadman: far longer than any card, and the only thing
+ * standing between an `animationend` that never arrives and a match nobody can play.
+ */
+const CARD_WATCHDOG_MS = 6000;
+/**
  * How long the AI sits on its turn before playing, in milliseconds.
  *
  * A move that lands the instant the turn flips reads as a machine answering, not as an
@@ -165,6 +173,9 @@ export class MatchScreen {
   private valid: Coord[] = [];
 
   private timeLeft = MOVE_SECONDS;
+  /** The ability card's watchdog, and the hold it belongs to (`holdFor`). */
+  private castTimer: number | null = null;
+  private castSeq = 0;
   private timerId: number | null = null;
   private aiTimer: number | null = null;
   /** Holds the result card back while the winner's wash plays. */
@@ -663,6 +674,7 @@ export class MatchScreen {
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
     this.clearTimers();
     if (this.endTimer) { clearTimeout(this.endTimer); this.endTimer = null; }
+    if (this.castTimer) { clearTimeout(this.castTimer); this.castTimer = null; }
     if (this.introTimer) { clearTimeout(this.introTimer); this.introTimer = null; }
     this.root.remove();
   }
@@ -689,6 +701,10 @@ export class MatchScreen {
     // it is live while the camera is still coming down — and End turn during the descent
     // would hand the first turn over before the match had visibly started.
     const acting = (): boolean => {
+      // NOTHING IS PRESSABLE WHILE THE CARD IS UP, and a press does not skip it either:
+      // the card is on screen precisely because the player is meant to read it, and a tap
+      // that dismissed it would be the accidental press this is here to prevent.
+      if (this.casting) return false;
       if (!this.introTimer) return true;
       this.openMatch();
       return false;
@@ -739,7 +755,18 @@ export class MatchScreen {
     if (s.over) this.finish();
   }
 
-  /** The ability card: slides in, holds, slides out. Purely decorative. */
+  /**
+   * The ability card: slides in, holds, slides out — and HOLDS THE MATCH STILL while it is
+   * up. It was purely decorative, which made it two faults at once: the turn clock ran
+   * down behind three seconds of animation nobody could play through, and the card covers
+   * the middle of the board, so a tap aimed at what is under it landed on a tile the
+   * player could not see. Reading what your own ability just did must not cost the turn,
+   * and must not take a move you did not mean to make — the same rule a tutorial step
+   * follows (§10a).
+   *
+   * THE CLOCK IS PAUSED, NEVER RESTARTED (`runClock(false)`). Handing the turn's full
+   * length back would make casting an ability a way to buy another thirty seconds.
+   */
   private showSpellCard(name: string, desc: string): void {
     const card = this.root.querySelector<HTMLElement>("#spellCard");
     if (!card) return;
@@ -750,7 +777,46 @@ export class MatchScreen {
     card.classList.remove("show");
     void card.offsetWidth;                  // restart the CSS animation
     card.classList.add("show");
+    this.holdFor(card);
   }
+
+  /**
+   * Hold the screen until the card has finished playing.
+   *
+   * THE CSS OWNS THE LENGTH, so `animationend` is what releases it — a number here would
+   * be the animation's duration written down in a second place, and the one that goes
+   * stale. `CARD_WATCHDOG_MS` is NOT that number: it is far longer than any card, and it
+   * is there because a screen left inert for ever by an event that never arrived is a far
+   * worse fault than the one this fixes. (jsdom has no animations at all, so in a test the
+   * watchdog is always what releases it.)
+   *
+   * A SECOND CAST RESTARTS THE HOLD rather than stacking one on another, and the sequence
+   * number is what makes the first card's listener harmless when it finally fires.
+   */
+  private holdFor(card: HTMLElement): void {
+    const seq = ++this.castSeq;
+    const release = (): void => { if (seq === this.castSeq) this.release(); };
+    if (this.castTimer !== null) clearTimeout(this.castTimer);
+    this.castTimer = window.setTimeout(release, CARD_WATCHDOG_MS);
+    this.root.classList.add("casting");
+    card.addEventListener("animationend", release, { once: true });
+    // The watchdog is armed FIRST, so `casting` is already true here and this STOPS the
+    // clock at `runClock`'s own guard rather than reaching past it to `stopTimer`. One
+    // function decides whether the clock may run (§7), and a `startTimer` that lands
+    // during a hold is refused by the same line rather than quietly un-pausing it.
+    this.runClock(false);
+  }
+
+  /** The card is done: the screen takes taps again and the clock picks up where it was. */
+  private release(): void {
+    if (this.castTimer !== null) { clearTimeout(this.castTimer); this.castTimer = null; }
+    this.castSeq++;                          // nothing from the finished hold may speak again
+    this.root.classList.remove("casting");
+    this.runClock(false);
+  }
+
+  /** True while an ability card is on screen. */
+  private get casting(): boolean { return this.castTimer !== null; }
 
   private get state(): GameState { return this.opts.state; }
 
@@ -881,6 +947,7 @@ export class MatchScreen {
   private onPointerDown = (e: PointerEvent): void => {
     // A tap during the opening skips it. Sitting through the same descent every match is
     // the fastest way to make an animation hated.
+    if (this.casting) return;                // the card covers the middle of the board
     if (this.introTimer) { this.openMatch(); return; }
     if (this.state.over || this.state.current !== "you") return;
     const at = this.renderer.hit(e.clientX, e.clientY);
@@ -1039,12 +1106,24 @@ export class MatchScreen {
 
   /* ----------------------------------------------------------------------- TIMER */
 
-  private startTimer(): void {
+  /** A fresh turn: the whole length, counting down. */
+  private startTimer(): void { this.runClock(true); }
+
+  /**
+   * Run the turn clock. `restart` gives the turn its full length; WITHOUT it the clock
+   * picks up from whatever is left, which is what a pause needs — an ability card that
+   * handed the turn's time back would make casting one a way to buy another thirty
+   * seconds. Every reason the clock may not run is gathered here, so a pause cannot
+   * resume into a state that should still be holding it.
+   */
+  private runClock(restart: boolean): void {
     this.stopTimer();
     if (this.state.over) { this.updateTimerUI(); return; }
     // A tutorial step holds the match still: reading one must never cost the turn.
     if (this.touring) { this.updateTimerUI(); return; }
-    this.timeLeft = MOVE_SECONDS;
+    // And so does an ability card, for the same reason (`showSpellCard`).
+    if (this.casting) { this.updateTimerUI(); return; }
+    if (restart) this.timeLeft = MOVE_SECONDS;
     this.updateTimerUI();
     this.timerId = window.setInterval(() => {
       this.timeLeft--;

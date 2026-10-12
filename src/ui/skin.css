@@ -4442,6 +4442,18 @@ button:not(.playbtn):active,
    outranks every rule in the app and this one is styling like any other. */
 .match { display: contents; }
 
+/* WHILE AN ABILITY CARD IS UP, THE SCREEN TAKES NO TAPS (`showSpellCard`).
+   The card is `position: fixed` over the middle of the board, so a tap aimed at
+   what is under it lands on a tile the player cannot see — and the footer is DOM,
+   live under the animation exactly as it is under the opening descent.
+   The JS gates are what actually refuse the action (`acting`, `onPointerDown`);
+   this is what stops the press being taken at all, so a button does not light up
+   for something that will not happen.
+   DIRECT CHILDREN, not the wrapper: `.match` is `display: contents` and generates
+   no box of its own, so a rule on it would be relying on `pointer-events` being an
+   inherited property through an element that is not there. */
+.match.casting > * { pointer-events: none; }
+
 
 
 /* ======================================================================
