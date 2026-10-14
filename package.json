@@ -16,6 +16,7 @@
     "arena": "tsx tools/arena.ts",
     "reach": "tsx tools/reach.ts",
     "shots": "tsx tools/shots.ts",
+    "gdd:pdf": "tsx tools/gdd-pdf.ts",
     "ai:bench": "tsx tools/bench.ts",
     "android": "npm run build && cap sync android",
     "android:open": "npm run build && cap sync android && cap open android"

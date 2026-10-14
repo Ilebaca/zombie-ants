@@ -19,3 +19,7 @@ dist-old/
 # the line above is ignored: it is a folder of pictures of the app, and the app is drawn
 # by its own code. Re-run the tool rather than committing a copy that goes stale.
 export/
+
+# The design document, printed (`npm run gdd:pdf`). Output again: `docs/GDD.html` is the
+# source, and a PDF beside it is a second copy of the same document that nobody updates.
+*.pdf
