@@ -127,6 +127,17 @@ const PATHS: Record<string, string | string[]> = {
   flag: "M5 2a1.4 1.4 0 0 1 1.4 1.4v.4l11.9 2.4a1 1 0 0 1 .5 1.7l-3.3 3.3 3.3 3.3a1 1 0 0 1-.5 1.7L6.4 18.6v3A1.4 1.4 0 0 1 3.6 21.6V3.4A1.4 1.4 0 0 1 5 2",
 };
 
+/**
+ * EVERY MARK IN THE FAMILY, BY NAME.
+ *
+ * The table itself stays private — a path is an implementation detail of `icon()` and
+ * nothing else should be drawing one by hand. The NAMES are a different thing: a mark is
+ * named rather than carried everywhere in this app (`Product.icon`, `Chamber.icon`,
+ * `Quest.icon`, `TraitDef.icon`), so the set of names is part of the interface, and the
+ * asset export enumerates it rather than keeping a second list that would go stale.
+ */
+export const ICON_NAMES: readonly string[] = Object.keys(PATHS);
+
 /** One icon, sized in px, inheriting the colour of whatever it sits in. */
 export function icon(name: keyof typeof PATHS | string, size = 20): SVGSVGElement {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");

@@ -9,5 +9,13 @@ dist-old/
 # Screenshots taken for a design review. They are OUTPUT, not source: every picture in
 # this app is drawn by the code that owns it, and a folder of PNGs of the app is the one
 # thing here that goes stale the moment a screen changes. Re-take them instead.
-shots/
+#
+# ROOTED, or it also hides `tools/shots/` — a pattern with no leading slash matches a
+# directory of that name at ANY depth, which quietly left the export harness untracked.
+/shots/
 *.zip
+
+# Where `npm run shots` writes the screen and asset export. OUTPUT, for the same reason
+# the line above is ignored: it is a folder of pictures of the app, and the app is drawn
+# by its own code. Re-run the tool rather than committing a copy that goes stale.
+export/

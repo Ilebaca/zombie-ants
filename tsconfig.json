@@ -32,6 +32,9 @@
   "exclude": [
     "tools/icons.ts",
     "tools/mapshot.ts",
-    "tools/mapshot/main.ts"
+    "tools/mapshot/main.ts",
+    "tools/shots.ts",
+    "tools/shots/main.ts",
+    "tools/shots/sheets.ts"
   ]
 }
