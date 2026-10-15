@@ -457,6 +457,8 @@ let dir = 0;
 
 (window as any).shots = {
   names: SCENES.map((s) => s.name),
+  /** The live app, for measuring the board's geometry off a real screen. */
+  app: () => app,
   meta: SCENES.map((s) => ({ wait: s.wait ?? 260, still: !!s.still })),
   run(i: number): any { dir = 0; return SCENES[i]?.set(); },
   scroll: scrollOn,
