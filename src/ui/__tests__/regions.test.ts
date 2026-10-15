@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import { readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { REGIONS, REGION_CHAPTERS, ROAD_CHAPTERS, regionName, regionOf } from "../../platform";
-import { DRAWN_GROUND, groundFor, regionArt, regionsPainted } from "../regions";
+import { DEFAULT_GROUND, groundFor, regionArt, regionsPainted } from "../regions";
 
 const FOLDER = resolve(__dirname, "..", "regions");
 const painted = (): string[] => readdirSync(FOLDER).filter((f) => /^rg\d+/.test(f));
@@ -41,7 +41,7 @@ describe("the road runs through ten places", () => {
     expect(regionOf(0)).toBe(1);
     expect(regionOf(-4)).toBe(1);
     expect(regionOf(ROAD_CHAPTERS + 20)).toBe(REGIONS.length);
-    expect(groundFor(Number.NaN)).toBe(DRAWN_GROUND);
+    expect(groundFor(Number.NaN)).toBe(DEFAULT_GROUND);
   });
 });
 
@@ -54,22 +54,22 @@ describe("the ground a match is played on", () => {
 
   /**
    * THE FALLBACK IS THE POINT OF THE STRUCTURE. Until a region is painted it wears the
-   * game's own drawn ground, exported through `tools/mapshot.ts`, so the board looks
-   * exactly as it always has and the feature can land before the art does.
+   * placeholder, so the feature can land — and ship — long before the art does. Every
+   * one of the ten wears it today, which is exactly the state this has to survive.
    */
-  it("falls back to the drawn ground for a region that has none", () => {
+  it("falls back to the placeholder for a region that has none", () => {
     expect(regionsPainted(), "the folder and the table disagree").toBe(painted().length);
     for (let at = 1; at <= REGIONS.length; at++) {
       const own = painted().some((f) => Number(/^rg(\d+)/.exec(f)?.[1]) === at);
       if (!own) {
-        expect(regionArt(at), `region ${at} invented a picture`).toBe(DRAWN_GROUND);
+        expect(regionArt(at), `region ${at} invented a picture`).toBe(DEFAULT_GROUND);
       }
     }
   });
 
-  /** And the drawn one is a real file the build emits, not an empty string. */
-  it("ships the drawn ground as a file", () => {
-    expect(DRAWN_GROUND).toMatch(/\.webp/);
+  /** And the placeholder is a real file the build emits, not an empty string. */
+  it("ships the placeholder ground as a file", () => {
+    expect(DEFAULT_GROUND).toMatch(/\.webp/);
     expect(readdirSync(FOLDER)).toContain("ground.webp");
   });
 

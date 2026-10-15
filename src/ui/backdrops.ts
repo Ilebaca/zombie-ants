@@ -11,10 +11,12 @@
  * whole change — no import to add, no list to keep in step, and no chance of a table
  * naming a file that is not there. The convention is `ch<NN>.webp`, two digits, 01 to 50.
  *
- * EVERY CHAPTER THAT HAS NO PICTURE YET FALLS BACK TO `home.webp`, which is the one the
- * game ships with today. That is what makes this safe to land before the art exists: fifty
- * chapters, fifty entries, and all of them currently the same image — a build is never
- * missing a background, and each real one starts being used on the commit it arrives on.
+ * EVERY CHAPTER THAT HAS NO PICTURE YET FALLS BACK TO `home.webp`, a painted PLACEHOLDER,
+ * and today that is all fifty of them. That is what makes this safe to land before the art
+ * exists: fifty chapters, fifty entries, all of them currently the same image — a build is
+ * never missing a background, and each real one starts being used on the commit it arrives
+ * on. The placeholder is deliberately a finished-looking picture rather than a grey plate:
+ * a chapter should read as art that is on its way, not as art that is missing.
  *
  * The files are bundled from `src/ui/` rather than dropped in `public/` for the same three
  * reasons the first one was: Vite hashes the name so a cached picture cannot go stale, it

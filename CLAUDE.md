@@ -1979,10 +1979,13 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
   seven's — the glob resolves at BUILD time, so dropping a file in with the right name is
   the WHOLE change. No import to add, no list to keep in step, and no way for a table to
   name a file that is not there. The convention is `ch<NN>.webp`, two digits, 01 to 50.
-  - **EVERY CHAPTER WITHOUT ONE FALLS BACK TO `home.webp`**, the picture the game ships
-    with. That is what let the structure land before the art did: today all fifty resolve
-    to the same image, a build is never missing a background, and each real one starts
-    being used on the commit it arrives on. `backdrops.test.ts` asks every chapter on the
+  - **EVERY CHAPTER WITHOUT ONE FALLS BACK TO `home.webp`**, which is a painted
+    PLACEHOLDER — and today that is all fifty. That is what let the structure land before
+    the art did: a build is never missing a background, and each real one starts being
+    used on the commit it arrives on. Chapters 6–10 had their own for a while and were
+    taken out with the two painted regions, for the same reason: one placeholder
+    everywhere reads as art on its way, and five finished chapters in a road of fifty
+    read as forty-five that are broken. `backdrops.test.ts` asks every chapter on the
     road for its ground, and holds that a chapter with no file of its own answers with the
     default rather than inventing one.
   - **It is set INLINE on `#home`, from the chapter the banner already names.** Fifty
@@ -2003,13 +2006,19 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
   - **THE FOLDER IS THE TABLE**, the same rule the home artwork follows:
     `src/ui/regions/rg03.webp` IS the Volcano's ground, resolved by a build-time glob. The
     NUMBER is what is read, so `rg03-volcano.webp` works too and says what it is in the
-    folder listing. Every region without one wears `ground.webp` — the game's own drawn
-    ground, exported through the tool below — so the board looks exactly as it always has
-    until the art lands. **Painted so far: 1 Forest floor, 2 Desert.**
+    folder listing. Every region without one wears `ground.webp`, which is a painted
+    PLACEHOLDER — and today that is **all ten of them**. The two that had their own
+    ground (Forest floor and Desert) were taken out deliberately: one placeholder
+    everywhere is a game that reads as art on its way, where two finished regions and
+    eight falling back to a different-looking floor reads as a game that is broken in
+    eight places. `ground.webp` was the game's own DRAWN floor exported through the tool
+    below for as long as the drawn floor was what a match used; the rule is unchanged, only
+    the file in it. **Painted so far: none — every region wears the placeholder.**
   - **THE TILE INDICATORS ARE NOT PART OF THE PICTURE.** They mark the cells, so they are
     a LAYER over whatever ground is underneath (`paintChequer`, `tileMark`): the tile size
     depends on the screen, so squares baked into a picture would line up on exactly one
-    phone. That is also why the exported placeholder has none.
+    phone. That is also why neither the exported ground nor the placeholder has one, and
+    why a region painted later must not either.
     - **THE MARK IS SOLVED AGAINST THE GROUND IT LANDS ON** (`tileMark`, `groundLuma`),
       and getting there took two goes. It was `MAP.groundA` — the drawn floor's lighter
       soil, which over a BRIGHT painted map is a darker square, so muddy brown patches
