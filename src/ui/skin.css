@@ -128,8 +128,15 @@
    and turned the Antarium's quiet "Upgrade & Customize" bar solid gold
    with green text on it. Early, it is only a floor, and anything later
    in this file still wins.
+
+   TWO SCREENS ARE EXEMPT, and they are the two that are a PICTURE rather than
+   a column of cards: `#home` and `#luckyhatch`. Everything else in the app is
+   drawn, so a background image anywhere else is either a gradient this rule is
+   here to remove or a file that should not exist. Adding a third means adding
+   it here as well, or the declaration is cleared with `!important` and never
+   once takes effect — silently, which is the whole fault this blanket creates.
    ====================================================================== */
-*:not(#home), *::before, *::after { background-image: none !important; }
+*:not(#home):not(#luckyhatch), *::before, *::after { background-image: none !important; }
 
 /* Surfaces the legacy sheet fills with a gradient and this file does not
    otherwise dress. */
@@ -4997,6 +5004,30 @@ button:not(.playbtn):active,
    the disc, the ring around it and the tier word all take `--tier` from the
    table (platform/traits.ts), which is the same place that decides what a
    mythic is worth. */
+/* ---- The chamber the larva is in ----
+   The one screen besides home that is a PICTURE rather than a column of cards,
+   and for the same reason: the hatch does exactly one thing, so what is on it
+   is an egg, a button, and the ground they are standing on. Bundled from
+   `src/ui/backdrops/` like the home artwork — Vite hashes the name so a cached
+   picture cannot go stale, the url it emits is RELATIVE (`base: "./"`, or the
+   Capacitor shell points at nothing), and the service worker precaches it with
+   everything else the build emitted.
+
+   It is NOT part of the chapter table next to it: that glob reads `ch*.webp`
+   and this file is not one, so it is ignored there by name rather than by luck.
+
+   COVER, CENTRED, and the picture is composed for it: the larva sits in the
+   middle of a chamber that is dark at every edge, so a crop at any phone shape
+   loses nothing that was carrying the screen. The blanket above had to be told
+   about `#luckyhatch` for any of this to paint at all. */
+#luckyhatch {
+  background-image: url("./backdrops/hatch.webp");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-color: var(--bg);
+}
+
 .hatchwrap {
   display: flex;
   flex-direction: column;
