@@ -3851,6 +3851,37 @@ button:not(.playbtn):active,
 .spgwrap .secthead { margin: 12px 0 0; }
 .spgwrap .secthead:first-child { margin-top: 0; }
 
+/* ------------------------------------------------------------------ THE COVER
+   One painted ant across the top of the page, at the ratio the paintings are
+   delivered at — 1567 x 1254, written as that pair rather than as a decimal so
+   the box and the file can never disagree and crop somebody's artwork.
+
+   The ratio is on the BOX, not on the picture, so a colony that has not been
+   painted yet holds exactly the same shape with its head drawn on the plate
+   instead (ui/covers.ts). Nothing on the page moves when a cover lands.
+
+   `object-fit: cover` is belt and braces: the files are already this ratio, and
+   a picture delivered at a slightly different one is cropped rather than
+   stretched, which is the failure a reader cannot see. */
+.spgcover {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1567 / 1254;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.spgcover-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Not painted yet: the head, centred, on the plate. */
+.spgcover.plain { display: grid; place-items: center; }
+.spgcover-head { width: 160px; height: 160px; opacity: .85; }
+
 /* ------------------------------------------------------------------- THE HERO */
 .spghero {
   display: grid;

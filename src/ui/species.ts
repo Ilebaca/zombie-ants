@@ -36,6 +36,7 @@ import {
 import type { ProfileStore, Research, ResearchDef } from "../platform";
 import { SPECIES_COL } from "../render";
 import { antPortrait, buyButton, effectRow, el, pips, redraw, screenEl, screenHeader, toast } from "./chrome";
+import { coverFor } from "./covers";
 import { icon } from "./icons";
 import { traitOpener } from "./traits";
 
@@ -70,6 +71,12 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     const body = el("div", "screenbody sb-top");
     const page = el("div", "spgwrap");
     page.id = "aupBody";
+
+    // THE COVER LEADS THE PAGE. This screen is where a colony is bought, researched and
+    // dressed, and until now it opened on the same 240px head that marks a row in a list.
+    // A painting of the animal says what the colony IS in the time it takes to look at
+    // it, which is the one thing a stat bar cannot do.
+    page.appendChild(cover(id, store.lookFor(id)));
 
     // THE TRAITS RIDE IN THE HERO, as its last row.
     //
@@ -214,6 +221,39 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
  * ceiling, so "0.90" means something: it is read off `SPECIES`, and a balance change moves
  * the track on the same commit.
  */
+/**
+ * THE PAINTING AT THE TOP, or the colony's own head while it is still to be painted.
+ *
+ * The BOX is the same either way — one ratio, stated once in `skin.css` and matching the
+ * size the paintings are delivered at — so the page has the same shape on every colony
+ * and a cover landing later moves nothing. `ui/covers.ts` is the table.
+ *
+ * The fallback is a CANVAS rather than a grey rectangle: the head is drawn by the same
+ * code the board draws it with, wearing whatever look this colony has on, so a page with
+ * no painting is still a picture of the right colony rather than a hole where one goes.
+ */
+function cover(id: SpeciesId, look: Look): HTMLElement {
+  const box = el("div", "spgcover");
+  box.id = "aupCover";
+  const art = coverFor(id);
+  if (art) {
+    const img = document.createElement("img");
+    img.src = art;
+    img.className = "spgcover-img";
+    // Named, because it is the one picture on this screen that is not beside the words
+    // it illustrates — the colony's name is in the header above it, not next to it.
+    img.alt = `${SPECIES[id].name}`;
+    // It is the first thing on the page and the page is reached by a tap, so it is
+    // already in the viewport: loading it lazily would show the plate and then swap.
+    img.decoding = "async";
+    box.appendChild(img);
+  } else {
+    box.classList.add("plain");
+    box.appendChild(antPortrait(id, 320, "spgcover-head", look));
+  }
+  return box;
+}
+
 function hero(
   id: SpeciesId, research: Research, tierName: string, tierCol: string, look: Look,
   traits: HTMLElement,
