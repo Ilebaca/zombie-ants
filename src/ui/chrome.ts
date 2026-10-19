@@ -15,6 +15,7 @@ import type { Profile, ProfileStore } from "../platform";
 import type { Look, SpeciesId } from "../engine";
 import { antHead, basicLook, lookCol } from "../render";
 import { icon } from "./icons";
+import { faceFor } from "./faces";
 
 /** Small element factory: `el("div", "cls", "text")`. */
 export function el<K extends keyof HTMLElementTagNameMap>(
@@ -463,17 +464,39 @@ export function setupSteps(current: number, total = 2): HTMLElement {
 
 /** A mark in a wrapper, so the flex row can size it without the SVG shrinking. */
 /**
- * A species' head, drawn by the board's own code.
+ * A colony's face: its painted icon where there is one, and its drawn head where there
+ * is not.
  *
- * One function, because four screens want the same picture — the profile, the Antarium,
- * the opponent search and the ladder — and four copies of it is four places to fix when
- * the drawing changes (CLAUDE.md §7). jsdom has no canvas and a screen must survive a
- * context it cannot draw into (§6), so a null context returns a blank canvas rather than
- * throwing.
+ * One function, because every screen that names a colony wants the same picture — the
+ * profile, the Antarium, a friend row, the ladder, the opponent search, the result card —
+ * and a copy per screen is a copy to fix when the drawing changes (CLAUDE.md §7).
+ *
+ * THE PAINTING IS ONLY EVER THE BASIC LOOK, and that is the rule worth keeping. A skin
+ * recolours the whole colony and may carry an overlay (`engine/skins.ts`); the drawn head
+ * is the only one of the two that can show either, so a colony wearing something found
+ * keeps its drawn face. Handing a skinned colony its painted icon would make wearing a
+ * skin do nothing on nine screens, silently.
+ *
+ * jsdom has no canvas and a screen must survive a context it cannot draw into (§6), so a
+ * null context returns a blank canvas rather than throwing.
  */
 export function antPortrait(
   id: SpeciesId, size: number, cls?: string, look?: Look | null,
-): HTMLCanvasElement {
+): HTMLElement {
+  const worn = look ?? basicLook(id);
+  const art = faceFor(id);
+  if (art && worn.id === basicLook(id).id) {
+    const img = document.createElement("img");
+    img.src = art;
+    img.width = size;
+    img.height = size;
+    if (cls) img.className = cls;
+    // Silent, for the reason the canvas below is: the face always sits inside something
+    // that is already named, and a second announcement is noise rather than access.
+    img.alt = "";
+    img.setAttribute("aria-hidden", "true");
+    return img;
+  }
   const cv = document.createElement("canvas");
   cv.width = size;
   cv.height = size;
@@ -487,7 +510,6 @@ export function antPortrait(
   // A look carries its own colours as well as its overlay, and `lookCol` is the one place
   // that decides which wins — so a portrait and the board can never disagree about what a
   // colony looks like. No look means the basic one, which is what an opponent always is.
-  const worn = look ?? basicLook(id);
   if (g) antHead(g, size / 2, size / 2, size * 0.46, lookCol(id, worn), worn);
   return cv;
 }
