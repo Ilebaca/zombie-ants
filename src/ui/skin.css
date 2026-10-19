@@ -3865,12 +3865,21 @@ button:not(.playbtn):active,
    stretched, which is the failure a reader cannot see. */
 .spgcover {
   position: relative;
-  width: 100%;
+  /* FULL BLEED. The painting is the top of the screen, not a card on it: no gutter,
+     no corner and no outline, so it meets the edge of the phone the way the ground
+     under the board does. `.screen` carries the app's 16px gutter, so the cover
+     escapes by exactly that and is put back by twice it — the same trick the legacy
+     `.tophead` uses, and the reason it is written as the variable rather than as 16:
+     a block that escapes by a different number than the one holding it in overhangs
+     the screen it is meant to fill. */
+  margin-inline: calc(-1 * var(--sp4));
+  width: calc(100% + var(--sp8));
   aspect-ratio: 1567 / 1254;
   overflow: hidden;
-  border-radius: var(--r-lg);
-  background: var(--panel);
-  border: 1px solid var(--line);
+  /* The paintings are delivered on this ground, so the box is it: a colony with no
+     cover yet stands on the same colour the painted ones do, and a picture that ever
+     fails to fill the box shows ground rather than a plate of another colour. */
+  background: #1a120a;
 }
 .spgcover-img {
   display: block;

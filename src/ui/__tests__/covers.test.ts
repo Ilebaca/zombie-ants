@@ -64,6 +64,21 @@ describe("a colony's cover", () => {
     expect(/\.spgcover-img\s*\{([^}]*)\}/.exec(css)?.[1] ?? "").toMatch(/object-fit:\s*cover/);
   });
 
+  /**
+   * IT IS FULL BLEED, and the number it escapes by has to be the number holding it in.
+   * The screen's own gutter is `--sp4`; a cover that pulled itself out by a different
+   * one would either leave a sliver of page down each side or overhang the screen, and
+   * neither is visible to anybody reading the stylesheet.
+   */
+  it("escapes the screen's gutter rather than a number of its own", () => {
+    const css = readFileSync(resolve(__dirname, "..", "skin.css"), "utf8");
+    const rule = /\.spgcover\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
+    expect(rule).toMatch(/margin-inline:\s*calc\(-1 \* var\(--sp4\)\)/);
+    expect(rule).toMatch(/width:\s*calc\(100% \+ var\(--sp8\)\)/);
+    // No card dressing: it is the top of the screen, not a panel on it.
+    expect(rule, "the cover is a card again").not.toMatch(/border(-radius)?:/);
+  });
+
   /** Every file really is that shape, or the box crops a painting nobody meant to crop. */
   it("ships files at that ratio", () => {
     for (const f of files()) {
