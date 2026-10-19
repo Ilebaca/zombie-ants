@@ -36,7 +36,7 @@ import type { SpeciesId } from "../engine";
  * a box that disagreed with the file would letterbox or crop somebody's artwork.
  */
 export const COVER_W = 1567;
-export const COVER_H = 1254;
+export const COVER_H = 900;
 
 /** What the build found, keyed by colony. */
 const PAINTED: Partial<Record<SpeciesId, string>> = (() => {

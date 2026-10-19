@@ -65,22 +65,38 @@ describe("a colony's cover", () => {
   });
 
   /**
-   * IT IS FULL BLEED, and the number it escapes by has to be the number holding it in.
-   * The screen's own gutter is `--sp4`; a cover that pulled itself out by a different
-   * one would either leave a sliver of page down each side or overhang the screen, and
-   * neither is visible to anybody reading the stylesheet.
+   * IT IS FULL BLEED, and the way it gets there is that THE SCREEN HAS NO GUTTER.
+   * The cover is a plain 100%; the gutter lives on the blocks instead. Pulling it out
+   * with negative margins instead looked identical in the DOM — the box really was the
+   * width of the glass — and painted 16px short at both ends, because the clip that
+   * stops the page being dragged sideways ate the overhang. Nothing but a pixel told
+   * the difference, so the rules that make it work are held here.
    */
-  it("escapes the screen's gutter rather than a number of its own", () => {
+  it("is full bleed because the screen carries no gutter", () => {
     const css = readFileSync(resolve(__dirname, "..", "skin.css"), "utf8");
     const rule = /\.spgcover\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
-    expect(rule).toMatch(/margin-inline:\s*calc\(-1 \* var\(--sp4\)\)/);
-    expect(rule).toMatch(/width:\s*calc\(100% \+ var\(--sp8\)\)/);
+    expect(rule, "the cover is not a plain full-width block").toMatch(/width:\s*100%/);
+    expect(rule, "the cover escapes with margins again").not.toMatch(/margin-inline/);
     // No card dressing: it is the top of the screen, not a panel on it.
     expect(rule, "the cover is a card again").not.toMatch(/border(-radius)?:/);
+    // And the gutter it used to escape is on the blocks around it.
+    expect(/#antup\s*\{([^}]*)\}/.exec(css)?.[1] ?? "", "the screen kept its padding")
+      .toMatch(/padding-inline:\s*0/);
+    expect(css, "the blocks were not given the gutter back")
+      .toMatch(/#antup \.spgwrap > \*:not\(\.spgcover\)/);
   });
 
-  /** Every file really is that shape, or the box crops a painting nobody meant to crop. */
-  it("ships files at that ratio", () => {
+  /**
+   * A FILE MAY BE TALLER THAN THE BOX AND MUST NEVER BE WIDER.
+   *
+   * `object-fit: cover` never stretches, so the only way a cover can go wrong is WHERE it
+   * crops. A painting taller than the box loses sky off the top and ground off the bottom,
+   * which is what these are composed to survive; one WIDER than the box is cropped at the
+   * SIDES instead, and what is at the sides of every one of them is the ant's head and its
+   * gaster. The ratio moved from 1567x1254 to 1567x900 with the paintings already in, so
+   * this is the rule that actually matters rather than "every file is exactly the box".
+   */
+  it("ships files the box can only crop top and bottom", () => {
     for (const f of files()) {
       const d = readFileSync(resolve(FOLDER, f));
       const tag = d.subarray(12, 16).toString("latin1");
@@ -96,8 +112,8 @@ describe("a colony's cover", () => {
         w = d.readUInt16LE(26) & 0x3fff;
         h = d.readUInt16LE(28) & 0x3fff;
       }
-      expect(w / h, `${f} is ${w}x${h}, which is not the cover ratio`)
-        .toBeCloseTo(COVER_W / COVER_H, 2);
+      expect(w / h, `${f} is ${w}x${h} — wider than the box, so it loses its head`)
+        .toBeLessThanOrEqual(COVER_W / COVER_H + 0.001);
     }
   });
 });

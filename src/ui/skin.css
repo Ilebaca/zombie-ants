@@ -3853,8 +3853,8 @@ button:not(.playbtn):active,
 
 /* ------------------------------------------------------------------ THE COVER
    One painted ant across the top of the page, at the ratio the paintings are
-   delivered at — 1567 x 1254, written as that pair rather than as a decimal so
-   the box and the file can never disagree and crop somebody's artwork.
+   delivered at — 1567 x 900, written as that pair rather than as a decimal so
+   the box and the file can never disagree about the shape.
 
    The ratio is on the BOX, not on the picture, so a colony that has not been
    painted yet holds exactly the same shape with its head drawn on the plate
@@ -3863,18 +3863,32 @@ button:not(.playbtn):active,
    `object-fit: cover` is belt and braces: the files are already this ratio, and
    a picture delivered at a slightly different one is cropped rather than
    stretched, which is the failure a reader cannot see. */
+/* THIS SCREEN HAS NO GUTTER OF ITS OWN — its BLOCKS do.
+   Every screen is padded 16px and its body is `min(100%, var(--page))` centred
+   (§ ONE CONTENT COLUMN), which is two things holding the content in: the
+   padding, and the column on a screen wider than 360. A cover pulled out by
+   negative margins escaped the first and not the second, and then the clip that
+   stopped the page being dragged sideways ate the overhang as well — so it read
+   as a 16px margin that no rule in the file admits to.
+   So the PADDING comes off this screen and goes onto each block instead. The
+   cover is then simply 100% of the glass, with nothing to escape, nothing to
+   clip and nothing that can be dragged. */
+#antup { padding-inline: 0; }
+#antup .screentop,
+#antup .spgwrap > *:not(.spgcover) {
+  width: min(calc(100% - var(--sp8)), var(--page));
+  margin-inline: auto;
+}
+#antup .screenbody { width: 100%; max-width: none; }
+
 .spgcover {
   position: relative;
-  /* FULL BLEED. The painting is the top of the screen, not a card on it: no gutter,
-     no corner and no outline, so it meets the edge of the phone the way the ground
-     under the board does. `.screen` carries the app's 16px gutter, so the cover
-     escapes by exactly that and is put back by twice it — the same trick the legacy
-     `.tophead` uses, and the reason it is written as the variable rather than as 16:
-     a block that escapes by a different number than the one holding it in overhangs
-     the screen it is meant to fill. */
-  margin-inline: calc(-1 * var(--sp4));
-  width: calc(100% + var(--sp8));
-  aspect-ratio: 1567 / 1254;
+  /* FULL BLEED. The painting is the top of the screen, not a card on it: no
+     gutter, no corner and no outline, so it meets the edge of the glass the way
+     the ground under the board does. It is a plain 100% because the screen above
+     carries no padding for it to escape. */
+  width: 100%;
+  aspect-ratio: 1567 / 900;
   overflow: hidden;
   /* The paintings are delivered on this ground, so the box is it: a colony with no
      cover yet stands on the same colour the painted ones do, and a picture that ever
