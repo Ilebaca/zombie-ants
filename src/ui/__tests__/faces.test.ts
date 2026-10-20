@@ -20,7 +20,21 @@ import { antPortrait } from "../chrome";
 import { faceFor, facesPainted, paintedFaces } from "../faces";
 
 const FOLDER = resolve(__dirname, "..", "faces");
-const files = (): string[] => readdirSync(FOLDER).filter((f) => f.endsWith(".webp"));
+/**
+ * What is in the folder — AND AN ABSENT FOLDER IS AN ANSWER, not an error.
+ *
+ * Git does not track an empty directory, so a feature that lands before its art does
+ * reaches CI with no folder at all: it existed on the machine it was written on and
+ * nowhere else. `readdirSync` throws ENOENT on that, which failed a deploy with every
+ * other test passing. Nothing painted is the state this whole file is about.
+ */
+const files = (): string[] => {
+  try {
+    return readdirSync(FOLDER).filter((f) => f.endsWith(".webp"));
+  } catch {
+    return [];
+  }
+};
 const ALL = Object.keys(SPECIES) as SpeciesId[];
 
 describe("a colony's painted icon", () => {
