@@ -3873,7 +3873,13 @@ button:not(.playbtn):active,
    So the PADDING comes off this screen and goes onto each block instead. The
    cover is then simply 100% of the glass, with nothing to escape, nothing to
    clip and nothing that can be dragged. */
-#antup { padding-inline: 0; }
+/* AND IT IS THE ONLY SCREEN THAT IS NOT GREEN. Every other screen in the app
+   stands on the forest floor's `--bg0`; this one stands on the ground its
+   paintings are lit on, so the cover meets the page rather than being a brown
+   window cut into a green wall. It is a colour rather than a token because it
+   belongs to the artwork, not to the palette — nothing else in the app uses it,
+   and the day a second screen does it becomes one. */
+#antup { padding-inline: 0; background-color: #1d140d; }
 #antup .screentop,
 #antup .spgwrap > *:not(.spgcover) {
   width: min(calc(100% - var(--sp8)), var(--page));

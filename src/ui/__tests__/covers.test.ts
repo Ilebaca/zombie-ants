@@ -80,8 +80,12 @@ describe("a colony's cover", () => {
     // No card dressing: it is the top of the screen, not a panel on it.
     expect(rule, "the cover is a card again").not.toMatch(/border(-radius)?:/);
     // And the gutter it used to escape is on the blocks around it.
-    expect(/#antup\s*\{([^}]*)\}/.exec(css)?.[1] ?? "", "the screen kept its padding")
-      .toMatch(/padding-inline:\s*0/);
+    const screen = /#antup\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
+    expect(screen, "the screen kept its padding").toMatch(/padding-inline:\s*0/);
+    // And it stands on the ground the paintings are lit on rather than the app's
+    // green, so the cover meets the page instead of being a window cut into it.
+    expect(screen, "the colony page went back to the app's green")
+      .toMatch(/background-color:\s*#1d140d/i);
     expect(css, "the blocks were not given the gutter back")
       .toMatch(/#antup \.spgwrap > \*:not\(\.spgcover\)/);
   });
