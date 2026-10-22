@@ -4144,6 +4144,14 @@ button:not(.playbtn):active,
   background: var(--panel);
   border: 1px solid var(--line);
 }
+/* THE CAST CARD'S PICTURE. The legacy frame is a 4:3 plate that centred a 52px EMOJI;
+   this build draws none (§10), so it sat empty on every cast. The paintings are SQUARE,
+   so the picture COVERS the plate rather than letterboxing inside it, and the frame
+   drops its own fill and border where there is one — a painting inside a visible box
+   reads as a thumbnail that failed to fill. An unpainted ability keeps the plate. */
+.sc-img.painted { background: none; border: none; overflow: hidden; }
+.sc-img > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
 /* A PAINTED ability card loses its padding so the picture can reach its own edges —
    a painting inset inside a card reads as a thumbnail that failed to fill. Everything
    under it is padded back by hand. */

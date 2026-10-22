@@ -13,7 +13,7 @@ import {
   tilesOwnedBy, allTiles, neighbours, tutorialAiMove, furthestTravel,
 } from "../engine";
 import type {
-  AbilityKind, ActionContext, Coord, EngineEvent, GameOverReason, GameState, MapId, Move,
+  Ability, AbilityKind, ActionContext, Coord, EngineEvent, GameOverReason, GameState, MapId, Move,
   Look, Player, PlayerMods, SpeciesId, Tile,
 } from "../engine";
 import { adopt } from "../ai/thinker";
@@ -29,6 +29,7 @@ import type { SpotRect, Tour, TourStep } from "./tour";
 import { icon } from "./icons";
 import type { Cue, Feedback } from "../platform";
 import { el } from "./chrome";
+import { abilityArtFor } from "./abilityart";
 
 /** Seconds a player gets per move before the turn passes automatically. */
 const MOVE_SECONDS = 15;
@@ -749,7 +750,7 @@ export class MatchScreen {
     this.cue("ability");
     this.opts.onAbilityCast?.(ability.kind);
     this.consume(events);
-    this.showSpellCard(ability.name, ability.desc);
+    this.showSpellCard(ability);
     this.clearSelection();
     this.refreshHUD();
     if (s.over) this.finish();
@@ -767,13 +768,31 @@ export class MatchScreen {
    * THE CLOCK IS PAUSED, NEVER RESTARTED (`runClock(false)`). Handing the turn's full
    * length back would make casting an ability a way to buy another thirty seconds.
    */
-  private showSpellCard(name: string, desc: string): void {
+  private showSpellCard(ability: Ability): void {
     const card = this.root.querySelector<HTMLElement>("#spellCard");
     if (!card) return;
     const title = card.querySelector(".sc-title");
     const body = card.querySelector(".sc-desc");
-    if (title) title.textContent = name;
-    if (body) body.textContent = desc;
+    if (title) title.textContent = ability.name;
+    if (body) body.textContent = ability.desc;
+    // The picture box is the legacy build's EMOJI frame — a 52px glyph centred in a
+    // plate — and this build draws no emoji (§10), so it has been an empty rectangle at
+    // the top of every cast card since. It holds the ability's painting where there is
+    // one, and an unpainted ability shows the plate it always showed.
+    const frame = card.querySelector<HTMLElement>(".sc-img");
+    if (frame) {
+      const art = abilityArtFor(ability);
+      frame.replaceChildren();
+      frame.classList.toggle("painted", !!art);
+      if (art) {
+        const img = document.createElement("img");
+        img.src = art;
+        img.alt = "";                       // the name is the line under it
+        img.setAttribute("aria-hidden", "true");
+        img.decoding = "async";
+        frame.appendChild(img);
+      }
+    }
     card.classList.remove("show");
     void card.offsetWidth;                  // restart the CSS animation
     card.classList.add("show");

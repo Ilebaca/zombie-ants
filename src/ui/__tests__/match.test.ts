@@ -12,10 +12,11 @@
  */
 import { describe, expect, it, vi, beforeAll, afterEach } from "vitest";
 import {
-  createGame, defaultContext, NEUTRAL_MODS, snapshot,
+  createGame, defaultContext, NEUTRAL_MODS, SPECIES, snapshot,
 } from "../../engine";
 import type { EngineEvent, GameState, Move } from "../../engine";
 import { MatchScreen, loudestOf } from "../match";
+import { abilityArtFor } from "../abilityart";
 
 beforeAll(() => {
   HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
@@ -382,6 +383,39 @@ describe("the opening", () => {
     expect(clock(w), "the card handed the turn its full length back").toBe(ticking);
     await vi.advanceTimersByTimeAsync(2000);
     expect(clock(w), "the clock never picked up again").not.toBe(ticking);
+    w.screen.destroy();
+  });
+
+  /**
+   * THE CARD CARRIES THE ABILITY'S PAINTING.
+   *
+   * `.sc-img` is the legacy build's EMOJI frame — a 52px glyph centred in a plate — and
+   * this build draws no emoji (§10), so it was an empty rectangle at the top of every
+   * cast card. The watcher fields the Fire Ant, whose Wildfire is painted.
+   */
+  it("puts the ability's painting on the cast card", async () => {
+    vi.useFakeTimers();
+    const w = watch();
+    w.state.current = "you";
+    w.state.cooldown.you = 0;
+    w.screen.start();
+    opened(w);
+    await vi.advanceTimersByTimeAsync(4000);
+
+    const frame = w.host.querySelector<HTMLElement>(".sc-img");
+    expect(frame, "the card has no picture frame").not.toBeNull();
+    expect(frame?.querySelector("img"), "a picture before anything was cast").toBeNull();
+
+    w.host.querySelector<HTMLButtonElement>("#bAbility")?.click();
+    const art = abilityArtFor(SPECIES.fire.ability);
+    expect(art, "the Fire Ant's ability lost its painting").toBeTruthy();
+    expect(frame?.querySelector("img")?.getAttribute("src"), "the frame stayed empty")
+      .toBe(art);
+    // The frame drops its own plate, or the painting sits inside a visible box.
+    expect(frame?.classList.contains("painted")).toBe(true);
+    // Silent: the ability's NAME is the line directly under it.
+    expect(frame?.querySelector("img")?.getAttribute("aria-hidden")).toBe("true");
+    await vi.advanceTimersByTimeAsync(7000);
     w.screen.destroy();
   });
 
