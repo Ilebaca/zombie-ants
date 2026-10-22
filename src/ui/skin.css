@@ -4144,6 +4144,21 @@ button:not(.playbtn):active,
   background: var(--panel);
   border: 1px solid var(--line);
 }
+/* A PAINTED ability card loses its padding so the picture can reach its own edges —
+   a painting inset inside a card reads as a thumbnail that failed to fill. Everything
+   under it is padded back by hand. */
+.spgcard.painted { padding: 0; overflow: hidden; gap: 0; }
+.spgcard.painted > *:not(.spgability-art) { margin-inline: 13px; }
+.spgcard.painted > .spgchips { margin-top: 13px; }
+.spgcard.painted > .spgtext { margin-bottom: 13px; margin-top: 8px; }
+/* The files are SQUARE and a square inside a card is most of a phone screen, so the band
+   is a 2:1 centre crop — every painting has its subject in the middle. */
+.spgability-art {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+}
 .spgchips { display: flex; flex-wrap: wrap; gap: 6px; }
 .spgchip {
   display: flex;

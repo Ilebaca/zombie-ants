@@ -36,6 +36,7 @@ import {
 import type { ProfileStore, Research, ResearchDef } from "../platform";
 import { SPECIES_COL } from "../render";
 import { antPortrait, buyButton, effectRow, el, pips, redraw, screenEl, screenHeader, toast } from "./chrome";
+import { abilityArtFor } from "./abilityart";
 import { coverFor } from "./covers";
 import { icon } from "./icons";
 import { traitOpener } from "./traits";
@@ -354,6 +355,21 @@ function abilityCard(id: SpeciesId, research: Research): HTMLElement {
   const species = SPECIES[id];
   const cd = abilityCooldown(species.ability, { ...NEUTRAL_MODS, reservoir: research.reservoir });
   const box = el("div", "spgcard");
+
+  // The painting leads, because it is what tells nine cards apart before any of them is
+  // read. It is decorative: the ability's NAME is the heading above this card and its
+  // rule is the sentence below, so an alt text here would announce the same thing twice.
+  const art = abilityArtFor(species.ability);
+  if (art) {
+    const img = document.createElement("img");
+    img.src = art;
+    img.className = "spgability-art";
+    img.alt = "";
+    img.setAttribute("aria-hidden", "true");
+    img.decoding = "async";
+    box.classList.add("painted");
+    box.appendChild(img);
+  }
 
   const chips = el("div", "spgchips");
   chips.append(chip("clock", `${cd}-turn cooldown`, cd < species.ability.cooldown));
