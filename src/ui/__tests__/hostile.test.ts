@@ -33,6 +33,20 @@ beforeEach(() => { document.body.replaceChildren(); });
 /** Markup, an event handler and both kinds of quote, in the one field a player types into. */
 const NASTY = `<img src=x onerror="boom()"><script>boom()</script>'"&`;
 
+/**
+ * ANY ELEMENT THE NAME PRODUCED. This used to be "no `<img>` anywhere", which worked while
+ * the app drew every picture it had — and stopped meaning anything the day the colonies got
+ * PAINTED icons, because then a screen legitimately carries images. The rule it was standing
+ * in for is the one asserted now: every image on screen is a BUNDLED ASSET the app built,
+ * never a src or a handler that came out of a string somebody typed.
+ */
+const strays = (root: ParentNode): Element[] =>
+  Array.from(root.querySelectorAll("img")).filter(
+    (img: HTMLImageElement) =>
+      !/\.webp(\?|$)/.test(img.getAttribute("src") ?? "") ||
+      img.getAttributeNames().some((a: string) => a.startsWith("on")),
+  );
+
 describe("text a player types never becomes markup", () => {
   const named = (): ProfileStore => {
     const s = new ProfileStore(new MemoryStore());
@@ -50,7 +64,7 @@ describe("text a player types never becomes markup", () => {
 
     for (const tab of ["shop", "anthill", "antarium", "challenges", "home"]) {
       host.querySelector<HTMLButtonElement>(`[data-nav='${tab}']`)?.click();
-      expect(host.querySelector("img"), `an element was injected on ${tab}`).toBeNull();
+      expect(strays(host), `an element was injected on ${tab}`).toEqual([]);
       expect(host.querySelector("script"), `a script was injected on ${tab}`).toBeNull();
     }
     app.destroy();
@@ -69,7 +83,7 @@ describe("text a player types never becomes markup", () => {
     ]) {
       const root = build();
       document.body.replaceChildren(root);
-      expect(root.querySelector("img"), "an element was injected").toBeNull();
+      expect(strays(root), "an element was injected").toEqual([]);
       expect(root.querySelector("script")).toBeNull();
     }
   });

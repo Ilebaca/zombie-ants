@@ -162,7 +162,8 @@ describe("this week", () => {
 
   it("gives every row a face", () => {
     for (const r of rows(build(store(24_000)))) {
-      expect(r.querySelector(".lbface canvas"), r.textContent).toBeTruthy();
+      // A face is DRAWN or PAINTED (`antPortrait`), so the rule is that there is one.
+      expect(r.querySelector(".lbface canvas, .lbface img"), r.textContent).toBeTruthy();
     }
   });
 });
