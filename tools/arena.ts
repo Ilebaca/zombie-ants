@@ -63,7 +63,7 @@ export function playGame(
   return { winner: null, turns: state.turn, reason: `stalled you=${you} ai=${ai}` };
 }
 
-const SPECIES: SpeciesId[] = ["fire", "leafcutter", "carpenter", "weaver", "army", "bullet"];
+const SPECIES: SpeciesId[] = ["fire", "leafcutter", "carpenter", "army", "bullet", "ghost"];
 
 /** A round-robin of `games` matches with A and B swapping sides each time. */
 export function match(a: Difficulty, b: Difficulty, games: number, map: MapId = "small"): {

@@ -2,7 +2,7 @@
  * WHERE A CURRENCY GOES ONCE THERE IS NOTHING LEFT TO BUY.
  *
  * Both spendable sinks are FINITE — chambers, colonies and the granary for mycelium; every
- * research level on all nine colonies for pheromone — and both are emptied well inside the
+ * research level on all eight colonies for pheromone — and both are emptied well inside the
  * road by the player the economy is tuned for. From those days each currency is a number
  * going up, which is what these two trades exist to stop.
  *

@@ -20,7 +20,7 @@ const a = (process.argv[2] ?? "hard") as Difficulty;
 const b = (process.argv[3] ?? "easy") as Difficulty;
 const games = Number(process.argv[5] ?? 12);
 const map = (process.argv[6] ?? "small") as MapId;
-const species: SpeciesId[] = ["fire", "leafcutter", "carpenter", "weaver", "army", "bullet"];
+const species: SpeciesId[] = ["fire", "leafcutter", "carpenter", "army", "bullet", "ghost"];
 
 const tally = new Map<string, number>();
 let aWins = 0, bWins = 0;

@@ -66,7 +66,7 @@ export function buildProfile(store: ProfileStore, opts: ProfileOptions): HTMLEle
     // It rides with the HERO, above the record rather than below it, because everything
     // under "Record" is a summary OF these matches and the way into a summary is the
     // thing it summarises. It began under the collection — three doors and a strip of
-    // nine heads deep — where from the top of the screen it did not exist at all.
+    // a strip of heads deep — where from the top of the screen it did not exist at all.
     const stored = store.history.length;
     const history = el("button", "pf-row pf-row-go");
     history.id = "pfHistory";
@@ -276,7 +276,7 @@ function collRow(
   return row;
 }
 
-/** The nine colonies as a row of heads, the locked ones dimmed. */
+/** The eight colonies as a row of heads, the locked ones dimmed. */
 function faces(store: ProfileStore): HTMLElement {
   const strip = el("div", "pf-faces");
   for (const id of SPECIES_ORDER) {

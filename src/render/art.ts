@@ -125,22 +125,6 @@ export function antSkinOverlay(
     g.beginPath(); g.arc(x - s * 0.09, y - s * 0.34, s * 0.045, 0, TAU); g.fill();
     g.beginPath(); g.arc(x + s * 0.09, y - s * 0.34, s * 0.045, 0, TAU); g.fill();
 
-  } else if (style === "silk") {                   // strands wound across the body
-    g.strokeStyle = "rgba(255,255,255,0.82)";
-    g.lineWidth = Math.max(1, s * 0.045); g.lineCap = "round";
-    for (const dy of [0.06, 0.24, 0.42]) {
-      g.beginPath();
-      g.moveTo(x - s * 0.34, y + s * (dy - 0.05));
-      g.quadraticCurveTo(x, y + s * (dy + 0.07), x + s * 0.34, y + s * (dy - 0.05));
-      g.stroke();
-    }
-    // a loose thread trailing off the gaster, which is what says SPUN rather than striped
-    g.strokeStyle = "rgba(255,255,255,0.5)"; g.lineWidth = Math.max(1, s * 0.03);
-    g.beginPath();
-    g.moveTo(x + s * 0.30, y + s * 0.50);
-    g.quadraticCurveTo(x + s * 0.52, y + s * 0.62, x + s * 0.44, y + s * 0.80);
-    g.stroke();
-
   } else if (style === "bark") {                   // grain along the shell, and a ridge
     g.strokeStyle = "rgba(48,32,18,0.8)";
     g.lineWidth = Math.max(1, s * 0.035); g.lineCap = "round";
@@ -344,22 +328,6 @@ export function antHeadSkin(g: CanvasRenderingContext2D, style: SkinStyle, dark:
     g.moveTo(-44, -30); g.lineTo(-16, -20);
     g.moveTo(44, -30); g.lineTo(16, -20);
     g.stroke();
-
-  } else if (style === "silk") {                       // a woven veil across the face
-    g.strokeStyle = "rgba(255,255,255,0.85)"; g.lineWidth = 5; g.lineCap = "round";
-    for (const yy of [-34, -8, 18]) {
-      g.beginPath();
-      g.moveTo(-56, yy - 6); g.quadraticCurveTo(0, yy + 12, 56, yy - 6); g.stroke();
-    }
-    g.lineWidth = 3.5; g.strokeStyle = "rgba(255,255,255,0.6)";
-    for (const xx of [-30, 0, 30]) {
-      g.beginPath();
-      g.moveTo(xx - 6, -50); g.quadraticCurveTo(xx + 6, -6, xx - 6, 36); g.stroke();
-    }
-    // the strand that leaves the head, so it reads as spun rather than as a net drawn on
-    g.lineWidth = 3; g.strokeStyle = "rgba(255,255,255,0.5)";
-    g.beginPath();
-    g.moveTo(56, 20); g.quadraticCurveTo(84, 40, 74, 68); g.stroke();
 
   } else if (style === "bark") {                       // grain down the head plate
     g.strokeStyle = "rgba(48,32,18,0.8)"; g.lineWidth = 4; g.lineCap = "round";

@@ -151,7 +151,7 @@ table tbody tr:hover { background: #f5f1ea; }
       <li><strong>Territory is economy.</strong> Every connected tile produces soldiers every turn. Land is not score — it is income.</li>
       <li><strong>Supply lines matter.</strong> A tile only lives while a chain of your tiles links it back to your queen. Cut the chain and everything behind it goes dark.</li>
       <li><strong>Readable on a phone.</strong> One thumb, big tap targets, a whole match in 3–10 minutes.</li>
-      <li><strong>Biology as mechanic.</strong> Nine real ant species whose real behaviours become their abilities — leafcutters farm fungus, army ants devour, ghost ants tunnel unseen.</li>
+      <li><strong>Biology as mechanic.</strong> Eight real ant species whose real behaviours become their abilities — leafcutters farm fungus, army ants devour, ghost ants tunnel unseen.</li>
     </ul>
 
     <h2>Player fantasy</h2>
@@ -359,8 +359,7 @@ table tbody tr:hover { background: #f5f1ea; }
         <tr><td>Leafcutter</td><td><strong>Fungal Garden</strong></td><td>6</td><td>Grows leaf walls on your borders — impassable to the enemy for 4 turns, then leave +40% defence on the tile. Research Lv 2–4 makes <strong>one wall per cast permanent</strong>, accumulating to a total of 1/2/3.</td></tr>
         <tr><td>Fire Ant</td><td><strong>Wildfire</strong></td><td>7</td><td>Your borders ignite for 3 turns. Enemy tiles burning lose <strong>20%</strong> of their garrison per turn; garrisons of 5 or fewer are wiped out entirely. Your own fire also burns wild garrisons and the Hive. Detached tiles don't ignite.</td></tr>
         <tr><td>Army Ant</td><td><strong>Feeding Swarm</strong></td><td>6</td><td>Enemy tiles bordering your colony <em>at cast time</em> lose <strong>25%</strong> of their troops, devoured into your adjacent tile. Snapshot-based: newly captured tiles do not chain into new targets. Bases immune.</td></tr>
-        <tr><td>Weaver Ant</td><td><strong>Spread</strong></td><td>5</td><td>Claims every empty tile you border on the enemy's half of the map.</td></tr>
-        <tr><td>Carpenter</td><td><strong>Fortify</strong></td><td>6</td><td>Every frontline <em>active</em> tile gains +12% garrison (veins excluded), and the whole colony defends at +70% for 3 turns.</td></tr>
+                <tr><td>Carpenter</td><td><strong>Fortify</strong></td><td>6</td><td>Every frontline <em>active</em> tile gains +12% garrison (veins excluded), and the whole colony defends at +70% for 3 turns.</td></tr>
         <tr><td>Bullet Ant</td><td><strong>Venom Rain</strong></td><td>6</td><td>Venom scatters across the board. Enemy tiles caught lose <strong>7 troops flat</strong> each turn for 3 turns. Your tiles and both nests are immune.</td></tr>
         <tr><td>Demon Ant</td><td><strong>Flee</strong></td><td>6</td><td>Every mobile enemy garrison within <strong>2 tiles</strong> runs directly away along one axis, up to 2 tiles, stopping as soon as it is clear of your colony or reaches ground it cannot enter (a rock, a leaf wall, a wild garrison, or one of your own tiles); colliding runners merge. Only tiles <strong>connected to your nest</strong> cast the fear — a cut-off outpost frightens nothing. <strong>Cannot push:</strong> veins, tunnels, resources, the Hive queen/guards, or blocked tiles — and it never breaks a vein.</td></tr>
       </tbody>
@@ -422,7 +421,7 @@ table tbody tr:hover { background: #f5f1ea; }
 <div id="species" class="tab-panel">
   <div class="page">
     <div class="eyebrow">Species</div>
-    <h1>Nine colonies</h1>
+    <h1>Eight colonies</h1>
     <p>Every species is a stat triangle plus one ability. Values are exact multipliers applied in combat and production.</p>
 
     <div class="tw"><table>
@@ -433,8 +432,7 @@ table tbody tr:hover { background: #f5f1ea; }
         <tr><td><strong>Leafcutter</strong></td><td>1.13</td><td><strong>1.25</strong></td><td>1.15</td><td>Economic powerhouse that terraforms the field</td><td>Fungal Garden</td></tr>
         <tr><td><strong>Fire Ant</strong></td><td>0.86</td><td>0.87</td><td>1.05</td><td>Balanced territorial scorched-earth defender</td><td>Wildfire</td></tr>
         <tr><td><strong>Army Ant</strong></td><td>1.10</td><td>0.79</td><td>0.95</td><td>Nomadic raider — a devouring column</td><td>Feeding Swarm</td></tr>
-        <tr><td><strong>Weaver Ant</strong></td><td>1.07</td><td>1.04</td><td>1.00</td><td>The expansionist — many fronts at once</td><td>Spread</td></tr>
-        <tr><td><strong>Carpenter</strong></td><td>0.91</td><td>1.06</td><td>1.05</td><td>The fortress — a nightmare to dislodge</td><td>Fortify</td></tr>
+                <tr><td><strong>Carpenter</strong></td><td>0.91</td><td>1.06</td><td>1.05</td><td>The fortress — a nightmare to dislodge</td><td>Fortify</td></tr>
         <tr><td><strong>Bullet Ant</strong></td><td><strong>1.22</strong></td><td>0.84</td><td><strong>0.70</strong></td><td>Glass cannon — devastating per unit, starving economy</td><td>Venom Rain</td></tr>
         <tr><td><strong>Demon Ant</strong> <span class="badge new">premium</span></td><td>1.09</td><td>1.00</td><td>0.95</td><td>Sacrifices her own for power — terror pheromone</td><td>Flee</td></tr>
       </tbody>
@@ -678,7 +676,7 @@ table tbody tr:hover { background: #f5f1ea; }
     <h2>The economy is modelled against a real player</h2>
     <p>Every number above was checked in isolation and none of them had been checked <em>together</em>, and that is where all of it was wrong. The player it is tuned for: <strong>two to three matches a day, winning about half.</strong> A test plays that player through the entire road day by day.</p>
     <ul>
-      <li><strong>What the model found:</strong> the road was over in under three months, the whole research economy across all nine colonies was covered three times over inside three weeks, and the granary out-earned playing — so the fastest way up was to stop.</li>
+      <li><strong>What the model found:</strong> the road was over in under three months, the whole research economy across all eight colonies was covered three times over inside three weeks, and the granary out-earned playing — so the fastest way up was to stop.</li>
       <li><strong>Currency has to trail desire.</strong> A player should finish the road at about the point they have bought everything, with enough slack never to be stuck and never so much that the currency stops meaning anything. Held at 0.9–1.8× for mycel and 0.7–1.3× for pheromone, tighter because pheromone buys one thing and a surplus has nowhere to go.</li>
       <li><strong>No single faucet may carry the economy.</strong> The level track and the daily sweep bonus arrive without being played for, so both are held under what the quests themselves pay.</li>
       <li><strong>Measured pacing, whole road:</strong> 2 games a day at an even record is <strong>521 days</strong>, 2.5 is <strong>431</strong>, 3 is <strong>368</strong>; at a 60% win rate, 385 / 316 / 268.</li>
@@ -686,7 +684,7 @@ table tbody tr:hover { background: #f5f1ea; }
     </ul>
 
     <h2>Where a currency goes when there is nothing left to buy</h2>
-    <p>Everything above measures whether the sinks are the right <em>size</em>. What it never asked is what happens <em>after</em> them, because every one of them is finite. Measured on the same tuned player: the mycel sink (21,865 — chambers 3,745, colony unlocks 2,120, the granary 16,000) is covered around <strong>day 250</strong> of a 440-day road, and the pheromone sink (14,850, the whole research tree across nine colonies) around <strong>day 400</strong>. From those days each currency is a number that goes up on the top bar and buys nothing, for ever.</p>
+    <p>Everything above measures whether the sinks are the right <em>size</em>. What it never asked is what happens <em>after</em> them, because every one of them is finite. Measured on the same tuned player: the mycel sink (21,585 — chambers 3,745, colony unlocks 1,840, the granary 16,000) is covered around <strong>day 250</strong> of a 440-day road, and the pheromone sink (14,400, the whole research tree across eight colonies) around <strong>day 400</strong>. From those days each currency is a number that goes up on the top bar and buys nothing, for ever.</p>
     <div class="flag">The fix cannot be more things that change a match. Every match-affecting number in this game is capped on purpose, because progression must never become mandatory and the AI gets none of it. Uncapping a chamber or a research track to make a sink would buy an endless economy with the one rule the game is built on.</div>
     <p>So the endless sinks point at the <strong>collection</strong>, the only thing here that does not end — and each currency keeps the job it already had.</p>
     <div class="tw"><table>
@@ -850,7 +848,7 @@ table tbody tr:hover { background: #f5f1ea; }
 
     <h2>Two rules the palettes have to obey</h2>
     <ul>
-      <li><strong>No skin may look like another colony.</strong> An opponent always fields its basic look, so a palette landing on some other species' own colours is not a skin — it is a colony you cannot identify across the board. Four did on the first pass: a pink Leafcutter read as a Demon Ant, a gold Weaver as a Pharaoh, a cream Leafcutter as a Ghost, and an indigo Army as a Carpenter. A test measures every palette against every species' body colour, and it is the only reason the last two were ever found.</li>
+      <li><strong>No skin may look like another colony.</strong> An opponent always fields its basic look, so a palette landing on some other species' own colours is not a skin — it is a colony you cannot identify across the board. Four did on the first pass: a pink Leafcutter read as a Demon Ant, a gold Weaver as a Pharaoh, a cream Leafcutter as a Ghost, and an indigo Army as a Carpenter. A test measures every palette against every species' body colour, and it is the only reason the last two were ever found. (The Weaver has since been removed; the example is kept because it is why the test exists.)</li>
       <li><strong>And never grey.</strong> The board greys out tiles it has cut off, so a grey colony would read as permanently disconnected. That is what pushed the Fire Ant's colourway from ash to <em>ice</em> — a Fire Ant in Frostbite blue, on purpose.</li>
     </ul>
 
@@ -883,7 +881,7 @@ table tbody tr:hover { background: #f5f1ea; }
       <thead><tr><th>#</th><th>Challenge</th><th>Setup</th><th>Objective</th></tr></thead>
       <tbody>
         <tr><td>1</td><td><strong>First Blood</strong></td><td>Fire Ant · Wedge</td><td>Strike the enemy before they strike you</td></tr>
-        <tr><td>2</td><td><strong>Hold the Line</strong></td><td>Weaver Ant · Line</td><td>Survive the early swarm, then wipe them out</td></tr>
+        <tr><td>2</td><td><strong>Hold the Line</strong></td><td>Carpenter · Line</td><td>Survive the early swarm, then wipe them out</td></tr>
         <tr><td>3</td><td><strong>Hive Siege</strong></td><td>Army Ant · Arrow</td><td>Break the wall and destroy the enemy colony</td></tr>
         <tr><td>4</td><td><strong>Outnumbered</strong></td><td>Bullet Ant · Column</td><td>Claw back a win from the corner</td></tr>
         <tr><td>5</td><td><strong>Ghost Protocol</strong></td><td>Ghost Ant · Tower</td><td>Win using tunnels and stealth</td></tr>
@@ -1199,7 +1197,7 @@ table tbody tr:hover { background: #f5f1ea; }
     <h2>Built and playable</h2>
     <ul>
       <li>Complete match loop on one board with all win conditions, no turn limit, and a coin for who opens</li>
-      <li>Nine colonies with distinct stats, signatures and abilities</li>
+      <li>Eight colonies with distinct stats, signatures and abilities</li>
       <li>The Hive: dormant / awake / surge / cooling / respawn, with escalating levels and a banked garrison</li>
       <li>Vein supply network with both pruning rules and queen-anchored connectivity</li>
       <li>An alpha-beta AI at three genuinely different difficulties, running in a Web Worker, with measured self-play results</li>

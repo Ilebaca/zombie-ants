@@ -1426,7 +1426,7 @@ export class ProfileStore {
    *
    * It charged mycelium for months, which is the legacy build's rule and is why the two
    * currencies had one job between them: mycelium bought the chambers, the colonies, the
-   * granary AND every research level on all nine of them, while pheromone — earned from
+   * granary AND every research level on all eight of them, while pheromone — earned from
    * quests, the level track and the Colony Road, and printed in the top bar on every
    * screen — bought NOTHING AT ALL. A currency with no sink is a number going up.
    *
@@ -1567,7 +1567,7 @@ export class ProfileStore {
   /**
    * Buy a larva with mycelium.
    *
-   * The mycelium sink is FINITE — chambers, colonies and the granary come to 21,865, and
+   * The mycelium sink is FINITE — chambers, colonies and the granary come to 21,585, and
    * a player on the tuned record has bought all of it on day 247 of a 440-day road. From
    * there the currency a match pays every time buys nothing at all, for ever. This is the
    * door out: the hatch is the one sink in the game with no end, so the endless currency
@@ -1597,8 +1597,8 @@ export class ProfileStore {
   /**
    * Three spare traits of one tier and some pheromone become ONE of the next tier up.
    *
-   * The pheromone sink is finite too — every research level on all nine colonies is
-   * 14,850, gone by day 374 — and this is where it goes afterwards. It is deliberately the
+   * The pheromone sink is finite too — every research level on all eight colonies is
+   * 14,400, gone by day 374 — and this is where it goes afterwards. It is deliberately the
    * DEPTH trade to mycelium's breadth: research makes one colony better, and so does this.
    *
    * It also empties the bag of what the hatch fills it with. A 60% common rate means a

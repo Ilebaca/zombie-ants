@@ -3,7 +3,7 @@
  *
  * Every screen in this app that names a colony puts its head beside the name: the profile,
  * the Antarium, a friend row, the ladder, the opponent search, the result card. That head
- * is DRAWN (`render/art.ts`), which is what let nine of them exist before any art did and
+ * is DRAWN (`render/art.ts`), which is what let eight of them exist before any art did and
  * is why a skin can recolour one. These are paintings of the same thing, and where one
  * exists it is the better picture.
  *

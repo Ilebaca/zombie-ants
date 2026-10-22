@@ -90,7 +90,7 @@ export const roadKey = (track: RoadTrack, index: number): string =>
  * stops pay pheromone instead. The conversion was fifty, chosen so the numbers looked like
  * the legacy ones, and nobody checked it against what pheromone actually BUYS. A research
  * level costs forty to a hundred and eighty, so a single ten-larva stop was paying for
- * five of them, and the whole research economy — every track on all nine colonies — was
+ * five of them, and the whole research economy — every track on all eight colonies — was
  * covered three times over before the road was half walked.
  *
  * Four is the rate that makes a larva worth about a tenth of a research level, so a stop

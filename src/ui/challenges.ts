@@ -48,9 +48,15 @@ export interface Challenge {
 }
 
 /**
- * The legacy build's five challenges, unchanged. Its formation keys are spelled
- * differently (tee/box for what this build calls arrow/column) — same twelve shapes, same
- * order, same names on screen.
+ * The legacy build's five challenges. Its formation keys are spelled differently
+ * (tee/box for what this build calls arrow/column) — same twelve shapes, same order,
+ * same names on screen.
+ *
+ * ONE THING MOVED: Hold the Line was fielded by the Weaver Ant, which this build no
+ * longer has. It is the Carpenter now — the fortress, whose Fortify braces the whole
+ * colony — which is a better read of that objective than the expansionist ever was. The
+ * id is unchanged, so a player who has already beaten it keeps it beaten (a rung is
+ * remembered by ID, never by index).
  */
 export const CHALLENGES: readonly Challenge[] = [
   {
@@ -58,7 +64,7 @@ export const CHALLENGES: readonly Challenge[] = [
     goal: "attackFirst",
   },
   {
-    id: "hold-the-line", name: "Hold the Line", stars: 2, map: "small", species: "weaver", shape: "line",
+    id: "hold-the-line", name: "Hold the Line", stars: 2, map: "small", species: "carpenter", shape: "line",
     goal: "eliminate",
   },
   {

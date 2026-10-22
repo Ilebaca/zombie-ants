@@ -20,7 +20,7 @@ for (const p of Object.values(PROFILES)) {
 const level = (process.argv[2] ?? "normal") as Difficulty;
 const games = Number(process.argv[3] ?? 12);
 const maps: MapId[] = ["small"];
-const species: SpeciesId[] = ["fire", "leafcutter", "carpenter", "weaver", "army", "bullet"];
+const species: SpeciesId[] = ["fire", "leafcutter", "carpenter", "army", "bullet", "ghost"];
 
 for (const map of maps) {
   // Same difficulty AND the same species on both sides: anything left is the board.

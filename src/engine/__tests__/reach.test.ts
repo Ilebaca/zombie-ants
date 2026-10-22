@@ -143,7 +143,7 @@ function audit(seed: number, map: MapId, species: Record<Player, SpeciesId>, tur
 }
 
 const SPECIES: SpeciesId[] = [
-  "fire", "leafcutter", "army", "ghost", "weaver", "carpenter", "bullet", "pharaoh", "demon",
+  "fire", "leafcutter", "army", "ghost", "carpenter", "bullet", "pharaoh", "demon",
 ];
 
 /**

@@ -13,7 +13,8 @@ import {
 import type { SpeciesId } from "../../engine";
 import {
   COLONY_START, GRANARY_LEVELS, GRANARY_MAX, MemoryStore, ProfileStore, ROAD_CHAPTER_STOPS,
-  RESEARCH_TOTAL_MAX, SPECIES_UNLOCK, chapterOf, compact, granaryFull, roadKey, stopColony,
+  RESEARCH_TOTAL_MAX, SPECIES_UNLOCK, TIERS, chapterOf, compact, granaryFull, roadKey,
+  stopColony, tierOf,
 } from "../../platform";
 import { buildAnthill } from "../anthill";
 import { buildProfile } from "../profile";
@@ -341,7 +342,7 @@ describe("profile screen", () => {
 
   /**
    * THE MATCH LIST RIDES WITH THE HERO, above everything the record says about it. It sat
-   * under the COLLECTION — three doors and a strip of nine heads deep — so from the top
+   * under the COLLECTION — three doors and a strip of heads deep — so from the top
    * of the screen it did not exist at all, and the record stayed a count with no way into
    * the matches it was counting. Everything under "Record" is a summary of these matches,
    * and the way into a summary belongs beside the thing it summarises.
@@ -425,19 +426,34 @@ describe("antarium collection", () => {
     expect(said, "the old species-only ladder is still here").not.toContain("Founding castes");
   });
 
+  /**
+   * The counts are READ OFF THE CATALOGUE, never typed here. A tier is derived from a
+   * colony's price, so retuning one price moves a colony between two headings — and a
+   * hardcoded "3/3" then fails on a change that is not a bug, or passes one that is.
+   */
   it("counts owned colonies per tier", () => {
     const root = openAntarium(store());
     const heads = Array.from(root.querySelectorAll(".tierhead"));
-    // The three founding castes are the ones a new profile owns.
-    expect(heads[0]?.textContent).toContain("3/3");
-    expect(heads[1]?.textContent).toContain("0/3");
+    const ids = Object.keys(SPECIES) as SpeciesId[];
+    // The headings run in tier order, so the nth heading is the nth tier that has any
+    // colony in it at all — an empty rung is held open in the ladder (common) and draws
+    // no heading here.
+    const rungs = [...new Set(TIERS.map((t) => t.k))].filter(
+      (k) => ids.some((id) => tierOf(id).k === k),
+    );
+    const sizeOf = (k: string): number => ids.filter((id) => tierOf(id).k === k).length;
+    // A new profile owns exactly the free colonies, and they are the first rung.
+    expect(heads[0]?.textContent).toContain(`${sizeOf(rungs[0]!)}/${sizeOf(rungs[0]!)}`);
+    expect(ids.filter((id) => SPECIES_UNLOCK[id] === 0).length).toBe(sizeOf(rungs[0]!));
+    // Nothing on any later rung is owned yet.
+    expect(heads[1]?.textContent).toContain(`0/${sizeOf(rungs[1]!)}`);
   });
 
   it("veils a locked colony with its price and leaves owned ones open", () => {
     const root = openAntarium(store());
-    const weaver = cardFor(root, "Weaver Ant");
-    expect(weaver?.className).toContain("locked");
-    expect(weaver?.querySelector(".cveil")?.textContent).toContain(String(SPECIES_UNLOCK.weaver));
+    const army = cardFor(root, "Army Ant");
+    expect(army?.className).toContain("locked");
+    expect(army?.querySelector(".cveil")?.textContent).toContain(String(SPECIES_UNLOCK.army));
 
     const fire = cardFor(root, "Fire Ant");
     expect(fire?.className).not.toContain("locked");
@@ -470,13 +486,13 @@ describe("antarium collection", () => {
   });
 
   it("buys a locked colony with mycelium and flips it to owned", () => {
-    const s = store(SPECIES_UNLOCK.weaver);
+    const s = store(SPECIES_UNLOCK.army);
     const root = buildAntarium(s, { onOpenSpecies: () => {} });
-    click(cardFor(root, "Weaver Ant"));
+    click(cardFor(root, "Army Ant"));
     click(root.querySelector("#antCTA"));
-    expect(s.isUnlocked("weaver")).toBe(true);
+    expect(s.isUnlocked("army")).toBe(true);
     expect(s.get().mycel).toBe(0);
-    expect(cardFor(root, "Weaver Ant")?.className).not.toContain("locked");
+    expect(cardFor(root, "Army Ant")?.className).not.toContain("locked");
   });
 
   /** Premium is a shop purchase (roadmap step 5) — soft currency must not reach it. */
@@ -492,11 +508,11 @@ describe("antarium collection", () => {
   it("says so rather than spending when the price is out of reach", () => {
     const s = store(10);
     const root = buildAntarium(s, { onOpenSpecies: () => {} });
-    click(cardFor(root, "Weaver Ant"));
+    click(cardFor(root, "Army Ant"));
     expect(root.querySelector("#antCTA")?.textContent).toContain("Locked · needs");
     click(root.querySelector("#antCTA"));
     expect(s.get().mycel).toBe(10);
-    expect(s.isUnlocked("weaver")).toBe(false);
+    expect(s.isUnlocked("army")).toBe(false);
   });
 });
 
@@ -946,7 +962,7 @@ describe("legacy markup parity", () => {
    *
    * The card used to grow a progress bar the moment a colony had any research — so it
    * showed under some cards and not others, drawing the same number the "LV 15" badge
-   * already carries, with no label on it. Two rules under two of nine cards read as a
+   * already carries, with no label on it. Two rules under two cards out of eight read as a
    * stray line rather than as a measure of anything.
    */
   it("grows no bar under a card once its colony has research", () => {
@@ -1023,7 +1039,7 @@ describe("the manual", () => {
     for (const heading of [
       "How a match is won", "A turn", "Moving and attacking", "What the tiles are worth",
       "Travel and veins", "Supply lines", "Rally and Advance", "The Hive",
-      "Nine colonies", "What you play for",
+      "The colonies", "What you play for",
     ]) {
       expect(said, `nothing about "${heading}"`).toContain(heading);
     }
@@ -1055,7 +1071,7 @@ describe("the manual", () => {
   });
 
   /**
-   * The nine colonies are listed from the species table, not retyped beside it — but the
+   * The colonies are listed from the species table, not retyped beside it — but the
    * manual does NOT repeat what each ability does. That is written on the colony's own page
    * in the Antarium, where the player is choosing, and twice is twice to keep in step.
    */

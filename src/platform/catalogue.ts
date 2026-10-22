@@ -130,7 +130,7 @@ function reservoirAt(level: number, species: SpeciesId): string {
  */
 export const SPECIES_UNLOCK: Record<SpeciesId, number> = {
   ghost: 260, pharaoh: 260, leafcutter: 0, fire: 0, army: 300,
-  weaver: 280, carpenter: 0, bullet: 320, demon: 700,
+  carpenter: 0, bullet: 320, demon: 700,
 };
 
 /**
@@ -195,8 +195,6 @@ export const SPECIES_NOTES: Record<SpeciesId, string> = {
     "Solenopsis invicta swarms any disturbance within seconds and stings in unison on a chemical cue. Flooded colonies link legs and mandibles into a living raft.",
   army:
     "Eciton burchellii never builds a nest. The colony forms a living bivouac from its own bodies and moves in raiding columns that strip the forest floor.",
-  weaver:
-    "Oecophylla stitch living leaves into nests, workers pulling edges together while larvae are used as silk guns — one of the few known cases of tool use in insects.",
   carpenter:
     "Camponotus excavate galleries in dead wood rather than eating it. Majors have armoured heads shaped to plug the nest entrance like a living door.",
   bullet:

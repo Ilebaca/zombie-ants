@@ -97,8 +97,20 @@ export const CHAMBER_MAX = { royal: 5, brood: 5, soldierCaste: 5, gland: 5, cult
 
 export const chamberCost = (level: number): number => 60 + level * 55;
 
-/** Cost of the NEXT research level, given the level already held. */
-export const researchCost = (level: number): number => 40 + level * 35;
+/**
+ * Cost of the NEXT research level, given the level already held.
+ *
+ * THE STEP WENT 35 → 40 WHEN A COLONY WAS REMOVED. Pheromone buys exactly one thing, so
+ * its whole sink is the research tree — every track on every colony — and taking a colony
+ * out took a ninth of it away while the income that feeds it did not move. The supply ran
+ * to 1.40x of what there was to spend it on, outside the 0.7–1.3 band §8c holds it to,
+ * which is a currency that has stopped meaning anything well before the end of the road.
+ *
+ * The STEP rather than the base, so the first level of a track still costs 40: a player
+ * trying research for the first time pays what they always did, and it is DEPTH that got
+ * dearer. `economy.test.ts` is what measures this, and it is the only reason it was seen.
+ */
+export const researchCost = (level: number): number => 40 + level * 40;
 
 
 /* ------------------------------------------------- WHAT THE ABILITIES DO

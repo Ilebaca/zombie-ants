@@ -11,7 +11,7 @@ for a square grid. At the centre sleeps **the Hive** — a wild queen infected w
 *Ophiocordyceps*, the real parasitic fungus. Capture her for a growth surge; lose your own
 queen and the match is over.
 
-Grounded in real ant biology: nine real species whose real behaviours are their abilities.
+Grounded in real ant biology: eight real species whose real behaviours are their abilities.
 
 - Repo: `ilebaca/zombie-ants`
 - Design spec: `docs/GDD.html` — accurate to the shipped rules, use it as the reference
@@ -1305,7 +1305,7 @@ Every number below was checked in isolation and none of them had been checked TO
 that is where all of it was wrong. The player it is tuned for: **two to three matches a day,
 winning about half.**
 - **What the model found.** The road was over in under three months. The whole research
-  economy — every track on all nine colonies — was covered three times over inside three
+  economy — every track on all eight colonies — was covered three times over inside three
   weeks. The daily sweep bonus alone paid more mycelium in a year than the game has to
   spend it on. And the granary out-earned playing, so the fastest way up was to stop.
 - **The larva conversion was the single worst number.** Legacy pays some quests and road
@@ -1341,9 +1341,9 @@ winning about half.**
 
 **8d. WHERE A CURRENCY GOES WHEN THERE IS NOTHING LEFT TO BUY** (`platform/exchange.ts`).
 Every sink in §8c is FINITE, and §8c measured whether they were the right SIZE without ever
-asking what happens after them. Measured on the same tuned player: mycelium's sink (21,865
-— chambers 3,745, colonies 2,120, the granary 16,000) is covered around **day 250** of a
-440-day road, and pheromone's (14,850, the whole research tree) around **day 400**. From
+asking what happens after them. Measured on the same tuned player: mycelium's sink (21,585
+— chambers 3,745, colonies 1,840, the granary 16,000) is covered around **day 250** of a
+440-day road, and pheromone's (14,400, the whole research tree) around **day 400**. From
 those days each currency is a number that goes up on the top bar and buys nothing, for
 ever — which is a reward that has stopped being one, and is exactly how it was reported.
 - **THE FIX CANNOT BE MORE THINGS THAT CHANGE A MATCH.** Every match-affecting number here
@@ -1507,7 +1507,7 @@ war, and the store is emptied into the colony from the home screen.
 
 ## 9. Roadmap
 
-1. Engine port + tests ✅ (all nine abilities implemented)
+1. Engine port + tests ✅ (all eight abilities implemented)
 2. Canvas renderer driven by engine events ✅
 3. Meta UI ✅ — every legacy screen is ported, including the **lucky hatch**, plus a
    profile card the legacy build could not reach. Built: home with its top bar and five-tab
@@ -1694,6 +1694,43 @@ rather than a purchase.
   "Trait"; with equippable Traits on the same page, one word for two things is the screen
   contradicting itself. It reads "Signature" now.
 
+**EIGHT COLONIES — THE WEAVER ANT IS GONE, AND SO IS SPREAD.** It was removed outright
+rather than hidden, which is the same decision the three maps got (§ ONE BOARD): a colony
+left in the type but out of the game is a thing every screen has to remember to skip. What
+went with it: the species row, `Spread` and `castSpread`, `onEnemyHalf` (Spread was its
+only caller, and the AI's move generator its only other), the `silk` skin style and its
+two drawings, the Weaver's five traits, its two skins, its palette, its price and its
+field notes.
+- **A SAVE SURVIVES IT WITHOUT A MIGRATION, because `normalise` was already the trust
+  boundary** (§12). A profile that owned the Weaver, wore one of its skins or carried one
+  of its traits comes back playable: the bag and the benches are rebuilt together and an
+  item whose trait id is gone from the table is dropped, a look naming a colony that does
+  not exist falls back to basic, and a save stripped of every species is repopulated. That
+  is exactly what those rules were written for, and this is the first time one of them has
+  had to do it for real.
+- **THE CHALLENGE IT FIELDED MOVED RATHER THAN GOING WITH IT.** "Hold the Line" was played
+  as the Weaver; it is the Carpenter now — the fortress, whose Fortify braces the whole
+  colony, which is a better read of that objective than the expansionist ever was. The ID
+  is unchanged, so a player who has beaten it keeps it beaten (§ CHALLENGES ARE A LADDER:
+  a rung is remembered by id, never by index).
+- **IT MOVED A BALANCE NUMBER, and that is the part that was nearly missed.** Pheromone
+  buys exactly ONE thing, so its whole sink is the research tree — and taking a colony out
+  took an eighth of that away while the income feeding it did not move. Supply went to
+  **1.40x** of the sink, outside the 0.7–1.3 band §8c holds it to. `researchCost`'s STEP
+  went 35 → 40 (the base stays 40, so a first level costs what it always did and it is
+  DEPTH that got dearer), which puts it back at 1.28x. `economy.test.ts` is the only
+  reason this was seen at all — nothing else in the suite would have blinked.
+- **THE COUNT CAME OUT OF THE COPY.** The manual's section was headed "Nine colonies" and
+  the tour said "Nine real ant species", both of which were lying the moment this landed.
+  A number written into a sentence is a second table to keep in step (the rule the manual
+  already follows for every figure it reads out of `config.ts`), so neither counts now.
+- **LEGACY AND THE GDD STILL HAVE IT.** `legacy/zombie-ants-pro.html` is the original
+  build kept as the behavioural and visual source of truth (§1) and `game.css` is a
+  verbatim copy of its `<style>` block with a test comparing them line by line — editing
+  it would be rewriting the reference this port is checked against. The GDD's prose was
+  corrected where it counts the colonies; its record of what the legacy build shipped was
+  not.
+
 **ONE RARITY LADDER, FOR EVERYTHING THAT HAS ONE** (`engine/tiers.ts`). There were TWO and
 they disagreed. Traits ran common / uncommon / rare / exceptional / mythic in grey, green,
 blue, purple and red; colonies ran "Founding castes" / "Rare colonies" / "Elite castes" /
@@ -1740,7 +1777,8 @@ that costs an opponent nothing.
   identify across the board. FOUR did on the first pass: a pink Leafcutter read as a Demon
   Ant, a gold Weaver as a Pharaoh, a cream Leafcutter as a Ghost, and an indigo Army as a
   Carpenter. `skins.test.ts` measures every palette against every species' body colour, and
-  it is the only reason the last two were ever found.
+  it is the only reason the last two were ever found. (The Weaver is gone — see below —
+  but the lesson is the reason the test exists, so the example is left as it was found.)
 - **AND NEVER GREY.** The board greys out tiles it has cut off, so a grey colony reads as
   permanently disconnected. That is what pushed the Fire Ant's colourway from ash to ice.
 - **A SKIN IS NOT AN ITEM, which is why it never reaches the inventory.** A trait has a
@@ -2601,7 +2639,7 @@ than throwing when the player cannot afford it, so a screen can tap optimistical
 nothing ever goes half-spent.
 
 **AND `buyResearch` CHARGED MYCELIUM FOR MONTHS.** That is the legacy build's rule, ported
-with the rest of it, and it meant mycelium bought the chambers, the nine colonies, the
+with the rest of it, and it meant mycelium bought the chambers, the eight colonies, the
 granary AND all twenty-seven research tracks while **pheromone bought nothing whatever** —
 a currency printed in the top bar of every screen that was a number going up. Every other
 part of the game already said otherwise: the tour tells the player to spend pheromone on
@@ -3177,7 +3215,7 @@ only ever demonstrate "move onto empty ground". `arrangeTutorial` runs a supply 
 colony to a camp beside the Hive and puts an ENEMY TILE ON THE GUARD in front of the queen —
 on the board every match is played on. It changes no rules;
 it decides where things START, the way a formation does. `src/engine/__tests__/tutorial.test.
-ts` plays the whole walkthrough as all nine species, because a step asking for
+ts` plays the whole walkthrough as all eight species, because a step asking for
 something the board cannot deliver leaves the tutorial stuck with nothing but Skip.
 
 - **The enemy stands on the guard because the queen has no doorstep.** Her only neighbours

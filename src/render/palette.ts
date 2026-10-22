@@ -14,7 +14,6 @@ export const SPECIES_COL: Record<SpeciesId, readonly [string, string, string]> =
   leafcutter: ["#4fae46", "#56d840", "#266a22"],
   fire:       ["#ff7a45", "#ff8f43", "#b8431d"],
   army:       ["#7d5733", "#cf9354", "#482d13"],
-  weaver:     ["#ef8a2b", "#ffa636", "#8f4d0f"],
   carpenter:  ["#5a6173", "#a3adc4", "#2c313d"],
   bullet:     ["#9a2740", "#ec4763", "#56101f"],
   demon:      ["#c220a0", "#ff54d4", "#730f5c"],

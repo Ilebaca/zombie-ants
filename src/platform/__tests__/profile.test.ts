@@ -230,3 +230,72 @@ describe("a brand-new profile", () => {
     expect(normalise({ mycel: "lots" }).mycel).toBe(defaultProfile().mycel);
   });
 });
+
+/**
+ * A SAVE FROM THE BUILD THAT HAD THE WEAVER ANT.
+ *
+ * A colony was removed from the game (CLAUDE.md, EIGHT COLONIES) and no migration was
+ * written for it, on the argument that `normalise` is the trust boundary and already
+ * drops anything it cannot name. That is a claim about somebody's save, so it is held
+ * here rather than asserted in a comment: a player who had bought the Weaver, was
+ * fielding it, wore one of its skins and carried one of its traits must come back with a
+ * colony they can play — never a crash, and never an empty profile.
+ */
+describe("a save that names a colony the game no longer has", () => {
+  const old = {
+    name: "Old Hand", colony: 12_000, mycel: 500, pheromone: 300,
+    unlocked: ["leafcutter", "fire", "carpenter", "weaver"],
+    lastSpecies: "weaver",
+    look: { weaver: "we_silk", fire: "fi_b" },
+    skins: ["we_silk", "we_verdigris"],
+    research: { weaver: { reservoir: 3, mandible: 2, carapace: 1 }, fire: { reservoir: 1 } },
+    bag: [
+      { uid: "t1", def: "weaver.silk", tier: "rare" },           // a Weaver trait
+      { uid: "t2", def: "carpenter.excavate", tier: "rare" },    // a Carpenter one
+      { uid: "t3", def: "u.mandible", tier: "common" },          // and a universal one
+    ],
+    bench: { weaver: ["t1", null, null, null, null] },
+  };
+
+  it("keeps the colonies that still exist and drops the one that does not", () => {
+    const p = normalise(old);
+    expect(p.unlocked, "the Weaver came back").not.toContain("weaver");
+    expect(p.unlocked).toContain("fire");
+    expect(p.unlocked).toContain("carpenter");
+    expect(p.unlocked.length).toBeGreaterThan(0);
+  });
+
+  it("leaves the player fielding a colony they actually own", () => {
+    const p = normalise(old);
+    expect(p.unlocked, "fielding a colony that is not owned").toContain(p.lastSpecies);
+  });
+
+  it("drops the removed colony's skins, traits and research", () => {
+    const p = normalise(old);
+    expect(p.skins).not.toContain("we_silk");
+    expect(p.skins).not.toContain("we_verdigris");
+    expect(p.bag.some((i) => i.def === "weaver.silk"), "a Weaver trait survived").toBe(false);
+    expect(p.bag.some((i) => i.def === "carpenter.excavate"), "a good trait was thrown away").toBe(true);
+    expect(p.bag.some((i) => i.def === "u.mandible"), "a universal trait was thrown away").toBe(true);
+    expect(Object.keys(p.research)).not.toContain("weaver");
+  });
+
+  /** Everything the save still had a right to keep. */
+  it("keeps the career it had", () => {
+    const p = normalise(old);
+    expect(p.name).toBe("Old Hand");
+    expect(p.colony).toBe(12_000);
+    expect(p.mycel).toBe(500);
+    expect(p.pheromone).toBe(300);
+    expect(p.research.fire?.reservoir).toBe(1);
+  });
+
+  /** And a store built on it opens, which is the thing the player actually experiences. */
+  it("opens as a playable store", () => {
+    const kv = new MemoryStore();
+    kv.set("za.profile.v2", JSON.stringify(old));
+    const s = new ProfileStore(kv);
+    expect(s.get().unlocked.length).toBeGreaterThan(0);
+    expect(s.isUnlocked(s.get().lastSpecies)).toBe(true);
+  });
+});

@@ -27,7 +27,7 @@ const ALL = Object.keys(SPECIES) as SpeciesId[];
  */
 const SPECIES_BODY: Record<SpeciesId, string> = {
   ghost: "#eaf2ff", pharaoh: "#ffc62f", leafcutter: "#56d840", fire: "#ff8f43",
-  army: "#cf9354", weaver: "#ffa636", carpenter: "#a3adc4", bullet: "#ec4763",
+  army: "#cf9354", carpenter: "#a3adc4", bullet: "#ec4763",
   demon: "#ff54d4",
 };
 
@@ -53,8 +53,8 @@ describe("the catalogue", () => {
   /**
    * NO SKIN MAY LOOK LIKE ANOTHER COLONY. An opponent always fields its basic look, so a
    * palette landing on some other species' own colours is not a skin — it is a colony the
-   * player cannot identify across the board. Two did on the first pass: a pink Leafcutter
-   * read as a Demon Ant and a gold Weaver as a Pharaoh.
+   * player cannot identify across the board. One did on the first pass: a pink Leafcutter
+   * read as a Demon Ant.
    */
   it("keeps every palette clear of every other colony's own colours", () => {
     const rgb = (hex: string): [number, number, number] => [

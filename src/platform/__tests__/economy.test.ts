@@ -5,7 +5,7 @@
  * chamber costs, what the granary carries. None of them could see the thing that was
  * actually wrong, which is that the numbers did not add up TOGETHER:
  *
- *  - the whole research economy, every track on all nine colonies, was covered three times
+ *  - the whole research economy, every track on all eight colonies, was covered three times
  *    over inside three weeks, because larva were converted to pheromone at a rate nobody
  *    had checked against what pheromone buys;
  *  - the daily sweep bonus alone paid more mycelium in a year than there is in the game to

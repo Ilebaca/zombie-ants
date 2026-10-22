@@ -1,5 +1,5 @@
 /**
- * The nine species abilities.
+ * The eight species abilities.
  *
  * An ability is a free extra action: it does NOT consume the turn — except Tunnelling, which
  * does (`abilitySpendsTurn`, CLAUDE.md §4.10) — and it goes on cooldown only if it fired.
@@ -92,11 +92,6 @@ export function frontline(state: GameState, p: Player): Tile[] {
   });
 }
 
-/** The enemy's side of the diagonal. */
-export function onEnemyHalf(c: number, r: number, owner: Player): boolean {
-  return owner === "ai" ? c < r : c > r;
-}
-
 /** Soldiers that could leave their tile without emptying it. */
 export function sparePool(state: GameState, p: Player): number {
   let n = 0;
@@ -176,7 +171,6 @@ export function activateAbility(
     case "leaf":    fired = castLeaf(state, p, mods, events); break;
     case "fire":    fired = castFire(state, p, mods, events); break;
     case "swarm":   fired = castSwarm(state, p, mods, events); break;
-    case "spread":  fired = castSpread(state, p, events); break;
     case "fortify": fired = castFortify(state, p, mods, events); break;
     case "venom":   fired = castVenom(state, p, mods, events); break;
     case "flee":    fired = castFlee(state, p, mods, events); break;
@@ -354,30 +348,6 @@ function castSwarm(state: GameState, p: Player, mods: PlayerMods, events: Engine
     }
   }
   return targets.length > 0;
-}
-
-/** Weaver — claim every bordering empty tile on the enemy's half of the map. */
-function castSpread(state: GameState, p: Player, events: EngineEvent[]): boolean {
-  const seen = new Set<string>();
-  const claims: Tile[] = [];
-  for (const t of allTiles(state)) {
-    if (t.owner !== p) continue;
-    for (const n of neighbours(state, t)) {
-      if (n.owner !== null || n.guard !== 0 || n.terrain !== "ground") continue;
-      if (!onEnemyHalf(n.c, n.r, p) || blockedByEnemyLeaf(state, n, p)) continue;
-      const k = `${n.c},${n.r}`;
-      if (seen.has(k)) continue;
-      seen.add(k);
-      claims.push(n);
-    }
-  }
-  for (const n of claims) {
-    n.owner = p;
-    n.soldiers = 1;
-    promote(n);
-    events.push({ type: "capture", at: { c: n.c, r: n.r }, owner: p, from: "R", previous: null });
-  }
-  return claims.length > 0;
 }
 
 /** Carpenter — the whole colony braces, and the frontline thickens. Veins are skipped. */

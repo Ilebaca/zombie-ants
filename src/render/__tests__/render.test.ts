@@ -453,7 +453,7 @@ describe("the reveal front", () => {
 
 describe("a batch of captures", () => {
   /**
-   * An ability that claims several tiles at once (Weaver's Spread, Pharaoh's Bud) used to
+   * An ability that claims several tiles at once (Pharaoh's Bud) used to
    * start a separate reveal for each one, all on the same frame — so the tiles filled
    * together instead of one after another. They must run as a single ordered front.
    */

@@ -2,7 +2,7 @@
  * EVERY DRAWN THING IN THE GAME, GROUPED ONTO ONE PAGE PER GROUP.
  *
  * The other half of `tools/shots.ts`. The screens export says what the app LOOKS like;
- * this hands over the PARTS — the icon family, the nine colonies' portraits, every skin,
+ * this hands over the PARTS — the icon family, the eight colonies' portraits, every skin,
  * every trait tile, the rarity ladder, the twelve formations, the board's own elements,
  * the chambers and the shop — at a size somebody can actually use in a store listing or a
  * press kit.
@@ -140,9 +140,9 @@ sheet("sheet-01-icons", () => {
   root.append(g);
 });
 
-/* 2. The nine colonies. */
+/* 2. The eight colonies. */
 sheet("sheet-02-colonies", () => {
-  head("The nine colonies", "Every portrait is drawn by `render/art.ts` — the same code "
+  head("The eight colonies", "Every portrait is drawn by `render/art.ts` — the same code "
     + "that draws the head beside a colony's name on the board. Attack and defence are "
     + "the species multipliers; the ability is what the colony is actually for.");
   const g = grid(3);
@@ -184,7 +184,7 @@ sheet("sheet-03-skins", () => {
 
 /* 4. The abilities. */
 sheet("sheet-04-abilities", () => {
-  head("The nine abilities", "Real ant behaviour, used as the mechanic. An ability is a "
+  head("The eight abilities", "Real ant behaviour, used as the mechanic. An ability is a "
     + "FREE extra action — except Tunnelling, which spends the turn. Every number in "
     + "these sentences is read out of `engine/config.ts`, so the copy cannot disagree "
     + "with the rule.");

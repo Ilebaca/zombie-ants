@@ -161,7 +161,7 @@ function reservedCells(
  * YOU hold the BOTTOM-LEFT corner and the enemy the TOP-RIGHT — the two ends of the
  * board's leading diagonal. Every map is symmetric under a 180° rotation about the centre
  * ((c,r) → (N-1-c, N-1-r)), which maps one corner exactly onto the other, so neither side
- * gets better ground. `onEnemyHalf` splits the board along that same diagonal.
+ * gets better ground.
  */
 function startCell(
   size: number, p: Player, dc: number, dr: number,

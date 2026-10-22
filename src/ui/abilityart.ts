@@ -4,7 +4,7 @@
  * Each colony's ability is written on its own page in the Antarium, where the player is
  * deciding whether to spend on that colony (CLAUDE.md: the manual deliberately does NOT
  * describe the abilities, so this card is the one place each is explained). It was a row
- * of chips and a sentence; a painting of the thing is what tells nine of them apart at a
+ * of chips and a sentence; a painting of the thing is what tells eight of them apart at a
  * glance.
  *
  * THE FOLDER IS THE TABLE, the same rule the covers, the faces, the region grounds and
@@ -18,7 +18,7 @@
  * at — a painting on the wrong ability is worse than none.
  *
  * AN ABILITY WITH NO PAINTING ANSWERS NULL and the card is simply the card it already
- * was, which is what let this land before all nine existed.
+ * was, which is what let this land before all eight existed.
  */
 import { SPECIES } from "../engine";
 import type { Ability } from "../engine";

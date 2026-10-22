@@ -127,10 +127,10 @@ describe("buying chambers and research", () => {
 describe("species unlocks", () => {
   it("sells a locked species for its listed price", () => {
     const s = rich();
-    expect(s.isUnlocked("weaver")).toBe(false);
-    expect(s.unlockSpecies("weaver")).toBe(true);
-    expect(s.isUnlocked("weaver")).toBe(true);
-    expect(s.get().mycel).toBe(100000 - SPECIES_UNLOCK.weaver);
+    expect(s.isUnlocked("army")).toBe(false);
+    expect(s.unlockSpecies("army")).toBe(true);
+    expect(s.isUnlocked("army")).toBe(true);
+    expect(s.get().mycel).toBe(100000 - SPECIES_UNLOCK.army);
   });
 
   it("will not sell a premium species for soft currency", () => {
@@ -145,11 +145,11 @@ describe("species unlocks", () => {
 
   it("never charges twice for the same species", () => {
     const s = rich();
-    s.unlockSpecies("weaver");
+    s.unlockSpecies("army");
     const banked = s.get().mycel;
-    expect(s.unlockSpecies("weaver")).toBe(false);
+    expect(s.unlockSpecies("army")).toBe(false);
     expect(s.get().mycel).toBe(banked);
-    expect(s.get().unlocked.filter((id) => id === "weaver").length).toBe(1);
+    expect(s.get().unlocked.filter((id) => id === "army").length).toBe(1);
   });
 
   it("refuses a species the player cannot afford", () => {

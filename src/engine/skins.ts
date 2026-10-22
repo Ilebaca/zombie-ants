@@ -33,9 +33,8 @@
  * NO SKIN MAY LOOK LIKE ANOTHER COLONY. An opponent always fields its basic look, so a
  * palette that lands on some other species' own colours is not a skin — it is a colony
  * you cannot identify across the board. Two of these were exactly that on the first pass:
- * a pink Leafcutter read as a Demon Ant and a gold Weaver read as a Pharaoh. A third was
- * only caught by the test that was written for the first two: a cream Leafcutter sat on
- * the Ghost Ant's near-white. `skins.test.ts` holds the whole set apart now, which is the
+ * a pink Leafcutter read as a Demon Ant, and a cream Leafcutter sat on the Ghost Ant's
+ * near-white — the second only caught by the test written for the first. `skins.test.ts` holds the whole set apart now, which is the
  * only way this stays true through a retune of any species' own colours.
  */
 import type { SpeciesId } from "./types";
@@ -44,7 +43,7 @@ import type { TierId } from "./tiers";
 /** The overlay drawn on top of the ant's body. `null` is the bare species. */
 export type SkinStyle =
   | "lava" | "leaves" | "ghost" | "glyph" | "camo" | "devil"
-  | "silk" | "bark" | "banded"
+  | "bark" | "banded"
   | null;
 
 /** Which structure a colony's nest is drawn as. */
@@ -126,13 +125,6 @@ export const LOOKS: Record<SpeciesId, readonly Look[]> = {
     { id: "ar_night", name: "Night Raid", species: "army", style: null, hill: "bunker",
       pal: ["#3a3f8f", "#5b62e0", "#171a44"], tier: "exceptional" },
     { id: "ar_camo", name: "Camouflage", species: "army", style: "camo", hill: "bunker",
-      tier: "mythic" },
-  ],
-  weaver: [
-    { id: "we_b", name: "Basic", species: "weaver", style: null, hill: "mound" },
-    { id: "we_verdigris", name: "Verdigris", species: "weaver", style: null, hill: "tree",
-      pal: ["#2f9a92", "#57d6cb", "#14524d"], tier: "exceptional" },
-    { id: "we_silk", name: "Silk Weavers", species: "weaver", style: "silk", hill: "tree",
       tier: "mythic" },
   ],
   carpenter: [

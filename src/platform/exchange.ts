@@ -5,10 +5,10 @@
  * currency that stops meaning anything while the game carries on. Measured against the
  * player the economy is tuned for (two and a half matches a day, an even record):
  *
- *   mycelium   sink 21,865 — chambers 3,745, colonies 2,120, the granary 16,000.
+ *   mycelium   sink 21,585 — chambers 3,745, colonies 1,840, the granary 16,000.
  *              Covered ON DAY 251 of a 440-day road: nearly half the game holding a
  *              currency that buys nothing, and then for ever after.
- *   pheromone  sink 14,850 — every research level on all nine colonies. Covered on day
+ *   pheromone  sink 14,400 — every research level on all eight colonies. Covered on day
  *              399, and then for ever after.
  *
  * (Pheromone was WORSE than that until the same commit: `buyResearch` charged mycelium,

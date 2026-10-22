@@ -6,7 +6,7 @@ const mods = { ...NEUTRAL_MODS };
 
 describe("production", () => {
   it("pays nest 2, stable 1, resource 3", () => {
-    const s = blankGame("small", { you: "weaver", ai: "fire" });  // weaver prod = 1.0
+    const s = blankGame("small", { you: "ghost", ai: "fire" });  // ghost prod = 1.0
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     put(s, 2, 1, { owner: "you", struct: "stable", soldiers: 3 });
     put(s, 3, 1, { owner: "you", struct: "stable", soldiers: 3, terrain: "resource" });
@@ -15,7 +15,7 @@ describe("production", () => {
   });
 
   it("pays nothing for veins", () => {
-    const s = blankGame("small", { you: "weaver", ai: "fire" });
+    const s = blankGame("small", { you: "ghost", ai: "fire" });
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     put(s, 2, 1, { owner: "you", struct: "vein", soldiers: 0 });
     recomputeConnectivity(s);
@@ -23,7 +23,7 @@ describe("production", () => {
   });
 
   it("pays nothing for tiles detached from the queen", () => {
-    const s = blankGame("small", { you: "weaver", ai: "fire" });
+    const s = blankGame("small", { you: "ghost", ai: "fire" });
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     put(s, 1, 7, { owner: "you", struct: "stable", soldiers: 3 });   // floating
     recomputeConnectivity(s);
@@ -31,7 +31,7 @@ describe("production", () => {
   });
 
   it("scales resources with Fungal Cultivation, up to double", () => {
-    const s = blankGame("small", { you: "weaver", ai: "fire" });
+    const s = blankGame("small", { you: "ghost", ai: "fire" });
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     put(s, 2, 1, { owner: "you", struct: "stable", soldiers: 3, terrain: "resource" });
     recomputeConnectivity(s);
@@ -50,7 +50,7 @@ describe("production", () => {
   });
 
   it("hatches Brood Nursery soldiers into the nest", () => {
-    const s = blankGame("small", { you: "weaver", ai: "fire" });
+    const s = blankGame("small", { you: "ghost", ai: "fire" });
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     recomputeConnectivity(s);
     runProduction(s, "you", { ...mods, brood: 3 });

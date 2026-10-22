@@ -5,7 +5,7 @@ import {
 import type { Species, SpeciesId } from "./types";
 
 /**
- * Nine colonies. The multiplier spread is intentionally narrow (0.70–1.25):
+ * Eight colonies. The multiplier spread is intentionally narrow (0.70–1.25):
  * species should change HOW you win, not guarantee that you do.
  *
  * EVERY NUMBER IN THE COPY IS READ FROM `config.ts`, never typed. These sentences are what
@@ -50,13 +50,6 @@ export const SPECIES: Record<SpeciesId, Species> = {
     trait: "Bivouac — a devouring column.",
     ability: { name: "Feeding Swarm", kind: "swarm", cooldown: 6,
       desc: `Bordering tiles lose ${sharePct(SWARM_BITE)}% of their troops — devoured and added to your colony. Enemy veins are destroyed, wild garrisons and the Hive are eaten too. Only tiles touching your colony at cast time.` },
-  },
-  weaver: {
-    id: "weaver", name: "Weaver Ant", atk: 1.07, def: 1.04, prod: 1.0,
-    blurb: "The expansionist. Many fronts at once.",
-    trait: "Silk bridges — pushes into enemy ground.",
-    ability: { name: "Spread", kind: "spread", cooldown: 5,
-      desc: "Claim every empty tile you border on the enemy's half of the map." },
   },
   carpenter: {
     id: "carpenter", name: "Carpenter", atk: 0.91, def: 1.06, prod: 1.05,

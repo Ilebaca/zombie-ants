@@ -326,7 +326,7 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: "Nine colonies",
+    title: "The colonies",
     blocks: [
       { p: [
         "Each species is a real ant, and its ability is something that ant really does. The ",

@@ -513,13 +513,14 @@ describe("tunnel (Ghost)", () => {
 
 describe("cooldown and cost", () => {
   it("only spends the cooldown when the ability actually fires", () => {
-    const weaver = withSpecies("weaver");
-    // Spread only claims ground on the enemy's side of the diagonal (c > r for "you").
-    // Sitting at (1,3), every neighbour is still on our own side, so it has nothing to take.
-    put(weaver, 1, 3, { owner: "you", struct: "nest", soldiers: 10 });
-    recomputeConnectivity(weaver);
-    expect(activateAbility(weaver, "you", mods())).toHaveLength(0);
-    expect(weaver.cooldown.you).toBe(0);
+    const army = withSpecies("army");
+    // Feeding Swarm devours a garrison INTO a bordering tile of ours that is not a nest,
+    // so a colony that is nothing but its nest has nowhere to put anything it eats and
+    // the cast finds no target at all. A mistimed tap must not burn six turns (CLAUDE.md §5).
+    put(army, 1, 3, { owner: "you", struct: "nest", soldiers: 10 });
+    recomputeConnectivity(army);
+    expect(activateAbility(army, "you", mods())).toHaveLength(0);
+    expect(army.cooldown.you).toBe(0);
   });
 
   it("shortens the cooldown by one turn only at max research", () => {
@@ -603,7 +604,7 @@ describe("wildfire", () => {
 
 describe("abilities never break the board", () => {
   it("leaves every colony connected to its nest after any cast", () => {
-    const casters: SpeciesId[] = ["pharaoh", "leafcutter", "fire", "army", "weaver", "carpenter", "bullet", "demon"];
+    const casters: SpeciesId[] = ["pharaoh", "leafcutter", "fire", "army", "carpenter", "bullet", "demon"];
     for (const species of casters) {
       const s = withSpecies(species);
       put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 45 });
@@ -627,7 +628,7 @@ describe("abilities never break the board", () => {
    */
   it("names tunnelling as the one ability that costs the turn", () => {
     expect(abilitySpendsTurn("tunnel")).toBe(true);
-    for (const kind of ["bud", "leaf", "fire", "swarm", "spread", "fortify", "venom", "flee"] as const) {
+    for (const kind of ["bud", "leaf", "fire", "swarm", "fortify", "venom", "flee"] as const) {
       expect(abilitySpendsTurn(kind), `${kind} started costing the turn`).toBe(false);
     }
   });

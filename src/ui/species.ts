@@ -356,7 +356,7 @@ function abilityCard(id: SpeciesId, research: Research): HTMLElement {
   const cd = abilityCooldown(species.ability, { ...NEUTRAL_MODS, reservoir: research.reservoir });
   const box = el("div", "spgcard");
 
-  // The painting leads, because it is what tells nine cards apart before any of them is
+  // The painting leads, because it is what tells eight cards apart before any of them is
   // read. It is decorative: the ability's NAME is the heading above this card and its
   // rule is the sentence below, so an alt text here would announce the same thing twice.
   const art = abilityArtFor(species.ability);

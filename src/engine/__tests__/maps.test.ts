@@ -4,7 +4,7 @@
  * These are the rules a player feels before they make a single move — which corner is mine,
  * is the other side's ground the same as mine, is there anything worth taking. Nothing here
  * was covered before, and the corners were wrong (you started top-left, and the diagonal
- * that splits the board for Weaver's Spread ran the wrong way).
+ * that splits the board ran the wrong way).
  */
 import { describe, expect, it } from "vitest";
 import {

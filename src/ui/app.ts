@@ -508,7 +508,8 @@ export class App {
         "Chambers upgrade your whole colony: more income, tougher soldiers, a longer "
         + "reach. This is where mycelium goes first."),
       deckStep("antarium", ".antscroll", "The Antarium",
-        "Nine real ant species, each with a real behaviour as its ability. Unlock them "
+        "Every colony is a real ant species, with a real behaviour as its ability. "
+        + "Unlock them "
         + "here, and spend pheromone on research for the one you field."),
       deckStep("challenges", ".challist", "Challenges",
         "Set matches with a twist and a fixed objective, plus a fresh one every day."),

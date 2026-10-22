@@ -284,7 +284,7 @@ describe("hatching a skin", () => {
 /**
  * MYCELIUM BUYS A LARVA.
  *
- * The mycelium sink is finite — the chambers, the nine colonies and the granary — and a
+ * The mycelium sink is finite — the chambers, the eight colonies and the granary — and a
  * player on the record this economy is tuned for owns all of it well before the road ends.
  * From that day the currency every match pays buys nothing at all, which is a reward that
  * has stopped being one. The hatch is the only sink in the game with no end, so this row

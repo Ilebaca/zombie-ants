@@ -121,11 +121,11 @@ export interface MapLimits {
 
 export type SpeciesId =
   | "ghost" | "pharaoh" | "leafcutter" | "fire" | "army"
-  | "weaver" | "carpenter" | "bullet" | "demon";
+  | "carpenter" | "bullet" | "demon";
 
 export type AbilityKind =
   | "tunnel" | "bud" | "leaf" | "fire" | "swarm"
-  | "spread" | "fortify" | "venom" | "flee";
+  | "fortify" | "venom" | "flee";
 
 export interface Ability {
   name: string;

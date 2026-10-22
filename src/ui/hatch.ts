@@ -135,8 +135,8 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
   /**
    * MYCELIUM BUYS A LARVA.
    *
-   * The mycelium sink is FINITE and always was — the chambers, the nine colonies and the
-   * granary come to about 21,865, and a player on the record this economy is tuned for has
+   * The mycelium sink is FINITE and always was — the chambers, the eight colonies and the
+   * granary come to about 21,585, and a player on the record this economy is tuned for has
    * bought every one of them well before the road ends. From that day the currency every
    * match pays buys nothing at all, for ever, which is a reward that has stopped being one.
    *

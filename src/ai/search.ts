@@ -3,7 +3,7 @@ import {
   attackMultiplier, defenceMultiplier, fight, flatDefence,
   endTurn,
   snapshot, restore,
-  abilityOf, abilityReady, abilitySpendsTurn, activateAbility, frontline, onEnemyHalf,
+  abilityOf, abilityReady, abilitySpendsTurn, activateAbility, frontline,
 } from "../engine";
 import type {
   ActionContext, Coord, EngineEvent, GameState, Move, Player, PlayerMods,
@@ -496,9 +496,6 @@ function abilityWorthCasting(state: GameState, me: Player, ctx: ActionContext): 
     case "bud":
       return allTiles(state).some((t) => t.owner === me && t.soldiers >= 40
         && neighbours(state, t).some((n) => n.owner === null && n.terrain === "ground"));
-    case "spread":
-      return allTiles(state).some((t) => t.owner === me
-        && neighbours(state, t).some((n) => n.owner === null && n.terrain === "ground" && onEnemyHalf(n.c, n.r, me)));
     case "fortify":
     case "leaf": {
       // Defensive: brace when the border is genuinely under pressure, or about to break.

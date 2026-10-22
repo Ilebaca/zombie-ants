@@ -36,7 +36,7 @@ import { allTiles, createGame, defaultContext, endTurn, key, TRAVEL_RANGE } from
 import type { Coord, EngineEvent, GameState, MapId, SpeciesId } from "../src/engine";
 import { aiTurn } from "../src/ai/search";
 
-const SPECIES: SpeciesId[] = ["fire","leafcutter","army","ghost","weaver","carpenter","bullet","pharaoh","demon"];
+const SPECIES: SpeciesId[] = ["fire","leafcutter","army","ghost","carpenter","bullet","pharaoh","demon"];
 const orth = (a: Coord, b: Coord) => Math.abs(a.c-b.c)+Math.abs(a.r-b.r) === 1;
 const held = (s: GameState) => new Map(allTiles(s).map(t => [key(t.c,t.r), `${t.owner ?? "-"}/${t.struct ?? "-"}`]));
 

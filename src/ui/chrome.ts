@@ -475,7 +475,7 @@ export function setupSteps(current: number, total = 2): HTMLElement {
  * recolours the whole colony and may carry an overlay (`engine/skins.ts`); the drawn head
  * is the only one of the two that can show either, so a colony wearing something found
  * keeps its drawn face. Handing a skinned colony its painted icon would make wearing a
- * skin do nothing on nine screens, silently.
+ * skin do nothing on every screen that shows a face, silently.
  *
  * jsdom has no canvas and a screen must survive a context it cannot draw into (§6), so a
  * null context returns a blank canvas rather than throwing.

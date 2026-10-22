@@ -84,11 +84,11 @@ function anchors(s: GameState, t: Tile): number {
 }
 
 const SPECIES: SpeciesId[] = [
-  "fire", "leafcutter", "carpenter", "weaver", "army", "bullet", "demon", "ghost", "pharaoh",
+  "fire", "leafcutter", "carpenter", "army", "bullet", "demon", "ghost", "pharaoh",
 ];
 
 describe("a real game never reaches a state the rules cannot read", () => {
-  // One game per species as the caster, so all nine abilities are fired many times over.
+  // One game per species as the caster, so all eight abilities are fired many times over.
   for (let i = 0; i < SPECIES.length; i++) {
     const you = SPECIES[i] as SpeciesId;
     const ai = SPECIES[(i * 4 + 3) % SPECIES.length] as SpeciesId;

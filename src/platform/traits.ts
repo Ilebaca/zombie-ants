@@ -157,7 +157,7 @@ export interface TraitDef {
    * and `Product.icon` / `Chamber.icon` name a mark the same way).
    *
    * It only has to be distinct WITHIN A BENCH, and a bench is either the eight universal
-   * traits or one colony's five — so the five colony marks repeat across all nine, which
+   * traits or one colony's five — so the five colony marks repeat across all eight, which
    * is the reason a set this small can cover fifty-three traits without any of them
    * looking like each other where it matters.
    */
@@ -228,7 +228,7 @@ const SPECIES_MARKS = ["attack", "spark", "defence", "anthill", "clock"] as cons
 /**
  * FIVE PER COLONY, so a colony's five slots can be filled with five DIFFERENT traits
  * rather than duplicates. Two attack, two defence, one cooldown each — the same shape
- * everywhere, so a player learns one pattern and it holds for all nine.
+ * everywhere, so a player learns one pattern and it holds for all eight.
  *
  * Every one is that species' own real behaviour, which is the rule the whole game is
  * written to: the abilities are real biology, and a trait that was invented would be the
@@ -269,13 +269,6 @@ const PER_SPECIES: Record<SpeciesId, readonly [string, TraitKind, string, string
     ["bridge", "defence", "Living Bridge", "Workers that become the ground the column crosses on."],
     ["column2", "defence", "Column Guard", "Majors standing outward along the whole length of the raid."],
     ["nomad", "cooldown", "Nomadic Phase", "A colony that is never settled long enough to be slow."],
-  ],
-  weaver: [
-    ["silk", "attack", "Silk Anchor", "A grip nothing shakes, taken before the fight starts."],
-    ["chain", "attack", "Worker Chains", "Living chains that pull two edges of a leaf together."],
-    ["canopy", "defence", "Canopy Nest", "A nest sewn shut in the crown of a tree."],
-    ["territorial", "defence", "Territorial Patrol", "Ground walked often enough that nothing crosses it unseen."],
-    ["larval", "cooldown", "Larval Silk", "Silk drawn from the brood, and the brood is always there."],
   ],
   carpenter: [
     ["excavate", "attack", "Excavating Jaws", "Jaws shaped for wood, used on something softer."],
