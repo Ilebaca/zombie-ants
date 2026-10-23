@@ -6,6 +6,7 @@ import {
   attackMultiplier, defenceMultiplier, fight, flatDefence, guardDefence,
 } from "./combat";
 import { isConnected, pruneAllVeins, recomputeConnectivity } from "./connectivity";
+import { stripArmour } from "./effects";
 import { captureQueen, queenIsTakeable } from "./hive";
 import { key } from "./types";
 import type {
@@ -331,6 +332,10 @@ export function travel(state: GameState, from: Coord, to: Coord): EngineEvent[] 
     const t = tileAt(state, step.c, step.r);
     if (t && !t.owner && !isHiveTerrain(t)) {
       t.owner = owner; t.struct = "vein";
+      // A vein wears no armour (`takesArmour`), and razing a tile leaves its effects
+      // behind — so without this a trail laid over ground that was armoured before it
+      // was lost inherits a shield nobody cast on it.
+      stripArmour(state, t.c, t.r);
       events.push({ type: "veinLaid", at: { c: t.c, r: t.r }, owner });
     }
   }

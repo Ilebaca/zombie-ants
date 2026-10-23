@@ -28,6 +28,21 @@ export const glandCut = (mods: PlayerMods): number => Math.max(0.25, 1 - mods.gl
  */
 export const takesArmour = (t: Tile): boolean => t.struct !== "vein";
 
+/**
+ * Strip armour a tile may no longer wear — called when a trail is laid across it.
+ *
+ * THE THIRD PATH, and the one the two add-site guards could not cover. Razing a tile does
+ * NOT clear the effects on it, and that is deliberate: venom and fire keep burning ground
+ * after whatever stood there is gone. Armour is the one effect that belongs to the
+ * GARRISON rather than to the ground, so it outlived its tile — and a travel laying a
+ * trail over that same square inherited a shield nobody cast there.
+ */
+export function stripArmour(state: GameState, c: number, r: number): void {
+  state.effects = state.effects.filter(
+    (e) => !(e.c === c && e.r === r && e.kind === "armor"),
+  );
+}
+
 export function addEffect(
   state: GameState, c: number, r: number, kind: TileEffect["kind"], owner: Player, turns: number,
 ): TileEffect {

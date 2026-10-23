@@ -575,6 +575,14 @@ Each of these cost a debugging round. Do not repeat them.
     leaving armour as it withers (a wall is only ever cast on EMPTY ground, but a travel
     may lay a trail across it first). Fortify already skipped veins; this is the rest of
     that rule.
+  - **AND THERE WAS A THIRD PATH, found by re-running the sweep after fixing the first
+    two.** Razing a tile does NOT clear the effects on it — deliberately, because venom
+    and fire keep burning ground after whatever stood there is gone. Armour is the one
+    effect that belongs to the GARRISON rather than to the ground, so it outlived its
+    tile and a travel laying a trail across that square inherited a shield nobody cast
+    there. `travel` strips it where it lays the vein, which is the only place in the game
+    a tile becomes one. Guarding the two places armour is ADDED was not enough, and
+    nothing but a sweep would have said so.
   - Clean at hard over the sweep after the fixes; `npm run veins [games] [turns]`.
 - **Scenery is baked once, not drawn per frame.** The undergrowth around the playfield
   (`render/terrain.ts`) is a still life — rocks, logs, ferns — and redrawing it sixty times

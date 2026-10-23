@@ -444,6 +444,30 @@ describe("armour never lands on a trail", () => {
     expect(armoured(s, vein), "a trail was armoured").toBe(false);
   });
 
+  /**
+   * THE THIRD PATH, and the one the two add-site guards could not cover. Razing a tile
+   * does NOT clear the effects on it — deliberately, because venom and fire keep burning
+   * ground after whatever stood there is gone. Armour is the one effect that belongs to
+   * the GARRISON rather than to the ground, so it outlived its tile, and a travel laying
+   * a trail across that square inherited a shield nobody cast there. Found by the sweep
+   * AFTER both other guards were in, which is the whole reason the sweep exists.
+   */
+  it("is stripped from ground a trail is laid across", () => {
+    const s = blankGame();
+    put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 30 });
+    // Ground that was armoured while the colony held it, and has since been lost.
+    const lost = put(s, 3, 1, { owner: null, struct: null, soldiers: 0 });
+    addEffect(s, lost.c, lost.r, "armor", "you", 4);
+    recomputeConnectivity(s);
+
+    const path = travelTargets(s, tile(s, 1, 1)).find((o) => o.c === 4 && o.r === 1);
+    expect(path, "the send this test is about is not legal").toBeTruthy();
+    travel(s, { c: 1, r: 1 }, { c: 4, r: 1 });
+
+    expect(lost.struct, "the trail never crossed the armoured ground").toBe("vein");
+    expect(armoured(s, lost), "a trail inherited armour off the ground under it").toBe(false);
+  });
+
   it("is refused when a leaf wall withers onto ground a trail now crosses", () => {
     const s = blankGame("small", { you: "leafcutter", ai: "fire" });
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 20 });
