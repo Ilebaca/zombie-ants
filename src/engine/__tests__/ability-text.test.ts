@@ -65,6 +65,29 @@ describe("what an ability says it does", () => {
     }
   });
 
+  /**
+   * A BLURB IS ONE SENTENCE.
+   *
+   * It is the line under the colony's name on the Antarium's hero, and it ran to two —
+   * "Balanced & territorial. The honest fighter." — where the second half mostly restated
+   * the first in other words. One line, so the hero reads at a glance.
+   *
+   * The Demon Ant is the one that kept its SECOND half: its first was "Premium.", which
+   * is already a tag printed above the name on the same card.
+   */
+  it("gives every colony a one-sentence blurb", () => {
+    for (const species of Object.values(SPECIES)) {
+      const blurb = species.blurb;
+      expect(blurb.length, `${species.id} has no blurb`).toBeGreaterThan(0);
+      expect(blurb.endsWith("."), `${species.id}'s blurb does not end in a full stop`)
+        .toBe(true);
+      // Exactly one full stop, and it is the last character: a second sentence puts one
+      // anywhere earlier. "&" is fine; an abbreviation would not be, and none is used.
+      expect(blurb.indexOf("."), `${species.id}'s blurb is two sentences: "${blurb}"`)
+        .toBe(blurb.length - 1);
+    }
+  });
+
   it("gives every colony an ability with a name and a description", () => {
     for (const species of Object.values(SPECIES)) {
       expect(species.ability.name.length).toBeGreaterThan(0);
