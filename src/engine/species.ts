@@ -60,14 +60,14 @@ export const SPECIES: Record<SpeciesId, Species> = {
   },
   bullet: {
     id: "bullet", name: "Bullet Ant", atk: 1.22, def: 0.84, prod: 0.70,
-    blurb: "Glass cannon.",
+    blurb: "Hits hardest, holds least.",
     trait: "Pain gland — chemical barrage.",
     ability: { name: "Venom Rain", kind: "venom", cooldown: 6,
       desc: `Venom rains across the whole board at random. Enemy tiles caught in it lose ${VENOM_BITE} troops/turn for ${VENOM_TURNS} turns — your tiles and both main bases are immune.` },
   },
   demon: {
     id: "demon", name: "Demon Ant", atk: 1.09, def: 1.0, prod: 0.95, premium: true,
-    blurb: "Sacrifices her own for power.",
+    blurb: "Breaks the enemy's nerve.",
     trait: "Terror pheromone — panics nearby colonies into flight.",
     ability: { name: "Flee", kind: "flee", cooldown: 6,
       desc: `Fear ripples out: every mobile enemy garrison within ${FLEE_REACH} tiles of your colony flees directly away until it is beyond that reach. Veins, tunnels, resources and the Hive cannot be pushed. Tiles that collide while fleeing merge into one.` },
