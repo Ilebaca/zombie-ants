@@ -15,6 +15,7 @@
     "ladder": "tsx tools/ladder.ts",
     "arena": "tsx tools/arena.ts",
     "reach": "tsx tools/reach.ts",
+    "veins": "tsx tools/veins.ts",
     "shots": "tsx tools/shots.ts",
     "gdd:pdf": "tsx tools/gdd-pdf.ts",
     "ai:bench": "tsx tools/bench.ts",

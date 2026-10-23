@@ -1,8 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
-  defaultContext, isConnected, moveOrAttack, pruneAllVeins, rally, rallyTargets,
-  recomputeConnectivity, tile, travel, travelTargets,
+  abilityReady, activateAbility, allTiles, captureQueen, createGame, defaultContext,
+  endTurn, hiveCells, isConnected, moveOrAttack, neighbours, NEUTRAL_MODS, pruneAllVeins,
+  rally, rallyTargets, recomputeConnectivity, startTurn, tile, travel, travelTargets,
 } from "../index";
+import { aiTurn } from "../../ai/search";
+import type { GameState, Tile } from "../index";
 import { blankGame, put } from "./helpers";
 
 describe("veins have no defence", () => {
@@ -218,5 +221,195 @@ describe("veins cut off from the colony", () => {
 
     pruneAllVeins(s);
     for (const c of [2, 3, 4]) expect(tile(s, c, 1).struct, `vein at ${c}`).toBe("vein");
+  });
+});
+
+/**
+ * A VEIN IS NOT SOMEWHERE TROOPS CAN STAND (§4.4, §4.6).
+ *
+ * It holds no garrison — that is what makes damage destroy one outright rather than taking
+ * a percentage of nothing — and the other half of the same rule is that troops ARRIVING on
+ * one promote it to a stable. Every path that lands troops has to obey it, and one did
+ * not: Feeding Swarm devours a bitten garrison INTO a bordering tile of its own, and the
+ * tile it picked was allowed to be a vein. The colony grew a vein carrying a garrison,
+ * which then ate the next bite as well and climbed on every cast — found by `npm run
+ * veins` after a real match came back with a number on a trail.
+ */
+describe("troops landing on a vein", () => {
+  it("promote it rather than garrisoning it, when a swarm devours into one", () => {
+    const s = blankGame("small", { you: "army", ai: "fire" });
+    put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 20 });
+    // A trail out of the nest, with the enemy standing beside its far end.
+    const vein = put(s, 2, 1, { owner: "you", struct: "vein", soldiers: 0 });
+    put(s, 3, 1, { owner: "you", struct: "stable", soldiers: 4 });
+    put(s, 2, 2, { owner: "ai", struct: "stable", soldiers: 12 });
+    recomputeConnectivity(s);
+
+    activateAbility(s, "you", { ...NEUTRAL_MODS });
+
+    expect(vein.soldiers === 0 || vein.struct === "stable",
+      `a vein was left carrying ${vein.soldiers} soldiers`).toBe(true);
+    // And the rest of the rule still holds across the whole board.
+    for (const t of allTiles(s)) {
+      if (t.struct === "vein") expect(t.soldiers, `${t.c},${t.r}`).toBe(0);
+    }
+  });
+
+  /**
+   * THE LANDING TILE HAS TO SURVIVE THE PRUNE, or this tests nothing. A first version put
+   * the runner on the end of a thread: without the promotion the tile stayed a vein with
+   * a garrison on it for a moment and was then destroyed for having one anchor, so the
+   * board came out clean either way and the mutation that deleted the rule passed. The
+   * landing tile is given TWO anchors of its own here, so a vein left carrying troops is
+   * still standing to be found.
+   */
+  it("promote it when a fleeing garrison lands on one", () => {
+    const s = blankGame("small", { you: "demon", ai: "fire" });
+    put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 20 });
+    put(s, 2, 1, { owner: "you", struct: "stable", soldiers: 5 });
+    put(s, 3, 1, { owner: "ai", struct: "stable", soldiers: 6 });   // runs two tiles clear
+    // (4,1) is left open to run across; the trail it lands in holds itself up.
+    const landing = put(s, 5, 1, { owner: "ai", struct: "vein", soldiers: 0 });
+    put(s, 5, 2, { owner: "ai", struct: "vein", soldiers: 0 });
+    put(s, 6, 1, { owner: "ai", struct: "stable", soldiers: 3 });
+    put(s, 6, 2, { owner: "ai", struct: "stable", soldiers: 3 });
+    recomputeConnectivity(s);
+
+    activateAbility(s, "you", { ...NEUTRAL_MODS });
+
+    expect(landing.soldiers, "the runner never reached the trail").toBeGreaterThan(0);
+    expect(landing.struct, "a garrison is standing on a vein").toBe("stable");
+    for (const t of allTiles(s)) {
+      if (t.struct === "vein") expect(t.soldiers, `${t.c},${t.r} is a vein with a garrison`).toBe(0);
+    }
+  });
+});
+
+/**
+ * THE HIVE TAKING ITS FIVE TILES BACK IS AN ANCHOR GOING AWAY.
+ *
+ * While a colony holds them they are ordinary stables, so a trail may legitimately end on
+ * one — and when the surge lapses, or the queen storms a camp off her own ground, they go
+ * back to bare ground. `startTurn` recomputed supply lines after the hive tick and did not
+ * PRUNE, so the trail stood there as a stub for the rest of the turn with nothing on the
+ * board to explain it. Reported from a real match, hive "Back in 4", one vein hanging off
+ * the colony pointing at nothing.
+ */
+describe("the hive handing its tiles back", () => {
+  const trailIntoTheHive = (): GameState => {
+    const s = blankGame();
+    const q = hiveCells(s).find((t) => t.terrain === "hiveQ") as Tile;
+    put(s, 1, q.r, { owner: "you", struct: "nest", soldiers: 20 });
+    // nest — vein … vein — [hive guard], so the guard is the trail's far anchor.
+    for (let c = 2; c < q.c - 1; c++) put(s, c, q.r, { owner: "you", struct: "vein", soldiers: 0 });
+    s.hive.phase = "awake";
+    s.hive.awokeTurn = 1;
+    captureQueen(s, "you");
+    recomputeConnectivity(s);
+    return s;
+  };
+
+  const stubs = (s: GameState): string[] => {
+    const bad: string[] = [];
+    for (const t of allTiles(s)) {
+      if (t.struct !== "vein" || !t.owner) continue;
+      let n = 0;
+      for (const nb of neighbours(s, t)) {
+        if (nb.owner === t.owner && (nb.struct === "vein" || nb.struct === "stable" || nb.struct === "nest")) n++;
+      }
+      if (n < 2) bad.push(`${t.c},${t.r}`);
+    }
+    return bad;
+  };
+
+  it("holds the trail up while the colony still owns them", () => {
+    const s = trailIntoTheHive();
+    expect(stubs(s), "the board was already wrong before the surge lapsed").toEqual([]);
+  });
+
+  it("prunes the trail in the same tick the surge lapses", () => {
+    const s = trailIntoTheHive();
+    s.hive.buffLeft = 1;
+    s.current = "you";
+    startTurn(s, { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } });
+
+    expect(s.hive.phase, "the surge never lapsed, so this tested nothing").toBe("cooling");
+    expect(stubs(s), "a trail was left hanging off the hive").toEqual([]);
+  });
+});
+
+/**
+ * THE TRIPWIRE. `npm run veins` is the real sweep — every vein rule checked after every
+ * engine entry point across whole games at hard; this is the short version the suite can
+ * afford, and it exists because of what it replaced.
+ *
+ * `invariants.test.ts` has played whole games and checked these same rules for months and
+ * never once caught a vein fault — because it plays `easy`, and easy generates NO TRAVEL
+ * (CLAUDE.md §4a). Travel is the only thing in this game that lays a vein, so the audit
+ * with the most vein rules in it was running on boards that had almost none. `normal` is
+ * the cheapest difficulty that travels.
+ *
+ * It also checks after the HAND-OVER, not only after an action: `startTurn` is where
+ * effects tick and the hive takes its five tiles back, and both of those can strand a
+ * trail. A check that only runs after a move cannot see either.
+ */
+describe("a real game leaves no trail in a state the rules cannot read", () => {
+  const faults = (s: GameState): string[] => {
+    const bad: string[] = [];
+    const reaching = (owner: "you" | "ai"): Set<string> => {
+      const held = new Set<string>();
+      const queue = allTiles(s).filter(
+        (t) => t.owner === owner && (t.struct === "stable" || t.struct === "nest"));
+      while (queue.length) {
+        for (const nb of neighbours(s, queue.pop() as Tile)) {
+          if (nb.owner !== owner || nb.struct !== "vein") continue;
+          const k = `${nb.c},${nb.r}`;
+          if (held.has(k)) continue;
+          held.add(k);
+          queue.push(nb);
+        }
+      }
+      return held;
+    };
+    const held = { you: reaching("you"), ai: reaching("ai") };
+    for (const t of allTiles(s)) {
+      if (t.struct !== "vein") continue;
+      const at = `${t.c},${t.r}`;
+      if (!t.owner) { bad.push(`${at} is a vein owned by nobody`); continue; }
+      if (t.soldiers !== 0) bad.push(`${at} is a vein carrying ${t.soldiers} soldiers`);
+      let n = 0;
+      for (const nb of neighbours(s, t)) {
+        if (nb.owner === t.owner && (nb.struct === "vein" || nb.struct === "stable" || nb.struct === "nest")) n++;
+      }
+      if (n < 2) bad.push(`${at} is a vein standing on ${n} anchor(s)`);
+      if (!held[t.owner].has(at)) bad.push(`${at} is a vein reaching no captured tile`);
+    }
+    return bad;
+  };
+
+  it("holds through a game that actually lays some", () => {
+    const mods = { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } };
+    const s = createGame({ map: "small", species: { you: "army", ai: "bullet" }, seed: 1003 });
+    let laid = 0;
+    for (let i = 0; i < 26 && !s.over; i++) {
+      const p = s.current;
+      startTurn(s, mods);
+      expect(faults(s), `after startTurn for ${p} on turn ${s.turn}`).toEqual([]);
+      if (s.over) break;
+      if (abilityReady(s, p)) {
+        activateAbility(s, p, mods[p]);
+        expect(faults(s), `after ${s.species[p]}'s ability on turn ${s.turn}`).toEqual([]);
+      }
+      if (s.over) break;
+      aiTurn(s, p, "normal", defaultContext());
+      expect(faults(s), `after ${p} moved on turn ${s.turn}`).toEqual([]);
+      if (s.over) break;
+      endTurn(s, mods);
+      expect(faults(s), `after turn ${s.turn} was handed over`).toEqual([]);
+      laid = Math.max(laid, allTiles(s).filter((t) => t.struct === "vein").length);
+    }
+    // Without this the whole test passes on a board that never grew a trail — which is
+    // exactly how the audit it replaced stayed green while a vein bug shipped.
+    expect(laid, "no vein was ever laid, so none of this was tested").toBeGreaterThan(0);
   });
 });

@@ -265,9 +265,16 @@ export function startTurn(state: GameState, mods: Record<Player, PlayerMods>): E
   if (state.cloak[p] > 0) state.cloak[p]--;
   hiveTick(state, p, events, mods);
   // The hive hands five tiles over and takes them back again — a surge lapsing, a queen
-  // growing back — so the colony has to be re-examined before production reads it. A colony
-  // that reached its nest only through captured hive ground is cut off the moment she takes
-  // it back, and used to keep producing until somebody happened to move.
+  // growing back, a camp losing a tile she stormed — so the colony has to be re-examined
+  // before production reads it. A colony that reached its nest only through captured hive
+  // ground is cut off the moment she takes it back, and used to keep producing until
+  // somebody happened to move.
+  //
+  // AND IT PRUNES, not just recomputes. Those five tiles are ordinary ANCHORS while a
+  // colony holds them, so a trail running up to the hive loses its end the moment she
+  // takes them back — a stub left standing on the board for the rest of the turn, with
+  // nothing to explain it. Same reason the tick above prunes after effects (§4.2).
+  pruneAllVeins(state, events);
   recomputeConnectivity(state);
   runProduction(state, p, mods[p], events);
   return events;

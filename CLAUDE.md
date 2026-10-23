@@ -537,6 +537,36 @@ Each of these cost a debugging round. Do not repeat them.
     why it is a tool and not a test). The suite carries one short game,
     because the search is synchronous and a full game is most of vitest's RPC budget spent
     on a tail where nothing new happens.
+- **AND VEINS HAVE THEIR OWN SWEEP, for the same reason and a worse one** (`npm run
+  veins`, and the tripwire at the foot of `engine/__tests__/veins.test.ts`). Reported from
+  a real match as "a bug with veins, vein interaction with abilities especially", with a
+  stub hanging off the colony pointing at nothing. Two faults, and the reason neither was
+  caught is the part worth keeping:
+  - **`invariants.test.ts` plays `easy`, AND EASY GENERATES NO TRAVEL** (§4a). Travel is
+    the only thing in this game that lays a vein, so the audit carrying the most vein
+    rules had been running for months on boards that had almost none. It stayed green the
+    whole time. `normal` is the cheapest difficulty that travels, which is what the
+    tripwire plays, and the tool plays `hard`.
+  - **IT CHECKS AFTER THE HAND-OVER, not only after an action.** `startTurn` is where
+    effects tick and where the hive takes its five tiles back, and both of those can
+    strand a trail — neither is visible to a check that runs only after a move.
+  - **A SWARM DEVOURED INTO A VEIN.** Feeding Swarm eats a bitten garrison INTO a
+    bordering tile of its own, and the tile it picked was allowed to be a vein — so the
+    colony grew a vein CARRYING a garrison, which then ate the next bite as well and
+    climbed on every cast. §4.6 already said what should happen ("troops landing on a
+    vein promote it to a stable"); the swarm was the one path that landed troops without
+    going through `promote`. One line, in the function that owns the rule (§7).
+  - **THE HIVE TAKING ITS TILES BACK IS AN ANCHOR GOING AWAY.** While a colony holds them
+    they are ordinary stables, so a trail may legitimately end on one — and `startTurn`
+    recomputed supply lines after `hiveTick` without PRUNING, so a surge lapsing (or a
+    queen storming a camp off her own ground) left the trail standing as a stub for the
+    rest of the turn. It prunes there now, the same way it already did after effects.
+  - **A TEST THAT DELETES ITS OWN EVIDENCE IS NOT A TEST.** The flee-landing case passed
+    against the broken code: the runner landed on the end of a THREAD, so an unpromoted
+    vein-with-a-garrison was destroyed for having one anchor before the assertion ran, and
+    the board came out clean either way. The landing tile is given two anchors of its own
+    now. Mutation-check anything on this board that prunes.
+  - Clean at hard over the sweep after both fixes; `npm run veins [games] [turns]`.
 - **Scenery is baked once, not drawn per frame.** The undergrowth around the playfield
   (`render/terrain.ts`) is a still life — rocks, logs, ferns — and redrawing it sixty times
   a second was by far the most expensive thing on the frame. It renders to an offscreen

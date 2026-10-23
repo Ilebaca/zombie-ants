@@ -331,6 +331,11 @@ function castSwarm(state: GameState, p: Player, mods: PlayerMods, events: Engine
     if (!hit.lost) continue;
 
     into.soldiers += hit.lost;                                       // devoured, not just killed
+    // TROOPS LANDING ON A VEIN PROMOTE IT (CLAUDE.md §4.6), and a swarm devouring INTO one
+    // is troops landing on it. Without this the colony grew a vein carrying a garrison —
+    // a number on a tile the rules say holds none, which then ate the next bite as well
+    // and climbed every cast. `promote` is the one function that owns the rule (§7).
+    promote(into);
     events.push({
       type: "devoured",
       at: { c: from.c, r: from.r }, into: { c: into.c, r: into.r }, owner: p, count: hit.lost,
