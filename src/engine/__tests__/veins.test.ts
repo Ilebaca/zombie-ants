@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  abilityReady, activateAbility, allTiles, captureQueen, createGame, defaultContext,
+  abilityReady, activateAbility, addEffect, allTiles, captureQueen, createGame, defaultContext,
   endTurn, hiveCells, isConnected, moveOrAttack, neighbours, NEUTRAL_MODS, pruneAllVeins,
   rally, rallyTargets, recomputeConnectivity, startTurn, tile, travel, travelTargets,
 } from "../index";
@@ -383,6 +383,9 @@ describe("a real game leaves no trail in a state the rules cannot read", () => {
       }
       if (n < 2) bad.push(`${at} is a vein standing on ${n} anchor(s)`);
       if (!held[t.owner].has(at)) bad.push(`${at} is a vein reaching no captured tile`);
+      if (s.effects.some((e) => e.c === t.c && e.r === t.r && e.kind === "armor")) {
+        bad.push(`${at} is a vein wearing armour`);
+      }
     }
     return bad;
   };
@@ -411,5 +414,50 @@ describe("a real game leaves no trail in a state the rules cannot read", () => {
     // Without this the whole test passes on a board that never grew a trail — which is
     // exactly how the audit it replaced stayed green while a vein bug shipped.
     expect(laid, "no vein was ever laid, so none of this was tested").toBeGreaterThan(0);
+  });
+});
+
+/**
+ * A VEIN TAKES NO ARMOUR (§4.4, §4.6).
+ *
+ * Attacking an enemy vein captures it instantly — the combat path returns before `fight()`
+ * is reached — so a defence bonus on one cannot change a single outcome. What it does do
+ * is DRAW: armour is a full-tile plate and a shield badge, so an armoured vein lit a
+ * square over a trail that is drawn as a thin bar, and put a shield on the one tile in the
+ * game that cannot defend itself. Fortify already skipped veins; this is the other half.
+ */
+describe("armour never lands on a trail", () => {
+  const armoured = (s: GameState, t: Tile): boolean =>
+    s.effects.some((e) => e.c === t.c && e.r === t.r && e.kind === "armor");
+
+  it("is refused by Fungal Garden's frontline sweep", () => {
+    const s = blankGame("small", { you: "leafcutter", ai: "fire" });
+    put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 20 });
+    const vein = put(s, 2, 1, { owner: "you", struct: "vein", soldiers: 0 });
+    const stable = put(s, 3, 1, { owner: "you", struct: "stable", soldiers: 4 });
+    recomputeConnectivity(s);
+
+    activateAbility(s, "you", { ...NEUTRAL_MODS });
+
+    expect(armoured(s, stable), "the garden armoured nothing, so this tested nothing")
+      .toBe(true);
+    expect(armoured(s, vein), "a trail was armoured").toBe(false);
+  });
+
+  it("is refused when a leaf wall withers onto ground a trail now crosses", () => {
+    const s = blankGame("small", { you: "leafcutter", ai: "fire" });
+    put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 20 });
+    const vein = put(s, 2, 1, { owner: "you", struct: "vein", soldiers: 0 });
+    put(s, 3, 1, { owner: "you", struct: "stable", soldiers: 4 });
+    recomputeConnectivity(s);
+    // A wall is only ever cast on EMPTY ground — and a travel may lay a trail across it
+    // before it withers, which is the only way these two ever meet.
+    addEffect(s, vein.c, vein.r, "leaf", "you", 1);
+
+    s.current = "you";
+    startTurn(s, { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } });
+
+    expect(s.effects.some((e) => e.kind === "leaf"), "the wall never withered").toBe(false);
+    expect(armoured(s, vein), "a withered wall armoured the trail under it").toBe(false);
   });
 });

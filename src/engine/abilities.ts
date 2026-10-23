@@ -16,7 +16,7 @@ import {
   allTiles, isHiveTerrain, neighbours, nestTile, otherPlayer, tileAt,
 } from "./board";
 import { isConnected, pruneAllVeins, recomputeConnectivity } from "./connectivity";
-import { addEffect, effectAt, garrisonOf, strike } from "./effects";
+import { addEffect, effectAt, garrisonOf, strike, takesArmour } from "./effects";
 import { speciesOf } from "./species";
 import { shuffle } from "./random";
 import { PERMANENT } from "./types";
@@ -247,8 +247,9 @@ function castLeaf(state: GameState, p: Player, mods: PlayerMods, events: EngineE
         }
       }
     }
-    // the garden armours the border immediately, not only once the walls wither
-    if (!effectAt(state, t.c, t.r, "armor")) {
+    // the garden armours the border immediately, not only once the walls wither —
+    // but never a vein, which cannot defend and only draws a shield (`takesArmour`)
+    if (takesArmour(t) && !effectAt(state, t.c, t.r, "armor")) {
       addEffect(state, t.c, t.r, "armor", p, turns);
       events.push({ type: "effectApplied", at: { c: t.c, r: t.r }, kind: "armor", owner: p, turns });
     }

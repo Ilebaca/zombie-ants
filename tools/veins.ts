@@ -71,6 +71,11 @@ export function veinFaults(s: GameState): string[] {
     if (t.guard > 0) bad.push(`${at} is a vein holding a wild garrison`);
     if (anchors(s, t) < 2) bad.push(`${at} is a vein standing on ${anchors(s, t)} anchor(s)`);
     if (!held[t.owner].has(at)) bad.push(`${at} is a vein reaching no captured tile`);
+    // A vein is captured with no combat at all, so armour on one can change no outcome —
+    // it only draws a full-tile plate and a shield over a trail drawn as a thin bar.
+    if (s.effects.some((e) => e.c === t.c && e.r === t.r && e.kind === "armor")) {
+      bad.push(`${at} is a vein wearing armour`);
+    }
   }
   return bad;
 }

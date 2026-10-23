@@ -11,6 +11,23 @@ export { VENOM_BITE, FIRE_BITE } from "./config";
 /** Metapleural Gland softens fire, venom and hive damage by 5% per level. */
 export const glandCut = (mods: PlayerMods): number => Math.max(0.25, 1 - mods.gland * 0.05);
 
+/**
+ * A VEIN TAKES NO ARMOUR (CLAUDE.md §4.4, §4.6).
+ *
+ * Attacking an enemy vein captures it instantly — the combat path returns before `fight()`
+ * is ever reached — so a defence bonus on one can never change a single outcome. What it
+ * DOES do is draw: armour is a full-tile plate and a shield badge, so an armoured vein lit
+ * a square over a trail that is drawn as a thin bar, and put a shield on the one tile in
+ * the game that cannot defend itself.
+ *
+ * Two paths armour a tile and both have to ask: Fungal Garden armours the frontline at
+ * cast time, and a leaf wall leaves armour behind when it withers — a wall is only ever
+ * cast on EMPTY ground, but a travel may lay a trail across it before it does.
+ *
+ * Fortify already skipped veins for the same reason; this is the other half of that rule.
+ */
+export const takesArmour = (t: Tile): boolean => t.struct !== "vein";
+
 export function addEffect(
   state: GameState, c: number, r: number, kind: TileEffect["kind"], owner: Player, turns: number,
 ): TileEffect {
@@ -149,8 +166,12 @@ export function tickEffects(
     if (e.owner !== p || e.left >= PERMANENT) continue;
     e.left--;
     if (e.left <= 0) {
-      // A withered leaf wall leaves defensive armour behind on the tile.
-      if (e.kind === "leaf") addEffect(state, e.c, e.r, "armor", e.owner, LEAF_TURNS);
+      // A withered leaf wall leaves defensive armour behind on the tile — unless a trail
+      // has since been laid across it, because a vein takes none (`takesArmour`).
+      const under = tileAt(state, e.c, e.r);
+      if (e.kind === "leaf" && under && takesArmour(under)) {
+        addEffect(state, e.c, e.r, "armor", e.owner, LEAF_TURNS);
+      }
       state.effects = state.effects.filter((x) => x !== e);
       events.push({ type: "effectExpired", at: { c: e.c, r: e.r }, kind: e.kind });
     }

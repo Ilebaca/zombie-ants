@@ -566,7 +566,16 @@ Each of these cost a debugging round. Do not repeat them.
     vein-with-a-garrison was destroyed for having one anchor before the assertion ran, and
     the board came out clean either way. The landing tile is given two anchors of its own
     now. Mutation-check anything on this board that prunes.
-  - Clean at hard over the sweep after both fixes; `npm run veins [games] [turns]`.
+  - **AND ARMOUR WAS LANDING ON TRAILS.** Attacking an enemy vein captures it instantly —
+    the combat path returns before `fight()` is reached — so a defence bonus on one cannot
+    change a single outcome. What it DOES do is draw: armour is a full-tile plate and a
+    shield badge, so an armoured vein lit a square over a trail drawn as a thin bar, and
+    put a shield on the one tile in the game that cannot defend itself. Both paths that
+    armour a tile now ask `takesArmour` — Fungal Garden's frontline sweep, and a leaf wall
+    leaving armour as it withers (a wall is only ever cast on EMPTY ground, but a travel
+    may lay a trail across it first). Fortify already skipped veins; this is the rest of
+    that rule.
+  - Clean at hard over the sweep after the fixes; `npm run veins [games] [turns]`.
 - **Scenery is baked once, not drawn per frame.** The undergrowth around the playfield
   (`render/terrain.ts`) is a still life — rocks, logs, ferns — and redrawing it sixty times
   a second was by far the most expensive thing on the frame. It renders to an offscreen
