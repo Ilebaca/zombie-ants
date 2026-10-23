@@ -140,7 +140,7 @@
 
 /* Surfaces the legacy sheet fills with a gradient and this file does not
    otherwise dress. */
-.ccard, .spellcard, .heroslide, .hatchreveal { background-color: var(--panel); }
+.spellcard, .heroslide, .hatchreveal { background-color: var(--panel); }
 .crest, .avatar, .avatarbig, .herocrest, .qhero .qbadge, .sc-img,
 .shopitem-art { background-color: var(--bg2); }
 .turnbanner span { background-color: rgba(0, 0, 0, .55); }
@@ -413,14 +413,30 @@ body {
 /* ======================================================================
    COLLECTION CARDS — the tier colour does the work, not a border
    ====================================================================== */
-.antcell, .ccard {
+.antcell {
   border: none;
   background: var(--panel);
   border-radius: var(--r-lg);
   box-shadow: var(--bevel);
 }
-.ccard.sel { box-shadow: 0 4px 0 var(--panel-edge), inset 0 0 0 3px var(--tc, var(--gold)); }
-.ccard.locked { background: var(--panel); }
+/* A COLLECTION CARD IS THE PICTURE AND THE NAME, ON NO PLATE OF ITS OWN. Each colony's
+   icon is a PAINTING with its own frame and its own dark ground baked into the file, so
+   a card plate behind it is a second box around a box — two rounded rectangles a few
+   pixels apart, which is what it read as. The card keeps its padding, because that is
+   what holds the grid apart, and its radius for the veil and the selection ring to
+   follow. Nothing else on this screen lost a plate: `.antcell` above is the Anthill's,
+   and it has no picture of its own to carry one. */
+.ccard {
+  border: none;
+  background: none;
+  border-radius: var(--r-lg);
+  box-shadow: none;
+}
+.ccard.sel { box-shadow: inset 0 0 0 3px var(--tc, var(--gold)); }
+/* THE ICON IS SIZED BY THE CARD, not by the drawing. A painted colony is an <img> at
+   its natural size and a SKINNED one is still a canvas (a painting cannot be
+   recoloured), so without this the two sit at different sizes in one grid. */
+.ccard canvas, .ccard > img { width: 100%; height: auto; aspect-ratio: 1; }
 /* Locked art still has to be recognisable — the player is looking at what they'd buy.
    Desaturate it and drop it a little; do not black it out. */
 .ccard.locked canvas,
@@ -433,7 +449,6 @@ body {
 .ccard .cveil .cc { color: var(--gold-edge); }
 .ccard.locked canvas,
 .collcell.locked .cc-ic { filter: grayscale(.75) brightness(1.02) contrast(.92); }
-.ccard.locked { background: var(--panel-hi); }
 .rbanner { box-shadow: var(--bevel), inset 0 0 0 2px var(--tc, transparent); }
 
 /* A corner ribbon is only a corner ribbon if the card clips it. */
@@ -782,7 +797,6 @@ footer { background: var(--bg1); }
 .ccard .cveil .cc { color: var(--gold); }
 .ccard.locked canvas,
 .collcell.locked .cc-ic { filter: grayscale(.85) brightness(.75); }
-.ccard.locked { background: var(--bg2); }
 
 /* ======================================================================
    ==  THE SECOND PASS  =================================================
