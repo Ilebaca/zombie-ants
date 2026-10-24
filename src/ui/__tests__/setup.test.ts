@@ -131,16 +131,21 @@ describe("the setup screen", () => {
     expect(name(root)).toBe(shapeName(Object.keys(START_SHAPES)[0] as ShapeId));
   });
 
+  /**
+   * EVERY FORMATION IS REACHABLE, WITHOUT WRAPPING. This used to walk one full loop and
+   * assert it came back round; the picker clamps at both ends now (§ the ends of the
+   * picker), so reaching all twelve means walking to one end and back along the whole
+   * list rather than off the end of it.
+   */
   it("steps through every formation with the arrows, both ways", () => {
     const { root, choices } = build();
     const shapes = Object.keys(START_SHAPES) as ShapeId[];
-    const from = choices.shape;
     const seen = new Set<string>();
+    for (let i = 0; i < shapes.length; i++) { seen.add(choices.shape); press(root, "pickPrev"); }
+    expect(choices.shape, "walking back did not reach the first").toBe(shapes[0]);
     for (let i = 0; i < shapes.length; i++) { seen.add(choices.shape); press(root, "pickNext"); }
+    expect(choices.shape, "walking on did not reach the last").toBe(shapes[shapes.length - 1]);
     expect(seen.size, "the arrows do not reach every formation").toBe(shapes.length);
-    expect(choices.shape, "a full loop did not come back round").toBe(from);
-    press(root, "pickPrev");
-    expect(choices.shape).toBe(shapes[(shapes.indexOf(from) + shapes.length - 1) % shapes.length]);
   });
 
   // Next does not navigate: the same row starts naming colonies, and the button becomes
@@ -373,4 +378,65 @@ describe("the ground under the setup board", () => {
     }
   });
 
+});
+
+/**
+ * THE PICKER STOPS AT BOTH ENDS.
+ *
+ * It wrapped, and with the colony step drawn as a RAIL that is the one place wrapping
+ * cannot work: stepping past the last colony slid the whole row backwards across every
+ * other one to reach the first, which reads as the screen throwing the player back to
+ * the start. Clamping is also what lets the end arrow go dead and SAY SO — a wrapping
+ * picker has no ends, so it can never tell you that you have seen everything.
+ */
+describe("the ends of the picker", () => {
+  const SHAPE_IDS = Object.keys(START_SHAPES) as ShapeId[];
+  const build = (store = new ProfileStore(new MemoryStore())) => {
+    const choices = {
+      map: "small" as const, species: "fire" as SpeciesId, shape: "corner" as ShapeId,
+    };
+    const root = buildSetup({ choices, profile: store, onBack: () => {}, onBegin: () => {} });
+    document.body.replaceChildren(root);
+    return { root, choices };
+  };
+  const press = (root: HTMLElement, id: string): void =>
+    root.querySelector<HTMLButtonElement>(`#${id}`)?.click() as void;
+  const arrows = (root: HTMLElement) => ({
+    prev: root.querySelector("#pickPrev") as HTMLButtonElement,
+    next: root.querySelector("#pickNext") as HTMLButtonElement,
+  });
+
+  it("stops on the last colony rather than coming round to the first", () => {
+    const store = new ProfileStore(new MemoryStore());
+    const owned = SPECIES_ORDER.filter((id) => store.isUnlocked(id));
+    expect(owned.length, "one colony cannot test an end").toBeGreaterThan(1);
+    const { root, choices } = build(store);
+    press(root, "setupGo");
+
+    for (let i = 0; i < owned.length + 3; i++) press(root, "pickNext");
+    expect(choices.species, "the picker wrapped round to the first colony")
+      .toBe(owned[owned.length - 1]);
+    expect(arrows(root).next.disabled, "the arrow at the end is still live").toBe(true);
+
+    for (let i = 0; i < owned.length + 3; i++) press(root, "pickPrev");
+    expect(choices.species, "the picker wrapped round to the last colony").toBe(owned[0]);
+    expect(arrows(root).prev.disabled, "the arrow at the start is still live").toBe(true);
+  });
+
+  /** Both steps are the same two arrows in the same place, so both behave the same. */
+  it("stops at both ends of the formations too", () => {
+    const { root, choices } = build();
+    for (let i = 0; i < SHAPE_IDS.length + 3; i++) press(root, "pickNext");
+    expect(choices.shape).toBe(SHAPE_IDS[SHAPE_IDS.length - 1]);
+    expect(arrows(root).next.disabled).toBe(true);
+    expect(arrows(root).prev.disabled, "the start arrow died at the far end").toBe(false);
+  });
+
+  /** In the middle of the list both arrows are live, or the test above proves nothing. */
+  it("leaves both arrows live anywhere in between", () => {
+    const { root } = build();
+    press(root, "pickNext");
+    expect(arrows(root).prev.disabled).toBe(false);
+    expect(arrows(root).next.disabled).toBe(false);
+  });
 });

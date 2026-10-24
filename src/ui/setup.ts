@@ -169,16 +169,44 @@ export function buildSetup(o: SetupOptions): HTMLElement {
       ? shapeName(o.choices.shape)
       : SPECIES[o.choices.species].name));
     go.textContent = step === "shape" ? "Next" : "Play";
+    // A DEAD ARROW HAS TO LOOK DEAD. Clamping without this is a control that answers a
+    // press by doing nothing, which is the one thing this app keeps being bitten by —
+    // from the outside it is indistinguishable from a button that has stopped working.
+    const list = step === "shape" ? (SHAPE_IDS as string[]) : (owned as string[]);
+    const at = list.indexOf(step === "shape" ? o.choices.shape : o.choices.species);
+    prev.disabled = at <= 0;
+    next.disabled = at >= list.length - 1;
     draw();
   };
 
+  /**
+   * THE PICKER STOPS AT BOTH ENDS; it does not wrap.
+   *
+   * It used to, and with the colony step drawn as a RAIL that is the one place wrapping
+   * cannot work: going past the last colony slid the whole row backwards across every
+   * other one to reach the first, which reads as the screen throwing the player back to
+   * the start rather than as one more step. Clamping is also what lets the arrow at the
+   * end go DEAD and SAY SO — a wrapping picker has no ends, so it can never tell you
+   * that you have seen everything.
+   *
+   * BOTH steps stop, not just the colony one. They are the same two arrows in the same
+   * place on one screen, and an arrow that wraps on the formation and stops on the
+   * colony is two behaviours to learn for one control.
+   *
+   * THE DISABLED ARROW IS THE MECHANISM, not a second one. A first version also clamped
+   * the index in here, and the mutation that turned that clamp back into a wrap passed
+   * every test — because a disabled button cannot be pressed, so the clamp was
+   * unreachable code dressed as a rule (§ the ability card: one mechanism, and the one a
+   * player can see). What is left is a FALLBACK: a press that got through anyway leaves
+   * the choice where it was, rather than stepping off the end of the list.
+   */
   const cycle = (by: number): void => {
     if (step === "shape") {
       const i = SHAPE_IDS.indexOf(o.choices.shape);
-      o.choices.shape = SHAPE_IDS[(i + by + SHAPE_IDS.length) % SHAPE_IDS.length] as ShapeId;
+      o.choices.shape = SHAPE_IDS[i + by] ?? o.choices.shape;
     } else {
       const i = owned.indexOf(o.choices.species);
-      o.choices.species = owned[(i + by + owned.length) % owned.length] as SpeciesId;
+      o.choices.species = owned[i + by] ?? o.choices.species;
     }
     render();
   };

@@ -872,6 +872,23 @@ one that survived.
   - **A COLONY WITH NO PAINTING KEEPS ITS DRAWN HEAD, in a pane of the same shape.** A
     pane that vanished would put every colony after it one place out on the rail — and
     it is what let the slider land without depending on all eight files existing.
+  - **AND THE PICKER STOPS AT BOTH ENDS; it does not wrap.** With the colony step drawn
+    as a rail that is the one place wrapping cannot work: stepping past the last colony
+    slid the whole row backwards across every other one to reach the first, which reads
+    as the screen throwing the player back to the start rather than as one more step.
+    Both steps stop, not only the colony one — they are the same two arrows in the same
+    place, and an arrow that wraps on the formation and stops on the colony is two
+    behaviours for one control.
+    - **THE DISABLED ARROW IS THE MECHANISM, not a second one.** A first version also
+      clamped the index inside the handler, and the mutation that turned that clamp back
+      into a wrap passed every test — a disabled button cannot be pressed, so the clamp
+      was unreachable code dressed as a rule (the same lesson as the ability card's
+      clock guard). What is left in the handler is a FALLBACK, and it is commented as
+      one. Dimmed, never HIDDEN: the row is a three-column grid and a missing arrow lets
+      the name slide to the edge on the first and last colony.
+    - **An existing test asserted the WRAP** — it walked one full loop and checked it
+      came back round. It walks to one end and back along the whole list now, which is
+      what "the arrows reach every formation" actually means without one.
   - **The little head beside the NAME went with it.** It was there because a colony is a
     face everywhere else it is named; with the painting directly above the name it was
     the same fact twice on one line, and the smaller of the two.

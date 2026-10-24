@@ -3099,6 +3099,12 @@ button:not(.playbtn):active,
   cursor: pointer;
 }
 .pickarrow:active { filter: brightness(.9); }
+/* AT THE END OF THE LIST. The picker stops rather than wrapping, so the arrow that can
+   no longer move has to look like it: faded and with the cursor off it. Dimmed, never
+   HIDDEN — the row is a three-column grid and a missing arrow would let the name slide
+   across to the edge of the screen on the first and last colony. */
+.pickarrow:disabled { opacity: .3; cursor: default; }
+.pickarrow:disabled:active { filter: none; }
 .pickname {
   display: flex;
   align-items: center;
