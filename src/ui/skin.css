@@ -3026,6 +3026,39 @@ button:not(.playbtn):active,
   border-radius: var(--r-lg);
 }
 
+/* THE COLONY STEP IS A RAIL OF PAINTINGS, and the board steps aside for it.
+   Both live in the stage: the rail has to keep its position so stepping back to the
+   colony lands where it was left, and the two are swapped by a class rather than by
+   rebuilding, or every press would restart the slide from a standing start. */
+#setupBoard.off, .coverslide:not(.on) { display: none; }
+.coverslide {
+  /* The same ceiling the board is sized to in JS (`MAX_BOARD_PX`), so the two steps are
+     the same width and the picture does not jump sideways between them. The stage adds
+     no inset of its own, so 100% here IS the reading column. */
+  width: min(100%, 520px);
+  aspect-ratio: 1567 / 900;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: #1a120a;
+}
+/* ONE ROW, MOVED BY WHOLE PANES. `translate3d` rather than `left`, so the slide is
+   composited rather than laid out again on every frame. */
+.coverrail {
+  display: flex;
+  height: 100%;
+  transition: transform .28s cubic-bezier(.22, .61, .36, 1);
+  will-change: transform;
+}
+/* `flex: 0 0 100%`, never `width: 100%`: a flex item with a basis of auto is free to
+   SHRINK to share the rail between eight of them, which lays all eight across one
+   viewport instead of one each. */
+.coverpane { flex: 0 0 100%; height: 100%; position: relative; }
+.coverimg { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* A colony with no painting yet keeps its drawn head, in a pane of the same shape — a
+   pane that vanished would put every colony after it one place out on the rail. */
+.coverpane.plain { display: grid; place-items: center; }
+.coverhead { width: 160px; height: 160px; opacity: .85; }
+
 .setupfoot {
   /* It takes the same share of the spare room as the stage, and the button rides its
      bottom — which is the bottom of the screen. */
@@ -3078,9 +3111,6 @@ button:not(.playbtn):active,
   color: var(--ink);
 }
 .picktext { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Drawn at twice the size it is shown at, which is what keeps it sharp on a
-   phone — the same rule `antPortrait` follows. */
-.pickface { width: 32px; height: 32px; display: block; }
 /* THE BUTTON IS SEPARATE FROM THE PICKER, not the last row of it. It stays inside the
    footer so the tour's one hole can hold both controls live. */
 .setupfoot .cta { width: 100%; margin: auto 0 0; }

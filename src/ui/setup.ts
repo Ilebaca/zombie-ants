@@ -22,11 +22,12 @@
  * time — a copy handed back at the end would lose a choice the moment a step navigated.
  */
 import { SPECIES, START_SHAPES, createGame, razeTile } from "../engine";
-import type { MapId, ShapeId, SpeciesId } from "../engine";
+import type { Look, MapId, ShapeId, SpeciesId } from "../engine";
 import { SPECIES_ORDER, chapterOf } from "../platform";
 import type { ProfileStore } from "../platform";
 import { groundFor } from "./regions";
 import { antHead, drawSnapshot, groundReady, lookCol, setFactionColor } from "../render";
+import { coverFor } from "./covers";
 import { el, screenEl, screenHeader, setupSteps } from "./chrome";
 import { icon } from "./icons";
 
@@ -96,6 +97,17 @@ export function buildSetup(o: SetupOptions): HTMLElement {
   const shot = document.createElement("canvas");
   shot.id = "setupBoard";
   stage.appendChild(shot);
+  // THE COLONY STEP SHOWS THE COLONY, NOT THE BOARD. The second step recoloured the same
+  // picture and stepped the name under it, so the thing the player was choosing — which
+  // ant — was a word and a tint on a map. It is the colony's own painting now, and the
+  // paintings SLIDE: a rail of all of them, moved one across per press, so stepping
+  // through reads as walking down a row rather than as one picture being swapped.
+  const reel = el("div", "coverslide");
+  reel.id = "setupReel";
+  const rail = el("div", "coverrail");
+  for (const id of owned) rail.appendChild(coverPane(id, o.profile.lookFor(id)));
+  reel.appendChild(rail);
+  stage.appendChild(reel);
   root.appendChild(stage);
 
   const foot = el("div", "setupfoot");
@@ -117,6 +129,13 @@ export function buildSetup(o: SetupOptions): HTMLElement {
     // The whole UI takes the colony's colours — the button, the chips, the board — so the
     // recolour has to happen before the picture is drawn, not after (§ skins).
     setFactionColor("you", o.choices.species, o.profile.lookFor(o.choices.species));
+    // Which of the two pictures the stage is showing. Both stay in the DOM: the rail has
+    // to keep its position so stepping back to the colony lands where it was left, and
+    // rebuilding it per press would restart the slide from a standing start every time.
+    const picking = step === "species";
+    reel.classList.toggle("on", picking);
+    shot.classList.toggle("off", picking);
+    rail.style.transform = `translate3d(${-100 * Math.max(0, owned.indexOf(o.choices.species))}%,0,0)`;
     // THE GROUND THE MATCH WILL BE PLAYED ON, not a generic one: the player is choosing a
     // formation FOR a place, and the region is decided by the chapter they are standing on
     // (§ THE BOARD'S GROUND IS PAINTED PER REGION). The lookup is done HERE because the
@@ -142,18 +161,10 @@ export function buildSetup(o: SetupOptions): HTMLElement {
     head.appendChild(setupSteps(step === "shape" ? 0 : 1));
 
     label.replaceChildren();
-    if (step === "species") {
-      // The colony's own head beside its name, because a colony is a face in this game
-      // everywhere else it is named.
-      const mark = document.createElement("canvas");
-      mark.width = 64; mark.height = 64;
-      mark.className = "pickface";
-      mark.setAttribute("aria-hidden", "true");
-      const ctx = mark.getContext("2d");
-      const look = o.profile.lookFor(o.choices.species);
-      if (ctx) antHead(ctx, 32, 32, 29, lookCol(o.choices.species, look), look);
-      label.appendChild(mark);
-    }
+    // NO HEAD BESIDE THE NAME. It was there because a colony is a face everywhere else it
+    // is named — but the picture above the name is now that colony, at the size the art
+    // was painted for, so the little drawn head was the same fact twice on one line and
+    // the smaller of the two.
     label.appendChild(el("span", "picktext", step === "shape"
       ? shapeName(o.choices.shape)
       : SPECIES[o.choices.species].name));
@@ -230,6 +241,40 @@ function drawBoard(
   const room = Math.min(w - GUTTER_PX * 2, h - CHROME_PX, MAX_BOARD_PX);
   const tile = Math.max(12, Math.floor(room / across));
   drawSnapshot(canvas, state, { tile, terrain: true, art, padTiles: MAP_PAD_TILES });
+}
+
+/**
+ * ONE COLONY ON THE RAIL.
+ *
+ * A COLONY WITHOUT A PAINTING KEEPS ITS DRAWN HEAD, in a pane of the same shape — the
+ * same rule the species page's cover follows, and the reason the structure could land
+ * before the art did. A pane that simply vanished would leave a hole in the rail and put
+ * every colony after it one place out, which is the one thing a slider must not do.
+ */
+function coverPane(id: SpeciesId, look: Look): HTMLElement {
+  const pane = el("div", "coverpane");
+  const art = coverFor(id);
+  if (art) {
+    const img = document.createElement("img");
+    img.src = art;
+    img.className = "coverimg";
+    // The NAME is written directly under the rail, so the picture repeating it would be
+    // the same thing said twice to a screen reader (§ EVERY CONTROL SAYS WHAT IT IS).
+    img.alt = "";
+    img.setAttribute("aria-hidden", "true");
+    img.decoding = "async";
+    pane.appendChild(img);
+  } else {
+    pane.classList.add("plain");
+    const mark = document.createElement("canvas");
+    mark.width = 320; mark.height = 320;
+    mark.className = "coverhead";
+    mark.setAttribute("aria-hidden", "true");
+    const ctx = mark.getContext("2d");
+    if (ctx) antHead(ctx, 160, 160, 145, lookCol(id, look), look);
+    pane.appendChild(mark);
+  }
+  return pane;
 }
 
 /** One of the two stepper buttons. A mark and a name, never a glyph (§10). */

@@ -858,6 +858,23 @@ one that survived.
   already lived on the save (`lastShape`/`lastSpecies`, written when a match starts) and the
   shell already read it back; the SCREEN was what threw it away. All it does now is refuse a
   formation the build no longer carries, which is the same rule the colony step follows.
+- **THE COLONY STEP SHOWS THE COLONY, AND THE PAINTINGS SLIDE.** It recoloured the same
+  BOARD and stepped a name under it, so the thing being chosen — which ant — was a word
+  and a tint on a map, while the colony's own painting sat two screens away in the
+  Antarium. The second step is a RAIL of those paintings now, moved one pane across per
+  press. Three rules:
+  - **BOTH PICTURES STAY IN THE DOM and a class swaps them.** The rail has to keep its
+    position so stepping back from the formation lands where it was left, and rebuilding
+    it per press would restart the slide from a standing start every time.
+  - **The offset follows the CHOICE, never a count of presses.** It is
+    `owned.indexOf(species)`, which is the same list the arrows walk, so the two can
+    never disagree about where the rail should be.
+  - **A COLONY WITH NO PAINTING KEEPS ITS DRAWN HEAD, in a pane of the same shape.** A
+    pane that vanished would put every colony after it one place out on the rail — and
+    it is what let the slider land without depending on all eight files existing.
+  - **The little head beside the NAME went with it.** It was there because a colony is a
+    face everywhere else it is named; with the painting directly above the name it was
+    the same fact twice on one line, and the smaller of the two.
 - **An arrow may not step onto something the screen will then REFUSE.** The grid of cards
   it replaced showed locked colonies so the goal was visible and turned them down with a
   toast; a stepper that lands on one is a dead end with nothing to say. It walks what the

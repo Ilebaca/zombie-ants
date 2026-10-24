@@ -156,12 +156,61 @@ describe("the setup screen", () => {
     expect(name(root)).toBe(SPECIES[choices.species].name);
   });
 
-  /** A colony is a face everywhere else it is named on this screen too. */
-  it("puts the colony's head beside its name", () => {
+  /**
+   * THE COLONY STEP SHOWS THE COLONY. It recoloured the same BOARD and stepped a name
+   * under it, so the thing being chosen — which ant — was a word and a tint on a map.
+   * The paintings are the picture now, on a rail that slides one across per press, and
+   * the little drawn head beside the name went with it: the same fact twice on one line,
+   * and the smaller of the two.
+   */
+  it("shows the colony's painting on the colony step, never the board", () => {
     const { root } = build();
-    expect(root.querySelector(".pickface"), "a formation has no head").toBeNull();
+    const reel = root.querySelector("#setupReel") as HTMLElement;
+    const board = root.querySelector("#setupBoard") as HTMLElement;
+    expect(reel, "the rail was never built").toBeTruthy();
+
+    // Formation step: the board, and no rail.
+    expect(reel.classList.contains("on"), "the rail is up on the formation step").toBe(false);
+    expect(board.classList.contains("off"), "the board is hidden on its own step").toBe(false);
+
     press(root, "setupGo");
-    expect(root.querySelector(".pickface")).toBeTruthy();
+    expect(reel.classList.contains("on"), "the rail never came up").toBe(true);
+    expect(board.classList.contains("off"), "the board is still showing").toBe(true);
+    expect(root.querySelector(".pickface"), "the head is still beside the name").toBeNull();
+  });
+
+  /** One pane per colony the player may field, in the order the arrows walk them. */
+  it("carries every colony it can step to on the rail", () => {
+    const store = new ProfileStore(new MemoryStore());
+    const owned = SPECIES_ORDER.filter((id) => store.isUnlocked(id));
+    const { root } = build(store);
+    expect(root.querySelectorAll(".coverpane").length).toBe(owned.length);
+  });
+
+  /**
+   * THE RAIL MOVES BY WHOLE PANES, and the offset follows the CHOICE rather than a count
+   * of presses — so stepping back to the colony after the formation lands where it was
+   * left rather than at the start.
+   */
+  it("slides one pane per press", () => {
+    const store = new ProfileStore(new MemoryStore());
+    const owned = SPECIES_ORDER.filter((id) => store.isUnlocked(id));
+    const { root, choices } = build(store);
+    press(root, "setupGo");
+    const rail = root.querySelector(".coverrail") as HTMLElement;
+    const at = (): string => rail.style.transform;
+
+    expect(at()).toBe(`translate3d(${-100 * owned.indexOf(choices.species)}%,0,0)`);
+    press(root, "pickNext");
+    expect(at(), "the rail did not follow the arrow")
+      .toBe(`translate3d(${-100 * owned.indexOf(choices.species)}%,0,0)`);
+    press(root, "pickPrev");
+    expect(at()).toBe(`translate3d(${-100 * owned.indexOf(choices.species)}%,0,0)`);
+    // It wraps, and the rail has a pane to land on at either end.
+    for (let i = 0; i < owned.length; i++) press(root, "pickPrev");
+    const back = owned.indexOf(choices.species);
+    expect(back, "stepping all the way round did not come home").toBeGreaterThanOrEqual(0);
+    expect(at()).toBe(`translate3d(${-100 * back}%,0,0)`);
   });
 
   /**
