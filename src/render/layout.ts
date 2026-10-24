@@ -6,7 +6,20 @@
  */
 import type { Coord } from "../engine";
 
-const BOARD_PAD = 14;
+/**
+ * THE BOARD IS NINE TENTHS OF THE VIEWPORT WIDE, ALWAYS, AND DEAD CENTRE.
+ *
+ * A tile is a tenth of the phone's width and the nine of them span 90% of it. The board
+ * used to be whatever was LEFT once the header, the turn bar and the action row had taken
+ * their share — so the playfield was a different size and a different fraction of the
+ * picture on every device, which is exactly what a ground painted to the tile grid cannot
+ * live with.
+ *
+ * Measured off the VIEWPORT, never the canvas: the match screen carries a 16px gutter, so
+ * the canvas is narrower than the phone and nine tenths OF IT comes to about 82vw — a
+ * number that still moves with the chrome, which is the thing being fixed.
+ */
+const BOARD_VW = 0.9;
 
 export class Layout {
   /** Device pixel ratio, capped at 2 — beyond that costs fill rate for no visible gain. */
@@ -39,8 +52,15 @@ export class Layout {
     canvas.style.height = cssHeight + "px";
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 
-    const span = Math.min(cssWidth, cssHeight) - BOARD_PAD * 2;
-    this.ts = Math.max(8, Math.floor(span / this.size));
+    // The rule: nine tiles across nine tenths of the viewport.
+    const vw = window.innerWidth || cssWidth;
+    const want = (vw * BOARD_VW) / this.size;
+    // A canvas too SHORT (or too narrow) for a square that big falls back to fitting it,
+    // because a clipped board is worse than a small one. No portrait phone reaches this —
+    // 90vw fits inside (100vw - 32px) at every width from 320 up, and the board's box is
+    // far taller than it is wide — but a desktop window laid out wide does.
+    const fit = Math.min(cssWidth, cssHeight) / this.size;
+    this.ts = Math.max(8, Math.floor(Math.min(want, fit)));
     const board = this.ts * this.size;
     this.ox = Math.round((cssWidth - board) / 2);
     this.oy = Math.round((cssHeight - board) / 2);

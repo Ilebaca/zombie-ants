@@ -410,6 +410,27 @@ Each of these cost a debugging round. Do not repeat them.
 - **Starting position is always exactly 5 tiles.** If it isn't, something is applying a
   legacy bonus.
 - **Search must not mutate the profile.** Simulation writes no stats, currencies or storage.
+- **THE BOARD IS 90vw WIDE AND DEAD CENTRE, ON EVERY PHONE** (`BOARD_VW` in
+  `render/layout.ts`). A tile is a tenth of the VIEWPORT and the nine of them span nine
+  tenths of it. It used to be whatever was LEFT once the header, the turn bar and the
+  action row had taken their share — `min(w, h) - 28` of the canvas — so the playfield was
+  a different size, and a different fraction of the picture, on every device. A ground
+  painted to the tile grid cannot live with that.
+  - **Measured off the VIEWPORT, never the canvas.** The match screen is `display:
+    contents`, so the canvas happens to be the full width today; a gutter added above it
+    tomorrow would make nine tenths OF THE CANVAS something other than 90vw, which is the
+    number this rule exists to pin.
+  - **A canvas too short for that square falls back to FITTING it**, because a clipped
+    board is worse than a small one. No portrait phone reaches it — measured in a browser
+    from 320x568 to 768x1024, the shortest left 43px of slack — but a desktop window laid
+    out wide does, and the game's rotate shade is gated on `pointer: coarse` (§10) so it
+    never covers one.
+  - **`drawSnapshot` builds its Layout BY HAND and is untouched by this.** A figure is
+    exactly as big as its window, so there is no viewport in it to be nine tenths of.
+  - The region's picture still COVERS the canvas and its bleed (§ THE BOARD'S GROUND IS
+    PAINTED PER REGION), so it does not line up with the tiles yet — anchoring it to this
+    square is the other half of that job, and a design decision, because what is left
+    outside the board then has to be something.
 - **Never measure the canvas against a zero-sized container.** `Layout.measure` writes the
   result to `canvas.style`, and an inline `width: 0px` outranks the stylesheet's `100%`. One
   early measurement (before first layout, or while the tab isn't compositing) pinned the board
