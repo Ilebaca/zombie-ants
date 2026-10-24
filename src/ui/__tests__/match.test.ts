@@ -133,7 +133,7 @@ describe("the AI's turn", () => {
 });
 
 /**
- * The camera comes down through the canopy before the turn begins (render/intro.ts). A tap
+ * The colonies grow out of their nests before the turn begins (`playIntro`). A tap
  * cuts it short, which is what a player does — and it keeps these tests about the AI.
  */
 const opened = (w: Watch): void => {
@@ -276,7 +276,7 @@ describe("the end of a match", () => {
  * THE OPENING HOLDS THE TURN.
  *
  * The camera comes down through the canopy and the colonies grow out of their nests before
- * anything can be played (render/intro.ts). The clock must not be running under it — and a
+ * anything can be played (`playIntro`). The clock must not be running under it — and a
  * tap must cut it short, because sitting through the same descent every match is the
  * fastest way to make an animation hated.
  */

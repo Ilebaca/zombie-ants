@@ -24,7 +24,6 @@
  */
 import { MAP } from "./palette";
 import { seeded } from "../engine";
-import { INTRO_FROM } from "./intro";
 import type { Layout } from "./layout";
 import { rrect } from "./shapes";
 
@@ -45,19 +44,17 @@ const sceneKey = (layout: Layout): string =>
   `${Math.round(layout.width)}x${Math.round(layout.height)}:${layout.dpr}:${layout.size}:${layout.ts}:${layout.ox},${layout.oy}`;
 
 /**
- * How far past each edge of the canvas the ground is painted.
+ * How far past each edge of the canvas the ground is painted: NOTHING, now.
  *
- * The camera starts at `INTRO_FROM` of its final framing and scales about the middle of the
- * BOARD, which is not always the middle of the canvas — so the furthest the lens can see in
- * any direction is set by the longer of the two sides of the board's centre. Anything less
- * and the plate's own edge comes into shot during the descent, which is the hard rectangle
- * the whole thing exists to avoid.
+ * It used to be half as much again in every direction, because the opening pulled the
+ * camera back and a plate cut to the canvas showed its own edge the moment it did. There
+ * is no camera any more — the board is a fixed frame and the region's picture is painted
+ * to fit it exactly — so an overhang is a plate several times the area for ground nobody
+ * can ever see. The function stays because it is the one place that says so, and because
+ * a plate is still blitted from its corner.
  */
-export function terrainBleed(layout: Layout): number {
-  const cx = layout.ox + (layout.size * layout.ts) / 2;
-  const cy = layout.oy + (layout.size * layout.ts) / 2;
-  const reach = Math.max(cx, layout.width - cx, cy, layout.height - cy);
-  return Math.ceil(reach * (1 / INTRO_FROM - 1)) + 2;
+export function terrainBleed(_layout: Layout): number {
+  return 0;
 }
 
 /**
@@ -150,23 +147,6 @@ export function groundReady(src: string): Promise<void> {
 /** Forget what has been loaded — tests only. */
 export function resetGroundArt(): void { loaded.clear(); }
 
-/**
- * Where a picture lands when it has to COVER the plate.
- *
- * Cover, never fit: a letterboxed background would draw the plate's own bare colour down
- * two edges, which is the hard rectangle the bleed exists to avoid. Centred, because the
- * clearing sits in the middle of the plate and the middle of the picture is what an
- * artist will have put the interesting part in.
- */
-export function groundCover(
-  pw: number, ph: number, iw: number, ih: number,
-): { x: number; y: number; w: number; h: number } {
-  if (iw <= 0 || ih <= 0) return { x: 0, y: 0, w: pw, h: ph };
-  const scale = Math.max(pw / iw, ph / ih);
-  const w = iw * scale, h = ih * scale;
-  return { x: (pw - w) / 2, y: (ph - h) / 2, w, h };
-}
-
 /** Throw the cached scenery away — used by tests and on a species recolour. */
 export function resetTerrain(): void { cache = null; }
 
@@ -201,29 +181,75 @@ function bake(
   if (art) {
     // A PAINTED REGION REPLACES THE SOIL AND EVERYTHING GROWING ON IT. A picture already
     // has its own rocks and ferns, and drawing ours over them is two forests at once.
-    paintArt(ctx, art, w, h, bleed);
+    paintArt(ctx, art, layout);
   } else {
     paintGround(ctx, layout, w, h, bleed);
     paintScenery(ctx, layout, w, h, bleed, reserve);
   }
-  // THE CHEQUER IS NOT PART OF THE PICTURE. It marks where the cells are, so it is drawn
-  // over whatever ground is underneath — a painted board with the squares baked into it
-  // would be a grid that no longer lines up the moment the tile size changes.
-  if (grid) paintChequer(ctx, layout, art !== null, bleed);
+  // THE CHEQUER IS THE DRAWN FLOOR'S, and only the drawn floor's. A region's picture has
+  // the cells painted into it and is placed BY them (`groundAlign`), so marking them again
+  // is two grids on one board. It was the other way round for as long as a picture was
+  // just ground: the squares could not be baked into one, because nothing said where in
+  // the file they would land.
+  if (grid && !art) paintChequer(ctx, layout);
   return { canvas, w: w + bleed * 2, h: h + bleed * 2, key };
 }
 
-/** The region's own ground, covering the plate, overhang included. */
+/**
+ * THE REGION'S PICTURE, LINED UP WITH THE BOARD.
+ *
+ * The picture carries the nine-by-nine grid itself (`ART_GRID`), so it is placed by that
+ * grid and nothing else: scaled until its painted cells are the size of the board's and
+ * centred on them. It used to COVER the canvas, which put the artwork at a different size
+ * on every phone — fine while the ground was soil and ferns, impossible now the slabs in
+ * it ARE the cells.
+ *
+ * Nothing fills the frame around it, because there is no frame: the picture is painted to
+ * the shape of a phone and the board is nine tenths of the screen, so it reaches every
+ * edge of the canvas by itself.
+ */
 function paintArt(
-  ctx: CanvasRenderingContext2D, art: HTMLImageElement, w: number, h: number, bleed: number,
+  ctx: CanvasRenderingContext2D, art: HTMLImageElement, layout: Layout,
 ): void {
-  const W = w + bleed * 2, H = h + bleed * 2;
-  const at = groundCover(W, H, art.naturalWidth || art.width, art.naturalHeight || art.height);
+  const iw = art.naturalWidth || art.width, ih = art.naturalHeight || art.height;
   // The picture is usually being scaled DOWN onto the plate, where averaging the dropped
   // pixels rather than picking one is the whole difference between a photograph and a
   // mosaic of it.
   ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(art, at.x - bleed, at.y - bleed, at.w, at.h);
+  const at = groundAlign(layout, iw, ih);
+  ctx.drawImage(art, at.x, at.y, at.w, at.h);
+}
+
+/**
+ * WHERE THE GRID SITS IN A REGION'S PICTURE, as fractions of the file.
+ *
+ * Every region picture is painted to one template, which is what lets the renderer place
+ * any of them without a table: the nine-by-nine grid of cells occupies this rectangle.
+ * Measured off the forest floor's own artwork, cell edge to cell edge.
+ */
+export const ART_GRID = { x: 0.0577, y: 0.2610, w: 0.8870, h: 0.4007 } as const;
+
+/**
+ * Where the whole picture lands so its painted grid sits exactly on the board.
+ *
+ * ONE scale, never two. The file's cells are a fraction of a percent off square — 83.0
+ * pixels across against 83.25 down on the forest floor — and stretching a painting to
+ * hide that is worse than the half pixel it costs. The two scales are averaged and the
+ * grid is centred on the board, so the error is split between the top and bottom edges
+ * instead of all landing on one of them, and it is under a pixel either way.
+ */
+export function groundAlign(
+  layout: Layout, iw: number, ih: number,
+): { x: number; y: number; w: number; h: number } {
+  const board = layout.ts * layout.size;
+  if (iw <= 0 || ih <= 0) return { x: layout.ox, y: layout.oy, w: board, h: board };
+  const scale = Math.sqrt((board / (ART_GRID.w * iw)) * (board / (ART_GRID.h * ih)));
+  const w = iw * scale, h = ih * scale;
+  return {
+    x: layout.ox + board / 2 - (ART_GRID.x + ART_GRID.w / 2) * w,
+    y: layout.oy + board / 2 - (ART_GRID.y + ART_GRID.h / 2) * h,
+    w, h,
+  };
 }
 
 /**
@@ -274,104 +300,40 @@ function paintGround(
  * THE TILE INDICATORS: a chequer of marked cells, fading out toward the rim of the grid so
  * the playfield has no hard border.
  *
- * Its own layer, over whatever ground is underneath. That matters most for a PAINTED
- * region (`ui/regions.ts`), which replaces the soil and still has to say where the cells
- * are — and it is why the colour is not one of the ground's own.
+ * THE DRAWN FLOOR'S ONLY. A region's picture has its cells painted in and is placed by
+ * them (`groundAlign`), so it needs no mark of its own — and marking it anyway put a
+ * second grid over the first.
  *
- * THE MARK IS MEASURED AGAINST THE GROUND IT LANDS ON, and that is the whole of it. It was
- * a fixed white at a fixed alpha, which is a mark whose strength depends entirely on how
- * dark the picture under it happens to be: the same 12% white read as **twelve levels out
- * of 255** on the forest floor's brown soil and **five** on the desert's bright sand, which
- * is under half as visible on the map a player reaches at chapter 6. Tiles not standing out
- * was reported once already and a fixed alpha was always going to bring it back, one region
- * at a time, as the art landed.
- *
- * So the cell's own ground is SAMPLED off the plate and the fill is solved for: the target
- * is a constant difference (`ART_STEP`), and compositing a colour at alpha `a` over
- * luminance `L` moves it by `a * |C - L|`, so the alpha falls straight out of the headroom.
- * NINETEEN is what the forest floor was already shipping at the middle of the board — the
- * map that was checked and signed off — so the ground a player has been looking at does not
- * move and every other one comes up to meet it. Measured over the whole grid, rim fade
- * included: forest **12.3 before, 12.5 after**; desert **5.1 before, 12.9 after**.
- *
- * AND THE DIRECTION FOLLOWS THE GROUND TOO. Lighten a dark map, DARKEN a bright one —
- * whichever has the room. On sand, white would need a quarter of an alpha to shift twelve
- * levels and that is a wash that takes the colour out with it; black needs six percent and
- * multiplies every channel by the same amount, so the sand stays sand. (The drawn floor's
- * own mark is still `MAP.groundA`, which is a colour rather than a tint and is not solved
- * for: it is the one ground this code knows the shade of.)
+ * It was a LAYER over a painted ground for as long as a picture was only ground, and the
+ * mark had to be solved against whatever luminance it landed on: a fixed white read as
+ * twelve levels out of 255 on brown soil and five on bright sand, so the tiles stopped
+ * standing out one region at a time as the art arrived. That whole mechanism is gone with
+ * the template, and this is what it always was underneath — the soil's own lighter colour
+ * on the soil.
  */
-const ART_STEP = 19;      // levels out of 255 a marked cell differs by, on any ground
-const ART_FALLBACK = 110; // a plate that will not hand its pixels back (see `groundLuma`)
 const SOIL_TILE = 0.46;
 
 /**
- * What a marked cell is painted with. `ground` is the mean luminance already there, 0–255,
- * or null for the game's own DRAWN floor; `edge` is how far out the cell sits (0 middle,
- * 1 rim).
+ * What a marked cell is painted with. `edge` is how far out the cell sits (0 middle, 1
+ * rim).
  *
  * Pulled out of the drawing so the rule can be tested: there is no canvas in a node test
  * and the plate bakes into one of its own, so this is the only part of the layer anything
  * else can see.
  */
-export function tileMark(ground: number | null, edge: number): { fill: string; alpha: number } {
+export function tileMark(edge: number): { fill: string; alpha: number } {
   const fade = 1 - Math.min(1, Math.max(0, edge)) * 0.42;
-  if (ground === null) return { fill: MAP.groundA, alpha: SOIL_TILE * fade };
-
-  const lum = Math.min(255, Math.max(0, ground));
-  const lighten = lum < 128;
-  // How far the ground can be pushed that way before it runs out of range. NO CAP IS
-  // NEEDED and one was written and taken out again: picking the side with the room means
-  // the headroom is never below half, so the worst a ground can ever ask for is twice the
-  // least — about 15% on pure black or pure white. A cap that can never bind is a rule
-  // nothing holds, and the mutation that removed it passed every test.
-  const headroom = lighten ? 255 - lum : lum;
-  return { fill: lighten ? "#ffffff" : "#000000", alpha: (ART_STEP / headroom) * fade };
+  return { fill: MAP.groundA, alpha: SOIL_TILE * fade };
 }
 
-/**
- * The mean luminance of one cell of the plate, or null when the plate will not say.
- *
- * `getImageData` reads DEVICE pixels and ignores the transform, so the cell's canvas
- * coordinates have to be put back through the bleed and the dpr by hand. It throws on a
- * tainted canvas — which cannot happen with a bundled picture, and is caught anyway,
- * because a board that will not draw its grid is worse than one that guesses at it.
- */
-function groundLuma(
-  ctx: CanvasRenderingContext2D, layout: Layout, bleed: number, c: number, r: number,
-): number | null {
-  const dpr = Math.max(1, layout.dpr || 1);
-  const n = Math.max(1, Math.round(layout.ts * dpr));
-  const x = Math.round((layout.x0(c) + bleed) * dpr);
-  const y = Math.round((layout.y0(r) + bleed) * dpr);
-  let px: Uint8ClampedArray;
-  try {
-    px = ctx.getImageData(x, y, n, n).data;
-  } catch {
-    return null;
-  }
-  // About sixty samples spread across the cell rather than every pixel: this runs per cell
-  // per bake, and the answer it feeds is rounded to an alpha either way.
-  const step = 4 * Math.max(1, Math.floor((n * n) / 64));
-  let sum = 0, seen = 0;
-  for (let i = 0; i + 2 < px.length; i += step) {
-    sum += 0.2126 * (px[i] ?? 0) + 0.7152 * (px[i + 1] ?? 0) + 0.0722 * (px[i + 2] ?? 0);
-    seen++;
-  }
-  return seen ? sum / seen : null;
-}
-
-function paintChequer(
-  ctx: CanvasRenderingContext2D, layout: Layout, art: boolean, bleed: number,
-): void {
+function paintChequer(ctx: CanvasRenderingContext2D, layout: Layout): void {
   const n = layout.size, ts = layout.ts;
   for (let r = 0; r < n; r++) {
     for (let c = 0; c < n; c++) {
       if ((r + c) % 2 === 0) continue;
       const dc = Math.abs(c - (n - 1) / 2) / ((n - 1) / 2 || 1);
       const dr = Math.abs(r - (n - 1) / 2) / ((n - 1) / 2 || 1);
-      const ground = art ? groundLuma(ctx, layout, bleed, c, r) ?? ART_FALLBACK : null;
-      const mark = tileMark(ground, Math.max(dc, dr));
+      const mark = tileMark(Math.max(dc, dr));
       ctx.globalAlpha = mark.alpha;
       ctx.fillStyle = mark.fill;
       ctx.fillRect(layout.x0(c), layout.y0(r), ts, ts);
@@ -444,8 +406,12 @@ function spread(layout: Layout, at: Plate, pad: number): number {
     * Math.max(0, Math.min(by + board, at.h) - Math.max(by, 0));
   const canvasFree = at.w * at.h - overlap;
   if (canvasFree < at.w * at.h * 0.05) return 1;   // the board fills the screen: leave it be
-  const plateFree = (at.w + at.bleed * 2) * (at.h + at.bleed * 2) - board * board;
-  return Math.max(1, plateFree / canvasFree);
+  // How many have to be SOWN for that many to come up on screen. A prop is sampled over
+  // the whole plate and thrown away if it lands on the board, so the loss is the whole
+  // calculation: it was the plate's own free ground over the canvas's, which only came
+  // out right while the plate was half as big again as the canvas in every direction. It
+  // is not any more (`terrainBleed`), and the ring around the tiles emptied by half.
+  return Math.max(1, ((at.w + at.bleed * 2) * (at.h + at.bleed * 2)) / canvasFree);
 }
 
 /** One prop, with the generator that placed it left ready for its own detail. */

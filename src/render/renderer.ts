@@ -12,12 +12,8 @@ import { RevealTracker } from "./reveal";
 import { FxLayer } from "./fx";
 import { animate } from "./animate";
 import { floodDuration, floodFade, planFlood, type Flood } from "./flood";
-import {
-  INTRO_FROM, drawSupply, drawSurround, introAt, introScale, introTotal, planIntro,
-  supplyFade, type Frame, type Intro, type Supply,
-} from "./intro";
 import { basicLook, type Look } from "./art";
-import { MAP, loadColors, ownerCol, setFactionColor } from "./palette";
+import { loadColors, setFactionColor } from "./palette";
 import { drawPlates, rowsOf, type Plate } from "./plates";
 import {
   drawBackground, drawFillets, drawFlood, drawSelection, drawSurge, drawTile, drawTileBevels,
@@ -48,12 +44,20 @@ export interface RendererOptions {
   ground?: string | null;
 }
 
+/**
+ * How long the caller holds the turn for while the colonies fill in.
+ *
+ * Long enough for the reveal to run its front out to the far corner of a starting
+ * formation, which is what makes the opening read as the colony ARRIVING rather than as
+ * five tiles that were already there. It was `INTRO_FILL_MS` in `render/intro.ts`, which
+ * is gone with the camera.
+ */
+const OPENING_FILL_MS = 820;
+
 export class BoardRenderer {
   readonly layout: Layout;
   private ctx: CanvasRenderingContext2D | null = null;
   private reveal = new RevealTracker();
-  /** The opening's supply lines: when they started, and how long the whole opening runs. */
-  private supply: { start: number; dur: number } | null = null;
   private fx = new FxLayer();
   private motes: Mote[] = [];
   private raf = 0;
@@ -72,7 +76,8 @@ export class BoardRenderer {
   /** The winner's wash over the board once the match is decided. */
   private flood: Flood | null = null;
   /** The camera coming down through the canopy at the start of a match. */
-  private intro: Intro | null = null;
+  /** True while the colonies are still growing out of their nests. */
+  private opening = false;
   /**
    * Where each colony STARTED, for the finale to wash out from.
    *
@@ -115,7 +120,7 @@ export class BoardRenderer {
     this.fx.clear();
     this.hideCounts = false;
     this.flood = null;
-    this.intro = null;
+    this.opening = false;
     this.selection = null;
     this.valid = [];
     this.rememberHomes();
@@ -179,51 +184,32 @@ export class BoardRenderer {
   }
 
   /**
-   * THE OPENING: the camera drops through the canopy onto the map (intro.ts).
+   * THE OPENING: the colonies grow out of their nests.
    *
-   * Returns how long the caller should hold the turn for — the descent, and then the
-   * colonies filling in from their nests, which `land()` starts when the camera arrives.
+   * It used to be a CAMERA as well — the clearing small in a frame of undergrowth, the
+   * floor growing up to the lens and locking, bushes sliding out of shot, and a supply
+   * line running in from off the frame to each nest. All of that is gone, asked for
+   * directly: the board is a FIXED frame now and the region's picture is painted to fit
+   * that frame exactly (`ART_GRID`), so a camera that pulls back is a camera pulling back
+   * off the edge of somebody's artwork.
+   *
+   * Returns how long the caller should hold the turn for.
    */
   playIntro(): number {
-    const intro = planIntro(performance.now(), this.reveal.reduced);
-    this.intro = intro;
-    // The supply lines run in from off the frame and reach the nests exactly as the camera
-    // lands, then hold while the colonies unfold and go. They outlive `intro` by the fill,
-    // which is why they carry their own clock.
-    this.supply = { start: intro.start, dur: introTotal(intro) };
-    // Scheduled NOW so the colonies are registered as unfilled from this frame, but with a
-    // front that does not set off until the camera lands. Without that they sit finished on
-    // the floor for the whole descent and then blink out to be revealed.
-    this.growColonies(intro.start + intro.dur);
-    return introTotal(intro);
+    this.opening = true;
+    this.growColonies(performance.now());
+    return this.reveal.reduced ? 1 : OPENING_FILL_MS;
   }
 
   /** True while the opening is still running, so a tap can cut it short. */
-  get introducing(): boolean { return this.intro !== null; }
+  get introducing(): boolean { return this.opening; }
 
-  /** Cut the opening short: the camera snaps home and the colonies fill in from here. */
+  /** Cut the opening short: the colonies fill in from here. */
   endIntro(): void {
-    if (!this.intro) return;
-    this.intro = null;
-    // A player who skipped the opening asked for the board, not for the rest of the show.
-    this.supply = null;
-    this.reveal.clear();                 // the front was timed for a landing that never came
+    if (!this.opening) return;
+    this.opening = false;
+    this.reveal.clear();
     this.growColonies(performance.now());
-  }
-
-  /**
-   * The frame the camera can see at the TOP of the descent.
-   *
-   * Not the canvas: the opening is drawn inside a transform scaled about the board's
-   * middle, so a line starting at the canvas edge would already be inside the picture on
-   * the first frame and would appear to sprout rather than to arrive.
-   */
-  private introFrame(): Frame {
-    const cx = this.layout.ox + (this.layout.size * this.layout.ts) / 2;
-    const cy = this.layout.oy + (this.layout.size * this.layout.ts) / 2;
-    const hw = this.layout.width / 2 / INTRO_FROM;
-    const hh = this.layout.height / 2 / INTRO_FROM;
-    return { x0: cx - hw, y0: cy - hh, x1: cx + hw, y1: cy + hh };
   }
 
   /** Where the nameplates are written, for the scenery to leave clear. */
@@ -231,30 +217,6 @@ export class BoardRenderer {
     if (!this.opts.plates) return [];
     return rowsOf(ctx, this.layout, this.opts.plates, this.opts.colonySize ?? String)
       .map((r) => ({ x: r.x, y: r.y, w: r.w, h: r.h }));
-  }
-
-  private drawSupplyLines(ctx: CanvasRenderingContext2D, now: number, descent: number): void {
-    const supply = this.supply;
-    if (!supply) return;
-    const p = (now - supply.start) / supply.dur;
-    if (p >= 1) { this.supply = null; return; }
-
-    const lines: Supply[] = [];
-    for (const who of ["you", "ai"] as const) {
-      const nest = nestTile(this.state, who);
-      if (nest) {
-        lines.push({
-          x: this.layout.cx(nest.c), y: this.layout.cy(nest.r), colour: ownerCol(who),
-        });
-      }
-    }
-    // Grown on the camera's OWN curve, so the front arrives at the nest on the frame the
-    // camera locks and the colonies begin to grow. Once it has landed it simply stays put.
-    const grow = descent < 1 ? descent : 1;
-    // A trail on the board is a bar a fifth of a tile wide (board.ts). This is the same
-    // trail, so it is the same width.
-    const screen: Frame = { x0: 0, y0: 0, x1: this.layout.width, y1: this.layout.height };
-    drawSupply(ctx, this.introFrame(), screen, lines, grow, supplyFade(p), this.layout.ts * 0.2);
   }
 
   /**
@@ -322,32 +284,14 @@ export class BoardRenderer {
       this.reveal.step(now);
       ctx.clearRect(0, 0, this.layout.width, this.layout.height);
 
-      // The opening is a camera: one transform around the whole frame, and the canopy over
-      // the top of it. The board underneath is drawn exactly as it always is.
-      const descent = this.intro ? introAt(this.intro, now) : 1;
-      if (descent >= 1) this.intro = null;
-      if (descent < 1) {
-        // The floor runs to every edge, so the frame outside the shrunken board is soil and
-        // not void — at this height the board does not fill the screen.
-        ctx.fillStyle = MAP.groundDark;
-        ctx.fillRect(0, 0, this.layout.width, this.layout.height);
-        const s = introScale(descent);
-        const cx = this.layout.ox + (this.layout.size * this.layout.ts) / 2;
-        const cy = this.layout.oy + (this.layout.size * this.layout.ts) / 2;
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.scale(s, s);
-        ctx.translate(-cx, -cy);
-      }
+      // The opening is over once the last colony tile has landed.
+      if (this.opening && !this.reveal.animating) this.opening = false;
 
       // The scenery is baked around the names as well as around the board: a fern grown
       // where a name is written reads as clutter over the text. Measured here rather than
       // guessed, so only the props that actually overlap are dropped.
       drawBackground(ctx, this.layout, this.motes, this.startedAt, this.plateBoxes(ctx),
         this.opts.ground);
-      // UNDER the tiles: a colony's nest sits ON the end of its line, which is what makes
-      // the five tiles in the corner read as connected to something past the clearing.
-      this.drawSupplyLines(ctx, now, descent);
 
       const scene: Scene = {
         ctx,
@@ -390,12 +334,6 @@ export class BoardRenderer {
       // gem seams and the rocks all go under it.
       drawFlood(scene);
 
-      // The undergrowth around the clearing is drawn INSIDE the camera: it is on the ground,
-      // so it slides off the edges as the board grows rather than sitting over it.
-      if (descent < 1) {
-        drawSurround(ctx, this.layout.width, this.layout.height, descent);
-        ctx.restore();
-      }
       this.fx.draw(ctx, this.layout);
     } catch (err) {
       // A bad frame must never kill the loop — recover on the next tick (e.g. mid-resize).

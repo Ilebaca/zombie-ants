@@ -427,10 +427,9 @@ Each of these cost a debugging round. Do not repeat them.
     never covers one.
   - **`drawSnapshot` builds its Layout BY HAND and is untouched by this.** A figure is
     exactly as big as its window, so there is no viewport in it to be nine tenths of.
-  - The region's picture still COVERS the canvas and its bleed (§ THE BOARD'S GROUND IS
-    PAINTED PER REGION), so it does not line up with the tiles yet — anchoring it to this
-    square is the other half of that job, and a design decision, because what is left
-    outside the board then has to be something.
+  - **And it is what the region's picture is lined up BY.** A painted ground carries the
+    grid itself and is scaled until its cells are the board's (§ THE PICTURE CARRIES THE
+    GRID), which only works because the board is the same fraction of every screen.
 - **Never measure the canvas against a zero-sized container.** `Layout.measure` writes the
   result to `canvas.style`, and an inline `width: 0px` outranks the stylesheet's `100%`. One
   early measurement (before first layout, or while the tab isn't compositing) pinned the board
@@ -629,81 +628,41 @@ Each of these cost a debugging round. Do not repeat them.
   figure-eight and the dashes run between the two as though there were ground there. Taking
   the sharpest RIGHT turn at every junction keeps them apart, because the trace is wound
   clockwise per cell. Everywhere else there is only one edge to take, so the rule is free.
-- **The opening is a VIEW too.** A match begins high above the board: the clearing sits
-  small in a frame of undergrowth, the floor grows up to the lens and locks, and only then
-  do the two colonies grow out of their nests (`render/intro.ts`). Like the finale it is one
-  transform around the frame — the board underneath is the one the engine built, and the
-  layout is untouched, or a tap would land on the wrong cell.
-  - **The frame has to be FULL, and it is ONE plate that fills it.** The scenery used to be
-    baked to the edges of the canvas and no further, so the moment the camera pulled back
-    there was a border of nothing around it — and the bushes that filled that border were a
-    different background from the rocks and sticks underneath, which is exactly how it was
-    reported: "different backgrounds, some rocks and sticks are moved". `terrainBleed`
-    (terrain.ts) sizes the bake off the height the camera STARTS at, so the same ground
-    covers the frame from the first frame of the descent to the last. Extended, never
-    stretched: the overhang is more ground carrying more scenery at the same density, and
-    the counts scale with the area for exactly that reason.
-  - **The bushes are foliage to come down past, not the fill.** They are drawn INSIDE the
-    camera so they belong to the ground, biased toward the rim and leaning over it.
-  - **They get out of the way by MOVING, never by fading.** A bush that dissolves says the
-    picture is changing; one that slides out of frame says the camera is coming down past
-    it. Each is given its exit direction and the exact distance to clear the frame AT
-    PLACEMENT, because the surround stops being drawn the instant the camera lands and
-    anything still inside the picture then pops out of existence. The corners hold the
-    frame longest by GEOMETRY — a diagonal is the longer way out — not by a timing of
-    their own: a corner is off the playfield, and forest carrying on past it reads better
-    than a curtain whipping away.
-  - **One movement, ONE curve.** The ring opening and the floor growing are the same camera,
-    so they start together, end together and are shaped the same (`descent`). They were not:
-    the floor eased OUT while the ring eased IN, held back so it would keep the frame full
-    late, and it read as two things happening at once rather than one lens coming down.
-    Opening early would have cost the rim its cover, which is why the ground plate had to
-    grow: it is what hides the rim now, at every height, so the ring is free to move with
-    the camera. `intro.test.ts` holds the plate against what the lens can see at the top of
-    the descent.
-  - **The lock has to be STILL.** There was a hair of overshoot on the scale, meant to read
-    as a camera locking on. It did the opposite: the bump returned to zero at the end but
-    its SLOPE did not, so the last drawn frame was still moving and the next one, with the
-    camera gone entirely, was not — a jolt on the one frame the whole descent is aiming at.
-    The ease now arrives with zero speed.
-  - **Not far out.** Past about a third the clearing stops being the subject and becomes a
-    stamp in a screen of undergrowth, and the zoom stops reading as a camera coming down and
-    starts reading as a picture being scaled.
-  - **The colonies ARRIVE from somewhere.** Before either grows out of its nest, a vein
-    runs in from off the frame and reaches it — the same bar a trail on the board is drawn
-    as, in that colony's own colour, so the five tiles in the corner read as a detachment
-    of something carrying on past the clearing rather than a colony that begins and ends
-    there. It lands on the frame the camera does, which is the frame the colonies start
-    growing on, so one thing hands over to the next. Two rules make it read:
-    ORTHOGONAL, never diagonal — nothing in this game moves diagonally and no vein on the
-    board is drawn that way, so an angled line from a corner would be the one mark on
-    screen not obeying the grid. And its TAIL sits on the frame the camera opens on while
-    its FRONT starts on the frame the camera lands on: measured from the outer frame at
-    both ends, the front spends most of the descent outside the canvas and the line shows
-    as two pixels of nub at the rim until the last moment. It fades over the last of the
-    fill, because the board the engine built has no tile out there and a mark that
-    outlives the opening is a lie about the position.
-  - **The colonies are scheduled at the START and set off at the landing.** `RevealTracker.
-    begin` takes a future `at` for exactly this: registering the tiles immediately is what
-    makes them draw UNFILLED during the descent. Beginning the reveal on arrival instead
-    left them sitting finished on the floor the whole way down and then blinking out.
+- **THE OPENING IS THE COLONIES GROWING OUT OF THEIR NESTS, AND NOTHING ELSE.** There was
+  a CAMERA: the match began high above the board, the clearing small in a frame of
+  undergrowth, the floor growing up to the lens and locking, bushes sliding out of shot
+  and a supply line running in from off the frame to each nest (`render/intro.ts`, now
+  deleted, with its test). It is gone because Milan asked for it directly — "I don't want
+  that zoom anymore" — and the reason it cannot come back as it was is structural: the
+  board is a FIXED frame now and a region's picture is painted to fit that frame exactly
+  (§ THE PICTURE CARRIES THE GRID), so a camera that pulls back is a camera pulling back
+  off the edge of somebody's artwork. Written down rather than left as a hole, because it
+  is the kind of thing that gets rediscovered as missing.
+  - **What it cost, and what it bought.** It cost `terrainBleed`, which is 0 now: the
+    plate was baked half as big again in every direction so the lens never saw its edge,
+    which is several times the area for ground nobody can see. The one real consequence
+    was the scenery count — props are SOWN over the plate and thrown away if they land on
+    the board, so the number to sow is the plate's whole area over the canvas's FREE
+    ground. It was the plate's free ground over the canvas's, which only came out right
+    while the plate was much bigger, and the ring around the tiles emptied by half the
+    moment the bleed went.
+  - **The colonies still grow**, over `OPENING_FILL_MS` (`render/renderer.ts`), and they
+    are scheduled from NOW rather than from a landing that no longer happens — a front
+    timed for one would leave the board empty for the whole hold and then blink on. A
+    test holds that the reveal has finished by the end of the hold the caller is given.
+  - **Every control still skips it**, canvas and footer alike. The footer is DOM and
+    stays live under the animation — End turn during the opening handed the first turn
+    over before the match had visibly started.
+  - **And the scenery must survive a resize.** Every prop is placed from its OWN seeded
+    generator, keyed on its index: with one shared sequence a prop rejected for landing on
+    the board consumed a different number of draws than one that was kept, so a few pixels
+    of relayout reshuffled every prop after the first difference. It is the DRAWN floor's
+    scenery only — a painted region replaces it.
   - **Nothing may RESIZE at the hand-over.** The ability button's label is one line in the
-    markup and two once it names the ability and its cooldown, so filling it in at the first
-    turn grew the footer five pixels, shrank the canvas, fired the ResizeObserver,
-    re-measured the board and re-baked the scenery — a blink exactly as the opening handed
-    over, with different ground on the other side of it. `start()` dresses the HUD BEFORE
+    markup and two once it names the ability and its cooldown, so filling it in at the
+    first turn grew the footer five pixels, shrank the canvas, fired the ResizeObserver,
+    re-measured the board and re-baked the ground. `start()` dresses the HUD BEFORE
     `playIntro()`. Anything else that writes into the chrome has the same trap.
-  - **And the scenery must survive a resize anyway.** Every prop is placed from its OWN
-    seeded generator, keyed on its index: with one shared sequence a prop rejected for
-    landing on the board consumed a different number of draws than one that was kept, so a
-    few pixels of relayout reshuffled every prop after the first difference. Counts are
-    given per SCREENFUL and scaled by the plate's FREE ground, not its area — props never
-    land on the playfield, which is a large hole in the canvas and barely a dent in the
-    plate, so scaling by area emptied the ring around the tiles.
-  - **Every control skips it**, canvas and footer alike. The footer is DOM and stays live
-    under the animation — End turn during the descent handed the first turn over before the
-    match had visibly started — and sitting through the same descent every match is the
-    fastest way to make an animation hated.
 
 - **The finale is a VIEW, not a set of moves.** When a match is decided the winner's colour
   sweeps out from their nest and consumes the whole board — enemy ground, veins, wild
@@ -1242,8 +1201,8 @@ them and the halves part onto the board.
   opponent's species and their name goes on the nameplate — the head the reel stopped on
   has to be the colony across the board, or the search was showing something it did not
   mean.
-- **The match starts UNDER the parting halves**, not after them, so the camera's descent
-  plays through the widening gap and the reveal is one movement.
+- **The match starts UNDER the parting halves**, not after them, so the colonies grow out
+  of their nests through the widening gap and the reveal is one movement.
 - **The search begins on `start()`, never in the constructor.** The caller's search closure
   wants the screen (it hands over the abort signal), so a constructor that searched at once
   ran that closure while the caller's binding was still in its temporal dead zone: the
@@ -1312,7 +1271,7 @@ a tutorial step already follows (§10a).
   a test the watchdog is always what releases it.
 - **A SECOND CAST RESTARTS THE HOLD** rather than stacking one on another, and `castSeq` is
   what makes the first card's listener harmless when it finally fires.
-- **A PRESS DOES NOT SKIP IT**, unlike the opening descent. The card is on screen precisely
+- **A PRESS DOES NOT SKIP IT**, unlike the opening. The card is on screen precisely
   because the player is meant to read it, and a tap that dismissed it would be the
   accidental press this exists to prevent.
 - The JS gates REFUSE the action (`acting`, `onPointerDown`); `.match.casting > *` stops the
@@ -1328,7 +1287,7 @@ opening hands over to the moment the match is decided, latched there so a result
 sitting on screen does not keep counting, and reported to the app through `onExit`. It
 cannot live in the engine: the engine is pure and seeded so the same moves replay
 identically (§4.1), and a real clock is the one input that never does. Nothing about the
-game reads it — it is a fact ABOUT the match. The descent is not counted; it plays the same
+game reads it — it is a fact ABOUT the match. The opening is not counted; it plays the same
 length every time and nothing can be done during it, so charging for it would put the same
 seconds on every card. It stands where the ENEMY'S ARMY used to: by the time the card is up
 their colony has been overrun by the finale, so a number for what they had is a number for
@@ -2004,8 +1963,8 @@ is the same twenty bytes a server would verify a result from.
   the same trick the AI's searched board lands by, which is why the renderer needs no
   rewind of its own. And a refused move LATCHES: skipping it and playing the rest would put
   the remainder of the record onto a board that has already diverged.
-- **No opening descent.** `playIntro()` is a match STARTING; replaying it every time a row
-  is opened is an animation nobody asked for twice.
+- **No opening.** `playIntro()` is a match STARTING; replaying it every time a row is
+  opened is an animation nobody asked for twice.
 - **`normalise` destructures the record OUT before rebuilding an entry.** Spreading the
   stored object copied a malformed `record` straight through, and re-adding a good one
   never removed it — so `canReplay` read `.moves` off a string. Any normaliser that both
@@ -2146,52 +2105,47 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
   - **THE FOLDER IS THE TABLE**, the same rule the home artwork follows:
     `src/ui/regions/rg03.webp` IS the Volcano's ground, resolved by a build-time glob. The
     NUMBER is what is read, so `rg03-volcano.webp` works too and says what it is in the
-    folder listing. Every region without one wears `ground.webp`, which is a painted
-    PLACEHOLDER — and today that is **all ten of them**. The two that had their own
-    ground (Forest floor and Desert) were taken out deliberately: one placeholder
-    everywhere is a game that reads as art on its way, where two finished regions and
-    eight falling back to a different-looking floor reads as a game that is broken in
-    eight places. `ground.webp` was the game's own DRAWN floor exported through the tool
-    below for as long as the drawn floor was what a match used; the rule is unchanged, only
-    the file in it. **Painted so far: none — every region wears the placeholder.**
-  - **THE TILE INDICATORS ARE NOT PART OF THE PICTURE.** They mark the cells, so they are
-    a LAYER over whatever ground is underneath (`paintChequer`, `tileMark`): the tile size
-    depends on the screen, so squares baked into a picture would line up on exactly one
-    phone. That is also why neither the exported ground nor the placeholder has one, and
-    why a region painted later must not either.
-    - **THE MARK IS SOLVED AGAINST THE GROUND IT LANDS ON** (`tileMark`, `groundLuma`),
-      and getting there took two goes. It was `MAP.groundA` — the drawn floor's lighter
-      soil, which over a BRIGHT painted map is a darker square, so muddy brown patches
-      where light tiles should be. Then it was a fixed WHITE at a fixed alpha, which is a
-      mark whose strength depends entirely on how dark the picture under it happens to be:
-      the same 12% read as **twelve levels out of 255** on the forest floor's brown soil
-      and **five** on the desert's sand. Tiles not standing out had already been reported
-      once at five levels, and a fixed alpha was always going to bring it back one region
-      at a time as the art landed — which is exactly what the desert did on the commit it
-      arrived on.
-      - So the cell's own ground is SAMPLED off the plate and the fill solved for it:
-        compositing a colour at alpha `a` over luminance `L` moves it by `a·|C−L|`, so the
-        alpha falls out of the headroom. `ART_STEP` is **19** because that is what the
-        forest floor was already shipping at the middle of the board — the map that was
-        checked and signed off — so the ground a player has been looking at does not move
-        and every other one comes up to meet it. Measured over the whole grid, rim fade
-        included: forest **12.3 → 12.5**, desert **5.1 → 12.9**.
-      - **THE DIRECTION FOLLOWS THE GROUND TOO**: lighten a dark map, DARKEN a bright one.
-        On sand, white needs a quarter of an alpha for that shift and it is a wash that
-        takes the colour out with it; black needs six percent and multiplies every channel
-        alike, so the sand stays sand.
-      - **NO CAP IS NEEDED**, and one was written and removed. Picking the side with the
-        room means the headroom is never under half, so pure black or pure white asks for
-        twice the least and no more — the mutation that deleted the cap passed every test,
-        which is how it was found. A rule nothing holds is not a rule.
-      - The DRAWN floor keeps `MAP.groundA` rather than being solved for: it is a shade
-        picked for that soil, and the one ground this code knows the colour of.
-    - `tileMark` is pulled out of the drawing so the rule has a test: the plate bakes into
-      a canvas of its own and a node test has no canvas at all, so that function is the
-      only part of this layer anything else can see. It takes a LUMINANCE now rather than
-      a boolean, which is what keeps it pure while the sampling stays in the drawing —
-      and `groundLuma` catches `getImageData`, because a board that will not draw its grid
-      is worse than one that guesses at it (`ART_FALLBACK`).
+    folder listing. Every region without one wears `ground.webp`, and today that is **all
+    ten of them**: it is the FOREST FLOOR's own painted ground, standing in for the other
+    nine until they are painted. One ground everywhere reads as art on its way, where two
+    finished regions and eight falling back to a different-looking floor reads as a game
+    broken in eight places — which is why the two that once had their own were taken out
+    again. `ground.webp` was the game's own DRAWN floor exported through the tool below
+    for as long as the drawn floor was what a match used; the rule is unchanged, only the
+    file in it.
+  - **THE PICTURE CARRIES THE GRID, AND IS PLACED BY IT** (`ART_GRID`, `groundAlign`).
+    Every region picture is painted to ONE TEMPLATE: the nine-by-nine grid of cells
+    occupies a known rectangle of the file, as fractions of its width and height. The
+    renderer scales the picture until those painted cells are the size of the board's and
+    centres it on them — so what lines the artwork up is the artwork's own grid, not the
+    canvas. **This is what the board being 90vw is FOR** (§5, `BOARD_VW`).
+    - **It is the reverse of the rule that stood here for months**, which is worth
+      stating plainly because it reads as a regression otherwise: the cells used to be a
+      LAYER the game drew over any picture (`paintChequer`), precisely because nothing
+      said where in a file the squares would land. The template says. The chequer is the
+      DRAWN floor's now and only the drawn floor's — over a picture it is two grids on
+      one board — and the machinery that solved a mark's alpha against the luminance it
+      landed on (`groundLuma`, `ART_STEP`) went with it.
+    - **ONE SCALE, never two.** The forest floor's cells are 83.0 across and 83.25 down —
+      a third of a percent off square — and stretching a painting to hide that is worse
+      than the half pixel it costs. The two scales are averaged and the grid is CENTRED
+      on the board, so the error is split between opposite edges instead of landing all
+      on one, and it stays inside the grout line between two painted slabs.
+    - **THE FRAME AROUND IT IS A VEIL WITH A HOLE IN IT** (`paintFrame`). The file is only
+      a little wider than its own grid, so once it is pinned to the board it reaches the
+      edges of the canvas by about a percent and no further. That is enough because the
+      frame is FIXED — and it is why the camera had to go: three ways of filling an
+      overhang were built and all three were worse than not having one. (A soft blown-up
+      copy leaves a line down both sides where the artwork stops; REFLECTING the picture
+      joins with no seam and carries the painted grid out with it, so the board looks four
+      times its real size; a feathered veil works and is a lot of machinery for a second
+      and a half of animation nobody asked for.) **A file with less margin around its grid
+      than the forest floor's would show the plate's bare colour at the edges of the
+      screen**, so that margin is part of the template too.
+    - **A REGION IS PAINTED AT THE SIZE IT IS DRAWN AT.** The plate bakes at device
+      resolution, so on a 3x phone the picture is drawn about 1,300 pixels wide; the
+      forest floor's file is 841 and is upscaled to get there. Anything painted later
+      wants to be around 1,300 x 2,900.
   - **A PAINTED REGION REPLACES THE SOIL AND THE SCENERY BOTH.** A picture has its own
     rocks and ferns; drawing ours over them is two forests at once.
   - **IT ARRIVES LATE, and the plate's cache key says whether it is HERE rather than
@@ -2218,15 +2172,13 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
     and after — the current forest floor is flat colour with a few hard-edged rocks, and
     there is no high-frequency content for a resample to lose. The defect is real
     regardless, and a painted or photographic region is where it would show.
-  - **COVER, NEVER FIT** (`groundCover`). A letterboxed background draws the plate's own
-    bare colour down two edges, which is the hard rectangle the bleed exists to avoid.
-    Centred, because the clearing is in the middle of the plate.
-  - **THE MIDDLE TWO THIRDS IS WHAT A PLAYER SEES.** The plate is sized off the height the
-    opening camera STARTS at (`terrainBleed`, 1/`INTRO_FROM`), so it runs about half as far
-    again as the canvas in every direction — and the picture covers the plate. Everything
-    outside that middle is only ever seen during the descent. Worth saying to whoever
-    paints one: scenery composed around the edges of the file lands off screen for the
-    whole match.
+  - **THE WHOLE FILE IS SEEN, so paint it to the shape of a phone.** It used to COVER a
+    plate half as big again as the canvas in every direction, because the opening pulled
+    a camera back through it; the camera is gone and the plate is the canvas, so the
+    picture is placed by its grid and the rest of it falls where it falls. The forest
+    floor is 841 x 1870 — about the shape of a tall phone — with the grid 26% of the way
+    down and a little margin either side of it, and that margin is what reaches the edges
+    of the screen.
   - **What crosses into `render/` is a URL**, never a region or a chapter: which picture
     belongs to which stretch of the road is a progression decision, and the renderer may
     not read one (§3). `app.ts` reads the colony, asks `groundFor(chapterOf(colony))` and
@@ -2397,8 +2349,8 @@ silently: nothing anywhere kept a match that had not finished.
 - **ONE function writes a move down** (`MatchScreen.remember`), because a move that is
   played and not reported resumes onto a board the player never reached — and it is
   silent: the match plays on perfectly and only the NEXT sitting is wrong.
-- **A resumed match has no opening descent and carries its clock.** `playIntro()` is a match
-  STARTING, and flying the camera down onto a board thirty turns old says something untrue —
+- **A resumed match has no opening and carries its clock.** `playIntro()` is a match
+  STARTING, and growing a colony out of its nest on a board thirty turns old is untrue —
   the same rule the history replay follows. The time already spent is added to `playedMs`,
   or a match resumed for one turn reports itself as a thirty-second game.
 - **It keeps the mods it OPENED with.** Research bought between two sittings must not change

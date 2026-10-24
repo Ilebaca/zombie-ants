@@ -1262,7 +1262,7 @@ export class App {
       // the ones they could plausibly be seated against.
       roster: botsForChapter(chapterOf(me.colony)),
       search: () => this.matchmaker.find(me.colony, screen.signal),
-      // The halves are still parting: the match starts under them, so the camera's descent
+      // The halves are still parting: the match starts under them, so the opening
       // plays through the widening gap rather than after it.
       onFound: (foe) => { this.matchmaking = null; this.startMatch(foe); },
     });

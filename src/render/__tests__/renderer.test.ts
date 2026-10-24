@@ -157,7 +157,31 @@ describe("the opening", () => {
     expect(r.introducing).toBe(true);
   });
 
-  /** Every control skips it. Sitting through the same descent every match is not a feature. */
+  /**
+   * AND THE COLONIES SET OFF AT ONCE. They used to be scheduled for the moment the camera
+   * LANDED, which is why `RevealTracker.begin` takes a future time at all — registering
+   * them immediately is what made them draw unfilled during the descent. With the camera
+   * gone, a front still timed for a landing that never comes is a board that sits empty
+   * and then blinks on: the hold the caller is given would be over before anything moved.
+   */
+  it("starts the colonies growing straight away, inside the hold it asks for", () => {
+    const { r } = make();
+    r.resize();
+    const base = performance.now();
+    const clock = vi.spyOn(performance, "now").mockReturnValue(base);
+    try {
+      const held = r.playIntro();
+      expect(r.animating, "nothing was growing on the first frame").toBe(true);
+      clock.mockReturnValue(base + held + 50);
+      drawOneFrame(r);
+      expect(r.animating, "still growing after the hold the caller was given").toBe(false);
+      expect(r.introducing, "the opening never ended").toBe(false);
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
+  /** Every control skips it. Sitting through the same opening every match is not a feature. */
   it("can be cut short, and the board is left filled in", () => {
     const { r } = make();
     r.resize();

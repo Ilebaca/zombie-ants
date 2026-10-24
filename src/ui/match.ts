@@ -141,7 +141,7 @@ export interface MatchOptions {
    * second half of one, and the wall clock already spent, so the result card reports the
    * match rather than the sitting.
    *
-   * It also skips the opening descent. `playIntro()` is a match STARTING, and playing the
+   * It also skips the opening. `playIntro()` is a match STARTING, and playing the
    * camera down onto a board thirty turns old says the wrong thing — the same rule the
    * history replay follows.
    */
@@ -193,7 +193,7 @@ export class MatchScreen {
    * one input that never does. Nothing about the game reads it; it is a fact ABOUT the
    * match, reported when it is over.
    *
-   * The descent is not counted. It plays the same length every time and the player cannot
+   * The opening is not counted. It plays the same length every time and the player cannot
    * act during it, so charging them for it would put the same two seconds on every match.
    */
   private startedAt = 0;
@@ -304,11 +304,11 @@ export class MatchScreen {
     this.refreshHUD();
     // A RESUMED MATCH DOES NOT OPEN, it carries on. `playIntro()` is a match starting, and
     // flying the camera down onto a board thirty turns old says something that is not true
-    // — the same reason a history replay has no descent either. It goes straight to the
+    // — the same reason a history replay has no opening either. It goes straight to the
     // turn, on the board it was left on.
     if (this.opts.resumed) { this.openMatch(); return; }
     // The camera comes down through the canopy first, and the colonies fill in from their
-    // nests when it lands (render/intro.ts). The clock does not start until it is over.
+    // nests (`BoardRenderer.playIntro`). The clock does not start until it is over.
     this.introTimer = window.setTimeout(this.openMatch, this.renderer.playIntro());
   }
 
@@ -699,7 +699,7 @@ export class MatchScreen {
     };
 
     // Every control skips the opening rather than acting through it. The footer is DOM, so
-    // it is live while the camera is still coming down — and End turn during the descent
+    // it is live while the colonies are still growing in — and End turn during the opening
     // would hand the first turn over before the match had visibly started.
     const acting = (): boolean => {
       // NOTHING IS PRESSABLE WHILE THE CARD IS UP, and a press does not skip it either:
@@ -964,7 +964,7 @@ export class MatchScreen {
   /* ----------------------------------------------------------------------- INPUT */
 
   private onPointerDown = (e: PointerEvent): void => {
-    // A tap during the opening skips it. Sitting through the same descent every match is
+    // A tap during the opening skips it. Sitting through the same opening every match is
     // the fastest way to make an animation hated.
     if (this.casting) return;                // the card covers the middle of the board
     if (this.introTimer) { this.openMatch(); return; }

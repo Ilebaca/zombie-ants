@@ -7,9 +7,11 @@
  */
 import { describe, expect, it } from "vitest";
 import { Layout } from "../layout";
-import { drawTerrain, groundCover, plateFor, resetTerrain, scatter, terrainBleed, tileMark }
+import { ART_GRID, drawTerrain, groundAlign, plateFor, resetGroundArt,
+  resetTerrain, scatter, terrainBleed, tileMark }
   from "../terrain";
-import { makeRecorder } from "./recorder";
+import { MAP } from "../palette";
+import { makeRecorder, type Recorder } from "./recorder";
 import type { Rect } from "../terrain";
 
 /** A phone-shaped board, laid out the way `measure` lays one out. */
@@ -66,10 +68,11 @@ describe("staying put", () => {
   it("barely moves when the canvas loses five pixels", () => {
     const a = scatter(phone(844), plateFor(phone(844)), 0x7f4a11, 34, 18);
     const b = scatter(phone(839), plateFor(phone(839)), 0x7f4a11, 34, 18);
-    const near = a.filter((p, i) => {
-      const q = b[i];
-      return q && Math.abs(p.x - q.x) < 12 && Math.abs(p.y - q.y) < 12;
-    }).length;
+    // Matched by WHERE THEY ARE rather than by their place in the list: a prop dropped
+    // for landing on the board is simply absent, so the two lists do not line up index
+    // for index — and have not since the plate stopped being bigger than the canvas.
+    const near = a.filter((p) =>
+      b.some((q) => Math.abs(p.x - q.x) < 12 && Math.abs(p.y - q.y) < 12)).length;
     expect(near / a.length, "the scenery reshuffled itself over a five-pixel resize")
       .toBeGreaterThan(0.9);
   });
@@ -82,9 +85,15 @@ describe("staying put", () => {
     expect(one.length).toBeGreaterThan(0);
   });
 
-  /** The bake has to reach past the canvas, or the camera sees the plate's own edge. */
-  it("overhangs the canvas on every side", () => {
-    expect(terrainBleed(phone())).toBeGreaterThan(100);
+  /**
+   * THE PLATE IS THE CANVAS. It used to be baked half as big again in every direction,
+   * because the opening pulled the camera back and would otherwise have seen the plate's
+   * own edge. There is no camera now (`renderer.playIntro`), and the region's picture is
+   * painted to fit the frame exactly — so an overhang is several times the area of ground
+   * nobody can ever see.
+   */
+  it("does not overhang the canvas", () => {
+    expect(terrainBleed(phone())).toBe(0);
   });
 });
 
@@ -101,7 +110,7 @@ describe("scenery around the names", () => {
   });
 
   const props = (layout: Layout, reserve: Rect[]): { x: number; y: number }[] =>
-    scatter(layout, { ...plateFor(layout), reserve }, 0xfe271d, 18, SIZE)
+    scatter(layout, { ...plateFor(layout), reserve }, 0xfe271d, 40, SIZE)
       .map((p) => ({ x: p.x, y: p.y }));
 
   it("drops the props that land where a name is written", () => {
@@ -136,130 +145,193 @@ describe("scenery around the names", () => {
   it("changes nothing when nobody is named", () => {
     const layout = phone();
     expect(props(layout, [])).toEqual(
-      scatter(layout, plateFor(layout), 0xfe271d, 18, SIZE).map((p) => ({ x: p.x, y: p.y })),
+      scatter(layout, plateFor(layout), 0xfe271d, 40, SIZE).map((p) => ({ x: p.x, y: p.y })),
     );
   });
 });
 /**
- * A REGION'S PAINTED GROUND (ui/regions.ts) has to cover the plate, and the plate is a
- * different shape on every phone. Cover, never fit: a letterboxed background draws the
- * plate's own bare colour down two edges, which is the hard rectangle the bleed exists to
- * avoid in the first place.
+ * A REGION'S PICTURE IS PLACED BY ITS OWN GRID (`groundAlign`).
+ *
+ * Every region picture is painted to one template (`ART_GRID`): the nine-by-nine grid of
+ * cells occupies a known rectangle of the file. So the picture is scaled until those
+ * painted cells are the size of the board's and centred on them — which is the whole
+ * point of the board being 90vw (§ layout.ts). Covering the plate instead put the artwork
+ * at a different size on every phone, which is fine for soil and impossible once the
+ * slabs in the picture ARE the cells.
  */
-describe("a painted ground covering the plate", () => {
-  const shapes: ReadonlyArray<readonly [number, number, number, number]> = [
-    [1000, 1400, 1000, 1400],   // exactly the same shape
-    [1000, 1400, 2000, 1000],   // a wide picture on a tall plate
-    [1400, 1000, 900, 1900],    // a tall picture on a wide plate
-    [812, 1000, 2678, 3158],    // the placeholder, on a small plate
-  ];
+describe("lining a painted ground up with the board", () => {
+  /** The shipped picture, and the board on a few real phones. */
+  const ART = [841, 1870] as const;
 
-  it("never leaves a gap, whatever shape the picture is", () => {
-    for (const [pw, ph, iw, ih] of shapes) {
-      const at = groundCover(pw, ph, iw, ih);
-      expect(at.w, `${iw}x${ih} is narrower than the plate`).toBeGreaterThanOrEqual(pw - 0.001);
-      expect(at.h, `${iw}x${ih} is shorter than the plate`).toBeGreaterThanOrEqual(ph - 0.001);
-      expect(at.x).toBeLessThanOrEqual(0.001);
-      expect(at.y).toBeLessThanOrEqual(0.001);
-    }
-  });
+  const board = (tile: number, ox = 20, oy = 100): Layout => {
+    const l = new Layout(9);
+    l.ts = tile; l.ox = ox; l.oy = oy; l.width = tile * 10; l.height = tile * 16;
+    return l;
+  };
 
-  /** And it keeps the picture's own shape: a stretched background reads as a mistake. */
-  it("does not stretch", () => {
-    for (const [pw, ph, iw, ih] of shapes) {
-      const at = groundCover(pw, ph, iw, ih);
-      expect(at.w / at.h).toBeCloseTo(iw / ih, 5);
-    }
+  /** Where the picture's painted grid actually lands, given where the picture landed. */
+  const painted = (at: { x: number; y: number; w: number; h: number }) => ({
+    x: at.x + ART_GRID.x * at.w,
+    y: at.y + ART_GRID.y * at.h,
+    w: ART_GRID.w * at.w,
+    h: ART_GRID.h * at.h,
   });
 
   /**
-   * CENTRED, because the clearing sits in the middle of the plate — so whatever an artist
-   * put in the middle of the picture is what ends up under the board.
+   * The one scale cannot make both sides exact, because the file's cells are not quite
+   * square — so what is held is the SIZE OF THE ERROR: a quarter of one percent of the
+   * board, which is under a pixel at every phone tile size and still inside the grout
+   * line between two painted slabs on a tablet.
    */
-  it("centres the overflow", () => {
-    const at = groundCover(1000, 1400, 2000, 1000);
-    expect(at.x + at.w / 2).toBeCloseTo(500, 5);
-    expect(at.y + at.h / 2).toBeCloseTo(700, 5);
+  it("puts the painted grid on the board at every size", () => {
+    for (const tile of [32, 36, 39, 43, 76, 120]) {
+      const l = board(tile);
+      const g = painted(groundAlign(l, ...ART));
+      const side = tile * 9, slack = side * 0.0025;
+      expect(Math.abs(g.x - l.ox), `left at tile ${tile}`).toBeLessThan(slack);
+      expect(Math.abs(g.y - l.oy), `top at tile ${tile}`).toBeLessThan(slack);
+      expect(Math.abs(g.w - side), `width at tile ${tile}`).toBeLessThan(slack);
+      expect(Math.abs(g.h - side), `height at tile ${tile}`).toBeLessThan(slack);
+      if (tile < 50) expect(Math.abs(g.w - side), `a phone at tile ${tile}`).toBeLessThan(1);
+    }
+  });
+
+  /** ONE scale: the file's own cells are a hair off square, and stretching art to hide
+   *  that is worse than the half pixel it costs. */
+  it("does not stretch the picture", () => {
+    const at = groundAlign(board(39), ...ART);
+    expect(at.w / at.h).toBeCloseTo(ART[0] / ART[1], 5);
+  });
+
+  /** The error is SPLIT between the two edges rather than all landing on one of them. */
+  it("centres the grid on the board", () => {
+    const l = board(39, 17, 133);
+    const g = painted(groundAlign(l, ...ART));
+    expect(g.x + g.w / 2).toBeCloseTo(l.ox + (l.ts * 9) / 2, 5);
+    expect(g.y + g.h / 2).toBeCloseTo(l.oy + (l.ts * 9) / 2, 5);
+  });
+
+  /** It follows the board, not the canvas — a bigger canvas moves nothing. */
+  it("ignores the canvas around the board", () => {
+    const l = board(39), wide = board(39);
+    wide.width = 2000; wide.height = 3000;
+    expect(groundAlign(wide, ...ART)).toEqual(groundAlign(l, ...ART));
   });
 
   /** A picture that has not decoded reports 0x0, and must not produce a NaN draw. */
   it("survives a picture with no size", () => {
-    const at = groundCover(1000, 1400, 0, 0);
-    expect(at).toEqual({ x: 0, y: 0, w: 1000, h: 1400 });
+    const l = board(40);
+    expect(groundAlign(l, 0, 0)).toEqual({ x: 20, y: 100, w: 360, h: 360 });
+  });
+
+  /**
+   * AND THE PICTURE REACHES THE EDGES OF THE CANVAS once the camera has landed, because
+   * the artwork is a little wider than its own grid and the board is nine tenths of the
+   * screen. It is only a HAIR wider — the margin comes to a pixel or two — so the test is
+   * that nothing is left to fill but that hair, which the soft copy behind it covers. The
+   * frame proper is only ever seen during the opening descent.
+   */
+  it("reaches the edges of the canvas on a phone", () => {
+    for (const [vw, vh] of [[320, 331], [390, 606], [430, 694], [768, 786]] as const) {
+      const tile = Math.floor(Math.min(vw / 10, Math.min(vw, vh) / 9));
+      const l = new Layout(9);
+      l.ts = tile; l.width = vw; l.height = vh;
+      l.ox = Math.round((vw - tile * 9) / 2); l.oy = Math.round((vh - tile * 9) / 2);
+      const at = groundAlign(l, ...ART);
+      expect(at.x, `${vw}x${vh} left`).toBeLessThanOrEqual(1);
+      expect(at.x + at.w, `${vw}x${vh} right`).toBeGreaterThanOrEqual(vw - 1);
+      expect(at.y, `${vw}x${vh} top`).toBeLessThanOrEqual(0);
+      expect(at.y + at.h, `${vw}x${vh} bottom`).toBeGreaterThanOrEqual(vh);
+    }
   });
 });
 
 /**
- * THE TILE INDICATORS ARE A LAYER, NOT PART OF THE GROUND (`tileMark`).
+ * THE TILE INDICATORS ARE THE DRAWN FLOOR'S (`tileMark`).
  *
- * They mark where the cells are, so they go over whatever is underneath — the drawn floor
- * or a painted region (`ui/regions.ts`). The colour cannot be the floor's own: `groundA`
- * is light against the soil it was picked for and DARK against a bright painted map,
- * which would put muddy patches where light tiles should be.
+ * A region's picture has its cells painted in and is placed by them, so it needs no mark
+ * of its own — marking it anyway is two grids on one board. What is left is the soil's
+ * own lighter colour on the soil it was picked for.
  */
 describe("the tile indicators", () => {
-  /** What compositing `mark` over a ground of `lum` actually moves it by, in levels. */
-  const shift = (lum: number): number => {
-    const mark = tileMark(lum, 0);
-    const to = mark.fill === "#ffffff" ? 255 : 0;
-    return Math.abs(to - lum) * mark.alpha;
-  };
-
-  /**
-   * THE MARK IS SOLVED AGAINST THE GROUND. A fixed white at a fixed alpha read as twelve
-   * levels on the forest floor's soil and five on the desert's sand — under half as
-   * visible on the map chapter 6 is played on, which is how "tiles do not stand out"
-   * comes back one region at a time as the art lands.
-   */
-  it("moves every ground by about the same amount", () => {
-    for (const lum of [20, 60, 100, 140, 180, 205, 235]) {
-      expect(shift(lum), `a ground at ${lum} moved by ${shift(lum).toFixed(1)} levels`)
-        .toBeCloseTo(19, 0);
-    }
+  it("marks the drawn floor with the soil's own colour, not a tint", () => {
+    expect(tileMark(0).fill).not.toBe("#ffffff");
+    expect(tileMark(0).fill).not.toBe("#000000");
+    expect(tileMark(0).alpha).toBeGreaterThan(0);
   });
 
-  /**
-   * And the DIRECTION follows the ground: lighten a dark map, darken a bright one. White
-   * on sand would need a quarter of an alpha for the same shift, which is a wash that
-   * takes the colour out with it; black multiplies every channel alike, so sand stays sand.
-   */
-  it("lightens a dark ground and darkens a bright one", () => {
-    expect(tileMark(40, 0).fill).toBe("#ffffff");
-    expect(tileMark(205, 0).fill).toBe("#000000");
-    expect(tileMark(205, 0).alpha).toBeLessThan(0.1);
-  });
-
-  /**
-   * NO CAP IS NEEDED, which is why there is not one. Picking the side with the room means
-   * the headroom is never under half, so the extremes ask for twice the least and no more.
-   */
-  it("never asks a near-black or near-white ground for a wash", () => {
-    for (const lum of [0, 255]) expect(tileMark(lum, 0).alpha).toBeLessThan(0.2);
-  });
-
-  /**
-   * The DRAWN floor keeps its own colour. `MAP.groundA` is a shade picked for that soil
-   * rather than a tint solved for it — it is the one ground this code knows.
-   */
-  it("marks the drawn floor with the soil's own lighter colour", () => {
-    expect(tileMark(null, 0).fill).not.toBe("#ffffff");
-    expect(tileMark(null, 0).fill).not.toBe("#000000");
-    expect(tileMark(null, 0).alpha).toBeGreaterThan(tileMark(120, 0).alpha);
-  });
-
-  /** The rim fades either way, or the playfield gets a hard border. */
-  it("fades toward the edge of the grid, by the same proportion on both", () => {
-    for (const ground of [null, 120]) {
-      const mid = tileMark(ground, 0).alpha, rim = tileMark(ground, 1).alpha;
-      expect(rim).toBeLessThan(mid);
-      expect(rim / mid).toBeCloseTo(0.58, 2);
-    }
+  /** The rim fades, or the playfield gets a hard border. */
+  it("fades toward the edge of the grid", () => {
+    const mid = tileMark(0).alpha, rim = tileMark(1).alpha;
+    expect(rim).toBeLessThan(mid);
+    expect(rim / mid).toBeCloseTo(0.58, 2);
   });
 
   /** A cell outside the grid cannot ask for more than the middle's strength. */
   it("clamps", () => {
-    expect(tileMark(120, 4).alpha).toBe(tileMark(120, 1).alpha);
-    expect(tileMark(120, -2).alpha).toBe(tileMark(120, 0).alpha);
+    expect(tileMark(4).alpha).toBe(tileMark(1).alpha);
+    expect(tileMark(-2).alpha).toBe(tileMark(0).alpha);
+  });
+});
+
+/**
+ * WHAT A BAKE WITH A PAINTED GROUND ACTUALLY PUTS ON THE PLATE.
+ *
+ * Two draws and no chequer: the soft copy that fills the frame, then the picture itself
+ * lined up with the board. A chequer over it would be a second grid on top of the one
+ * painted into the artwork, which is the fault this whole template exists to avoid.
+ */
+describe("baking a painted ground", () => {
+  const ART = [841, 1870] as const;
+
+  /** Bake once with (or without) a picture, and hand back the PLATE's recorded calls. */
+  function bake(ground: string | null): { plate: Recorder; layout: Layout } {
+    const realCtx = HTMLCanvasElement.prototype.getContext;
+    const realImg = Object.getOwnPropertyDescriptors(HTMLImageElement.prototype);
+    const made: Recorder[] = [];
+    HTMLCanvasElement.prototype.getContext = (() => {
+      const rec = makeRecorder();
+      made.push(rec);
+      return rec.ctx;
+    }) as unknown as HTMLCanvasElement["getContext"];
+    // jsdom loads nothing, so the picture is declared decoded by hand — `groundArt` asks
+    // for exactly these three and nothing else.
+    for (const [k, v] of [["complete", true], ["naturalWidth", ART[0]], ["naturalHeight", ART[1]]] as const)
+      Object.defineProperty(HTMLImageElement.prototype, k, { value: v, configurable: true });
+    try {
+      resetTerrain();
+      resetGroundArt();
+      const layout = phone();
+      drawTerrain(makeRecorder().ctx, layout, [], ground ? { ground } : {});
+      return { plate: made[0] as Recorder, layout };
+    } finally {
+      HTMLCanvasElement.prototype.getContext = realCtx;
+      for (const k of ["complete", "naturalWidth", "naturalHeight"])
+        Object.defineProperty(HTMLImageElement.prototype, k, realImg[k] as PropertyDescriptor);
+      resetTerrain();
+      resetGroundArt();
+    }
+  }
+
+  it("draws the picture where the board is, and nothing else", () => {
+    const { plate, layout } = bake("rg01.webp");
+    const drawn = plate.of("drawImage");
+    expect(drawn.length).toBe(1);
+    const at = groundAlign(layout, ...ART);
+    const [, x, y, w, h] = drawn[0]?.args as [unknown, number, number, number, number];
+    for (const [got, want] of [[x, at.x], [y, at.y], [w, at.w], [h, at.h]] as const)
+      expect(got).toBeCloseTo(want, 5);
+  });
+
+  it("marks no cells over a picture that has them painted in", () => {
+    const { plate } = bake("rg01.webp");
+    expect(plate.fills()).not.toContain(MAP.groundA.toLowerCase());
+  });
+
+  /** And the drawn floor still gets its chequer, or the mutation above says nothing. */
+  it("still marks the cells on the drawn floor", () => {
+    const { plate } = bake(null);
+    expect(plate.fills()).toContain(MAP.groundA.toLowerCase());
   });
 });
 

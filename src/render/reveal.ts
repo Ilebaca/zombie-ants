@@ -148,7 +148,8 @@ export class RevealTracker {
    * `at` starts the front LATER than now. Every tile is registered at once either way, so
    * it draws unfilled from this moment — which is what the match opening needs: the
    * colonies must not be sitting there while the camera is still coming down through the
-   * canopy, only to be revealed once it lands (render/intro.ts).
+   * canopy, only to be revealed once it lands. Nothing schedules one in the future any
+   * more — the camera that needed it is gone — and it is kept because it costs a field.
    */
   begin(
     tiles: ReadonlyArray<{ at: Coord; edge: RevealEdge; prev: Player | null; slot?: number }>,

@@ -246,7 +246,7 @@ describe("a match with the tour up", () => {
   };
 
   /**
-   * The camera comes down through the canopy before the turn begins (render/intro.ts), and
+   * The colonies grow out of their nests before the turn begins (`playIntro`), and
    * the tour waits for it. A tap cuts it short, which is what a player does — and doing it
    * that way keeps these tests about the tour rather than about the opening's length.
    */

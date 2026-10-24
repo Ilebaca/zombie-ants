@@ -164,7 +164,7 @@ export class ReplayScreen {
     this.root.appendChild(bar);
     this.el = { turn, play, rate };
 
-    // No `playIntro()`, and that is the whole of it: the opening descent is a match
+    // No `playIntro()`, and that is the whole of it: the opening is a match
     // STARTING, and replaying it every time a row is opened is an animation nobody asked
     // for twice. The renderer only plays it when it is told to.
     this.renderer = new BoardRenderer(this.canvas, this.state, {

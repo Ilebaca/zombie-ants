@@ -10,8 +10,8 @@
  * When somebody is seated the reel STOPS DEAD on them. Not eased, not decelerated: a
  * gradual stop reads as an animation finishing, and a hard one reads as a search hitting
  * something. Then the two halves part and the board is already underneath, with the camera
- * coming down onto it (render/intro.ts) — the reveal and the opening are one movement, so
- * the split hands over to the descent rather than cutting to it.
+ * growing out of their nests on it — the reveal and the opening are one movement, so
+ * the split hands over to the opening rather than cutting to it.
  *
  * It knows nothing about how an opponent is found. `platform/matchmaking.ts` owns that, and
  * owns the rule that seats a bot when nobody answers in five seconds; this screen would
@@ -167,7 +167,7 @@ export class MatchmakingScreen {
     this.after(HOLD_MS, () => {
       this.root.classList.add("split");
       // The board is revealed as the halves move, so the match starts NOW rather than when
-      // they finish: the camera's descent plays through the gap as it widens.
+      // they finish: the colonies grow out of their nests through the gap as it widens.
       this.opts.onFound(foe);
       this.after(SPLIT_MS, () => this.destroy());
     });
