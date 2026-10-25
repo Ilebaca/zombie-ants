@@ -2133,15 +2133,26 @@ nagging the one player who had already done what it asked.**
   nothing in the second. A test holds it, and it was checked against a real sub-path server.
 - **THE ICON IS A COMMITTED IMAGE, and that is deliberate.** Almost everything else is
   drawn at runtime; an icon cannot be, because the OS needs a file before a line of our
-  script runs. (The home artwork is the other one — § THE HOME ARTWORK.) `tools/icons.ts` renders it from the game's own `antHead` through headless
-  Chromium — so it is not a second drawing that can drift — but it is a TOOL, not a build
-  step: an icon has to be stable, because people find an app by its icon, and one that
-  redrew itself whenever `render/art.ts` changed would be a different app every few weeks.
-  Run it by hand when the mark is meant to change. It is excluded from typecheck and lint
-  because it imports Playwright, which is deliberately not a dependency (§11).
-- The head is nudged DOWN in the frame: the antennae reach well above its centre and the
-  mandibles barely below, so centring the drawing's origin clipped the one feature that
-  says "ant".
+  script runs. (The home artwork and the regions are the others.) **It is a PAINTING now**
+  — `assets/icon.png`, the source, committed beside the five PNGs `tools/icons.ts` cuts
+  from it. It used to be RENDERED from the game's own `antHead` so it could not drift from
+  the ant on the board, and the argument reverses with a painted mark: a drawing somebody
+  made cannot be derived from anything, so the source is kept and the tool only resizes.
+  Still a TOOL, not a build step — an icon has to be stable, because people find an app by
+  it — and still excluded from typecheck and lint because it imports Playwright (§11).
+- **THE MASKABLE ONE IS INSET ON THREE SIDES AND FLUSH WITH THE BOTTOM.** Android may crop
+  to a circle inscribed in the middle 80%, so the picture comes in 8% at the top and sides
+  — and the margin that leaves is the painting's OWN EDGE stretched out, a nine-slice off
+  its one-pixel border. Two other ways were tried and both are visible: a blurred blow-up
+  of the whole picture drags the ant's reds across the margin and leaves the inset copy
+  sitting on it as a square, and a flat fill or a hand-picked gradient seams exactly where
+  the inset stops. The BOTTOM is flush because the body already runs off the edge there:
+  clamp it too and that body stretches down as a red block with a step at each side.
+  Checked at 96px and 48px under both a squircle and a circle mask, which is the only size
+  any of this is ever seen at.
+- **Every browser tool points at `/opt/pw-browsers/chromium`**, the stable symlink, never
+  at a versioned path — four of them had `chromium-1194` written out and all four broke the
+  day the container's Chromium moved.
 
 **THE HOME ARTWORK IS A FILE — the only picture in the app that is not drawn**
 (`src/ui/backdrops/`, `src/ui/backdrops.ts`, the `#home` rules in `skin.css`). The legacy

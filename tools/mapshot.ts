@@ -35,7 +35,7 @@ async function main(): Promise<void> {
   const server = await createServer({ server: { port: 5199 }, logLevel: "warn" });
   await server.listen();
   const browser = await chromium.launch({
-    executablePath: process.env.CHROMIUM ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+    executablePath: process.env.CHROMIUM ?? "/opt/pw-browsers/chromium",
   });
   try {
     const page = await browser.newPage();
