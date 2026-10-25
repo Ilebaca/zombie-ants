@@ -174,6 +174,15 @@ export class MatchScreen {
   private valid: Coord[] = [];
 
   private timeLeft = MOVE_SECONDS;
+  /**
+   * What the card is holding up, if anything.
+   *
+   * The OPPONENT's cast plays over their move, and the turn may not come back to the
+   * player from under a card they are still reading — so `playAI` leaves the hand-over
+   * here and `release` runs it (§ BOTH SIDES SEE THE SAME CAST).
+   */
+  private afterCard: (() => void) | null = null;
+
   /** The ability card's watchdog, and the hold it belongs to (`holdFor`). */
   private castTimer: number | null = null;
   private castSeq = 0;
@@ -673,6 +682,7 @@ export class MatchScreen {
     this.clearTimers();
     if (this.endTimer) { clearTimeout(this.endTimer); this.endTimer = null; }
     if (this.castTimer) { clearTimeout(this.castTimer); this.castTimer = null; }
+    this.afterCard = null;                   // a torn-down screen hands no turn over
     if (this.introTimer) { clearTimeout(this.introTimer); this.introTimer = null; }
     this.root.remove();
   }
@@ -747,7 +757,7 @@ export class MatchScreen {
     this.cue("ability");
     this.opts.onAbilityCast?.(ability.kind);
     this.consume(events);
-    this.showSpellCard(ability);
+    this.showSpellCard(ability, "you");
     this.clearSelection();
     this.refreshHUD();
     if (s.over) this.finish();
@@ -765,13 +775,23 @@ export class MatchScreen {
    * THE CLOCK IS PAUSED, NEVER RESTARTED (`runClock(false)`). Handing the turn's full
    * length back would make casting an ability a way to buy another thirty seconds.
    */
-  private showSpellCard(ability: Ability): void {
+  private showSpellCard(ability: Ability, who: Player): void {
     const card = this.root.querySelector<HTMLElement>("#spellCard");
     if (!card) return;
     const title = card.querySelector(".sc-title");
     const body = card.querySelector(".sc-desc");
     if (title) title.textContent = ability.name;
     if (body) body.textContent = ability.desc;
+    // WHOSE CAST IT IS. The card was the player's only, so it never had to say — and the
+    // moment the enemy gets one too, an unattributed "Venom Rain" over the board reads as
+    // something you did. `.sc-cast` is the legacy card's own accent line and was empty
+    // from the day it was ported; `--sc-accent` is the colour it is written in, which is
+    // the second half of the same answer.
+    const cast = card.querySelector<HTMLElement>(".sc-cast");
+    if (cast) {
+      cast.textContent = this.opts.plates?.[who]?.name ?? (who === "you" ? "You" : "Enemy");
+      card.style.setProperty("--sc-accent", who === "you" ? "var(--you)" : "var(--ai)");
+    }
     // The picture box is the legacy build's EMOJI frame — a 52px glyph centred in a
     // plate — and this build draws no emoji (§10), so it has been an empty rectangle at
     // the top of every cast card since. It holds the ability's painting where there is
@@ -828,6 +848,11 @@ export class MatchScreen {
     if (this.castTimer !== null) { clearTimeout(this.castTimer); this.castTimer = null; }
     this.castSeq++;                          // nothing from the finished hold may speak again
     this.root.classList.remove("casting");
+    // A turn held open for the OPPONENT's card hands over HERE, and does not resume a
+    // clock it is about to reset: `handOver` runs `beginTurn`, which starts a fresh one.
+    const held = this.afterCard;
+    this.afterCard = null;
+    if (held) { held(); return; }
     this.runClock(false);
   }
 
@@ -901,13 +926,58 @@ export class MatchScreen {
     this.remember(...thought.moves);
     const events = thought.events;
     this.consume(events);
+    this.showOpponentCast(thought.moves);
     this.refreshHUD();
     // Let the reveal finish before handing over — flipping the turn mid-sweep cuts the
     // animation off. A turn that CAST and then marched plays for a beat longer, because the
     // march waits for the cast to be seen (render/animate.ts), and the hand-over has to
     // wait with it or the second half is cut off exactly where it matters.
     const play = events.length ? 700 + actGapOf(events) : 200;
-    this.aiTimer = window.setTimeout(() => this.handOver(), play);
+    this.aiTimer = window.setTimeout(() => {
+      // The card plays OVER the board, so it overlaps the move rather than following it —
+      // but the turn may not come back to the player from under one they are reading.
+      if (this.casting) { this.afterCard = this.closeEnemyTurn; return; }
+      this.closeEnemyTurn();
+    }, play);
+  }
+
+  /**
+   * The enemy's turn is finished with.
+   *
+   * THE OPPONENT MAY HAVE ENDED IT ITSELF. The local search hands back a board with its
+   * move played and the turn still its own, leaving the hand-over to the screen — but a
+   * REMOTE opponent sends a whole turn as data (`ui/opponent.ts`), and a move list that
+   * carries its own `end` lands a board where it is already the player's move. Ending it
+   * again took the player's turn away the instant it began, which is the sort of fault
+   * that only shows up the day there is a second person on the other side.
+   */
+  private closeEnemyTurn = (): void => {
+    if (this.state.current === "ai") { this.handOver(); return; }
+    if (this.state.over) { this.finish(); return; }
+    this.beginTurn();
+  };
+
+  /**
+   * BOTH SIDES SEE THE SAME CAST.
+   *
+   * The card was raised from `onAbility` — the PLAYER's own button — so an ability the
+   * opponent used simply happened: tiles changed and nothing said what had hit them. Two
+   * players have to be watching the same match from two chairs, and that is the test to
+   * apply to anything on this screen long before there is a server to make it literal.
+   *
+   * It is read off the MOVES the turn landed with, never off the opponent being an AI. A
+   * remote turn arrives through this same function (`ui/opponent.ts` is one landing path
+   * for both), so a real opponent's cast raises the same card with no second route.
+   *
+   * TUNNELLING STILL SHOWS NONE, on either side. It is cast from a target tap and spends
+   * the turn (§4.10), so there is no card for the player either; showing one here would
+   * be the two sides disagreeing in the other direction.
+   */
+  private showOpponentCast(moves: readonly Move[]): void {
+    if (!moves.some((m) => m.do === "ability")) return;
+    const ability = speciesOf(this.state.species.ai).ability;
+    if (abilitySpendsTurn(ability.kind)) return;
+    this.showSpellCard(ability, "ai");
   }
 
   /**
