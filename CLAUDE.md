@@ -2140,16 +2140,17 @@ nagging the one player who had already done what it asked.**
   made cannot be derived from anything, so the source is kept and the tool only resizes.
   Still a TOOL, not a build step — an icon has to be stable, because people find an app by
   it — and still excluded from typecheck and lint because it imports Playwright (§11).
-- **THE MASKABLE ONE IS INSET ON THREE SIDES AND FLUSH WITH THE BOTTOM.** Android may crop
-  to a circle inscribed in the middle 80%, so the picture comes in 8% at the top and sides
-  — and the margin that leaves is the painting's OWN EDGE stretched out, a nine-slice off
-  its one-pixel border. Two other ways were tried and both are visible: a blurred blow-up
-  of the whole picture drags the ant's reds across the margin and leaves the inset copy
-  sitting on it as a square, and a flat fill or a hand-picked gradient seams exactly where
-  the inset stops. The BOTTOM is flush because the body already runs off the edge there:
-  clamp it too and that body stretches down as a red block with a step at each side.
-  Checked at 96px and 48px under both a squircle and a circle mask, which is the only size
-  any of this is ever seen at.
+- **EVERY SIZE IS THE WHOLE PAINTING, THE MASKABLE ONE INCLUDED — the MARGIN IS PAINTED,
+  not added here.** Android may crop a maskable icon to a circle inscribed in the middle
+  80%, so the first version insetting the picture 8% on three sides and stretched its own
+  one-pixel border out to fill the margin (a nine-slice; a blurred blow-up drags the ant's
+  reds across it, and a flat fill or a guessed gradient seams exactly where the inset
+  stops; the bottom had to stay flush because the body runs off the edge there and clamps
+  into a red block). All of that is gone: the artwork is composed with the head well
+  inside its own frame, so insetting again pads a picture that is already padded — asked
+  for directly, "do not expand it yourself further". The rule for whoever paints the next
+  one is that the margin belongs in the FILE. Checked at 96px and 48px under both a
+  squircle and a circle mask, which is the only size any of this is ever seen at.
 - **Every browser tool points at `/opt/pw-browsers/chromium`**, the stable symlink, never
   at a versioned path — four of them had `chromium-1194` written out and all four broke the
   day the container's Chromium moved.
