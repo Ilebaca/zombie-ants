@@ -29,7 +29,7 @@ import { resolve } from "node:path";
 
 const PORT = 5198;
 const CHROME = process.env.CHROMIUM
-  ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+  ?? "/opt/pw-browsers/chromium";
 /**
  * How many 360x800 frames one screen may be walked through.
  *
