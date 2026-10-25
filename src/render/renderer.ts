@@ -15,7 +15,7 @@ import { floodDuration, floodFade, planFlood, type Flood } from "./flood";
 import { groundPainted } from "./terrain";
 import { basicLook, type Look } from "./art";
 import { loadColors, setFactionColor } from "./palette";
-import { drawPlates, rowsOf, type Plate } from "./plates";
+import { drawPlates, drawSockets, rowsOf, seamsHeld, type Plate } from "./plates";
 import {
   drawBackground, drawFillets, drawFlood, drawSelection, drawSurge, drawTile, drawTileBevels,
   drawTrails, seedMotes,
@@ -328,8 +328,12 @@ export class BoardRenderer {
       // board, and a name left standing on flooded ground would be the one thing the
       // winner's colour did not reach.
       if (this.opts.plates) {
-        drawPlates(ctx, this.layout, this.opts.plates,
-          this.opts.colonySize ?? String, this.looks, this.flood ? fade : 1);
+        const dim = this.flood ? fade : 1;
+        drawPlates(ctx, this.layout, this.opts.plates, this.opts.colonySize ?? String, dim);
+        // ...and the seams each side holds, lit into the sockets the ground already has.
+        drawSockets(ctx, this.layout, {
+          you: seamsHeld(this.state, "you"), ai: seamsHeld(this.state, "ai"),
+        }, scene.painted, dim);
       }
 
       // Last, and over everything: "consumed" means the veins, the garrisons, the Hive, the

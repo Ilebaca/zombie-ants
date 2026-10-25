@@ -282,10 +282,7 @@ export class MatchScreen {
       species: opts.state.species,
       // Who is playing is drawn ON THE GROUND, beside each side's own base — so it is the
       // renderer's, not the screen's. Settled for the length of the match either way.
-      plates: opts.plates && {
-        you: { ...opts.plates.you, species: opts.state.species.you },
-        ai: { ...opts.plates.ai, species: opts.state.species.ai },
-      },
+      plates: opts.plates,
       colonySize: compact,
       looks: opts.looks,
       ground: opts.ground,
