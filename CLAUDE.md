@@ -1328,6 +1328,41 @@ a tutorial step already follows (§10a).
 - **Tunnelling shows no card and is not held.** It is cast from a target tap and spends the
   turn (§4.10), so the turn hands over immediately and there is no clock left to pause.
 
+**BOTH SIDES SEE THE SAME CAST** (`showOpponentCast`, `closeEnemyTurn` in `ui/match.ts`).
+The card was raised from `onAbility` — the PLAYER's own button — so an ability the OPPONENT
+used simply happened: tiles changed and nothing on screen said what had hit them. Reported
+directly, with the reason attached: two players have to be watching the same match from two
+chairs, and that is the test to apply to anything on this screen long before there is a
+server to make it literal.
+- **IT IS READ OFF THE MOVES THE TURN LANDED WITH**, never off the opponent being an AI. A
+  remote turn arrives through `playAI` exactly as a searched one does (`ui/opponent.ts` is
+  one landing path for both, §9b), so a real opponent's cast raises the same card with no
+  second route to keep in step.
+- **THE CARD SAYS WHOSE IT IS.** It never had to while it was the player's only; the moment
+  the enemy gets one, an unattributed "Venom Rain" over the board reads as something you
+  did. `.sc-cast` is the legacy card's own accent line — it had been empty since the day it
+  was ported — and `--sc-accent` is the colour it is written in, which is the second half of
+  the same answer. The name comes off `plates`, so it is the opponent the reel seated.
+- **AND THE TURN DOES NOT COME BACK FROM UNDER IT.** The card plays OVER the board, so it
+  overlaps the move rather than following it — but handing the turn to the player while they
+  are still reading what just hit them is the fault the hold exists to fix, seen from the
+  other chair. `playAI` leaves the hand-over in `afterCard` and `release` runs it; `release`
+  then does NOT resume a clock it is about to reset, because `beginTurn` starts a fresh one.
+- **TUNNELLING STILL SHOWS NONE, ON EITHER SIDE.** It spends the turn, so the player gets no
+  card for it; one here would be the two sides disagreeing in the other direction.
+- **AND A TURN THAT ENDED ITSELF IS NOT ENDED TWICE** (`closeEnemyTurn`). The local search
+  hands back a board with its move played and the turn still its own, leaving the hand-over
+  to the screen — but a REMOTE opponent sends a whole turn as data, `end` included, so the
+  board it lands is already the player's move. Running the hand-over on top of that took the
+  player's turn away the instant it began, and then handed it back, and so on: a ping-pong
+  that is on the right side half the times you happen to look. It was found by writing the
+  test with a `RemoteOpponent` rather than the AI, which is the whole argument for doing
+  that — and the test samples ACROSS the span rather than at one moment, for the same reason.
+- **The three new tests pin the AI's think time** (`Math.random` → 0). It sits on its answer
+  for one to four seconds and the card's watchdog is six, so an unpinned think puts the
+  release anywhere between 7.7s and 10.7s — and a test that advances past one of those is a
+  test that passes on some runs.
+
 **The match clock is the SCREEN's, never the engine's.** Wall time from the moment the
 opening hands over to the moment the match is decided, latched there so a result card
 sitting on screen does not keep counting, and reported to the app through `onExit`. It

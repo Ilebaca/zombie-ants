@@ -14,8 +14,10 @@ import { describe, expect, it, vi, beforeAll, afterEach } from "vitest";
 import {
   createGame, defaultContext, NEUTRAL_MODS, SPECIES, snapshot,
 } from "../../engine";
-import type { EngineEvent, GameState, Move } from "../../engine";
+import type { EngineEvent, GameState, Move, SpeciesId } from "../../engine";
+import type { OpponentSource } from "../opponent";
 import { MatchScreen, loudestOf } from "../match";
+import { RemoteOpponent } from "../opponent";
 import { abilityArtFor } from "../abilityart";
 
 beforeAll(() => {
@@ -37,8 +39,11 @@ interface Watch {
  * going, so a board handed over with the enemy to move plays itself rather than sitting
  * there waiting for a tap that would do nothing.
  */
-function watch(): Watch {
-  const state = createGame({ map: "small", species: { you: "fire", ai: "fire" }, seed: 11 });
+function watch(
+  seat?: (w: Omit<Watch, "screen">) => OpponentSource,
+  species: { you: SpeciesId; ai: SpeciesId } = { you: "fire", ai: "fire" },
+): Watch {
+  const state = createGame({ map: "small", species, seed: 11 });
   state.current = "ai";
   const host = document.createElement("div");
   document.body.appendChild(host);
@@ -55,6 +60,7 @@ function watch(): Watch {
     ctx: defaultContext(),
     difficulty: "normal",
     map: "small",
+    opponent: seat?.(w as Omit<Watch, "screen">),
     onEvents: (events: readonly EngineEvent[]) => {
       if (events.length) log.push("events");
     },
@@ -383,6 +389,157 @@ describe("the opening", () => {
     expect(clock(w), "the card handed the turn its full length back").toBe(ticking);
     await vi.advanceTimersByTimeAsync(2000);
     expect(clock(w), "the clock never picked up again").not.toBe(ticking);
+    w.screen.destroy();
+  });
+
+  /**
+   * BOTH SIDES SEE THE SAME CAST.
+   *
+   * The card was raised from the player's own ability BUTTON, so an ability the opponent
+   * used simply happened: tiles changed and nothing on screen said what had hit them. Two
+   * players have to be watching the same match from two chairs, and the way that is held
+   * here is the way it will be true with a server — the turn is played by a
+   * `RemoteOpponent`, the shape a real one has, and the card is read off the MOVES it
+   * landed with rather than off the opponent being an AI.
+   */
+  const cast = (w: Watch): { name: string; title: string } => ({
+    name: w.host.querySelector<HTMLElement>(".sc-cast")?.textContent ?? "",
+    title: w.host.querySelector<HTMLElement>(".sc-title")?.textContent ?? "",
+  });
+
+  /**
+   * The enemy's turn, played at a KNOWN moment.
+   *
+   * `runAI` sits on the answer for one to four seconds, and the card's watchdog is six —
+   * so an unpinned think puts the release anywhere between 7.7s and 10.7s, and a test
+   * that advances past one of those is a test that passes on some runs.
+   */
+  const promptly = (): void => { vi.spyOn(Math, "random").mockReturnValue(0); };
+
+  /**
+   * An opponent whose turn is one cast, as plain data.
+   *
+   * No `end` in it: that is the shape the local search hands back — the move played, the
+   * turn still its own, the hand-over left to the screen — and a remote one that DOES
+   * send its own end is the test below.
+   */
+  const caster = (): OpponentSource =>
+    new RemoteOpponent(
+      "ai",
+      async () => [{ do: "ability" }] as Move[],
+      { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } },
+      defaultContext(),
+    );
+
+  it("raises the ability card for the opponent's cast too", async () => {
+    vi.useFakeTimers();
+    promptly();
+    const w = watch(() => caster());
+    w.state.cooldown.ai = 0;
+    w.screen.start();
+    opened(w);
+    await vi.advanceTimersByTimeAsync(3000);            // thinks 1s, plays, card up
+
+    expect(w.host.querySelector(".match.casting"), "the enemy's cast raised no card")
+      .not.toBeNull();
+    // ...and it says WHOSE it is, in their name rather than the player's.
+    expect(cast(w).title).toBe(SPECIES.fire.ability.name);
+    expect(cast(w).name, "the card did not name the caster").toBe("Formica42");
+    w.screen.destroy();
+  });
+
+  /** The player's own card names the player, which is the other half of the same rule. */
+  it("names the player on their own cast", async () => {
+    vi.useFakeTimers();
+    const w = watch();
+    w.state.current = "you";
+    w.state.cooldown.you = 0;
+    w.screen.start();
+    opened(w);
+    await vi.advanceTimersByTimeAsync(4000);
+    w.host.querySelector<HTMLButtonElement>("#bAbility")?.click();
+    expect(cast(w).name).toBe("Milan");
+    w.screen.destroy();
+  });
+
+  /**
+   * AND THE TURN DOES NOT COME BACK FROM UNDER IT. The card plays OVER the board, so it
+   * overlaps the move rather than following it — but handing the turn to the player while
+   * they are still reading what just hit them is the same fault the hold exists to fix,
+   * seen from the other chair.
+   */
+  it("holds the screen until the opponent's card has played", async () => {
+    vi.useFakeTimers();
+    promptly();
+    const w = watch(() => caster());
+    w.state.cooldown.ai = 0;
+    w.screen.start();
+    opened(w);
+    await vi.advanceTimersByTimeAsync(3000);            // thinks 1s, plays, card up
+    expect(w.host.querySelector(".match.casting"), "no card to hold anything").not.toBeNull();
+
+    // Nothing the player presses may land, and the clock may not start counting the turn
+    // they cannot play yet.
+    const before = sig(w.state);
+    const held = clock(w);
+    w.host.querySelector<HTMLButtonElement>("#bEnd")?.click();
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(sig(w.state), "a press landed through the enemy's card").toBe(before);
+    expect(clock(w), "the clock ran down behind the enemy's card").toBe(held);
+    expect(w.state.current, "the turn handed over under the card").toBe("ai");
+
+    // jsdom runs no animations, so the watchdog is what releases it — six seconds after
+    // the card went up, which is a second and a bit into the match.
+    await vi.advanceTimersByTimeAsync(7000);
+    expect(w.host.querySelector(".match.casting"), "the hold never let go").toBeNull();
+    expect(w.state.current, "the turn never came back").toBe("you");
+    expect(clock(w), "the clock never picked up").not.toBe(held);
+    w.screen.destroy();
+  });
+
+  /**
+   * AND A TURN THAT ENDED ITSELF IS NOT ENDED TWICE. The local search hands back a board
+   * with its move played and the turn still its own; a REMOTE opponent sends a whole turn
+   * as data, `end` included, so the board it lands is already the player's move. Running
+   * the hand-over on top of that took the player's turn away the instant it began — a
+   * fault with no way to show up before there is somebody on the other side.
+   */
+  it("does not end the player's turn for them when the opponent ended its own", async () => {
+    vi.useFakeTimers();
+    promptly();
+    const w = watch(() => new RemoteOpponent(
+      "ai",
+      async () => [{ do: "end" }] as Move[],
+      { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } },
+      defaultContext(),
+    ));
+    w.screen.start();
+    opened(w);
+    // Sampled ACROSS the span, not at one moment: ending it twice hands the turn straight
+    // back to the enemy, which thinks again and ends again — a ping-pong that is on "you"
+    // half the times you happen to look.
+    for (let t = 0; t < 12; t++) {
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(w.state.current, `the player's turn was ended for them at ${t}s`).toBe("you");
+    }
+    w.screen.destroy();
+  });
+
+  /**
+   * AND TUNNELLING SHOWS NONE, on either side. It is cast from a target tap and spends
+   * the turn (§4.10), so the player gets no card for it; one here would be the two sides
+   * disagreeing in the other direction.
+   */
+  it("shows no card for an opponent's ability that spends the turn", async () => {
+    vi.useFakeTimers();
+    promptly();
+    const w = watch(() => caster(), { you: "fire", ai: "ghost" });
+    w.state.cooldown.ai = 0;
+    w.screen.start();
+    opened(w);
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(SPECIES.ghost.ability.kind, "the ghost stopped tunnelling").toBe("tunnel");
+    expect(w.host.querySelector(".match.casting"), "a tunnel raised a card").toBeNull();
     w.screen.destroy();
   });
 
