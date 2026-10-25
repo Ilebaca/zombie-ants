@@ -19,7 +19,7 @@ import {
 import type { Scene } from "./board";
 import { RevealTracker } from "./reveal";
 import { MAP } from "./palette";
-import { drawTerrain } from "./terrain";
+import { drawTerrain, groundPainted } from "./terrain";
 import { basicLook } from "./art";
 import type { Look } from "./art";
 
@@ -188,6 +188,7 @@ export function drawSnapshot(
     selection: opts.selection ?? null,
     valid: opts.valid ?? [],
     current: state.current,
+    painted: groundPainted(opts.art),
   };
 
   // The same two passes the live board uses: every under-band first, then every face, so a

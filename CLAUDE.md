@@ -149,6 +149,14 @@ These were each decided deliberately, several after bugs. Changing one silently 
      the hive's first waking for the whole match. With a flat per-level bonus and a clock
      that restarted, a long-ignored level-1 queen outclassed the level-2 queen who replaced
      her — capturing the Hive made the Hive easier.
+   - **THE QUEEN IS DRAWN AS A CIRCLE AND A NUMBER, AND NOTHING ELSE.** She used to sit
+     on a violet SLAB — a rounded plate under each of her five tiles, the same shape a
+     colony's own tiles are drawn as — with spore stalks erupting from the middle one.
+     Both are gone, asked for directly: the ground already says where she is (a painted
+     region paints her fungus across those five cells), and a plate the same shape as a
+     unit's said she was something standing ON the board rather than part of it. The
+     circle still grows for the QUEEN and shrinks for a guard, which is what the stalks
+     were there to say, and a test counts the arcs on her tile so they cannot creep back.
    - **The surge is a COLONY effect, so it has to look like one.** The wave that marks it
      leaves the queen and washes out across every tile the holder owns, each lighting as the
      front reaches its distance from her. Lighting only the five hive tiles said the
@@ -2126,11 +2134,25 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
       DRAWN floor's now and only the drawn floor's — over a picture it is two grids on
       one board — and the machinery that solved a mark's alpha against the luminance it
       landed on (`groundLuma`, `ART_STEP`) went with it.
-    - **ONE SCALE, never two.** The forest floor's cells are 83.0 across and 83.25 down —
-      a third of a percent off square — and stretching a painting to hide that is worse
-      than the half pixel it costs. The two scales are averaged and the grid is CENTRED
+    - **ONE SCALE, never two.** The forest floor's cells are 82.75 across and 83.4 down —
+      three quarters of a percent off square — and stretching a painting to hide that is
+      worse than the pixel it costs. The two scales are averaged and the grid is CENTRED
       on the board, so the error is split between opposite edges instead of landing all
-      on one, and it stays inside the grout line between two painted slabs.
+      on one: a pixel and a bit on a phone, inside the grout line between two painted
+      slabs, which is about two.
+    - **AND THE PICTURE CARRIES THE ROCKS AND THE GEM SEAMS TOO** (`Scene.painted`). The
+      artist paints a blocked cell as bare ground in the middle of the slabs and a
+      resource as a seam in one, exactly where the engine puts them — so `board.ts` draws
+      neither over a painted region. Nothing about the RULES moved: a rock is still
+      impassable and a seam still pays three a turn with its guard's shield still on it.
+      - **They are the DRAWN floor's, not deleted.** The manual's figures illustrate both
+        on the drawn floor (`rules.ts`), which has no rocks painted into it, and an
+        unmarked blocked cell there is a square nobody can tell from open ground. Same
+        shape as the chequer, and the same flag decides it.
+      - **It asks whether the picture has LANDED, not whether one was asked for**
+        (`groundPainted`). A file still decoding, or one that failed, leaves the drawn
+        floor underneath — keyed on the request, a picture that never arrived would take
+        the rocks off a board that has none.
     - **THE FRAME AROUND IT IS A VEIL WITH A HOLE IN IT** (`paintFrame`). The file is only
       a little wider than its own grid, so once it is pinned to the board it reaches the
       edges of the canvas by about a percent and no further. That is enough because the
@@ -2144,7 +2166,7 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
       screen**, so that margin is part of the template too.
     - **A REGION IS PAINTED AT THE SIZE IT IS DRAWN AT.** The plate bakes at device
       resolution, so on a 3x phone the picture is drawn about 1,300 pixels wide; the
-      forest floor's file is 841 and is upscaled to get there. Anything painted later
+      forest floor's file is 842 and is upscaled to get there. Anything painted later
       wants to be around 1,300 x 2,900.
   - **A PAINTED REGION REPLACES THE SOIL AND THE SCENERY BOTH.** A picture has its own
     rocks and ferns; drawing ours over them is two forests at once.
@@ -2176,7 +2198,7 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
     plate half as big again as the canvas in every direction, because the opening pulled
     a camera back through it; the camera is gone and the plate is the canvas, so the
     picture is placed by its grid and the rest of it falls where it falls. The forest
-    floor is 841 x 1870 — about the shape of a tall phone — with the grid 26% of the way
+    floor is 842 x 1867 — about the shape of a tall phone — with the grid 29% of the way
     down and a little margin either side of it, and that margin is what reaches the edges
     of the screen.
   - **What crosses into `render/` is a URL**, never a region or a chapter: which picture

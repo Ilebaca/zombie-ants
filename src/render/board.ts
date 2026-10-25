@@ -49,6 +49,15 @@ export interface Scene {
   valid: readonly Coord[];
   /** Whose turn it is — drives the target highlight colour. */
   current: Player;
+  /**
+   * Has the region's PICTURE landed under the board?
+   *
+   * A painted ground has the rocks and the gem seams in it (§ THE PICTURE CARRIES THE
+   * GRID), so drawing ours on top is the same object twice. The DRAWN floor has neither,
+   * and the manual's figures are drawn on it — so the marks are not deleted, they are the
+   * drawn floor's, exactly like the chequer.
+   */
+  painted: boolean;
 }
 
 export interface Mote { x: number; y: number; s: number; sp: number; ph: number }
@@ -305,6 +314,11 @@ export function drawTile(scene: Scene, t: Tile): void {
   const r = Math.max(3, ts * 0.18);
 
   if (t.terrain === "blocked") {
+    // THE PICTURE HAS THE ROCKS IN IT. A painted region paints the four blocked cells as
+    // bare ground in the middle of its slabs, so the tile is still impassable and there is
+    // nothing left to draw. On the DRAWN floor there is nothing there at all, and an
+    // unmarked blocked cell is a square the player cannot tell from open ground.
+    if (scene.painted) return;
     // A rock is a block, not a blob: ground shade, solid side, lit top — the same three
     // layers every raised object on this board is built from.
     const bx = x + w * 0.11, by = y + h * 0.10, bw = w * 0.78, bh = h * 0.74;
@@ -372,14 +386,15 @@ export function drawTile(scene: Scene, t: Tile): void {
     }
     ctx.restore();
 
-  } else if (t.terrain === "resource") {
+  } else if (t.terrain === "resource" && !scene.painted) {
     // a warm patch under the gem, rounded like everything else on this board
     ctx.fillStyle = MAP.resCell;
     rrect(ctx, layout.x0(t.c) + ts * 0.06, layout.y0(t.r) + ts * 0.06, ts * 0.88, ts * 0.88, r * 0.8);
     ctx.fill();
   }
 
-  if (t.terrain === "resource") {
+  // THE PICTURE HAS THE SEAMS IN IT TOO, drawn into the slab where the engine puts one.
+  if (t.terrain === "resource" && !scene.painted) {
     // A cut gem: a shaded base, the stone, and one lit facet across the top-left. The glow
     // is the only blur on the board, and it earns it — this is the thing worth fighting for.
     const gx = layout.cx(t.c), gy = layout.cy(t.r) - (t.owner ? h * 0.16 : 0);
@@ -614,34 +629,20 @@ export function drawHiveTile(scene: Scene, t: Tile): void {
   const glow = awake ? (COL["hive-soft"] ?? "#d9c2ff") : "rgba(255,255,255,0.55)";
   const pulse = awake ? (0.6 + 0.4 * Math.sin(performance.now() / 300)) : 0.3;
 
-  // The hive sits on its own violet slab, so the fungus reads against any ground colour
-  // and the five tiles group into one object rather than five loose circles. Violet is the
-  // one hue no species uses, which is what makes the shared objective read as neutral.
-  const px = layout.x0(t.c), py = layout.y0(t.r);
-  const drop = Math.max(3, ts * 0.11);
-  ctx.fillStyle = MAP.groundShade;
-  rrect(ctx, px + ts * 0.05, py + ts * 0.05 + drop, ts * 0.9, ts * 0.9, ts * 0.26); ctx.fill();
-  ctx.fillStyle = awake ? "#7c4fd0" : "#a99ab8";
-  rrect(ctx, px + ts * 0.05, py + ts * 0.05, ts * 0.9, ts * 0.9, ts * 0.26); ctx.fill();
-  ctx.fillStyle = awake ? "#9166e0" : "#bbaec8";
-  rrect(ctx, px + ts * 0.11, py + ts * 0.10, ts * 0.78, ts * 0.42, ts * 0.20); ctx.fill();
-
+  /*
+   * THE QUEEN IS A CIRCLE AND A NUMBER, AND NOTHING ELSE.
+   *
+   * She used to sit on a violet SLAB — a rounded plate under each of the five tiles, the
+   * same shape a colony's own tiles are drawn as — with spore stalks erupting from the
+   * middle one. Both are gone, asked for directly: the ground already says where she is
+   * (the region's picture paints her fungus across those five cells), and a plate the
+   * same shape as a unit's said she was a unit standing on the board rather than the
+   * board itself. The circle still grows for the QUEEN and shrinks for a guard, which is
+   * what the stalks were there to say.
+   */
   ctx.save();
   ctx.shadowColor = glow;
   ctx.shadowBlur = ts * (awake ? 0.6 : 0.25) * pulse;
-  if (t.terrain === "hiveQ") {                       // spore stalks erupting from the queen
-    ctx.strokeStyle = glow; ctx.lineWidth = Math.max(1.5, ts * 0.04); ctx.lineCap = "round";
-    for (let i = 0; i < 5; i++) {
-      const a = -1.57 + (i - 2) * 0.5;
-      const ex = x + Math.cos(a) * R * 1.7, ey = y + Math.sin(a) * R * 1.7;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.quadraticCurveTo(x + Math.cos(a) * R, y + Math.sin(a) * R - R * 0.6, ex, ey);
-      ctx.stroke();
-      ctx.fillStyle = glow;
-      ctx.beginPath(); ctx.arc(ex, ey, ts * 0.05, 0, TAU); ctx.fill();
-    }
-  }
   ctx.fillStyle = col;
   ctx.beginPath(); ctx.arc(x, y, R * (t.terrain === "hiveQ" ? 1 : 0.78), 0, TAU); ctx.fill();
   ctx.restore();

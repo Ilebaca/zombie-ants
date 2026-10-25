@@ -144,6 +144,18 @@ export function groundReady(src: string): Promise<void> {
   });
 }
 
+/**
+ * IS THE REGION'S PICTURE ACTUALLY ON THE PLATE?
+ *
+ * What it answers is "has it LANDED", not "was one asked for" — a file that is still
+ * decoding, or one that failed, leaves the DRAWN floor underneath, and the board has to
+ * draw the rocks and the gem seams itself there (`board.ts`). Keyed on the asked-for url
+ * instead, a picture that never arrived would take the rocks off a board that has none
+ * painted in.
+ */
+export const groundPainted = (src: string | null | undefined): boolean =>
+  !!src && groundArt(src) !== null;
+
 /** Forget what has been loaded — tests only. */
 export function resetGroundArt(): void { loaded.clear(); }
 
@@ -227,7 +239,7 @@ function paintArt(
  * any of them without a table: the nine-by-nine grid of cells occupies this rectangle.
  * Measured off the forest floor's own artwork, cell edge to cell edge.
  */
-export const ART_GRID = { x: 0.0577, y: 0.2610, w: 0.8870, h: 0.4007 } as const;
+export const ART_GRID = { x: 0.0589, y: 0.2926, w: 0.8846, h: 0.4019 } as const;
 
 /**
  * Where the whole picture lands so its painted grid sits exactly on the board.

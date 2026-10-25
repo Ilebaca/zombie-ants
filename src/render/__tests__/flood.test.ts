@@ -44,7 +44,7 @@ function frame(state: GameState, at: number): Recorder {
   const scene: Scene = {
     ctx: rec.ctx, layout, state, reveal: new RevealTracker(),
     looks: { you: basicLook("fire"), ai: basicLook("leafcutter") },
-    hideCounts: true, flood, selection: null, valid: [], current: "you",
+    hideCounts: true, flood, selection: null, valid: [], current: "you", painted: false,
   };
   drawFlood(scene);
   vi.restoreAllMocks();
@@ -59,7 +59,7 @@ function paint(state: GameState, t: Tile, hideCounts: boolean): Recorder {
   drawTile({
     ctx: rec.ctx, layout, state, reveal: new RevealTracker(),
     looks: { you: basicLook("fire"), ai: basicLook("leafcutter") },
-    hideCounts, flood: null, selection: null, valid: [], current: "you",
+    hideCounts, flood: null, selection: null, valid: [], current: "you", painted: false,
   }, t);
   return rec;
 }

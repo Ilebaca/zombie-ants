@@ -10,7 +10,7 @@ import { basicLook } from "../art";
 import {
   drawFillets, drawSelection, drawSurge, drawTile, drawTileEffects, drawTrails, type Scene,
 } from "../board";
-import { MAP, hexA, ownerCol } from "../palette";
+import { COL, MAP, hexA, ownerCol } from "../palette";
 import { innerCorners } from "../shapes";
 import { makeRecorder, type Call, type Recorder } from "./recorder";
 
@@ -29,6 +29,9 @@ function scene(state: GameState, over: Partial<Scene> = {}): { s: Scene; rec: Re
     selection: null,
     valid: [],
     current: "you",
+    // The DRAWN floor, which is what every figure outside a match is on — so the rocks
+    // and the gem seams are drawn. A painted region has them in the picture.
+    painted: false,
     ...over,
   };
   return { s, rec };
@@ -255,6 +258,41 @@ describe("drawTile", () => {
     for (const layer of [MAP.gemEdge, MAP.gem, MAP.gemTop]) {
       expect(fills, `gem is missing its ${layer} layer`).toContain(layer.toLowerCase());
     }
+  });
+
+  /**
+   * A PAINTED REGION ALREADY HAS THE ROCKS AND THE GEM SEAMS IN IT.
+   *
+   * The picture is placed BY the grid (`ART_GRID`), so the artist can paint a blocked
+   * cell as bare ground and a resource as a seam in the slab, exactly where the engine
+   * puts them. Drawing ours on top is the same object twice. The DRAWN floor has neither,
+   * and the manual's figures are on it — so the marks are the drawn floor's, not deleted.
+   */
+  it("draws no rock over a region that has one painted in", () => {
+    const state = blankGame("small");
+    const t = put(state, 1, 1, { terrain: "blocked" });
+    const fills = draw(state, t, { painted: true }).fills();
+    for (const layer of [MAP.rockEdge, MAP.rock, MAP.rockTop]) {
+      expect(fills, `the rock's ${layer} layer was drawn over the picture`)
+        .not.toContain(layer.toLowerCase());
+    }
+  });
+
+  it("draws no gem over a region that has one painted in", () => {
+    const state = blankGame("small");
+    const t = put(state, 2, 2, { terrain: "resource" });
+    const fills = draw(state, t, { painted: true }).fills();
+    for (const layer of [MAP.resCell, MAP.gemEdge, MAP.gem, MAP.gemTop]) {
+      expect(fills, `the gem's ${layer} layer was drawn over the picture`)
+        .not.toContain(layer.toLowerCase());
+    }
+  });
+
+  /** And a blocked cell is still blocked — the rule never looked at the drawing. */
+  it("leaves a wild garrison's count on a painted region", () => {
+    const state = blankGame("small");
+    const t = put(state, 2, 2, { terrain: "resource", guard: 6 });
+    expect(draw(state, t, { painted: true }).texts()).toContain("6");
   });
 
   /**
@@ -1053,7 +1091,9 @@ describe("drawing the trail against a live reveal", () => {
  * as neutral. Leaving the slab on captured tiles said the prize still belonged to the board.
  */
 describe("a captured hive tile", () => {
-  const VIOLETS = ["#7c4fd0", "#9166e0", "#b14de0"];
+  // The hive's own colour. Two more violets used to be here — the slab under her and its
+  // lit face — and they are gone with it (§ THE QUEEN IS A CIRCLE AND A NUMBER).
+  const VIOLETS = ["#b14de0"];
 
   const drawn = (owner: "you" | null): string[] => {
     const s = blankGame("small");
@@ -1261,7 +1301,9 @@ describe("drawing the trail against a live reveal", () => {
  * as neutral. Leaving the slab on captured tiles said the prize still belonged to the board.
  */
 describe("a captured hive tile", () => {
-  const VIOLETS = ["#7c4fd0", "#9166e0", "#b14de0"];
+  // The hive's own colour. Two more violets used to be here — the slab under her and its
+  // lit face — and they are gone with it (§ THE QUEEN IS A CIRCLE AND A NUMBER).
+  const VIOLETS = ["#b14de0"];
 
   const drawn = (owner: "you" | null): string[] => {
     const s = blankGame("small");
@@ -1466,5 +1508,69 @@ describe("the move targets", () => {
     drawSelection(s);
     const dashes = rec.of("setLineDash").map((c) => c.args[0] as number[]);
     expect(dashes.some((d) => d.length > 0 && d.every((n) => n > 0)), "no dashed ring").toBe(true);
+  });
+});
+
+/**
+ * THE QUEEN IS A CIRCLE AND A NUMBER, AND NOTHING ELSE.
+ *
+ * She used to sit on a violet SLAB the same rounded shape a colony's own tiles are drawn
+ * as, with spore stalks erupting from the middle one — so the thing nobody owns was drawn
+ * like a unit standing on the board. Asked for directly: the circle and the garrison, and
+ * not even the tile shape.
+ */
+describe("the neutral hive", () => {
+  const SLAB = ["#7c4fd0", "#9166e0", "#a99ab8", "#bbaec8"];
+
+  const queen = (): { rec: Recorder; cells: number } => {
+    const s = blankGame("small");
+    s.hive.phase = "awake";
+    s.hive.owner = null;
+    const q = hiveCells(s).find((t) => t.terrain === "hiveQ") as { c: number; r: number };
+    put(s, q.c, q.r, { soldiers: 12 });
+    const { s: sc, rec } = scene(s);
+    drawTile(sc, tile(s, q.c, q.r));
+    return { rec, cells: 0 };
+  };
+
+  it("draws no slab under her", () => {
+    const fills = queen().rec.fills();
+    for (const v of SLAB) expect(fills, `the slab's ${v} is back`).not.toContain(v);
+    expect(fills, "the slab's drop shadow is back").not.toContain(MAP.groundShade.toLowerCase());
+  });
+
+  /**
+   * Counted rather than named: the stalks were five curves with a cap on the end of each,
+   * so putting them back takes the arcs on her tile from two to seven. The shield beside
+   * her number is drawn with curves of its own, which is why this cannot simply ask
+   * whether anything was stroked.
+   */
+  it("draws no spore stalks", () => {
+    const { rec } = queen();
+    expect(rec.of("arc").length, "the five stalk caps are back").toBeLessThan(4);
+    const glow = (COL["hive-soft"] ?? "#d9c2ff").toLowerCase();
+    const strokes = rec.calls.map((c) => (c.stroke ?? "").toLowerCase());
+    expect(strokes, "the stalks are stroked on her tile again").not.toContain(glow);
+  });
+
+  it("still draws her circle and her garrison", () => {
+    const { rec } = queen();
+    expect(rec.of("arc").length).toBeGreaterThan(0);
+    expect(rec.fills()).toContain((COL.hive ?? "#b14de0").toLowerCase());
+    expect(rec.texts()).toContain("12");
+  });
+
+  /** The queen is the big circle and a guard the small one — which is what the stalks said. */
+  it("draws the queen larger than a guard", () => {
+    const s = blankGame("small");
+    s.hive.phase = "awake";
+    const q = hiveCells(s).find((t) => t.terrain === "hiveQ") as { c: number; r: number };
+    const g = hiveCells(s).find((t) => t.terrain === "hiveG") as { c: number; r: number };
+    const radius = (c: number, r: number): number => {
+      const { s: sc, rec } = scene(s);
+      drawTile(sc, tile(s, c, r));
+      return Math.max(...rec.of("arc").map((a) => a.args[2] as number));
+    };
+    expect(radius(q.c, q.r)).toBeGreaterThan(radius(g.c, g.r));
   });
 });

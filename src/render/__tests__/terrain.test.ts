@@ -161,7 +161,7 @@ describe("scenery around the names", () => {
  */
 describe("lining a painted ground up with the board", () => {
   /** The shipped picture, and the board on a few real phones. */
-  const ART = [841, 1870] as const;
+  const ART = [842, 1867] as const;
 
   const board = (tile: number, ox = 20, oy = 100): Layout => {
     const l = new Layout(9);
@@ -179,20 +179,21 @@ describe("lining a painted ground up with the board", () => {
 
   /**
    * The one scale cannot make both sides exact, because the file's cells are not quite
-   * square — so what is held is the SIZE OF THE ERROR: a quarter of one percent of the
-   * board, which is under a pixel at every phone tile size and still inside the grout
-   * line between two painted slabs on a tablet.
+   * square — the forest floor's are 82.75 across and 83.4 down, three quarters of a
+   * percent out. So what is held is the SIZE OF THE ERROR: under half a percent of the
+   * board, which is a pixel and a bit on a phone and stays inside the grout line between
+   * two painted slabs, which is about two.
    */
   it("puts the painted grid on the board at every size", () => {
     for (const tile of [32, 36, 39, 43, 76, 120]) {
       const l = board(tile);
       const g = painted(groundAlign(l, ...ART));
-      const side = tile * 9, slack = side * 0.0025;
+      const side = tile * 9, slack = side * 0.005;
       expect(Math.abs(g.x - l.ox), `left at tile ${tile}`).toBeLessThan(slack);
       expect(Math.abs(g.y - l.oy), `top at tile ${tile}`).toBeLessThan(slack);
       expect(Math.abs(g.w - side), `width at tile ${tile}`).toBeLessThan(slack);
       expect(Math.abs(g.h - side), `height at tile ${tile}`).toBeLessThan(slack);
-      if (tile < 50) expect(Math.abs(g.w - side), `a phone at tile ${tile}`).toBeLessThan(1);
+      if (tile < 50) expect(Math.abs(g.w - side), `a phone at tile ${tile}`).toBeLessThan(2);
     }
   });
 
@@ -282,7 +283,7 @@ describe("the tile indicators", () => {
  * painted into the artwork, which is the fault this whole template exists to avoid.
  */
 describe("baking a painted ground", () => {
-  const ART = [841, 1870] as const;
+  const ART = [842, 1867] as const;
 
   /** Bake once with (or without) a picture, and hand back the PLATE's recorded calls. */
   function bake(ground: string | null): { plate: Recorder; layout: Layout } {

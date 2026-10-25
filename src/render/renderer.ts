@@ -12,6 +12,7 @@ import { RevealTracker } from "./reveal";
 import { FxLayer } from "./fx";
 import { animate } from "./animate";
 import { floodDuration, floodFade, planFlood, type Flood } from "./flood";
+import { groundPainted } from "./terrain";
 import { basicLook, type Look } from "./art";
 import { loadColors, setFactionColor } from "./palette";
 import { drawPlates, rowsOf, type Plate } from "./plates";
@@ -304,6 +305,7 @@ export class BoardRenderer {
         selection: this.selection,
         valid: this.valid,
         current: this.state.current,
+        painted: groundPainted(this.opts.ground),
       };
 
       // Two passes: every tile's solid under-band first, then every tile face on top, so a
