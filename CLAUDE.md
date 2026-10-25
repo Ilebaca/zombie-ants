@@ -2113,14 +2113,15 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
   - **THE FOLDER IS THE TABLE**, the same rule the home artwork follows:
     `src/ui/regions/rg03.webp` IS the Volcano's ground, resolved by a build-time glob. The
     NUMBER is what is read, so `rg03-volcano.webp` works too and says what it is in the
-    folder listing. Every region without one wears `ground.webp`, and today that is **all
-    ten of them**: it is the FOREST FLOOR's own painted ground, standing in for the other
-    nine until they are painted. One ground everywhere reads as art on its way, where two
-    finished regions and eight falling back to a different-looking floor reads as a game
-    broken in eight places — which is why the two that once had their own were taken out
-    again. `ground.webp` was the game's own DRAWN floor exported through the tool below
-    for as long as the drawn floor was what a match used; the rule is unchanged, only the
-    file in it.
+    folder listing. **ALL TEN ARE PAINTED NOW**, each 841 x 1870, each to the template
+    below — and the structure landed long before the art did, with every region falling
+    back to `ground.webp` for as long as it took. That fallback survives for a region
+    with no file of its own: nothing can reach it while the ten are there, which is
+    exactly why it is a HALF-SIZE copy of the forest floor rather than a full picture —
+    it has to be something rather than a broken board, and it must not cost a quarter of
+    a megabyte the service worker precaches and nobody ever sees. It has been the game's
+    own DRAWN floor exported through the tool below, and a painted placeholder, and is
+    now a small copy of a real region; the rule is unchanged, only the file in it.
   - **THE PICTURE CARRIES THE GRID, AND IS PLACED BY IT** (`ART_GRID`, `groundAlign`).
     Every region picture is painted to ONE TEMPLATE: the nine-by-nine grid of cells
     occupies a known rectangle of the file, as fractions of its width and height. The
@@ -2134,12 +2135,20 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
       DRAWN floor's now and only the drawn floor's — over a picture it is two grids on
       one board — and the machinery that solved a mark's alpha against the luminance it
       landed on (`groundLuma`, `ART_STEP`) went with it.
-    - **ONE SCALE, never two.** The forest floor's cells are 82.75 across and 83.4 down —
-      three quarters of a percent off square — and stretching a painting to hide that is
-      worse than the pixel it costs. The two scales are averaged and the grid is CENTRED
-      on the board, so the error is split between opposite edges instead of landing all
-      on one: a pixel and a bit on a phone, inside the grout line between two painted
-      slabs, which is about two.
+    - **ONE SCALE, never two.** The cells average 82.8 across and 83.7 down — a bit over
+      one percent off square — and stretching a painting to hide that is worse than the
+      pixel it costs. The two scales are averaged and the grid is CENTRED on the board,
+      so the error is split between opposite edges instead of landing all on one: a
+      couple of pixels on the widest phone, inside the grout line between two painted
+      slabs.
+    - **AND THE RECTANGLE IS THE MEAN OF ALL TEN, measured to the LINE CENTRES.** A
+      ten-line ladder is fitted to each file's luminance, which answers with the middle
+      of each painted grout line rather than the edge of the ink — and a cell boundary
+      belongs on the middle of the line between two slabs. A row-by-row detector that
+      found where the grid STARTS answered five pixels low at both ends, consistently,
+      which is the thickness of the line. The ten files agree to about two pixels, so
+      the rectangle is their mean; taking it off one would let that one file decide
+      where the other nine sit.
     - **AND THE PICTURE CARRIES THE ROCKS AND THE GEM SEAMS TOO** (`Scene.painted`). The
       artist paints a blocked cell as bare ground in the middle of the slabs and a
       resource as a seam in one, exactly where the engine puts them — so `board.ts` draws
@@ -2166,7 +2175,7 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
       screen**, so that margin is part of the template too.
     - **A REGION IS PAINTED AT THE SIZE IT IS DRAWN AT.** The plate bakes at device
       resolution, so on a 3x phone the picture is drawn about 1,300 pixels wide; the
-      forest floor's file is 842 and is upscaled to get there. Anything painted later
+      region files are 841 wide and are upscaled to get there. Anything painted later
       wants to be around 1,300 x 2,900.
   - **A PAINTED REGION REPLACES THE SOIL AND THE SCENERY BOTH.** A picture has its own
     rocks and ferns; drawing ours over them is two forests at once.
@@ -2191,14 +2200,14 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
     baking their ground at half the resolution they are drawn at.
   - **A FLAT ILLUSTRATION HIDES THIS, so do not measure it with one.** The detail in the
     frame (mean laplacian over a ground-only band) was IDENTICAL to three decimals before
-    and after — the current forest floor is flat colour with a few hard-edged rocks, and
-    there is no high-frequency content for a resample to lose. The defect is real
+    and after — it was measured against the flat placeholder floor, which is colour and a
+    few hard-edged rocks with no high-frequency content for a resample to lose. The defect is real
     regardless, and a painted or photographic region is where it would show.
   - **THE WHOLE FILE IS SEEN, so paint it to the shape of a phone.** It used to COVER a
     plate half as big again as the canvas in every direction, because the opening pulled
     a camera back through it; the camera is gone and the plate is the canvas, so the
-    picture is placed by its grid and the rest of it falls where it falls. The forest
-    floor is 842 x 1867 — about the shape of a tall phone — with the grid 29% of the way
+    picture is placed by its grid and the rest of it falls where it falls. The region
+    files are 841 x 1870 — about the shape of a tall phone — with the grid 29% of the way
     down and a little margin either side of it, and that margin is what reaches the edges
     of the screen.
   - **What crosses into `render/` is a URL**, never a region or a chapter: which picture
@@ -2213,7 +2222,7 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
   and cropping to the canvas would hand back less picture than the game has. The file type
   follows the extension — webp for anything that ships in the bundle, png for a picture
   somebody is going to paint over — and the CHEQUER IS OFF unless `grid` is `1`, because
-  what this exports is a region picture. It is what made `src/ui/regions/ground.webp`. A
+  what this exports is a region picture. It is what made the first stand-in ground. A
   TOOL, not a build step, excluded from typecheck and lint like `tools/icons.ts` because it
   imports Playwright (§11).
 - **THE PICTURE IS THE TITLE SCREEN, so it carries NO TITLE and NO WASH.** The wordmark

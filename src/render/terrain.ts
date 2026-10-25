@@ -237,9 +237,15 @@ function paintArt(
  *
  * Every region picture is painted to one template, which is what lets the renderer place
  * any of them without a table: the nine-by-nine grid of cells occupies this rectangle.
- * Measured off the forest floor's own artwork, cell edge to cell edge.
+ *
+ * MEASURED ACROSS ALL TEN REGIONS, not off one of them: a ten-line ladder fitted to each
+ * file's luminance, which answers with the CENTRE of each painted grout line rather than
+ * the edge of the ink — and a cell boundary belongs on the middle of the line between two
+ * slabs. The ten agree to about two pixels, which is the hand that painted them, so the
+ * rectangle is their mean; taking it off one file would let that file decide where the
+ * other nine sit.
  */
-export const ART_GRID = { x: 0.0589, y: 0.2926, w: 0.8846, h: 0.4019 } as const;
+export const ART_GRID = { x: 0.0572, y: 0.2939, w: 0.8857, h: 0.4027 } as const;
 
 /**
  * Where the whole picture lands so its painted grid sits exactly on the board.
