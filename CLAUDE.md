@@ -2080,21 +2080,27 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
   the rule the whole build follows (an absolute one points at nothing inside the Capacitor
   shell); and the service worker precaches everything the build emitted, so the artwork
   comes with the offline install rather than being the one thing missing from it.
-- **ONE PICTURE PER CHAPTER, AND THE FOLDER IS THE TABLE** (`src/ui/backdrops.ts`). The
-  screen a player opens every time said nothing about how far they had come, so the ground
-  follows the road: fifty chapters, fifty pictures. `src/ui/backdrops/ch07.webp` IS chapter
-  seven's — the glob resolves at BUILD time, so dropping a file in with the right name is
-  the WHOLE change. No import to add, no list to keep in step, and no way for a table to
-  name a file that is not there. The convention is `ch<NN>.webp`, two digits, 01 to 50.
-  - **EVERY CHAPTER WITHOUT ONE FALLS BACK TO `home.webp`**, which is a painted
-    PLACEHOLDER — and today that is all fifty. That is what let the structure land before
-    the art did: a build is never missing a background, and each real one starts being
-    used on the commit it arrives on. Chapters 6–10 had their own for a while and were
-    taken out with the two painted regions, for the same reason: one placeholder
-    everywhere reads as art on its way, and five finished chapters in a road of fifty
-    read as forty-five that are broken. `backdrops.test.ts` asks every chapter on the
-    road for its ground, and holds that a chapter with no file of its own answers with the
-    default rather than inventing one.
+- **ONE PICTURE PER REGION, AND THE FOLDER IS THE TABLE TWICE OVER**
+  (`src/ui/backdrops.ts`). The screen a player opens every time said nothing about how far
+  they had come, so the ground follows the road — and it follows it in the SAME five-chapter
+  bands the board's ground does, because home and the match reached from it have to be the
+  same place. `src/ui/backdrops/rg03.webp` IS the Volcano's, every chapter in region three;
+  `src/ui/backdrops/ch07.webp` IS chapter seven's alone and BEATS its region. Both globs
+  resolve at BUILD time, so dropping a file in with the right name is the WHOLE change, and
+  the NUMBER is what is read (`rg03-volcano.webp` works and says what it is in a listing).
+  - **ALL TEN REGIONS ARE PAINTED**, at 1200 x 2670 — a 3x phone at 430 CSS pixels asks
+    for about 1290, so this is sized for the device rather than for the file that arrived.
+  - **THE PER-CHAPTER TIER IS KEPT ON PURPOSE though nothing uses it.** Fifty pictures is
+    not a set somebody paints and ten is, but a single rung that deserves its own should
+    cost one file rather than a change of shape here. With the folder empty there is no
+    precedence to exercise, and a test that loops over an empty list passes against a
+    mutation reversing it — so the test asserts the folder IS empty and fails on the day
+    somebody adds the first one, which is the day to write the real precedence test. Same
+    shape as the `SUPPORT_EMAIL` placeholder test.
+  - **ANYTHING WITH NEITHER FALLS BACK TO `home.webp`**, a painted PLACEHOLDER. That is
+    what let the structure land before the art did, when all fifty wore it; nothing reaches
+    it on the road any more, and it stays because `skin.css` names it directly — the screen
+    is never bare if the script never runs.
   - **It is set INLINE on `#home`, from the chapter the banner already names.** Fifty
     rules in a stylesheet for fifty files the stylesheet cannot see is a second table to
     keep in step — and `skin.css` still carries the default, so the screen is never bare
