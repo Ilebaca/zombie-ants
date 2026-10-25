@@ -53,9 +53,10 @@ describe("the ground a match is played on", () => {
   });
 
   /**
-   * THE FALLBACK IS THE POINT OF THE STRUCTURE. Until a region is painted it wears the
-   * placeholder, so the feature can land — and ship — long before the art does. Every
-   * one of the ten wears it today, which is exactly the state this has to survive.
+   * THE FALLBACK IS THE POINT OF THE STRUCTURE. A region with no file of its own wears
+   * the placeholder, which is what let the feature land — and ship — long before the art
+   * did. All ten are painted now, so this passes by having nothing to check; the test
+   * below is the one that would notice a file going missing.
    */
   it("falls back to the placeholder for a region that has none", () => {
     expect(regionsPainted(), "the folder and the table disagree").toBe(painted().length);
@@ -64,6 +65,18 @@ describe("the ground a match is played on", () => {
       if (!own) {
         expect(regionArt(at), `region ${at} invented a picture`).toBe(DEFAULT_GROUND);
       }
+    }
+  });
+
+  /**
+   * AND ALL TEN ARE PAINTED, which is the claim the folder makes. A region whose file is
+   * deleted or misnamed falls silently back to the placeholder — the board still draws,
+   * so nothing else in the suite would say a word about it.
+   */
+  it("has a picture for every region", () => {
+    expect(regionsPainted()).toBe(REGIONS.length);
+    for (let at = 1; at <= REGIONS.length; at++) {
+      expect(regionArt(at), `${regionName(at)} is not painted`).not.toBe(DEFAULT_GROUND);
     }
   });
 

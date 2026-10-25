@@ -15,19 +15,20 @@
  * time — so dropping a file in with the right name is the whole change. The number is what
  * is read, so `rg03-volcano.webp` works too and says what it is in the folder listing.
  *
- * EVERY REGION WITHOUT A PICTURE WEARS `ground.webp`, and today that is ALL TEN of them:
- * the file is a painted PLACEHOLDER, one clearing in the undergrowth, and it stands in
- * until each region's own ground is painted. It was the game's own drawn floor exported
- * through `tools/mapshot.ts` for as long as the drawn floor was what a match used; a
- * placeholder that looks like the finished thing is a better answer than one that looks
- * like the thing it replaced, because every region now reads as art that is on its way
- * rather than as art that is missing.
+ * ALL TEN ARE PAINTED. `ground.webp` survives as the fallback for a region that has no
+ * file of its own — nothing can reach it while the ten are there, which is precisely why
+ * it is a HALF-SIZE copy of the forest floor rather than a full picture: it has to be
+ * something rather than a broken board, and it must not cost a quarter of a megabyte the
+ * service worker precaches and nobody ever sees. An eleventh region added without art
+ * would wear it, soft, and read as ground rather than as nothing.
  *
- * WHAT THE PICTURE IS NOT is the grid. The chequer that marks the cells is drawn OVER
- * whatever ground is underneath, because the tile size depends on the screen — squares
- * baked into a picture would line up on one phone and on no other. That is why the
- * placeholder has no chequer in it, and why one painted for a region must not have one
- * either.
+ * THE PICTURE CARRIES THE GRID. Every region is painted to one template — the
+ * nine-by-nine grid of cells sits in a known rectangle of the file (`ART_GRID` in
+ * `render/terrain.ts`) — and the renderer scales the picture until those painted cells
+ * are the size of the board's. So the squares are IN the artwork, along with the rocks
+ * and the gem seams, and the game draws none of them over a painted region. That is the
+ * reverse of the rule that stood here while a picture was just ground, when nothing could
+ * say where in a file the cells would land.
  */
 import { REGIONS, regionOf } from "../platform";
 import fallback from "./regions/ground.webp";
@@ -53,10 +54,9 @@ const PAINTED: Record<number, string> = (() => {
 })();
 
 /**
- * The placeholder ground — every region's fallback, and at the moment every region's
- * ground. Named for the job rather than for the picture: what is in the file will change
- * as the real grounds land, and the one thing that will not is that something has to be
- * there when a region has nothing of its own.
+ * The fallback ground. Named for the job rather than for the picture: what is in the file
+ * has already changed once as the real grounds landed, and the one thing that will not is
+ * that something has to be there when a region has nothing of its own.
  */
 export const DEFAULT_GROUND = fallback;
 
