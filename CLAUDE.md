@@ -1219,8 +1219,13 @@ them and the halves part onto the board.
 **WHO IS PLAYING is ON THE GROUND** (`render/plates.ts`). The header counted two armies
 and called them "You" and "Enemy" — a scoreboard, not an opponent — and the colony, the
 number the whole game is played for (§8a), was never once in front of the player while they
-were playing for it. A mark and two words on the forest floor: the colony's own head, the
-name, and its size.
+were playing for it. Two words on the ground: the name, and its size.
+- **THERE WAS A HEAD AT THE START OF EACH ROW AND IT IS GONE**, asked for directly. It
+  drew the colony that side was fielding, wearing its skin — a third thing on a line that
+  is already a name and a number, sitting on a painted plaque that is carrying marks of
+  its own now (see the seam counter below). What the head said is on the board itself, in
+  the colony's colour, for the whole match. `Plate` lost its `species` field with it, and
+  `drawPlates` its `looks`.
 - **It is drawn, not laid out.** Two DOM strips above and below the board was two more
   pieces of chrome stacked on a screen that already has a header, a turn bar and an action
   row — and the canvas had to be given its own box, because `BoardRenderer` measures the
@@ -1253,6 +1258,39 @@ name, and its size.
   name from the same pool the Leaderboard draws its rivals from, and a colony near the
   player's own, which is what a ranked ladder would serve them. Keyed by the match seed, so
   it does not change under the player mid-match.
+- **AND HOW FAR OUT EACH ROW SITS IS A DIFFERENT NUMBER AT EACH EDGE**, because the
+  painted plaque is. One gap for both put the enemy's name half on top of the stone it is
+  written above.
+
+**THE FOUR SOCKETS ON THE PLAQUE COUNT THE SEAMS** (`drawSockets`, `seamsHeld` in
+`render/plates.ts`). Every region's ground has a stone plaque painted onto each edge of the
+board with four empty diamond sockets cut into it. They are the only thing anywhere that
+says who is winning the RESOURCES — a seam pays three a turn where a plain stable pays one
+(§8), and until now the only way to know was to find all four on the grid and read their
+colours. One socket lights cyan, left to right, per seam that side holds, and goes dark the
+moment the tile is lost.
+- **FOUR IS THE ARTWORK'S NUMBER, not the map's.** The sockets are painted, so the count
+  cannot be read off the board at runtime — and a map with three seams would leave one
+  that can never come on, while a fifth would light nothing. A test holds `buildMap` to
+  exactly `SOCKETS` resource tiles, which is what stops the two drifting.
+- **IT IS READ OFF THE BOARD, never tallied.** `seamsHeld` counts owned resource tiles on
+  the frame it draws, so losing one puts the light out with no event to subscribe to and
+  nothing to keep in step.
+- **The geometry is in TILES from the board's own edges**, measured off the ten region
+  files and then checked by drawing the pips over the artwork in a browser at a phone's
+  size. That frame is the one the picture and the board agree on (§ THE PICTURE CARRIES
+  THE GRID) — the picture is scaled until its painted cells are the board's, so a pip
+  placed in tiles lands on the painted socket on every screen and in every region. It is
+  also why the two edges carry different numbers: the plaques are not painted at quite
+  the same distance out, and forcing them symmetric put every pip a couple of pixels off
+  its socket at one end.
+- **The empty sockets are the GROUND's.** On a painted region they are already cut into
+  the stone and only the lit ones are drawn; on the game's own drawn floor there is no
+  plaque at all, so the dark ones are drawn too — four pips with nothing behind them read
+  as decoration rather than as a counter of four. Same flag as the rocks and the seams
+  (`Scene.painted`), and it asks whether the picture has LANDED.
+- **It goes under the finale with the names**, for the same reason: the winner's colour
+  takes the whole board.
 
 **THE ABILITY CARD HOLDS THE MATCH STILL** (`showSpellCard`, `holdFor`, `.match.casting`).
 It slid in, held and slid out and was marked "purely decorative", which was two faults at
@@ -1867,8 +1905,9 @@ that costs an opponent nothing.
   ran on the bare species and quietly undid the colour `startMatch` had just set, so a
   skinned colony wore its own nest shape in the base species' colour. `looksOf` settles the
   looks BEFORE `paint()`. Anything else that calls `setFactionColor` has the same trap.
-- **The plate beside the nest wears it too.** It was the one mark left on the board still
-  drawn in the species' colour — a blue colony with an orange face beside its name.
+- **The plate beside the nest wore it too**, and that head is gone now (§ WHO IS PLAYING):
+  it was the one mark left on the board still drawn in the species' colour, and the fix
+  was to have it wear the look before the row itself was removed.
 - **The AI always fields the basic look.** Not a fairness rule (a skin cannot affect a
   fight) — it is so an opponent reads as the species it is, and so the one colony on screen
   wearing something found is the player's.
