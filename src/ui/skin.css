@@ -659,7 +659,7 @@ footer { background: var(--bg1); }
    scroll to do it. Portrait down, padding in, and the whole card earns
    its place instead of filling the first screenful. */
 .dhero { padding: 12px 12px 12px; margin-bottom: 10px; }
-.dhero canvas { width: 96px; height: 96px; }
+.dhero canvas, .dhero img { width: 96px; height: 96px; }
 .dhero .dname { font-size: 19px; }
 
 /* Segmented control: the selected tab is a raised pill, not just a colour. */
@@ -710,7 +710,7 @@ footer { background: var(--bg1); }
   text-align: left;
   padding: 10px 14px;
 }
-.mp canvas { width: 76px; height: 76px; flex: 0 0 auto; }
+.mp canvas, .mp img { width: 76px; height: 76px; flex: 0 0 auto; }
 .mp .snm { font-size: 15px; }
 .mp, .shp, .sp { border-color: transparent; }
 
@@ -729,7 +729,7 @@ footer { background: var(--bg1); }
    the portrait grows into it. */
 .pickslider { flex: 1; min-height: 0; align-items: center; }
 .sp { padding: 20px 14px 22px; }
-.sp .face canvas { width: 132px; height: 132px; }
+.sp .face canvas, .sp .face img { width: 132px; height: 132px; }
 .sp .nm { font-size: 20px; }
 .sp .ds, .sp .tr { font-size: 13px; }
 .sp .mods { font-size: 15px; }
@@ -2591,7 +2591,7 @@ button:not(.playbtn):active,
   border: 1px solid var(--line);
 }
 .pf-face { position: relative; width: 76px; height: 76px; }
-.pf-face canvas { display: block; width: 76px; height: 76px; }
+.pf-face canvas, .pf-face img { display: block; width: 76px; height: 76px; }
 /* The level rides the portrait rather than sitting beside it: one object,
    and the number is the thing that changes. */
 .pf-level {
@@ -2699,7 +2699,7 @@ button:not(.playbtn):active,
    on ONE line: a strip that wraps stops reading as a set and starts reading as a list. */
 .pf-faces { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
 .pf-head { display: block; width: 22px; height: 22px; }
-.pf-head canvas { display: block; width: 22px; height: 22px; }
+.pf-head canvas, .pf-head img { display: block; width: 22px; height: 22px; }
 .pf-head.off { opacity: .26; filter: grayscale(1); }
 
 /* The one row that is a door and not a count. */
@@ -3541,7 +3541,7 @@ button:not(.playbtn):active,
   width: 30px;
   height: 30px;
 }
-.lbface canvas { display: block; width: 30px; height: 30px; }
+.lbface canvas, .lbface img { display: block; width: 30px; height: 30px; }
 
 /* The top three are the only ranks worth marking. Below that a number is a
    number, and colouring all fifteen would mark none of them. */
@@ -3681,7 +3681,7 @@ button:not(.playbtn):active,
 }
 /* Drawn at twice the size it is shown at, so it stays sharp on a phone. */
 .frface { display: grid; place-items: center; width: 36px; height: 36px; }
-.frface canvas { display: block; width: 36px; height: 36px; }
+.frface canvas, .frface img { display: block; width: 36px; height: 36px; }
 .frmid { min-width: 0; display: grid; gap: 1px; }
 .frname {
   font-size: 13px;
@@ -4687,7 +4687,7 @@ button:not(.playbtn):active,
   border-bottom: 1px solid var(--line);
 }
 .invface { width: 34px; height: 34px; flex: 0 0 34px; }
-.invface canvas { width: 100%; height: 100%; display: block; }
+.invface canvas, .invface img { width: 100%; height: 100%; display: block; }
 .invmid { flex: 1; min-width: 0; }
 .invwho {
   display: flex;
@@ -4773,7 +4773,10 @@ button:not(.playbtn):active,
 
 /* Drawn at twice the size it is shown at, so it stays sharp on a phone. */
 .histface { display: grid; place-items: center; width: 38px; height: 38px; }
-.histface canvas { display: block; width: 38px; height: 38px; }
+/* BOTH TAGS. `antPortrait` answers with an <img> for a painted colony and a <canvas> for
+   a drawn one, so a box that sizes only one of them lets the other render at the file's
+   own size — which here was twice the row's height, over the rows above and below. */
+.histface canvas, .histface img { display: block; width: 38px; height: 38px; }
 
 .histmid { min-width: 0; display: grid; gap: 2px; }
 .histwho {

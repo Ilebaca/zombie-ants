@@ -7,17 +7,37 @@
  * would break silently — the list would still show the row, and opening it would show a
  * different game.
  */
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
   MemoryStore, ProfileStore, TOUR_VERSION, canReplay,
 } from "../../platform";
 import type { MatchLog } from "../../platform";
 import type { MatchSetup, Move } from "../../engine";
 import { buildHistory, ReplayScreen } from "../history";
+import { groundFor } from "../regions";
+
+/**
+ * The real renderer, with every set of options it is built with kept.
+ *
+ * A replay has to be dressed in the ground the match was played on, and the only place
+ * that is observable is the argument it is handed — so this wraps the class rather than
+ * replacing it, and every other test in the file still drives the real thing.
+ */
+const spy = vi.hoisted(() => ({ built: [] as Array<{ ground?: string | null }> }));
+vi.mock("../../render", async (orig) => {
+  const real = await orig<typeof import("../../render")>();
+  class Watched extends real.BoardRenderer {
+    constructor(...args: ConstructorParameters<typeof real.BoardRenderer>) {
+      super(...args);
+      spy.built.push(args[2] ?? {});
+    }
+  }
+  return { ...real, BoardRenderer: Watched };
+});
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
 
-beforeEach(() => { document.body.replaceChildren(); });
+beforeEach(() => { document.body.replaceChildren(); spy.built.length = 0; });
 
 const setup: MatchSetup = { map: "small", species: { you: "fire", ai: "ghost" }, seed: 31 };
 
@@ -182,5 +202,42 @@ describe("what a replay rests on", () => {
   it("knows which entries carry a record at all", () => {
     expect(canReplay(log())).toBe(false);
     expect(canReplay(log({ record: { setup, moves: [{ do: "end" }] } }))).toBe(true);
+  });
+});
+
+/**
+ * THE GROUND IT WAS PLAYED ON.
+ *
+ * The replay was given no picture at all, so every match in the list was watched back on
+ * the game's own DRAWN forest floor however far down the road it had actually been
+ * fought — reported as "playback shows old map". The chapter comes off the colony the
+ * match OPENED with, which is what the road said at the time.
+ */
+describe("the ground a replay is watched on", () => {
+  const groundOf = (colonyBefore: number): string | null | undefined => {
+    const screen = new ReplayScreen(document.body, {
+      log: log({ colonyBefore, record: { setup, moves: [{ do: "end" }] } }),
+      onBack: () => {},
+    });
+    const opts = spy.built.at(-1);
+    screen.destroy();
+    return opts?.ground;
+  };
+
+  it("is the region the match was played in, not the drawn floor", () => {
+    expect(groundOf(100), "the replay was handed no picture").toBeTruthy();
+  });
+
+  /**
+   * Two matches a road apart must not be watched on one ground. This is what fails if the
+   * chapter is read off anything constant — today's colony, or the first rung.
+   */
+  it("is a different picture for a match played a road apart", () => {
+    expect(groundOf(4_000_000)).not.toBe(groundOf(100));
+  });
+
+  /** And it is the SAME picture the rest of the app would serve that chapter. */
+  it("agrees with the region lookup every other screen uses", () => {
+    expect(groundOf(4_000_000)).toBe(groundFor(50));
   });
 });
