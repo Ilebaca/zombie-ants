@@ -2355,9 +2355,43 @@ game was starting; it looked broken for a moment.
   builds arrives at the moment the app does, which is the moment this stops being needed;
   and `skin.css` is emitted by the bundler, which is one more file to wait for. The one
   thing a cover must not do is wait.
-- **It draws the wordmark and loads nothing.** An `<img>` is a second request that can land
-  after the thing it was meant to cover. The type matches home's own mark, so the cover
-  hands over rather than being replaced.
+- **IT CARRIES A PICTURE, AND THE PICTURE IS THE ONE THING IT DOES NOT DEPEND ON.** It
+  used to draw the wordmark and load nothing, on the argument that a second request can
+  land after the thing it was meant to cover — which is true, and is why `splash.webp` is
+  a background LAYER over the soil colour rather than the cover itself. The wordmark, the
+  bar and the ground are painted from the first frame exactly as before; the artwork
+  appears under them whenever it arrives, and a file that never arrives leaves the cover
+  that shipped before there was one. The type matches home's own mark, so the cover hands
+  over rather than being replaced.
+  - **It is in `public/`, not bundled**, for the reason the icon is: the DOCUMENT names it,
+    in a style block that runs before any of our script, so it cannot carry a
+    content-hashed filename. It is precached by name in `vite.config.ts` beside the icons
+    and the fonts — the cover is up for two seconds on EVERY launch, and the second one
+    should have the picture on the first frame rather than a second of bare soil.
+  - **`skin.css` HAS TO EXEMPT IT**, and this is the trap. That sheet clears every
+    background image in the app with `!important` (§10), and it lands while the cover is
+    still up — so without `:not(#splash)` the picture AND its scrim are stripped off in
+    front of the player, silently. The blanket's own comment says adding one means adding
+    it there; this is the third.
+  - **The wordmark holds the FOOT of the screen under a gradient**, rather than the middle.
+    The picture's subject is in the middle and the name sat on top of it, and the scrim is
+    the only thing making pale type legible over artwork nobody has measured a contrast
+    ratio against.
+- **IT IS UP FOR AT LEAST TWO SECONDS, HOWEVER FAST THE GAME LOADS** (`MIN_MS` in
+  `platform/splash.ts`). Asked for directly, and the artwork is what makes it worth having:
+  a painted cover that flashes past in two hundred milliseconds on a warm cache is a
+  picture nobody sees and a game that looks like it stuttered on the way in. It also hides
+  the SPREAD — the same boot is a blink on a desktop and most of a second on a phone — so
+  the game opens the same way every time. Measured in a browser at **2.28s** door to door,
+  cold and warm alike, which is the floor plus the fade.
+  - **It is a FLOOR, not a delay.** A boot that takes longer still takes longer, and
+    nothing waits on it but the cover coming down.
+  - **The remainder is worked out ONCE, never re-checked on a tick.** A loop that asked
+    `performance.now()` again each time would never finish under a test's fake clock, where
+    the timers advance and `performance.now()` need not.
+  - **`dropSplash` has no floor**, and that is the point of it being a second function: two
+    seconds of looking at a picture on top of the one screen that says what went wrong is
+    the fault the watchdog exists to prevent, arrived at deliberately.
 - **The bar is INDETERMINATE on purpose.** The browser does not tell a page how much of its
   own script has arrived, so there is no honest percentage — and a fake one that jumps to
   90% and waits is worse than a sweep that only says "working".
@@ -2938,8 +2972,10 @@ How to check a screen really matches, without being able to see it:
   stacked down a screen it reads as a shadow falling out from under everything, which is
   how it was reported. One rule does the removing (`*:not(#home), *::before, *::after
   { background-image: none !important }`), because a gradient cannot be selected for and
-  there is no way to flatten everything element by element without missing some; `#home` is
-  exempt because the artwork is a background image. Every radius came down one step with it
+  there is no way to flatten everything element by element without missing some. Three
+  things are exempt and each has a real picture on it: `#home`, `#luckyhatch` and
+  `#splash` — the last being the cover in `index.html`, which is on screen before this
+  sheet is even fetched and for a beat afterwards. Every radius came down one step with it
   (`--r-lg` 20→14, `--r-md` 14→10, and the literals with them); pills stay pills.
   - **The restores sit near the TOP of `skin.css`, not the end.** Each legacy rule whose
     gradient the blanket nulls needs its colour back, but at the end of the file that block

@@ -49,10 +49,24 @@
   emitted by the bundler and is another file to wait for — the one thing a cover must not
   do is wait.
 
-  IT IS THE WORDMARK, DRAWN, with no image and no icon file. Everything else in this game
-  is drawn by the code that owns it, and an <img> here would be a second request that can
-  land after the thing it was meant to cover. The type matches the home screen's own mark
-  so the cover hands over to it rather than being replaced by it.
+  IT IS A PICTURE AND THE WORDMARK, and the picture is the one thing here the cover does
+  not DEPEND on. `splash.webp` is a second request, which used to be the argument against
+  having one at all — it can land after the thing it was meant to cover. So it is a
+  background LAYER over the soil colour, never the cover itself: the wordmark, the bar and
+  the ground are drawn from the first frame exactly as they always were, and the artwork
+  appears underneath them whenever it arrives. A picture that never lands leaves the cover
+  that shipped before it.
+
+  It is in `public/` rather than bundled, for the reason the icon is (tools/icons.ts): the
+  DOCUMENT names it, in a style block that runs before any of our script, so it cannot
+  carry a content-hashed filename. The service worker precaches it by name, so the second
+  launch has it before the first frame.
+
+  The wordmark holds the FOOT of the screen under a scrim, rather than the middle. The
+  picture's subject is in the middle and the name sat on top of it; the gradient is the
+  only thing making the type legible over artwork nobody has measured contrast against.
+  The type matches the home screen's own mark so the cover hands over to it rather than
+  being replaced by it.
 
   THE BAR IS INDETERMINATE ON PURPOSE. There is no honest percentage to show — the browser
   does not tell a page how much of its own script has arrived — and a fake one that jumps
@@ -70,9 +84,18 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
     gap: 22px;
-    background: #0e1a12;
+    padding-bottom: max(64px, 13vh);
+    /* THE COLOUR IS THE COVER AND THE PICTURE IS A LAYER OVER IT. Written as one
+       declaration so a file that has not arrived — or never will — leaves the cover
+       that shipped before there was one. The gradient is what the wordmark is read
+       against; `skin.css` exempts `#splash` from its blanket background-image reset,
+       or both layers would be cleared the moment the stylesheet lands. */
+    background:
+      linear-gradient(180deg, rgba(14, 26, 18, 0) 44%, rgba(14, 26, 18, .78) 74%, rgba(14, 26, 18, .97) 100%),
+      url(./splash.webp) center / cover no-repeat,
+      #0e1a12;
     color: #eaf3ea;
     font-family: Nunito, system-ui, -apple-system, "Segoe UI", sans-serif;
     transition: opacity .28s ease;

@@ -153,6 +153,11 @@ export default defineConfig({
           // launch offline should not be the one that renders in Arial.
           "./fonts/nunito-latin.woff2",
           "./fonts/nunito-latin-ext.woff2",
+          // THE COVER'S ARTWORK, named by `index.html` itself rather than bundled, so it
+          // is listed by hand like the icons. Precached, because the cover holds for two
+          // seconds on EVERY launch and the second one should have the picture from the
+          // first frame rather than a second of soil.
+          "./splash.webp",
           // Everything the build just emitted — EXCEPT `version.json`, which the worker
           // deliberately never answers from a cache (see below). Precaching it would be a
           // file kept for a request that can never reach it.

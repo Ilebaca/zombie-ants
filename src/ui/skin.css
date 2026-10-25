@@ -132,11 +132,17 @@
    TWO SCREENS ARE EXEMPT, and they are the two that are a PICTURE rather than
    a column of cards: `#home` and `#luckyhatch`. Everything else in the app is
    drawn, so a background image anywhere else is either a gradient this rule is
-   here to remove or a file that should not exist. Adding a third means adding
-   it here as well, or the declaration is cleared with `!important` and never
-   once takes effect — silently, which is the whole fault this blanket creates.
+   here to remove or a file that should not exist. Adding one means adding it
+   here as well, or the declaration is cleared with `!important` and never once
+   takes effect — silently, which is the whole fault this blanket creates.
+
+   `#splash` is the THIRD, and it is not one of the app's screens at all: it is
+   the cover in `index.html`, carrying its artwork and the scrim the wordmark is
+   read against. It is on screen for the second or two before this stylesheet
+   has even been fetched — and for a beat afterwards, which is exactly long
+   enough for the blanket to strip the picture off it in front of the player.
    ====================================================================== */
-*:not(#home):not(#luckyhatch), *::before, *::after { background-image: none !important; }
+*:not(#home):not(#luckyhatch):not(#splash), *::before, *::after { background-image: none !important; }
 
 /* Surfaces the legacy sheet fills with a gradient and this file does not
    otherwise dress. */
