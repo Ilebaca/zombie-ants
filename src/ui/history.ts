@@ -14,9 +14,10 @@ import { applyMove, openingBoard, restore, snapshot } from "../engine";
 import type { GameState, MatchRecord, Player } from "../engine";
 import { MAPS, SPECIES } from "../engine";
 import { BoardRenderer } from "../render";
-import { canReplay, compact, outcomeOf } from "../platform";
+import { canReplay, chapterOf, compact, outcomeOf } from "../platform";
 import type { MatchLog, ProfileStore } from "../platform";
 import { antPortrait, el, screenEl, screenHeader } from "./chrome";
+import { groundFor } from "./regions";
 import { icon } from "./icons";
 
 /* ---------------------------------------------------------------------- THE LIST */
@@ -169,6 +170,16 @@ export class ReplayScreen {
     // for twice. The renderer only plays it when it is told to.
     this.renderer = new BoardRenderer(this.canvas, this.state, {
       species: this.record.setup.species,
+      // THE GROUND IT WAS PLAYED ON, not the ground the player is standing on now. A
+      // replay opened from a later chapter was showing the game's own DRAWN forest floor
+      // — the renderer was given no picture at all — so every match in the list looked
+      // like it had been fought somewhere the player had long since walked past. The
+      // chapter comes off the colony the match OPENED with, which is what the road said
+      // at the time; reading it off today's colony would re-dress old matches in the
+      // region the player happens to be in. The lookup is done HERE because which
+      // picture belongs to which stretch of the road is a progression decision and
+      // `render/` may not read one (§3).
+      ground: groundFor(chapterOf(opts.log.colonyBefore)),
     });
     host.appendChild(this.root);
     this.renderer.start();

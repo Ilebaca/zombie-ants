@@ -1130,6 +1130,15 @@ A test holds `.cname` as the card's LAST child, so nothing can creep back under 
 - **`antPortrait` in `chrome.ts` owns the picture.** It was written out four times, which
   is four places to fix when the drawing changes (§7). A face drawn at twice the size it is
   shown at and scaled by the stylesheet is what keeps it sharp on a phone.
+- **AND IT ANSWERS WITH TWO DIFFERENT TAGS, so a box has to size BOTH.** A colony with a
+  painted face comes back as an `<img>` and one without as a `<canvas>` — so every
+  `X canvas { width: … }` written for a portrait box sized half of them and let the rest
+  render at the file's own size. On the match history that was a face twice the row's
+  height, lying over the rows above and below and the text beside it, on every row.
+  Nine rules in `skin.css` name both now, and `css-sanity.test.ts` fails on a portrait box
+  that names only one — the exceptions are the three surfaces that are ALWAYS drawn (the
+  setup stage, the replay stage, the news picture), where an `img` selector would match
+  nothing.
 
 **CHALLENGING A FRIEND** (`platform/duels.ts`, `ui/duel.ts`, the row in `ui/friends.ts`).
 A ranked match is against whoever the finder seats; a DUEL is against a named person. It is
@@ -2047,6 +2056,14 @@ is the same twenty bytes a server would verify a result from.
   the remainder of the record onto a board that has already diverged.
 - **No opening.** `playIntro()` is a match STARTING; replaying it every time a row is
   opened is an animation nobody asked for twice.
+- **IT IS WATCHED ON THE GROUND IT WAS PLAYED ON.** The replay was handed no picture at
+  all, so every match in the list came back on the game's own DRAWN forest floor however
+  far down the road it had been fought — reported as "playback shows old map". The chapter
+  comes off `colonyBefore`, the colony the match OPENED with, which is what the road said
+  at the time; today's colony would re-dress every old match in the region the player
+  happens to be standing in now. The lookup is done in the SCREEN, because which picture
+  belongs to which stretch of the road is a progression decision and `render/` may not
+  read one (§3).
 - **`normalise` destructures the record OUT before rebuilding an entry.** Spreading the
   stored object copied a malformed `record` straight through, and re-adding a good one
   never removed it — so `canReplay` read `.moves` off a string. Any normaliser that both

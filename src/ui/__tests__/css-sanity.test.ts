@@ -247,3 +247,39 @@ describe("the app is on one vertical rhythm", () => {
     }
   });
 });
+
+/**
+ * A PORTRAIT IS EITHER A PAINTING OR A DRAWING, AND A BOX HAS TO SIZE BOTH.
+ *
+ * `antPortrait` answers with an `<img>` when the colony has a painted face and a
+ * `<canvas>` when it has to be drawn — so a box that sizes only `canvas` sizes half of
+ * them, and the other half render at whatever the file is. That is exactly what happened
+ * to the match history: the face came out at twice the row's height, overlapping the rows
+ * above and below and the text beside it, on every row in the list.
+ *
+ * The four surfaces below are the ones that are ALWAYS drawn — a board, a replay stage, a
+ * news picture — and can never be handed an image, so naming one there would be a
+ * selector that matches nothing.
+ */
+describe("a box that sizes a portrait sizes both kinds", () => {
+  const DRAWN_ONLY = [".setupstage", ".replaystage", ".newshero"];
+
+  it("names img wherever it names canvas", () => {
+    const css = code(read("skin.css"));
+    const bad: string[] = [];
+    for (const m of css.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+      const selector = (m[1] ?? "").trim();
+      const body = m[2] ?? "";
+      if (!/(^|[;{])\s*width\s*:/.test(body)) continue;
+      // A child combinator is the same reach as a descendant one for this question, so
+      // `.ccard canvas, .ccard > img` counts as a pair rather than as a miss.
+      const parts = selector.split(",").map((s) => s.trim().replace(/\s*>\s*/g, " "));
+      for (const part of parts) {
+        if (!/\bcanvas$/.test(part)) continue;
+        if (DRAWN_ONLY.some((drawn) => part.includes(drawn))) continue;
+        if (!parts.includes(part.replace(/\bcanvas$/, "img"))) bad.push(part);
+      }
+    }
+    expect(bad, "these boxes size a drawn portrait and not a painted one").toEqual([]);
+  });
+});
