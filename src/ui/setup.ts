@@ -146,6 +146,15 @@ export function buildSetup(o: SetupOptions): HTMLElement {
     // without this the screen keeps the drawn ground for ever while the match it opens
     // plays on the painting. The redraw reads the choices LIVE, or a picture arriving
     // after the player has stepped on would put the previous formation back.
+    //
+    // THE REDRAW IS WHY THIS SCREEN USED TO BLINK, and the fix is not here. Opening it
+    // for the first time showed one frame of the game's own DRAWN forest floor and then
+    // the region — reported exactly that way. WAITING for the picture instead was tried
+    // and is worse: an image element that never fires either event (jsdom, and any
+    // browser that simply never answers) leaves the board blank for ever, and a blank
+    // square reads as broken where a redraw reads as loading. So the picture is asked
+    // for a screen EARLIER, on home (`App.renderHome`), and by the time PLAY is pressed
+    // it is already in hand — the first draw gets it and there is nothing to redraw.
     void groundReady(art).then(() => {
       if (shot.isConnected) drawBoard(shot, o.choices.shape, o.choices.species, art);
     });

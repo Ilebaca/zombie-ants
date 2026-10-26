@@ -835,6 +835,20 @@ one that survived.
     drawn ONCE, and the file always lands a beat after that one draw — so without a redraw
     the screen keeps the drawn ground for ever. The redraw reads the choices LIVE, or a
     picture arriving after the player has stepped on would put the previous formation back.
+  - **AND HOME FETCHES THAT PICTURE A SCREEN EARLY** (`groundReady` in `App.renderHome`).
+    The redraw above is correct and still reads as a fault: opening the setup screen for
+    the first time showed one frame of the game's own DRAWN forest floor and then the
+    region, reported as "it blinks another map for a moment". Nothing on the setup screen
+    can fix that — what fixes it is the picture already being in hand when the screen
+    opens, and home is where PLAY is pressed. Fire and forget, and idempotent: the loader
+    holds one element per url for the life of the page, so the rebuild home does on every
+    deck slide costs nothing.
+    - **WAITING for the picture instead was tried and is WORSE.** Holding the first draw
+      until `groundReady` resolves means an image element that never fires either event
+      leaves the board blank for ever — which is every jsdom test (two failed at once,
+      which is how this was caught) and any browser that simply never answers. A blank
+      square reads as broken where a redraw reads as loading, which is the rule the
+      granary pill and the hatch button already follow.
   - **The manual's figures and the news pictures leave `art` unset on purpose.** They
     illustrate a RULE, which is true on every ground there is; dressing one in a chapter's
     artwork would say the rule belongs to that chapter.
