@@ -1,7 +1,7 @@
 /**
  * THE LUCKY HATCH.
  *
- * One egg in the middle of the screen, the larva you have above it, and a button under it.
+ * The painting in the middle of the screen, the larva you have above it, a button under it.
  * That is deliberately the whole interface: the hatch does exactly one thing, and every
  * control that is not "hatch" is a control competing with it.
  *
@@ -10,7 +10,7 @@
  * mycelium and a colony; this pays the one thing there is no other way to get.
  *
  * THE MOMENT IS THE FEATURE. A roll that resolves instantly is a number changing, and a
- * collection nobody feels collecting is a spreadsheet. So the egg rocks, then the tier's
+ * collection nobody feels collecting is a spreadsheet. So the roll HOLDS, then the tier's
  * colour comes UP THROUGH IT before the trait is named — the colour is the answer, and it
  * arrives first, which is the whole reason the tiers have colours at all.
  */
@@ -24,7 +24,7 @@ import { antPortrait, el, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 import { buildOdds } from "./odds";
 
-/** How long the egg rocks before it gives an answer. */
+/** How long the roll is held before it gives an answer. */
 const SHAKE_MS = 900;
 
 export interface HatchOptions {
@@ -93,7 +93,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
   const shut = (): HTMLElement => {
     const box = el("div", "hatchshut");
     box.id = "hatchShut";
-    const mark = el("div", "hatchegg locked");
+    const mark = el("div", "hatchlock");
     mark.appendChild(icon("lock", 60));
     box.append(
       mark,
@@ -172,26 +172,28 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     return row;
   };
 
-  /* --------------------------------------------------------------------- THE EGG */
+  /* ------------------------------------------------------------------- THE STAGE */
 
+  /**
+   * THE MIDDLE IS THE PAINTING, AND NOTHING ELSE.
+   *
+   * There was a drawn EGG here — a gold mark on a dashed gold-tinted disc — and a line of
+   * copy under it saying what was in the hatch. Both are gone, asked for directly: the
+   * screen's artwork already has a larva painted in the middle of it, so the mark sat on
+   * top of the picture it was duplicating, and a sentence under that was a third thing
+   * saying what the two chips of odds below already say.
+   *
+   * WHAT IT COST is the rocking. The egg was what moved while the roll resolved, and the
+   * painted larva cannot rock — it is part of a full-screen background, not an element.
+   * So the hold is still there and still silent-but-for-the-shell cue; the stage simply
+   * says it is WORKING rather than showing it. Anything that wants the movement back has
+   * to bring its own element to the middle of this screen.
+   */
   const stage = (): HTMLElement => {
-    const box = el("div", "hatchstage");
+    const box = el("div", "hatchstage" + (busy ? " working" : ""));
     box.id = "hatchStage";
-
     if (found && !busy) {
       box.appendChild(found.kind === "skin" ? skinPrize(found.look) : prize(found.item));
-      return box;
-    }
-
-    const egg = el("div", "hatchegg" + (busy ? " shaking" : ""));
-    egg.id = "hatchEgg";
-    egg.appendChild(icon("brood", 96));
-    box.appendChild(egg);
-    // Said once, under the egg, and only before the first hatch: after that the last
-    // trait is standing there saying it better than a sentence could.
-    if (!found && !busy) {
-      box.appendChild(el("div", "hatchhint",
-        "Every trait in the game is in here, and every colony skin."));
     }
     return box;
   };
@@ -311,9 +313,9 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
    *
    * The spend and the roll are ONE call on the store (`hatch`), because those two must
    * never come apart — a hatch that spent and did not roll takes something for nothing.
-   * What is here is only the drama: rock the egg, then show what was already decided.
+   * What is here is only the drama: hold, then show what was already decided.
    *
-   * Re-entry is stopped by the BUTTON being disabled while the egg rocks, not by a flag
+   * Re-entry is stopped by the BUTTON being disabled through the hold, not by a flag
    * checked here as well — one mechanism, and the one a player can actually see.
    */
   const run = (): void => {
@@ -321,9 +323,9 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     if (!item) return;
     found = item;
     busy = true;
-    // The shell first, under the rocking. Not the prize: nothing has been revealed yet,
-    // and a sound that gave the answer away here would undo the only thing the rocking is
-    // for (CLAUDE.md — the moment is the feature).
+    // The shell first, under the hold. Not the prize: nothing has been revealed yet, and
+    // a sound that gave the answer away here would undo the only thing the hold is for
+    // (CLAUDE.md — the moment is the feature).
     opts.feedback?.play("hatch");
     render();
     window.setTimeout(() => {
