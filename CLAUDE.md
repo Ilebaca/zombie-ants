@@ -1976,10 +1976,23 @@ that costs an opponent nothing.
   say which is a chase with no idea how long it is. The worn one is the only card that is
   FILLED, so the rarity edge and the worn state can never be confused.
 
-**THE LUCKY HATCH** (`ui/hatch.ts`, `platform/traits.ts`). One egg in the middle of the
-screen, the larva you have above it, one button under it. That is deliberately the whole
-interface: the hatch does exactly one thing, and every control that is not "hatch" is a
-control competing with it.
+**THE LUCKY HATCH** (`ui/hatch.ts`, `platform/traits.ts`). The artwork in the middle of
+the screen, the larva you have above it, one button under it. That is deliberately the
+whole interface: the hatch does exactly one thing, and every control that is not "hatch"
+is a control competing with it.
+- **THE DRAWN EGG AND ITS CAPTION ARE GONE, asked for directly.** There was a gold mark
+  on a dashed, gold-tinted disc in the middle, and a line under it saying every trait and
+  every skin was in there. The screen's own painting already has a LARVA in the middle of
+  it, so the mark sat on top of the picture it was duplicating — and the sentence under
+  that was a third thing saying what the odds row below already says.
+  - **WHAT IT COST IS THE ROCKING**, and that is worth stating because the moment is the
+    feature. The egg was the thing that moved while the roll resolved; a painted larva
+    cannot move, because it is part of a full-screen background rather than an element.
+    So the HOLD survives — the button stays disabled, the shell cue still plays under it,
+    and the tier's colour still arrives at the end — and the stage only says it is
+    `working`. Anything that wants the movement back has to bring its own element.
+  - **The stage keeps its room**, so the prize card does not jump the layout in, and the
+    LOCKED state kept the ring the egg used to lend it under its own name (`.hatchlock`).
 - **LARVA IS THE THIRD CURRENCY AND IT IS SHOWN HERE AND NOWHERE ELSE.** It buys exactly
   one thing, so it does not ride the top bar beside the two a player spends every day — a
   figure in the chrome that the chrome offers nothing to spend on is a question the
@@ -2022,10 +2035,10 @@ control competing with it.
   universal eight are different sizes, so picking a pool first would make a universal
   trait rarer the more colonies you own — a collection that gets worse as it grows.
 - **THE MOMENT IS THE FEATURE.** A roll that resolves instantly is a number changing, and
-  a collection nobody feels collecting is a spreadsheet. The egg ROCKS — never spins, which
-  reads as a loading spinner, the one thing this must not look like — and then the tier's
-  COLOUR arrives before the trait is named. The colour is the answer, which is the whole
-  reason the tiers have colours.
+  a collection nobody feels collecting is a spreadsheet. So the roll is HELD — the egg
+  used to rock through it, and never spin, which reads as a loading spinner — and then the
+  tier's COLOUR arrives before the trait is named. The colour is the answer, which is the
+  whole reason the tiers have colours.
 - **With no larva the button is not disabled, it is the way to buy some.** A dead button is
   a dead end. And the prize says where it went, with the way there: a reward that lands
   somewhere the player has to go looking for is a reward they will not find.

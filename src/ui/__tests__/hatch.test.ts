@@ -117,9 +117,12 @@ describe("the hatch", () => {
     const s = store();
     const { root, spy } = build(s);
     tap(root, "hatchGo");
-    // The egg rocks first: the answer is not on screen the instant the button is pressed.
+    // IT HOLDS FIRST: the answer is not on screen the instant the button is pressed, and
+    // the stage says it is working. (There used to be a drawn egg here and it rocked; the
+    // middle of this screen is the artwork now, which cannot be animated — so the hold is
+    // what is left of the moment, and it is the part that must not be lost.)
     expect(root.querySelector("#hatchPrize")).toBeNull();
-    expect(root.querySelector(".hatchegg.shaking")).toBeTruthy();
+    expect(root.querySelector(".hatchstage.working")).toBeTruthy();
 
     vi.advanceTimersByTime(2000);
     const prize = root.querySelector("#hatchPrize");
@@ -392,5 +395,22 @@ describe("what it sounds like", () => {
       vi.runAllTimers();
     }).not.toThrow();
     vi.useRealTimers();
+  });
+});
+
+/**
+ * THE MIDDLE OF THE SCREEN IS THE PAINTING.
+ *
+ * A drawn gold egg sat on a tinted disc over the larva the artwork already paints there,
+ * with a line of copy under it — both removed, asked for directly. A screen that grows a
+ * second illustration on top of its own is the fault this holds against.
+ */
+describe("the stage", () => {
+  it("draws nothing over the artwork before a hatch", () => {
+    const { root } = build(store());
+    const stage = root.querySelector("#hatchStage");
+    expect(stage, "the stage went away with the egg").toBeTruthy();
+    expect(stage?.childElementCount, "something is drawn over the artwork again").toBe(0);
+    expect(stage?.textContent, "the stage is captioned again").toBe("");
   });
 });
