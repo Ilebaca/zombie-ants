@@ -10,6 +10,7 @@ export type { Look, HillStyle, SkinStyle } from "./art";
 export { COL, MAP, SPECIES_COL, hexA, loadColors, lookCol, ownerCol, setFactionColor } from "./palette";
 export { drawSnapshot } from "./snapshot";
 // A STILL has to be redrawn when the region's picture lands; the board, which redraws
-// every frame, does not (§ terrain.ts).
+// every frame, does not (§ terrain.ts). It is also what HOME calls to fetch that picture
+// a screen early, so the still's first draw already has it.
 export { groundReady } from "./terrain";
 export type { SnapshotOptions } from "./snapshot";

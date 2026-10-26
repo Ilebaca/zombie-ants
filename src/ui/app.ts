@@ -18,7 +18,7 @@ import type {
   DuelInvite, DuelService, Feedback, Friend, FriendService, MatchLog, Matchmaker, Opponent,
   Person, PurchaseGateway, SupportGateway, TraitScope,
 } from "../platform";
-import { setFactionColor } from "../render";
+import { groundReady, setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
 import { buildInventory, buildTraitBench } from "./traits";
 import { settleMatch } from "./settle";
@@ -994,7 +994,15 @@ export class App {
     // class per chapter: fifty rules in the stylesheet for fifty files the stylesheet
     // cannot see is a second table to keep in step, and `skin.css` still carries the
     // default so the screen is never bare if this never runs.
-    root.style.backgroundImage = `url("${backdropFor(chapterOf(this.profile.get().colony))}")`;
+    const chapter = chapterOf(this.profile.get().colony);
+    root.style.backgroundImage = `url("${backdropFor(chapter)}")`;
+    // AND THE BOARD'S GROUND IS FETCHED FROM HERE, a screen early. Home is where the
+    // player stands before PLAY, and the setup screen's board is a STILL that cannot be
+    // drawn until the region's picture has landed — so asking for it now is what makes
+    // that screen open on the finished picture rather than on a blank square. Fire and
+    // forget, and idempotent: the loader holds one element per url for the life of the
+    // page, so the rebuild home does on every deck slide costs nothing.
+    void groundReady(groundFor(chapter));
 
     /*
      * The bar, and the granary emptied directly under the figure it pays into.

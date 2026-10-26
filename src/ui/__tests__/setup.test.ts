@@ -8,6 +8,8 @@ import { describe, expect, it, vi } from "vitest";
  * through — the screen wants `setFactionColor`, `antHead` and `lookCol` for real.
  */
 const shots: { art?: string | null; terrain?: boolean }[] = [];
+/** Every region picture the app has asked the loader for, in order. */
+const wanted: string[] = [];
 vi.mock("../../render", async (real) => {
   const mod = await real<typeof import("../../render")>();
   return {
@@ -15,6 +17,10 @@ vi.mock("../../render", async (real) => {
     drawSnapshot: (c: HTMLCanvasElement, s: never, o: { art?: string | null } = {}) => {
       shots.push(o);
       return mod.drawSnapshot(c, s, o);
+    },
+    groundReady: (src: string) => {
+      wanted.push(src);
+      return mod.groundReady(src);
     },
   };
 });
@@ -378,6 +384,28 @@ describe("the ground under the setup board", () => {
     }
   });
 
+  /**
+   * AND HOME ASKS FOR IT A SCREEN EARLY.
+   *
+   * The setup board is a STILL: it is drawn once, and the region's picture is a file that
+   * lands a beat after that draw — so the screen painted the game's own DRAWN forest
+   * floor and then swapped it for the region, which is one frame of a different place
+   * every time it was opened cold. Reported exactly that way. Nothing on the setup screen
+   * can fix it; what fixes it is the picture already being in hand when the screen opens,
+   * and home is the screen the player presses PLAY from.
+   */
+  it("is already being fetched while the player is still on home", () => {
+    wanted.length = 0;
+    const store = new ProfileStore(new MemoryStore());
+    store.update((p) => { p.colony = 5_000; p.tourSeen = TOUR_VERSION; });
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    new App(host, store).start();
+
+    expect(wanted, "home never asked for the ground the match will be played on")
+      .toContain(groundFor(chapterOf(5_000)));
+    host.remove();
+  });
 });
 
 /**
