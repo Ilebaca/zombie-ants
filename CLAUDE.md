@@ -2367,6 +2367,13 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
   What is left brings its own ground: the banner, the granary pill and the three floating
   buttons are cards, PLAY is a solid slab. The name now lives on the cover over a cold
   boot (`#splash`), which is the only place it is still written.
+  - **AND THE SLAB NEEDS ROOM UNDER IT.** `.homeplay` is `justify-content: flex-end`, so
+    taking How to play out from under PLAY dropped the button by the whole of that line —
+    about 37px plus the 14px gap above it — onto the 64px band the tab bar is reserved in.
+    Reported as needing a gap under it. The padding is three of home's own gutters, which
+    is roughly what the link occupied, so the button sits where a player is used to
+    finding it and the screen still answers to one pair of edges rather than a fourth
+    number (§ HOME HAS ONE GUTTER).
 - **HOW TO PLAY IS NOT WRITTEN ON THE ARTWORK ANY MORE — it is in the DRAWER**
   (`MENU_ENTRIES`), asked for directly. It was the one control in this app written
   straight onto a picture, and a manual is somewhere you go to look something up rather
@@ -2380,10 +2387,15 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
 - **AND THE LUCKY HATCH CAME THE OTHER WAY**, out of the drawer onto a third floating
   button under the Daily one. It pays the one currency nothing else pays, and six rows
   down a list most players open once a week is not where that belongs. Three rules:
-  - **It wears the DAILY'S SHAPE and the MENU BUTTON'S FACE.** It carries `.dailyfab` as
-    well as `.hatchfab`, so the size, the label, the press and the right edge come from
-    one place rather than from a copy — and only the colour is said again. GOLD on home
-    means "something is waiting"; two gold buttons stacked is neither of them saying it.
+  - **It IS the daily button, twice over.** It carries `.dailyfab`, so the size, the
+    label, the press, the right edge AND the colour come from one place rather than from
+    a copy; `.hatchfab` is a hook the tests find it by and carries no style at all.
+    - **It was given the menu button's dark FACE first**, on the argument that gold on
+      home means "something is waiting" and two gold buttons stacked is neither of them
+      saying it. What that actually looked like was reported at once: a button whose
+      BOTTOM had gone missing. The ledge is what says a thing is solid here (§10 — the
+      PLAY button keeps its ledge and nothing else does), and a dark ledge over a dark
+      painting is no ledge. The argument was about colour and the answer was about depth.
   - **`syncFabs` stacks whatever it finds, in DOM order.** It named the two buttons and
     placed each by hand, under a comment promising that another one would be another step
     down the same column — this is what that promise cost, and it is shorter than the two
