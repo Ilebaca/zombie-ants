@@ -2068,6 +2068,17 @@ is a control competing with it.
     is nearly 900, and under a 1.7x brightness lift the old silhouette is still faintly
     there in the ground. Dropping the two real files in at the same names is the WHOLE
     remaining change — no code, no CSS, no test.
+  - **THE BUTTON STAYS SOLID WHILE IT IS HATCHING.** It is disabled for the whole hold and
+    `[disabled]` carried `opacity: .7`, so the one filled slab on a screen that is
+    otherwise a lit painting went SEE-THROUGH at exactly the moment the player is watching
+    it — reported as the button going transparent. It darkens its own FILL now, which says
+    working without saying gone; the `out` state has no fill to darken, so that one dims
+    its ink instead. `css-sanity.test.ts` holds that the rule sets a background and never
+    an opacity.
+  - **AND THE NOTE UNDER THE ODDS BREAKS AT THE COMMA.** As one string it wrapped wherever
+    the column ran out — mid-clause, on a different word at every width, which reads as a
+    paragraph that did not fit. The two halves are their own elements (`.ho-line`), so
+    what is paid is one line and the condition on it is the next, at every width.
   - **The stage keeps its room**, so nothing below it moves as larva come and go, and the
     LOCKED state kept the ring the egg used to lend it under its own name (`.hatchlock`).
 - **LARVA IS THE THIRD CURRENCY AND IT IS SHOWN HERE AND NOWHERE ELSE.** It buys exactly

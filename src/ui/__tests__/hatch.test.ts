@@ -284,6 +284,30 @@ describe("hatching a skin", () => {
     for (const t of SKIN_TIERS) expect(said).toContain(TIERS[t].name);
     expect(said).toContain("colony skin");
   });
+
+  /**
+   * AND IT BREAKS AT THE COMMA.
+   *
+   * As one string the note wraps wherever the column runs out — mid-clause, on a
+   * different word at every screen width — which reads as a paragraph that did not fit
+   * rather than as one line saying what is paid and a second saying when. The halves are
+   * their own elements so the break cannot drift; `.ho-line` is what makes each a line.
+   */
+  it("puts the note on two lines, split at the comma", () => {
+    const root = buildHatch(store(1), {
+      onBack: () => {}, onBuyLarva: () => {}, onInventory: () => {},
+    });
+    const lines = Array.from(root.querySelectorAll("#hatchOdds .ho-note .ho-line"))
+      .map((n) => n.textContent ?? "");
+    expect(lines.length, "the note is one run of text again").toBe(2);
+    expect(lines[0]?.endsWith(","), `the first line does not end at the comma: ${lines[0]}`)
+      .toBe(true);
+    expect(lines[1], "the clause after the comma is not its own line").not.toContain(",");
+    // ...and the split lost nothing: the two halves are still the whole sentence.
+    expect(lines.join(" ")).toBe(
+      `${SKIN_TIERS.map((t) => TIERS[t].name).join(" and ")} hatches pay a colony skin,`
+      + " while you still have one to find.");
+  });
 });
 
 /**
