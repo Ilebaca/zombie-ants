@@ -1098,15 +1098,13 @@ body,
   color: var(--ink-soft);
   box-shadow: 0 3px 0 rgba(0, 0, 0, .5), 0 8px 18px rgba(0, 0, 0, .45), var(--sheen);
 }
-/* THE HATCH IS THE DAILY'S SHAPE AND THE MENU BUTTON'S FACE. It carries `.dailyfab` as
-   well, so it inherits the size, the label, the press and the right edge from one place
-   rather than from a copy — and only the colour is said again here. GOLD on this screen
-   means "something is waiting"; two gold buttons stacked is neither of them saying it. */
-.hatchfab {
-  background: rgba(16, 28, 19, .86);
-  color: var(--ink-soft);
-  box-shadow: 0 3px 0 rgba(0, 0, 0, .5), 0 8px 18px rgba(0, 0, 0, .45), var(--sheen);
-}
+/* THE HATCH IS THE DAILY, TWICE — gold face, gold ledge, asked for directly. It was
+   given the menu button's dark face on the argument that gold means "something is
+   waiting" and two of them stacked is neither saying it; what that actually looked like
+   on the artwork is a button whose BOTTOM has gone missing, because the ledge under it
+   was a dark shadow over a dark picture rather than the gold edge the daily sits on.
+   Carrying `.dailyfab` and nothing else is now the whole of it: one face, one ledge, one
+   place they are written. */
 
 /* ----------------------------------------------------------- THE ACTION
    One green, one shape, one place. The play button is the only thing on
@@ -1204,7 +1202,14 @@ body,
    screen and it carries no title — so the rules that dressed them went with them. The
    legacy sheet still has its own `.homemark`/`.hometag`, and it can: nothing emits either
    class any more. */
-.homeplay { gap: 14px; padding-bottom: 10px; }
+/* ROOM UNDER THE BUTTON. How to play sat here — a line of text about 37px tall under a
+   14px gap — and with it gone (§ THE HOME ARTWORK) `.homeplay`'s `justify-content:
+   flex-end` dropped PLAY that far down the screen, onto the 64px band the tab bar is
+   reserved in. Reported as needing a gap under it. Three gutters is roughly what the
+   link occupied, so the button stays where a player is used to finding it — and it is
+   home's OWN gutter rather than a fourth number, which is the rule the banner, the pill
+   and the floating buttons already follow. */
+.homeplay { gap: 14px; padding-bottom: calc(var(--gutter) * 3); }
 
 /* HOW TO PLAY IS IN THE DRAWER NOW (`MENU_ENTRIES`), so the rules that dressed it as a
    line of text on the artwork are gone with it — nothing emits `.howtolink` any more.
