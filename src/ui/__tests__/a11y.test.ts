@@ -96,7 +96,10 @@ describe("everything on screen says what it is", () => {
   it("names the manual and the board", () => {
     vi.useFakeTimers();
     const { host, app } = open();
-    host.querySelector<HTMLButtonElement>("#howToBtn")?.click();
+    // Through the DRAWER, which is the only route to the manual now — it used to be a
+    // line of text on home's artwork.
+    host.querySelector<HTMLButtonElement>(".settingsfab")?.click();
+    host.querySelector<HTMLButtonElement>("[data-go='rules']")?.click();
     expect(unnamed(host), "how to play").toEqual([]);
 
     host.querySelector<HTMLButtonElement>("[data-nav='challenges']")?.click();

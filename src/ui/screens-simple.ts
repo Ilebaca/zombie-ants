@@ -19,9 +19,22 @@ export interface MenuEntry {
   label: string;
 }
 
-/** The slide-in menu behind the home screen's hamburger. */
+/**
+ * The slide-in menu behind the home screen's hamburger.
+ *
+ * TWO ENTRIES SWAPPED PLACES WITH HOME, asked for directly. HOW TO PLAY came IN: it was
+ * a line of text written straight onto the artwork under the PLAY button, which is the
+ * only place in the app a control is written on a picture, and a manual is a thing you
+ * go and look up rather than an action the title screen offers. THE LUCKY HATCH went
+ * OUT, to a button under the Daily one: it pays the one currency nothing else pays, and
+ * behind the hamburger it was six rows down a list most players open once a week.
+ *
+ * So the drawer is what it says it is — the places you go to READ or to SETTLE
+ * something — and home carries the two things that hand you something.
+ */
 export const MENU_ENTRIES: readonly MenuEntry[] = [
   { id: "settings", icon: "gear", label: "Settings" },
+  { id: "rules", icon: "book", label: "How to play" },
   { id: "news", icon: "news", label: "News" },
   { id: "friends", icon: "friends", label: "Friends" },
   { id: "support", icon: "support", label: "Support" },
@@ -29,7 +42,6 @@ export const MENU_ENTRIES: readonly MenuEntry[] = [
   // across every bench — the per-bench screens show only what fits THAT bench, so
   // without this there is nowhere in the app that shows a collection as a collection.
   { id: "inventory", icon: "gift", label: "Inventory" },
-  { id: "luckyhatch", icon: "brood", label: "Lucky hatch" },
   { id: "leaderboard", icon: "star", label: "Leaderboard" },
   { id: "achievements", icon: "trophy", label: "Colony Road" },
 ];

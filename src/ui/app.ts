@@ -1043,11 +1043,29 @@ export class App {
     daily.title = "Daily challenges";
     daily.append(icon("calendar", 17), el("small", undefined, "Daily"));
     daily.onclick = () => this.show("daily");
-    root.append(settings, daily);
+
+    // AND THE HATCH IS OUT HERE NOW, under it — asked for directly. It was six rows down
+    // the drawer, which is a list most players open once a week, and it pays the one
+    // currency nothing else in the game pays. It wears the daily's SHAPE (a mark over a
+    // word) and the menu button's FACE: gold on this screen means "something is waiting",
+    // and two gold buttons stacked is neither of them saying it.
+    //
+    // It is shown before chapter 10 as well, when the screen behind it is still shut.
+    // That screen NAMES the chapter rather than drawing a padlock (§ the hatch), which is
+    // the same rule the granary's levels and the inventory row follow — and a button that
+    // only appears once the feature is open is one nobody knows is coming.
+    const hatch = el("button", "dailyfab hatchfab");
+    hatch.title = "Lucky hatch";
+    hatch.append(icon("brood", 17), el("small", undefined, "Hatch"));
+    hatch.onclick = () => this.show("luckyhatch");
+    root.append(settings, daily, hatch);
 
     // THE ARTWORK IS THE TITLE SCREEN, and it carries no title. The name and the tagline
-    // used to sit here, over the picture; what is left is the one action the screen exists
-    // to offer and the way into the manual. The cover over a cold boot still draws the
+    // used to sit here, over the picture; what is left is the ONE action the screen exists
+    // to offer. How to play was a second line of text under it and is in the drawer now
+    // (`MENU_ENTRIES`) — it was the only control in the app written straight onto a
+    // picture, and a manual is somewhere you go to look something up rather than
+    // something the title screen offers. The cover over a cold boot still draws the
     // wordmark (`#splash`), which is where the name is now.
     const play = el("div", "homeplay");
 
@@ -1058,12 +1076,6 @@ export class App {
     btn.id = "goPlay";
     btn.onclick = () => this.playOrdinary();
     play.appendChild(btn);
-
-    const how = el("button", "howtolink");
-    how.append(icon("book", 15), el("span", undefined, "How to play"));
-    how.id = "howToBtn";
-    how.onclick = () => this.show("rules");
-    play.appendChild(how);
 
     root.appendChild(play);
     requestAnimationFrame(() => syncFabs(root));
@@ -1711,21 +1723,29 @@ export class App {
 /** A delta the way a scoreboard writes one: the sign is part of the number. */
 
 function syncFabs(home: HTMLElement): void {
+  // IN DOM ORDER, which is the order they are stacked in: menu, daily, hatch. It used to
+  // name the two of them and place each by hand, and the comment under it promised that
+  // another button would be another step down the same column — so when a third arrived
+  // this is what that promise cost, and it is less than the two lines it replaced.
+  const fabs = Array.from(home.querySelectorAll<HTMLElement>(".settingsfab, .dailyfab"));
   const daily = home.querySelector<HTMLElement>(".dailyfab");
-  const settings = home.querySelector<HTMLElement>(".settingsfab");
   const head = home.querySelector<HTMLElement>(".tophead");
-  if (!daily || !settings) return;
+  if (!daily || fabs.length === 0) return;
   const box = daily.getBoundingClientRect();
   if (!box.width || !box.height) return;
 
-  settings.style.width = `${box.width}px`;
-  settings.style.height = `${box.height}px`;
   const top = home.getBoundingClientRect().top;
-  const y = head ? head.getBoundingClientRect().bottom - top + 10 : 84;
-  // Measured and stacked rather than given percentages in the stylesheet, so another
-  // button is another step down the same column and not a third guess at a percentage.
-  settings.style.top = `${y}px`;
-  daily.style.top = `${y + (box.height + 10)}px`;
+  let y = head ? head.getBoundingClientRect().bottom - top + 10 : 84;
+  for (const fab of fabs) {
+    // Only the DAILY is sized by the stylesheet; every other one is squared off its box,
+    // so the column is one width whatever is in each button.
+    if (fab !== daily) {
+      fab.style.width = `${box.width}px`;
+      fab.style.height = `${box.height}px`;
+    }
+    fab.style.top = `${y}px`;
+    y += box.height + 10;
+  }
 }
 
 /**
