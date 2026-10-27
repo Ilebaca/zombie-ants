@@ -35,36 +35,67 @@ import type { SpeciesId } from "../engine";
  * paintings are delivered at and `skin.css` writes the same pair into `aspect-ratio` —
  * a box that disagreed with the file would letterbox or crop somebody's artwork.
  *
- * AND THE PAINTINGS ARE CUT-OUTS: an ant on TRANSPARENT ground, so the colour behind
- * them is the BOX's. That used to be belt and braces — the files carried their own lit
- * brown ground and `#1a120a` was only there for the colonies that had none — and it is
- * now the whole backdrop, on both screens that show a cover (the species page and the
- * setup rail). Two things follow. A screen that puts a cover on any other colour shows
- * the ant standing on that colour, so the two boxes have to agree; and the frame is OURS
- * rather than the artist's, which is why the delivered 1402x1122 is re-framed into this
- * box here rather than the box being changed to fit it — padding transparent ground
- * costs nothing, and a near-square painting across the top of the page would be mostly
- * empty. `covers.test.ts` holds that every file really does carry alpha: one delivered
- * with its background still on would sit in the box as a brown rectangle.
+ * THERE ARE TWO SETS, AND THE DIFFERENCE IS THE GROUND THEY STAND ON.
+ *
+ * `covers/` is the painting as it was delivered — the ant on its own lit brown ground,
+ * lamp and shadow and all. `covers-cut/` is the same ant CUT OUT on transparent ground,
+ * so whatever is behind it shows through.
+ *
+ * Both exist because the two places a cover is shown are not the same box. The SPECIES
+ * PAGE is a full-bleed hero across the top of a screen, and a cut-out there is an ant
+ * floating in a flat rectangle of `#1a120a` — reported directly, and the reason the
+ * originals came back. The SETUP RAIL is a rounded pane the player steps through, where
+ * the lit ground reads as a photograph in a frame and the cut-out reads as the colony.
+ *
+ * So the rule is: the hero takes the PAINTED one, the rail takes the CUT one, and each
+ * falls back to the other rather than to nothing — a colony with a file in one folder
+ * and not the other is still shown everywhere, which is what let the cut-outs land for
+ * the rail without a second set of eight being owed on the same day.
+ *
+ * THE FOLDER IS STILL THE TABLE, twice: `covers/fire.webp` and `covers-cut/fire.webp`
+ * are the Fire Ant's, both resolved by a build-time glob, and dropping a file in is the
+ * whole change. `covers.test.ts` holds that every CUT file really carries alpha — one
+ * delivered with its background still on would sit in the rail as a brown rectangle on
+ * a darker plate — and that the painted ones are never wider than the box.
  */
 export const COVER_W = 1567;
 export const COVER_H = 900;
 
-/** What the build found, keyed by colony. */
-const PAINTED: Partial<Record<SpeciesId, string>> = (() => {
+const index = (files: Record<string, string>): Partial<Record<SpeciesId, string>> => {
   const found: Partial<Record<SpeciesId, string>> = {};
-  const files = import.meta.glob<string>("./covers/*.webp", {
-    eager: true, query: "?url", import: "default",
-  });
   for (const [path, url] of Object.entries(files)) {
     const id = /\/([a-z]+)\.webp$/.exec(path)?.[1] ?? "";
     if (id in SPECIES) found[id as SpeciesId] = url;
   }
   return found;
-})();
+};
+
+/** The delivered paintings, on their own ground. */
+const PAINTED = index(import.meta.glob<string>("./covers/*.webp", {
+  eager: true, query: "?url", import: "default",
+}));
+
+/** The same ants cut out, for a box that supplies its own ground. */
+const CUT = index(import.meta.glob<string>("./covers-cut/*.webp", {
+  eager: true, query: "?url", import: "default",
+}));
 
 /** How many colonies have a painting. Nothing but a test reads this. */
 export const coversPainted = (): number => Object.keys(PAINTED).length;
 
-/** This colony's cover, or null while it is still to be painted. */
-export const coverFor = (id: SpeciesId): string | null => PAINTED[id] ?? null;
+/** How many have a cut-out. Nothing but a test reads this either. */
+export const coversCut = (): number => Object.keys(CUT).length;
+
+/**
+ * This colony's cover, or null while it is still to be painted.
+ *
+ * The HERO's answer: the painting on its own ground, because a cut-out across the top
+ * of the species page is an ant in a flat rectangle.
+ */
+export const coverFor = (id: SpeciesId): string | null => PAINTED[id] ?? CUT[id] ?? null;
+
+/**
+ * The RAIL's answer: the ant cut out, so the pane's own colour is the ground under it
+ * and the colony reads as the thing being stepped through rather than as a photograph.
+ */
+export const cutCoverFor = (id: SpeciesId): string | null => CUT[id] ?? PAINTED[id] ?? null;

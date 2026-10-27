@@ -926,26 +926,39 @@ one that survived.
   that used to ask which board is gone, so that button is the only place the player is told
   what they are about to play on.
 
-**A COLONY'S PAINTING IS A CUT-OUT** (`src/ui/covers/`, `ui/covers.ts`). One painted ant
-per colony, shown at the top of its own page and as the rail the setup screen's second
-step slides. THE FOLDER IS THE TABLE, the same rule the home artwork and the region
-grounds follow: `src/ui/covers/fire.webp` IS the Fire Ant's, resolved by a build-time
-glob, and a colony with no file keeps its drawn head in a box of the same shape.
-- **THE GROUND IS THE BOX'S, NOT THE ARTIST'S.** The eight paintings used to carry their
-  own lit brown ground and `#1a120a` on the box was belt and braces for the colonies that
-  had none. They are CUT-OUTS now — an ant on transparent ground, delivered that way —
-  so that colour is the whole backdrop, and the species page and the setup rail have to
-  spell the same value or one screen lights the ant on a different ground from the other.
-  `covers.test.ts` holds that every file really carries alpha: one delivered with its
-  background still baked in sits in the box as a brown rectangle on a darker plate, which
-  reads as a considered frame rather than as a mistake.
-- **AND THE FRAME IS OURS.** They arrive at 1402x1122, which is nearly square and mostly
-  empty above and below the ant; the box is 1567x900 and is tuned to how much of the page
-  the painting should take. So each is re-framed INTO the box rather than the box being
-  changed to fit them — padding transparent ground costs nothing, where a near-square
-  cover across the top of the species page would be a third of the screen of bare colour.
-  All eight are exactly the box now; they used to be three different sizes (1567x900,
-  1402x1122 and 1567x1254), which the existing ratio test was written to survive.
+**A COLONY'S PAINTING COMES IN TWO SETS** (`src/ui/covers/`, `src/ui/covers-cut/`,
+`ui/covers.ts`). One painted ant per colony, shown at the top of its own page and as the
+rail the setup screen's second step slides. THE FOLDER IS THE TABLE, twice over and the
+same rule the home artwork and the region grounds follow: `covers/fire.webp` and
+`covers-cut/fire.webp` are both the Fire Ant's, both resolved by a build-time glob, and a
+colony with no file in either keeps its drawn head in a box of the same shape.
+- **THE DIFFERENCE IS THE GROUND THEY STAND ON.** `covers/` is the painting as delivered
+  — the ant on its own lit brown ground, lamp and shadow and all. `covers-cut/` is the
+  same ant CUT OUT on transparent ground.
+- **AND IT IS TWO SETS BECAUSE THE TWO BOXES ARE NOT THE SAME BOX.** One set was tried
+  for both and each half came back in turn. The SPECIES PAGE is a full-bleed hero across
+  the top of a screen, and the cut-out there is an ant floating in a flat rectangle of
+  `#1a120a` — "restore previous species images just in the species overview". The SETUP
+  RAIL is a rounded pane stepped through one colony at a time, and the painting there is
+  a photograph in a frame; the brown plate behind a transparent picture was reported as
+  the image "somehow still having a brown background".
+  - So the hero takes the PAINTED one (`coverFor`) and the rail the CUT one
+    (`cutCoverFor`), **and the rail's box has no fill at all** — the screen's own ground
+    is what the ant stands on, which is the whole point of a cut-out. `#1a120a` stays on
+    the HERO, and that is not an inconsistency: it is the colour the paintings are lit on.
+  - **Each falls back to the other rather than to nothing**, so a colony with a file in
+    one folder and not the other is still shown everywhere. `css-sanity.test.ts` holds
+    that the rail has no plate and the hero still has its ground, and `covers.test.ts`
+    holds that each function answers out of its OWN folder — nothing but the folder a url
+    came from can tell the two apart.
+- **ONLY THE CUT SET CARRIES ALPHA, and a test holds it.** One delivered with its
+  background still baked in would sit in the rail as a brown rectangle on the screen's
+  green, which reads as a considered frame rather than as a mistake.
+- **AND THE CUT FRAME IS OURS.** They arrive at 1402x1122, which is nearly square and
+  mostly empty above and below the ant, so each is re-framed into 1567x900 — padding
+  transparent ground costs nothing. The PAINTED set keeps the three sizes it has always
+  had (1567x900, 1402x1122 and 1567x1254), which the ratio test was written to survive:
+  a file wider than the box loses its head to the crop, taller only loses sky.
 - **THE HEAD PORTRAITS ARE DIFFERENT ART** (`src/ui/faces/`, 512 square). They are a close
   crop of the head and they are what a friend row, the matchmaking reel and the result card
   wear; cutting one out of a cover would be an upscale of a third of the picture.
@@ -2079,6 +2092,20 @@ is a control competing with it.
     the column ran out — mid-clause, on a different word at every width, which reads as a
     paragraph that did not fit. The two halves are their own elements (`.ho-line`), so
     what is paid is one line and the condition on it is the next, at every width.
+  - **AND THE FIVE TIER FRAMES ARE FILLED, with a dark shade of the tier itself.** They
+    were `color-mix(… var(--tier) 10%, transparent)` — a wash over whatever was behind
+    them, which on the hatch is a lit chamber, so the rarity was the border and the fill
+    was the painting. Mixed into the SOIL instead, each frame is a dark version of the
+    colour it names, the same on both screens that show this panel.
+    - **BOTH LINES ON IT HAD TO COME UP, and that is measured** (§ CONTRAST IS MEASURED).
+      Against a 26% shade of its own tier the name fell to **4.22** and the Exceptional
+      figure to **3.95**, both under AA — on the near-black they used to sit on, both
+      cleared it easily. The name reads at `--ink-soft` and the FIGURE is the tier lifted
+      toward white, which is the only way to keep the colour saying which rung it is while
+      separating it from a fill made of that same colour. The two converge as the fill
+      gets richer, so this is a ceiling rather than a preference: with the figure left at
+      a flat tier colour the richest fill that still clears AA is 14%, which is barely a
+      fill. The DOT stays the pure tier — it is the swatch, and nothing is read on it.
   - **The stage keeps its room**, so nothing below it moves as larva come and go, and the
     LOCKED state kept the ring the egg used to lend it under its own name (`.hatchlock`).
 - **LARVA IS THE THIRD CURRENCY AND IT IS SHOWN HERE AND NOWHERE ELSE.** It buys exactly

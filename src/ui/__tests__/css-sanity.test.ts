@@ -293,6 +293,25 @@ describe("a box that sizes a portrait sizes both kinds", () => {
  * screen. Reported as the button going transparent. Darkening the FILL says "working"
  * without saying "gone", and opacity is the only way to say it that cannot.
  */
+/**
+ * THE SETUP RAIL HAS NO PLATE UNDER IT.
+ *
+ * It shows the CUT-OUT set, so the ground under the ant is the screen's own. The box
+ * carried `#1a120a` from when the rail showed the painted set, and a brown rectangle
+ * behind a transparent picture is the one thing a cut-out is made to remove — reported
+ * as the image "somehow still having a brown background". The species page's hero keeps
+ * that colour, because the paintings are lit on exactly it.
+ */
+describe("the colony rail", () => {
+  it("shows the cut-out on the screen's own ground", () => {
+    const css = read("skin.css");
+    expect(rulesFor(css, ".coverslide"), "the rail grew a plate under the cut-out again")
+      .not.toMatch(/background(-color)?\s*:\s*#/);
+    expect(rulesFor(css, ".spgcover"), "the hero lost the ground its paintings are lit on")
+      .toMatch(/background\s*:\s*#1a120a/);
+  });
+});
+
 describe("the hatch button while it is hatching", () => {
   it("darkens its fill rather than going see-through", () => {
     // `rulesFor` escapes the brackets itself, so the selector is written as it is in the file.
