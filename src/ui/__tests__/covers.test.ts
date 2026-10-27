@@ -120,4 +120,25 @@ describe("a colony's cover", () => {
         .toBeLessThanOrEqual(COVER_W / COVER_H + 0.001);
     }
   });
+
+  /**
+   * EVERY COVER IS A CUT-OUT.
+   *
+   * The paintings stand on TRANSPARENT ground and the colour behind them is the box's
+   * own `#1a120a` (ui/covers.ts). A file delivered with its background still baked in
+   * would sit inside that box as a brown rectangle on a darker plate — a frame around
+   * the ant that no rule in the stylesheet admits to, and the kind of fault that looks
+   * like a considered choice. Read off the WebP header: an extended (`VP8X`) file
+   * carries its alpha flag in the feature byte at offset 20, and a plain lossy one has
+   * no alpha channel at all.
+   */
+  it("ships paintings with no background on them", () => {
+    for (const f of files()) {
+      const d = readFileSync(resolve(FOLDER, f));
+      const extended = d.subarray(12, 16).toString("latin1") === "VP8X";
+      const features = extended ? d.readUInt8(20) : 0;
+      const alpha = (features & 0x10) !== 0;
+      expect(alpha, `${f} carries its own background — it has to be a cut-out`).toBe(true);
+    }
+  });
 });

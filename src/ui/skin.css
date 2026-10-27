@@ -3948,9 +3948,11 @@ button:not(.playbtn):active,
   width: 100%;
   aspect-ratio: 1567 / 900;
   overflow: hidden;
-  /* The paintings are delivered on this ground, so the box is it: a colony with no
-     cover yet stands on the same colour the painted ones do, and a picture that ever
-     fails to fill the box shows ground rather than a plate of another colour. */
+  /* The paintings are CUT-OUTS — an ant on transparent ground — so this is not a
+     fallback, it is the backdrop they stand on. The colony with no cover yet stands
+     on the same colour the painted ones do, and the setup rail's pane carries the
+     same value for the same reason: the two cannot disagree without one screen
+     lighting the ant on a different ground from the other. */
   background: #1a120a;
 }
 .spgcover-img {

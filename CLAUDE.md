@@ -926,6 +926,30 @@ one that survived.
   that used to ask which board is gone, so that button is the only place the player is told
   what they are about to play on.
 
+**A COLONY'S PAINTING IS A CUT-OUT** (`src/ui/covers/`, `ui/covers.ts`). One painted ant
+per colony, shown at the top of its own page and as the rail the setup screen's second
+step slides. THE FOLDER IS THE TABLE, the same rule the home artwork and the region
+grounds follow: `src/ui/covers/fire.webp` IS the Fire Ant's, resolved by a build-time
+glob, and a colony with no file keeps its drawn head in a box of the same shape.
+- **THE GROUND IS THE BOX'S, NOT THE ARTIST'S.** The eight paintings used to carry their
+  own lit brown ground and `#1a120a` on the box was belt and braces for the colonies that
+  had none. They are CUT-OUTS now — an ant on transparent ground, delivered that way —
+  so that colour is the whole backdrop, and the species page and the setup rail have to
+  spell the same value or one screen lights the ant on a different ground from the other.
+  `covers.test.ts` holds that every file really carries alpha: one delivered with its
+  background still baked in sits in the box as a brown rectangle on a darker plate, which
+  reads as a considered frame rather than as a mistake.
+- **AND THE FRAME IS OURS.** They arrive at 1402x1122, which is nearly square and mostly
+  empty above and below the ant; the box is 1567x900 and is tuned to how much of the page
+  the painting should take. So each is re-framed INTO the box rather than the box being
+  changed to fit them — padding transparent ground costs nothing, where a near-square
+  cover across the top of the species page would be a third of the screen of bare colour.
+  All eight are exactly the box now; they used to be three different sizes (1567x900,
+  1402x1122 and 1567x1254), which the existing ratio test was written to survive.
+- **THE HEAD PORTRAITS ARE DIFFERENT ART** (`src/ui/faces/`, 512 square). They are a close
+  crop of the head and they are what a friend row, the matchmaking reel and the result card
+  wear; cutting one out of a cover would be an upscale of a third of the picture.
+
 **HOW TO PLAY IS A MANUAL** (`src/ui/rules.ts`). It was seven lines of prose, which cannot
 carry a game with deterministic combat a player is meant to count out, supply lines that
 freeze a colony that ignores them, veins with rules of their own and a Hive on a clock.
