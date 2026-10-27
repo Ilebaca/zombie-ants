@@ -118,15 +118,17 @@ describe("the hatch", () => {
     const { root, spy } = build(s);
     tap(root, "hatchGo");
     // IT HOLDS FIRST: the answer is not on screen the instant the button is pressed, and
-    // the stage says it is working. (There used to be a drawn egg here and it rocked; the
-    // middle of this screen is the artwork now, which cannot be animated — so the hold is
-    // what is left of the moment, and it is the part that must not be lost.)
+    // the larva is wriggling through the hold (`.working` is the one class that drives
+    // the animation, the button's label and the guard against a second press).
+    expect(root.querySelector("#hatchPop")).toBeNull();
     expect(root.querySelector("#hatchPrize")).toBeNull();
     expect(root.querySelector(".hatchstage.working")).toBeTruthy();
+    expect(root.querySelector("#hatchLarvaArt"),
+      "the larva vanished on the press, so there was nothing to wriggle").toBeTruthy();
 
     vi.advanceTimersByTime(2000);
-    const prize = root.querySelector("#hatchPrize");
-    expect(prize).toBeTruthy();
+    const prize = root.querySelector("#hatchPop #hatchPrize");
+    expect(prize, "the prize did not come up over the screen").toBeTruthy();
     const item = s.bag[0]!;
     expect(prize?.textContent).toContain(itemDef(item)?.name);
     expect(spy.changed).toBe(1);
@@ -399,18 +401,149 @@ describe("what it sounds like", () => {
 });
 
 /**
- * THE MIDDLE OF THE SCREEN IS THE PAINTING.
+ * THE MIDDLE OF THE SCREEN IS THE LARVA.
  *
- * A drawn gold egg sat on a tinted disc over the larva the artwork already paints there,
- * with a line of copy under it — both removed, asked for directly. A screen that grows a
- * second illustration on top of its own is the fault this holds against.
+ * A drawn gold egg sat on a tinted disc over the larva the ARTWORK painted there, with a
+ * line of copy under it — a screen illustrating itself twice, removed when it was asked
+ * for. The chamber is empty in the picture now and the animal is an element, which is
+ * what let the movement come back; the caption did not.
  */
 describe("the stage", () => {
-  it("draws nothing over the artwork before a hatch", () => {
+  it("holds the larva and nothing else", () => {
     const { root } = build(store());
     const stage = root.querySelector("#hatchStage");
     expect(stage, "the stage went away with the egg").toBeTruthy();
-    expect(stage?.childElementCount, "something is drawn over the artwork again").toBe(0);
+    expect(stage?.childElementCount, "something else is drawn over the artwork").toBe(1);
+    expect(stage?.querySelector("#hatchLarvaArt"), "the larva is not in the chamber").toBeTruthy();
     expect(stage?.textContent, "the stage is captioned again").toBe("");
+  });
+
+  /**
+   * NO LARVA, NO LARVA IN THE CHAMBER.
+   *
+   * The picture is the hatch you are holding rather than decoration, so an empty purse
+   * leaves an empty burrow — and the button under it is the one thing on the screen
+   * saying what to do about that.
+   */
+  it("empties the chamber when there is nothing to hatch", () => {
+    const { root } = build(store(0));
+    expect(root.querySelector("#hatchLarvaArt"),
+      "a larva is lying there that the player does not own").toBeNull();
+    // The screen is not broken by it — the stage still holds its room, so nothing below
+    // jumps when the next larva is bought.
+    expect(root.querySelector("#hatchStage")).toBeTruthy();
+  });
+
+  /**
+   * THE LAST LARVA STAYS PUT WHILE IT IS HATCHING.
+   *
+   * `store.hatch()` spends BEFORE the screen redraws, so a player opening their last one
+   * has none left by the time the wriggle starts — read off the purse alone the animal
+   * would vanish on the press and the hold would play over an empty burrow. While it is
+   * wriggling it is the one being hatched, so `busy` comes first.
+   */
+  it("keeps the last larva on screen while it hatches", () => {
+    vi.useFakeTimers();
+    const { root } = build(store(1));
+    tap(root, "hatchGo");
+    expect(root.querySelector("#hatchLarvaArt"),
+      "the last larva vanished on the press, mid-wriggle").toBeTruthy();
+    vi.advanceTimersByTime(2000);
+    // ...and once it HAS hatched there is nothing left in the burrow.
+    expect(root.querySelector("#hatchLarvaArt"),
+      "a larva the player no longer has is still lying there").toBeNull();
+    vi.useRealTimers();
+  });
+
+  /**
+   * ...AND IT COMES BACK WHEN ONE IS BOUGHT, because the stage is read off the store on
+   * every render rather than decided once when the screen was built.
+   */
+  it("puts one back the moment one is traded for", () => {
+    const s = store(0);
+    s.update((p) => { p.mycel = 99_999; });
+    const { root } = build(s);
+    expect(root.querySelector("#hatchLarvaArt")).toBeNull();
+    tap(root, "hatchTrade");
+    expect(root.querySelector("#hatchLarvaArt"), "the chamber stayed empty").toBeTruthy();
+  });
+});
+
+/**
+ * WHAT CAME OUT, OVER THE WHOLE SCREEN.
+ *
+ * The card used to land in the middle of the chamber at about the size of the larva it
+ * replaced, which made the best thing that happens in this feature the same size as the
+ * thing that was already there.
+ *
+ * THREE WAYS OUT AND ALL OF THEM CLOSE IT, which is the part worth holding: a press
+ * wobbles, and the browser fires the click on the nearest common ancestor of where it
+ * went down and where it came up — so a thumb that starts on the button and lifts on the
+ * dark lands on the backdrop. With every target closing, the worst a wobble does is
+ * close without navigating, which is what the backdrop does anyway.
+ */
+describe("the prize pop-up", () => {
+  const opened = (s = store()): { root: HTMLElement; spy: Spy } => {
+    vi.useFakeTimers();
+    const built = build(s);
+    tap(built.root, "hatchGo");
+    vi.advanceTimersByTime(2000);
+    vi.useRealTimers();
+    return built;
+  };
+
+  it("comes up over the screen rather than inside the chamber", () => {
+    const { root } = opened();
+    const pop = root.querySelector("#hatchPop");
+    expect(pop, "the prize did not come up").toBeTruthy();
+    expect(pop?.querySelector("#hatchPrize"), "the card is not in the pop-up").toBeTruthy();
+    expect(root.querySelector("#hatchStage #hatchPrize"),
+      "the card landed in the chamber again").toBeNull();
+  });
+
+  it("is put down by a tap anywhere on it", () => {
+    const { root } = opened();
+    root.querySelector<HTMLElement>("#hatchPop")?.click();
+    expect(root.querySelector("#hatchPop"), "a tap on the pop-up left it standing").toBeNull();
+  });
+
+  it("is put down by the close mark", () => {
+    const { root } = opened();
+    const x = root.querySelector<HTMLButtonElement>("#hatchPopClose");
+    expect(x, "there is no visible way out of a full-screen card").toBeTruthy();
+    x?.click();
+    expect(root.querySelector("#hatchPop")).toBeNull();
+  });
+
+  /** The way to the thing that was just won — and it closes on the way, or the card
+   *  would be standing here on the way back from the inventory. */
+  it("offers the inventory, and closes behind it", () => {
+    const { root, spy } = opened();
+    tap(root, "hatchToBag");
+    expect(spy.bag, "the way to the inventory did not go anywhere").toBe(1);
+    expect(root.querySelector("#hatchPop"), "it was left standing behind the inventory").toBeNull();
+  });
+
+  /** Closed, the screen is the screen again — the next hatch is one press away. */
+  it("leaves the hatch ready to go again", () => {
+    const { root } = opened(store(5));
+    root.querySelector<HTMLElement>("#hatchPop")?.click();
+    expect(root.querySelector<HTMLButtonElement>("#hatchGo")?.disabled).toBe(false);
+    expect(root.querySelector("#hatchLarvaArt"), "the next larva is not in the chamber").toBeTruthy();
+  });
+
+  /**
+   * A HOLD THAT OUTLIVES ITS SCREEN GETS NOTHING. The pop-up covers the whole viewport,
+   * so a card raised after the player left would be standing over wherever they went.
+   */
+  it("does not come up on a screen that was left", () => {
+    vi.useFakeTimers();
+    const { root, spy } = build(store());
+    tap(root, "hatchGo");
+    document.body.replaceChildren();          // the player went somewhere else
+    vi.advanceTimersByTime(2000);
+    vi.useRealTimers();
+    expect(root.querySelector("#hatchPop"), "a card was raised over another screen").toBeNull();
+    expect(spy.changed, "a prize landed on a screen nobody was looking at").toBe(0);
   });
 });

@@ -10,9 +10,10 @@
  * mycelium and a colony; this pays the one thing there is no other way to get.
  *
  * THE MOMENT IS THE FEATURE. A roll that resolves instantly is a number changing, and a
- * collection nobody feels collecting is a spreadsheet. So the roll HOLDS, then the tier's
- * colour comes UP THROUGH IT before the trait is named — the colour is the answer, and it
- * arrives first, which is the whole reason the tiers have colours at all.
+ * collection nobody feels collecting is a spreadsheet. So the roll HOLDS — the larva in
+ * the middle of the chamber WRIGGLES through it — and then the tier's colour comes up
+ * before the trait is named. The colour is the answer, and it arrives first, which is the
+ * whole reason the tiers have colours at all.
  */
 import {
   HATCH_COST, LARVA_MYCEL, TRAITS_CHAPTER, TRAIT_TIER, effectText, itemDef, markOf,
@@ -23,8 +24,9 @@ import type { Look } from "../engine";
 import { antPortrait, el, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 import { buildOdds } from "./odds";
+import LARVA_ART from "./backdrops/larva.webp";
 
-/** How long the roll is held before it gives an answer. */
+/** How long the larva wriggles before it gives an answer. */
 const SHAKE_MS = 900;
 
 export interface HatchOptions {
@@ -60,9 +62,15 @@ const prizeCue = (tier: string | undefined): Cue =>
 
 export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement {
   const root = screenEl("luckyhatch");
-  /** What the last hatch produced, or null before the first one. */
+  /**
+   * What the last hatch produced, and nothing before the first one.
+   *
+   * It is also what puts the prize OVER the screen: the card is a full-screen pop-up
+   * rather than something that lands in the middle of the chamber, so this doubles as
+   * "is the pop-up up". Closing it clears the field, which is how one state can be both.
+   */
   let found: HatchPrize | null = null;
-  /** True while the egg is rocking: the button must not be tapped twice into one animation. */
+  /** True while the larva is wriggling: the button must not be tapped twice into one roll. */
   let busy = false;
 
   const render = (): void => {
@@ -87,6 +95,19 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
 
     body.appendChild(wrap);
     root.appendChild(body);
+
+    // THE PRIZE IS OVER THE SCREEN, AND IT RIDES INSIDE IT. Appended to `root` rather
+    // than to the body, so leaving the hatch takes the pop-up with it — a full-screen
+    // card left standing over whatever the player went to next is a far worse fault
+    // than the one it is here to fix.
+    //
+    // WHICH IS WHY THE SCREEN IS LIFTED. `.screen` is `z-index: 20` in the legacy sheet
+    // and the tab bar is 60, both in the page's own stacking context — so a pop-up
+    // INSIDE the screen cannot out-stack the bar however high its own z-index goes, and
+    // it came up with five tabs still lit across the bottom of it. The class raises the
+    // screen rather than the card, because the card is the thing that is trapped.
+    root.classList.toggle("popped", Boolean(found) && !busy);
+    if (found && !busy) root.appendChild(popup(found));
   };
 
   /** The chapter, never a padlock: a number is something to play toward. */
@@ -175,27 +196,97 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
   /* ------------------------------------------------------------------- THE STAGE */
 
   /**
-   * THE MIDDLE IS THE PAINTING, AND NOTHING ELSE.
+   * THE MIDDLE IS THE LARVA, AND NOTHING ELSE.
    *
-   * There was a drawn EGG here — a gold mark on a dashed gold-tinted disc — and a line of
-   * copy under it saying what was in the hatch. Both are gone, asked for directly: the
-   * screen's artwork already has a larva painted in the middle of it, so the mark sat on
-   * top of the picture it was duplicating, and a sentence under that was a third thing
-   * saying what the two chips of odds below already say.
+   * There was a drawn EGG here — a gold mark on a dashed gold-tinted disc — over a larva
+   * the ARTWORK painted in the middle of the chamber, which is a screen illustrating
+   * itself twice. The egg went, and with it the only thing on the screen that could move
+   * while the roll resolved: a painted larva is part of a full-screen background, not an
+   * element, so the hold was left saying it was WORKING rather than showing it.
    *
-   * WHAT IT COST is the rocking. The egg was what moved while the roll resolved, and the
-   * painted larva cannot rock — it is part of a full-screen background, not an element.
-   * So the hold is still there and still silent-but-for-the-shell cue; the stage simply
-   * says it is WORKING rather than showing it. Anything that wants the movement back has
-   * to bring its own element to the middle of this screen.
+   * THE LARVA IS AN ELEMENT NOW and the chamber is empty without it, which is what buys
+   * the movement back. It is sized to land where the painted one did (`skin.css`), so the
+   * swap is invisible — and it WRIGGLES through the hold rather than spinning, because a
+   * spin is what a loading indicator does and this is an animal.
+   *
+   * IT IS THERE EXACTLY WHEN YOU CAN HATCH. No larva, no larva in the chamber: the
+   * picture is the hatch you are holding rather than decoration, so an empty purse leaves
+   * an empty burrow and the button under it is the one that says what to do about it.
+   * Measured against `HATCH_COST` and not against zero, or holding a fraction of a hatch
+   * would show one that cannot be opened.
    */
   const stage = (): HTMLElement => {
     const box = el("div", "hatchstage" + (busy ? " working" : ""));
     box.id = "hatchStage";
-    if (found && !busy) {
-      box.appendChild(found.kind === "skin" ? skinPrize(found.look) : prize(found.item));
-    }
+    // `busy` FIRST, and that is not belt and braces: `store.hatch()` spends before this
+    // ever redraws, so a player opening their LAST larva has none left by the time the
+    // wriggle would start — the animal would vanish on the press and the hold would play
+    // over an empty burrow. While it is wriggling it is the one being hatched.
+    if (busy || store.get().larva >= HATCH_COST) box.appendChild(larva());
     return box;
+  };
+
+  /** The animal in the middle of the chamber. Named by the screen around it, not by itself. */
+  const larva = (): HTMLElement => {
+    const img = document.createElement("img");
+    img.src = LARVA_ART;
+    img.className = "hatchlarva";
+    img.id = "hatchLarvaArt";
+    // The screen is titled "Lucky hatch" and the purse above says what is in the burrow,
+    // so a name here is the same fact a third time (§ EVERY CONTROL SAYS WHAT IT IS).
+    img.alt = "";
+    img.setAttribute("aria-hidden", "true");
+    img.decoding = "async";
+    return img;
+  };
+
+  /* -------------------------------------------------------------------- THE PRIZE */
+
+  /**
+   * WHAT CAME OUT, OVER THE WHOLE SCREEN.
+   *
+   * The card used to land in the middle of the chamber, the same size as the larva it
+   * replaced — which made the best thing that happens in this feature the same size as
+   * the thing that was already there. It is a pop-up now: the roll finishes, the screen
+   * goes dark, and the tier's colour is the only thing on it.
+   *
+   * THREE WAYS OUT AND ALL OF THEM CLOSE IT. A tap anywhere dismisses it, because a
+   * full-screen card a player has read is in the way and hunting for its corner is a
+   * tax on every single hatch; the X is there for anyone who looks for one, since a
+   * pop-up with no visible way out reads as something that has gone wrong; and the
+   * button both goes where the prize went and closes on the way.
+   *
+   * That they ALL close is what makes it safe. A press wobbles — the browser fires the
+   * click on the nearest common ancestor of where it went down and where it came up
+   * (§ A PRESS THAT GOES DOWN ON ONE ELEMENT), so a thumb that starts on the button and
+   * lifts on the dark lands on the backdrop. With every target closing, the worst a
+   * wobble can do is close without navigating, which is what the backdrop does anyway.
+   */
+  const popup = (prizeFound: HatchPrize): HTMLElement => {
+    const pop = el("div", "hatchpop");
+    pop.id = "hatchPop";
+    // It is a dialog in the sense that matters here: it covers the screen and it is the
+    // only thing that can be acted on while it is up.
+    pop.setAttribute("role", "dialog");
+    pop.setAttribute("aria-modal", "true");
+    pop.onclick = close;
+
+    const x = el("button", "hatchpop-x") as HTMLButtonElement;
+    x.type = "button";
+    x.id = "hatchPopClose";
+    x.setAttribute("aria-label", "Close");
+    x.appendChild(icon("cross", 20));
+    x.onclick = (e) => { e.stopPropagation(); close(); };
+
+    pop.append(x, prizeFound.kind === "skin" ? skinPrize(prizeFound.look) : prize(prizeFound.item));
+    return pop;
+  };
+
+  /** Put the card down. The field it clears is also what says the pop-up is up. */
+  const close = (): void => {
+    if (!found) return;
+    found = null;
+    render();
   };
 
   /** What came out. The TIER is the loudest thing on it — that is what a hatch is for. */
@@ -219,12 +310,14 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
       el("div", "hp-name", def?.name ?? "Trait"),
       kind,
     );
-    // The trait has gone to the inventory, so the screen says where and offers the way.
+    // The trait has gone to the inventory, so the card says where and offers the way.
+    // It CLOSES on the way out as well: the pop-up is over the hatch, so leaving it
+    // standing behind the inventory would be a card waiting on the way back.
     const go = el("button", "hp-go") as HTMLButtonElement;
     go.type = "button";
     go.id = "hatchToBag";
-    go.append(el("span", undefined, "In your inventory"), icon("next", 13));
-    go.onclick = opts.onInventory;
+    go.append(el("span", undefined, "See it in your inventory"), icon("next", 13));
+    go.onclick = (e) => { e.stopPropagation(); close(); opts.onInventory(); };
     box.appendChild(go);
     return box;
   };
@@ -262,7 +355,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     go.type = "button";
     go.id = "hatchToColony";
     go.append(el("span", undefined, `Wear it on the ${SPECIES[look.species].name}`), icon("next", 13));
-    go.onclick = () => opts.onColony?.(look.species);
+    go.onclick = (e) => { e.stopPropagation(); close(); opts.onColony?.(look.species); };
     box.appendChild(go);
     return box;
   };
@@ -291,8 +384,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
 
   const foot = (): HTMLElement => {
     const box = el("div", "hatchfoot");
-    const larva = store.get().larva;
-    const can = larva >= HATCH_COST;
+    const can = store.get().larva >= HATCH_COST;
 
     const btn = el("button", "hatchbtn" + (can ? "" : " out")) as HTMLButtonElement;
     btn.type = "button";
@@ -329,6 +421,10 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     opts.feedback?.play("hatch");
     render();
     window.setTimeout(() => {
+      // A SCREEN THAT WAS LEFT GETS NOTHING. The pop-up covers the whole viewport, so a
+      // hatch whose hold outlived its screen would put a card up over wherever the
+      // player went — and the prize cue would arrive there with it.
+      if (!root.isConnected) return;
       busy = false;
       render();
       // THE TIER, THE MOMENT THE COLOUR ARRIVES. Same instant as the card, off the same

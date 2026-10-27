@@ -2009,13 +2009,66 @@ is a control competing with it.
   every skin was in there. The screen's own painting already has a LARVA in the middle of
   it, so the mark sat on top of the picture it was duplicating — and the sentence under
   that was a third thing saying what the odds row below already says.
-  - **WHAT IT COST IS THE ROCKING**, and that is worth stating because the moment is the
-    feature. The egg was the thing that moved while the roll resolved; a painted larva
-    cannot move, because it is part of a full-screen background rather than an element.
-    So the HOLD survives — the button stays disabled, the shell cue still plays under it,
-    and the tier's colour still arrives at the end — and the stage only says it is
-    `working`. Anything that wants the movement back has to bring its own element.
-  - **The stage keeps its room**, so the prize card does not jump the layout in, and the
+  - **WHAT IT COST WAS THE ROCKING, AND THE LARVA IS AN ELEMENT NOW SO IT IS BACK.** The
+    egg was the only thing that moved while the roll resolved; a PAINTED larva cannot
+    move, because it is part of a full-screen background. So the chamber was repainted
+    EMPTY and the animal is an `<img>` in the stage — which is exactly what that note
+    said whoever wanted the movement back would have to bring.
+    - **IT IS SIZED TO LAND WHERE THE PAINTED ONE DID, and the number is not a guess.**
+      That picture is `cover` on a screen that is the whole viewport, and on a phone the
+      viewport is relatively wider than the file — so cover scales it BY WIDTH, and the
+      larva painted across 23.9% of the file was 23.9% of the viewport. `24vw` is that
+      number; measured in a browser at 390px wide it comes out 94px, which is what the
+      paint was. The cap is for a tablet, where cover turns over to scaling by HEIGHT and
+      the painted one would have been SMALLER than 24vw rather than larger.
+    - **IT WRIGGLES, IT DOES NOT SPIN**, which is the same rule the egg followed: a spin
+      is what a loading indicator does, and nothing here is loading — the answer was
+      decided before the animation started.
+    - **IT IS THERE EXACTLY WHEN YOU CAN HATCH ONE.** The picture is the hatch you are
+      holding rather than decoration, so an empty purse leaves an empty burrow and the
+      button under it is the one thing on screen saying what to do about that.
+    - **AND `busy` IS CHECKED FIRST, which is not belt and braces.** `store.hatch()`
+      SPENDS before the screen redraws, so a player opening their LAST larva has none
+      left by the time the wriggle would start — read off the purse alone, the animal
+      vanishes on the press and the hold plays over an empty burrow. While it is
+      wriggling it is the one being hatched.
+  - **THE PRIZE IS A FULL-SCREEN POP-UP**, asked for directly. It used to land in the
+    middle of the chamber at about the size of the larva it replaced, which made the best
+    thing that happens in this feature the same size as the thing that was already there.
+    - **THREE WAYS OUT AND ALL OF THEM CLOSE IT.** A tap anywhere dismisses it, because a
+      card that has been read is in the way and hunting for its corner is a tax on every
+      hatch; the X is for anyone who looks for one, since a full-screen card with no
+      visible way out reads as something gone wrong; and the button to the inventory
+      closes on the way, or the card would be standing there on the way back. That they
+      all close is what makes it SAFE: a press wobbles and the browser fires the click on
+      the nearest common ancestor of where it went down and where it came up (§ A PRESS
+      THAT GOES DOWN ON ONE ELEMENT), so a thumb that starts on the button and lifts on
+      the dark lands on the backdrop — and the worst that does is close without
+      navigating, which is what the backdrop does anyway.
+    - **THE SCREEN IS WHAT IS RAISED, NOT THE CARD.** `.screen` is `z-index: 20` in the
+      legacy sheet and `#mainNav` is 60 in the same stacking context, so a card INSIDE
+      the screen cannot out-stack the tab bar at any z-index of its own. It came up with
+      five tabs still lit along the bottom of it. `#luckyhatch.popped` lifts the screen,
+      and only while a prize is up.
+    - **AND IT STAYS INSIDE THE SCREEN** rather than going on the body, so leaving the
+      hatch takes it with it — a full-screen card left standing over wherever the player
+      went is far worse than the fault it fixes. The same reason the hold's timer checks
+      `root.isConnected` before raising one at all.
+    - **The scrim is .96, not .88.** The chamber behind it is LIT — a pale larva in the
+      middle of the frame — and it read straight through the prize's own disc, which is a
+      ring with a 14% wash of the tier colour in it rather than a plate. The point of the
+      pop-up is that the tier's colour is the only thing on the screen.
+  - **TWO FILES, AND BOTH ARE STAND-INS** (`ui/backdrops/hatch.webp`, `.../larva.webp`).
+    The real pair — an empty chamber and a larva cut out on transparent ground — were
+    sent and did not reach this container as files, so the shipped ones were DERIVED from
+    the painting that was already there: the larva was keyed out of it, and the hole it
+    left was filled by relaxing Laplace over the patch (the ground there is a flat brown
+    within 12 of 255, so there is nothing to reconstruct). That is good enough to ship
+    the mechanic and it is not the artwork: the cut-out is 218px wide where the real one
+    is nearly 900, and under a 1.7x brightness lift the old silhouette is still faintly
+    there in the ground. Dropping the two real files in at the same names is the WHOLE
+    remaining change — no code, no CSS, no test.
+  - **The stage keeps its room**, so nothing below it moves as larva come and go, and the
     LOCKED state kept the ring the egg used to lend it under its own name (`.hatchlock`).
 - **LARVA IS THE THIRD CURRENCY AND IT IS SHOWN HERE AND NOWHERE ELSE.** It buys exactly
   one thing, so it does not ride the top bar beside the two a player spends every day — a
