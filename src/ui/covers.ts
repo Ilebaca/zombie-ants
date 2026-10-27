@@ -34,6 +34,18 @@ import type { SpeciesId } from "../engine";
  * Stated here as the two numbers rather than as a decimal, because it is the size the
  * paintings are delivered at and `skin.css` writes the same pair into `aspect-ratio` —
  * a box that disagreed with the file would letterbox or crop somebody's artwork.
+ *
+ * AND THE PAINTINGS ARE CUT-OUTS: an ant on TRANSPARENT ground, so the colour behind
+ * them is the BOX's. That used to be belt and braces — the files carried their own lit
+ * brown ground and `#1a120a` was only there for the colonies that had none — and it is
+ * now the whole backdrop, on both screens that show a cover (the species page and the
+ * setup rail). Two things follow. A screen that puts a cover on any other colour shows
+ * the ant standing on that colour, so the two boxes have to agree; and the frame is OURS
+ * rather than the artist's, which is why the delivered 1402x1122 is re-framed into this
+ * box here rather than the box being changed to fit it — padding transparent ground
+ * costs nothing, and a near-square painting across the top of the page would be mostly
+ * empty. `covers.test.ts` holds that every file really does carry alpha: one delivered
+ * with its background still on would sit in the box as a brown rectangle.
  */
 export const COVER_W = 1567;
 export const COVER_H = 900;
