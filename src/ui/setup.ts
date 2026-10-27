@@ -27,7 +27,7 @@ import { SPECIES_ORDER, chapterOf } from "../platform";
 import type { ProfileStore } from "../platform";
 import { groundFor } from "./regions";
 import { antHead, drawSnapshot, groundReady, lookCol, setFactionColor } from "../render";
-import { coverFor } from "./covers";
+import { cutCoverFor } from "./covers";
 import { el, screenEl, screenHeader, setupSteps } from "./chrome";
 import { icon } from "./icons";
 
@@ -290,7 +290,10 @@ function drawBoard(
  */
 function coverPane(id: SpeciesId, look: Look): HTMLElement {
   const pane = el("div", "coverpane");
-  const art = coverFor(id);
+  // THE CUT-OUT, not the painting: the pane supplies its own ground, so an ant with
+  // its own lit brown rectangle baked in would be a photograph inside the frame
+  // (ui/covers.ts). The species page's hero takes the other one.
+  const art = cutCoverFor(id);
   if (art) {
     const img = document.createElement("img");
     img.src = art;

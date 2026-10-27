@@ -3040,8 +3040,14 @@ button:not(.playbtn):active,
   width: min(100%, 520px);
   aspect-ratio: 1567 / 900;
   overflow: hidden;
-  border-radius: var(--r-lg);
-  background: #1a120a;
+  /* NO PLATE. The rail shows the CUT-OUT (ui/covers.ts), so the ground under the
+     ant is the SCREEN's — a brown rectangle behind a transparent picture is the
+     thing the cut-out was made to remove, and it read as a photograph in a frame
+     rather than as the colony being stepped through. The box stays, because it is
+     what holds the rail's size and the slide; only its fill goes.
+     The species page's hero keeps `#1a120a`, and that is not an inconsistency:
+     it shows the PAINTED set, which is lit on exactly that colour. */
+  background: none;
 }
 /* ONE ROW, MOVED BY WHOLE PANES. `translate3d` rather than `left`, so the slide is
    composited rather than laid out again on every frame. */
@@ -5440,7 +5446,14 @@ button:not(.playbtn):active,
   gap: 3px;
   padding: 7px 2px;
   border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--tier) 10%, transparent);
+  /* A DARK SHADE OF THE TIER, never a wash of it over nothing. Mixed into
+     TRANSPARENCY the five frames showed whatever was behind them — on the hatch
+     that is a lit chamber, so the rarity's own colour was the border and the
+     fill was the painting. Mixed into the soil instead, each frame is a dark
+     version of the colour it names, the same on both screens that show this
+     panel. The border stays the bright one, so the edge still reads as the
+     tier at a glance. */
+  background: color-mix(in srgb, var(--tier) 26%, #0d1410);
   border: 1px solid color-mix(in srgb, var(--tier) 40%, transparent);
 }
 .ho-dot {
@@ -5451,8 +5464,16 @@ button:not(.playbtn):active,
 }
 /* Five names across a 320px phone leaves no room for a word, so the tier is
    carried by its colour and the name rides under it as small as it can be read. */
-.ho-n { font-size: 8px; font-weight: 800; letter-spacing: .2px; color: var(--muted); }
-.ho-p { font-size: 12px; font-weight: 900; color: var(--tier); }
+/* BOTH LINES HAD TO COME UP WITH THE FILL, and that is measured rather than
+   taste (§ CONTRAST IS MEASURED). On the near-black the rows used to sit on,
+   `--muted` and the tier's own colour both cleared AA comfortably; against a
+   26% shade of that tier they do not — the name fell to 4.22 and the Exceptional
+   figure to 3.95. The name reads at `--ink-soft`, and the FIGURE is the tier
+   lifted toward white, which is the one way to keep the colour saying which
+   rung it is while separating it from a fill made of the same colour. The DOT
+   stays the pure tier: it is the swatch, and it has no text on it to read. */
+.ho-n { font-size: 8px; font-weight: 800; letter-spacing: .2px; color: var(--ink-soft); }
+.ho-p { font-size: 12px; font-weight: 900; color: color-mix(in srgb, var(--tier) 78%, #fff); }
 /* A skin is not a sixth tier — no stat, and nowhere on the rarity curve — so
    it is a sentence under the row rather than a column squeezed into it. */
 .ho-note {

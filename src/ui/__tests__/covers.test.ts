@@ -15,10 +15,13 @@ import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { SPECIES } from "../../engine";
 import type { SpeciesId } from "../../engine";
-import { COVER_H, COVER_W, coverFor, coversPainted } from "../covers";
+import { COVER_H, COVER_W, coverFor, coversCut, coversPainted, cutCoverFor } from "../covers";
 
 const FOLDER = resolve(__dirname, "..", "covers");
-const files = (): string[] => readdirSync(FOLDER).filter((f) => f.endsWith(".webp"));
+const CUTS = resolve(__dirname, "..", "covers-cut");
+const webps = (dir: string): string[] =>
+  readdirSync(dir).filter((f) => f.endsWith(".webp"));
+const files = (): string[] => webps(FOLDER);
 const ALL = Object.keys(SPECIES) as SpeciesId[];
 
 describe("a colony's cover", () => {
@@ -28,6 +31,32 @@ describe("a colony's cover", () => {
       expect(art === null || typeof art === "string", `${id} answered something else`).toBe(true);
       if (art) expect(art, `${id}`).toMatch(/\.webp/);
     }
+  });
+
+  /**
+   * TWO SETS, AND EACH SCREEN TAKES THE RIGHT ONE.
+   *
+   * The species page is a full-bleed hero and takes the PAINTING on its own lit ground;
+   * the setup rail supplies its own ground and takes the CUT-OUT. Swapping them is
+   * exactly what was reported twice — an ant floating in a flat rectangle on the hero,
+   * and a brown plate behind a transparent picture on the rail — and nothing but the
+   * folder a url came out of can tell the two apart.
+   */
+  it("hands the hero the painting and the rail the cut-out", () => {
+    for (const id of ALL) {
+      if (!files().includes(`${id}.webp`)) continue;
+      expect(coverFor(id), `${id}'s hero took a cut-out`).toContain("/covers/");
+    }
+    for (const id of ALL) {
+      if (!webps(CUTS).includes(`${id}.webp`)) continue;
+      expect(cutCoverFor(id), `${id}'s rail took a painting`).toContain("/covers-cut/");
+    }
+  });
+
+  /** Both folders are complete, so neither fallback is reachable today. */
+  it("has a painting and a cut-out for every colony", () => {
+    expect(coversPainted(), "a colony lost its painting").toBe(ALL.length);
+    expect(coversCut(), "a colony lost its cut-out").toBe(ALL.length);
   });
 
   /** The folder IS the table: what is in it and what the module found cannot differ. */
@@ -40,11 +69,12 @@ describe("a colony's cover", () => {
     }
   });
 
-  /** A colony with no file of its own invents nothing. */
+  /** A colony with no file in EITHER folder invents nothing. */
   it("answers null for a colony that has not been painted", () => {
     for (const id of ALL) {
-      if (files().includes(`${id}.webp`)) continue;
+      if (files().includes(`${id}.webp`) || webps(CUTS).includes(`${id}.webp`)) continue;
       expect(coverFor(id), `${id} invented a cover`).toBeNull();
+      expect(cutCoverFor(id), `${id} invented a cut-out`).toBeNull();
     }
   });
 
@@ -132,9 +162,9 @@ describe("a colony's cover", () => {
    * carries its alpha flag in the feature byte at offset 20, and a plain lossy one has
    * no alpha channel at all.
    */
-  it("ships paintings with no background on them", () => {
-    for (const f of files()) {
-      const d = readFileSync(resolve(FOLDER, f));
+  it("ships cut-outs with no background on them", () => {
+    for (const f of webps(CUTS)) {
+      const d = readFileSync(resolve(CUTS, f));
       const extended = d.subarray(12, 16).toString("latin1") === "VP8X";
       const features = extended ? d.readUInt8(20) : 0;
       const alpha = (features & 0x10) !== 0;
