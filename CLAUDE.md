@@ -2367,11 +2367,35 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
   What is left brings its own ground: the banner, the granary pill and the three floating
   buttons are cards, PLAY is a solid slab. The name now lives on the cover over a cold
   boot (`#splash`), which is the only place it is still written.
-- **HOW TO PLAY IS THE ONE PIECE OF TEXT WRITTEN STRAIGHT ONTO THE ARTWORK, so it is DARK
-  INK.** In the app's pale `--ink-soft` it measured **1.7:1** against the sand — a control
-  the player cannot read (§ CONTRAST IS MEASURED). Dark ink with a soft light halo is
-  **5.8:1** and needs no fill; a pill under PLAY would be two things shaped like buttons
-  on a screen that offers one action (§10). Every other screen keeps the pale colour.
+- **HOW TO PLAY IS NOT WRITTEN ON THE ARTWORK ANY MORE — it is in the DRAWER**
+  (`MENU_ENTRIES`), asked for directly. It was the one control in this app written
+  straight onto a picture, and a manual is somewhere you go to look something up rather
+  than an action the title screen offers; home is left with the ONE action it exists for.
+  What it cost is worth keeping, because it is the only time this problem has come up: in
+  the app's pale `--ink-soft` it measured **1.7:1** against the sand — a control the
+  player cannot read (§ CONTRAST IS MEASURED) — so it was DARK ink with a soft light halo
+  at **5.8:1** and no fill, a pill under PLAY being two things shaped like buttons on a
+  screen that offers one action (§10). `.howtolink` is gone from `skin.css` with it;
+  `game.css` still carries the legacy one, the same way it still carries `.homemark`.
+- **AND THE LUCKY HATCH CAME THE OTHER WAY**, out of the drawer onto a third floating
+  button under the Daily one. It pays the one currency nothing else pays, and six rows
+  down a list most players open once a week is not where that belongs. Three rules:
+  - **It wears the DAILY'S SHAPE and the MENU BUTTON'S FACE.** It carries `.dailyfab` as
+    well as `.hatchfab`, so the size, the label, the press and the right edge come from
+    one place rather than from a copy — and only the colour is said again. GOLD on home
+    means "something is waiting"; two gold buttons stacked is neither of them saying it.
+  - **`syncFabs` stacks whatever it finds, in DOM order.** It named the two buttons and
+    placed each by hand, under a comment promising that another one would be another step
+    down the same column — this is what that promise cost, and it is shorter than the two
+    lines it replaced. Only the DAILY is sized by the stylesheet; the others are squared
+    off its measured box, so the column is one width whatever is in each button.
+  - **It is shown BEFORE chapter 10, when the screen behind it is still shut.** That
+    screen NAMES the chapter rather than drawing a padlock, which is the rule the
+    granary's levels and the inventory row already follow — and a button that appears
+    only once a feature is open is one nobody knows is coming.
+  - `ui/__tests__/routes.test.ts` holds both ways in, because a route is exactly what
+    nothing else notices: every other test opens these screens through the router rather
+    than through the app, so a screen reachable from nowhere stays green.
 - **A GRADIENT CANNOT BE PAINTED ON `#home::after` WITHOUT EXEMPTING IT** from the blanket
   that clears every background image (`*:not(#home), *::before, *::after`) — a gradient IS
   a background image, so a wash written there is a flat colour or nothing at all,
@@ -3259,8 +3283,9 @@ are gone until there is something behind them.
   difference between a screen and a list of labels.
 - **Three of the rows are things the app could already do and had nowhere to offer.** The
   colony's NAME, printed beside the nest for the whole match (§ plates) and never editable
-  anywhere; HOW TO PLAY, reachable only from home; and `ProfileStore.reset`, which has
-  always existed and which nothing called.
+  anywhere; HOW TO PLAY, which was then reachable only from home and is in the drawer now
+  (§ THE HOME ARTWORK); and `ProfileStore.reset`, which has always existed and which
+  nothing called.
 - **The reset asks twice, on the same button.** A confirm dialog would be a second overlay
   for one control; the row re-labels itself and says what it is about to destroy instead.
 - **The build stamp is not a setting and no longer sits in the list pretending to be one.**

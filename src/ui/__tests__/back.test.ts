@@ -61,7 +61,8 @@ describe("going up one", () => {
    */
   it("presses the screen's own back button on a page over the deck", () => {
     const { host, app } = open();
-    host.querySelector<HTMLButtonElement>("#howToBtn")?.click();
+    host.querySelector<HTMLButtonElement>(".settingsfab")?.click();
+    host.querySelector<HTMLButtonElement>("[data-go='rules']")?.click();
     expect(showing(host)).toContain("rules");
     expect(app.goBack()).toBe(true);
     expect(showing(host)).not.toContain("rules");

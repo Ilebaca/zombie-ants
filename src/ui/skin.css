@@ -1098,6 +1098,15 @@ body,
   color: var(--ink-soft);
   box-shadow: 0 3px 0 rgba(0, 0, 0, .5), 0 8px 18px rgba(0, 0, 0, .45), var(--sheen);
 }
+/* THE HATCH IS THE DAILY'S SHAPE AND THE MENU BUTTON'S FACE. It carries `.dailyfab` as
+   well, so it inherits the size, the label, the press and the right edge from one place
+   rather than from a copy — and only the colour is said again here. GOLD on this screen
+   means "something is waiting"; two gold buttons stacked is neither of them saying it. */
+.hatchfab {
+  background: rgba(16, 28, 19, .86);
+  color: var(--ink-soft);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, .5), 0 8px 18px rgba(0, 0, 0, .45), var(--sheen);
+}
 
 /* ----------------------------------------------------------- THE ACTION
    One green, one shape, one place. The play button is the only thing on
@@ -1197,32 +1206,14 @@ body,
    class any more. */
 .homeplay { gap: 14px; padding-bottom: 10px; }
 
-/* NO FILL AT ALL. It was a pill under the PLAY button, which put two things
-   shaped like buttons on a screen that offers one action — and the quiet one
-   read as the second choice rather than as a way out to a page of text. It is
-   the words and the mark, and the press dims them. */
-.howtolink {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin: 2px auto 0;
-  padding: 9px 16px;
-  border: none;
-  background: none;
-  /* DARK INK, because the ground under it is BRIGHT. It is the one piece of text on home
-     written straight onto the artwork — everything else is a card or a slab — and in the
-     app's pale `--ink-soft` it measured 1.7:1 against the sand, which is a control the
-     player cannot read (§ CONTRAST IS MEASURED). The soft light halo is what carries it
-     across a rock or a tuft of grass without giving it a fill: a pill under PLAY is two
-     things shaped like buttons on a screen that offers one action (§10). */
-  color: rgba(14, 26, 16, .88);
-  text-shadow: 0 1px 6px rgba(255, 240, 200, .55);
-  font-size: 12.5px;
-  font-weight: 800;
-  letter-spacing: .3px;
-  text-decoration: none;
-}
-.howtolink:active { background: none; opacity: .6; }
+/* HOW TO PLAY IS IN THE DRAWER NOW (`MENU_ENTRIES`), so the rules that dressed it as a
+   line of text on the artwork are gone with it — nothing emits `.howtolink` any more.
+   What they were for is worth keeping as a note, because it is the one place this app
+   ever wrote a control straight onto a picture: no fill, because a pill under PLAY is
+   two things shaped like buttons on a screen that offers one action; and DARK ink with
+   a soft light halo, because the pale `--ink-soft` measured 1.7:1 against the sand and
+   the dark read 5.8:1 (§ CONTRAST IS MEASURED). The legacy sheet still carries its own
+   `.howtolink`, and it can — the same way it still carries `.homemark`. */
 
 /* The top bar and the colony banner are one block of chrome, so the banner sits
    on the panel rather than floating on the artwork underneath it. */
