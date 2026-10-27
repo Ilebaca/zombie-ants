@@ -283,3 +283,22 @@ describe("a box that sizes a portrait sizes both kinds", () => {
     expect(bad, "these boxes size a drawn portrait and not a painted one").toEqual([]);
   });
 });
+
+/**
+ * A SOLID BUTTON STAYS SOLID WHILE IT IS WORKING.
+ *
+ * The hatch button is the one filled slab on a screen that is otherwise a lit painting,
+ * and it is disabled for the whole of the hold — so `opacity: .7` on `[disabled]` let the
+ * chamber through it at exactly the moment the player is watching that corner of the
+ * screen. Reported as the button going transparent. Darkening the FILL says "working"
+ * without saying "gone", and opacity is the only way to say it that cannot.
+ */
+describe("the hatch button while it is hatching", () => {
+  it("darkens its fill rather than going see-through", () => {
+    // `rulesFor` escapes the brackets itself, so the selector is written as it is in the file.
+    const rule = rulesFor(read("skin.css"), ".hatchbtn[disabled]");
+    expect(rule, "it is transparent again while hatching").not.toMatch(/(^|[;{])\s*opacity\s*:/);
+    expect(rule, "the fill was dropped, so there is nothing to darken")
+      .toMatch(/background\s*:\s*color-mix/);
+  });
+});

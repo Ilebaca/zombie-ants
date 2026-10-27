@@ -48,8 +48,18 @@ export function buildOdds(heading = "Chances"): HTMLElement {
   // A skin has no chance of its own — it IS the top of this row (platform/skins.ts) — so
   // the note names the tiers rather than a second number. Printed all the same: an outcome
   // a player can get and was never told about is exactly what this panel prevents.
+  //
+  // IT BREAKS AT THE COMMA, and that is why the two halves are their own elements. Left
+  // as one string it wraps wherever the column runs out — mid-clause, on a different word
+  // at every width, which reads as a paragraph that did not fit. The comma is where the
+  // sentence already pauses, so that is the line: what the two tiers pay, then the
+  // condition on it.
   const named = SKIN_TIERS.map((t) => TIERS[t].name).join(" and ");
-  box.appendChild(el("div", "ho-note",
-    `${named} hatches pay a colony skin, while you still have one to find.`));
+  const note = el("div", "ho-note");
+  note.append(
+    el("span", "ho-line", `${named} hatches pay a colony skin,`),
+    el("span", "ho-line", "while you still have one to find."),
+  );
+  box.appendChild(note);
   return box;
 }

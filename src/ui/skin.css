@@ -5403,7 +5403,13 @@ button:not(.playbtn):active,
 /* With no larva it is NOT disabled — it is the way to get some. A dead button
    is a dead end; this one still answers, it just answers with the shop. */
 .hatchbtn.out { background: rgba(255, 255, 255, .07); border: 1px solid var(--line); color: var(--ink); }
-.hatchbtn[disabled] { opacity: .7; cursor: default; }
+/* WHILE IT IS HATCHING IT IS STILL A BUTTON. `opacity: .7` over a lit chamber
+   let the artwork through it — the one solid slab on the screen going see-
+   through at the one moment the player is watching it. It is the same fill a
+   step darker, which says "working" without saying "gone". */
+.hatchbtn[disabled] { background: color-mix(in srgb, var(--grass) 78%, #0b1409); cursor: default; }
+/* ...and the out state has no fill to darken, so it dims its ink instead. */
+.hatchbtn.out[disabled] { background: rgba(255, 255, 255, .07); color: var(--muted); }
 .hb-t { font-size: 17px; font-weight: 900; letter-spacing: .4px; text-transform: uppercase; }
 .hb-c { font-size: 11px; font-weight: 800; opacity: .75; }
 
@@ -5458,6 +5464,13 @@ button:not(.playbtn):active,
   text-align: center;
   color: var(--muted);
 }
+/* IT BREAKS AT THE COMMA, which is why the two halves are separate elements.
+   Left as one string the break lands wherever the column happens to run out —
+   mid-clause, on a different word at every screen width — and reads as a
+   paragraph that did not fit. The comma is where the sentence already pauses,
+   so that is the line. (Each half still wraps on a narrow phone if it has to;
+   what is pinned is that the two never share a line.) */
+.ho-line { display: block; }
 
 /* ---- A skin came out ----
    The portrait fills the disc rather than sitting in it: the picture IS the
