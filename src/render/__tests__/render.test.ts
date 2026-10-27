@@ -150,6 +150,11 @@ describe("animate: events to animation", () => {
     const flow = vi.spyOn(s.fx, "flow");
     const crumble = vi.spyOn(s.fx, "crumble");
     const path: Coord[] = [{ c: 0, r: 0 }, { c: 0, r: 1 }, { c: 0, r: 2 }, { c: 0, r: 3 }];
+    // BEFORE the batch, because `animate` stamps the hold off its OWN `performance.now()`.
+    // Read afterwards this is a few milliseconds LATER than that stamp, so "one before the
+    // hold ends" lands just PAST it and the trail has a fraction of a tile on it — green
+    // on a quiet machine and red on a loaded CI runner. Taken first it can only be early.
+    const start = performance.now();
     animate([
       { type: "effectDamage", at: { c: 1, r: 1 }, kind: "venom", lost: 4, wiped: true, owner: "you" },
       { type: "veinLaid", at: { c: 0, r: 1 }, owner: "ai" },
@@ -166,7 +171,6 @@ describe("animate: events to animation", () => {
     expect(held, "the column set off on top of the destruction").toBeGreaterThan(0);
 
     // ...and the ground the march claims is not filling in the meantime either.
-    const start = performance.now();
     s.reveal.step(start + held - 1);
     expect(s.reveal.progress(0, 1), "the trail filled before the troops set off").toBe(0);
     s.reveal.step(start + held + s.reveal.slotMs(1.5, 3));
