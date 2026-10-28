@@ -65,6 +65,25 @@ describe("the odds", () => {
     }
   });
 
+  /**
+   * NO HEADING HERE, and that is not the same as dropping the disclosure.
+   *
+   * The panel sits under a button that says Hatch, beside a purse counting larva, on a
+   * screen titled "Lucky hatch" — "Chances" was a label on the only thing it could be the
+   * chances of, and it cost a line the screen needed once the handful went under the main
+   * button. In the SHOP it is a row of percentages under a PRICE and the heading is what
+   * carries the requirement; `store-policy.test.ts` holds that one.
+   */
+  it("needs no heading on the screen it is the chances of", () => {
+    const panel = build(store()).root.querySelector("#hatchOdds");
+    expect(panel?.querySelector(".ho-h"), "the heading took a line back").toBeNull();
+    // ...and every chance is still printed, which is the half that has to hold.
+    for (const t of TRAIT_TIERS) {
+      expect(panel?.textContent, `${t}'s chance went with the heading`)
+        .toContain(`${Math.round(tierOdds(t))}%`);
+    }
+  });
+
   /** Shut with the rest of it: there is nothing to state the chances OF. */
   it("says nothing before the hatch opens", () => {
     const young = new ProfileStore(new MemoryStore());
@@ -421,6 +440,120 @@ describe("what it sounds like", () => {
       vi.runAllTimers();
     }).not.toThrow();
     vi.useRealTimers();
+  });
+});
+
+/**
+ * TEN AT ONCE.
+ *
+ * The handful is a shortcut through the one action this screen offers, so it is OFFERED
+ * only when it can be paid for — the main button already carries "a dead button is a dead
+ * end" and never says no, and a second one under it that mostly reads "you cannot" is a
+ * control competing with the one that can.
+ */
+describe("the handful", () => {
+  const BULK = 10;
+
+  it("is not offered until the whole batch can be paid for", () => {
+    expect(build(store(BULK - 1)).root.querySelector("#hatchGo10"),
+      "a handful was offered that the purse cannot cover").toBeNull();
+    expect(build(store(BULK)).root.querySelector("#hatchGo10"),
+      "a player holding ten was not offered the handful").toBeTruthy();
+  });
+
+  /** Under the one that always works, never above it: there is one primary action here. */
+  it("sits under the main button", () => {
+    const foot = build(store(BULK)).root.querySelector(".hatchfoot");
+    const ids = Array.from(foot?.children ?? []).map((n) => n.id);
+    expect(ids, "the handful is not under the main button").toEqual(["hatchGo", "hatchGo10"]);
+  });
+
+  it("spends ten and puts ten in the bag", () => {
+    vi.useFakeTimers();
+    const s = store(12);
+    const { root, spy } = build(s);
+    tap(root, "hatchGo10");
+    vi.advanceTimersByTime(2000);
+    vi.useRealTimers();
+    expect(s.get().larva, "the batch did not cost ten larva").toBe(2);
+    // Every roll landed: a trait in the bag, or a skin, which goes nowhere else.
+    expect(s.bag.length + s.skins.length, "ten larva did not produce ten prizes").toBe(BULK);
+    expect(spy.changed).toBe(1);
+  });
+
+  /**
+   * TEN ROWS, IN TWO COLUMNS, IN THE ORDER THEY ROLLED. Ten of the single card would be a
+   * scroller — a player would have to travel to see what they got.
+   */
+  it("shows the whole handful on one card", () => {
+    vi.useFakeTimers();
+    const { root } = build(store(BULK));
+    tap(root, "hatchGo10");
+    vi.advanceTimersByTime(2000);
+    vi.useRealTimers();
+
+    const card = root.querySelector("#hatchPop #hatchPrize");
+    expect(card?.className, "a handful drew the single prize card").toContain("many");
+    expect(root.querySelectorAll("#hatchHaul .hp-one").length,
+      "the card does not show every roll").toBe(BULK);
+  });
+
+  /** ...and it is put down the same three ways the single card is. */
+  it("closes on a tap anywhere", () => {
+    vi.useFakeTimers();
+    const { root } = build(store(BULK));
+    tap(root, "hatchGo10");
+    vi.advanceTimersByTime(2000);
+    vi.useRealTimers();
+    root.querySelector<HTMLElement>("#hatchPop")?.click();
+    expect(root.querySelector("#hatchPop"), "the handful's card would not go down").toBeNull();
+  });
+
+  /**
+   * A MYTHIC IN A HANDFUL MUST SOUND LIKE THE MYTHIC — the same rule the match screen's
+   * `loudestOf` follows. Ten cues on top of each other is a rattle; the batch is graded by
+   * its best roll.
+   */
+  it("sounds like the loudest thing in it", () => {
+    const heard: Cue[] = [];
+    const feedback: Feedback = {
+      play: (c: Cue) => { heard.push(c); }, unlock: () => {}, setMuted: () => {},
+      setMusic: () => {}, setMusicMuted: () => {},
+    } as unknown as Feedback;
+    vi.useFakeTimers();
+    const s = store(BULK);
+    // A roll at the very top of the range is a mythic (platform/traits.ts).
+    const root = buildHatch(s, {
+      onBack: () => {}, onBuyLarva: () => {}, onInventory: () => {},
+      random: () => 0.999, feedback,
+    });
+    document.body.replaceChildren(root);
+    tap(root, "hatchGo10");
+    vi.advanceTimersByTime(2000);
+    vi.useRealTimers();
+    expect(heard[0], "the shell did not give way first").toBe("hatch");
+    expect(heard.at(-1), "a handful of mythics sounded like a common").toBe("jackpot");
+
+    // A SKIN IN THE BATCH GOES SOMEWHERE THE BUTTON DOES NOT, so the card says so. At the
+    // top of the range every roll pays one while any is still locked, which is the whole
+    // point of the note: the inventory is the one place a skin will never be.
+    expect(s.skins.length, "the top of the range paid no skin at all").toBeGreaterThan(0);
+    expect(root.querySelector(".hp-many-n")?.textContent,
+      "a handful carrying a skin did not say where it went").toMatch(/worn on/i);
+    expect(root.querySelectorAll("#hatchHaul .hp-one.skin").length,
+      "a skin was drawn as a trait").toBeGreaterThan(0);
+  });
+
+  /**
+   * ...AND THE STORE REFUSES TOO, not just the screen. The button is only drawn when the
+   * batch is affordable, so the guard that actually protects the save is never reached
+   * from there — and it is the one that has to hold for every future caller.
+   */
+  it("refuses a batch the purse cannot cover, whoever asks", () => {
+    const s = store(BULK - 1);
+    expect(s.hatchMany(BULK, () => 0.5)).toEqual([]);
+    expect(s.bag.length, "a partial batch was rolled").toBe(0);
+    expect(s.get().larva, "larva went missing on a refused batch").toBe(BULK - 1);
   });
 });
 

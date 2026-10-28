@@ -5371,6 +5371,66 @@ button:not(.playbtn):active,
   font-weight: 900;
   color: var(--grass-glow);
 }
+/* ---- Ten at once ----
+   One prize is the tier's colour filling the screen; ten is a TABLE, and they are
+   not the same card. Ten of the big cards would be a scroller — a player would
+   have to travel to see what they got — so each roll is one row and the batch is
+   TWO COLUMNS of five, the whole handful readable without moving. */
+.hatchprize.many { gap: 10px; width: min(100%, 420px); }
+.hp-many-h {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.hp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  width: 100%;
+}
+/* The same mix-into-the-soil the odds rows use: over the lit chamber a wash on
+   nothing shows the painting through the prize (§ THE FIVE TIER FRAMES). */
+.hp-one {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--tier) 26%, #0d1410);
+  border: 1px solid color-mix(in srgb, var(--tier) 40%, transparent);
+}
+.hp-one-i { flex: none; display: grid; place-items: center; color: var(--tier); }
+.hp-one-port { width: 26px; height: 26px; border-radius: 50%; }
+/* `min-width: 0` on both, or a long trait name refuses to shrink and pushes the
+   column past its track — a grid item's automatic minimum is its CONTENT. */
+.hp-one-t { display: grid; gap: 1px; min-width: 0; }
+.hp-one-n {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hp-one-e {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* A skin in the batch goes somewhere the button under it does not. */
+.hp-many-n {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--muted);
+}
+
 /* Where it went. A reward that lands somewhere the player has to go looking for
    is a reward they will not find. */
 .hp-go {
@@ -5418,6 +5478,23 @@ button:not(.playbtn):active,
 .hatchbtn.out[disabled] { background: rgba(255, 255, 255, .07); color: var(--muted); }
 .hb-t { font-size: 17px; font-weight: 900; letter-spacing: .4px; text-transform: uppercase; }
 .hb-c { font-size: 11px; font-weight: 800; opacity: .75; }
+
+/* ---- The handful ----
+   Under the one that always works, and quieter than it: one primary action on
+   this screen, and this is a shortcut THROUGH it rather than a rival to it. An
+   outline rather than a slab, and shorter, so the eye still lands on Hatch. It
+   is only drawn when the batch can be paid for, so it never has an `out` state
+   to wear — which is why it may be outlined where the main button may not. */
+.hatchfoot { display: grid; gap: 8px; }
+.hatchbtn.bulk {
+  min-height: 46px;
+  padding: 7px 10px;
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--grass) 55%, transparent);
+  color: var(--grass-glow);
+}
+.hatchbtn.bulk .hb-t { font-size: 14px; }
+.hatchbtn.bulk[disabled] { background: none; color: var(--muted); }
 
 /* ---- The odds ----
    A single row of five, because the ORDER is the message: the colours run from

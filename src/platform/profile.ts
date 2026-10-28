@@ -1562,6 +1562,35 @@ export class ProfileStore {
     return item ? { kind: "trait", item } : null;
   }
 
+  /**
+   * HATCH A WHOLE HANDFUL, one roll at a time.
+   *
+   * It is `hatch()` in a loop and that is deliberate rather than lazy — the rolls are not
+   * independent of each other. A skin is rolled against the collection AS IT STANDS
+   * (platform/skins.ts), so committing each one before the next is what stops a batch
+   * paying the SAME skin twice; rolling ten against one snapshot would hand out
+   * duplicates of the rarest thing in the game.
+   *
+   * THE PURSE IS CHECKED ONCE, FOR THE WHOLE BATCH. A run that paid for six and then
+   * stopped would be a button that did not do what it said, and the screen's own guard
+   * only offers this when the larva are there — this is the one that actually protects
+   * the save (§9b: the store refuses too, not just the screen).
+   *
+   * An empty array is a refusal, the same shape `null` is for a single hatch. A roll that
+   * produced nothing is left out rather than carried as a hole: the caller is a card that
+   * draws what came out, and nothing is not a prize.
+   */
+  hatchMany(count: number, random: () => number = Math.random): HatchPrize[] {
+    const n = Math.floor(count);
+    if (n < 1 || this.profile.larva < HATCH_COST * n) return [];
+    const out: HatchPrize[] = [];
+    for (let i = 0; i < n; i++) {
+      const prize = this.hatch(random);
+      if (prize) out.push(prize);
+    }
+    return out;
+  }
+
   /* ------------------------------------------------------- WHERE A CURRENCY GOES */
 
   /**
