@@ -2106,6 +2106,50 @@ is a control competing with it.
       gets richer, so this is a ceiling rather than a preference: with the figure left at
       a flat tier colour the richest fill that still clears AA is 14%, which is barely a
       fill. The DOT stays the pure tier — it is the swatch, and nothing is read on it.
+  - **AND A HANDFUL IS TEN** (`BULK`, `ProfileStore.hatchMany`), asked for directly. Ten
+    is the number a player counts larva in once they have more than a few, and ten rolls
+    at the printed odds is where the row below stops being a table of chances and becomes
+    something they have watched happen.
+    - **IT IS SHOWN ONLY WHEN THE WHOLE BATCH IS AFFORDABLE**, which is the one place this
+      screen departs from "a dead button is a dead end". The main button already carries
+      that job and never says no; a second one under it that mostly reads "you cannot" is
+      a control competing with the one that can. It sits UNDER that button and quieter —
+      an outline rather than a slab — because this is a shortcut THROUGH the screen's one
+      action rather than a rival to it.
+    - **THE ROLLS ARE NOT INDEPENDENT, so it is `hatch()` in a loop on purpose.** A skin is
+      rolled against the collection AS IT STANDS, so committing each roll before the next
+      is what stops a batch paying the SAME skin twice; ten rolled against one snapshot
+      would hand out duplicates of the rarest thing in the game. The purse is checked ONCE
+      for the whole batch — a run that paid for six and stopped would be a button that did
+      not do what it said — and the store refuses too, not just the screen (§9b).
+    - **TEN IS A TABLE, ONE IS A COLOUR, and they are two different cards.** One prize is
+      the tier's colour filling the screen; ten of those would be a scroller the player
+      has to travel through to see what they got. Each roll is one ROW — the mark in its
+      tier, the name, what it is worth — in TWO COLUMNS of five, the whole handful read at
+      a glance. `haul` is a second field rather than `found` becoming a list, because a
+      list of one would draw the table for an ordinary hatch and lose the moment.
+    - **IN THE ORDER THEY ROLLED, never sorted by tier.** Sorting puts the best one at the
+      top of every batch, which turns the one moment worth having — finding the good one
+      in the list — into a header.
+    - **AND A SKIN IN THE BATCH SAYS WHERE IT WENT.** Five rolls in a hundred means about
+      four batches in ten carry one, so it is the common case rather than an edge — and
+      the button under the card points at the INVENTORY, which is the one place a skin
+      will never be (§ A SKIN IS NOT AN ITEM). The card names it and the note says it is
+      worn on the colony's own page.
+    - **The cue is the LOUDEST roll in the batch**, the same rule `loudestOf` follows on
+      the match screen: ten cues on top of each other is a rattle, and a mythic among
+      commons has to sound like the mythic.
+    - **It holds for exactly as long as ONE roll does.** The wriggle says the screen is
+      working rather than measuring anything, so ten times the wait for ten times the
+      larva would be the shortcut costing more time than the ten taps it saves.
+  - **AND THE ODDS PANEL LOST ITS HEADING HERE, but never in the shop.** It sits under a
+    button that says Hatch, beside a purse counting larva, on a screen titled "Lucky
+    hatch" — "Chances" was a label on the only thing it could be the chances of, and it
+    cost a line the screen needed once a second button went under the first. In the SHOP
+    it is a row of percentages under a PRICE and a disclosure with no subject is worse
+    than none, which is the store requirement the panel exists for (§ LOOT BOX ODDS GO
+    BEFORE THE PURCHASE). `buildOdds` takes an empty heading and draws none; two tests
+    hold the two halves.
   - **The stage keeps its room**, so nothing below it moves as larva come and go, and the
     LOCKED state kept the ring the egg used to lend it under its own name (`.hatchlock`).
 - **LARVA IS THE THIRD CURRENCY AND IT IS SHOWN HERE AND NOWHERE ELSE.** It buys exactly

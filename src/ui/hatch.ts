@@ -29,6 +29,21 @@ import LARVA_ART from "./backdrops/larva.webp";
 /** How long the larva wriggles before it gives an answer. */
 const SHAKE_MS = 900;
 
+/**
+ * HOW MANY A HANDFUL IS.
+ *
+ * Ten, because that is the number a player counts their larva in once they have more than
+ * a few, and because ten rolls at the printed odds is where the row below stops being a
+ * table of chances and starts being something they have watched happen — four uncommons,
+ * a rare, and the one in a hundred still missing.
+ *
+ * The button for it is SHOWN ONLY when the whole batch is affordable, which is the one
+ * place this screen departs from "a dead button is a dead end": the main button already
+ * carries that job, and it never says no. A second one under it that mostly reads "you
+ * cannot" is a control competing with the one that can.
+ */
+const BULK = 10;
+
 export interface HatchOptions {
   onBack: () => void;
   /** Straight to the larva shelf in the shop — the plus sign is not a general "go shopping". */
@@ -60,6 +75,20 @@ const LOUD = TIER_IDS.slice(-2) as readonly string[];
 const prizeCue = (tier: string | undefined): Cue =>
   tier && LOUD.includes(tier) ? "jackpot" : "prize";
 
+/** What a prize is worth to the ear, whichever kind it is. */
+const tierOf = (prize: HatchPrize): string | undefined =>
+  prize.kind === "skin" ? prize.look.tier : prize.item.tier;
+
+/**
+ * ONE CUE FOR A BATCH, AND IT IS THE LOUDEST THING IN IT.
+ *
+ * The same rule the match screen's `loudestOf` follows: ten cues on top of each other is a
+ * rattle, and a mythic in a handful of commons has to sound like the mythic — grading the
+ * batch by its best roll is what the player is listening for.
+ */
+const batchCue = (prizes: readonly HatchPrize[]): Cue =>
+  prizes.some((p) => LOUD.includes(tierOf(p) ?? "")) ? "jackpot" : "prize";
+
 export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement {
   const root = screenEl("luckyhatch");
   /**
@@ -70,6 +99,15 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
    * "is the pop-up up". Closing it clears the field, which is how one state can be both.
    */
   let found: HatchPrize | null = null;
+  /**
+   * What a HANDFUL produced, and empty for a single hatch.
+   *
+   * It is a second field rather than `found` becoming a list, because the two are two
+   * different cards: one prize is the tier's colour filling the screen, and ten is a
+   * table of what came out. A list of one would draw the handful's card for an ordinary
+   * hatch and lose the moment the whole feature is built around.
+   */
+  let haul: HatchPrize[] = [];
   /** True while the larva is wriggling: the button must not be tapped twice into one roll. */
   let busy = false;
 
@@ -106,8 +144,9 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     // INSIDE the screen cannot out-stack the bar however high its own z-index goes, and
     // it came up with five tabs still lit across the bottom of it. The class raises the
     // screen rather than the card, because the card is the thing that is trapped.
-    root.classList.toggle("popped", Boolean(found) && !busy);
-    if (found && !busy) root.appendChild(popup(found));
+    const up = !busy && (Boolean(found) || haul.length > 0);
+    root.classList.toggle("popped", up);
+    if (up) root.appendChild(popup());
   };
 
   /** The chapter, never a padlock: a number is something to play toward. */
@@ -262,7 +301,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
    * lifts on the dark lands on the backdrop. With every target closing, the worst a
    * wobble can do is close without navigating, which is what the backdrop does anyway.
    */
-  const popup = (prizeFound: HatchPrize): HTMLElement => {
+  const popup = (): HTMLElement => {
     const pop = el("div", "hatchpop");
     pop.id = "hatchPop";
     // It is a dialog in the sense that matters here: it covers the screen and it is the
@@ -278,14 +317,111 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     x.appendChild(icon("cross", 20));
     x.onclick = (e) => { e.stopPropagation(); close(); };
 
-    pop.append(x, prizeFound.kind === "skin" ? skinPrize(prizeFound.look) : prize(prizeFound.item));
+    // One card or the other, never a cast: `render` only raises this with something to
+    // show, and a `found` that is somehow neither leaves the pop-up empty rather than
+    // throwing inside a screen builder.
+    if (haul.length > 0) pop.append(x, hoard(haul));
+    else if (found?.kind === "skin") pop.append(x, skinPrize(found.look));
+    else if (found) pop.append(x, prize(found.item));
+    else pop.appendChild(x);
     return pop;
   };
 
-  /** Put the card down. The field it clears is also what says the pop-up is up. */
+  /* ------------------------------------------------------------------ A HANDFUL */
+
+  /**
+   * WHAT TEN LARVA CAME TO.
+   *
+   * One prize is the tier's COLOUR filling the screen; ten is a TABLE, and the two cannot
+   * be the same card. Ten of the big cards would be a scroller — the player would have to
+   * travel to see what they got — so each roll is one row: the mark in its tier's colour,
+   * what it is, and what it is worth. TWO COLUMNS, five rows, the whole batch on one
+   * screen at a glance, which is the only reading that makes a handful feel like a
+   * handful rather than like ten hatches that happened quickly.
+   *
+   * They are drawn IN THE ORDER THEY ROLLED, never sorted by tier. Sorting would put the
+   * best one at the top of every batch, which turns the one moment worth having — finding
+   * the good one in the list — into a header.
+   */
+  const hoard = (prizes: readonly HatchPrize[]): HTMLElement => {
+    const box = el("div", "hatchprize many");
+    box.id = "hatchPrize";
+
+    box.appendChild(el("div", "hp-many-h", `${prizes.length} hatched`));
+    const grid = el("div", "hp-grid");
+    grid.id = "hatchHaul";
+    for (const p of prizes) grid.appendChild(p.kind === "skin" ? skinRow(p.look) : traitRow(p.item));
+    box.appendChild(grid);
+
+    // A SKIN IN THE BATCH GOES SOMEWHERE ELSE, so the card has to say so. At five rolls
+    // in a hundred a handful of ten carries one about four times out of ten — the common
+    // case, not an edge — and the button under this points at the inventory, which is the
+    // one place a skin will never be (§ A SKIN IS NOT AN ITEM).
+    const skins = prizes.filter((p) => p.kind === "skin").length;
+    if (skins > 0) {
+      box.appendChild(el("div", "hp-many-n",
+        skins === 1
+          ? "The skin is worn on its colony's own page."
+          : "The skins are worn on their colonies' own pages."));
+    }
+
+    const traits = prizes.length - skins;
+    if (traits > 0) {
+      const go = el("button", "hp-go") as HTMLButtonElement;
+      go.type = "button";
+      go.id = "hatchToBag";
+      go.append(
+        el("span", undefined, traits === 1 ? "See it in your inventory" : "See them in your inventory"),
+        icon("next", 13),
+      );
+      go.onclick = (e) => { e.stopPropagation(); close(); opts.onInventory(); };
+      box.appendChild(go);
+    }
+    return box;
+  };
+
+  /** One roll of the batch: the mark, the name, and what it is worth. */
+  const traitRow = (item: TraitItem): HTMLElement => {
+    const def = itemDef(item);
+    const tier = TRAIT_TIER[item.tier];
+    const row = el("div", "hp-one");
+    row.style.setProperty("--tier", tier.colour);
+
+    const mark = el("span", "hp-one-i");
+    mark.appendChild(icon(def?.icon ?? "star", 18));
+    const text = el("span", "hp-one-t");
+    text.append(
+      el("span", "hp-one-n", def?.name ?? "Trait"),
+      el("span", "hp-one-e", def ? effectText(def, item.tier) : tier.name),
+    );
+    row.append(mark, text);
+    row.title = def ? `${def.name} · ${tier.name}` : tier.name;
+    return row;
+  };
+
+  /** ...and a skin, which is the colony rather than a mark. */
+  const skinRow = (look: Look): HTMLElement => {
+    const tier = look.tier ? TIERS[look.tier] : null;
+    const row = el("div", "hp-one skin");
+    row.style.setProperty("--tier", tier?.colour ?? "#ffd257");
+
+    const mark = el("span", "hp-one-i");
+    mark.appendChild(antPortrait(look.species, 44, "hp-one-port", look));
+    const text = el("span", "hp-one-t");
+    text.append(
+      el("span", "hp-one-n", look.name),
+      el("span", "hp-one-e", `${SPECIES[look.species].name} skin`),
+    );
+    row.append(mark, text);
+    row.title = `${look.name} · ${tier?.name ?? ""} skin`;
+    return row;
+  };
+
+  /** Put the card down. The fields it clears are also what say the pop-up is up. */
   const close = (): void => {
-    if (!found) return;
+    if (!found && haul.length === 0) return;
     found = null;
+    haul = [];
     render();
   };
 
@@ -397,6 +533,22 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     );
     btn.onclick = () => (can ? run() : opts.onBuyLarva());
     box.appendChild(btn);
+
+    // THE HANDFUL SITS UNDER THE ONE THAT ALWAYS WORKS, and only when it can be paid for.
+    // Quieter than the button above it on purpose: there is one primary action on this
+    // screen and this is a shortcut through it, not a second offer competing with it.
+    if (store.get().larva >= HATCH_COST * BULK) {
+      const many = el("button", "hatchbtn bulk") as HTMLButtonElement;
+      many.type = "button";
+      many.id = "hatchGo10";
+      many.disabled = busy;
+      many.append(
+        el("span", "hb-t", `Hatch ${BULK}`),
+        el("span", "hb-c", `${HATCH_COST * BULK} larva`),
+      );
+      many.onclick = () => runMany();
+      box.appendChild(many);
+    }
     return box;
   };
 
@@ -431,6 +583,32 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
       // ladder — a mythic that sounds like a common is the feature failing at the one
       // moment it exists for.
       opts.feedback?.play(prizeCue(item.kind === "skin" ? item.look.tier : item.item.tier));
+      opts.onChanged?.();
+    }, SHAKE_MS);
+  };
+
+  /**
+   * ...AND THE SAME DRAMA FOR A HANDFUL.
+   *
+   * It holds for exactly as long as one roll does. The wriggle is what says the screen is
+   * working, not a progress bar, and ten times the wait for ten times the larva would be
+   * the shortcut costing more time than the ten taps it saves.
+   *
+   * `hatchMany` spends and rolls in ONE call, the same rule `hatch` follows, and refuses
+   * the whole batch rather than part of it if the purse cannot cover it (platform).
+   */
+  const runMany = (): void => {
+    const got = store.hatchMany(BULK, opts.random);
+    if (got.length === 0) return;
+    haul = got;
+    busy = true;
+    opts.feedback?.play("hatch");
+    render();
+    window.setTimeout(() => {
+      if (!root.isConnected) return;
+      busy = false;
+      render();
+      opts.feedback?.play(batchCue(got));
       opts.onChanged?.();
     }, SHAKE_MS);
   };

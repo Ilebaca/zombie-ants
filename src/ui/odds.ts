@@ -27,13 +27,20 @@ export const trimPct = (pct: number): string =>
 /**
  * Build the panel.
  *
- * `heading` is what the screen calls it. On the hatch it is "Chances", beside the egg being
- * rolled; in the shop it has to say what it is the odds OF, because a row of percentages
- * under a price with no subject is worse than no disclosure at all.
+ * `heading` is what the screen calls it, and an EMPTY one draws no heading at all.
+ *
+ * THE HATCH PASSES NOTHING, and the SHOP must always pass something. On the hatch the
+ * panel sits under a button that says Hatch, beside a purse counting larva, on a screen
+ * titled "Lucky hatch" — "Chances" there was a label on the only thing it could be the
+ * chances of, and the line it took is room the screen needed once a second button went
+ * under the first. In the SHOP it is a row of percentages under a PRICE, and a
+ * disclosure with no subject is worse than none: that is the store requirement this
+ * panel exists for (§ LOOT BOX ODDS GO BEFORE THE PURCHASE), so the heading is what
+ * carries it there. `store-policy.test.ts` holds the shop's.
  */
-export function buildOdds(heading = "Chances"): HTMLElement {
+export function buildOdds(heading = ""): HTMLElement {
   const box = el("div", "hatchodds");
-  box.appendChild(el("div", "ho-h", heading));
+  if (heading) box.appendChild(el("div", "ho-h", heading));
   for (const id of TRAIT_TIERS) {
     const tier = TRAIT_TIER[id];
     const row = el("div", "ho-row");
