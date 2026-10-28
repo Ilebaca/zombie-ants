@@ -986,6 +986,78 @@ Ten numbered sections now, with a picture beside the rules that need one.
 - **The hive terrain is cleared from every figure that is not about it.** It sits in the
   middle of the board, which is inside most of these windows.
 
+**THE COLONY ROAD IS A PATH THROUGH TEN PLACES** (`src/ui/road.ts`, the table in
+`platform/road.ts`). It was a LADDER: two columns of grey cards either side of a hairline,
+a chapter label every two rungs, fifty times — every fact on it a word ("+105 mycelium",
+"Claim", "Locked"), so the one thing a road is FOR, how far have I come and how far is
+left, was the hardest thing on it to see. The shape it has now was asked for directly, and
+each of these is one of those requests.
+- **A CHAPTER IS FIVE CHECKPOINTS AND THE FIFTH IS BIGGER.** `ROAD_CHAPTER_STOPS` is 5,
+  so the road is 250 rungs rather than 100.
+  - **WIDENING IT DID NOT MULTIPLY THE ROAD'S INCOME, and that is the whole of the care
+    in the table.** A chapter has a PURSE (`freePurse`/`passPurse`) and its five
+    checkpoints SPLIT it (`splitPurse`): each of the first four takes an eighth and the
+    last takes WHAT IS LEFT, which is four times an eighth and a chapter that pays
+    exactly its purse however the eighths round. Paying each of the five what the single
+    stop used to pay would have been two and a half times the free track's lifetime
+    income, straight through the band `economy.test.ts` holds mycelium to — and nothing
+    else in the suite measures it. The totals are the two-rung road's to the troop (5,625
+    mycelium and 1,000 pheromone free, 7,750 and 1,400 on the pass), and a test holds all
+    four.
+  - **The pass track's purse is its old per-chapter AVERAGE**, on the opposite phase to
+    the free one, so every chapter still pays both currencies somewhere.
+  - **Chapter boundaries barely moved**, because the ladder is solved from its two ends:
+    chapter N still closes at about the colony it always did. What DID move is the
+    rounding (§8a) and a handful of tests that computed "the colony in chapter N" as
+    `stopColony((N - 1) * 2)` with the 2 written out.
+- **EVERY CHAPTER WEARS A PICTURE, and it is home's own** (`backdropFor`). Ten paintings,
+  one per region, with a per-chapter `ch##.webp` beating its region — that tier had been
+  held open with nothing using it, and this is the first thing that does. So "a different
+  background for each chapter" is one dropped file, and home and the stretch of road it
+  announces are the same place for the same chapter.
+  - **`.rd-chap` IS THE FOURTH EXEMPTION ON THE BACKGROUND BLANKET** (§10), and the only
+    one that is not a whole screen. Without `:not(.rd-chap)` all fifty pictures are
+    stripped off with `!important` and the road comes back grey, silently. `css-sanity`
+    holds it, because nothing a jsdom test can see would notice: the inline style is set
+    either way and only the cascade removes it. The scrim is a `::before` — those are
+    blanketed with no exemption at all, so the picture cannot hide on one.
+- **A CHECKPOINT IS AN ICON ON THE PATH, NOT A CARD BESIDE IT.** The disc carries the
+  resource's mark and nothing else; the pass reward is a smaller disc hanging off the
+  right-hand column, wearing a crown or a lock. The path is drawn per checkpoint
+  (`.rd-stop::before`) and goes gold as far as the colony has reached, so "how far have I
+  come" is answered by where the colour stops — which one bar down the scroller could only
+  do by measuring the DOM.
+- **THE AMOUNT IS THE REWARD FOR CLAIMING IT.** A popup names it, with the resource's
+  mark, so walking the road is a sequence of small openings rather than a priced list. It
+  is still on the button's own label, because a control has to say what it is. The card is
+  raised INSIDE the screen and `#achievements.popped` lifts the screen — the hatch's trap,
+  `.screen` being z-index 20 against `#mainNav`'s 60 — and its own z-index clears the
+  STICKY footer as well, which sat on top of the first version of it.
+- **A BREAKER BETWEEN THE AREAS, and a "theme" is a REGION.** Ten of them, five chapters
+  each, so nine gates — between chapter 5 and 6, 10 and 11, and so on — each naming the
+  area being ENTERED. Drawn, not an image: an arch is two borders and a radius, and a file
+  would be a tenth thing to keep in step with `REGIONS`.
+- **IT OPENS WHERE THE PLAYER STANDS**, with the checkpoint they are working towards
+  centred — and the offset is measured off the RECTS. A checkpoint's offset parent is its
+  own `.rd-path` (both are positioned), so `offsetTop` answers where it sits inside its
+  CHAPTER: a couple of hundred pixels into a thirty-six-thousand-pixel scroller, which
+  clamped to zero and opened every colony at chapter fifty.
+- **THE LABELS SIT ON NEAR-OPAQUE PLATES, and that is a contrast decision.** Written onto
+  the scrim they are read against TEN paintings — measured at 5.1 over the Mangrove, which
+  is AA with nothing in hand, and the next region somebody paints decides whether it still
+  is. On a `.88` plate the ratio is a property of two colours in this file: **4.82 against
+  the brightest artwork there could ever be**, which is a stronger statement than a sweep
+  of the ten. The one thing that failed that test was the target pill's own darker wash
+  (4.10); it wears the same plate as the rest now, and what marks the target is the ring.
+- **NOTHING PULSES.** The claimable disc was animated, and a save that has not claimed in
+  twenty chapters has two hundred of them on screen at once. Gold filled against dim
+  outlined is already the loudest difference on the page.
+- **The ladder's classes went WITH the markup.** `road2`, `roadchap`, `roadrow`, `rnode`,
+  `roadcell` and the rest are out of `skin.css` as well as out of `road.ts`, and the parity
+  test holds that they do not come back. What survives of the legacy build is the footer
+  strip — `roadhead`, `roadt`, the pass button — which is still the last child, still
+  sticky, and still says where the player stands.
+
 **CHALLENGES ARE A LADDER, AND BEATING ONE IS REMEMBERED** (`src/ui/challenges.ts`). Five
 identical cards — a title, a run-on grey sentence, a green Play button — and nothing
 recorded a win, so the forty-mycelium reward paid again on EVERY replay of the easiest
@@ -1629,11 +1701,17 @@ ceiling — only a curve that flattens.
   One decimal only under ten of a unit — 457.3K is three characters of noise — and the
   shown digit is TRUNCATED, so 999,900 reads as 999K and never as the 1000K that would
   follow 999K on the screen above it. `exact()` writes it out where there is room.
-- **The road grows with it.** Every rung is a fixed multiple of the last, and a hundred of
-  them run from a hundred troops to five million — the top came down from two trillion
-  with the taper, because a road is only worth having where a career actually goes. A rung
-  is named by its INDEX, not its size: "is this a multiple of five hundred?" only answers on an even
-  ladder, and a claim key has to outlive a retune of the table.
+- **The road grows with it.** Every rung is a fixed multiple of the last, and two hundred
+  and fifty of them run from a hundred troops to five million — the top came down from two
+  trillion with the taper, because a road is only worth having where a career actually
+  goes. A rung is named by its INDEX, not its size: "is this a multiple of five hundred?"
+  only answers on an even ladder, and a claim key has to outlive a retune of the table.
+  - **AND THE ROUNDING IS THREE SIGNIFICANT FIGURES EVERYWHERE**, which it was not under
+    a thousand — there it rounded to the nearest TEN, two figures at a hundred. With two
+    rungs to a chapter the step there was 15% and it never showed; at five checkpoints a
+    chapter it is 4.4%, four troops at the first rung, and rungs one and two both landed
+    on 100. Two checkpoints asking for the same colony is one nobody can ever be short
+    of, and `stopReached(100)` answered 2.
 - **A save from the trophy build converts, and its road claims convert with it.** The
   trophy count becomes troops — the player earned it — and claims keyed by trophy amount
   ("f500") would otherwise read as rung five hundred, which is past the end of the road.
@@ -3076,7 +3154,8 @@ The progression layer sits in three files, and none of them is reachable from th
 - `platform/catalogue.ts` — prices and player-facing copy. The engine still owns what a
   chamber or research level *does*; this owns what it costs and what it says.
 - `platform/colony.ts` — how the colony grows, and how a figure that big is written.
-- `platform/road.ts` — Colony Road reward table, pure functions of a colony size.
+- `platform/road.ts` — Colony Road reward table (a chapter's purse and how its five
+  checkpoints split it), pure functions of a colony size.
 - `platform/quests.ts` — the daily pool and a day-seeded roll.
 
 A new player starts with nothing — no mycelium, no pheromone, a colony of forty. The legacy

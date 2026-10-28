@@ -16,7 +16,7 @@ import type { TraitItem, TraitTier } from "../traits";
 import { ProfileStore, normalise } from "../profile";
 import { MemoryStore } from "../storage";
 import { SPECIES } from "../../engine";
-import { ROAD_CHAPTERS, ROAD_LAST, stopColony } from "../road";
+import { ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, ROAD_LAST, stopColony } from "../road";
 import { COLONY_START } from "../colony";
 
 const item = (def: string, tier: TraitTier, uid = def): TraitItem => ({ uid, def, tier });
@@ -361,7 +361,7 @@ describe("when each slot opens", () => {
   const at = (chapter: number): ProfileStore => {
     const s = new ProfileStore(new MemoryStore());
     // The colony is what decides the chapter, so a chapter is set by picking a rung.
-    s.update((p) => { p.colony = chapter <= 1 ? COLONY_START : stopColony((chapter - 1) * 2); });
+    s.update((p) => { p.colony = chapter <= 1 ? COLONY_START : stopColony((chapter - 1) * ROAD_CHAPTER_STOPS); });
     return s;
   };
 
@@ -424,14 +424,14 @@ describe("when each slot opens", () => {
     for (const uid of uids) expect(s.equipTrait("hill", uid)).toBe(true);
     const both = s.benchTotals("hill");
 
-    s.update((p) => { p.colony = stopColony(9 * 2); });      // back to chapter 10
+    s.update((p) => { p.colony = stopColony(9 * ROAD_CHAPTER_STOPS); });      // back to chapter 10
     expect(s.slotsOpen()).toBe(1);
     const one = s.benchTotals("hill");
     expect(one.atkPct + one.defPct + one.luckPct,
       "a closed slot still counted").toBeLessThan(both.atkPct + both.defPct + both.luckPct);
     // ...and it is still THERE, so climbing back restores it.
     expect(s.bench("hill").filter(Boolean).length).toBe(2);
-    s.update((p) => { p.colony = stopColony(19 * 2); });
+    s.update((p) => { p.colony = stopColony(19 * ROAD_CHAPTER_STOPS); });
     expect(s.benchTotals("hill")).toEqual(both);
   });
 });

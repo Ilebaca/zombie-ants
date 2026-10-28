@@ -20,7 +20,7 @@ import { MemoryStore } from "../storage";
 import { TIER_IDS } from "../../engine";
 import { TRAITS_CHAPTER } from "../traits";
 import type { TraitTier } from "../traits";
-import { ROAD_CHAPTERS, ROAD_LAST, stopColony } from "../road";
+import { ROAD_CHAPTERS, ROAD_LAST, ROAD_STOPS, stopColony } from "../road";
 
 const store = (mycel = 0, pheromone = 0): ProfileStore => {
   const s = new ProfileStore(new MemoryStore());
@@ -30,7 +30,7 @@ const store = (mycel = 0, pheromone = 0): ProfileStore => {
 
 /** The colony a player has when they reach this chapter — the trait gate is a chapter. */
 const colonyAtChapter = (chapter: number): number =>
-  stopColony(Math.ceil((chapter / ROAD_CHAPTERS) * 100)) || ROAD_LAST;
+  stopColony(Math.ceil((chapter / ROAD_CHAPTERS) * ROAD_STOPS)) || ROAD_LAST;
 
 /** n spare traits of one tier, taken from the colonies this player actually has. */
 const fill = (s: ProfileStore, tier: TraitTier, n: number): void => {

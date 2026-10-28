@@ -22,7 +22,9 @@ import { describe, expect, it } from "vitest";
 import { CHAMBER_MAX, RESEARCH_MAX, chamberCost, researchCost } from "../../engine";
 import { COLONY_START, losses, winnings } from "../colony";
 import { GRANARY_LEVELS, granaryFull, granaryRate, granaryStored } from "../granary";
-import { ROAD_LAST, ROAD_STOPS, chapterOf, freeReward } from "../road";
+import {
+  ROAD_CHAPTER_STOPS, ROAD_LAST, ROAD_STOPS, chapterOf, freeReward, stopColony,
+} from "../road";
 import { QUEST_POOL, QUEST_SWEEP_BONUS, QUESTS_PER_DAY, levelReward, xpForLevel } from "../quests";
 import { SPECIES_UNLOCK } from "../catalogue";
 import { FUSE_COST, FUSE_DEALS, FUSE_FUEL, LARVA_MYCEL } from "../exchange";
@@ -313,8 +315,10 @@ describe("the granary is a top-up, not a rival", () => {
   });
 
   it("pays a whole troop an hour by the chapter it is judged on", () => {
-    const colony = 640;
-    expect(chapterOf(colony)).toBeGreaterThanOrEqual(10);
+    // The colony is DERIVED from the chapter, not typed in: it was 640, which was chapter
+    // 10 while a chapter was two rungs wide and is chapter 9 now that it is five.
+    const colony = stopColony((10 - 1) * ROAD_CHAPTER_STOPS + 1);
+    expect(chapterOf(colony)).toBe(10);
     expect(granaryRate(colony, 2)).toBeGreaterThanOrEqual(1);
   });
 });

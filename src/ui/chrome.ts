@@ -9,7 +9,7 @@
  * player-chosen name, and a template string would happily inject it as markup.
  */
 import {
-  ROAD_CHAPTER_STOPS, compact, freeReward, passReward, stopColony, stopReached,
+  chapterAt, compact, freeReward, passReward, stopColony, stopReached,
 } from "../platform";
 import type { Profile, ProfileStore } from "../platform";
 import type { Look, SpeciesId } from "../engine";
@@ -230,7 +230,7 @@ export function colonyBanner(colony: number, onClick: () => void): HTMLElement {
 
   // The label names WHERE ON THE ROAD the player is standing. "Your colony" named the
   // thing the figure beside it already is.
-  const chapter = Math.ceil((reached + 1) / ROAD_CHAPTER_STOPS);
+  const chapter = chapterAt(reached + 1);
   const mid = el("div", "col-mid");
   mid.append(el("div", "col-t", `Chapter ${chapter}`), rail);
 

@@ -15,19 +15,32 @@
  * and `ProfileStore.claimRoad` is the only thing that pays out, so the table can be retuned
  * without touching either.
  *
- * Two tracks, as in the legacy build: FREE pays once a chapter, PASS pays at every stop but
- * only to players who hold the Colony Pass. The pass is the RevenueCat integration point
+ * Two tracks, as in the legacy build. Both pay at every checkpoint now — a chapter's purse
+ * split five ways — but the PASS half only to players who hold the Colony Pass. The pass is the RevenueCat integration point
  * (roadmap step 5) — `ProfileStore.grantPass()` is what a purchase calls.
  */
 import { COLONY_START } from "./colony";
 
-/** A chapter is two stops wide: one free reward, two pass rewards. */
-export const ROAD_CHAPTER_STOPS = 2;
+/**
+ * A chapter is FIVE checkpoints wide, and the fifth is the one that closes it.
+ *
+ * It was TWO — one free reward a chapter, a pass reward on each rung — which gave the
+ * screen nothing to be a road OF: two cards under a chapter label, fifty times. Five
+ * checkpoints is a stretch a player walks, with a visibly bigger reward at the end of it.
+ *
+ * WIDENING IT DID NOT MULTIPLY THE ROAD'S INCOME, and that is the whole of the care here.
+ * A chapter has a PURSE (`freePurse`/`passPurse`) and its checkpoints SPLIT it
+ * (`splitPurse`), so the road pays exactly what it paid before — in five pieces instead
+ * of one. Paying each of the five what the single stop used to pay would have been two and
+ * a half times the free track's lifetime income, straight through the band
+ * `economy.test.ts` holds mycelium to.
+ */
+export const ROAD_CHAPTER_STOPS = 5;
 export const ROAD_CHAPTERS = 50;
 export const ROAD_STOPS = ROAD_CHAPTERS * ROAD_CHAPTER_STOPS;
 
 /**
- * The first rung, and the last: a hundred stops from a young colony to five million troops.
+ * The first rung, and the last: the whole ladder, from a young colony to five million troops.
  *
  * The last rung used to be two trillion, which is what a flat compounding win rate reaches
  * — and a chapter-50 victory paid a hundred and thirty-six billion troops, a number that
@@ -72,10 +85,18 @@ export function stopColony(index: number): number {
   return roundish(raw);
 }
 
-/** Round to three significant figures, so every rung reads as a round-ish number. */
+/**
+ * Round to three significant figures, so every rung reads as a round-ish number.
+ *
+ * THREE EVERYWHERE, including under a thousand — that case used to round to the nearest
+ * TEN, which is only two figures at a hundred. With two rungs to a chapter the step there
+ * was 15%, so it never showed; at five checkpoints a chapter the step is 4.4%, which is
+ * four troops at the first rung — and the nearest ten put rungs one and two BOTH on 100.
+ * Two checkpoints asking for the same colony is one the player can never be short of, and
+ * `stopReached(100)` answered 2.
+ */
 function roundish(n: number): number {
-  if (n < 1000) return Math.round(n / 10) * 10;
-  const mag = 10 ** (Math.floor(Math.log10(n)) - 2);
+  const mag = Math.max(1, 10 ** (Math.floor(Math.log10(n)) - 2));
   return Math.round(n / mag) * mag;
 }
 
@@ -99,21 +120,70 @@ export const roadKey = (track: RoadTrack, index: number): string =>
  */
 const LARVA_IN_PHEROMONE = 4;
 
-/** Free track: one reward per chapter, alternating currency. */
-export function freeReward(index: number): RoadReward | null {
-  if (index < 1 || index > ROAD_STOPS) return null;
-  if (index % ROAD_CHAPTER_STOPS !== 0) return null;
-  const tier = index / ROAD_CHAPTER_STOPS;
-  return tier % 2 === 0
-    ? { pheromone: 10 * LARVA_IN_PHEROMONE }
-    : { mycel: 100 + tier * 5 };
+/** Which chapter a rung belongs to, 1-based. The one answer, so nothing derives it twice. */
+export const chapterAt = (index: number): number => Math.ceil(index / ROAD_CHAPTER_STOPS);
+
+/** Which checkpoint of its chapter a rung is, 1..ROAD_CHAPTER_STOPS. */
+export const rungOfChapter = (index: number): number =>
+  ((index - 1) % ROAD_CHAPTER_STOPS) + 1;
+
+/** The rung that closes a chapter — the one paying the big share of its purse. */
+export const isChapterEnd = (index: number): boolean =>
+  rungOfChapter(index) === ROAD_CHAPTER_STOPS;
+
+/**
+ * WHAT A WHOLE CHAPTER PAYS, per track. The checkpoints inside it divide this up.
+ *
+ * The two tracks alternate on OPPOSITE phases, so every chapter pays both currencies
+ * somewhere — the free track pays mycelium on the odd chapters and the pass pays
+ * pheromone on them.
+ *
+ * Both are the totals the two-rung road paid, carried over exactly: the free track's
+ * per-chapter reward is the number it always was, and the pass track's is its old
+ * per-chapter average (155 mycelium and 28 pheromone a chapter, 7,750 and 1,400 over the
+ * fifty). Retuning the road is retuning these two lines and nothing else.
+ */
+const freePurse = (chapter: number): RoadReward =>
+  chapter % 2 === 0 ? { pheromone: 10 * LARVA_IN_PHEROMONE } : { mycel: 100 + chapter * 5 };
+
+const passPurse = (chapter: number): RoadReward =>
+  chapter % 2 === 0 ? { mycel: 310 } : { pheromone: 56 };
+
+/**
+ * HOW ONE CHAPTER'S PURSE IS SHARED OUT ACROSS ITS FIVE CHECKPOINTS.
+ *
+ * The fifth marks the end of the chapter, so it has to be worth visibly more than the four
+ * before it: each of those takes an eighth, and the last takes WHAT IS LEFT rather than a
+ * fraction of its own — four times an eighth, and a chapter that pays exactly its purse
+ * however the eighths round. Computed as its own half it would drift by a troop or two per
+ * chapter, which over fifty of them is the road quietly paying something else.
+ */
+const STEP_SHARE = 1 / 8;
+
+function splitPurse(purse: RoadReward, rung: number): RoadReward {
+  // A floor of one, so a purse small enough to round an eighth to nothing still pays
+  // something at every checkpoint: a reward of zero is a checkpoint that lied.
+  const share = (total: number): number => {
+    const step = Math.max(1, Math.round(total * STEP_SHARE));
+    if (rung !== ROAD_CHAPTER_STOPS) return step;
+    return Math.max(1, total - step * (ROAD_CHAPTER_STOPS - 1));
+  };
+  const out: RoadReward = {};
+  if (purse.mycel) out.mycel = share(purse.mycel);
+  if (purse.pheromone) out.pheromone = share(purse.pheromone);
+  return out;
 }
 
-/** Pass track: pays at every stop, and every fourth stop pays both currencies. */
+/** Free track: a share of the chapter's purse at every one of its five checkpoints. */
+export function freeReward(index: number): RoadReward | null {
+  if (index < 1 || index > ROAD_STOPS) return null;
+  return splitPurse(freePurse(chapterAt(index)), rungOfChapter(index));
+}
+
+/** Pass track: the same, out of the pass purse, and only to a player holding the pass. */
 export function passReward(index: number): RoadReward | null {
   if (index < 1 || index > ROAD_STOPS) return null;
-  if (index % 4 === 0) return { mycel: 150, pheromone: 10 * LARVA_IN_PHEROMONE };
-  return index % 2 === 0 ? { pheromone: 4 * LARVA_IN_PHEROMONE } : { mycel: 80 };
+  return splitPurse(passPurse(chapterAt(index)), rungOfChapter(index));
 }
 
 export function roadStops(): RoadStop[] {
@@ -122,7 +192,7 @@ export function roadStops(): RoadStop[] {
     out.push({
       index: i,
       colony: stopColony(i),
-      chapter: Math.ceil(i / ROAD_CHAPTER_STOPS),
+      chapter: chapterAt(i),
       free: freeReward(i),
       pass: passReward(i),
     });
@@ -190,7 +260,7 @@ export const regionName = (region: number): string =>
  * its levels are open. Two copies of this arithmetic would be two answers on one screen.
  */
 export const chapterOf = (colony: number): number =>
-  Math.min(ROAD_CHAPTERS, Math.max(1, Math.ceil((stopReached(colony) + 1) / ROAD_CHAPTER_STOPS)));
+  Math.min(ROAD_CHAPTERS, Math.max(1, chapterAt(stopReached(colony) + 1)));
 
 export function rewardText(r: RoadReward): string {
   return [

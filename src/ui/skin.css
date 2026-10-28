@@ -141,8 +141,15 @@
    read against. It is on screen for the second or two before this stylesheet
    has even been fetched — and for a beat afterwards, which is exactly long
    enough for the blanket to strip the picture off it in front of the player.
+
+   `.rd-chap` is the FOURTH and the only one that is not a whole screen: the
+   Colony Road's chapter panels each wear that chapter's painting (`ui/road.ts`
+   sets it inline, from `backdropFor`). It is a CLASS because there are fifty of
+   them down one scroller, and it is exempt for the same reason `#home` is — it
+   is a picture rather than a gradient. Note the pseudo-elements are blanketed
+   too, so a picture cannot be hidden on a `::before` to dodge this.
    ====================================================================== */
-*:not(#home):not(#luckyhatch):not(#splash), *::before, *::after { background-image: none !important; }
+*:not(#home):not(#luckyhatch):not(#splash):not(.rd-chap), *::before, *::after { background-image: none !important; }
 
 /* Surfaces the legacy sheet fills with a gradient and this file does not
    otherwise dress. */
@@ -150,8 +157,8 @@
 .crest, .avatar, .avatarbig, .herocrest, .qhero .qbadge, .sc-img,
 .shopitem-art { background-color: var(--bg2); }
 .turnbanner span { background-color: rgba(0, 0, 0, .55); }
-.ac-chip.ready, .antcta.locked, .achfill, .buybar.soft, .hbuy, .hatchbtn,
-.roadchapter.reached::before, .rcolC.reached::before { background-color: var(--gold); }
+.ac-chip.ready, .antcta.locked, .achfill, .buybar.soft, .hbuy,
+.hatchbtn { background-color: var(--gold); }
 
 body {
   /* Light falling from the top of the page, the way it falls on the artwork. */
@@ -536,35 +543,6 @@ footer { background: var(--bg1); }
 .toast.hive { box-shadow: 0 3px 0 var(--hive-glow), var(--lift); }
 
 /* ======================================================================
-   THE ROAD — chapters as tinted trays
-   ====================================================================== */
-.roadchap { border-radius: var(--r-xl); }
-.roadcell { border: none; background: var(--panel); border-radius: var(--r-md); box-shadow: var(--bevel-sm); }
-.roadcell.ready { background: var(--gold); color: #3a2600; box-shadow: 0 4px 0 var(--gold-edge); }
-.roadcell.ready .rc-btn { color: #5a3a00; }
-.roadcell.empty { background: rgba(255, 255, 255, .03); box-shadow: none; }
-.rnode {
-  border: none;
-  background: var(--panel-hi);
-  color: var(--muted);
-  box-shadow: var(--bevel-sm);
-}
-.rnode.done { background: var(--gold); color: #3a2600; box-shadow: 0 3px 0 var(--gold-edge); }
-
-/* WHERE YOU ARE HEADED.
-   Every stop looked identical, so the road was a wall of dim cards with no way to read
-   your own position off it. The first unreached stop is now the lit one. */
-.roadrow.next .rnode {
-  background: var(--panel-hi);
-  color: var(--gold-glow);
-  box-shadow: 0 0 0 3px var(--gold), 0 3px 0 var(--panel-edge);
-}
-.roadrow.next .roadcell:not(.empty) {
-  background: var(--panel-hi);
-  box-shadow: 0 4px 0 var(--panel-edge), inset 0 0 0 2px var(--gold);
-}
-
-/* ======================================================================
    SETUP PICKERS
    ====================================================================== */
 .mp, .shp, .sp, .coscell {
@@ -798,7 +776,6 @@ footer { background: var(--bg1); }
 .pip { background: rgba(0, 0, 0, .3); }
 .qbar, .qp, .sb, .lbbar { background: rgba(0, 0, 0, .34); }
 .dcard .rtrack, .hcrow { background: none; }
-.roadcell.empty { background: rgba(255, 255, 255, .04); }
 .ccard .cveil { background: rgba(6, 14, 9, .62); }
 .ccard .cveil .cc { color: var(--gold); }
 .ccard.locked canvas,
@@ -2409,11 +2386,6 @@ button:not(.playbtn):active,
 /* The shop body's own 1px of side padding started its boxes half a pixel
    off every other screen's. */
 .screenbody.shopbody { padding-left: 0; padding-right: 0; }
-/* A chapter is an invisible grouping, so its padding only moved the reward
-   cells eight pixels in from where every other card on every other screen
-   starts. */
-.roadchap { padding-left: 0; padding-right: 0; }
-
 /* The mark and the figure were touching. */
 .dcard .ch .purse { display: inline-flex; align-items: center; gap: 5px; }
 
@@ -6105,3 +6077,310 @@ button:not(.playbtn):active,
 }
 .kssteps::marker, .kssteps li::marker { color: var(--grass-glow); font-weight: 900; }
 .kscard .setpanel { margin-top: 10px; padding: 0; background: none; border: none; }
+
+/* ======================================================================
+   THE COLONY ROAD — A PATH THROUGH TEN PLACES
+
+   It was two columns of grey cards either side of a hairline, a chapter
+   label every two rungs, fifty times: a spreadsheet of prices with the one
+   thing a road is FOR — how far have I come — the hardest fact on it to
+   find. The shape here is the one that was asked for, and each rule below
+   is one of those requests.
+
+   SPACIOUS. A checkpoint is 118px tall and a chapter is five of them, so
+   one chapter fills most of a phone and the road is something walked
+   rather than scrolled past.
+
+   EVERY CHAPTER WEARS ITS PICTURE, set inline by `ui/road.ts` from
+   `backdropFor` — which is exactly why `.rd-chap` is the fourth exemption
+   on the blanket at the top of this file. The scrim is a `::before`, which
+   is allowed to carry a COLOUR even though the blanket clears every
+   pseudo-element's image.
+
+   THE PATH IS PER-CHECKPOINT, not one bar down the scroller. It is drawn
+   on `.rd-stop::before` and goes gold as far as the colony has reached, so
+   "how far have I come" is answered by where the colour stops — which a
+   single bar could only do by measuring the DOM.
+
+   NO `box-shadow` ANYWHERE BELOW. The rule at line 1792 clears every one
+   of them with `!important`, so depth here is tone and a border, the same
+   way the Anthill's chambers carry theirs.
+   ====================================================================== */
+.rd-road { display: block; }
+
+.rd-chap {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-xl);
+  margin-bottom: var(--stack);
+  background-color: var(--bg2);
+  background-size: cover;
+  background-position: center;
+}
+/* The artwork is somebody's painting and the discs have to be read over it. */
+.rd-chap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 14, 9, .6);
+}
+
+/* THE LABEL SITS ON ITS OWN PLATE, and that is a contrast decision rather than a
+   decorative one. Written straight onto the scrim it is read against TEN different
+   paintings — measured at 11.2 over the Mangrove and 5.1 over its subtitle, which is AA
+   with very little in hand, and the next region somebody paints decides whether it still
+   is. On a near-opaque plate the ratio is a property of two colours in this file, so no
+   artwork can take it under. The pill is the legacy build's answer to the same problem. */
+.rd-chapname {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: fit-content;
+  margin: 16px auto 2px;
+  padding: 6px 16px;
+  border: 1px solid var(--hud-line);
+  border-radius: 999px;
+  background: rgba(10, 18, 12, .88);
+}
+.rd-chapname b {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: .5px;
+  color: var(--muted);
+}
+.rd-chapname span { font-size: 11px; font-weight: 800; color: var(--muted); opacity: .85; }
+.rd-chapname.reached b { color: var(--gold-glow); }
+
+/* No padding at the foot: the path has to reach the edge of the panel, or it stops
+   short of the gap and the road reads as fifty separate ladders. */
+.rd-path { position: relative; display: block; }
+
+/* ---------------------------------------------------------- A CHECKPOINT */
+.rd-stop {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  min-height: 118px;
+}
+/* The path itself, one segment per checkpoint, gold as far as the colony got. */
+.rd-stop::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  background: rgba(255, 255, 255, .13);
+}
+.rd-stop.reached::before { background: var(--gold); }
+
+.rd-mid {
+  grid-column: 2;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+}
+
+/* The size the checkpoint asks for, under the disc. A tick once it is behind you. */
+.rd-at {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  min-height: 20px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  /* Near-opaque for the same reason the chapter plate is: it is read over ten
+     paintings and over the gold path, and a wash would depend on both. */
+  background: rgba(10, 18, 12, .88);
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--muted);
+}
+/* Behind you it carries a mark instead of a figure, so it needs no room for one. */
+.rd-stop.reached .rd-at { min-width: 26px; color: var(--gold-glow); }
+
+/* ------------------------------------------------------------- THE PRIZE
+   The disc carries the resource's MARK and nothing else: the figure is on
+   the popup the claim raises, and on this button's own label so a control
+   still says what it is. */
+.rd-prize {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  border: 3px solid rgba(255, 255, 255, .16);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--muted);
+  cursor: pointer;
+}
+.rd-prize:disabled { cursor: default; }
+.rd-prize.locked { color: var(--muted); }
+.rd-prize.ready {
+  background: var(--gold);
+  border-color: var(--gold-glow);
+  color: #3a2600;
+}
+.rd-prize.got {
+  background: color-mix(in srgb, var(--grass) 26%, var(--panel));
+  border-color: color-mix(in srgb, var(--grass) 60%, transparent);
+  color: var(--grass-glow);
+}
+.rd-prize.passlock { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 34%, transparent); }
+
+/* THE CHAPTER'S LAST CHECKPOINT IS BIGGER, because it pays four times what
+   any of the four before it does (`splitPurse`). A reward that is worth
+   more and looks identical is the screen keeping it to itself. */
+.rd-stop.big { min-height: 146px; }
+.rd-stop.big .rd-prize.free { width: 78px; height: 78px; border-width: 4px; }
+.rd-stop.big .rd-at { font-size: 12px; }
+
+/* WHERE YOU ARE HEADED. Exactly one checkpoint is the target, and the ring
+   around it is the only thing on a road this long that says which. */
+.rd-stop.next .rd-prize.free { border-color: var(--gold-glow); color: var(--gold-glow); }
+/* The target's pill keeps the SAME plate. Darkening it to a 60% black wash was the one
+   thing on this screen that failed AA against a bright painting — 4.10 over pure white,
+   against 9.89 on the plate everything else wears. What marks the target is the ring on
+   the disc and the gold ink, neither of which depends on what is painted behind it. */
+.rd-stop.next .rd-at { color: var(--gold-glow); }
+
+/* The pass prize hangs off the right-hand column — a smaller disc, still a
+   thumb wide, marked with a crown it is wearing or a lock it is behind. */
+.rd-prize.pass {
+  grid-column: 3;
+  justify-self: start;
+  position: relative;
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  margin-left: 16px;
+  border-width: 2px;
+}
+.rd-tag, .rd-done {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--panel-edge);
+  color: var(--gold-glow);
+}
+.rd-done { color: var(--grass-glow); }
+
+/* --------------------------------------------------------- THE BREAKER
+   Ten regions, five chapters each, and the gate at a boundary announces
+   the area being entered. Drawn rather than an image: an arch is two
+   borders and a radius, and a file would be a tenth thing to keep in step
+   with `REGIONS`. */
+.rd-gate {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 24px 0 30px;
+  margin-bottom: var(--stack);
+}
+.rd-arch {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 88px;
+  height: 54px;
+  padding-bottom: 9px;
+  border: 3px solid var(--gold);
+  border-bottom: none;
+  border-radius: 48px 48px 0 0;
+  background: rgba(0, 0, 0, .4);
+  color: var(--gold-glow);
+}
+/* The mark is a chevron; an entrance is the way UP. */
+.rd-arch svg { transform: rotate(-90deg); }
+.rd-gatek {
+  margin-top: 8px;
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.rd-gaten { font-size: 15px; font-weight: 900; color: var(--gold-glow); }
+
+/* ------------------------------------------------------- WHAT IT PAID
+   The one place a figure is written. `#achievements.popped` is what lifts
+   it: `.screen` is z-index 20 in the legacy sheet and `#mainNav` is 60 in
+   the same stacking context, so a card inside the screen cannot out-stack
+   the tab bar at any z-index of its own. */
+#achievements.popped { z-index: 500; }
+.rd-pop {
+  position: fixed;
+  inset: 0;
+  /* Over the FOOTER as well as the board: `.achbody > .roadhead` is sticky at z-index 2,
+     so a card at 1 came up with the troop count still sitting on top of it. */
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(10, 6, 3, .96);
+}
+.rd-popcard {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  width: min(100%, 320px);
+  padding: 30px 22px 26px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  text-align: center;
+}
+.rd-popx {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap);
+  height: var(--tap);
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.rd-popk {
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.rd-popline { display: flex; align-items: center; gap: 10px; }
+.rd-popic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  background: color-mix(in srgb, var(--gold) 14%, var(--panel));
+  color: var(--gold-glow);
+}
+.rd-popn { font-size: 26px; font-weight: 900; color: var(--gold-glow); }
+.rd-popu { font-size: 13px; font-weight: 800; color: var(--ink-soft); }

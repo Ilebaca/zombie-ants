@@ -5,9 +5,10 @@ import { MemoryStore } from "../storage";
 import { ProfileStore, normalise } from "../profile";
 import { CHAMBERS, RESEARCH_TRACKS, SPECIES_ORDER, SPECIES_UNLOCK } from "../catalogue";
 import {
-  ROAD_CHAPTER_STOPS, ROAD_FIRST, ROAD_LAST, ROAD_STOPS, freeReward, passReward, rewardFor,
-  roadColony, roadKey, roadStops, stopColony, stopReached,
+  ROAD_CHAPTER_STOPS, ROAD_FIRST, ROAD_LAST, ROAD_STOPS, freeReward, isChapterEnd, passReward,
+  rewardFor, roadColony, roadKey, roadStops, rungOfChapter, stopColony, stopReached,
 } from "../road";
+import type { RoadReward } from "../road";
 
 /** A profile with nothing banked — the starting grant would mask "cannot afford" cases. */
 const store = (): ProfileStore => {
@@ -194,12 +195,55 @@ describe("colony road layout", () => {
     expect(stopReached(1e15), "a colony past the end is not on the last rung").toBe(ROAD_STOPS);
   });
 
-  it("pays the free track once per chapter and the pass track every rung", () => {
+  it("pays both tracks at every one of a chapter's five checkpoints", () => {
+    expect(ROAD_CHAPTER_STOPS).toBe(5);
     for (const stop of roadStops()) {
-      expect(!!stop.free).toBe(stop.index % ROAD_CHAPTER_STOPS === 0);
-      expect(!!stop.pass).toBe(true);
+      expect(!!stop.free, `rung ${stop.index} paid nothing on the free track`).toBe(true);
+      expect(!!stop.pass, `rung ${stop.index} paid nothing on the pass track`).toBe(true);
     }
   });
+
+  /**
+   * THE FIFTH IS THE ONE THAT CLOSES THE CHAPTER, so it has to be worth visibly more than
+   * the four before it — which is the whole reason a chapter is five checkpoints and not
+   * five identical ones.
+   */
+  it("pays the chapter's last checkpoint several times what the others pay", () => {
+    for (const stop of roadStops()) {
+      const rung = rungOfChapter(stop.index);
+      expect(isChapterEnd(stop.index)).toBe(rung === ROAD_CHAPTER_STOPS);
+      if (rung !== 1) continue;
+      const first = worth(freeReward(stop.index));
+      const last = worth(freeReward(stop.index + ROAD_CHAPTER_STOPS - 1));
+      expect(last, `chapter ${stop.chapter}'s last checkpoint is not the big one`)
+        .toBeGreaterThan(first * 2);
+    }
+  });
+
+  /**
+   * AND WIDENING A CHAPTER DID NOT MULTIPLY THE ROAD'S INCOME.
+   *
+   * A chapter used to be two rungs with one free reward on it; it is five with a reward on
+   * each. Paying each of the five what that single stop paid would have been two and a
+   * half times the free track's lifetime income — through the band `economy.test.ts` holds
+   * mycelium to, and measured by nothing else in the suite. The five SPLIT a purse, so the
+   * totals below are the ones the two-rung road paid, to the troop.
+   */
+  it("pays over the whole road exactly what the two-rung road paid", () => {
+    const total = (reward: (i: number) => RoadReward | null): RoadReward => {
+      let mycel = 0, pheromone = 0;
+      for (let i = 1; i <= ROAD_STOPS; i++) {
+        mycel += reward(i)?.mycel ?? 0;
+        pheromone += reward(i)?.pheromone ?? 0;
+      }
+      return { mycel, pheromone };
+    };
+    expect(total(freeReward)).toEqual({ mycel: 5625, pheromone: 1000 });
+    expect(total(passReward)).toEqual({ mycel: 7750, pheromone: 1400 });
+  });
+
+  /** What a reward is worth at all, for the comparisons above. */
+  const worth = (r: RoadReward | null): number => (r?.mycel ?? 0) + (r?.pheromone ?? 0);
 
   it("always pays something when it pays at all", () => {
     for (const stop of roadStops()) {
