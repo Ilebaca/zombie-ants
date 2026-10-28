@@ -12,7 +12,7 @@ import {
   granaryRate, granaryStored,
 } from "../granary";
 import { COLONY_START, winnings } from "../colony";
-import { chapterOf, ROAD_CHAPTERS, stopColony } from "../road";
+import { chapterOf, ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, stopColony } from "../road";
 import { MemoryStore, ProfileStore } from "../index";
 
 const HOUR = 3_600_000;
@@ -135,14 +135,14 @@ describe("digging it deeper", () => {
   });
 
   it("sells it once the chapter is open, and charges for it", () => {
-    const store = rich(stopColony((GRANARY_LEVELS[1]!.chapter - 1) * 2 + 1));
+    const store = rich(stopColony((GRANARY_LEVELS[1]!.chapter - 1) * ROAD_CHAPTER_STOPS + 1));
     expect(store.buyGranary(T0)).toBe(true);
     expect(store.get().granary).toBe(2);
     expect(store.get().mycel).toBe(99_999 - GRANARY_LEVELS[1]!.cost);
   });
 
   it("refuses it with the chapter open but the mycelium missing", () => {
-    const store = rich(stopColony((GRANARY_LEVELS[1]!.chapter - 1) * 2 + 1));
+    const store = rich(stopColony((GRANARY_LEVELS[1]!.chapter - 1) * ROAD_CHAPTER_STOPS + 1));
     store.update((p) => { p.mycel = GRANARY_LEVELS[1]!.cost - 1; });
     expect(store.buyGranary(T0)).toBe(false);
     expect(store.get().granary).toBe(1);
@@ -151,7 +151,7 @@ describe("digging it deeper", () => {
   // Hours foraged at the old rate belong to the old rate. Levelling up on a full store
   // would pay them out at a speed that was not running when they were earned.
   it("empties the store at the OLD rate before it digs", () => {
-    const colony = stopColony((GRANARY_LEVELS[1]!.chapter - 1) * 2 + 1);
+    const colony = stopColony((GRANARY_LEVELS[1]!.chapter - 1) * ROAD_CHAPTER_STOPS + 1);
     const store = rich(colony);
     store.update((p) => { p.granaryAt = T0 - GRANARY_MAX_LID * HOUR; });
     const owedAtOldRate = granaryFull(colony, 1);

@@ -12,7 +12,9 @@ import { MemoryStore } from "../../platform";
 import { buildInventory, buildTraitBench, traitOpener } from "../traits";
 import { buildSpeciesPage } from "../species";
 import { TIERS, basicLook, looksFor } from "../../engine";
-import { FUSE_COST, FUSE_FUEL, ROAD_LAST, SLOT_STEP, slotChapter, stopColony } from "../../platform";
+import {
+  FUSE_COST, FUSE_FUEL, ROAD_CHAPTER_STOPS, ROAD_LAST, SLOT_STEP, slotChapter, stopColony,
+} from "../../platform";
 import type { TraitScope } from "../../platform";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
@@ -402,7 +404,7 @@ describe("choosing a colony's look", () => {
  */
 describe("slots that have not opened yet", () => {
   const at = (chapter: number): ProfileStore =>
-    store(stopColony((chapter - 1) * 2));
+    store(stopColony((chapter - 1) * ROAD_CHAPTER_STOPS));
 
   it("draws all five, with the shut ones naming their chapter", () => {
     const root = bench(at(20));

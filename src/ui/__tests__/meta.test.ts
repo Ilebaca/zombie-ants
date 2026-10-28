@@ -12,10 +12,11 @@ import {
 } from "../../engine";
 import type { SpeciesId } from "../../engine";
 import {
-  COLONY_START, GRANARY_LEVELS, GRANARY_MAX, MemoryStore, ProfileStore, ROAD_CHAPTER_STOPS,
-  RESEARCH_TOTAL_MAX, SPECIES_UNLOCK, TIERS, chapterOf, compact, granaryFull, roadKey,
-  stopColony, tierOf,
+  COLONY_START, GRANARY_LEVELS, GRANARY_MAX, MemoryStore, ProfileStore, REGIONS,
+  RESEARCH_TOTAL_MAX, ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, ROAD_STOPS, SPECIES_UNLOCK, TIERS,
+  chapterOf, compact, freeReward, granaryFull, regionName, roadKey, stopColony, tierOf,
 } from "../../platform";
+import { backdropFor } from "../backdrops";
 import { buildAnthill } from "../anthill";
 import { buildProfile } from "../profile";
 import { clockOf, colonyBanner, granaryPill } from "../chrome";
@@ -712,8 +713,8 @@ describe("the colony banner", () => {
 describe("colony road screen", () => {
   /*
    * Rungs are named by INDEX and sized geometrically, so every case here asks the road what
-   * a rung is worth rather than hard-coding a number a retune would move. Rung 2 is the
-   * first that pays on the free track (one free reward a chapter, two rungs to a chapter).
+   * a rung is worth rather than hard-coding a number a retune would move. Five checkpoints
+   * to a chapter, every one of them paying on both tracks.
    */
   const RUNG = 2;
   const atRung = (n: number, mycel = 0): ProfileStore => store(mycel, 0, stopColony(n));
@@ -721,26 +722,52 @@ describe("colony road screen", () => {
   it("claims a reached free reward once and banks the currency", () => {
     const s = atRung(RUNG);
     const root = buildColonyRoad(s, () => {}, () => {});
-    const ready = root.querySelectorAll<HTMLButtonElement>(".roadcell.ready");
-    expect(ready.length).toBeGreaterThan(0);
+    const ready = root.querySelectorAll<HTMLButtonElement>(".rd-prize.free.ready");
+    expect(ready.length).toBe(RUNG);
     click(ready[0]);
     expect(s.get().mycel + s.get().pheromone).toBeGreaterThan(0);
     expect(s.get().roadClaimed).toContain(roadKey("free", RUNG));
-    expect(root.querySelectorAll(".roadcell.got").length).toBe(1);
+    expect(root.querySelectorAll(".rd-prize.free.got").length).toBe(1);
+  });
+
+  /**
+   * THE FIGURE IS ON THE POPUP, and only there. The disc says WHICH resource is waiting;
+   * what it pays is the reward for claiming it, which is what was asked for — so the
+   * amount has to be on the card, with the resource's mark beside it.
+   */
+  it("names what the claim paid, with the resource's mark, and closes on a tap", () => {
+    const s = atRung(RUNG);
+    const root = buildColonyRoad(s, () => {}, () => {});
+    click(root.querySelector<HTMLButtonElement>(".rd-prize.free.ready"));
+
+    const pop = root.querySelector("#roadPop");
+    expect(pop, "nothing said what the reward was").toBeTruthy();
+    expect(root.classList.contains("popped"), "the card cannot out-stack the tab bar").toBe(true);
+    const paid = freeReward(RUNG)!;
+    expect(pop?.querySelector(".rd-popn")?.textContent)
+      .toBe(`+${paid.mycel ?? paid.pheromone}`);
+    expect(pop?.querySelector(".rd-popic svg"), "the resource has no mark").toBeTruthy();
+
+    click(pop as HTMLElement);
+    expect(root.querySelector("#roadPop")).toBeNull();
+    expect(root.classList.contains("popped")).toBe(false);
   });
 
   it("locks the pass track until the pass is owned", () => {
     const s = atRung(RUNG);
     const root = buildColonyRoad(s, () => {}, () => {});
-    expect(root.querySelectorAll(".roadcell.passlock").length).toBeGreaterThan(0);
-    for (const cell of Array.from(root.querySelectorAll<HTMLButtonElement>(".roadcell.passlock"))) {
-      click(cell);
-    }
+    expect(root.querySelectorAll(".rd-prize.pass.passlock").length).toBeGreaterThan(0);
+    // A locked pass disc is not a dead end — it goes to the shop, which is what sells it.
+    let wentToShop = false;
+    const toShop = buildColonyRoad(s, () => {}, () => { wentToShop = true; });
+    click(toShop.querySelector<HTMLButtonElement>(".rd-prize.pass.passlock"));
+    expect(wentToShop).toBe(true);
     expect(s.get().roadClaimed.length).toBe(0);
 
     s.grantPass();
     const withPass = buildColonyRoad(s, () => {}, () => {});
-    expect(withPass.querySelectorAll(".roadcell.passlock").length).toBe(0);
+    expect(withPass.querySelectorAll(".rd-prize.pass.passlock").length).toBe(0);
+    expect(withPass.querySelectorAll(".rd-prize.pass.ready").length).toBe(RUNG);
     // The tick beside it is a drawn mark now, not a ✓ typed into the string, so the
     // banner is asserted on by what it SAYS plus the presence of the mark.
     const banner = withPass.querySelector(".passon");
@@ -748,42 +775,117 @@ describe("colony road screen", () => {
     expect(banner?.querySelector("svg"), "the pass lost its mark").toBeTruthy();
   });
 
-  it("offers nothing to a colony that has not reached the first rung", () => {
+  it("offers nothing to a colony that has not reached the first checkpoint", () => {
     const root = buildColonyRoad(store(), () => {}, () => {});
-    expect(root.querySelectorAll(".roadcell.ready").length).toBe(0);
-    expect(root.querySelectorAll(".rnode.done").length).toBe(0);
+    expect(root.querySelectorAll(".rd-prize.ready").length).toBe(0);
+    expect(root.querySelectorAll(".rd-stop.reached").length).toBe(0);
   });
 
-  it("marks reached stops as done", () => {
+  it("colours the path as far as the colony has walked it", () => {
     const root = buildColonyRoad(atRung(4), () => {}, () => {});
-    expect(root.querySelectorAll(".rnode.done").length).toBe(4);
+    expect(root.querySelectorAll(".rd-stop.reached").length).toBe(4);
+    // A checkpoint behind you stops asking for a size and carries a mark instead: the
+    // figure on it is what the colony still has to reach.
+    const done = root.querySelector(".rd-stop.reached .rd-at");
+    expect(done?.textContent).toBe("");
+    expect(done?.querySelector("svg"), "a walked checkpoint has nothing on it").toBeTruthy();
+    // And the chapter it is in reads as reached, which is the only thing saying so from
+    // the top of a panel the player has not scrolled into yet.
+    expect(root.querySelectorAll(".rd-chapname.reached").length).toBe(1);
+  });
+
+  /**
+   * THE DISC IS THE RESOURCE AND NOTHING ELSE. No figure on it — that is the popup's job —
+   * and a claimed one wears a tick so a walked chapter does not read as five locked discs.
+   */
+  it("says which resource is waiting, and marks the ones already taken", () => {
+    const s = atRung(RUNG);
+    const root = buildColonyRoad(s, () => {}, () => {});
+    const disc = root.querySelector<HTMLButtonElement>(".rd-prize.free.ready")!;
+    expect(disc.textContent, "the figure is on the disc, not the popup").toBe("");
+    expect(disc.querySelector("svg"), "no resource mark on the checkpoint").toBeTruthy();
+    // Unlabelled marks, so the figure survives as the name a screen reader reads out.
+    expect(disc.getAttribute("aria-label")).toBe(`+${freeReward(RUNG)!.mycel} mycelium`);
+
+    click(disc);
+    click(root.querySelector("#roadPop") as HTMLElement);
+    expect(root.querySelector(".rd-prize.free.got .rd-done svg"),
+      "a claimed checkpoint is not marked").toBeTruthy();
+    // The pass disc says whether it is behind the pass or being worn.
+    expect(root.querySelector(".rd-prize.pass.passlock .rd-tag svg")).toBeTruthy();
   });
 
   /** The figure on an unreached rung is the compact one — a road of 1,047,382 is unreadable. */
-  it("writes the rungs the way the rest of the game writes the colony", () => {
+  it("writes the checkpoints the way the rest of the game writes the colony", () => {
     const root = buildColonyRoad(store(), () => {}, () => {});
-    const nodes = Array.from(root.querySelectorAll(".rnode:not(.done) b"));
-    expect(nodes.length).toBeGreaterThan(0);
-    expect(nodes.some((n) => n.textContent === compact(stopColony(1)))).toBe(true);
+    const at = Array.from(root.querySelectorAll(".rd-stop:not(.reached) .rd-at"));
+    expect(at.length).toBeGreaterThan(0);
+    expect(at.some((n) => n.textContent === compact(stopColony(1)))).toBe(true);
     // The road has to still be there at the sizes a compounding colony reaches.
-    expect(nodes.some((n) => /[MB]$/.test(n.textContent ?? ""))).toBe(true);
+    expect(at.some((n) => /[MB]$/.test(n.textContent ?? ""))).toBe(true);
   });
 
   /**
    * Every stop rendered identically, so the ladder gave the player no way to read their
-   * own position off it. Exactly one stop — the first one out of reach — is the target.
+   * own position off it. Exactly one checkpoint — the first out of reach — is the target.
    */
-  it("marks the stop the player is working towards, and only that one", () => {
+  it("marks the checkpoint the player is working towards, and only that one", () => {
     const fresh = buildColonyRoad(store(), () => {}, () => {});
-    const next = fresh.querySelectorAll(".roadrow.next");
+    const next = fresh.querySelectorAll(".rd-stop.next");
     expect(next.length).toBe(1);
     expect(next[0]?.textContent).toContain(compact(stopColony(1)));
 
     // The marker moves along with the player rather than staying on the first stop.
     const later = buildColonyRoad(atRung(3), () => {}, () => {});
-    const moved = later.querySelectorAll(".roadrow.next");
+    const moved = later.querySelectorAll(".rd-stop.next");
     expect(moved.length).toBe(1);
     expect(moved[0]?.textContent).toContain(compact(stopColony(4)));
+  });
+
+  /**
+   * FIVE CHECKPOINTS A CHAPTER AND THE FIFTH IS BIGGER, which is the shape of the SCREEN
+   * rather than only of the table: a reward worth four times the others and drawn the same
+   * size is the road keeping it to itself.
+   */
+  it("draws every chapter's last checkpoint as the big one", () => {
+    const root = buildColonyRoad(store(), () => {}, () => {});
+    expect(root.querySelectorAll(".rd-stop").length).toBe(ROAD_STOPS);
+    expect(root.querySelectorAll(".rd-stop.big").length).toBe(ROAD_CHAPTERS);
+    const first = Array.from(root.querySelectorAll(".rd-chap"))
+      .at(-1)?.querySelectorAll(".rd-stop") ?? [];
+    expect(first.length).toBe(ROAD_CHAPTER_STOPS);
+    // Chapter one is at the FOOT of the scroller and its checkpoints climb, so the one
+    // that closes it is the FIRST of the five in document order.
+    expect(first[0]?.classList.contains("big"), "the chapter ends at the wrong end").toBe(true);
+  });
+
+  /**
+   * A BREAKER BETWEEN THE AREAS. Ten regions, five chapters each, so nine boundaries — and
+   * the gate announces the one being ENTERED, which in a list that descends means the
+   * region of the chapter directly above it.
+   */
+  it("puts a gate at every area boundary, naming the area it opens", () => {
+    const root = buildColonyRoad(store(), () => {}, () => {});
+    const gates = Array.from(root.querySelectorAll(".rd-gate"));
+    expect(gates.length).toBe(REGIONS.length - 1);
+    expect(gates.at(-1)?.querySelector(".rd-gaten")?.textContent).toBe(regionName(2));
+    expect(gates[0]?.querySelector(".rd-gaten")?.textContent).toBe(regionName(REGIONS.length));
+  });
+
+  /**
+   * EVERY CHAPTER WEARS A PICTURE, and it is home's own (`ui/backdrops.ts`) — so the
+   * screen a player opens and the stretch of road it announces are the same place. The
+   * per-chapter tier of that glob had never been used by anything; this is what uses it.
+   */
+  it("dresses each chapter in that chapter's own artwork", () => {
+    const root = buildColonyRoad(store(), () => {}, () => {});
+    const panels = Array.from(root.querySelectorAll<HTMLElement>(".rd-chap"));
+    expect(panels.length).toBe(ROAD_CHAPTERS);
+    for (const [i, panel] of panels.entries()) {
+      // Descending, so the first panel is the last chapter.
+      expect(panel.style.backgroundImage, `chapter ${ROAD_CHAPTERS - i} has no ground`)
+        .toBe(`url("${backdropFor(ROAD_CHAPTERS - i)}")`);
+    }
   });
 
   it("shows the player their own colony in troops", () => {
@@ -798,6 +900,7 @@ describe("colony road screen", () => {
     expect(wentToShop).toBe(true);
   });
 });
+
 
 describe("colony screen", () => {
   it("lists today's quests with their progress and the colony level", () => {
@@ -1009,14 +1112,26 @@ describe("legacy markup parity", () => {
     expect(root.querySelector("#questBody")).toBeTruthy();
   });
 
-  it("keeps the Colony Road's road2 → roadchap → roadrow skeleton", () => {
+  /**
+   * THE COLONY ROAD IS A DELIBERATE DEVIATION (§10), so what is held here is the part of
+   * the legacy skeleton it still wears and the fact that the rest of it is GONE.
+   *
+   * It kept `road2 → roadchap → roadrow` — two columns of cards either side of a hairline
+   * — for as long as it was a port. The screen is a path through ten places now, five
+   * checkpoints a chapter, each chapter wearing its own picture; the ladder's classes went
+   * WITH the markup rather than being left in `skin.css` dressing selectors nothing emits.
+   */
+  it("keeps the Colony Road's shell and nothing of its ladder", () => {
     const root = buildColonyRoad(store(), () => {}, () => {});
     expect(root.id).toBe("achievements");
     expect(root.querySelector(".screenbody")?.id).toBe("achBody");
-    for (const cls of ["road2", "roadchap", "roadchapter", "roadrow", "rcolL", "rcolC",
-      "rcolR", "rnode", "roadcell", "rc-rew", "rc-btn", "roadhead", "roadhl", "roadt",
-      "roadsub"]) {
+    // The footer strip is still the legacy build's, dressed by its own rules.
+    for (const cls of ["roadhead", "roadhl", "roadt", "roadsub"]) {
       expect(landmarks(root), `.${cls} missing`).toContain(cls);
+    }
+    for (const cls of ["road2", "roadchap", "roadchapter", "roadrow", "rcolL", "rcolC",
+      "rcolR", "rnode", "roadcell", "rc-rew", "rc-btn"]) {
+      expect(landmarks(root), `.${cls} is back`).not.toContain(cls);
     }
     // The header strip is rendered last, which is what puts it at the foot of the ladder.
     const body = root.querySelector(".screenbody");

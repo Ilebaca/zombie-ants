@@ -321,3 +321,28 @@ describe("the hatch button while it is hatching", () => {
       .toMatch(/background\s*:\s*color-mix/);
   });
 });
+
+/**
+ * THE ROAD'S CHAPTER PANELS ARE EXEMPT FROM THE BACKGROUND BLANKET.
+ *
+ * `*:not(#home)… { background-image: none !important }` near the top of `skin.css` clears
+ * every background image in the app, because a gradient cannot be selected for (§10). Each
+ * chapter of the Colony Road wears its own painting, set inline by `ui/road.ts` — so
+ * without `:not(.rd-chap)` the fifty pictures are stripped off with `!important` and the
+ * screen comes back grey, silently, which is exactly the fault that blanket creates. The
+ * blanket's own comment says adding a picture means adding it there; this is the fourth.
+ *
+ * It is held HERE as well as by the screen's test because nothing a jsdom test can see
+ * would notice: the inline style is set either way, and only the cascade removes it.
+ */
+describe("the road's artwork", () => {
+  it("is let through the stylesheet's background blanket", () => {
+    const blanket = read("skin.css").split("\n")
+      .find((l) => l.includes("background-image: none !important"));
+    expect(blanket, "the blanket rule moved").toBeTruthy();
+    expect(blanket, "every chapter's picture is being stripped off").toContain(":not(.rd-chap)");
+    // And the picture cannot be hidden on a pseudo-element instead — those are blanketed
+    // with no exemption at all, which is why `.rd-chap::before` is the scrim and not the art.
+    expect(blanket).toContain("*::before");
+  });
+});

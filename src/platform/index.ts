@@ -37,8 +37,9 @@ export {
 export type { ChamberDef, ResearchDef, ResearchTrack, Tier } from "./catalogue";
 export {
   REGIONS, REGION_CHAPTERS, ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, ROAD_FIRST, ROAD_GROWTH,
-  ROAD_LAST, ROAD_STOPS, chapterOf, freeReward, isPassKey, passReward, regionName, regionOf,
-  rewardFor, rewardText, roadColony, roadKey, roadStops, stopColony, stopReached,
+  ROAD_LAST, ROAD_STOPS, chapterAt, chapterOf, freeReward, isChapterEnd, isPassKey, passReward,
+  regionName, regionOf, rewardFor, rewardText, roadColony, roadKey, roadStops, rungOfChapter,
+  stopColony, stopReached,
 } from "./road";
 export {
   COLONY_FLOOR, COLONY_LOSS_SHARE, COLONY_START, COLONY_TAPER, COLONY_WIN, compact, exact,
