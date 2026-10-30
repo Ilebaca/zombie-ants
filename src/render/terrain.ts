@@ -244,8 +244,13 @@ function paintArt(
  * slabs. The ten agree to about two pixels, which is the hand that painted them, so the
  * rectangle is their mean; taking it off one file would let that file decide where the
  * other nine sit.
+ *
+ * AND IT IS RE-MEASURED WHENEVER THE TEN ARE REPAINTED, which is the only way to know a
+ * new set was painted to the template rather than near it. The restyle moved it by six
+ * tenths of a file pixel — under a third of a pixel on the board — so the number barely
+ * changed, and that is the result rather than the reason to skip the measurement.
  */
-export const ART_GRID = { x: 0.0572, y: 0.2939, w: 0.8857, h: 0.4027 } as const;
+export const ART_GRID = { x: 0.0570, y: 0.2936, w: 0.8850, h: 0.4027 } as const;
 
 /**
  * Where the whole picture lands so its painted grid sits exactly on the board.

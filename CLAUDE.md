@@ -2432,6 +2432,11 @@ nagging the one player who had already done what it asked.**
   for directly, "do not expand it yourself further". The rule for whoever paints the next
   one is that the margin belongs in the FILE. Checked at 96px and 48px under both a
   squircle and a circle mask, which is the only size any of this is ever seen at.
+  - **AND THE ANTENNAE ARE CLIPPED UNDER A CIRCLE MASK — on both paintings so far.** The
+    head is whole and reads cleanly at 48px either way; what the circle takes is the outer
+    segment of each antenna, because they reach to within a few percent of the sides. It
+    is recorded rather than fixed, because fixing it here means insetting the picture
+    again, which is the one thing that was asked against. The margin belongs in the file.
 - **Every browser tool points at `/opt/pw-browsers/chromium`**, the stable symlink, never
   at a versioned path — four of them had `chromium-1194` written out and all four broke the
   day the container's Chromium moved.
@@ -2487,7 +2492,11 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
     `src/ui/regions/rg03.webp` IS the Volcano's ground, resolved by a build-time glob. The
     NUMBER is what is read, so `rg03-volcano.webp` works too and says what it is in the
     folder listing. **ALL TEN ARE PAINTED NOW**, each 841 x 1870, each to the template
-    below — and the structure landed long before the art did, with every region falling
+    below — and they have been REPAINTED once since, in a bolder, flatter style with
+    rounded slabs and heavier outlines. What matters about a restyle is that the TEMPLATE
+    held: the grid was re-measured across the new ten and moved by six tenths of a file
+    pixel, the painted rocks and seams are still on the engine's own cells, and the pips
+    land on the painted sockets in all ten (checked in a browser, a match per region) — and the structure landed long before the art did, with every region falling
     back to `ground.webp` for as long as it took. That fallback survives for a region
     with no file of its own: nothing can reach it while the ten are there, which is
     exactly why it is a HALF-SIZE copy of the forest floor rather than a full picture —
@@ -2514,6 +2523,12 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
       so the error is split between opposite edges instead of landing all on one: a
       couple of pixels on the widest phone, inside the grout line between two painted
       slabs.
+    - **AND IT IS RE-MEASURED WHENEVER THE TEN ARE REPAINTED.** That is the only way to
+      know a new set was painted to the template rather than near it, and the measurement
+      is cheap: a ten-line ladder fitted to each file's luminance, the mean of the ten.
+      The restyle moved it from 0.0572 / 0.2939 / 0.8857 / 0.4027 to 0.0570 / 0.2936 /
+      0.8850 / 0.4027 — under a third of a pixel on the board. That the number barely
+      moves is the RESULT, never the reason to skip it.
     - **AND THE RECTANGLE IS THE MEAN OF ALL TEN, measured to the LINE CENTRES.** A
       ten-line ladder is fitted to each file's luminance, which answers with the middle
       of each painted grout line rather than the edge of the ink — and a cell boundary
