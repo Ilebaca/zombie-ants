@@ -1019,8 +1019,19 @@ each of these is one of those requests.
     one that is not a whole screen. Without `:not(.rd-chap)` all fifty pictures are
     stripped off with `!important` and the road comes back grey, silently. `css-sanity`
     holds it, because nothing a jsdom test can see would notice: the inline style is set
-    either way and only the cascade removes it. The scrim is a `::before` — those are
-    blanketed with no exemption at all, so the picture cannot hide on one.
+    either way and only the cascade removes it. A pseudo-element is blanketed with no
+    exemption at all, so the picture cannot hide on one.
+  - **AND NOTHING IS LAID OVER IT: no tint, no radius, no gap, no side margins.** All
+    four asked for directly, and they are one decision — the artwork is the SCREEN here
+    rather than a card's decoration, so the road is a single painted strip the player
+    climbs. The panels butt, the corners are square, the scrim that used to sit on
+    `.rd-chap::before` is gone, and the body escapes `.screen`'s 16px gutter by the same
+    number (home's `.tophead` trick) instead of that padding being removed: the HEADER
+    above it still wants the gutter under the notch. **The bottom padding is NOT
+    escaped** — that one is `64px + safe-area`, the room the tab bar stands in, so the
+    road's bottom edge is the tab bar and the sticky footer strip sits flush on it.
+    All four are ABSENCES, which is the one kind of decision a stylesheet cannot show,
+    so `css-sanity` holds each of them.
 - **A CHECKPOINT IS AN ICON ON THE PATH, NOT A CARD BESIDE IT.** The disc carries the
   resource's mark and nothing else; the pass reward is a smaller disc hanging off the
   right-hand column, wearing a crown or a lock. The path is drawn per checkpoint
@@ -1042,12 +1053,14 @@ each of these is one of those requests.
   own `.rd-path` (both are positioned), so `offsetTop` answers where it sits inside its
   CHAPTER: a couple of hundred pixels into a thirty-six-thousand-pixel scroller, which
   clamped to zero and opened every colony at chapter fifty.
-- **THE LABELS SIT ON NEAR-OPAQUE PLATES, and that is a contrast decision.** Written onto
-  the scrim they are read against TEN paintings — measured at 5.1 over the Mangrove, which
-  is AA with nothing in hand, and the next region somebody paints decides whether it still
-  is. On a `.88` plate the ratio is a property of two colours in this file: **4.82 against
-  the brightest artwork there could ever be**, which is a stronger statement than a sweep
-  of the ten. The one thing that failed that test was the target pill's own darker wash
+- **THE LABELS SIT ON NEAR-OPAQUE PLATES, and that is a contrast decision — and it is
+  what lets the panel carry no tint at all.** Written onto the picture they are read
+  against TEN paintings — measured at 5.1 over the Mangrove, which is AA with nothing in
+  hand, and the next region somebody paints decides whether it still is. On a `.88` plate
+  the ratio is a property of two colours in this file: **4.82 against the brightest
+  artwork there could ever be**, which is a stronger statement than a sweep of the ten —
+  and the scrim was never in that calculation, which is why removing it took nothing
+  away. The one thing that failed that test was the target pill's own darker wash
   (4.10); it wears the same plate as the rest now, and what marks the target is the ring.
 - **NOTHING PULSES.** The claimable disc was animated, and a save that has not claimed in
   twenty chapters has two hundred of them on screen at once. Gold filled against dim

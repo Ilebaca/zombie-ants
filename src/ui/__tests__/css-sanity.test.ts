@@ -356,8 +356,37 @@ describe("the road's artwork", () => {
     expect(blanket, "the blanket rule moved").toBeTruthy();
     expect(blanket, "every chapter's picture is being stripped off").toContain(":not(.rd-chap)");
     // And the picture cannot be hidden on a pseudo-element instead — those are blanketed
-    // with no exemption at all, which is why `.rd-chap::before` is the scrim and not the art.
+    // with no exemption at all, so the art has to be on the element itself.
     expect(blanket).toContain("*::before");
+  });
+
+  /**
+   * AND NOTHING IS LAID OVER IT. Asked for directly: no dark overlay, no rounded
+   * corners, no gap between the chapters and no margins at the sides. All four are
+   * absences, which is the one kind of decision a stylesheet cannot show — a scrim
+   * written back onto the panel, or the reading column reapplied, looks like an
+   * ordinary rule rather than the thing the screen was corrected for. The ratios the
+   * labels pass are measured against the PICTURE now (the plates under them), so a
+   * tint put back would be contrast nobody is relying on.
+   */
+  it("lays nothing over the picture and keeps no margins", () => {
+    const css = code(read("skin.css"));
+    expect(css, "the chapter panels are tinted again").not.toMatch(/^\.rd-chap::(before|after)\s*\{/m);
+
+    const panel = rulesFor(css, ".rd-chap");
+    expect(panel, "the panels are rounded again").not.toMatch(/border-radius/);
+    expect(panel, "there is a gap between the chapters again").not.toMatch(/margin/);
+    expect(rulesFor(css, ".rd-gate"), "there is a gap under the breaker again")
+      .not.toMatch(/margin/);
+
+    // The road is the one screen body in the app that is edge to edge: it escapes
+    // `.screen`'s gutter by the same number, rather than that padding being removed.
+    const body = rulesFor(css, "#achievements > .screenbody.achbody");
+    expect(body, "the road is back inside the reading column").not.toMatch(/var\(--page\)/);
+    expect(body, "the road has side margins again")
+      .toMatch(/margin-inline:\s*calc\(-1 \* var\(--sp4\)\)/);
+    // ...but NOT the bottom one, which is the room the tab bar stands in.
+    expect(body, "the road runs underneath the tab bar").not.toMatch(/margin-bottom/);
   });
 });
 
