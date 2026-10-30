@@ -5137,9 +5137,30 @@ button:not(.playbtn):active,
    COVER, CENTRED, and the picture is composed for it: the larva sits in the
    middle of a chamber that is dark at every edge, so a crop at any phone shape
    loses nothing that was carrying the screen. The blanket above had to be told
-   about `#luckyhatch` for any of this to paint at all. */
+   about `#luckyhatch` for any of this to paint at all.
+
+   AND THE VIGNETTE IS A SECOND LAYER ON THIS SAME RULE, asked for directly:
+   everything but the very middle is dimmed, so the chamber reads as a hole in
+   the ground with one thing lit in it rather than as a wall of soil the larva
+   happens to be in front of. Two stops, because one hard edge reads as a
+   spotlight: the middle is untouched out to a third of the radius, then it
+   falls away to near-black at the corners.
+
+   IT IS A LAYER ON THE ELEMENT, NEVER A `::after`. A gradient IS a background
+   image, and the blanket at the top of this file clears every pseudo-element's
+   with `!important` and no exemption at all — so a vignette written there is
+   silently nothing. `#luckyhatch` itself is exempt, and `background-image`
+   stacks, so the wash goes in FRONT of the picture in the same declaration.
+   (Layer order is front-to-back, which is why the gradient is written first.) */
 #luckyhatch {
-  background-image: url("./backdrops/hatch.webp");
+  background-image:
+    radial-gradient(
+      ellipse 62% 38% at 50% 46%,
+      rgba(8, 5, 3, 0) 0%,
+      rgba(8, 5, 3, 0) 34%,
+      rgba(8, 5, 3, .42) 68%,
+      rgba(8, 5, 3, .82) 100%),
+    url("./backdrops/hatch.webp");
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
@@ -5215,20 +5236,22 @@ button:not(.playbtn):active,
    The chamber is EMPTY in the picture now and the animal is an element, which is
    what buys back the one thing the egg was doing: moving while the roll resolves.
 
-   SIZED TO LAND WHERE THE PAINTED ONE DID. That picture is `cover` on a screen
-   that is the whole viewport, and on a phone it is wider than it is tall relative
-   to the file — so cover scales it BY WIDTH and the larva painted across 23.9% of
-   the file is 23.9% of the viewport. `24vw` is that number, and the swap from
-   paint to element is invisible on the device this is checked on. The cap is for a
-   tablet, where cover turns over to scaling by HEIGHT and the painted one would
-   have been smaller than 24vw rather than larger.
+   SIZED AGAINST THE BURROW, not against a larva that used to be painted there.
+   The first version was `24vw`, measured off the stand-in background — the real
+   artwork is a chamber with a wide open mouth in the middle of it, and a 94px
+   animal in it read as something dropped down a hole rather than as the thing
+   the screen is about. The picture is `cover` and a phone is wider than the file
+   is, relative to each other, so cover scales BY WIDTH and a `vw` is the file's
+   own width: this is a little over a third of the opening. The cap is for a
+   tablet, where cover turns over to scaling by HEIGHT and an unbounded `vw`
+   would put the animal straight through the walls.
 
    IT WRIGGLES, IT DOES NOT SPIN. A spin is what a loading indicator does, and the
    answer here is already decided — what is on screen is an animal about to hatch.
    Kept on `.working` so one class drives the hold, the button's label and this. */
 .hatchlarva {
   display: block;
-  width: min(24vw, 150px);
+  width: min(40vw, 215px);
   height: auto;
   /* The rock is about the MIDDLE of the body rather than the top of the image, or
      the head swings a long way and the tail barely moves. */
