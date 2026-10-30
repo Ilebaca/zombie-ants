@@ -1859,8 +1859,14 @@ button:not(.playbtn):active,
   position: sticky;
   bottom: 0;
   z-index: 2;
-  /* On the column's own edges, like everything else. */
-  margin: 10px 0 calc(10px + env(safe-area-inset-bottom));
+  /* FLUSH, because the road has no margins (above). A card floating 10px off the
+     end of an edge-to-edge painting is a gap in the one place the eye is already
+     at the bottom of the screen, and a radius on it leaves two slivers of artwork
+     showing through its corners. It is a strip above the tab bar now, not a card. */
+  margin: 0;
+  border-inline: none;
+  border-bottom: none;
+  border-radius: 0;
   background: var(--panel);
 }
 
@@ -4506,6 +4512,27 @@ button:not(.playbtn):active,
   margin-inline: auto;
 }
 
+/* ...EXCEPT THE ROAD, WHICH IS A PICTURE AND NOT A COLUMN OF CARDS. Asked for
+   directly: no margins at the sides, the top or the foot. A painted strip inset
+   16px either side reads as a photograph of a road rather than the road, and on
+   a tablet the column would put the artwork in a frame of nothing. It is the one
+   screen body in the app that is edge to edge, because it is the one whose
+   content IS the background.
+
+   IT ESCAPES BY THE SAME NUMBERS `.screen` PUTS IT IN BY, rather than that
+   padding being removed — the header above it is still a header and still wants
+   the app's gutter under the notch, so taking the gutter off the screen would put
+   the back button 4px from the glass. The pattern is home's own `.tophead`. The
+   SIDES ONLY. The screen's BOTTOM padding is `64px + safe-area` — the room the
+   tab bar stands in — so escaping that would run the road, and the sticky strip
+   on the end of it, underneath five lit tabs. The road's bottom edge is the tab
+   bar; the strip sits flush on it. */
+#achievements > .screenbody.achbody {
+  width: auto;
+  margin-inline: calc(-1 * var(--sp4));
+  padding: 0;
+}
+
 /* ----------------------------------------------------------------------
    EVERY CONTROL IS A THUMB WIDE
 
@@ -6116,9 +6143,10 @@ button:not(.playbtn):active,
 
    EVERY CHAPTER WEARS ITS PICTURE, set inline by `ui/road.ts` from
    `backdropFor` — which is exactly why `.rd-chap` is the fourth exemption
-   on the blanket at the top of this file. The scrim is a `::before`, which
-   is allowed to carry a COLOUR even though the blanket clears every
-   pseudo-element's image.
+   on the blanket at the top of this file. Nothing is laid OVER it: no tint,
+   no radius, no gap and no side margins, all four asked for directly, so
+   the road is one painted strip rather than fifty cards on a dark page.
+   Every label on it rides its own near-opaque plate for that reason.
 
    THE PATH IS PER-CHECKPOINT, not one bar down the scroller. It is drawn
    on `.rd-stop::before` and goes gold as far as the colony has reached, so
@@ -6131,29 +6159,27 @@ button:not(.playbtn):active,
    ====================================================================== */
 .rd-road { display: block; }
 
+/* SQUARE, FLUSH AND UNDIMMED, all three asked for directly. No radius, no gap to
+   the panel below and no scrim over the picture: the road is one continuous
+   painted strip the player climbs, rather than fifty cards on a dark page. The
+   artwork is the screen, so nothing may be laid over it — which is why every
+   label on it rides its own near-opaque plate (below), measured against the
+   brightest artwork there could ever be rather than against a tint. */
 .rd-chap {
   position: relative;
   overflow: hidden;
-  border-radius: var(--r-xl);
-  margin-bottom: var(--stack);
   background-color: var(--bg2);
   background-size: cover;
   background-position: center;
 }
-/* The artwork is somebody's painting and the discs have to be read over it. */
-.rd-chap::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(6, 14, 9, .6);
-}
 
 /* THE LABEL SITS ON ITS OWN PLATE, and that is a contrast decision rather than a
-   decorative one. Written straight onto the scrim it is read against TEN different
+   decorative one. Written straight onto the picture it is read against TEN different
    paintings — measured at 11.2 over the Mangrove and 5.1 over its subtitle, which is AA
    with very little in hand, and the next region somebody paints decides whether it still
    is. On a near-opaque plate the ratio is a property of two colours in this file, so no
-   artwork can take it under. The pill is the legacy build's answer to the same problem. */
+   artwork can take it under — which is what lets the panel carry no tint at all. The
+   pill is the legacy build's answer to the same problem. */
 .rd-chapname {
   position: relative;
   z-index: 1;
@@ -6178,7 +6204,7 @@ button:not(.playbtn):active,
 .rd-chapname.reached b { color: var(--gold-glow); }
 
 /* No padding at the foot: the path has to reach the edge of the panel, or it stops
-   short of the gap and the road reads as fifty separate ladders. */
+   short of the seam with the chapter below and the road reads as fifty ladders. */
 .rd-path { position: relative; display: block; }
 
 /* ---------------------------------------------------------- A CHECKPOINT */
@@ -6316,7 +6342,6 @@ button:not(.playbtn):active,
   justify-items: center;
   gap: 3px;
   padding: 24px 0 30px;
-  margin-bottom: var(--stack);
 }
 .rd-arch {
   display: flex;
