@@ -50,12 +50,24 @@ describe("every declaration does something", () => {
 
 /**
  * THE APP CLEARS EVERY BACKGROUND IMAGE (§10), so a `background: <gradient>` written
- * anywhere but on `#home` is a declaration that never takes effect — the same silent
- * failure as a doubled unit, and it happened twice on the lucky hatch before this existed.
+ * on anything the blanket does not EXEMPT is a declaration that never takes effect —
+ * the same silent failure as a doubled unit, and it happened twice on the lucky hatch
+ * before this existed.
+ *
+ * THE EXEMPT LIST IS READ OUT OF THE BLANKET ITSELF rather than typed here. It was
+ * `#home` alone, which was right while home was the only picture in the app; the hatch
+ * wears a vignette over its chamber now and the fourth exemption is a CLASS. A second
+ * copy of that list is a second thing to keep in step, and the day it fell behind this
+ * test would be failing a rule that works perfectly.
  */
 describe("no rule paints a gradient the app has already cleared", () => {
-  it("has no gradient outside the home artwork", () => {
+  it("has no gradient outside what the blanket exempts", () => {
     const css = code(read("skin.css"));
+    const blanket = css.split("\n").find((l) => l.includes("background-image: none !important"));
+    expect(blanket, "the blanket rule moved").toBeTruthy();
+    const exempt = [...(blanket ?? "").matchAll(/:not\(([^)]+)\)/g)].map((m) => m[1] ?? "");
+    expect(exempt.length, "the blanket exempts nothing").toBeGreaterThan(0);
+
     const bad: string[] = [];
     for (const m of css.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
       const selector = (m[1] ?? "").trim();
@@ -65,7 +77,9 @@ describe("no rule paints a gradient the app has already cleared", () => {
       const paints = [...(m[2] ?? "").matchAll(/(^|[;{])\s*(background(?:-image)?)\s*:([^;]*)/g)]
         .some((d) => /gradient\(/.test(d[3] ?? ""));
       if (!paints) continue;
-      if (selector.includes("#home") || selector.startsWith("@")) continue;
+      if (selector.startsWith("@")) continue;
+      // A pseudo-element is NEVER exempt, however its own element is spelled.
+      if (!/::(before|after)/.test(selector) && exempt.some((e) => selector.includes(e))) continue;
       bad.push(selector.slice(0, 60));
     }
     expect(bad, "these gradients are cleared by the app-wide rule").toEqual([]);
@@ -344,5 +358,37 @@ describe("the road's artwork", () => {
     // And the picture cannot be hidden on a pseudo-element instead — those are blanketed
     // with no exemption at all, which is why `.rd-chap::before` is the scrim and not the art.
     expect(blanket).toContain("*::before");
+  });
+});
+
+/**
+ * THE HATCH'S VIGNETTE IS A LAYER ON THE ELEMENT, NOT A PSEUDO-ELEMENT.
+ *
+ * Everything but the middle of the chamber is dimmed, so the burrow reads as a
+ * hole with one thing lit in it. A gradient IS a background image, and the
+ * blanket at the top of `skin.css` clears every `*::before` and `*::after`
+ * with `!important` and NO exemption — so written there the wash is silently
+ * nothing at all, which is the trap `#home::after` is already on record for.
+ * `#luckyhatch` itself is one of the four exempt selectors, and
+ * `background-image` stacks, so the wash rides in front of the picture in the
+ * same declaration.
+ *
+ * Nothing a jsdom test can see would notice: both spellings parse, and only
+ * the cascade decides which one paints.
+ */
+describe("the lucky hatch's vignette", () => {
+  it("rides on the screen's own background, in front of the picture", () => {
+    const css = read("skin.css");
+    const rule = rulesFor(css, "#luckyhatch");
+    expect(rule, "the chamber lost its picture").toContain("backdrops/hatch.webp");
+    expect(rule, "the vignette is gone").toContain("radial-gradient");
+    // Layer order is front-to-back, so the wash has to be written FIRST or it
+    // is painted behind the picture and does nothing.
+    const layers = /background-image:([\s\S]*?);/.exec(rule)?.[1] ?? "";
+    expect(layers.indexOf("radial-gradient"), "the wash is behind the picture")
+      .toBeLessThan(layers.indexOf("backdrops/hatch.webp"));
+    // And it must not have moved onto a pseudo-element, where the blanket eats it.
+    expect(css, "a vignette on a pseudo-element is cleared with !important")
+      .not.toMatch(/#luckyhatch::(before|after)\s*\{[^}]*gradient/);
   });
 });

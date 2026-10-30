@@ -2105,13 +2105,15 @@ is a control competing with it.
     move, because it is part of a full-screen background. So the chamber was repainted
     EMPTY and the animal is an `<img>` in the stage — which is exactly what that note
     said whoever wanted the movement back would have to bring.
-    - **IT IS SIZED TO LAND WHERE THE PAINTED ONE DID, and the number is not a guess.**
-      That picture is `cover` on a screen that is the whole viewport, and on a phone the
-      viewport is relatively wider than the file — so cover scales it BY WIDTH, and the
-      larva painted across 23.9% of the file was 23.9% of the viewport. `24vw` is that
-      number; measured in a browser at 390px wide it comes out 94px, which is what the
-      paint was. The cap is for a tablet, where cover turns over to scaling by HEIGHT and
-      the painted one would have been SMALLER than 24vw rather than larger.
+    - **IT IS SIZED AGAINST THE BURROW, and that is the second answer to this.** The
+      first was `24vw` — the width the larva was PAINTED at in the stand-in background,
+      which made the swap from paint to element invisible. The real chamber has a wide
+      open mouth in the middle of it, and a 94px animal in that read as something
+      dropped down a hole rather than as the thing the screen is about. `min(40vw,
+      215px)` is a little over a third of the opening, checked on a phone and a tablet.
+      A `vw` is still the file's own width, because the picture is `cover` and a phone
+      is relatively wider than the file; the CAP is for a tablet, where cover turns over
+      to scaling by HEIGHT and an unbounded `vw` puts the animal through the walls.
     - **IT WRIGGLES, IT DOES NOT SPIN**, which is the same rule the egg followed: a spin
       is what a loading indicator does, and nothing here is loading — the answer was
       decided before the animation started.
@@ -2149,16 +2151,37 @@ is a control competing with it.
       middle of the frame — and it read straight through the prize's own disc, which is a
       ring with a 14% wash of the tier colour in it rather than a plate. The point of the
       pop-up is that the tier's colour is the only thing on the screen.
-  - **TWO FILES, AND BOTH ARE STAND-INS** (`ui/backdrops/hatch.webp`, `.../larva.webp`).
-    The real pair — an empty chamber and a larva cut out on transparent ground — were
-    sent and did not reach this container as files, so the shipped ones were DERIVED from
-    the painting that was already there: the larva was keyed out of it, and the hole it
-    left was filled by relaxing Laplace over the patch (the ground there is a flat brown
-    within 12 of 255, so there is nothing to reconstruct). That is good enough to ship
-    the mechanic and it is not the artwork: the cut-out is 218px wide where the real one
-    is nearly 900, and under a 1.7x brightness lift the old silhouette is still faintly
-    there in the ground. Dropping the two real files in at the same names is the WHOLE
-    remaining change — no code, no CSS, no test.
+  - **THE TWO FILES ARE THE REAL ARTWORK** (`ui/backdrops/hatch.webp`, `.../larva.webp`).
+    They were STAND-INS for a while — the chamber was the old painting with the larva
+    keyed out of it and the hole filled by relaxing Laplace over the patch, and the
+    cut-out was that keyed larva at 218px — and the note here said dropping the real
+    pair in at the same names was the whole remaining change. It was: the files landed
+    and nothing but their two sizes moved.
+    - **The larva is TRIMMED TO ITS INK and resized to 720 wide.** The element is at
+      most 215 CSS pixels, which is 645 device pixels on a 3x phone, so the 1080 it
+      arrived at is two and a half times more picture than any screen asks for — and
+      the service worker precaches every byte. Trimmed because `transform-origin: 50%
+      55%` is measured against the BOX, so transparent margin in the file would move
+      where the wriggle pivots.
+  - **AND THE CHAMBER CARRIES A VIGNETTE, asked for directly**: everything but the very
+    middle is dimmed, so the burrow reads as a hole in the ground with one thing lit in
+    it rather than as a wall of soil the larva happens to be in front of. Two stops, out
+    to a third of the radius untouched and near-black at the corners — one hard edge
+    reads as a spotlight.
+    - **IT IS A SECOND LAYER ON `#luckyhatch` ITSELF, never a `::after`.** A gradient IS
+      a background image, and the blanket (§10) clears every pseudo-element's with
+      `!important` and NO exemption at all — so a vignette written there is silently
+      nothing, which is the trap `#home::after` is already on record for. The screen is
+      one of the four exempt selectors and `background-image` stacks, so the wash rides
+      in FRONT of the picture in the same declaration. Layer order is front-to-back,
+      which is why the gradient is written first, and a test holds that order.
+    - **AND THE TEST THAT ALREADY GUARDED THIS NOW READS THE BLANKET.** `css-sanity` has
+      a sweep for gradients the blanket would clear, and its exempt list was the literal
+      string `#home` — right while home was the only picture in the app, and wrong the
+      moment a fourth exemption landed as a CLASS. It parses the `:not(...)` list out of
+      the blanket rule itself, so the two cannot drift; a pseudo-element is never exempt
+      however its own element is spelled.
+
   - **THE BUTTON STAYS SOLID WHILE IT IS HATCHING.** It is disabled for the whole hold and
     `[disabled]` carried `opacity: .7`, so the one filled slab on a screen that is
     otherwise a lit painting went SEE-THROUGH at exactly the moment the player is watching
