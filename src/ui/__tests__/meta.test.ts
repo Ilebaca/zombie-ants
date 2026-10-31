@@ -696,7 +696,13 @@ describe("the colony banner", () => {
    */
   it("ends the bar with what filling it pays", () => {
     const rail = banner(1_284_000).querySelector(".col-rail");
-    expect(rail?.querySelector(".col-pay svg"), "no reward mark on the bar").toBeTruthy();
+    // THE TAG FOLLOWS THE FILE, so the assertion may not name one: a currency with a
+    // painted mark is an `<img class="hudmark">` and one without is an `<svg>`
+    // (§ THE PAINTED CHROME MARKS). Asserting `svg` here held for exactly as long as the
+    // currencies were drawn and failed the day they were painted, while the rail was
+    // perfectly correct. What the rail owes is A MARK.
+    expect(rail?.querySelector(".col-pay svg, .col-pay .hudmark"),
+      "no reward mark on the bar").toBeTruthy();
     // The rail carries the chapter's LABEL and the reward mark, and no second figure:
     // the rung's size beside the one the banner leads with reads as a sum of the two.
     expect(rail?.textContent, "the rung's size is printed on the rail")
