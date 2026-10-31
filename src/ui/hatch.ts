@@ -534,21 +534,26 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     btn.onclick = () => (can ? run() : opts.onBuyLarva());
     box.appendChild(btn);
 
-    // THE HANDFUL SITS UNDER THE ONE THAT ALWAYS WORKS, and only when it can be paid for.
-    // Quieter than the button above it on purpose: there is one primary action on this
-    // screen and this is a shortcut through it, not a second offer competing with it.
-    if (store.get().larva >= HATCH_COST * BULK) {
-      const many = el("button", "hatchbtn bulk") as HTMLButtonElement;
-      many.type = "button";
-      many.id = "hatchGo10";
-      many.disabled = busy;
-      many.append(
-        el("span", "hb-t", `Hatch ${BULK}`),
-        el("span", "hb-c", `${HATCH_COST * BULK} larva`),
-      );
-      many.onclick = () => runMany();
-      box.appendChild(many);
-    }
+    // THE HANDFUL SITS UNDER THE ONE THAT ALWAYS WORKS, and it is ALWAYS THERE.
+    // It used to be drawn only once the whole batch could be paid for, on the argument
+    // that a second button mostly reading "you cannot" competes with the one that can —
+    // asked for directly the other way, and the argument was wrong about what appearing
+    // and disappearing costs: a shortcut a player has seen once and cannot find again
+    // reads as the screen having lost it. Shown and DISABLED, it is a price to save up
+    // to. Quieter than the button above it either way: one primary action on this screen.
+    const enough = store.get().larva >= HATCH_COST * BULK;
+    const many = el("button", "hatchbtn bulk") as HTMLButtonElement;
+    many.type = "button";
+    many.id = "hatchGo10";
+    // The DISABLED attribute is the whole mechanism, not a second guard inside the
+    // handler: a button that cannot be pressed is the one state a player can see.
+    many.disabled = busy || !enough;
+    many.append(
+      el("span", "hb-t", `Hatch ${BULK}`),
+      el("span", "hb-c", `${HATCH_COST * BULK} larva`),
+    );
+    many.onclick = () => runMany();
+    box.appendChild(many);
     return box;
   };
 
