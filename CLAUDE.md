@@ -2563,6 +2563,17 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
     what let the structure land before the art did, when all fifty wore it; nothing reaches
     it on the road any more, and it stays because `skin.css` names it directly — the screen
     is never bare if the script never runs.
+  - **AND IT IS ANCHORED TO ITS FOOT, so only the TOP is ever cut** (`background-position:
+    center bottom`). The files are 842x1871 under `cover`, which always fills the width —
+    so a screen that is not the design's 360x800 loses HEIGHT, and centred that came off
+    BOTH ends. Measured: 360x800 and 412x915 lose nothing at all, 390x844 and 430x932
+    about 2.5%, 360x740 7.5%, and **320x568 and 375x667 twenty per cent** — a tenth off
+    each end. The tenth off the bottom was the expensive one: every chapter picture paints
+    its five mounds with the crossed swords on the one the player is standing at, and
+    mound ONE is near the foot, so on a short phone the one thing the artwork exists to
+    say was the first thing to go. Pinned to the bottom the whole cut lands on the sky,
+    where there is nothing to lose. Held by a test, because the screen looks identical
+    either way until a short phone opens it.
   - **It is set INLINE on `#home`, from the chapter the banner already names.** Fifty
     rules in a stylesheet for fifty files the stylesheet cannot see is a second table to
     keep in step — and `skin.css` still carries the default, so the screen is never bare
