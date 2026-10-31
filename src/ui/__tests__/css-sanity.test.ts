@@ -606,6 +606,30 @@ describe("the home screen's ledge survives the blanket", () => {
   });
 
   /**
+   * ONE VERTICAL GAP DOWN THE WHOLE TOP BLOCK, asked for directly.
+   *
+   * The mock-up spaced it three different ways — 5 under the bar, 5 + 5 + 8 stacked
+   * between the banner and the buttons, 16 down the button column — which measured out
+   * as 5 / 18 / 16 and read as three decisions rather than one. What is held here is
+   * that every one of them names the SAME TOKEN: four copies of `12 * var(--u)` would
+   * pass an assertion about the number while being four chances for "uniform" to stop
+   * being true, which is the only thing this rule actually says.
+   */
+  it("puts one gap between everything in the top block", () => {
+    expect(rulesFor(css, ":root"), "the top block has no gap of its own")
+      .toMatch(dp("--vgap", 12));
+    // Under the bar. Top only — what sits below the banner is the granary row, and that
+    // row's own top padding is the gap, so a bottom margin here would be it spelled twice.
+    expect(ruleFor(css, "#home .colhero"))
+      .toMatch(/margin:\s*var\(--vgap\) var\(--gutter\) 0/);
+    // Under the banner, and above whatever follows the row.
+    expect(ruleFor(css, "#home .homerow"))
+      .toMatch(/padding:\s*var\(--vgap\) var\(--gutter\)/);
+    // Down the column of three side buttons.
+    expect(ruleFor(css, "#home .homefabs")).toMatch(/gap:\s*var\(--vgap\)/);
+  });
+
+  /**
    * AND THE SCALE DOES NOT OUTRANK THE TAP FLOOR. `--tap` is a rule about a thumb, not a
    * measurement off the mock-up, so it does not shrink with one: at the bottom of the
    * scale the three side buttons are 48 design px, which is 42 real ones.

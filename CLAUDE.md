@@ -2824,6 +2824,22 @@ and lands on the design's figure exactly.
     `calc(N * var(--u))` pattern, because asserting `height: 24px` passes just as well
     against a rule that has quietly fallen off the scale — which is the regression worth
     catching.
+- **ONE VERTICAL GAP DOWN THE WHOLE TOP BLOCK (`--vgap`, 12), asked for directly.** The
+  mock-up spaces it three different ways — 5 under the bar, then 5 + 5 + 8 stacked
+  between the banner and the buttons, then 16 down the button column — which measured out
+  as **5 / 18 / 16** and read as three decisions rather than one. It is 12 everywhere now
+  and it rides `--u` like everything else (10.7 at 320, 14.3 at 430), so the gaps stay
+  equal at every width.
+  - **IT IS A TOKEN, not the number written in four places.** "Uniform" is the rule, and
+    four copies of `12 * var(--u)` would satisfy an assertion about the NUMBER while being
+    four chances for the rule to stop being true. The test names the token.
+  - **The banner carries a TOP margin only.** What sits under it is the granary row, whose
+    own top padding is that gap; a bottom margin here would be one number spelled twice
+    and the two would add.
+  - **AND IT ALIGNED THE PILL WITH THE BUTTONS.** The mock-up puts the granary pill 8px
+    HIGHER than the burger (107 against 115), because the pill's column has no vertical
+    padding and each button's own box carries `py-8`. They share one top edge here — a
+    deviation, flagged and kept.
 - **THE AIR UNDER PLAY FOLLOWS THE SCREEN'S HEIGHT, NOT ITS WIDTH, AND IT IS THE FOOT
   THAT IS HELD.** Everything else here scales by `--u`, which is measured ACROSS — right
   for how big a button is and wrong for the air beneath it. In the design PLAY's foot is
