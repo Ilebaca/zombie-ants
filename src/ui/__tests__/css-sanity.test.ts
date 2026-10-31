@@ -133,7 +133,7 @@ describe("the design scales", () => {
     }
     // The full-bleed top block escapes by the SAME number it is put back by, or it
     // overhangs the screen it is meant to fill.
-    expect(ruleFor(css, "#home .tophead")).toContain("calc(-1 * var(--gutter))");
+    expect(rulesFor(css, "#home .tophead")).toContain("calc(-1 * var(--gutter))");
   });
 
   /**
@@ -295,6 +295,83 @@ describe("a box that sizes a portrait sizes both kinds", () => {
       }
     }
     expect(bad, "these boxes size a drawn portrait and not a painted one").toEqual([]);
+  });
+
+  /**
+   * AND THE SAME IS TRUE OF A CHROME MARK, which is the second pair this app has.
+   *
+   * `hudMark` answers an `<img>` where a mark is painted (`ui/hud.ts`) and the drawn
+   * `<svg>` where it is not, so a box that sizes only `svg` sizes whichever half has no
+   * file yet and lets the rest render at 100px. The roots are where `hudMark` is used —
+   * the home screen, the tab bar and the drawer — and a fourth would be a deliberate
+   * change to this list rather than something that drifts into it.
+   */
+  it("names the painted mark wherever it sizes a drawn one", () => {
+    const css = code(read("skin.css"));
+    const ROOTS = ["#home", "#mainNav", ".menudraw"];
+    // Every selector in the file that sizes something, flattened once: the pair may be
+    // in the SAME rule (one size for both tags) or in a rule of its own, which is what a
+    // box needs when the painted mark and the drawn one are different sizes.
+    const sized: string[] = [];
+    for (const m of css.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+      if (!/(^|[;{])\s*width\s*:/.test(m[2] ?? "")) continue;
+      for (const part of (m[1] ?? "").split(",")) sized.push(part.trim().replace(/\s*>\s*/g, " "));
+    }
+    const bad = sized.filter((part) =>
+      /\bsvg$/.test(part) && ROOTS.some((root) => part.startsWith(root)) &&
+      !sized.includes(`${part.replace(/\s*svg$/, "")} .hudmark`));
+    expect(bad, "these boxes size a drawn mark and not a painted one").toEqual([]);
+  });
+});
+
+/**
+ * THE DRAWER (Figma `05-menu-drawer 3`). The same three things the rest of the redesign
+ * is built from, minus the gloss: the panel is a hole cut in the screen rather than a
+ * tile standing on it. Its position is the one number here that is not a style — it hangs
+ * three pixels under the menu button, which only works while the top block starts at the
+ * top of the frame.
+ */
+describe("the drawer is drawn to the design", () => {
+  const css = code(read("skin.css"));
+
+  it("hangs off the menu button", () => {
+    expect(rulesFor(css, ".menuwrap"))
+      .toMatch(/padding:\s*calc\(166px \+ env\(safe-area-inset-bottom|padding:\s*calc\(166px \+ env\(safe-area-inset-top\)\)/);
+  });
+
+  /** The block above it is what 166 is measured from, so the screen's own top inset has
+   *  to be the NOTCH and nothing else — `.screen` pads by `--sp4` on top of that. */
+  it("starts the top block at the top of the frame", () => {
+    expect(rulesFor(css, "#home")).toMatch(/padding-top:\s*env\(safe-area-inset-top\)/);
+    expect(rulesFor(css, "#home .tophead"), "the bar's own escape would hang it off the top")
+      .toMatch(/margin-top:\s*0/);
+  });
+
+  it("wears the face and the ledge, and no gloss", () => {
+    const panel = rulesFor(css, ".menudraw");
+    expect(panel).toMatch(/background:\s*var\(--hud-face\)/);
+    expect(panel).toMatch(/box-shadow:\s*var\(--hud-ledge\)\s*!important/);
+    expect(panel, "the panel is a hole, not a tile standing on the screen")
+      .not.toContain("--hud-gloss");
+    expect(panel).toMatch(/padding:\s*12px/);
+    expect(panel).toMatch(/gap:\s*16px/);
+  });
+
+  it("gives every row the design's own plate", () => {
+    const row = rulesFor(css, ".menudraw .menuitem");
+    expect(row).toMatch(/height:\s*24px/);
+    expect(row).toMatch(/background:\s*rgba\(255, 255, 255, \.05\)/);
+    expect(row).toMatch(/font-size:\s*12px/);
+    expect(row).toMatch(/color:\s*var\(--hud-ink\)/);
+  });
+
+  /** The design has no scrim: the artwork behind it is the point, and the panel brings
+   *  its own ground. A tap outside still closes it — the wrapper is still the full
+   *  screen, it just no longer paints over it. */
+  it("lays nothing over the artwork behind it", () => {
+    const wrap = rulesFor(css, ".menuwrap");
+    expect(wrap).toMatch(/background:\s*none/);
+    expect(wrap).toMatch(/backdrop-filter:\s*none/);
   });
 });
 

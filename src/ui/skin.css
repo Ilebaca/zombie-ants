@@ -6474,6 +6474,11 @@ button:not(.playbtn):active,
   --hud-go: #4ac707;
   --hud-ledge: 3px 4px 0 #000;
   --hud-gloss: inset 0 2px 0 rgba(255, 255, 255, .4);
+  /* THE INK IS A WARM CREAM, NOT WHITE. The first frame of this design set every figure
+     in white; the drawer frame that followed sets all of them in `#fcf7e6`, which is the
+     colour the game's own artwork is lit in — a pure white figure on a painted ground
+     reads as a sticker laid on top of it. One token, because it is on nine things. */
+  --hud-ink: #fcf7e6;
   /* Poetsen One, with the body stack behind it: a colony named in an
      alphabet this face does not carry falls through rather than vanishing. */
   --font-display: Poetsen, var(--font);
@@ -6509,6 +6514,20 @@ button:not(.playbtn):active,
     linear-gradient(180deg, rgba(0, 0, 0, 0) 74.5%, rgba(0, 0, 0, .4) 82.3%),
     url("./backdrops/home.webp");
 }
+
+/* THE TOP BAR STARTS AT THE TOP. `.screen` pads every page by `--sp4` plus the notch,
+   which is right for a page with a header on it and wrong here: the design's bar sits on
+   the very edge of the frame with its own 8px inside it, and the 16 above it pushed the
+   whole block — bar, banner, granary, buttons — down by that much. What is LEFT is the
+   notch, which is the honest half of that padding and the only reason it was ever two
+   numbers. It is what puts the drawer under the menu button, too (see THE DRAWER). */
+#home { padding-top: env(safe-area-inset-top); }
+/* AND THE BAR'S OWN ESCAPE GOES WITH IT. The legacy `.tophead` pulls itself up by
+   `--sp4` AND the notch, to sit flush on a screen that pads for both; with the padding
+   gone that margin is a block hanging 16px off the top of the viewport, with the
+   currency chips cut in half. The side escape stays — that one is still putting back a
+   gutter that is still there. */
+#home .tophead { margin-top: 0; }
 
 /* ------------------------------------------------------------- THE TOP BAR */
 #home .tophead {
@@ -6601,7 +6620,8 @@ button:not(.playbtn):active,
   border-radius: 4px;
   background: none;
 }
-#home .tn-coin .tn-ic svg { width: 26px; height: 26px; display: block; }
+#home .tn-coin .tn-ic svg,
+#home .tn-coin .tn-ic .hudmark { width: 26px; height: 26px; display: block; }
 #home .tn-coin .tn-num {
   flex: 0 1 auto;
   min-width: 0;
@@ -6609,7 +6629,7 @@ button:not(.playbtn):active,
   text-overflow: ellipsis;
   font-size: 16px;
   line-height: 1;
-  color: #fff;
+  color: var(--hud-ink);
   text-align: center;
 }
 #home .tn-plus {
@@ -6618,10 +6638,11 @@ button:not(.playbtn):active,
   height: 18px;
   background: none;
   border: none;
-  color: #fff;
+  color: var(--hud-ink);
   border-radius: 0;
 }
-#home .tn-plus svg { width: 18px; height: 18px; display: block; }
+#home .tn-plus svg,
+#home .tn-plus .hudmark { width: 18px; height: 18px; display: block; }
 
 /* ---------------------------------------------------------- THE COLONY
    The loudest object on the screen, and the only place the chapter is
@@ -6646,14 +6667,15 @@ button:not(.playbtn):active,
   align-items: center;
   gap: 5px;
 }
-#home .col-mark { display: flex; color: #fff; }
-#home .col-mark svg { width: 21px; height: 21px; display: block; }
+#home .col-mark { display: flex; color: var(--hud-ink); }
+#home .col-mark svg,
+#home .col-mark .hudmark { width: 21px; height: 21px; display: block; }
 #home .col-n {
   display: block;
   min-width: 0;
   font-size: 30px;
   line-height: 1;
-  color: #fff;
+  color: var(--hud-ink);
   text-shadow: 2px 2px 0 #000 !important;
   font-variant-numeric: tabular-nums;
 }
@@ -6678,7 +6700,7 @@ button:not(.playbtn):active,
   line-height: 1;
   letter-spacing: 0;
   text-transform: uppercase;
-  color: #fff;
+  color: var(--hud-ink);
 }
 #home .col-rail .tr-bar {
   flex: none;
@@ -6692,7 +6714,7 @@ button:not(.playbtn):active,
 #home .col-rail .tr-fill {
   height: 6px;
   border-radius: 20px;
-  background: #fff;
+  background: var(--hud-ink);
 }
 #home .col-pay {
   flex: 0 0 auto;
@@ -6700,9 +6722,10 @@ button:not(.playbtn):active,
   width: 26px;
   height: 26px;
   border-radius: 4px;
-  color: #fff;
+  color: var(--hud-ink);
 }
-#home .col-pay svg { width: 26px; height: 26px; display: block; }
+#home .col-pay svg,
+#home .col-pay .hudmark { width: 26px; height: 26px; display: block; }
 
 /* --------------------------------------------- THE GRANARY AND THE DRAWER
    One row: what is waiting to be collected on the left, and the three ways
@@ -6732,7 +6755,7 @@ button:not(.playbtn):active,
   border: none;
   border-radius: 7px;
   background: var(--hud-face);
-  color: #fff;
+  color: var(--hud-ink);
   box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
 }
 #home .gp-l {
@@ -6741,13 +6764,17 @@ button:not(.playbtn):active,
   gap: 5px;
   min-width: 0;
 }
-#home .gp-ic { display: flex; color: #fff; }
-#home .gp-ic svg { width: 14px; height: 14px; display: block; }
+#home .gp-ic { display: flex; color: var(--hud-ink); }
+#home .gp-ic svg,
+#home .gp-ic .hudmark { width: 14px; height: 14px; display: block; }
 #home .granpill .gp-n {
   font-size: 16px;
   line-height: 1;
-  color: #fff;
-  text-shadow: 2px 2px 0 #000 !important;
+  color: var(--hud-ink);
+  /* ONE pixel here and two on the colony figure, which is the two frames' own
+     difference: this figure is 16px and that one is 30, and a ledge is sized to the
+     letter it sits under. */
+  text-shadow: 1px 1px 0 #000 !important;
 }
 /* ONE WORD IN THE RIGHT-HAND SLOT whichever state the store is in, so the
    row does not change shape as it fills. */
@@ -6762,8 +6789,8 @@ button:not(.playbtn):active,
   line-height: 1;
   letter-spacing: 0;
   text-transform: uppercase;
-  color: #fff;
-  text-shadow: 2px 2px 0 #000 !important;
+  color: var(--hud-ink);
+  text-shadow: 1px 1px 0 #000 !important;
 }
 
 #home .homefabs {
@@ -6785,11 +6812,17 @@ button:not(.playbtn):active,
   border: none;
   border-radius: 5px;
   background: var(--hud-face);
-  color: #fff;
+  color: var(--hud-ink);
   box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
 }
+/* TWO TAGS, TWO SIZES. A painted mark nearly fills the tile (the design's 36 inside a
+   48) and a drawn glyph at that size is a burger with no button round it, so each is
+   given its own number — and BOTH are named, or whichever one is not falls back to the
+   file's own height. That is the trap the match history already paid for. */
 #home .settingsfab svg,
 #home .dailyfab svg { width: 26px; height: 26px; display: block; }
+#home .settingsfab .hudmark,
+#home .dailyfab .hudmark { width: 36px; height: 36px; display: block; }
 #home .settingsfab:active,
 #home .dailyfab:active {
   background: var(--hud-face);
@@ -6835,7 +6868,7 @@ button:not(.playbtn):active,
   border: none;
   border-radius: 5px;
   background: var(--hud-go);
-  color: #fff;
+  color: var(--hud-ink);
   font-size: 32px;
   line-height: 1;
   text-align: center;
@@ -6870,14 +6903,15 @@ button:not(.playbtn):active,
   border: none;
   border-radius: 5px;
   background: var(--hud-face);
-  color: #fff;
+  color: var(--hud-ink);
   box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
 }
 #mainNav .navitem .ni { display: flex; font-size: 0; line-height: 0; }
-#mainNav .navitem svg { width: 40px; height: 40px; display: block; }
+#mainNav .navitem svg,
+#mainNav .navitem .hudmark { width: 40px; height: 40px; display: block; }
 #mainNav .navitem.active {
   background: var(--hud-go);
-  color: #fff;
+  color: var(--hud-ink);
 }
 /* AND THE TICK ABOVE IT IS GONE. A 26x3 bar sat six pixels over the active tab, back when
    every tile had the same face and something had to say which one you were standing on.
@@ -6896,4 +6930,89 @@ button:not(.playbtn):active,
 #home, #profile, #rules, #shop, #achievements, #settings, #news, #friends,
 #support, #luckyhatch, #antarium, #anthill, #challenges {
   padding-bottom: calc(70px + env(safe-area-inset-bottom));
+}
+
+/* ==========================================================================
+   THE DRAWER (Figma `05-menu-drawer 3`, node 245:1249)
+
+   The same screen with the burger open, so it is the same three things: a
+   face, a ledge, and the cream ink. What is NOT here is the gloss — the panel
+   is a hole cut in the screen rather than a tile standing on it, and the rows
+   inside carry their own 5% white instead.
+   ========================================================================== */
+
+/* IT HANGS OFF THE BUTTON, at a measured 166px from the top of the frame — three
+   pixels under the menu button's own bottom edge, which is where the design puts
+   it. Written as the design's number plus the notch, because everything above it
+   moves by the notch and nothing else. The legacy sheet pads this wrapper to place
+   the panel, so that is the property to set. */
+.menuwrap {
+  padding: calc(166px + env(safe-area-inset-top)) var(--gutter, 12px) 12px;
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.menudraw {
+  width: auto;
+  min-width: 158px;
+  max-width: 76vw;
+  gap: 16px;
+  padding: 12px;
+  border: none;
+  border-radius: 7px;
+  background: var(--hud-face);
+  box-shadow: var(--hud-ledge) !important;
+}
+/* A ROW IS 24px TALL AND ITS MARK IS 30, which is the design's own arithmetic: the
+   icon stands a little proud of the plate it sits on at both ends. The 16px gap is
+   what leaves room for it, so neither number moves without the other. */
+.menudraw .menuitem {
+  height: 24px;
+  gap: 12px;
+  padding: 0 0 0 5px;
+  border: none;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .05);
+  color: var(--hud-ink);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1;
+}
+.menudraw .menuitem:active {
+  background: rgba(255, 255, 255, .12);
+  transform: none;
+}
+.menudraw .menuitem .mi {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 0;
+  background: none;
+  box-shadow: none !important;
+  color: var(--hud-ink);
+}
+.menudraw .menuitem .mi svg,
+.menudraw .menuitem .mi .hudmark { width: 30px; height: 30px; display: block; }
+/* The badge keeps its own colour — it is the one thing in the drawer that is not
+   a label, and the whole point of it is that it is not the same as the row. */
+.menudraw .menudot {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+
+/* A PAINTED CHROME MARK (`ui/hud.ts`). It is an `<img>` where the drawn one is an
+   `<svg>`, which is why every box above names both tags: a rule written for one sizes
+   half the marks in the app and lets the rest render at the file's own height. Nothing
+   here sets a size — the box it sits in does, because the box is what the design
+   measures. */
+.hudmark {
+  display: block;
+  object-fit: contain;
+  /* It carries its own colour. `currentColor` is the drawn mark's contract and a painted
+     one has no use for it, so a tile that tints its ink must not tint this. */
+  flex: 0 0 auto;
 }

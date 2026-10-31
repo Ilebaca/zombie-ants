@@ -15,7 +15,40 @@ import type { Profile, ProfileStore } from "../platform";
 import type { Look, SpeciesId } from "../engine";
 import { antHead, basicLook, lookCol } from "../render";
 import { icon } from "./icons";
+import { hudIcon } from "./hud";
 import { faceFor } from "./faces";
+
+/**
+ * A CHROME MARK: the painted one where there is a file, the drawn one where there is not.
+ *
+ * `ui/hud.ts` is the table and a missing file is not a hole (§ THE PAINTED MARKS). What
+ * this returns is therefore one of TWO TAGS — an `<img>` or an `<svg>` — and every box
+ * that holds one has to size BOTH, which is a trap this project has already paid for once
+ * on the match history, where a portrait box sized only the canvas and let every painted
+ * face render at the file's own height. `css-sanity` fails on a mark box that names one.
+ */
+export function hudMark(
+  name: string, size: number,
+  /**
+   * What the DRAWN one is worth, where that is not the same number.
+   *
+   * A flat glyph and a painted illustration do not read at one size: the design draws a
+   * 36px picture inside a 48px button, and the burger drawn at 36 is three bars filling
+   * the tile. The painted size is the design's; the drawn size is the one it was tuned
+   * at, and it is only written out where the two differ.
+   */
+  drawn = size,
+): HTMLElement | SVGElement {
+  const painted = hudIcon(name);
+  if (!painted) return icon(name, drawn);
+  const img = el("img", "hudmark");
+  img.src = painted;
+  img.width = size;
+  img.height = size;
+  // The button around it carries the name; an alt here would say it twice.
+  img.alt = "";
+  return img;
+}
 
 /** Small element factory: `el("div", "cls", "text")`. */
 export function el<K extends keyof HTMLElementTagNameMap>(
@@ -319,11 +352,11 @@ function coin(
   // and 15 — a mark and an affordance at almost one size, which is what made the chip
   // read as a row of three things rather than as a purse with a way to fill it.
   const ic = el("span", "tn-ic");
-  ic.appendChild(icon(mark, 26));
+  ic.appendChild(hudMark(mark, 26));
   box.append(ic, el("span", `tn-num ${numClass}`, String(value)));
   if (plus) {
     const btn = el("button", "tn-plus");
-    btn.appendChild(icon("plus", 18));
+    btn.appendChild(hudMark("plus", 18));
     btn.setAttribute("aria-label", plus.label);
     btn.onclick = plus.onClick;
     box.appendChild(btn);
@@ -386,7 +419,7 @@ export function bottomNav(onNav: (id: NavId) => void): HTMLElement {
     const b = el("button", "navitem");
     b.dataset.nav = id;
     const mark = el("span", "ni");
-    mark.appendChild(icon(iconName, 40));
+    mark.appendChild(hudMark(iconName, 40));
     b.append(mark);
     // THE LABEL IS GONE FROM THE TILE AND NOT FROM THE BUTTON. Five words across a phone
     // is what made these tiles tall and the type tiny; the mark is the tab. It is still
@@ -546,6 +579,6 @@ export function antPortrait(
 
 function iconSlot(cls: string, mark: string, size: number): HTMLElement {
   const box = el("span", cls);
-  box.appendChild(icon(mark, size));
+  box.appendChild(hudMark(mark, size));
   return box;
 }

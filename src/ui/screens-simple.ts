@@ -10,8 +10,7 @@
  * How to play grew into a manual of its own and lives in `rules.ts`, and Settings grew
  * into a screen of its own in `settings.ts`.
  */
-import { el } from "./chrome";
-import { icon as iconMark } from "./icons";
+import { el, hudMark } from "./chrome";
 
 export interface MenuEntry {
   id: string;
@@ -64,7 +63,9 @@ export function buildMenu(
     const item = el("button", "menuitem");
     item.dataset.go = entry.id;
     const mark = el("span", "mi");
-    mark.appendChild(iconMark(entry.icon, 20));
+    // 30, which is the design's own slot. It was 20 inside a 34px plate; the plate is
+    // gone and the mark fills the space it held.
+    mark.appendChild(hudMark(entry.icon, 30));
     item.append(mark, document.createTextNode(entry.label));
     // The drawer is the only route to News, so the count has to be here or nothing in the
     // app ever says a post has landed.
