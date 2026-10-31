@@ -1010,11 +1010,16 @@ each of these is one of those requests.
     chapter N still closes at about the colony it always did. What DID move is the
     rounding (§8a) and a handful of tests that computed "the colony in chapter N" as
     `stopColony((N - 1) * 2)` with the 2 written out.
-- **EVERY CHAPTER WEARS A PICTURE, and it is home's own** (`backdropFor`). Ten paintings,
-  one per region, with a per-chapter `ch##.webp` beating its region — that tier had been
-  held open with nothing using it, and this is the first thing that does. So "a different
-  background for each chapter" is one dropped file, and home and the stretch of road it
-  announces are the same place for the same chapter.
+- **EVERY CHAPTER WEARS A PICTURE, and it is home's own** (`bandFor`). Ten paintings, one
+  per region, so home and the stretch of road it announces are the same place.
+  - **THE REGION'S, NEVER THE CHAPTER'S, and that is the one rule here that was learned
+    the hard way.** Every chapter has its own home picture now (§ THE HOME ARTWORK) and
+    every one of those has five numbered mounds painted on it with crossed swords on the
+    one the player is standing at — while this screen draws five checkpoint discs of its
+    own down the middle of every panel. Dropped straight in, the road came back with two
+    sets of progress marks on one panel: painted numbers reading through the discs, a
+    scorpion across a claim button. `bandFor` is the band with nothing painted on it, and
+    both halves are held by a test, because swapping the call back looks like a tidy-up.
   - **`.rd-chap` IS THE FOURTH EXEMPTION ON THE BACKGROUND BLANKET** (§10), and the only
     one that is not a whole screen. Without `:not(.rd-chap)` all fifty pictures are
     stripped off with `!important` and the road comes back grey, silently. `css-sanity`
@@ -2498,13 +2503,29 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
   the NUMBER is what is read (`rg03-volcano.webp` works and says what it is in a listing).
   - **ALL TEN REGIONS ARE PAINTED**, at 1200 x 2670 — a 3x phone at 430 CSS pixels asks
     for about 1290, so this is sized for the device rather than for the file that arrived.
-  - **THE PER-CHAPTER TIER IS KEPT ON PURPOSE though nothing uses it.** Fifty pictures is
-    not a set somebody paints and ten is, but a single rung that deserves its own should
-    cost one file rather than a change of shape here. With the folder empty there is no
-    precedence to exercise, and a test that loops over an empty list passes against a
-    mutation reversing it — so the test asserts the folder IS empty and fails on the day
-    somebody adds the first one, which is the day to write the real precedence test. Same
-    shape as the `SUPPORT_EMAIL` placeholder test.
+  - **AND ALL FIFTY CHAPTERS ARE PAINTED NOW, which is what that tier was held open for.**
+    It sat empty for months under the note that fifty pictures is not a set somebody
+    paints and ten is, so a single rung deserving its own should cost one file rather
+    than a change of shape — and what arrived was the whole road at once. The five in a
+    region are the same SCENE: five ant mounds down a path, numbered with the chapters,
+    the ones behind you lit and crossed swords on the one you are standing at. So home
+    says where you are without a word on it, and the region still changes the world
+    every five chapters.
+    - **The test that guarded the empty folder was its own tripwire** ("the folder IS
+      empty, and the day that fails is the day to write the real precedence test"). That
+      day came; it is the precedence test now — every chapter resolves to its own file
+      and to none of the ten bands, which is fifty chances to catch the two tiers being
+      swapped. Same shape as the `SUPPORT_EMAIL` placeholder test, and the same ending.
+    - **IT COST 5.3 MB OF THE INSTALL**, which is the one thing to know before painting
+      fifty more of anything: the service worker precaches everything the build emits
+      (§ PLAYING WITH NO NETWORK), so `dist` went from about 8 MB to **13.4 MB** and a
+      player downloads forty-nine pictures they will not see this month. The honest
+      alternative is to leave `ch*.webp` out of the precache and let each one be cached
+      when it is first shown — offline on a chapter never opened then falls back to the
+      painting `skin.css` names, which is a picture rather than a hole. Not done, because
+      it is a change to the offline contract rather than to the art.
+    - **The files are 841 x 1871**, which is what a phone asks for at about 1.4x upscale,
+      and encoded at q84 — the same quality as the ten region grounds.
   - **ANYTHING WITH NEITHER FALLS BACK TO `home.webp`**, a painted PLACEHOLDER. That is
     what let the structure land before the art did, when all fifty wore it; nothing reaches
     it on the road any more, and it stays because `skin.css` names it directly — the screen

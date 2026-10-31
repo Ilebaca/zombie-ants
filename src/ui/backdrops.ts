@@ -15,9 +15,18 @@
  * table naming a file that is not there. The NUMBER is what is read, so `rg03-volcano.webp`
  * works too and says what it is in the folder listing.
  *
- * THE PER-CHAPTER TIER IS KEPT ON PURPOSE even though nothing uses it today. Fifty pictures
- * is not a set somebody paints, and ten is — but a single chapter that deserves its own
- * (the last rung, say) should cost one file rather than a change of shape here.
+ * AND ALL FIFTY CHAPTERS ARE PAINTED NOW. That tier was held open for years of commits with
+ * nothing in it ("fifty pictures is not a set somebody paints, and ten is") against the day
+ * one rung deserved its own; what arrived instead was the whole road. The five pictures in a
+ * region are the same SCENE — five ant mounds down a path, numbered — with the crossed
+ * swords one mound further along, so a player opening home sees where they stand without
+ * reading a word, and the region still changes the world every five chapters.
+ *
+ * THE BAND IS NOT DEAD, AND THAT IS WHY `bandFor` EXISTS. A chapter picture carries its own
+ * five markers, so the COLONY ROAD — which draws five checkpoint discs of its own down the
+ * middle of each panel — cannot wear one: two sets of progress marks on one panel, the
+ * painted numbers reading through the discs. The road takes the REGION's picture and home
+ * takes the chapter's. They are still the same place, which is the rule that matters.
  *
  * ANYTHING WITH NEITHER FALLS BACK TO `home.webp`, a painted PLACEHOLDER. That is what made
  * this safe to land before the art existed, when all fifty wore it; with all ten regions
@@ -85,4 +94,17 @@ export function backdropFor(chapter: number): string {
   const at = Math.min(ROAD_CHAPTERS, Math.max(1, Math.round(chapter)));
   // The chapter's own picture outranks its region's, so one special rung costs one file.
   return DRAWN[at] ?? BANDS[regionOf(at)] ?? fallback;
+}
+
+/**
+ * The REGION's picture for a chapter — the same ground with nothing painted on it.
+ *
+ * The Colony Road wants this rather than `backdropFor`: a chapter's own picture already
+ * carries five numbered mounds and a marker on the one you are standing at, and the road
+ * draws five checkpoint discs down the middle of every panel. One of the two has to give,
+ * and the road's discs are the thing the screen exists for.
+ */
+export function bandFor(chapter: number): string {
+  const at = Math.min(ROAD_CHAPTERS, Math.max(1, Math.round(chapter)));
+  return BANDS[regionOf(at)] ?? fallback;
 }
