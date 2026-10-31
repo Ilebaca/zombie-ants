@@ -2703,19 +2703,114 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
   what this exports is a region picture. It is what made the first stand-in ground. A
   TOOL, not a build step, excluded from typecheck and lint like `tools/icons.ts` because it
   imports Playwright (§11).
-- **THE PICTURE IS THE TITLE SCREEN, so it carries NO TITLE and NO WASH.** The wordmark
-  and the tagline used to sit over it and the wash existed to give them ground; both are
-  gone, and a tint over the whole artwork was darkening the thing it was there to protect.
-  What is left brings its own ground: the banner, the granary pill and the three floating
-  buttons are cards, PLAY is a solid slab. The name now lives on the cover over a cold
-  boot (`#splash`), which is the only place it is still written.
+- **THE PICTURE IS THE TITLE SCREEN, so it carries NO TITLE.** The wordmark and the
+  tagline used to sit over it; both are gone. What is left brings its own ground: the
+  banner, the granary pill and the three buttons are cards, PLAY is a solid slab. The name
+  now lives on the cover over a cold boot (`#splash`), which is the only place it is
+  still written.
+  - **THERE IS A WASH AGAIN, and it is ONE END of the picture rather than all of it.**
+    The old one was a tint over the whole artwork, ground for a wordmark that is gone, and
+    it was darkening the thing it was there to protect. The design's is
+    `rgba(0,0,0,0) 74.5% → rgba(0,0,0,.4) 82.3%`: the bottom fifth only, which is where
+    PLAY and the tab bar sit on whatever a chapter's painting happens to put under them.
+    It is written INLINE beside the artwork url (`App.renderHome`) and not in `skin.css`,
+    because an inline style outranks the sheet — a wash written only there would be
+    REPLACED by the per-chapter line rather than layered under it. `skin.css` carries the
+    same pair as the floor for a screen whose script never ran.
   - **AND THE SLAB NEEDS ROOM UNDER IT.** `.homeplay` is `justify-content: flex-end`, so
     taking How to play out from under PLAY dropped the button by the whole of that line —
-    about 37px plus the 14px gap above it — onto the 64px band the tab bar is reserved in.
-    Reported as needing a gap under it. The padding is three of home's own gutters, which
-    is roughly what the link occupied, so the button sits where a player is used to
-    finding it and the screen still answers to one pair of edges rather than a fourth
-    number (§ HOME HAS ONE GUTTER).
+    about 37px plus the 14px gap above it — onto the band the tab bar is reserved in.
+    Reported as needing a gap under it. It is 50px now, which is the design's own gap
+    between the PLAY row and the bar.
+
+**THE HOME SCREEN IS DRAWN TO A DESIGN, AND THE DESIGN IS THE SOURCE** (Figma
+`Zombie Ants` → `03-home 2`, node `134:31`; the block at the foot of `src/ui/skin.css`).
+Everything above it in that file is the app's older language — flat faces, no gradients,
+no shadows, one green. Home is a different one now, handed over finished rather than
+described, so the numbers in that block are the mock-up's own and are not to be rounded
+to whatever was already there. Every box on the screen was measured in a browser at 360
+and lands on the design's figure exactly.
+- **THREE THINGS CARRY THE WHOLE LOOK**, and every control is built from them: a FACE
+  (`--hud-face`, `#1c1e25`), a LEDGE (`--hud-ledge`, `3px 4px 0 #000`) and a GLOSS
+  (`--hud-gloss`, `inset 0 2px 0 rgba(255,255,255,.4)`). The ledge has NO BLUR in it,
+  which is the whole difference between a stamped tile and a card floating over a
+  picture; the gloss is one inset hairline along the top edge and is why they read as
+  convex. `--hud-go` (`#4ac707`) is the one bright thing on the screen: the colony
+  banner, PLAY, and the tab you are standing on.
+- **THE LEDGE NEEDS `!important`, and that is the THIRD time this file has earned it.**
+  `*:not(.playbtn) { box-shadow: none !important }` is a considered decision that still
+  holds for every other screen, and it cannot be unsaid from a later rule without
+  matching its weight. Lose the `!important` on one rule and that control goes flat while
+  everything round it stays raised, silently — so `css-sanity` reads every declaration
+  that mentions `--hud-ledge` and fails on any that is not marked. The same goes for the
+  text ledges on the two figures, which `text-shadow: none !important` blankets.
+- **WHITE ON THE GREEN IS 2.22:1, WHICH FAILS AA** (§ CONTRAST IS MEASURED — AA wants 4.5
+  for normal text and 3.0 for large). It is the design's own pairing and it is shipped as
+  drawn; everything on the dark face measures 16.6 and is fine. What carries the two
+  FIGURES in practice is the black text ledge they wear (`2px 2px 0 #000`), which an eye
+  reads and a contrast ratio does not count. "CHAPTER n" at 8px and "PLAY" at 32px have
+  no ledge and are the two that are genuinely thin. Recorded rather than quietly
+  corrected: it is a design decision, and changing it is Milan's call.
+- **THE THREE BUTTONS ARE LAID OUT, NOT MEASURED.** They were `position: absolute` with a
+  percentage top, stacked at runtime by measuring the bar's bottom edge — `syncFabs`,
+  deleted. The design draws them as a column on the right of a row whose left is the
+  granary, which is an ordinary flex row, so the browser does it. One consequence: a
+  band added to that block now PUSHES what follows down, where before a sibling laid out
+  after `.tophead` landed underneath the buttons and could not be pressed.
+- **THE TAB BAR LOST ITS WORDS AND NOT ITS NAMES.** Five labels across a phone is what
+  made the tiles tall and the type tiny; the mark is the tab. Each button still carries
+  `title` and `aria-label` (§ EVERY CONTROL SAYS WHAT IT IS) and `a11y.test.ts` fails on
+  three separate tests if one goes. The "you are here" tick that used to hang six pixels
+  above the active tab is gone with them — the tile is GREEN now, which is the loudest
+  difference on the bar, and the tick was a second answer to a question already answered.
+- **THE BAR AND THE ROOM RESERVED FOR IT ARE ONE NUMBER.** It grew 64 → 70, and the
+  padding every scrolling screen keeps at its foot is the only thing stopping the last
+  row sitting under it. Two places spelling out one rule (§7), so a test reads both and
+  compares them.
+- **TWO FIXED SIZES NEEDED THE LEGACY SHEET OVERRULED, and neither shows in jsdom.**
+  `.tn-coin` is pinned to `height: 26px` there — exactly the currency mark's own height,
+  so the 2px of padding around it had nowhere to go and the chip clipped itself; it is
+  `height: auto` now. And `.tn-id` is a 30px disc against the app's 44px tap floor, so
+  the floor moved onto an invisible `::after` centred on it, which is the answer the
+  currency steppers already use. Both are held by tests that read the stylesheet.
+- **PLAY IS INSET 50px FROM THE SCREEN, written as `calc(50px - var(--gutter))`.** The
+  row is already inside home's 12px gutter, so the design's number minus the gutter it is
+  standing in is the honest way to say it. Escaping the gutter and padding a flat 50 was
+  tried and costs the column: the responsive block caps this row at `--homemax` and
+  centres it, which is what keeps PLAY the same width as the banner on a tablet.
+- **THE BUTTON SAYS ONE WORD.** It read "PLAY 9x9" — the last place the player was told
+  which board, after the screen that used to ask was removed (§ ONE BOARD). The design
+  says PLAY. The size is a fact about a choice nobody makes any more, and the setup
+  screen draws that board before a tile is placed on it.
+- **THE CHAPTER KEEPS ITS NUMBER, which the mock-up's label does not show.** Its slot
+  reads "CHAPTER" beside "9999" and "999K" — placeholders for live figures, every one of
+  them — and this is the only place in the app the chapter is named, which is also what
+  the artwork behind it is keyed on. A label with no number is the screen going quiet
+  about the one thing it is announcing.
+- **STILL OWED: the painted icons.** The design's marks are PNG artwork — the currencies,
+  the colony, the three buttons, the five tabs — and they could not be fetched: this
+  container's network policy denies `figma.com`. Every one of them is drawn from
+  `ui/icons.ts` in the design's exact slot and at the design's exact size, so dropping the
+  files in is a swap and not a layout change.
+
+**THE DISPLAY FACE IS POETSEN ONE** (`public/fonts/poetsen-one.woff2`, the second
+`@font-face` in `index.html`). Supplied as a TTF and converted; it is OFL, and the licence
+travels beside it, which is what that licence asks for.
+- **It is OURS like Nunito is** — shipped with the build and precached, so nothing about
+  rendering the first screen leaves the device (§ THE TYPEFACE IS OURS). The test that
+  held this used to spell out `nunito-latin.woff2` twice, so the day a third face landed
+  both went on passing while saying nothing about it; they read the `@font-face` block as
+  the table now and check every url in it ships and is precached.
+- **NO `unicode-range`, because it is not the body stack.** It is asked for by name on the
+  handful of things the design sets in it, and a glyph it does not carry — a colony named
+  in another alphabet — falls through to Nunito behind it in the same declaration.
+- **`font-display: block`, not `swap`**, which is the one considered choice in it.
+  Everything this face sets is LARGE and sits in a box sized by the design, so a swap is
+  not a subtle reflow: it is the screen re-laying itself out a beat after the player is
+  looking at it.
+- **And it ships ONE weight, so nothing may ask for 900.** Asking a browser for a weight
+  a face does not carry is telling it to smear the glyphs sideways itself; every rule
+  that sets `--font-display` sets `font-weight: 400` with it.
 - **HOW TO PLAY IS NOT WRITTEN ON THE ARTWORK ANY MORE — it is in the DRAWER**
   (`MENU_ENTRIES`), asked for directly. It was the one control in this app written
   straight onto a picture, and a manual is somewhere you go to look something up rather

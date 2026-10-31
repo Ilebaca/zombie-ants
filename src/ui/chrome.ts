@@ -177,10 +177,13 @@ export function topBar(profile: Readonly<Profile>, opts: TopBarOptions): HTMLEle
   id.onclick = opts.onProfile;
   nav.appendChild(id);
 
+  // THE CRYSTAL LEADS, AND THAT IS THE DESIGN'S ORDER rather than the one this file had.
+  // Nothing reads meaning into which side a purse sits on; what matters is that the two
+  // screens a player moves between agree, and the mock-up is the one that decides.
   const cur = el("div", "tn-cur");
   cur.append(
-    coin("mycel", "ophio-pts", profile.mycel, { label: "Get mycel", onClick: opts.onShop }),
     coin("pheromone", "pher-pts", profile.pheromone, { label: "Get pheromone", onClick: opts.onShop }),
+    coin("mycel", "ophio-pts", profile.mycel, { label: "Get mycel", onClick: opts.onShop }),
   );
   nav.appendChild(cur);
   head.appendChild(nav);
@@ -205,11 +208,13 @@ export function colonyBanner(colony: number, onClick: () => void): HTMLElement {
   box.id = "colonyHero";
   box.title = "Colony Road";
 
-  // THE FIGURE STANDS WHERE THE MARK DID. The left plate carried an ant, which said what
-  // the banner was about to a player who could already read the label beside it — and put
-  // a picture in the one slot the eye lands on first. The size goes there instead.
+  // A MARK, THEN THE FIGURE. The mark came back: the banner is the loudest object on the
+  // screen now and the thing it is loud ABOUT has to be said, or a bare number on a green
+  // slab is a number with no unit. The word "troops" that used to sit under the figure is
+  // gone with it — a mark and a label are the same fact twice, and the label was the one
+  // taking a second line.
   const size = el("div", "col-size");
-  size.append(el("b", "col-n", compact(colony)), el("span", "col-k", "troops"));
+  size.append(iconSlot("col-mark", "swords", 21), el("b", "col-n", compact(colony)));
 
   const reached = stopReached(colony);
   const from = reached ? stopColony(reached) : 0;
@@ -221,20 +226,24 @@ export function colonyBanner(colony: number, onClick: () => void): HTMLElement {
   fill.style.width = `${Math.round(pct * 100)}%`;
   track.appendChild(fill);
 
+  // The label names WHERE ON THE ROAD the player is standing, and it carries the NUMBER.
+  // The mock-up's label reads "CHAPTER" alone, in the same slot that holds "9999" and
+  // "999K" — placeholders for live figures, every one of them — and this is the only
+  // place in the app the chapter is named, which is also what the artwork behind it is
+  // keyed on. A label with no number would be the screen going quiet about the one thing
+  // it is announcing.
+  const chapter = chapterAt(reached + 1);
+  const mid = el("div", "col-mid");
+  mid.append(el("div", "col-t", `Chapter ${chapter}`), track);
+
   // WHAT FILLING THE BAR PAYS, not how many troops it takes. The size the rung asks for
   // was a second big number beside the one the banner already leads with, and the two read
   // as a sum; the currency mark says what is waiting there in one glyph.
   const reward = freeReward(reached + 1) ?? passReward(reached + 1);
   const rail = el("div", "col-rail");
-  rail.append(track, iconSlot("col-pay", reward?.pheromone ? "pheromone" : "mycel", 16));
+  rail.append(mid, iconSlot("col-pay", reward?.pheromone ? "pheromone" : "mycel", 26));
 
-  // The label names WHERE ON THE ROAD the player is standing. "Your colony" named the
-  // thing the figure beside it already is.
-  const chapter = chapterAt(reached + 1);
-  const mid = el("div", "col-mid");
-  mid.append(el("div", "col-t", `Chapter ${chapter}`), rail);
-
-  box.append(size, mid);
+  box.append(size, rail);
   box.onclick = onClick;
   return box;
 }
@@ -265,14 +274,24 @@ export function granaryPill(
     pill.replaceChildren();
     const ready = g.stored >= 1;
     pill.classList.toggle("ready", ready);
-    pill.append(icon("granary", 18));
-    // Full, it says what is waiting; empty, it says what it is doing — never nothing, or a
-    // control that does nothing when tapped looks broken rather than patient.
-    pill.append(
+    // A MARK AND A FIGURE, then one word. It wears the colony's own mark rather than the
+    // granary's, because what it pays out is TROOPS — the same thing the banner above it
+    // counts — and the room it is dug in is named on the screen that digs it.
+    const left = el("span", "gp-l");
+    left.append(
+      iconSlot("gp-ic", "swords", 14),
+      // Full, it says what is waiting; empty, it says what it is doing — never nothing, or
+      // a control that does nothing when tapped looks broken rather than patient.
       el("b", "gp-n", ready ? `+${compact(g.stored)}` : `+${perHourLabel(g.rate)}/h`),
-      el("span", "gp-k", ready ? "troops" : "foraging"),
     );
-    if (ready) pill.append(el("span", "gp-go", "Collect"));
+    pill.append(left);
+    // ONE WORD IN THE RIGHT-HAND SLOT, whichever state it is in, so nothing on the row
+    // moves as the store crosses over. `.gp-go` is still only drawn when there is
+    // something to collect: it is the half that makes this a control rather than a
+    // readout, and offering Collect over an empty store is the screen lying.
+    pill.append(ready
+      ? el("span", "gp-go", "Collect")
+      : el("span", "gp-k", "foraging"));
   };
 
   pill.onclick = (): void => {
@@ -295,12 +314,16 @@ function coin(
 ): HTMLElement {
   const box = el("div", "tn-coin");
   box.classList.add(`c-${mark}`);
+  // 26 AND 18, which are the design's own numbers: the currency's mark is nearly the
+  // height of the chip it sits in, and the "+" is the smaller of the two. They were 18
+  // and 15 — a mark and an affordance at almost one size, which is what made the chip
+  // read as a row of three things rather than as a purse with a way to fill it.
   const ic = el("span", "tn-ic");
-  ic.appendChild(icon(mark, 18));
+  ic.appendChild(icon(mark, 26));
   box.append(ic, el("span", `tn-num ${numClass}`, String(value)));
   if (plus) {
     const btn = el("button", "tn-plus");
-    btn.appendChild(icon("plus", 15));
+    btn.appendChild(icon("plus", 18));
     btn.setAttribute("aria-label", plus.label);
     btn.onclick = plus.onClick;
     box.appendChild(btn);
@@ -363,8 +386,15 @@ export function bottomNav(onNav: (id: NavId) => void): HTMLElement {
     const b = el("button", "navitem");
     b.dataset.nav = id;
     const mark = el("span", "ni");
-    mark.appendChild(icon(iconName, 24));
-    b.append(mark, el("span", undefined, label));
+    mark.appendChild(icon(iconName, 40));
+    b.append(mark);
+    // THE LABEL IS GONE FROM THE TILE AND NOT FROM THE BUTTON. Five words across a phone
+    // is what made these tiles tall and the type tiny; the mark is the tab. It is still
+    // NAMED, because a drawn control that says nothing is a control a screen reader
+    // cannot announce (§ EVERY CONTROL SAYS WHAT IT IS) — the name moved off the glass,
+    // not out of the markup.
+    b.title = label;
+    b.setAttribute("aria-label", label);
     b.onclick = () => onNav(id);
     nav.appendChild(b);
   }

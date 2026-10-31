@@ -153,6 +153,11 @@ export default defineConfig({
           // launch offline should not be the one that renders in Arial.
           "./fonts/nunito-latin.woff2",
           "./fonts/nunito-latin-ext.woff2",
+          // AND THE DISPLAY FACE, which every figure on the home screen is set in. A
+          // number that arrives in the fallback and then re-lays itself out is the one
+          // place a swap is actually seen, because these are big: a 32px PLAY and a 30px
+          // colony. Precached, so the second launch has it on the first frame.
+          "./fonts/poetsen-one.woff2",
           // THE COVER'S ARTWORK, named by `index.html` itself rather than bundled, so it
           // is listed by hand like the icons. Precached, because the cover holds for two
           // seconds on EVERY launch and the second one should have the picture from the

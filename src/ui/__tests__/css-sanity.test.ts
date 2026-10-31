@@ -435,3 +435,87 @@ describe("the lucky hatch's vignette", () => {
       .not.toMatch(/#luckyhatch::(before|after)\s*\{[^}]*gradient/);
   });
 });
+
+/**
+ * THE HOME SCREEN'S DESIGN LANGUAGE (Figma `03-home 2`).
+ *
+ * This screen is built out of three things — a face, a hard black ledge and one inset
+ * hairline of gloss — and every one of them is the kind of decision a stylesheet cannot
+ * show is missing. The ledge in particular is drawn ON TOP of a blanket that says "no
+ * shadows, anywhere, `!important`": lose the `!important` on any one rule and that
+ * control goes flat while everything around it stays raised, with nothing failing.
+ */
+describe("the home screen's ledge survives the blanket", () => {
+  const css = code(read("skin.css"));
+
+  /** The blanket is the reason the `!important`s below are needed. If it ever goes, these
+   *  tests should be deleted rather than quietly left passing against nothing. */
+  it("still has the blanket that makes this necessary", () => {
+    expect(css, "the no-shadows blanket is gone")
+      .toMatch(/\*:not\(\.playbtn\)\s*\{\s*box-shadow:\s*none\s*!important/);
+  });
+
+  it("marks every ledge important, or the blanket wins", () => {
+    const weak: string[] = [];
+    for (const m of css.matchAll(/([^{}]+)\{([^{}]*--hud-ledge[^{}]*)\}/g)) {
+      const body = m[2] ?? "";
+      for (const decl of body.split(";")) {
+        if (!decl.includes("--hud-ledge") || !decl.trim().startsWith("box-shadow")) continue;
+        if (!decl.includes("!important")) weak.push((m[1] ?? "").trim());
+      }
+    }
+    expect(weak, "these would be flattened by the blanket").toEqual([]);
+  });
+
+  /** The two figures sit on a green slab and a near-black one with no plate behind them;
+   *  the text ledge is what carries them. `text-shadow: none !important` blankets those. */
+  it("marks the text ledges important too", () => {
+    for (const sel of ["#home .col-n", "#home .granpill .gp-n"]) {
+      expect(ruleFor(css, sel), `${sel} lost its text ledge`)
+        .toMatch(/text-shadow:[^;]*!important/);
+    }
+  });
+
+  /** One table, and the design's own values. */
+  it("keeps the palette in one place", () => {
+    const root = rulesFor(css, ":root");
+    expect(root).toMatch(/--hud-face:\s*#1c1e25/i);
+    expect(root).toMatch(/--hud-go:\s*#4ac707/i);
+    expect(root).toMatch(/--hud-ledge:\s*3px 4px 0 #000/i);
+    expect(root).toMatch(/--hud-gloss:\s*inset 0 2px 0 rgba\(255, 255, 255, \.4\)/i);
+  });
+
+  /**
+   * THE CHIP IS SIZED BY WHAT IS IN IT. The legacy sheet pins `.tn-coin` to 26px, which is
+   * exactly the currency mark's own height — so the 2px of padding around it had nowhere
+   * to go and the chip clipped itself. Nothing a jsdom test can see: jsdom has no layout.
+   */
+  it("lets the currency chip size itself", () => {
+    expect(ruleFor(css, "#home .tn-coin")).toMatch(/height:\s*auto/);
+  });
+
+  /**
+   * THE AVATAR IS 30px AND ITS TARGET IS A THUMB. The app's floor for anything pressable
+   * is `--tap`; the design draws the disc at 30. The floor moves to an invisible box
+   * centred on it, the same answer the currency steppers use — so a mutation that drops
+   * the `::after` leaves a control a third under the floor with every test still green.
+   */
+  it("keeps a thumb-sized target under the 30px avatar", () => {
+    expect(ruleFor(css, "#home .tn-id")).toMatch(/width:\s*30px/);
+    expect(ruleFor(css, "#home .tn-id::after")).toMatch(/width:\s*var\(--tap\)/);
+  });
+
+  /**
+   * THE BAR AND THE ROOM RESERVED FOR IT ARE ONE NUMBER. The tab bar grew from 64 to 70,
+   * and the padding every scrolling screen keeps at its foot is what stops the last row
+   * sitting under it. Two places spelling out one rule (§7), so they are read together.
+   */
+  it("reserves exactly the room the tab bar stands in", () => {
+    const bar = /height:\s*calc\((\d+)px \+ env\(safe-area-inset-bottom\)\)/
+      .exec(ruleFor(css, "#mainNav.homenav"))?.[1];
+    const reserved = /padding-bottom:\s*calc\((\d+)px \+ env\(safe-area-inset-bottom\)\)/
+      .exec(rulesFor(css, "#home, #profile, #rules, #shop, #achievements, #settings, #news, #friends,\n#support, #luckyhatch, #antarium, #anthill, #challenges"))?.[1];
+    expect(bar, "the tab bar has no height of its own").toBeTruthy();
+    expect(reserved, `the screens reserve ${String(reserved)} for a ${String(bar)} bar`).toBe(bar);
+  });
+});

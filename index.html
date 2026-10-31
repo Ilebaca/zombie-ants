@@ -184,6 +184,32 @@
   src: url(./fonts/nunito-latin.woff2) format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+/*
+  THE DISPLAY FACE — Poetsen One, which the home screen is drawn in.
+
+  It is OURS the same way Nunito is: the file ships with the build and is precached, so
+  nothing about rendering the first screen leaves the device. It is also OFL licensed and
+  the licence travels beside it (`fonts/poetsen-one-OFL.txt`), which is what that licence
+  asks for.
+
+  NO `unicode-range`, because this face is NOT the body stack: it is asked for by name on
+  the handful of things the design sets in it, and a glyph it does not carry — a colony
+  named in another alphabet — falls through to Nunito behind it in the same declaration.
+  Splitting it by subset would buy nothing; it is one 48 KB file either way.
+
+  `font-display: block`, not `swap`, and that is the one considered choice here. Everything
+  this face sets is LARGE and sits in a box sized by the design — a 32px PLAY, a 30px
+  colony — so a swap is not a subtle reflow, it is the whole screen re-laying itself out a
+  beat after the player is looking at it. A short block is the lesser fault, and the file
+  is precached from the second launch onward.
+*/
+@font-face {
+  font-family: Poetsen;
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url(./fonts/poetsen-one.woff2) format("woff2");
+}
 </style>
 </head>
 <body>

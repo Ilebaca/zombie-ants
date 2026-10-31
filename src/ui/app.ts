@@ -995,7 +995,17 @@ export class App {
     // cannot see is a second table to keep in step, and `skin.css` still carries the
     // default so the screen is never bare if this never runs.
     const chapter = chapterOf(this.profile.get().colony);
-    root.style.backgroundImage = `url("${backdropFor(chapter)}")`;
+    // AND ONE WASH OVER ITS FOOT, in the SAME declaration. `background-image` stacks and
+    // the first layer is the front one, so the gradient rides over the picture — which is
+    // the only way to put one here at all: an inline style outranks the stylesheet, so a
+    // wash written only in `skin.css` would be replaced by this line rather than layered
+    // under it, and a wash on `#home::after` is silently cleared by the background
+    // blanket (§ THE HOME ARTWORK). It is the design's own gradient, and what it is for
+    // is the bottom of the screen: PLAY and the tab bar sit on whatever the chapter's
+    // painting happens to put there.
+    root.style.backgroundImage =
+      `linear-gradient(180deg, rgba(0,0,0,0) 74.5%, rgba(0,0,0,.4) 82.3%), ` +
+      `url("${backdropFor(chapter)}")`;
     // AND THE BOARD'S GROUND IS FETCHED FROM HERE, a screen early. Home is where the
     // player stands before PLAY, and the setup screen's board is a STILL that cannot be
     // drawn until the region's picture has landed — so asking for it now is what makes
@@ -1017,48 +1027,7 @@ export class App {
       const fresh = this.homeBar(root);
       bar.replaceWith(fresh);
       bar = fresh;
-      // The three floating buttons are measured off this block's bottom edge, and a
-      // rebuild changes its height — collecting the granary swaps a two-line pill for a
-      // one-line one, and dismissing the guard takes a whole row out. Without this they
-      // stay where the old height put them.
-      requestAnimationFrame(() => syncFabs(root));
     };
-
-
-    // Two floating buttons down the right edge. The legacy build sizes and stacks them
-    // against the top bar at runtime; syncFabs does the same measurement.
-    const settings = el("button", "settingsfab");
-    settings.title = "Menu";
-    settings.setAttribute("aria-label", "Menu");
-    // `currentColor`, not a fixed white: the button's face is a light one now, and a
-    // hardcoded white icon on it is an invisible button.
-    settings.appendChild(icon("menu", 19));
-    settings.onclick = () => this.openMenu();
-
-    // A CHALLENGE STARTS ON THE FRIEND, not on a button that says "a friend". This used
-    // to be a third floating button here, and the count of invitations waiting rode it —
-    // that count is on the drawer's Friends entry now (`openMenu`), which is the route to
-    // the list the challenge is started from.
-    const daily = el("button", "dailyfab");
-    daily.title = "Daily challenges";
-    daily.append(icon("calendar", 17), el("small", undefined, "Daily"));
-    daily.onclick = () => this.show("daily");
-
-    // AND THE HATCH IS OUT HERE NOW, under it — asked for directly. It was six rows down
-    // the drawer, which is a list most players open once a week, and it pays the one
-    // currency nothing else in the game pays. It wears the daily's SHAPE (a mark over a
-    // word) and the menu button's FACE: gold on this screen means "something is waiting",
-    // and two gold buttons stacked is neither of them saying it.
-    //
-    // It is shown before chapter 10 as well, when the screen behind it is still shut.
-    // That screen NAMES the chapter rather than drawing a padlock (§ the hatch), which is
-    // the same rule the granary's levels and the inventory row follow — and a button that
-    // only appears once the feature is open is one nobody knows is coming.
-    const hatch = el("button", "dailyfab hatchfab");
-    hatch.title = "Lucky hatch";
-    hatch.append(icon("brood", 17), el("small", undefined, "Hatch"));
-    hatch.onclick = () => this.show("luckyhatch");
-    root.append(settings, daily, hatch);
 
     // THE ARTWORK IS THE TITLE SCREEN, and it carries no title. The name and the tagline
     // used to sit here, over the picture; what is left is the ONE action the screen exists
@@ -1069,16 +1038,17 @@ export class App {
     // wordmark (`#splash`), which is where the name is now.
     const play = el("div", "homeplay");
 
-    // The board's SIZE, read off the map rather than typed: there is one board and the
-    // button is where the player is told which (§ ONE BOARD).
-    const board = MAPS.small.size;
-    const btn = el("button", "playbtn", `PLAY ${board}\u00d7${board}`);
+    // ONE WORD. It read "PLAY 9x9", because the screen that used to ask which board is
+    // gone and this was the only place left that named the one that survived — and the
+    // design says PLAY. The size is not nothing, but it is a fact about a choice the
+    // player no longer makes, carried on the one control the whole screen exists to
+    // offer; the setup screen shows that board before a tile is placed on it.
+    const btn = el("button", "playbtn", "PLAY");
     btn.id = "goPlay";
     btn.onclick = () => this.playOrdinary();
     play.appendChild(btn);
 
     root.appendChild(play);
-    requestAnimationFrame(() => syncFabs(root));
     return root;
   }
 
@@ -1209,23 +1179,65 @@ export class App {
     this.startMatch(undefined, held);
   }
 
+  /**
+   * THE WHOLE HEADER BLOCK, and the three buttons are PART OF IT now.
+   *
+   * They used to be `position: absolute` with a percentage top, stacked at runtime by
+   * measuring the bar's bottom edge and stepping down from it (`syncFabs`, deleted with
+   * this). That measurement existed because the legacy build did it, and everything it
+   * bought is what an ordinary flex row gives for free — which is also what the design
+   * draws: the granary on the left of a row, the buttons in a column on the right of the
+   * same row. One consequence worth keeping in mind: anything added to this block now
+   * simply pushes what follows down, where before a sibling laid out after `.tophead`
+   * landed UNDERNEATH the buttons and could not be pressed.
+   */
   private homeBar(root: HTMLElement): HTMLElement {
     const bar = topBar(this.profile.get(), {
       onProfile: () => this.show("profile"),
       onColonyRoad: () => this.show("achievements"),
       onShop: () => this.show("shop"),
     });
-    // THE GUARD RIDES IN THE HEADER BLOCK, under the pill.
-    //
-    // Not as a sibling below it: the three floating buttons are positioned by measuring
-    // `.tophead`'s bottom edge (`syncFabs`), so anything laid out after it lands underneath
-    // them — which put the dismiss button behind the menu button, unreachable. Inside, the
-    // stack measures past it and the buttons step down on their own.
-    bar.appendChild(granaryPill(this.profile, (got) => {
+
+    const row = el("div", "homerow");
+    row.appendChild(granaryPill(this.profile, (got) => {
       this.rebuildHomeBar();
       this.feedback.play("claim");
       toast(root, `Granary → +${compact(got)} troops`, "hive");
     }));
+
+    // A column of three marks down the right edge: the drawer, the daily, the hatch.
+    // Each is NAMED and none is labelled on the glass — the same rule the tab bar below
+    // now follows (§ EVERY CONTROL SAYS WHAT IT IS).
+    const fabs = el("div", "homefabs");
+
+    const settings = el("button", "settingsfab");
+    settings.title = "Menu";
+    settings.setAttribute("aria-label", "Menu");
+    // `currentColor`, not a fixed white: the face is set by the stylesheet, and a
+    // hardcoded colour here is a mark that goes invisible the day the face changes.
+    settings.appendChild(icon("menu", 26));
+    settings.onclick = () => this.openMenu();
+
+    const daily = el("button", "dailyfab");
+    daily.title = "Daily challenges";
+    daily.setAttribute("aria-label", "Daily challenges");
+    daily.appendChild(icon("calendar", 26));
+    daily.onclick = () => this.show("daily");
+
+    // THE HATCH IS SHOWN BEFORE CHAPTER 10 TOO, when the screen behind it is still shut.
+    // That screen NAMES the chapter rather than drawing a padlock (§ the hatch), which is
+    // the rule the granary's levels and the inventory row already follow — and a button
+    // that only appears once a feature is open is one nobody knows is coming.
+    const hatch = el("button", "dailyfab hatchfab");
+    hatch.title = "Lucky hatch";
+    hatch.setAttribute("aria-label", "Lucky hatch");
+    hatch.appendChild(icon("brood", 26));
+    hatch.onclick = () => this.show("luckyhatch");
+
+    fabs.append(settings, daily, hatch);
+    row.appendChild(fabs);
+    bar.appendChild(row);
+
     const waiting = this.resumeBand();
     if (waiting) bar.appendChild(waiting);
     const guard = this.saveGuard();
@@ -1712,41 +1724,16 @@ export class App {
 
 }
 
-/**
- * Size the two floating buttons and stack them under the top bar.
- *
- * They are `position:absolute` with a percentage top in the stylesheet; the legacy build
- * measures the daily button and pins both to the bar's bottom edge so they never collide
- * with it on a short screen. A zero-sized measurement means the screen is not laid out
- * yet — skip rather than pin them to 0 (CLAUDE.md §5).
+/*
+ * `syncFabs` STOOD HERE and is gone. It sized the three floating buttons and stacked them
+ * down the right edge by measuring `.tophead`'s bottom at runtime, because the legacy
+ * build does — and because they were `position: absolute`, which is what made a
+ * measurement necessary at all. They are a flex column inside the header block now
+ * (`App.homeBar`), so the browser does it. Written down rather than left as a hole,
+ * because the rule it enforced is still true and now costs nothing: the buttons sit
+ * UNDER the bar, and anything added to that block pushes them down instead of landing
+ * beneath them where no tap can reach it.
  */
-/** A delta the way a scoreboard writes one: the sign is part of the number. */
-
-function syncFabs(home: HTMLElement): void {
-  // IN DOM ORDER, which is the order they are stacked in: menu, daily, hatch. It used to
-  // name the two of them and place each by hand, and the comment under it promised that
-  // another button would be another step down the same column — so when a third arrived
-  // this is what that promise cost, and it is less than the two lines it replaced.
-  const fabs = Array.from(home.querySelectorAll<HTMLElement>(".settingsfab, .dailyfab"));
-  const daily = home.querySelector<HTMLElement>(".dailyfab");
-  const head = home.querySelector<HTMLElement>(".tophead");
-  if (!daily || fabs.length === 0) return;
-  const box = daily.getBoundingClientRect();
-  if (!box.width || !box.height) return;
-
-  const top = home.getBoundingClientRect().top;
-  let y = head ? head.getBoundingClientRect().bottom - top + 10 : 84;
-  for (const fab of fabs) {
-    // Only the DAILY is sized by the stylesheet; every other one is squared off its box,
-    // so the column is one width whatever is in each button.
-    if (fab !== daily) {
-      fab.style.width = `${box.width}px`;
-      fab.style.height = `${box.height}px`;
-    }
-    fab.style.top = `${y}px`;
-    y += box.height + 10;
-  }
-}
 
 /**
  * The line under the result title. The legacy build words each ending differently, and the
