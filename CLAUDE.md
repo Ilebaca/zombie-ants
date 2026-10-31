@@ -2842,20 +2842,30 @@ seven illustrators (§10). The redesign paints them, and only them.
   tuned at, written out only where they differ.
 - **They are 100px square**, which is 2.5x the 40 the tabs draw them at — exact on a 2x
   screen and a mild upscale on a 3x one. Anything painted later wants 120.
-- **STILL OWED: five of the fifteen.** In: the five TABS, the colony's crossed swords
-  (`swords`, which the granary pill wears too), the three side buttons (`menu`,
-  `calendar`, `brood`) and six of the drawer's eight rows (`gear`, `news`, `friends`,
-  `support`, `gift`, `star`). Still drawn: the two CURRENCIES, the stepper's `plus`, and
-  the drawer's `book` and `trophy` rows — so the drawer still reads as mid-redesign, six
-  painted rows with two flat ones among them. `figma.com` is denied by this container's
-  network policy, so they cannot be pulled from the design either; each one already goes
-  through `hudMark` under the name its file needs, so each is a drop-in.
+- **THE SET IS COMPLETE — all twenty files, every mark the chrome asks for.** The five
+  TABS, the colony's crossed swords (`swords`, which the granary pill wears too), the two
+  CURRENCIES and the stepper's `plus`, the three side buttons (`menu`, `calendar`,
+  `brood`) and all eight drawer rows. It arrived over four batches and the app shipped
+  between every one of them, which is what the null fallback is FOR.
+  - **AND THE TEST TURNED ROUND WITH IT.** While marks were arriving a batch at a time,
+    the thing to hold was the TABLE — a name with a file answers a painting, one without
+    answers the drawing — and `hud.test.ts` could only pin the tabs. Complete, the
+    fallback is the thing to guard AGAINST: a file lost to a rename or a bad glob would
+    put one flat glyph in a row of paintings, which looks broken rather than unfinished.
+    So there is now a test of what is OWED, naming the marks the three calling sites ask
+    for. It is written out rather than globbed off the folder — the folder IS the glob's
+    input, so a test that read it would pass against a folder holding one file.
+  - **A TEST MAY NOT NAME THE TAG, and one did.** `meta.test.ts` asserted `.col-pay svg`
+    for the colony banner's reward mark. That held for exactly as long as the currencies
+    were drawn and failed the day they were painted, with the rail perfectly correct —
+    the same two-tag trap the stylesheet is swept for (§ A COLLECTION CARD). What a box
+    owes is A MARK: `svg, .hudmark`.
   - **A PICTURE IN THE CONVERSATION IS NOT A FILE, and that cost two rounds.** Three
     batches were sent and were perfectly visible in the chat while nothing whatever
     existed on disk — a sweep of the whole container found only this session's own
-    screenshots. The ones that DID land arrived with an explicit path attached
-    (`images/58.png`), and that is the entire difference. Worth knowing before promising
-    anybody that artwork has been received: LOOKING at it proves nothing.
+    screenshots. The ones that landed arrived with an explicit path attached
+    (`images/58.png`), and that is the entire difference. Worth knowing before telling
+    anybody their artwork has been received: LOOKING at it proves nothing.
   - **A MARK IS PAINTED IN THE CHROME AND STILL DRAWN IN THE BODY, deliberately.** `brood`
     is an `<img>` on the hatch button and an `<svg>` in the shop's row, the result card
     and the Leaderboard's prize column; `gear` likewise in Support's build row. The painted

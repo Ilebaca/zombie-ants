@@ -17,6 +17,7 @@ import { resolve } from "node:path";
 import { hudIcon, hudPainted } from "../hud";
 import { hudMark } from "../chrome";
 import { NAV_TABS } from "../chrome";
+import { MENU_ENTRIES } from "../screens-simple";
 
 const FOLDER = resolve(__dirname, "..", "hud");
 
@@ -31,11 +32,37 @@ describe("the painted chrome marks", () => {
     }
   });
 
-  /** The five tabs are the batch that has landed, and they are the whole bar — a bar
-   *  with four painted tiles and one drawn one is the worst of both. */
+  /** The five tabs are the whole bar — four painted tiles and one drawn one is the
+   *  worst of both. */
   it("has one for every tab", () => {
     for (const [, mark] of NAV_TABS) {
       expect(hudIcon(mark), `the ${mark} tab has no painted mark`).toBeTruthy();
+    }
+  });
+
+  /**
+   * AND THE CHROME IS COMPLETE NOW, so this stops being a table of what has arrived and
+   * becomes a table of what is OWED. For months a missing file was the ordinary case and
+   * this test could only hold the tabs; with every mark painted, the fallback that made
+   * shipping a batch at a time safe is the thing to guard AGAINST — a file lost in a
+   * rename or a bad glob would quietly put one flat glyph in a row of paintings, which
+   * is a screen that looks broken rather than one that looks unfinished.
+   *
+   * Written out rather than globbed off the folder: the folder IS the glob's input, so
+   * a test that reads it would pass against a folder with one file in it. These are the
+   * names the chrome actually asks `hudMark` for, from the three places that ask.
+   */
+  it("has one for every mark the chrome asks for", () => {
+    const asked = new Set<string>([
+      ...NAV_TABS.map(([, mark]) => mark),
+      ...MENU_ENTRIES.map((e) => e.icon),
+      // chrome.ts: the colony banner, the granary pill, the currency chips and the
+      // stepper. app.ts: the three side buttons.
+      "swords", "mycel", "pheromone", "plus", "menu", "calendar", "brood",
+    ]);
+    for (const mark of asked) {
+      expect(hudIcon(mark), `the chrome asks for ${mark} and there is no file`)
+        .toBeTruthy();
     }
   });
 
