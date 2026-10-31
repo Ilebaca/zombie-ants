@@ -606,6 +606,26 @@ describe("the home screen's ledge survives the blanket", () => {
   });
 
   /**
+   * THE ARTWORK IS ANCHORED TO ITS FOOT, so only the TOP is ever cut.
+   *
+   * It is 842x1871 under `cover`, which always fills the width — so a screen that is not
+   * the design's 360x800 loses HEIGHT. Centred, that came off both ends: measured at 20%
+   * on a 320x568 and a 375x667 phone, a tenth off each. The tenth off the BOTTOM is the
+   * expensive one, because the chapter mound carrying the crossed swords — the one thing
+   * on this picture that says where the player is standing — is painted near the foot.
+   *
+   * Nothing a jsdom test can see says a word about this: there is no layout, and the
+   * screen looks identical either way until a short phone opens it.
+   */
+  it("cuts the artwork off the top rather than the bottom", () => {
+    const home = rulesFor(css, "#home");
+    expect(home, "the artwork is not pinned to its foot")
+      .toMatch(/background-position:\s*center bottom/);
+    // Pinning it is only meaningful while the picture is still filling the width.
+    expect(home).toMatch(/background-size:\s*cover/);
+  });
+
+  /**
    * ONE VERTICAL GAP DOWN THE WHOLE TOP BLOCK, asked for directly.
    *
    * The mock-up spaced it three different ways — 5 under the bar, 5 + 5 + 8 stacked

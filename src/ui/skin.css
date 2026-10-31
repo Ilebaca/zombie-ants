@@ -1157,7 +1157,17 @@ body,
    nothing — and the service worker precaches it with everything else it emitted. */
 #home {
   background-image: url("./backdrops/home.webp");
-  background-position: center;
+  /* ANCHORED TO THE BOTTOM, so only the TOP is ever cut. The artwork is 842x1871 and
+     `cover` always fills the width, which means what a screen that is not the design's
+     360x800 loses is HEIGHT. Centred, that came off both ends — measured at 20% on a
+     320x568 and a 375x667 phone, a tenth off each — and the tenth off the BOTTOM is the
+     expensive one: the chapter mound carrying the crossed swords, the one thing on this
+     picture that says where the player is standing, is painted near the foot.
+
+     So the foot is pinned and the sky is what goes. On a tall phone nothing is lost
+     either way (360x800 and 412x915 crop by nothing at all); on a short one the whole
+     cut lands on the top of the picture, where there is nothing to lose. */
+  background-position: center bottom;
   background-size: cover;
   background-repeat: no-repeat;
 }
