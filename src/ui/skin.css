@@ -4454,6 +4454,9 @@ button:not(.playbtn):active,
      granary pill ended up at when the tab tray's gutter came off — an item
      touching the glass reads as a layout that overflowed. */
   --gutter: calc(12 * var(--u));
+  /* THE COLONY ROW'S ONE HEIGHT: the figure's line box, which the crossed swords mark
+     and the progress bar are both sized to. */
+  --colline: calc(30 * var(--u));
   /* Wider than the reading column on purpose: clamping home's furniture to
      a 360px measure inside a 390px phone put a second gutter inside the
      first. The cap only bites on a tablet, where a banner spread across the
@@ -6743,7 +6746,12 @@ button:not(.playbtn):active,
   overflow: hidden;
   border: none;
   border-radius: calc(7 * var(--u));
-  background: var(--hud-go);
+  /* THE SAME DARK FACE AS EVERY OTHER CARD ON THE SCREEN, asked for directly. It was
+     `--hud-go`, the design's one bright colour, and the green has moved INSIDE it onto
+     the progress fill — so the loud thing on the banner is the progress rather than the
+     plate. It also settles a contrast note this file has carried since the redesign:
+     the cream figure measured 2.22 on the green, under AA, and measures 16.6 here. */
+  background: var(--hud-face);
   box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
 }
 #home .col-size {
@@ -6754,16 +6762,21 @@ button:not(.playbtn):active,
   gap: calc(5 * var(--u));
 }
 #home .col-mark { display: flex; color: var(--hud-ink); }
+/* THE MARK IS THE HEIGHT OF THE FIGURE BESIDE IT, asked for directly. It was 21 against
+   a 30 figure, which reads as a small picture stuck on the front of a big number rather
+   than as one line. `--colline` is the figure's own line box (its `font-size`, at
+   `line-height: 1`), and the bar below takes the same number — so the three things on
+   this row are one height by construction rather than by three numbers agreeing. */
 #home .col-mark svg,
 #home .col-mark .hudmark {
-  width: calc(21 * var(--u));
-  height: calc(21 * var(--u));
+  width: var(--colline);
+  height: var(--colline);
   display: block;
 }
 #home .col-n {
   display: block;
   min-width: 0;
-  font-size: calc(30 * var(--u));
+  font-size: var(--colline);
   line-height: 1;
   color: var(--hud-ink);
   text-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 #000 !important;
@@ -6785,38 +6798,47 @@ button:not(.playbtn):active,
   justify-content: center;
   gap: 0;
 }
-/* THE BAR FILLS THE BANNER, from the top padding to the bottom one, asked for
-   directly. It was a 6px rule with a chapter label stacked over it; the label is gone
-   (`chrome.ts`) and what is left is one object as tall as the figure beside it. The
-   corners are 2 design px — barely rounded, which is what keeps five hard-edged fifths
-   reading as five rather than as one pill. */
+/* THE BAR IS THE HEIGHT OF THE FIGURE, asked for directly — the same `--colline` the
+   crossed swords take, so the row is one height rather than three. It was a 6px rule
+   with a chapter label stacked over it; the label is gone (`chrome.ts`). The corners
+   are 2 design px: barely rounded, which is what keeps five hard-edged fifths reading
+   as five rather than as one pill. */
 #home .col-rail .tr-bar {
   position: relative;
-  flex: 1 1 auto;
+  flex: none;
+  align-self: center;
   width: 100%;
-  height: auto;
+  height: var(--colline);
   overflow: hidden;
   border: 1px solid #000;
   border-radius: calc(2 * var(--u));
   background: #000;
 }
+/* AND THE GREEN IS IN HERE NOW, not on the plate behind it. The design's one bright
+   colour marks the thing that MOVES; the banner it sits on is the same dark face as
+   every other card (see `.colhero`).
+   THE INNER BAND IS A THIRD OF THE BAR, asked for directly — the same idea as
+   `--hud-gloss` and far taller, which is what makes the fill read as a solid bar with a
+   lit top rather than as a flat rectangle of colour. `!important` because the blanket
+   clears every `box-shadow` in the app (§10). */
 #home .col-rail .tr-fill {
   display: block;
   height: 100%;
   border-radius: calc(2 * var(--u));
-  background: var(--hud-ink);
+  background: var(--hud-go);
+  box-shadow: inset 0 calc(var(--colline) / 3) 0 rgba(255, 255, 255, .22) !important;
 }
-/* THE FOUR DIVIDERS, 1px of the banner's own green cut through the bar. A chapter is
-   five checkpoints, so the bar is ruled into five and fills one at a time — and the
-   line is drawn in the slab's colour rather than in black so it reads as a gap between
-   five pieces over the filled part AND over the empty track. It sits OVER the fill. */
+/* THE FOUR DIVIDERS, 1px of BLACK through the bar, asked for directly. A chapter is five
+   checkpoints, so the bar is ruled into five and fills one at a time. Black is the
+   track's own colour, so the empty part of the bar reads as one piece and the cuts show
+   exactly where they matter — across the green. They sit OVER the fill. */
 #home .col-rail .tr-cut {
   position: absolute;
   top: 0;
   bottom: 0;
   width: 1px;
   margin-left: -.5px;
-  background: var(--hud-go);
+  background: #000;
 }
 #home .col-pay {
   flex: 0 0 auto;

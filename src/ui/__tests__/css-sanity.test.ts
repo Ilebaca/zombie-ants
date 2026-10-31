@@ -725,21 +725,51 @@ describe("the colony bar and the tab tray", () => {
   const css = read("skin.css");
 
   /*
-   * THE BAR FILLS THE BANNER, from the top padding to the bottom one. It was a 6px rule
-   * with a chapter label stacked over it; the label is gone and the bar is the height of
-   * the figure beside it, which only works while the row STRETCHES and the two things
-   * that are not the bar centre themselves.
+   * ONE HEIGHT DOWN THE WHOLE ROW, asked for directly: the crossed swords mark and the
+   * progress bar are both the FIGURE's own line box. The mark was 21 against a 30
+   * figure, which reads as a small picture stuck on the front of a big number.
+   *
+   * What is held is that all three name the SAME TOKEN. Three copies of `30 * var(--u)`
+   * would satisfy an assertion about the number while being three chances for the rule
+   * to stop being true — the lesson `--vgap` is already on record for.
    */
-  it("runs the bar the full height between the paddings", () => {
-    expect(ruleFor(css, "#home .colhero"), "the row still centres, so the bar cannot grow")
-      .toMatch(/align-items:\s*stretch/);
-    expect(ruleFor(css, "#home .col-rail")).toMatch(/align-items:\s*stretch/);
-    expect(ruleFor(css, "#home .col-rail .tr-bar")).toMatch(/height:\s*auto/);
-    // ...and the two that are NOT the bar hold their own middle.
-    for (const sel of ["#home .col-size", "#home .col-pay"]) {
-      expect(ruleFor(css, sel), `${sel} is stretched with the bar`)
+  it("gives the mark, the figure and the bar one height", () => {
+    expect(rulesFor(css, "#home"), "the row has no height of its own")
+      .toMatch(dp("--colline", 30));
+    expect(ruleFor(css, "#home .col-n")).toMatch(/font-size:\s*var\(--colline\)/);
+    expect(ruleFor(css, "#home .col-mark svg,\n#home .col-mark .hudmark"))
+      .toMatch(/height:\s*var\(--colline\)/);
+    expect(ruleFor(css, "#home .col-rail .tr-bar"))
+      .toMatch(/height:\s*var\(--colline\)/);
+    // ...and nothing in the row is stretched to a different one.
+    for (const sel of ["#home .col-size", "#home .col-pay", "#home .col-rail .tr-bar"]) {
+      expect(ruleFor(css, sel), `${sel} does not hold its own middle`)
         .toMatch(/align-self:\s*center/);
     }
+  });
+
+  /*
+   * THE GREEN IS IN THE BAR, NOT ON THE PLATE. The banner was `--hud-go`, the design's
+   * one bright colour, with a cream fill on it; it is the same dark face as every other
+   * card now and the green marks the thing that MOVES. It also settles a contrast note
+   * on record since the redesign — the cream figure measured 2.22 on the green.
+   */
+  it("puts the green on the fill and the dark face on the banner", () => {
+    expect(ruleFor(css, "#home .colhero"), "the banner is still the bright slab")
+      .toMatch(/background:\s*var\(--hud-face\)/);
+    expect(ruleFor(css, "#home .col-rail .tr-fill"))
+      .toMatch(/background:\s*var\(--hud-go\)/);
+  });
+
+  /*
+   * AND THE FILL CARRIES AN INNER BAND A THIRD OF ITS HEIGHT, asked for directly — the
+   * same idea as `--hud-gloss` and far taller, so the fill reads as a solid bar with a
+   * lit top rather than a flat rectangle of colour. `!important` or the blanket clears
+   * it (§10), which is the half nothing else would notice.
+   */
+  it("lights the top third of the fill", () => {
+    expect(ruleFor(css, "#home .col-rail .tr-fill"), "the band is not a third of the bar")
+      .toMatch(/box-shadow:\s*inset 0 calc\(var\(--colline\) \/ 3\) 0 [^;]*!important/);
   });
 
   /*
@@ -759,13 +789,15 @@ describe("the colony bar and the tab tray", () => {
    * AND THE DIVIDERS ARE A COLOUR, NEVER A GRADIENT. A repeating gradient is the obvious
    * way to rule a bar into fifths and is silently nothing here: the blanket clears every
    * background IMAGE with `!important` and exempts four whole SCREENS, none of which a
-   * `.tr-cut` is. A hairline in the banner's own green is a background COLOUR.
+   * `.tr-cut` is. A black hairline is a background COLOUR — black because it is the
+   * TRACK's own colour, so the empty part of the bar reads as one piece and the cuts
+   * show exactly where they matter, across the green.
    */
   it("cuts the fifths with a colour the blanket cannot clear", () => {
     const rule = ruleFor(css, "#home .col-rail .tr-cut");
     expect(rule, "the dividers are drawn with an image the blanket strips")
       .not.toMatch(/gradient/);
-    expect(rule).toMatch(/background:\s*var\(--hud-go\)/);
+    expect(rule).toMatch(/background:\s*#000/);
     expect(rule).toMatch(/width:\s*1px/);
     expect(rule).toMatch(/position:\s*absolute/);
     // It has to be positioned against the TRACK, or every divider lands on the screen.
