@@ -2787,11 +2787,69 @@ and lands on the design's figure exactly.
   them — and this is the only place in the app the chapter is named, which is also what
   the artwork behind it is keyed on. A label with no number is the screen going quiet
   about the one thing it is announcing.
-- **STILL OWED: the painted icons.** The design's marks are PNG artwork — the currencies,
-  the colony, the three buttons, the five tabs — and they could not be fetched: this
-  container's network policy denies `figma.com`. Every one of them is drawn from
-  `ui/icons.ts` in the design's exact slot and at the design's exact size, so dropping the
-  files in is a swap and not a layout change.
+- **THE INK IS A WARM CREAM, `--hud-ink` (`#fcf7e6`), not white.** The first frame set
+  every figure in white; the drawer frame that followed sets all of them in the cream,
+  which is the colour the artwork itself is lit in — a pure white figure on a painted
+  ground reads as a sticker laid on top of it. One token, because it is on nine things.
+- **THE TOP BLOCK STARTS AT THE TOP OF THE FRAME, and that took undoing TWO insets.**
+  `.screen` pads every page by `--sp4` plus the notch, which is right for a page with a
+  header and wrong here; and the legacy `.tophead` then pulls itself UP by both, to sit
+  flush on a screen that pads for both. Zero the padding alone and the bar hangs 16px off
+  the top with the chips cut in half. What is left is the notch, which is the honest half
+  of that padding — and it is what puts the drawer under the menu button, since every
+  number below is measured from the frame.
+
+**THE DRAWER IS DRAWN TO A DESIGN TOO** (Figma `05-menu-drawer 3`, node `245:1249`; the
+block at the foot of `skin.css`). It is the same screen with the burger open, so it is
+the same three things — and the one that is missing is the point.
+- **NO GLOSS ON THE PANEL.** Face and ledge, and nothing along the top edge: the drawer
+  is a hole cut in the screen rather than a tile standing on it. The ROWS carry a 5% white
+  of their own instead, which is the only fill in the app that is not one of the three.
+- **IT HANGS OFF THE BUTTON at a measured 166px**, three pixels under the menu button's
+  own bottom edge. Written as the design's number plus the notch, because everything
+  above it moves by the notch and nothing else, and set as PADDING on `.menuwrap` —
+  which is how the legacy sheet places that panel, so there is one mechanism rather than
+  two fighting.
+- **A ROW IS 24px TALL AND ITS MARK IS 30.** That is the design's own arithmetic: the
+  icon stands a little proud of the plate at both ends, and the 16px gap is what leaves
+  room for it. Neither number moves without the other.
+- **NO SCRIM.** The wrapper still covers the screen — that is what closes the drawer on
+  a tap outside — it simply no longer paints over the artwork, which is the thing the
+  design wants seen behind it.
+- **HOW TO PLAY STAYS, which the mock-up's list does not show.** The drawer is the only
+  route to the manual (§ THE HOME ARTWORK), so dropping the row to match a seven-item
+  list would make it unreachable from anywhere in the app.
+
+**THE PAINTED CHROME MARKS** (`src/ui/hud/`, `ui/hud.ts`, `hudMark` in `chrome.ts`).
+Every mark in the chrome was DRAWN — `ui/icons.ts`, one family of solid shapes on a 24
+grid in `currentColor`, which is what stopped the bar looking like a row of emoji from
+seven illustrators (§10). The redesign paints them, and only them.
+- **THE FOLDER IS THE TABLE**, the fourth time: `src/ui/hud/shop.webp` IS the Shop tab's
+  mark, resolved by a build-time glob, and the name is the one `icons.ts` already uses for
+  the drawn one. Painting a mark is dropping a file in.
+- **AND A MISSING FILE IS NOT A HOLE.** `hudIcon` answers null and the caller draws what
+  it always drew. That is the only reason this could ship a batch at a time — the five
+  tabs landed first and the rest of the chrome went on being drawn, which is a screen
+  mid-redesign rather than a broken one.
+- **IT ANSWERS WITH TWO DIFFERENT TAGS, so every box sizes BOTH** — an `<img>` where the
+  mark is painted and an `<svg>` where it is not. This is the trap the match history
+  already paid for once (§ A COLLECTION CARD), and `css-sanity` sweeps it: any rule under
+  `#home`, `#mainNav` or `.menudraw` that sizes a bare `svg` must have a `.hudmark`
+  sizing rule for the same box, in that rule or another.
+- **THE TWO TAGS ARE NOT THE SAME SIZE**, which is why `hudMark` takes two numbers. The
+  design draws a 36px picture inside a 48px button; the burger glyph at 36 is three bars
+  filling the tile. The painted size is the design's and the drawn one is what it was
+  tuned at, written out only where they differ.
+- **They are 100px square**, which is 2.5x the 40 the tabs draw them at — exact on a 2x
+  screen and a mild upscale on a 3x one. Anything painted later wants 120.
+- **STILL OWED: the rest of the set.** The five TABS are in. The currencies, the colony's
+  crossed swords, the three side buttons and the drawer's own rows are still drawn: those
+  batches were sent as pictures in the conversation and never arrived as FILES, and
+  `figma.com` is denied by this container's network policy so they cannot be pulled from
+  the design either. Every one of them already goes through `hudMark` under the name its
+  file needs — `mycel`, `pheromone`, `plus`, `swords`, `menu`, `calendar`, `brood`,
+  `gear`, `news`, `friends`, `support`, `gift`, `star`, `trophy`, `book` — so each is a
+  drop-in.
 
 **THE DISPLAY FACE IS POETSEN ONE** (`public/fonts/poetsen-one.woff2`, the second
 `@font-face` in `index.html`). Supplied as a TTF and converted; it is OFL, and the licence

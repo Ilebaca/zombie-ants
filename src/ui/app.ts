@@ -26,9 +26,7 @@ import { buildAntarium } from "./antarium";
 import { buildSpeciesPage } from "./species";
 import { buildProfile } from "./profile";
 import { icon } from "./icons";
-import {
-  NAV_SCREENS, bottomNav, el, granaryPill, screenEl, toast, topBar,
-} from "./chrome";
+import { NAV_SCREENS, bottomNav, el, granaryPill, hudMark, screenEl, toast, topBar } from "./chrome";
 import type { NavId } from "./chrome";
 import { MatchScreen } from "./match";
 import {
@@ -1215,13 +1213,15 @@ export class App {
     settings.setAttribute("aria-label", "Menu");
     // `currentColor`, not a fixed white: the face is set by the stylesheet, and a
     // hardcoded colour here is a mark that goes invisible the day the face changes.
-    settings.appendChild(icon("menu", 26));
+    // 36 painted, 26 drawn: the design's picture nearly fills the 48px tile, and the
+    // burger drawn that big is three bars and no button (§ hudMark).
+    settings.appendChild(hudMark("menu", 36, 26));
     settings.onclick = () => this.openMenu();
 
     const daily = el("button", "dailyfab");
     daily.title = "Daily challenges";
     daily.setAttribute("aria-label", "Daily challenges");
-    daily.appendChild(icon("calendar", 26));
+    daily.appendChild(hudMark("calendar", 36, 26));
     daily.onclick = () => this.show("daily");
 
     // THE HATCH IS SHOWN BEFORE CHAPTER 10 TOO, when the screen behind it is still shut.
@@ -1231,7 +1231,7 @@ export class App {
     const hatch = el("button", "dailyfab hatchfab");
     hatch.title = "Lucky hatch";
     hatch.setAttribute("aria-label", "Lucky hatch");
-    hatch.appendChild(icon("brood", 26));
+    hatch.appendChild(hudMark("brood", 36, 26));
     hatch.onclick = () => this.show("luckyhatch");
 
     fabs.append(settings, daily, hatch);
