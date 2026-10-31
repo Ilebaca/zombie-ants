@@ -334,6 +334,20 @@ describe("the hatch button while it is hatching", () => {
     expect(rule, "the fill was dropped, so there is nothing to darken")
       .toMatch(/background\s*:\s*color-mix/);
   });
+
+  /**
+   * AND THE HANDFUL UNDER IT IS ALWAYS DRAWN, so it has a state for a purse that cannot
+   * cover ten — which has to read as UNCLICKABLE rather than merely quiet. It is an
+   * OUTLINE, so dimming the ink alone leaves a dead label inside a live green border,
+   * which is what the button above it looks like while it is working. Nothing a jsdom
+   * test can see says a word about this: the attribute is set either way.
+   */
+  it("dims the handful's border as well as its ink", () => {
+    const rule = rulesFor(read("skin.css"), ".hatchbtn.bulk[disabled]");
+    expect(rule, "the ink is still the live green").toMatch(/color\s*:\s*var\(--muted\)/);
+    expect(rule, "a dim label is sitting inside a live border").toMatch(/border-color\s*:/);
+    expect(rule, "it went see-through instead").not.toMatch(/(^|[;{])\s*opacity\s*:/);
+  });
 });
 
 /**

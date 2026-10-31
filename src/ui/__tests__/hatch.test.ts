@@ -446,19 +446,31 @@ describe("what it sounds like", () => {
 /**
  * TEN AT ONCE.
  *
- * The handful is a shortcut through the one action this screen offers, so it is OFFERED
- * only when it can be paid for — the main button already carries "a dead button is a dead
- * end" and never says no, and a second one under it that mostly reads "you cannot" is a
- * control competing with the one that can.
+ * The handful is a shortcut through the one action this screen offers, and it is ALWAYS
+ * on the screen — asked for directly. It used to be drawn only once the whole batch could
+ * be paid for; what that actually did was make a shortcut vanish between visits, which
+ * reads as the screen having lost it rather than as a price to save up to.
  */
 describe("the handful", () => {
   const BULK = 10;
 
-  it("is not offered until the whole batch can be paid for", () => {
-    expect(build(store(BULK - 1)).root.querySelector("#hatchGo10"),
-      "a handful was offered that the purse cannot cover").toBeNull();
-    expect(build(store(BULK)).root.querySelector("#hatchGo10"),
-      "a player holding ten was not offered the handful").toBeTruthy();
+  /**
+   * SHOWN ALWAYS, PRESSABLE ONLY WHEN IT CAN BE PAID FOR — and the DISABLED attribute is
+   * the whole mechanism, so that is what is asserted. A click on a disabled button is
+   * never dispatched, so a test that tapped it and checked nothing happened would pass
+   * against a handler with no guard in it at all (the setup arrows' lesson).
+   */
+  it("is always there, and refuses until the whole batch can be paid for", () => {
+    const poor = build(store(BULK - 1)).root
+      .querySelector<HTMLButtonElement>("#hatchGo10");
+    expect(poor, "the handful disappeared when the purse could not cover it").toBeTruthy();
+    expect(poor?.disabled, "a handful the purse cannot cover was pressable").toBe(true);
+    expect(poor?.textContent, "it stopped saying what it costs")
+      .toContain(`${BULK} larva`);
+
+    const rich = build(store(BULK)).root.querySelector<HTMLButtonElement>("#hatchGo10");
+    expect(rich, "a player holding ten was not offered the handful").toBeTruthy();
+    expect(rich?.disabled, "a player holding ten could not press it").toBe(false);
   });
 
   /** Under the one that always works, never above it: there is one primary action here. */

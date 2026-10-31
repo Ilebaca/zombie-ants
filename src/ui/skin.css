@@ -5504,9 +5504,7 @@ button:not(.playbtn):active,
 /* ---- The handful ----
    Under the one that always works, and quieter than it: one primary action on
    this screen, and this is a shortcut THROUGH it rather than a rival to it. An
-   outline rather than a slab, and shorter, so the eye still lands on Hatch. It
-   is only drawn when the batch can be paid for, so it never has an `out` state
-   to wear — which is why it may be outlined where the main button may not. */
+   outline rather than a slab, and shorter, so the eye still lands on Hatch. */
 .hatchfoot { display: grid; gap: 8px; }
 .hatchbtn.bulk {
   min-height: 46px;
@@ -5516,7 +5514,16 @@ button:not(.playbtn):active,
   color: var(--grass-glow);
 }
 .hatchbtn.bulk .hb-t { font-size: 14px; }
-.hatchbtn.bulk[disabled] { background: none; color: var(--muted); }
+/* IT IS ALWAYS DRAWN, so it has a state for a purse that cannot cover it, and
+   that state has to read as UNCLICKABLE rather than merely quiet. The BORDER
+   goes with the ink: a dim label inside a live green outline reads as a button
+   that is working, which is what the main one says while it hatches. It keeps
+   its price, because the price is the whole reason it cannot be pressed. */
+.hatchbtn.bulk[disabled] {
+  background: none;
+  border-color: var(--line);
+  color: var(--muted);
+}
 
 /* ---- The odds ----
    A single row of five, because the ORDER is the message: the colours run from

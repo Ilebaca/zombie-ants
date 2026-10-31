@@ -2229,12 +2229,27 @@ is a control competing with it.
     is the number a player counts larva in once they have more than a few, and ten rolls
     at the printed odds is where the row below stops being a table of chances and becomes
     something they have watched happen.
-    - **IT IS SHOWN ONLY WHEN THE WHOLE BATCH IS AFFORDABLE**, which is the one place this
-      screen departs from "a dead button is a dead end". The main button already carries
-      that job and never says no; a second one under it that mostly reads "you cannot" is
-      a control competing with the one that can. It sits UNDER that button and quieter —
-      an outline rather than a slab — because this is a shortcut THROUGH the screen's one
-      action rather than a rival to it.
+    - **IT IS ALWAYS ON THE SCREEN, and DISABLED when the purse cannot cover ten.** It
+      was drawn only once the batch was affordable, which this file argued for as the one
+      place the screen departs from "a dead button is a dead end" — the main button
+      already never says no, and a second one under it mostly reading "you cannot" is a
+      control competing with the one that can. Asked for directly the other way, and the
+      argument was wrong about what appearing and disappearing costs: a shortcut a player
+      saw once and cannot find again reads as the screen having lost it, where a price
+      they cannot pay yet reads as something to save up to. It sits UNDER the main button
+      and quieter either way — an outline rather than a slab — because this is a shortcut
+      THROUGH the screen's one action rather than a rival to it.
+      - **THE DISABLED ATTRIBUTE IS THE WHOLE MECHANISM**, not a second guard inside the
+        handler, which is the setup arrows' lesson: a click on a disabled button is never
+        dispatched, so a test that tapped it and found nothing had happened would pass
+        against a handler with no guard at all. What the test asserts is `disabled`.
+      - **AND THE BORDER DIMS WITH THE INK.** It is an OUTLINE, so greying only the label
+        leaves a dead price inside a live green frame — which is exactly what the button
+        above it looks like while it is hatching. It keeps its PRICE, because the price
+        is the whole reason it cannot be pressed; measured at **6.55** over the chamber
+        and **4.72** against the brightest ground inside its own box, so it is still read
+        rather than merely present. `css-sanity` holds the border, because the attribute
+        is set either way and nothing a jsdom test can see would notice.
     - **THE ROLLS ARE NOT INDEPENDENT, so it is `hatch()` in a loop on purpose.** A skin is
       rolled against the collection AS IT STANDS, so committing each roll before the next
       is what stops a batch paying the SAME skin twice; ten rolled against one snapshot
