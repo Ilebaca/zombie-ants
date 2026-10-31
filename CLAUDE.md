@@ -2842,14 +2842,23 @@ seven illustrators (§10). The redesign paints them, and only them.
   tuned at, written out only where they differ.
 - **They are 100px square**, which is 2.5x the 40 the tabs draw them at — exact on a 2x
   screen and a mild upscale on a 3x one. Anything painted later wants 120.
-- **STILL OWED: the rest of the set.** The five TABS are in. The currencies, the colony's
-  crossed swords, the three side buttons and the drawer's own rows are still drawn: those
-  batches were sent as pictures in the conversation and never arrived as FILES, and
-  `figma.com` is denied by this container's network policy so they cannot be pulled from
-  the design either. Every one of them already goes through `hudMark` under the name its
-  file needs — `mycel`, `pheromone`, `plus`, `swords`, `menu`, `calendar`, `brood`,
-  `gear`, `news`, `friends`, `support`, `gift`, `star`, `trophy`, `book` — so each is a
-  drop-in.
+- **STILL OWED: the rest of the set.** TEN are in — the five TABS, the colony's crossed
+  swords (`swords`, which the granary pill wears too), and the three side buttons plus the
+  drawer's own Settings row (`menu`, `calendar`, `brood`, `gear`). The two CURRENCIES, the
+  stepper's `plus` and the drawer's other seven rows are still drawn, so the drawer is
+  visibly mid-redesign: one painted row above seven flat ones. Those batches were sent as
+  pictures in the conversation and never arrived as FILES — the ones that DID land came
+  with explicit paths, which is the only difference worth knowing — and `figma.com` is
+  denied by this container's network policy so they cannot be pulled from the design
+  either. Every one of them already goes through `hudMark` under the name its file needs —
+  `mycel`, `pheromone`, `plus`, `news`, `friends`, `support`, `gift`, `star`, `trophy`,
+  `book` — so each is a drop-in.
+  - **A MARK IS PAINTED IN THE CHROME AND STILL DRAWN IN THE BODY, deliberately.** `brood`
+    is an `<img>` on the hatch button and an `<svg>` in the shop's row, the result card
+    and the Leaderboard's prize column; `gear` likewise in Support's build row. The painted
+    set is chunky colour art sized for a 36px tile, and the same picture at 15px inside a
+    line of text reads as clutter where a flat glyph reads as punctuation. `hudMark` is the
+    chrome's; `icon` is the body's, and the two are not going to converge.
 
 **THE DISPLAY FACE IS POETSEN ONE** (`public/fonts/poetsen-one.woff2`, the second
 `@font-face` in `index.html`). Supplied as a TTF and converted; it is OFL, and the licence
