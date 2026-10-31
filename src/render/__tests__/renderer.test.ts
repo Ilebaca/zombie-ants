@@ -13,7 +13,8 @@
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { blankGame, put } from "../../engine/__tests__/helpers";
-import { createGame } from "../../engine";
+import { createGame, START_SHAPES } from "../../engine";
+import type { ShapeId } from "../../engine";
 import type { GameState } from "../../engine";
 import { BoardRenderer } from "../renderer";
 import { makeRecorder, type Recorder } from "./recorder";
@@ -181,6 +182,46 @@ describe("the opening", () => {
     }
   });
 
+  /**
+   * AND IT PLAYS ONCE, ON EVERY FORMATION.
+   *
+   * The hold was a flat 820ms — the time a THREE-tile front takes, which is the wedge and
+   * the hook and nothing else. The other ten formations reach four or five tiles from the
+   * nest, so the hold ran out mid-fill, and `endIntro` then cleared the reveal and grew
+   * the colonies AGAIN: the troops marched in, snapped back and marched in a second time.
+   * Reported from a real match. The default board here is a wedge, which is exactly why
+   * every test above it passed.
+   */
+  it("plays once, whatever the formation", () => {
+    for (const shape of Object.keys(START_SHAPES) as ShapeId[]) {
+      const { r } = make(createGame({
+        map: "small",
+        species: { you: "fire", ai: "ghost" },
+        seed: 7,
+        shape: START_SHAPES[shape],
+        // The enemy keeps the WEDGE while the player's formation changes, so the hold has
+        // to be the wider of the two fronts rather than whichever was measured last.
+        aiShape: START_SHAPES.wedge,
+      }));
+      r.resize();
+      const base = performance.now();
+      const clock = vi.spyOn(performance, "now").mockReturnValue(base);
+      try {
+        const held = r.playIntro();
+        expect(r.animating, `${shape} never set off`).toBe(true);
+        clock.mockReturnValue(base + held + 50);
+        drawOneFrame(r);
+        expect(r.animating, `${shape} is still filling after its hold`).toBe(false);
+        // This is the hand-over: the screen's timer fires and calls `endIntro`. It must
+        // settle what is left, never start the colonies over.
+        r.endIntro();
+        expect(r.animating, `${shape} grew a second time`).toBe(false);
+      } finally {
+        clock.mockRestore();
+      }
+    }
+  });
+
   /** Every control skips it. Sitting through the same opening every match is not a feature. */
   it("can be cut short, and the board is left filled in", () => {
     const { r } = make();
@@ -188,6 +229,7 @@ describe("the opening", () => {
     r.playIntro();
     r.endIntro();
     expect(r.introducing).toBe(false);
+    expect(r.animating, "a skip left the board still filling").toBe(false);
     expect(() => drawOneFrame(r)).not.toThrow();
   });
 

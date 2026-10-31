@@ -654,10 +654,28 @@ Each of these cost a debugging round. Do not repeat them.
     ground. It was the plate's free ground over the canvas's, which only came out right
     while the plate was much bigger, and the ring around the tiles emptied by half the
     moment the bleed went.
-  - **The colonies still grow**, over `OPENING_FILL_MS` (`render/renderer.ts`), and they
-    are scheduled from NOW rather than from a landing that no longer happens — a front
-    timed for one would leave the board empty for the whole hold and then blink on. A
-    test holds that the reveal has finished by the end of the hold the caller is given.
+  - **The colonies still grow**, and they are scheduled from NOW rather than from a
+    landing that no longer happens — a front timed for one would leave the board empty
+    for the whole hold and then blink on. A test holds that the reveal has finished by
+    the end of the hold the caller is given.
+    - **AND THE HOLD IS THE FILL'S OWN LENGTH, never a number written down beside it.**
+      It was `OPENING_FILL_MS`, a flat 820ms, which is what a THREE-tile front takes —
+      and only the wedge and the hook are three tiles from the nest at their far corner.
+      The other ten formations reach four or five, so the hold ran out mid-fill, and
+      `endIntro` then CLEARED the reveal and grew the colonies again: **the opening
+      visibly played twice**, on ten of the twelve formations. Reported from a real match
+      as the troops moving in, snapping back and loading in again. Measured in a browser
+      on the `line` formation — the player's own colour on the board rose, dropped from
+      28,551 pixels to 23,166 at 837ms, and rose a second time.
+      - Two faults, one cause (§7): a constant spelling out the reveal's arithmetic, and
+        `endIntro` starting the fill rather than settling it. `growColonies` returns the
+        wider of the two fronts and `playIntro` asks `reveal.runMs` for the hold; a skip
+        now only clears. `endIntro`'s `growColonies` was correct while the fill was
+        scheduled for the moment the CAMERA landed — a tap before that had nothing
+        running to settle — and became a second play the day the camera went.
+      - **The default board in `renderer.test.ts` is a WEDGE, which is why every test
+        there passed.** The regression test walks all twelve formations with the enemy
+        left on the wedge, so the hold has to be the wider of the two fronts as well.
   - **Every control still skips it**, canvas and footer alike. The footer is DOM and
     stays live under the animation — End turn during the opening handed the first turn
     over before the match had visibly started.
