@@ -97,3 +97,62 @@ describe("the lucky hatch", () => {
     app.destroy();
   });
 });
+
+/**
+ * THE BAR IS THE FIVE SCREENS IT HAS TILES FOR, AND NOTHING ELSE. Asked for directly.
+ *
+ * It rode eight more — the profile, the manual, Settings, News, Friends, Support, the
+ * hatch and the Colony Road, which is the legacy build's own list — and on every one of
+ * them the lit tile named whichever tab the player had come FROM, so the bar was lit for
+ * a screen that was no longer on the glass.
+ *
+ * This walks the real app, because the bar is the shell's and a screen built directly is
+ * a screen whose chrome never ran.
+ */
+describe("the bottom bar", () => {
+  const navShowing = (host: HTMLElement): boolean => {
+    const nav = host.querySelector("#mainNav");
+    return !!nav && !nav.classList.contains("hidden");
+  };
+
+  it("stands on the five deck screens", () => {
+    const { host, app } = open();
+    for (const tab of ["shop", "anthill", "home", "antarium", "challenges"]) {
+      host.querySelector<HTMLButtonElement>(`.navitem[data-nav='${tab}']`)?.click();
+      expect(navShowing(host), `the bar is missing on ${tab}`).toBe(true);
+    }
+    app.destroy();
+  });
+
+  it("leaves every page over the deck", () => {
+    const { host, app } = open();
+    drawer(host);
+    for (const page of ["rules", "settings", "news", "friends", "support", "profile"]) {
+      drawer(host);
+      const row = host.querySelector<HTMLButtonElement>(`.menuitem[data-go='${page}']`);
+      if (!row) continue;
+      row.click();
+      expect(showing(host), `${page} did not open`).toContain(page);
+      expect(navShowing(host), `the bar is still standing on ${page}`).toBe(false);
+    }
+    host.querySelector<HTMLButtonElement>(".hatchfab")?.click();
+    expect(navShowing(host), "the bar is still standing on the hatch").toBe(false);
+    app.destroy();
+  });
+
+  /**
+   * AND THE MANUAL KEPT A WAY OUT. It was dressed as a bottom-nav screen like the legacy
+   * build — no back arrow, because the five tabs under it were the way off. Without one
+   * it is a page a phone with no hardware back button cannot leave.
+   */
+  it("leaves the manual with its own way back", () => {
+    const { host, app } = open();
+    drawer(host);
+    host.querySelector<HTMLButtonElement>(".menuitem[data-go='rules']")?.click();
+    const back = host.querySelector<HTMLButtonElement>("#rules .backbtn");
+    expect(back, "the manual has no way out at all").toBeTruthy();
+    back?.click();
+    expect(showing(host), "back off the manual goes nowhere").not.toContain("rules");
+    app.destroy();
+  });
+});

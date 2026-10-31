@@ -679,15 +679,15 @@ describe("the colony banner", () => {
   });
 
   /*
-   * The label names WHERE ON THE ROAD the player stands. "Your colony" named the thing the
-   * figure beside it already is, and a chapter is what the road itself is divided into.
+   * NO WORDS ON IT AT ALL. The rail read "Chapter 12" over the bar — the one fact on
+   * this banner the bar itself cannot show, and one said in full on the screen the
+   * banner opens. Removed directly; what is left is the figure, the bar and the mark
+   * for what the next rung pays.
    */
-  it("names the chapter it is working through, not the thing it is showing", () => {
-    const label = (colony: number): string | undefined =>
-      banner(colony).querySelector(".col-t")?.textContent ?? undefined;
-    expect(label(COLONY_START), "a new colony is not yet in chapter 1").toBe("Chapter 1");
-    expect(label(stopColony(ROAD_CHAPTER_STOPS))).toBe("Chapter 2");
-    expect(label(stopColony(ROAD_CHAPTER_STOPS * 4))).toBe("Chapter 5");
+  it("writes nothing on the rail", () => {
+    const rail = banner(1_284_000).querySelector(".col-rail");
+    expect(rail?.querySelector(".col-t"), "the chapter label is back").toBeNull();
+    expect(rail?.textContent?.trim(), "there is text on the rail").toBe("");
   });
 
   /*
@@ -703,19 +703,45 @@ describe("the colony banner", () => {
     // perfectly correct. What the rail owes is A MARK.
     expect(rail?.querySelector(".col-pay svg, .col-pay .hudmark"),
       "no reward mark on the bar").toBeTruthy();
-    // The rail carries the chapter's LABEL and the reward mark, and no second figure:
-    // the rung's size beside the one the banner leads with reads as a sum of the two.
-    expect(rail?.textContent, "the rung's size is printed on the rail")
-      .toMatch(/^Chapter \d+$/);
   });
 
-  it("fills the bar by how far between the two rungs the colony stands", () => {
-    const from = stopColony(6);
-    const to = stopColony(7);
-    const half = (el: HTMLElement): string =>
-      (el.querySelector(".tr-fill") as HTMLElement).style.width;
-    expect(half(banner(from))).toBe("0%");
-    expect(half(banner(Math.round((from + to) / 2)))).toBe("50%");
+  /*
+   * THE BAR MEASURES THE CHAPTER, NOT THE RUNG. It used to run 0 to 100% between every
+   * single checkpoint, so it swept the whole width five times a chapter and said nothing
+   * about where in the chapter the colony stood. Five checkpoints, filling one fifth at
+   * a time, and EMPTY again on the first rung of the next chapter.
+   */
+  it("fills the bar a fifth per checkpoint of the chapter", () => {
+    const pct = (colony: number): number =>
+      parseFloat((banner(colony).querySelector(".tr-fill") as HTMLElement).style.width);
+    const step = 100 / ROAD_CHAPTER_STOPS;
+
+    // The first rung of a chapter: nothing banked inside it yet.
+    expect(pct(stopColony(ROAD_CHAPTER_STOPS)), "a new chapter starts part-filled")
+      .toBeCloseTo(0, 5);
+    // One checkpoint in, and half way to the second.
+    const from = stopColony(ROAD_CHAPTER_STOPS + 1);
+    const to = stopColony(ROAD_CHAPTER_STOPS + 2);
+    expect(pct(from)).toBeCloseTo(step, 5);
+    expect(pct(Math.round((from + to) / 2))).toBeCloseTo(step * 1.5, 1);
+    // And the last checkpoint of a chapter is the last fifth.
+    expect(pct(stopColony(ROAD_CHAPTER_STOPS * 2 - 1)))
+      .toBeCloseTo(step * (ROAD_CHAPTER_STOPS - 1), 5);
+  });
+
+  /*
+   * AND THE FIFTHS ARE CUT BY FOUR REAL ELEMENTS. A repeating gradient is the obvious
+   * way to rule a bar and is silently nothing here — the blanket clears every background
+   * image outside four whole screens, and a descendant of one is not exempt (§10). Four
+   * dividers for five pieces, evenly spaced, inside the track so they sit over the fill.
+   */
+  it("rules the bar into the chapter's five checkpoints", () => {
+    const track = banner(1_284_000).querySelector(".tr-bar") as HTMLElement;
+    const cuts = Array.from(track.querySelectorAll<HTMLElement>(".tr-cut"));
+    expect(cuts.length, "a divider per boundary between the five")
+      .toBe(ROAD_CHAPTER_STOPS - 1);
+    expect(cuts.map((c) => Math.round(parseFloat(c.style.left))))
+      .toEqual([20, 40, 60, 80]);
   });
 });
 
@@ -1165,7 +1191,7 @@ describe("legacy markup parity", () => {
  * balance change cannot leave the manual quietly lying about the game.
  */
 describe("the manual", () => {
-  const text = (): string => buildRules().textContent ?? "";
+  const text = (): string => buildRules(() => {}).textContent ?? "";
 
   it("covers every rule a player has to be told rather than discover", () => {
     const said = text();
@@ -1180,7 +1206,7 @@ describe("the manual", () => {
 
   /** Ten sections down one scroll: each is numbered, so a reader can see where they are. */
   it("numbers the sections", () => {
-    const root = buildRules();
+    const root = buildRules(() => {});
     const marks = Array.from(root.querySelectorAll(".ru-no")).map((n) => n.textContent);
     expect(marks.length).toBe(root.querySelectorAll(".ru-h").length);
     expect(marks[0]).toBe("01");
@@ -1223,7 +1249,7 @@ describe("the manual", () => {
    * context, so they draw nothing — and the screen has to come out whole anyway (§6).
    */
   it("puts a picture beside the rules that need one, and survives having no canvas", () => {
-    const root = buildRules();
+    const root = buildRules(() => {});
     const figures = root.querySelectorAll(".ru-fig");
     expect(figures.length).toBeGreaterThanOrEqual(6);
     for (const fig of Array.from(figures)) {

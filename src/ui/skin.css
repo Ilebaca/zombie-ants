@@ -176,6 +176,14 @@ body {
    a display of its own would walk into exactly the same trap. */
 .screen.hidden { display: none !important; }
 
+/* AND THE BAR IS THE SAME TRAP, ONE TIE LOWER. The legacy sheet hides it with
+   `#mainNav.hidden { display: none }` — an id AND a class, which `#mainNav.homenav
+   { display: flex }` in the design block MATCHES EXACTLY. A tie is settled by source
+   order and this file comes second, so the bar stopped hiding altogether: five tabs
+   across the bottom of the setup screen, the match, the manual and every page over the
+   deck. Reported from a phone, on the Formation screen. */
+#mainNav.hidden { display: none !important; }
+
 .screen {
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%23a8e08a' fill-opacity='.035'%3E%3Crect x='10' y='14' width='16' height='16' rx='5'/%3E%3Crect x='42' y='60' width='11' height='11' rx='3.5'/%3E%3Crect x='86' y='26' width='14' height='14' rx='4.5'/%3E%3Crect x='66' y='96' width='9' height='9' rx='3'/%3E%3Crect x='16' y='84' width='12' height='12' rx='4'/%3E%3C/g%3E%3C/svg%3E"),
@@ -6722,7 +6730,10 @@ button:not(.playbtn):active,
    readable on a green slab without a second plate behind it. */
 #home .colhero {
   display: flex;
-  align-items: center;
+  /* STRETCH, so the bar can run the full height between the paddings. Everything else
+     in the row centres itself (`align-self`); the bar is the one thing here that is
+     measured against the banner rather than against its own content. */
+  align-items: stretch;
   gap: calc(12 * var(--u));
   width: auto;
   /* Top only: what sits under the banner is the granary row, and that row's own top
@@ -6737,6 +6748,7 @@ button:not(.playbtn):active,
 }
 #home .col-size {
   flex: 0 0 auto;
+  align-self: center;
   display: flex;
   align-items: center;
   gap: calc(5 * var(--u));
@@ -6761,7 +6773,7 @@ button:not(.playbtn):active,
   flex: 1 1 0;
   min-width: 0;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: calc(5 * var(--u));
   margin: 0;
 }
@@ -6771,31 +6783,44 @@ button:not(.playbtn):active,
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: calc(7 * var(--u));
+  gap: 0;
 }
-#home .col-t {
-  font-size: calc(8 * var(--u));
-  line-height: 1;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  color: var(--hud-ink);
-}
+/* THE BAR FILLS THE BANNER, from the top padding to the bottom one, asked for
+   directly. It was a 6px rule with a chapter label stacked over it; the label is gone
+   (`chrome.ts`) and what is left is one object as tall as the figure beside it. The
+   corners are 2 design px — barely rounded, which is what keeps five hard-edged fifths
+   reading as five rather than as one pill. */
 #home .col-rail .tr-bar {
-  flex: none;
+  position: relative;
+  flex: 1 1 auto;
   width: 100%;
-  height: calc(6 * var(--u));
+  height: auto;
   overflow: hidden;
   border: 1px solid #000;
-  border-radius: 30px;
+  border-radius: calc(2 * var(--u));
   background: #000;
 }
 #home .col-rail .tr-fill {
-  height: calc(6 * var(--u));
-  border-radius: 20px;
+  display: block;
+  height: 100%;
+  border-radius: calc(2 * var(--u));
   background: var(--hud-ink);
+}
+/* THE FOUR DIVIDERS, 1px of the banner's own green cut through the bar. A chapter is
+   five checkpoints, so the bar is ruled into five and fills one at a time — and the
+   line is drawn in the slab's colour rather than in black so it reads as a gap between
+   five pieces over the filled part AND over the empty track. It sits OVER the fill. */
+#home .col-rail .tr-cut {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  margin-left: -.5px;
+  background: var(--hud-go);
 }
 #home .col-pay {
   flex: 0 0 auto;
+  align-self: center;
   display: flex;
   width: calc(26 * var(--u));
   height: calc(26 * var(--u));
@@ -7019,6 +7044,11 @@ button:not(.playbtn):active,
    own name, which is what a screen reader reads anyway — five words across
    a phone is what made these tall and the type tiny. */
 #mainNav.homenav {
+  /* NO POSITION HERE, and that is load-bearing. The legacy sheet pins the bar to the
+     bottom of the screen on `#mainNav` alone — ONE id, which `#mainNav.homenav` beats,
+     so a relative position written here for the shelf below put the whole bar back in
+     the flow at the TOP of the screen, lying over the colony banner. Being fixed, it is
+     already a containing block for the plate. */
   display: flex;
   gap: calc(5 * var(--u));
   height: calc(var(--navh) + env(safe-area-inset-bottom));
@@ -7026,6 +7056,22 @@ button:not(.playbtn):active,
   border: none;
   background: none;
 }
+/* THE TRAY IS HALF A PLATE, asked for directly. A full-height slab behind five tiles is
+   a second rectangle around them; half of one is a shelf they stand on, which is what
+   lets the picture behind the bar still read as the screen. It is a PSEUDO-ELEMENT with
+   a background COLOUR — a gradient here is silently nothing, because the blanket clears
+   every background IMAGE on every `::before` with no exemption at all (§10). */
+#mainNav.homenav::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 50%;
+  background: var(--hud-face);
+}
+/* ...and the tiles stand ON it rather than under it. */
+#mainNav.homenav .navitem { position: relative; z-index: 1; }
 #mainNav .navitem {
   flex: 1 1 0;
   min-width: 0;

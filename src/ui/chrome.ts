@@ -9,7 +9,8 @@
  * player-chosen name, and a template string would happily inject it as markup.
  */
 import {
-  chapterAt, compact, freeReward, passReward, stopColony, stopReached,
+  ROAD_CHAPTER_STOPS, compact, freeReward, passReward, rungOfChapter, stopColony,
+  stopReached,
 } from "../platform";
 import type { Profile, ProfileStore } from "../platform";
 import type { Look, SpeciesId } from "../engine";
@@ -249,25 +250,47 @@ export function colonyBanner(colony: number, onClick: () => void): HTMLElement {
   const size = el("div", "col-size");
   size.append(iconSlot("col-mark", "swords", 21), el("b", "col-n", compact(colony)));
 
+  /*
+   * THE BAR MEASURES THE CHAPTER, NOT THE RUNG — five checkpoints, filling one at a
+   * time from the left, which is what the four dividers below cut it into. It used to
+   * run 0 to 100% between every single rung, so it swept the whole width five times a
+   * chapter and the bar said nothing about where in the chapter the player stood.
+   *
+   * `rungOfChapter` answers 1..5 for the rung being WORKED TOWARDS, so the rungs already
+   * banked inside this chapter is one less than that, and the fraction toward the next
+   * one is the fifth being filled right now.
+   */
   const reached = stopReached(colony);
   const from = reached ? stopColony(reached) : 0;
   const next = stopColony(reached + 1);
-  const pct = next > from ? Math.max(0, Math.min(1, (colony - from) / (next - from))) : 1;
+  const into = next > from ? Math.max(0, Math.min(1, (colony - from) / (next - from))) : 1;
+  const done = rungOfChapter(reached + 1) - 1;
+  const pct = (done + into) / ROAD_CHAPTER_STOPS;
 
   const track = el("span", "tr-bar");
   const fill = el("i", "tr-fill");
-  fill.style.width = `${Math.round(pct * 100)}%`;
+  fill.style.width = `${(pct * 100).toFixed(2)}%`;
   track.appendChild(fill);
 
-  // The label names WHERE ON THE ROAD the player is standing, and it carries the NUMBER.
-  // The mock-up's label reads "CHAPTER" alone, in the same slot that holds "9999" and
-  // "999K" — placeholders for live figures, every one of them — and this is the only
-  // place in the app the chapter is named, which is also what the artwork behind it is
-  // keyed on. A label with no number would be the screen going quiet about the one thing
-  // it is announcing.
-  const chapter = chapterAt(reached + 1);
+  /*
+   * AND THE FIVE ARE CUT BY FOUR REAL ELEMENTS, never a gradient. A repeating gradient
+   * is the obvious way to rule a bar into fifths and it is silently nothing here: the
+   * blanket in `skin.css` clears every background IMAGE in the app with `!important` and
+   * exempts four whole screens, none of which is a descendant of one (§10). A hairline
+   * drawn in the banner's own colour is a background COLOUR, which nothing blankets.
+   */
+  for (let i = 1; i < ROAD_CHAPTER_STOPS; i++) {
+    const cut = el("i", "tr-cut");
+    cut.style.left = `${(i * 100 / ROAD_CHAPTER_STOPS).toFixed(2)}%`;
+    track.appendChild(cut);
+  }
+
+  // NO CHAPTER LABEL. It said "Chapter 12" over the bar, which is the one fact on this
+  // banner the bar itself cannot show — and it is said in full on the screen the banner
+  // opens. Asked for directly; what is left is the figure, the bar and what the next
+  // rung pays.
   const mid = el("div", "col-mid");
-  mid.append(el("div", "col-t", `Chapter ${chapter}`), track);
+  mid.append(track);
 
   // WHAT FILLING THE BAR PAYS, not how many troops it takes. The size the rung asks for
   // was a second big number beside the one the banner already leads with, and the two read
@@ -406,10 +429,20 @@ export const NAV_TABS: ReadonlyArray<readonly [NavId, string, string]> = [
   ["challenges", "challenges", "Challenges"],
 ];
 
-/** Screens that show the bottom nav. Everything else (setup, match) hides it. */
+/**
+ * THE BAR IS THE FIVE SCREENS IT HAS TILES FOR, AND NOTHING ELSE. Asked for directly.
+ *
+ * It used to ride eight more — the profile, the manual, Settings, News, Friends,
+ * Support, the hatch and the Colony Road — which is the legacy build's own list. A bar
+ * whose five marks name five screens, shown on thirteen, says the player is on one of
+ * the five when they are not; and on those eight the active tile was whichever tab they
+ * had come from, so the bar was lit for a screen that was no longer on the glass.
+ *
+ * Every one of the eight has its own back arrow (the manual was given one when this
+ * landed), so none of them lost its way out.
+ */
 export const NAV_SCREENS: readonly string[] = [
-  "home", "profile", "rules", "shop", "achievements", "settings", "news", "friends",
-  "support", "luckyhatch", "antarium", "anthill", "challenges",
+  "shop", "anthill", "home", "antarium", "challenges",
 ];
 
 export function bottomNav(onNav: (id: NavId) => void): HTMLElement {

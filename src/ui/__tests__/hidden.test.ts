@@ -46,6 +46,32 @@ describe("hiding a screen", () => {
     }
   });
 
+  /*
+   * AND THE BAR IS THE SAME TRAP ONE TIE LOWER. The legacy sheet hides it with
+   * `#mainNav.hidden { display: none }` — an id AND a class, which the design block's
+   * `#mainNav.homenav { display: flex }` matches EXACTLY. A tie is settled by source
+   * order and `skin.css` comes second, so the bar stopped hiding anywhere: five tabs
+   * across the bottom of the setup screen, the match and every page over the deck.
+   * Reported from a phone. Reading either file would have shown nothing — only the
+   * cascade does.
+   */
+  it("takes the bottom bar off the screen too", () => {
+    const nav = document.createElement("nav");
+    nav.id = "mainNav";
+    nav.className = "homenav hidden";
+    document.body.replaceChildren(nav);
+    expect(getComputedStyle(nav).display, "the bar is still drawn while hidden")
+      .toBe("none");
+  });
+
+  it("still lays the bottom bar out when it is showing", () => {
+    const nav = document.createElement("nav");
+    nav.id = "mainNav";
+    nav.className = "homenav";
+    document.body.replaceChildren(nav);
+    expect(getComputedStyle(nav).display).toBe("flex");
+  });
+
   it("still lays the screen out when it is showing", () => {
     const el = document.createElement("div");
     el.id = "formation";
