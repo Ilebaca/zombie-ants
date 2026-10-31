@@ -713,3 +713,90 @@ describe("the home screen's ledge survives the blanket", () => {
       .toMatch(/--navh:\s*calc\(70 \* var\(--u\)\)/);
   });
 });
+
+/**
+ * THE COLONY BAR, AND THE SHELF UNDER THE TABS.
+ *
+ * Both were asked for directly and neither is visible to a jsdom test: the markup is
+ * identical either way and only the cascade decides what is drawn. What is held here is
+ * the handful of declarations that carry the shape.
+ */
+describe("the colony bar and the tab tray", () => {
+  const css = read("skin.css");
+
+  /*
+   * THE BAR FILLS THE BANNER, from the top padding to the bottom one. It was a 6px rule
+   * with a chapter label stacked over it; the label is gone and the bar is the height of
+   * the figure beside it, which only works while the row STRETCHES and the two things
+   * that are not the bar centre themselves.
+   */
+  it("runs the bar the full height between the paddings", () => {
+    expect(ruleFor(css, "#home .colhero"), "the row still centres, so the bar cannot grow")
+      .toMatch(/align-items:\s*stretch/);
+    expect(ruleFor(css, "#home .col-rail")).toMatch(/align-items:\s*stretch/);
+    expect(ruleFor(css, "#home .col-rail .tr-bar")).toMatch(/height:\s*auto/);
+    // ...and the two that are NOT the bar hold their own middle.
+    for (const sel of ["#home .col-size", "#home .col-pay"]) {
+      expect(ruleFor(css, sel), `${sel} is stretched with the bar`)
+        .toMatch(/align-self:\s*center/);
+    }
+  });
+
+  /*
+   * TWO DESIGN PIXELS OF RADIUS, ON BOTH. It was a 30px pill, which rounds five
+   * hard-edged fifths back into one object — the corner is what lets the ruled bar read
+   * as five pieces. The fill takes the same corner as the track or the two disagree at
+   * the ends.
+   */
+  it("gives the track and the fill the same barely-rounded corner", () => {
+    for (const sel of ["#home .col-rail .tr-bar", "#home .col-rail .tr-fill"]) {
+      expect(ruleFor(css, sel), `${sel} is not on the design's 2px corner`)
+        .toMatch(dp("border-radius", 2));
+    }
+  });
+
+  /*
+   * AND THE DIVIDERS ARE A COLOUR, NEVER A GRADIENT. A repeating gradient is the obvious
+   * way to rule a bar into fifths and is silently nothing here: the blanket clears every
+   * background IMAGE with `!important` and exempts four whole SCREENS, none of which a
+   * `.tr-cut` is. A hairline in the banner's own green is a background COLOUR.
+   */
+  it("cuts the fifths with a colour the blanket cannot clear", () => {
+    const rule = ruleFor(css, "#home .col-rail .tr-cut");
+    expect(rule, "the dividers are drawn with an image the blanket strips")
+      .not.toMatch(/gradient/);
+    expect(rule).toMatch(/background:\s*var\(--hud-go\)/);
+    expect(rule).toMatch(/width:\s*1px/);
+    expect(rule).toMatch(/position:\s*absolute/);
+    // It has to be positioned against the TRACK, or every divider lands on the screen.
+    expect(ruleFor(css, "#home .col-rail .tr-bar")).toMatch(/position:\s*relative/);
+  });
+
+  /*
+   * THE TRAY IS HALF A PLATE. A full-height slab behind five tiles is a second rectangle
+   * around them; half of one is a shelf they stand on. Same trap as the dividers — a
+   * pseudo-element is blanketed for background IMAGES with no exemption whatever, so
+   * this one is a colour too.
+   */
+  it("stands the tabs on a half-height shelf", () => {
+    const before = ruleFor(css, "#mainNav.homenav::before");
+    expect(before, "the tab tray has no plate behind it").toBeTruthy();
+    expect(before).not.toMatch(/gradient/);
+    expect(before).toMatch(/height:\s*50%/);
+    expect(before).toMatch(/background:\s*var\(--hud-face\)/);
+    expect(before).toMatch(/bottom:\s*0/);
+    // ...and the tiles stand ON it rather than under it.
+    expect(ruleFor(css, "#mainNav.homenav .navitem")).toMatch(/z-index:\s*1/);
+    /*
+     * AND THE BAR MAY NOT BE GIVEN A POSITION HERE. The legacy sheet pins it with
+     * `#mainNav { position: fixed; bottom: 0 }` — ONE id, which `#mainNav.homenav`
+     * outranks, so a `position: relative` added for the shelf above put the whole bar
+     * back in the flow at the TOP of the screen, lying over the colony banner. Being
+     * fixed, it is already a containing block for the plate.
+     */
+    expect(code(ruleFor(css, "#mainNav.homenav")), "the design block re-positions the bar")
+      .not.toMatch(/position:/);
+    expect(read("game.css"), "the bar is no longer pinned to the bottom")
+      .toMatch(/#mainNav\{position:fixed;[^}]*bottom:0/);
+  });
+});

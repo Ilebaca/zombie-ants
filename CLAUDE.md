@@ -2768,6 +2768,33 @@ and lands on the design's figure exactly.
   granary, which is an ordinary flex row, so the browser does it. One consequence: a
   band added to that block now PUSHES what follows down, where before a sibling laid out
   after `.tophead` landed underneath the buttons and could not be pressed.
+- **THE BAR IS THE FIVE SCREENS IT HAS TILES FOR, AND NOTHING ELSE** (`NAV_SCREENS`),
+  asked for directly. It rode eight more — the profile, the manual, Settings, News,
+  Friends, Support, the hatch and the Colony Road, which is the legacy build's own list
+  — and on every one of them the lit tile named whichever tab the player had come FROM,
+  so the bar was lit for a screen that was no longer on the glass.
+  - **AND IT HAD STOPPED HIDING AT ALL, which is how this was reported.** The legacy
+    sheet hides it with `#mainNav.hidden { display: none }` — an id AND a class, which
+    `#mainNav.homenav { display: flex }` in the design block MATCHES EXACTLY. A tie is
+    settled by source order and `skin.css` comes second, so the bar stood across the
+    bottom of the setup screen, the match and every page over the deck. Same trap as
+    `#formation { display: flex }` one tie lower (§5), same fix — `!important` — and
+    `hidden.test.ts` runs the real cascade, because reading either file shows nothing.
+  - **THE MANUAL NEEDED AN ARROW THE DAY THE BAR LEFT.** It was dressed as a bottom-nav
+    screen like the legacy build, with no back control at all — the five tabs under it
+    were the way out. Without one it is a page a phone with no hardware back button
+    cannot be left. `App.goBack` follows the arrow a player can see, so the hardware
+    button lands in the same place by itself.
+  - **AND THE DESIGN BLOCK MAY NOT GIVE THE BAR A `position`.** The legacy sheet pins it
+    with `#mainNav { position: fixed; bottom: 0 }` — ONE id, which `#mainNav.homenav`
+    outranks. A `position: relative` added so the shelf below could hang off it put the
+    whole bar back in the flow at the TOP of the screen, lying over the colony banner.
+    Being fixed it is already a containing block, so nothing was needed.
+- **THE TRAY IS HALF A PLATE** (`#mainNav.homenav::before`), asked for directly. A
+  full-height slab behind five tiles is a second rectangle around them; half of one is a
+  shelf they stand on, which is what lets the artwork behind the bar still read as the
+  screen. A background COLOUR on a pseudo-element, never a gradient — the blanket clears
+  every background IMAGE on every `::before` with no exemption at all (§10).
 - **THE TAB BAR LOST ITS WORDS AND NOT ITS NAMES.** Five labels across a phone is what
   made the tiles tall and the type tiny; the mark is the tab. Each button still carries
   `title` and `aria-label` (§ EVERY CONTROL SAYS WHAT IT IS) and `a11y.test.ts` fails on
@@ -2793,11 +2820,26 @@ and lands on the design's figure exactly.
   which board, after the screen that used to ask was removed (§ ONE BOARD). The design
   says PLAY. The size is a fact about a choice nobody makes any more, and the setup
   screen draws that board before a tile is placed on it.
-- **THE CHAPTER KEEPS ITS NUMBER, which the mock-up's label does not show.** Its slot
-  reads "CHAPTER" beside "9999" and "999K" — placeholders for live figures, every one of
-  them — and this is the only place in the app the chapter is named, which is also what
-  the artwork behind it is keyed on. A label with no number is the screen going quiet
-  about the one thing it is announcing.
+- **THE COLONY BANNER CARRIES NO WORDS AT ALL, AND ITS BAR IS THE CHAPTER.** It printed
+  "Chapter 12" over a hairline progress rule; both are gone, asked for directly. Three
+  decisions, and the middle one is the only one that changed what the screen MEANS:
+  - **No label.** The chapter was the one fact on this banner the bar itself cannot
+    show, and it is said in full on the screen the banner opens. What is lost is home
+    naming the chapter anywhere — the artwork behind it is still keyed on one.
+  - **THE BAR MEASURES THE CHAPTER, NOT THE RUNG.** It ran 0 to 100% between every
+    single checkpoint, so it swept the whole width five times a chapter and said nothing
+    about where in the chapter the colony stood. It is `(rungs banked in this chapter +
+    the fraction toward the next) / 5` now, so it fills one fifth at a time and is empty
+    again on the first rung of a new chapter.
+  - **AND THE FIFTHS ARE CUT BY FOUR REAL ELEMENTS, never a gradient.** A repeating
+    gradient is the obvious way to rule a bar into fifths and is silently nothing here:
+    the blanket clears every background IMAGE with `!important` and exempts four whole
+    SCREENS, none of which a `.tr-cut` is (§10). A 1px hairline in the banner's own green
+    is a background COLOUR, and it reads as a gap between five pieces over the filled
+    part AND over the empty track.
+  - **The bar fills the banner's height**, top padding to bottom padding, on a 2px
+    corner. The row STRETCHES and the two things that are not the bar centre themselves;
+    the old 30px pill rounded five hard-edged fifths back into one object.
 - **THE INK IS A WARM CREAM, `--hud-ink` (`#fcf7e6`), not white.** The first frame set
   every figure in white; the drawer frame that followed sets all of them in the cream,
   which is the colour the artwork itself is lit in — a pure white figure on a painted

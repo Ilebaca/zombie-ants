@@ -24,10 +24,17 @@ import type { GameState, Player, Structure, Terrain } from "../engine";
 import { drawSnapshot } from "../render";
 import { el, screenEl, screenHeader } from "./chrome";
 
-export function buildRules(): HTMLElement {
+export function buildRules(onBack: () => void): HTMLElement {
   const root = screenEl("rules");
-  // No back arrow: like the legacy build, this is a bottom-nav screen.
-  screenHeader(root, { title: "How to play", sub: "The rules, in order" });
+  /*
+   * AND IT NEEDED AN ARROW THE DAY THE TAB BAR LEFT. This was dressed as a bottom-nav
+   * screen like the legacy build — no back control at all, because the five tabs under
+   * it were the way out. The bar is on the five deck screens only now (`NAV_SCREENS`),
+   * so without this the manual is a page a phone with no hardware back button cannot be
+   * left. `App.goBack` follows the arrow a player can see, so the hardware button lands
+   * in the same place by itself.
+   */
+  screenHeader(root, { title: "How to play", sub: "The rules, in order", onBack });
 
   const body = el("div", "screenbody");
   const card = el("div", "card");
