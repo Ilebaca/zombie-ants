@@ -697,7 +697,10 @@ describe("the colony banner", () => {
   it("ends the bar with what filling it pays", () => {
     const rail = banner(1_284_000).querySelector(".col-rail");
     expect(rail?.querySelector(".col-pay svg"), "no reward mark on the bar").toBeTruthy();
-    expect(rail?.textContent, "the rung's size is still printed there").toBe("");
+    // The rail carries the chapter's LABEL and the reward mark, and no second figure:
+    // the rung's size beside the one the banner leads with reads as a sum of the two.
+    expect(rail?.textContent, "the rung's size is printed on the rail")
+      .toMatch(/^Chapter \d+$/);
   });
 
   it("fills the bar by how far between the two rungs the colony stands", () => {

@@ -6439,3 +6439,461 @@ button:not(.playbtn):active,
 }
 .rd-popn { font-size: 26px; font-weight: 900; color: var(--gold-glow); }
 .rd-popu { font-size: 13px; font-weight: 800; color: var(--ink-soft); }
+
+/* ==========================================================================
+   THE HOME SCREEN, REDRAWN TO THE DESIGN (Figma `03-home 2`, node 134:31)
+
+   Everything above this point is the app's older language: flat faces, no
+   gradients, no shadows, one green. This screen is a different one, and it
+   was handed over as a finished design rather than described — so the
+   numbers below are the mock-up's own, in the mock-up's own units, and are
+   not to be rounded to whatever was already here.
+
+   THREE THINGS CARRY THE WHOLE LOOK, and every control on the screen is
+   built from them:
+     - a FACE, `--hud-face`, the near-black every chip and tile is cut from;
+     - a LEDGE, `--hud-ledge`, a hard black shadow down and to the right.
+       It is not a soft drop shadow: there is no blur in it at all, which is
+       what makes these read as stamped tiles rather than as cards floating
+       over a picture;
+     - a GLOSS, `--hud-gloss`, one inset hairline of white along the top
+       edge. That is the light, and it is why the tiles look convex.
+
+   THE LEDGE NEEDS `!important`, and that is the third time this file has
+   earned it. The blanket near the top of the responsive section says
+   `*:not(.playbtn) { box-shadow: none !important }` — "no shadows,
+   anywhere", which was a considered decision and still holds for every
+   other screen. It cannot be unsaid from a later rule without matching its
+   weight. The same goes for the text ledge on the two figures.
+   ========================================================================== */
+
+:root {
+  /* The design's palette, verbatim. `--hud-go` is the one bright thing on
+     the screen: the colony banner, PLAY, and the tab you are standing on. */
+  --hud-face: #1c1e25;
+  --hud-go: #4ac707;
+  --hud-ledge: 3px 4px 0 #000;
+  --hud-gloss: inset 0 2px 0 rgba(255, 255, 255, .4);
+  /* Poetsen One, with the body stack behind it: a colony named in an
+     alphabet this face does not carry falls through rather than vanishing. */
+  --font-display: Poetsen, var(--font);
+}
+
+/* Every figure on this screen is set in the display face, and in its ONE
+   weight. Asking for 900 of a face that ships 400 is how a browser is told
+   to smear the glyphs sideways itself. */
+#home .tn-num,
+#home .col-n,
+#home .col-t,
+#home .gp-n,
+#home .gp-k,
+#home .gp-go,
+#home .playbtn {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* -------------------------------------------------------------- THE GROUND
+   The artwork, with one wash over its foot. `#home` is exempt from the
+   background blanket (see the top of this file) and `background-image`
+   stacks, so the wash rides in FRONT of the picture in the same
+   declaration — the trap `#home::after` is on record for, and the same
+   answer the hatch's vignette uses.
+
+   The app sets this property INLINE, per chapter, so the real wash is
+   written there too (`App.renderHome`); this is the floor under it, for a
+   screen whose script has not run. */
+#home {
+  background-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0) 74.5%, rgba(0, 0, 0, .4) 82.3%),
+    url("./backdrops/home.webp");
+}
+
+/* ------------------------------------------------------------- THE TOP BAR */
+#home .tophead {
+  gap: 0;
+  background: none;
+  padding: 0;
+  box-shadow: none !important;
+}
+#home .topnav {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px var(--gutter);
+  background: none;
+  border: none;
+  box-shadow: none !important;
+}
+
+/* The avatar is a disc, and the only round thing on the screen. */
+#home .tn-id {
+  position: relative;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  /* THE SIZE AND THE TARGET ARE TWO DIFFERENT NUMBERS. The app's floor for anything
+     pressable is `--tap` (44px) and the design draws this disc at 30 — so the floor is
+     lifted off the BOX and put on an invisible `::after` centred on it, which is the same
+     answer the currency steppers already use. Nothing on the row moves by a pixel. */
+  min-height: 30px;
+  padding: 0;
+  overflow: hidden;
+  border: none;
+  border-radius: 48px;
+  background: var(--hud-face);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+#home .tn-id::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--tap);
+  height: var(--tap);
+  transform: translate(-50%, -50%);
+}
+#home .tn-id .tn-av,
+#home .tn-id .topav {
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* The gold ring goes with it. It was a 2px border on the avatar's own box — a second
+     edge inside the disc's edge, which at 30px is most of the mark. */
+  border: none;
+  background: none;
+  box-shadow: none !important;
+}
+
+/* THE TWO PURSES SHARE WHAT IS LEFT, exactly: `flex: 1` each with a
+   `min-width: 0`, so a five-figure balance shrinks its own chip rather than
+   pushing the other one off the bar. */
+#home .tn-cur {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+#home .tn-coin {
+  flex: 1 1 0;
+  min-width: 0;
+  /* The legacy sheet pins this to `height: 26px`, which is exactly the mark's own height
+     — so the 2px of padding around it had nowhere to go and the chip clipped its own
+     contents. Sized by what is in it: 26 + 2 + 2 = 30. */
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0;
+  overflow: hidden;
+  padding: 2px 5px 2px 2px;
+  border: none;
+  border-radius: 5px;
+  background: var(--hud-face);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+#home .tn-coin .tn-ic {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  background: none;
+}
+#home .tn-coin .tn-ic svg { width: 26px; height: 26px; display: block; }
+#home .tn-coin .tn-num {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 16px;
+  line-height: 1;
+  color: #fff;
+  text-align: center;
+}
+#home .tn-plus {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  background: none;
+  border: none;
+  color: #fff;
+  border-radius: 0;
+}
+#home .tn-plus svg { width: 18px; height: 18px; display: block; }
+
+/* ---------------------------------------------------------- THE COLONY
+   The loudest object on the screen, and the only place the chapter is
+   named. The figure carries its own text ledge, which is what keeps it
+   readable on a green slab without a second plate behind it. */
+#home .colhero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: auto;
+  margin: 5px var(--gutter);
+  padding: 8px 12px;
+  overflow: hidden;
+  border: none;
+  border-radius: 7px;
+  background: var(--hud-go);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+#home .col-size {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+#home .col-mark { display: flex; color: #fff; }
+#home .col-mark svg { width: 21px; height: 21px; display: block; }
+#home .col-n {
+  display: block;
+  min-width: 0;
+  font-size: 30px;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 2px 2px 0 #000 !important;
+  font-variant-numeric: tabular-nums;
+}
+#home .col-rail {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+}
+#home .col-mid {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+}
+#home .col-t {
+  font-size: 8px;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: #fff;
+}
+#home .col-rail .tr-bar {
+  flex: none;
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border: 1px solid #000;
+  border-radius: 30px;
+  background: #000;
+}
+#home .col-rail .tr-fill {
+  height: 6px;
+  border-radius: 20px;
+  background: #fff;
+}
+#home .col-pay {
+  flex: 0 0 auto;
+  display: flex;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  color: #fff;
+}
+#home .col-pay svg { width: 26px; height: 26px; display: block; }
+
+/* --------------------------------------------- THE GRANARY AND THE DRAWER
+   One row: what is waiting to be collected on the left, and the three ways
+   off this screen stacked on the right. They used to be `position:
+   absolute` and stacked by measuring the bar at runtime (`syncFabs`); they
+   are laid out here, which is both what the design draws and what the
+   browser already does. */
+#home .homerow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 13px var(--gutter);
+}
+#home .granpill,
+#home #granaryPill.granpill {
+  flex: 0 1 163px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 163px;
+  min-height: 0;
+  margin: 0;
+  padding: 8px 12px;
+  overflow: hidden;
+  border: none;
+  border-radius: 7px;
+  background: var(--hud-face);
+  color: #fff;
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+#home .gp-l {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+#home .gp-ic { display: flex; color: #fff; }
+#home .gp-ic svg { width: 14px; height: 14px; display: block; }
+#home .granpill .gp-n {
+  font-size: 16px;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 2px 2px 0 #000 !important;
+}
+/* ONE WORD IN THE RIGHT-HAND SLOT whichever state the store is in, so the
+   row does not change shape as it fills. */
+#home .granpill .gp-go,
+#home .granpill .gp-k {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 2px 2px 0 #000 !important;
+}
+
+#home .homefabs {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+#home .settingsfab,
+#home .dailyfab {
+  position: static;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  gap: 0;
+  border: none;
+  border-radius: 5px;
+  background: var(--hud-face);
+  color: #fff;
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+#home .settingsfab svg,
+#home .dailyfab svg { width: 26px; height: 26px; display: block; }
+#home .settingsfab:active,
+#home .dailyfab:active {
+  background: var(--hud-face);
+  transform: translate(1px, 2px);
+  box-shadow: 1px 2px 0 #000, var(--hud-gloss) !important;
+}
+
+/* The two bands that are NOT in the design — a match left unfinished, and
+   the save-at-risk warning — still have to live somewhere, and they are the
+   same kind of object as everything above: a dark tile on a ledge. They
+   keep their own markup and take the screen's face. */
+#home .saveguard {
+  margin: 0 var(--gutter) 13px;
+  border: none;
+  border-radius: 7px;
+  background: var(--hud-face);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+
+/* ------------------------------------------------------------- THE ACTION
+   One word on one slab, and 50px of air either side of it: the design
+   insets PLAY far further than anything else on the screen, which is what
+   makes it the thing the eye lands on. The 50px is capped against the
+   column so it does not become a hairline button on a tablet. */
+#home .homeplay {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  align-items: stretch;
+  gap: 0;
+  /* 50px FROM THE EDGE OF THE SCREEN, which is the design's number — and this row is
+     already inside home's own 12px gutter, so it is written as the design's number minus
+     the gutter it is standing in rather than as the 38 that comes out. Escaping the
+     gutter and padding a flat 50 was the other way round and cost the column: the
+     responsive block caps this row at `--homemax` and centres it, which is what keeps
+     PLAY the same width as the banner above it on a tablet. */
+  padding: 8px calc(50px - var(--gutter));
+  margin-bottom: 50px;
+}
+#home .playbtn {
+  width: auto;
+  height: 54px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: var(--hud-go);
+  color: #fff;
+  font-size: 32px;
+  line-height: 1;
+  text-align: center;
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+#home .playbtn:active {
+  transform: translate(1px, 2px);
+  box-shadow: 1px 2px 0 #000, var(--hud-gloss) !important;
+  filter: none;
+}
+
+/* ------------------------------------------------------------- THE TAB BAR
+   Five tiles, no words. The label moved off the glass and onto the button's
+   own name, which is what a screen reader reads anyway — five words across
+   a phone is what made these tall and the type tiny. */
+#mainNav.homenav {
+  display: flex;
+  gap: 5px;
+  height: calc(70px + env(safe-area-inset-bottom));
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  border: none;
+  background: none;
+}
+#mainNav .navitem {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: var(--hud-face);
+  color: #fff;
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+#mainNav .navitem .ni { display: flex; font-size: 0; line-height: 0; }
+#mainNav .navitem svg { width: 40px; height: 40px; display: block; }
+#mainNav .navitem.active {
+  background: var(--hud-go);
+  color: #fff;
+}
+/* AND THE TICK ABOVE IT IS GONE. A 26x3 bar sat six pixels over the active tab, back when
+   every tile had the same face and something had to say which one you were standing on.
+   The tile is GREEN now — the loudest difference on the bar — so the tick was a second
+   answer to a question already answered, hanging outside the tray it belongs to. */
+#mainNav .navitem.active::before { content: none; }
+#mainNav .navitem:active {
+  transform: translate(1px, 2px);
+  box-shadow: 1px 2px 0 #000, var(--hud-gloss) !important;
+}
+
+/* THE TAB BAR GREW, so the room reserved for it has to. The legacy sheet
+   reserves `64px + safe-area` on every screen that shows the bar; the bar
+   is 70 now, and the ledge under the last row of tiles needs the extra 4
+   or it is clipped by the edge of the screen. */
+#home, #profile, #rules, #shop, #achievements, #settings, #news, #friends,
+#support, #luckyhatch, #antarium, #anthill, #challenges {
+  padding-bottom: calc(70px + env(safe-area-inset-bottom));
+}

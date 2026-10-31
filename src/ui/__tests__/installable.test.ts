@@ -216,26 +216,45 @@ function shipped(dir: string, out: string[] = []): string[] {
 describe("the typeface", () => {
   const html = readFileSync(resolve(root, "index.html"), "utf8");
 
-  it("is served from this build rather than from a CDN", () => {
+  /**
+   * EVERY FACE THE DOCUMENT NAMES, not a list of filenames kept in step by hand.
+   *
+   * There were two rules here and each spelled out `nunito-latin.woff2`, so the day a
+   * THIRD face landed (Poetsen One, the display face the home screen is drawn in) both
+   * went on passing while saying nothing whatever about it. The @font-face block is the
+   * table; these read it.
+   */
+  const faces = Array.from(html.matchAll(/url\(\.\/(fonts\/[\w.-]+\.woff2)\)/g))
+    .map((m) => m[1] as string);
+
+  it("declares its faces and serves every one of them from this build", () => {
     // Past the comments: the one above the @font-face block explains what was removed and
     // names the CDN to do it. Same trap the service worker's rules have.
     const markup = html.replace(/<!--[\s\S]*?-->/g, "");
     expect(markup).not.toMatch(/fonts\.googleapis\.com|fonts\.gstatic\.com/);
     expect(html).toContain("@font-face");
-    expect(html).toMatch(/url\(\.\/fonts\/nunito-latin\.woff2\)/);
+    expect(faces.length, "no self-hosted face is declared at all").toBeGreaterThanOrEqual(3);
+    expect(faces, "the display face is not declared").toContain("fonts/poetsen-one.woff2");
   });
 
   it("ships the files it names", () => {
-    for (const f of ["fonts/nunito-latin.woff2", "fonts/nunito-latin-ext.woff2"]) {
+    for (const f of faces) {
       expect(existsSync(resolve(root, "public", f)), `${f} is missing`).toBe(true);
     }
   });
 
   /** Precached like everything else now — a first launch with no network should not render
    *  in Arial. It could not be, while it lived on somebody else's server. */
-  it("is precached by the offline worker", () => {
+  it("precaches every one of them", () => {
     const config = readFileSync(resolve(root, "vite.config.ts"), "utf8");
-    expect(config).toContain("./fonts/nunito-latin.woff2");
+    for (const f of faces) {
+      expect(config, `${f} is not precached`).toContain(`./${f}`);
+    }
+  });
+
+  /** OFL asks for the licence to travel with the font. It is one file beside it. */
+  it("carries the display face's licence", () => {
+    expect(existsSync(resolve(root, "public/fonts/poetsen-one-OFL.txt"))).toBe(true);
   });
 
   /** And the policy no longer claims a request that does not happen. A privacy page that

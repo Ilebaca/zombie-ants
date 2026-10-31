@@ -307,13 +307,20 @@ describe("the setup screen", () => {
 });
 
 /**
- * THE BUTTON THAT OPENS IT NAMES THE BOARD. There is one board now (§ ONE BOARD), so the
- * screen that used to ask which is gone — and with it the only place the player was ever
- * told what they were about to play on. It is read off the map, never typed, so a second
- * board cannot leave the home screen lying about the first.
+ * THE BUTTON SAYS ONE WORD.
+ *
+ * It read "PLAY 9x9" for a while, and the reason is still worth having written down:
+ * there is one board now (§ ONE BOARD), so the screen that used to ask which is gone, and
+ * this was the only place left where the player was told what they were about to play on.
+ * The redesign says PLAY, and the size is a fact about a choice nobody makes any more —
+ * carried, until now, on the single control the whole screen exists to offer. The setup
+ * screen draws that board before a tile is placed on it, which is the better answer to
+ * the same question.
+ *
+ * What the test holds is the SHAPE: one word, and no figure smuggled back onto it.
  */
 describe("the way in", () => {
-  it("says which board PLAY plays on", () => {
+  it("offers PLAY and nothing else", () => {
     const store = new ProfileStore(new MemoryStore());
     store.update((p) => { p.tourSeen = TOUR_VERSION; });
     const host = document.createElement("div");
@@ -321,8 +328,9 @@ describe("the way in", () => {
     document.body.replaceChildren(host);
     new App(host, store).start();
     const label = host.querySelector(".playbtn")?.textContent ?? "";
-    expect(label).toContain("PLAY");
-    expect(label).toContain(`${MAPS.small.size}\u00d7${MAPS.small.size}`);
+    expect(label).toBe("PLAY");
+    expect(label, "a board size crept back onto the button")
+      .not.toContain(String(MAPS.small.size));
   });
 });
 
