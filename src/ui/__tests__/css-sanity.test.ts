@@ -631,13 +631,13 @@ describe("the home screen's ledge survives the blanket", () => {
    * The mock-up spaced it three different ways — 5 under the bar, 5 + 5 + 8 stacked
    * between the banner and the buttons, 16 down the button column — which measured out
    * as 5 / 18 / 16 and read as three decisions rather than one. What is held here is
-   * that every one of them names the SAME TOKEN: four copies of `12 * var(--u)` would
+   * that every one of them names the SAME TOKEN: four copies of `8 * var(--u)` would
    * pass an assertion about the number while being four chances for "uniform" to stop
    * being true, which is the only thing this rule actually says.
    */
   it("puts one gap between everything in the top block", () => {
     expect(rulesFor(css, ":root"), "the top block has no gap of its own")
-      .toMatch(dp("--vgap", 12));
+      .toMatch(dp("--vgap", 8));
     // Under the bar. Top only — what sits below the banner is the granary row, and that
     // row's own top padding is the gap, so a bottom margin here would be it spelled twice.
     expect(ruleFor(css, "#home .colhero"))

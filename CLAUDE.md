@@ -2835,14 +2835,18 @@ and lands on the design's figure exactly.
     `calc(N * var(--u))` pattern, because asserting `height: 24px` passes just as well
     against a rule that has quietly fallen off the scale — which is the regression worth
     catching.
-- **ONE VERTICAL GAP DOWN THE WHOLE TOP BLOCK (`--vgap`, 12), asked for directly.** The
+- **ONE VERTICAL GAP DOWN THE WHOLE TOP BLOCK (`--vgap`, 8), asked for directly.** The
   mock-up spaces it three different ways — 5 under the bar, then 5 + 5 + 8 stacked
   between the banner and the buttons, then 16 down the button column — which measured out
-  as **5 / 18 / 16** and read as three decisions rather than one. It is 12 everywhere now
-  and it rides `--u` like everything else (10.7 at 320, 14.3 at 430), so the gaps stay
-  equal at every width.
+  as **5 / 18 / 16** and read as three decisions rather than one. It is one number
+  everywhere now and it rides `--u` like everything else, so the gaps stay equal at every
+  width.
+  - **TWELVE FIRST, THEN EIGHT, both asked for directly.** Uniform at 12 (10.7 at 320,
+    14.3 at 430) read as too much air at the top of the screen. Eight is the design's own
+    smallest vertical step — the top bar's own padding — and measures **7.1 at 320, 8 at
+    360 and 9.6 at 430**.
   - **IT IS A TOKEN, not the number written in four places.** "Uniform" is the rule, and
-    four copies of `12 * var(--u)` would satisfy an assertion about the NUMBER while being
+    four copies of `8 * var(--u)` would satisfy an assertion about the NUMBER while being
     four chances for the rule to stop being true. The test names the token.
   - **The banner carries a TOP margin only.** What sits under it is the granary row, whose
     own top padding is that gap; a bottom margin here would be one number spelled twice

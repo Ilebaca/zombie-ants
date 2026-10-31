@@ -6521,10 +6521,15 @@ button:not(.playbtn):active,
   /* ONE VERTICAL GAP FOR THE WHOLE TOP BLOCK, asked for directly. The mock-up spaces
      it three different ways — 5 under the bar, then 5 + 5 + 8 stacked between the
      banner and the buttons, then 16 down the button column — which measured out as
-     5 / 18 / 16 and read as three decisions rather than one. It is 12 everywhere now,
-     and it is a TOKEN rather than the number written in four places, because "uniform"
-     is the rule and four copies of 12 is four chances for it to stop being true. */
-  --vgap: calc(12 * var(--u));
+     5 / 18 / 16 and read as three decisions rather than one.
+     TWELVE FIRST, THEN EIGHT, both asked for directly: uniform at 12 read as too much
+     air at the top of the screen, and 8 is the design's own smallest vertical step —
+     the top bar's own padding. It rides `--u` like everything else here, so the gaps
+     measure 7.1 at 320, 8 at 360 and 9.6 at 430.
+     And it is a TOKEN rather than the number written in four places, because "uniform"
+     is the rule and four copies of a number are four chances for it to stop being
+     true. */
+  --vgap: calc(8 * var(--u));
   --hud-ledge: calc(3 * var(--u)) calc(4 * var(--u)) 0 #000;
   --hud-gloss: inset 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .4);
   /* THE INK IS A WARM CREAM, NOT WHITE. The first frame of this design set every figure
