@@ -11,10 +11,12 @@
  *
  * - A CHAPTER IS FIVE CHECKPOINTS AND THE FIFTH IS BIGGER (`platform/road.ts`). The table
  *   splits a chapter's purse across them, so the road pays exactly what it always paid.
- * - EVERY CHAPTER WEARS A PICTURE. `backdropFor` is home's own artwork — ten paintings,
- *   one per region, with a per-chapter file beating its region (`ui/backdrops.ts`). That
- *   tier was held open with nothing using it; this is the first thing that does. Home and
- *   the road are then the same place for the same chapter, which is the point of it.
+ * - EVERY CHAPTER WEARS A PICTURE. `bandFor` is home's own artwork, one painting per
+ *   REGION (`ui/backdrops.ts`), so home and the stretch of road it announces are the same
+ *   place. Deliberately the band rather than `backdropFor`: a chapter's own picture has
+ *   five numbered mounds painted on it with a marker on the one you are standing at, and
+ *   this screen draws five checkpoint discs down the middle of every panel — two sets of
+ *   progress marks on one panel, the painted numbers reading through the discs.
  * - A CHECKPOINT IS AN ICON ON THE PATH, NOT A CARD BESIDE IT. The disc says which
  *   resource is waiting and nothing else.
  * - THE AMOUNT IS THE REWARD FOR CLAIMING IT. A popup names it when the player takes it,
@@ -32,7 +34,7 @@ import {
   regionName, regionOf, roadKey, roadStops,
 } from "../platform";
 import type { ProfileStore, RoadReward, RoadStop } from "../platform";
-import { backdropFor } from "./backdrops";
+import { bandFor } from "./backdrops";
 import { el, redraw, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 
@@ -112,7 +114,7 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, onShop:
   /** One chapter: its picture, its name, and its five checkpoints climbing. */
   const panel = (chapter: number, stops: RoadStop[], nextStop: number): HTMLElement => {
     const box = el("section", "rd-chap");
-    const art = backdropFor(chapter);
+    const art = bandFor(chapter);
     // Inline, because fifty rules in a stylesheet for files the stylesheet cannot see is a
     // second table to keep in step (the rule home's own artwork follows).
     // QUOTED, because a url is not guaranteed to be free of brackets and spaces.

@@ -16,7 +16,7 @@ import {
   RESEARCH_TOTAL_MAX, ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, ROAD_STOPS, SPECIES_UNLOCK, TIERS,
   chapterOf, compact, freeReward, granaryFull, regionName, roadKey, stopColony, tierOf,
 } from "../../platform";
-import { backdropFor } from "../backdrops";
+import { backdropFor, bandFor } from "../backdrops";
 import { buildAnthill } from "../anthill";
 import { buildProfile } from "../profile";
 import { clockOf, colonyBanner, granaryPill } from "../chrome";
@@ -874,17 +874,26 @@ describe("colony road screen", () => {
 
   /**
    * EVERY CHAPTER WEARS A PICTURE, and it is home's own (`ui/backdrops.ts`) — so the
-   * screen a player opens and the stretch of road it announces are the same place. The
-   * per-chapter tier of that glob had never been used by anything; this is what uses it.
+   * screen a player opens and the stretch of road it announces are the same place.
+   *
+   * THE REGION'S, NEVER THE CHAPTER'S. Every chapter has its own home picture now, and
+   * every one of those has five numbered mounds painted on it with a marker on the one
+   * the player is standing at — over which this screen draws five checkpoint discs of
+   * its own. Two sets of progress marks on one panel; the band is the one with nothing
+   * painted on it. Both halves are held, because swapping the call back would look like
+   * a tidy-up.
    */
-  it("dresses each chapter in that chapter's own artwork", () => {
+  it("dresses each chapter in its region's artwork", () => {
     const root = buildColonyRoad(store(), () => {}, () => {});
     const panels = Array.from(root.querySelectorAll<HTMLElement>(".rd-chap"));
     expect(panels.length).toBe(ROAD_CHAPTERS);
     for (const [i, panel] of panels.entries()) {
       // Descending, so the first panel is the last chapter.
-      expect(panel.style.backgroundImage, `chapter ${ROAD_CHAPTERS - i} has no ground`)
-        .toBe(`url("${backdropFor(ROAD_CHAPTERS - i)}")`);
+      const chapter = ROAD_CHAPTERS - i;
+      expect(panel.style.backgroundImage, `chapter ${chapter} has no ground`)
+        .toBe(`url("${bandFor(chapter)}")`);
+      expect(panel.style.backgroundImage, `chapter ${chapter} wears its own marked picture`)
+        .not.toBe(`url("${backdropFor(chapter)}")`);
     }
   });
 
