@@ -2755,13 +2755,13 @@ and lands on the design's figure exactly.
   everything round it stays raised, silently — so `css-sanity` reads every declaration
   that mentions `--hud-ledge` and fails on any that is not marked. The same goes for the
   text ledges on the two figures, which `text-shadow: none !important` blankets.
-- **WHITE ON THE GREEN IS 2.22:1, WHICH FAILS AA** (§ CONTRAST IS MEASURED — AA wants 4.5
-  for normal text and 3.0 for large). It is the design's own pairing and it is shipped as
-  drawn; everything on the dark face measures 16.6 and is fine. What carries the two
-  FIGURES in practice is the black text ledge they wear (`2px 2px 0 #000`), which an eye
-  reads and a contrast ratio does not count. "CHAPTER n" at 8px and "PLAY" at 32px have
-  no ledge and are the two that are genuinely thin. Recorded rather than quietly
-  corrected: it is a design decision, and changing it is Milan's call.
+- **WHITE ON THE GREEN WAS 2.22:1, AND THE GREEN IS GONE FROM UNDER THE TEXT.** It was
+  the design's own pairing on the colony banner and it was shipped as drawn, recorded
+  here as Milan's call. The call came the other way for a different reason — the banner
+  wears the same dark face as every other card now and the green moved onto the progress
+  fill (see below) — and the figure measures **16.6** there. What is LEFT on the green is
+  "PLAY", which carries no text ledge and is the one genuinely thin reading on the screen.
+  Recorded rather than quietly corrected: it is the design's own slab.
 - **THE THREE BUTTONS ARE LAID OUT, NOT MEASURED.** They were `position: absolute` with a
   percentage top, stacked at runtime by measuring the bar's bottom edge — `syncFabs`,
   deleted. The design draws them as a column on the right of a row whose left is the
@@ -2837,9 +2837,24 @@ and lands on the design's figure exactly.
     SCREENS, none of which a `.tr-cut` is (§10). A 1px hairline in the banner's own green
     is a background COLOUR, and it reads as a gap between five pieces over the filled
     part AND over the empty track.
-  - **The bar fills the banner's height**, top padding to bottom padding, on a 2px
-    corner. The row STRETCHES and the two things that are not the bar centre themselves;
-    the old 30px pill rounded five hard-edged fifths back into one object.
+  - **ONE HEIGHT DOWN THE WHOLE ROW** (`--colline`), asked for directly. The crossed
+    swords mark and the bar are both the FIGURE's own line box — the mark was 21 against
+    a 30 figure, which reads as a small picture stuck on the front of a big number. It
+    is a TOKEN, not the number written three times, for the reason `--vgap` is: three
+    copies would satisfy an assertion about the number while being three chances for the
+    rule to stop being true. The corner is 2px, because the old 30px pill rounded five
+    hard-edged fifths back into one object.
+  - **AND THE GREEN IS IN THE BAR, NOT ON THE PLATE**, asked for directly. The banner was
+    `--hud-go` with a cream fill on it; it is `--hud-face` now, the same dark card as
+    everything else on the screen, and the design's one bright colour marks the thing
+    that MOVES. The dividers went BLACK with it — the track's own colour, so the empty
+    part of the bar reads as one piece and the cuts show exactly where they matter,
+    across the green. The cost is that a nearly-empty bar shows no fifths at all, which
+    is the right trade: there is nothing there to divide yet.
+  - **AND THE FILL CARRIES AN INNER BAND A THIRD OF ITS HEIGHT**, asked for directly —
+    the same idea as `--hud-gloss` and far taller, so the fill reads as a solid bar with
+    a lit top rather than a flat rectangle of colour. `!important`, or the blanket clears
+    it (§10), which is the half nothing but a test would notice.
 - **THE INK IS A WARM CREAM, `--hud-ink` (`#fcf7e6`), not white.** The first frame set
   every figure in white; the drawer frame that followed sets all of them in the cream,
   which is the colour the artwork itself is lit in — a pure white figure on a painted
