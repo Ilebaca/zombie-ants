@@ -2842,17 +2842,20 @@ seven illustrators (§10). The redesign paints them, and only them.
   tuned at, written out only where they differ.
 - **They are 100px square**, which is 2.5x the 40 the tabs draw them at — exact on a 2x
   screen and a mild upscale on a 3x one. Anything painted later wants 120.
-- **STILL OWED: the rest of the set.** TEN are in — the five TABS, the colony's crossed
-  swords (`swords`, which the granary pill wears too), and the three side buttons plus the
-  drawer's own Settings row (`menu`, `calendar`, `brood`, `gear`). The two CURRENCIES, the
-  stepper's `plus` and the drawer's other seven rows are still drawn, so the drawer is
-  visibly mid-redesign: one painted row above seven flat ones. Those batches were sent as
-  pictures in the conversation and never arrived as FILES — the ones that DID land came
-  with explicit paths, which is the only difference worth knowing — and `figma.com` is
-  denied by this container's network policy so they cannot be pulled from the design
-  either. Every one of them already goes through `hudMark` under the name its file needs —
-  `mycel`, `pheromone`, `plus`, `news`, `friends`, `support`, `gift`, `star`, `trophy`,
-  `book` — so each is a drop-in.
+- **STILL OWED: five of the fifteen.** In: the five TABS, the colony's crossed swords
+  (`swords`, which the granary pill wears too), the three side buttons (`menu`,
+  `calendar`, `brood`) and six of the drawer's eight rows (`gear`, `news`, `friends`,
+  `support`, `gift`, `star`). Still drawn: the two CURRENCIES, the stepper's `plus`, and
+  the drawer's `book` and `trophy` rows — so the drawer still reads as mid-redesign, six
+  painted rows with two flat ones among them. `figma.com` is denied by this container's
+  network policy, so they cannot be pulled from the design either; each one already goes
+  through `hudMark` under the name its file needs, so each is a drop-in.
+  - **A PICTURE IN THE CONVERSATION IS NOT A FILE, and that cost two rounds.** Three
+    batches were sent and were perfectly visible in the chat while nothing whatever
+    existed on disk — a sweep of the whole container found only this session's own
+    screenshots. The ones that DID land arrived with an explicit path attached
+    (`images/58.png`), and that is the entire difference. Worth knowing before promising
+    anybody that artwork has been received: LOOKING at it proves nothing.
   - **A MARK IS PAINTED IN THE CHROME AND STILL DRAWN IN THE BODY, deliberately.** `brood`
     is an `<img>` on the hatch button and an `<svg>` in the shop's row, the result card
     and the Leaderboard's prize column; `gear` likewise in Support's build row. The painted
