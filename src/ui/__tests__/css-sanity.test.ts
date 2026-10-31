@@ -126,7 +126,8 @@ describe("the design scales", () => {
    */
   it("puts everything on home on one gutter", () => {
     const css = code(read("skin.css"));
-    expect(rulesFor(css, "#home"), "home has no gutter of its own").toMatch(/--gutter:\s*\d+px/);
+    expect(rulesFor(css, "#home"), "home has no gutter of its own")
+      .toMatch(/--gutter:\s*calc\(12 \* var\(--u\)\)/);
     for (const sel of ["#home #colonyHero,\n#home .granpill", "#home .homeplay"]) {
       expect(ruleFor(css, sel), `${sel} is not on home's gutter`)
         .toMatch(/var\(--gutter\)|var\(--homemax\)/);
@@ -232,6 +233,16 @@ const ruleFor = (css: string, selector: string): string => {
   return css.slice(at, css.indexOf("}", at));
 };
 
+/**
+ * ONE MEASUREMENT OFF THE MOCK-UP. Home is drawn to a fixed 360x800 frame and scaled to
+ * the screen by `--u`, one design pixel — so a box the design draws at 24 is written
+ * `calc(24 * var(--u))` and this builds the pattern that says so. Asserting the bare
+ * number instead would pass just as well against a rule that had quietly fallen off the
+ * scale and gone back to real pixels, which is exactly the regression worth catching.
+ */
+const dp = (prop: string, n: number): RegExp =>
+  new RegExp(`${prop}:\\s*calc\\(${n} \\* var\\(--u\\)\\)`);
+
 describe("the app is on one vertical rhythm", () => {
   const STACKS = [
     "#profileBody", ".pf-coll", ".setwrap", ".frpanel", ".frlist",
@@ -336,7 +347,7 @@ describe("the drawer is drawn to the design", () => {
 
   it("hangs off the menu button", () => {
     expect(rulesFor(css, ".menuwrap"))
-      .toMatch(/padding:\s*calc\(166px \+ env\(safe-area-inset-bottom|padding:\s*calc\(166px \+ env\(safe-area-inset-top\)\)/);
+      .toMatch(/padding:\s*calc\(166 \* var\(--u\) \+ env\(safe-area-inset-top\)\)/);
   });
 
   /** The block above it is what 166 is measured from, so the screen's own top inset has
@@ -353,15 +364,15 @@ describe("the drawer is drawn to the design", () => {
     expect(panel).toMatch(/box-shadow:\s*var\(--hud-ledge\)\s*!important/);
     expect(panel, "the panel is a hole, not a tile standing on the screen")
       .not.toContain("--hud-gloss");
-    expect(panel).toMatch(/padding:\s*12px/);
-    expect(panel).toMatch(/gap:\s*16px/);
+    expect(panel).toMatch(dp("padding", 12));
+    expect(panel).toMatch(dp("gap", 16));
   });
 
   it("gives every row the design's own plate", () => {
     const row = rulesFor(css, ".menudraw .menuitem");
-    expect(row).toMatch(/height:\s*24px/);
+    expect(row).toMatch(dp("height", 24));
     expect(row).toMatch(/background:\s*rgba\(255, 255, 255, \.05\)/);
-    expect(row).toMatch(/font-size:\s*12px/);
+    expect(row).toMatch(dp("font-size", 12));
     expect(row).toMatch(/color:\s*var\(--hud-ink\)/);
   });
 
@@ -558,8 +569,56 @@ describe("the home screen's ledge survives the blanket", () => {
     const root = rulesFor(css, ":root");
     expect(root).toMatch(/--hud-face:\s*#1c1e25/i);
     expect(root).toMatch(/--hud-go:\s*#4ac707/i);
-    expect(root).toMatch(/--hud-ledge:\s*3px 4px 0 #000/i);
-    expect(root).toMatch(/--hud-gloss:\s*inset 0 2px 0 rgba\(255, 255, 255, \.4\)/i);
+    // The ledge and the gloss are MEASUREMENTS off the mock-up like everything else on
+    // this screen, so they ride the design scale too: a 3px ledge under a HUD scaled up
+    // a fifth is a thinner edge than the one that was drawn.
+    expect(root).toMatch(/--hud-ledge:\s*calc\(3 \* var\(--u\)\) calc\(4 \* var\(--u\)\) 0 #000/i);
+    expect(root)
+      .toMatch(/--hud-gloss:\s*inset 0 calc\(2 \* var\(--u\)\) 0 rgba\(255, 255, 255, \.4\)/i);
+  });
+
+  /**
+   * ONE DESIGN PIXEL, AND THE WHOLE SCREEN IS MEASURED IN IT.
+   *
+   * The mock-up is a fixed 360x800 frame. Left at its own px the HUD crowded a 320
+   * phone and floated on a 430 one — measured in a browser at both — so `--u` is one
+   * design pixel and every box on home is `calc(N * var(--u))` with N the design's own
+   * figure. What this test holds is the three things that make that honest: 360 is the
+   * neutral width (so the mock-up reproduces exactly), it is CLAMPED at both ends, and
+   * the clamp is wide enough that no real phone is pinned to a bound.
+   */
+  it("scales the whole composition off one design pixel", () => {
+    const u = /--u:\s*clamp\(([^;]+)\);/.exec(rulesFor(css, ":root"))?.[1];
+    expect(u, "home has no design scale").toBeTruthy();
+    const [lo, mid, hi] = (u ?? "").split(",").map((x) => x.trim());
+    // The middle term is what makes 360 neutral: at 360 the scale is exactly 1.
+    expect(mid, "the scale is not measured against the design's own width")
+      .toBe("calc(100vw / 360)");
+    const n = (v: string): number => Number(v.replace("px", ""));
+    expect(n(lo ?? ""), "no floor, so a narrow phone shrinks the type away")
+      .toBeGreaterThan(0.5);
+    expect(n(hi ?? ""), "no ceiling, so a tablet inflates a phone HUD").toBeLessThan(2);
+    // 320 is the narrowest phone that ships and 430 the widest; neither may be clamped,
+    // or the scale stops tracking the screen exactly where a device actually lives.
+    expect(n(lo ?? ""), "a 320 phone is pinned to the floor").toBeLessThanOrEqual(320 / 360);
+    expect(n(hi ?? ""), "a 430 phone is pinned to the ceiling")
+      .toBeGreaterThanOrEqual(430 / 360);
+  });
+
+  /**
+   * AND THE SCALE DOES NOT OUTRANK THE TAP FLOOR. `--tap` is a rule about a thumb, not a
+   * measurement off the mock-up, so it does not shrink with one: at the bottom of the
+   * scale the three side buttons are 48 design px, which is 42 real ones.
+   */
+  it("keeps the side buttons a thumb wide at every scale", () => {
+    // `rulesFor`, not `ruleFor`: this selector has TWO blocks — the responsive section
+    // pins its right edge to home's column, and the design block sizes it. A helper that
+    // stops at the first one asserts against whichever happens to come first in the file.
+    const fab = rulesFor(css, "#home .settingsfab,\n#home .dailyfab");
+    expect(fab).toMatch(dp("width", 48));
+    expect(fab, "a scaled-down button falls under the tap floor")
+      .toMatch(/min-width:\s*var\(--tap\)/);
+    expect(fab).toMatch(/min-height:\s*var\(--tap\)/);
   });
 
   /**
@@ -578,7 +637,7 @@ describe("the home screen's ledge survives the blanket", () => {
    * the `::after` leaves a control a third under the floor with every test still green.
    */
   it("keeps a thumb-sized target under the 30px avatar", () => {
-    expect(ruleFor(css, "#home .tn-id")).toMatch(/width:\s*30px/);
+    expect(ruleFor(css, "#home .tn-id")).toMatch(dp("width", 30));
     expect(ruleFor(css, "#home .tn-id::after")).toMatch(/width:\s*var\(--tap\)/);
   });
 
@@ -588,11 +647,16 @@ describe("the home screen's ledge survives the blanket", () => {
    * sitting under it. Two places spelling out one rule (§7), so they are read together.
    */
   it("reserves exactly the room the tab bar stands in", () => {
-    const bar = /height:\s*calc\((\d+)px \+ env\(safe-area-inset-bottom\)\)/
+    // It is ONE token now rather than two numbers that have to agree, which is what the
+    // design scale forced: a bar measured in design pixels over a reservation measured
+    // in real ones clips the last row's ledge on every phone that is not 360 wide.
+    const bar = /height:\s*calc\(([^;]+) \+ env\(safe-area-inset-bottom\)\)/
       .exec(ruleFor(css, "#mainNav.homenav"))?.[1];
-    const reserved = /padding-bottom:\s*calc\((\d+)px \+ env\(safe-area-inset-bottom\)\)/
+    const reserved = /padding-bottom:\s*calc\(([^;]+) \+ env\(safe-area-inset-bottom\)\)/
       .exec(rulesFor(css, "#home, #profile, #rules, #shop, #achievements, #settings, #news, #friends,\n#support, #luckyhatch, #antarium, #anthill, #challenges"))?.[1];
-    expect(bar, "the tab bar has no height of its own").toBeTruthy();
+    expect(bar, "the tab bar has no height of its own").toBe("var(--navh)");
     expect(reserved, `the screens reserve ${String(reserved)} for a ${String(bar)} bar`).toBe(bar);
+    expect(rulesFor(css, ":root"), "the bar's height is not the design's 70")
+      .toMatch(/--navh:\s*calc\(70 \* var\(--u\)\)/);
   });
 });
