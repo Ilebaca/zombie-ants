@@ -6598,7 +6598,13 @@ button:not(.playbtn):active,
   display: flex;
   align-items: center;
   gap: calc(5 * var(--u));
-  padding: calc(8 * var(--u)) var(--gutter);
+  /* NO BOTTOM PADDING, AND THAT IS WHAT MAKES THE GAP UNDER IT 8 LIKE THE REST.
+     The bar carries no background on this screen, so its own padding is invisible
+     air that ADDS to the banner's `--vgap` margin — measured at 16 from the chips
+     to the banner where every other gap on the block was 8, and reported exactly
+     that way. The TOP padding stays: that one is the air under the notch, and there
+     is nothing above it to double up with. */
+  padding: calc(8 * var(--u)) var(--gutter) 0;
   background: none;
   border: none;
   box-shadow: none !important;

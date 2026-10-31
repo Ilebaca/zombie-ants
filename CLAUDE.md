@@ -2848,6 +2848,15 @@ and lands on the design's figure exactly.
   - **IT IS A TOKEN, not the number written in four places.** "Uniform" is the rule, and
     four copies of `8 * var(--u)` would satisfy an assertion about the NUMBER while being
     four chances for the rule to stop being true. The test names the token.
+  - **AND THE BAR MAY NOT PAD ITS OWN BOTTOM.** One gap on the token was still wrong on
+    screen, reported as "maybe there is another margin adding extra space", and it was:
+    `#home .topnav` had `padding: 8u var(--gutter)`, and the bar carries NO BACKGROUND
+    here — so that bottom padding is invisible air ADDING to the banner's `--vgap`
+    margin. Measured at **16 from the chips to the banner** where every other gap on the
+    block was 8. The TOP padding stays, because that one is the air under the notch and
+    has nothing above it to double with. The lesson generalises: on a transparent box a
+    token-driven gap is only the gap if nothing either side of it pads as well, and the
+    test holds the padding's THIRD value for exactly that reason.
   - **The banner carries a TOP margin only.** What sits under it is the granary row, whose
     own top padding is that gap; a bottom margin here would be one number spelled twice
     and the two would add.

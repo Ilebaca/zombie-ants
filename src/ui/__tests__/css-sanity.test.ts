@@ -647,6 +647,15 @@ describe("the home screen's ledge survives the blanket", () => {
       .toMatch(/padding:\s*var\(--vgap\) var\(--gutter\)/);
     // Down the column of three side buttons.
     expect(ruleFor(css, "#home .homefabs")).toMatch(/gap:\s*var\(--vgap\)/);
+    /*
+     * AND THE BAR MAY NOT PAD ITS OWN BOTTOM. It carries no background here, so that
+     * padding is invisible air that ADDS to the banner's margin — 16 from the chips to
+     * the banner where everything else was 8, which is how it was reported. The top
+     * padding is the air under the notch and stays, so what this holds is the THIRD
+     * value: `padding: Xu Ygutter 0`.
+     */
+    expect(rulesFor(css, "#home .topnav"), "the bar pads its own bottom, doubling the gap")
+      .toMatch(/padding:\s*calc\(8 \* var\(--u\)\) var\(--gutter\) 0\s*;/);
   });
 
   /**
