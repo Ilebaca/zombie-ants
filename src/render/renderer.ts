@@ -45,16 +45,6 @@ export interface RendererOptions {
   ground?: string | null;
 }
 
-/**
- * How long the caller holds the turn for while the colonies fill in.
- *
- * Long enough for the reveal to run its front out to the far corner of a starting
- * formation, which is what makes the opening read as the colony ARRIVING rather than as
- * five tiles that were already there. It was `INTRO_FILL_MS` in `render/intro.ts`, which
- * is gone with the camera.
- */
-const OPENING_FILL_MS = 820;
-
 export class BoardRenderer {
   readonly layout: Layout;
   private ctx: CanvasRenderingContext2D | null = null;
@@ -198,19 +188,32 @@ export class BoardRenderer {
    */
   playIntro(): number {
     this.opening = true;
-    this.growColonies(performance.now());
-    return this.reveal.reduced ? 1 : OPENING_FILL_MS;
+    const span = this.growColonies(performance.now());
+    // THE HOLD IS THE FILL'S OWN LENGTH, NEVER A NUMBER WRITTEN DOWN BESIDE IT. It was a
+    // flat 820ms, which is the time a THREE-tile front takes — right for the wedge and
+    // the hook, and short for the other ten formations, whose far corner is four or five
+    // tiles from the nest. So the hold ran out while the colonies were still arriving,
+    // and `endIntro` (below) started them over: the opening visibly played twice. Two
+    // places spelling out one rule (§7); the reveal is the one that knows.
+    return this.reveal.reduced ? 1 : this.reveal.runMs(span);
   }
 
   /** True while the opening is still running, so a tap can cut it short. */
   get introducing(): boolean { return this.opening; }
 
-  /** Cut the opening short: the colonies fill in from here. */
+  /**
+   * Cut the opening short: whatever is still filling lands at once.
+   *
+   * It used to CLEAR the reveal and grow the colonies again, which made sense while the
+   * fill was scheduled for the moment the camera landed — a tap arriving before that had
+   * nothing running to settle. The fill starts in `playIntro` now, so starting it here is
+   * starting it a second time, and that is exactly what it did at the end of every match
+   * opening whose hold expired first. A skip settles; it never replays.
+   */
   endIntro(): void {
     if (!this.opening) return;
     this.opening = false;
     this.reveal.clear();
-    this.growColonies(performance.now());
   }
 
   /** Where the nameplates are written, for the scenery to leave clear. */
@@ -224,8 +227,12 @@ export class BoardRenderer {
    * The two colonies grow out of their nests rather than being there already — the reveal
    * machinery is exactly the one a capture uses, run over the starting formation with each
    * tile's slot set by how far it sits from the nest.
+   *
+   * Returns how many tiles the widest of the two fronts has to cross, which is what the
+   * hold is worked out from.
    */
-  private growColonies(at: number): void {
+  private growColonies(at: number): number {
+    let widest = 1;
     for (const p of ["you", "ai"] as const) {
       const nest = nestTile(this.state, p);
       if (!nest) continue;
@@ -241,7 +248,11 @@ export class BoardRenderer {
         prev: null,
         slot: slot(t),
       })), at);
+      // The front has to cross the WHOLE formation, and the two colonies grow together —
+      // so the hold is the wider of the two, not the first one measured.
+      for (const t of held) widest = Math.max(widest, slot(t) + 1);
     }
+    return widest;
   }
 
   /**
