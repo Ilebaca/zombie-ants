@@ -6508,6 +6508,13 @@ button:not(.playbtn):active,
      keeps the last row out from under it is a separate rule, so a scaled
      bar over an unscaled reservation clips the last row's ledge. */
   --navh: calc(70 * var(--u));
+  /* ONE VERTICAL GAP FOR THE WHOLE TOP BLOCK, asked for directly. The mock-up spaces
+     it three different ways — 5 under the bar, then 5 + 5 + 8 stacked between the
+     banner and the buttons, then 16 down the button column — which measured out as
+     5 / 18 / 16 and read as three decisions rather than one. It is 12 everywhere now,
+     and it is a TOKEN rather than the number written in four places, because "uniform"
+     is the rule and four copies of 12 is four chances for it to stop being true. */
+  --vgap: calc(12 * var(--u));
   --hud-ledge: calc(3 * var(--u)) calc(4 * var(--u)) 0 #000;
   --hud-gloss: inset 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .4);
   /* THE INK IS A WARM CREAM, NOT WHITE. The first frame of this design set every figure
@@ -6697,7 +6704,9 @@ button:not(.playbtn):active,
   align-items: center;
   gap: calc(12 * var(--u));
   width: auto;
-  margin: calc(5 * var(--u)) var(--gutter);
+  /* Top only: what sits under the banner is the granary row, and that row's own top
+     padding is the gap. Two half-gaps meeting would be one number spelled twice. */
+  margin: var(--vgap) var(--gutter) 0;
   padding: calc(8 * var(--u)) calc(12 * var(--u));
   overflow: hidden;
   border: none;
@@ -6790,7 +6799,7 @@ button:not(.playbtn):active,
   align-items: flex-start;
   justify-content: space-between;
   gap: calc(8 * var(--u));
-  padding: calc(13 * var(--u)) var(--gutter);
+  padding: var(--vgap) var(--gutter);
 }
 #home .granpill,
 #home #granaryPill.granpill {
@@ -6853,7 +6862,7 @@ button:not(.playbtn):active,
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: calc(16 * var(--u));
+  gap: var(--vgap);
 }
 #home .settingsfab,
 #home .dailyfab {
@@ -6908,7 +6917,7 @@ button:not(.playbtn):active,
    same kind of object as everything above: a dark tile on a ledge. They
    keep their own markup and take the screen's face. */
 #home .saveguard {
-  margin: 0 var(--gutter) calc(13 * var(--u));
+  margin: 0 var(--gutter) var(--vgap);
   border: none;
   border-radius: calc(7 * var(--u));
   background: var(--hud-face);
