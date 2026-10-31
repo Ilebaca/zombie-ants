@@ -4435,7 +4435,7 @@ button:not(.playbtn):active,
      of nothing. It is not ZERO either, which is what the banner and the
      granary pill ended up at when the tab tray's gutter came off — an item
      touching the glass reads as a layout that overflowed. */
-  --gutter: 12px;
+  --gutter: calc(12 * var(--u));
   /* Wider than the reading column on purpose: clamping home's furniture to
      a 360px measure inside a 390px phone put a second gutter inside the
      first. The cap only bites on a tablet, where a banner spread across the
@@ -6472,8 +6472,44 @@ button:not(.playbtn):active,
      the screen: the colony banner, PLAY, and the tab you are standing on. */
   --hud-face: #1c1e25;
   --hud-go: #4ac707;
-  --hud-ledge: 3px 4px 0 #000;
-  --hud-gloss: inset 0 2px 0 rgba(255, 255, 255, .4);
+  /* ONE DESIGN PIXEL. The mock-up is a FIXED 360x800 frame and every number
+     below is measured on it, so the honest way to put it on a phone that is
+     not 360 wide is to scale the whole composition rather than to leave a
+     360-sized HUD sitting in whatever is there. Measured: at 320 it crowded
+     the picture, and at 430 it floated in it — the granary pill a 163px
+     island, PLAY a thin bar, the colony figure small inside its own banner.
+     Written as a LENGTH (one design px) so every measurement below reads
+     `calc(N * var(--u))` with N the design's own figure, which is the rule
+     this whole block already follows.
+
+     The bounds are the real phone range with a little either side: 320
+     lands at .889 and 430 at 1.194, so no phone is clamped. The floor stops
+     a narrower device shrinking the type past reading; the CEILING is what
+     keeps a tablet from inflating a phone HUD into a cartoon — past 432px
+     the composition stops growing and `--homemax` centres it.
+
+     IT IS NOT THE APP'S `--page`, and the difference is worth stating. That
+     one is the READING column for the screens that are a list of cards, and
+     its rule is that the column grows and the TYPE DOES NOT — which is
+     right for a 15px label on a card. Home is the opposite kind of screen:
+     one picture with a HUD drawn over it in fixed proportions, where type
+     that did not grow with the boxes around it is the thing that reads as
+     wrong. Both rules stand; they are about different screens.
+
+     AND CSS `zoom` IS NOT THE SHORTCUT. It was tried for the responsive
+     pass and rejected: `#app` is `position: fixed` with the tab bar fixed
+     inside it, and a fixed box under `zoom` is sized in scaled units
+     against an unscaled viewport. A transform is no better — it scales the
+     paint and not the layout, so the screen would be the wrong size inside
+     a box that is not. */
+  --u: clamp(.875px, calc(100vw / 360), 1.2px);
+  /* THE BAR AND THE ROOM RESERVED FOR IT ARE ONE NUMBER, and now it is
+     literally one. The bar is on every deck screen and the padding that
+     keeps the last row out from under it is a separate rule, so a scaled
+     bar over an unscaled reservation clips the last row's ledge. */
+  --navh: calc(70 * var(--u));
+  --hud-ledge: calc(3 * var(--u)) calc(4 * var(--u)) 0 #000;
+  --hud-gloss: inset 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .4);
   /* THE INK IS A WARM CREAM, NOT WHITE. The first frame of this design set every figure
      in white; the drawer frame that followed sets all of them in `#fcf7e6`, which is the
      colour the game's own artwork is lit in — a pure white figure on a painted ground
@@ -6539,8 +6575,8 @@ button:not(.playbtn):active,
 #home .topnav {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 8px var(--gutter);
+  gap: calc(5 * var(--u));
+  padding: calc(8 * var(--u)) var(--gutter);
   background: none;
   border: none;
   box-shadow: none !important;
@@ -6550,13 +6586,13 @@ button:not(.playbtn):active,
 #home .tn-id {
   position: relative;
   flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
+  width: calc(30 * var(--u));
+  height: calc(30 * var(--u));
   /* THE SIZE AND THE TARGET ARE TWO DIFFERENT NUMBERS. The app's floor for anything
      pressable is `--tap` (44px) and the design draws this disc at 30 — so the floor is
      lifted off the BOX and put on an invisible `::after` centred on it, which is the same
      answer the currency steppers already use. Nothing on the row moves by a pixel. */
-  min-height: 30px;
+  min-height: calc(30 * var(--u));
   padding: 0;
   overflow: hidden;
   border: none;
@@ -6593,7 +6629,7 @@ button:not(.playbtn):active,
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: calc(5 * var(--u));
 }
 #home .tn-coin {
   flex: 1 1 0;
@@ -6607,42 +6643,50 @@ button:not(.playbtn):active,
   justify-content: space-between;
   gap: 0;
   overflow: hidden;
-  padding: 2px 5px 2px 2px;
+  padding: calc(2 * var(--u)) calc(5 * var(--u)) calc(2 * var(--u)) calc(2 * var(--u));
   border: none;
-  border-radius: 5px;
+  border-radius: calc(5 * var(--u));
   background: var(--hud-face);
   box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
 }
 #home .tn-coin .tn-ic {
   flex: 0 0 auto;
-  width: 26px;
-  height: 26px;
-  border-radius: 4px;
+  width: calc(26 * var(--u));
+  height: calc(26 * var(--u));
+  border-radius: calc(4 * var(--u));
   background: none;
 }
 #home .tn-coin .tn-ic svg,
-#home .tn-coin .tn-ic .hudmark { width: 26px; height: 26px; display: block; }
+#home .tn-coin .tn-ic .hudmark {
+  width: calc(26 * var(--u));
+  height: calc(26 * var(--u));
+  display: block;
+}
 #home .tn-coin .tn-num {
   flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 16px;
+  font-size: calc(16 * var(--u));
   line-height: 1;
   color: var(--hud-ink);
   text-align: center;
 }
 #home .tn-plus {
   flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
+  width: calc(18 * var(--u));
+  height: calc(18 * var(--u));
   background: none;
   border: none;
   color: var(--hud-ink);
   border-radius: 0;
 }
 #home .tn-plus svg,
-#home .tn-plus .hudmark { width: 18px; height: 18px; display: block; }
+#home .tn-plus .hudmark {
+  width: calc(18 * var(--u));
+  height: calc(18 * var(--u));
+  display: block;
+}
 
 /* ---------------------------------------------------------- THE COLONY
    The loudest object on the screen, and the only place the chapter is
@@ -6651,13 +6695,13 @@ button:not(.playbtn):active,
 #home .colhero {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: calc(12 * var(--u));
   width: auto;
-  margin: 5px var(--gutter);
-  padding: 8px 12px;
+  margin: calc(5 * var(--u)) var(--gutter);
+  padding: calc(8 * var(--u)) calc(12 * var(--u));
   overflow: hidden;
   border: none;
-  border-radius: 7px;
+  border-radius: calc(7 * var(--u));
   background: var(--hud-go);
   box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
 }
@@ -6665,18 +6709,22 @@ button:not(.playbtn):active,
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: calc(5 * var(--u));
 }
 #home .col-mark { display: flex; color: var(--hud-ink); }
 #home .col-mark svg,
-#home .col-mark .hudmark { width: 21px; height: 21px; display: block; }
+#home .col-mark .hudmark {
+  width: calc(21 * var(--u));
+  height: calc(21 * var(--u));
+  display: block;
+}
 #home .col-n {
   display: block;
   min-width: 0;
-  font-size: 30px;
+  font-size: calc(30 * var(--u));
   line-height: 1;
   color: var(--hud-ink);
-  text-shadow: 2px 2px 0 #000 !important;
+  text-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 #000 !important;
   font-variant-numeric: tabular-nums;
 }
 #home .col-rail {
@@ -6684,7 +6732,7 @@ button:not(.playbtn):active,
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: calc(5 * var(--u));
   margin: 0;
 }
 #home .col-mid {
@@ -6693,10 +6741,10 @@ button:not(.playbtn):active,
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 7px;
+  gap: calc(7 * var(--u));
 }
 #home .col-t {
-  font-size: 8px;
+  font-size: calc(8 * var(--u));
   line-height: 1;
   letter-spacing: 0;
   text-transform: uppercase;
@@ -6705,27 +6753,31 @@ button:not(.playbtn):active,
 #home .col-rail .tr-bar {
   flex: none;
   width: 100%;
-  height: 6px;
+  height: calc(6 * var(--u));
   overflow: hidden;
   border: 1px solid #000;
   border-radius: 30px;
   background: #000;
 }
 #home .col-rail .tr-fill {
-  height: 6px;
+  height: calc(6 * var(--u));
   border-radius: 20px;
   background: var(--hud-ink);
 }
 #home .col-pay {
   flex: 0 0 auto;
   display: flex;
-  width: 26px;
-  height: 26px;
-  border-radius: 4px;
+  width: calc(26 * var(--u));
+  height: calc(26 * var(--u));
+  border-radius: calc(4 * var(--u));
   color: var(--hud-ink);
 }
 #home .col-pay svg,
-#home .col-pay .hudmark { width: 26px; height: 26px; display: block; }
+#home .col-pay .hudmark {
+  width: calc(26 * var(--u));
+  height: calc(26 * var(--u));
+  display: block;
+}
 
 /* --------------------------------------------- THE GRANARY AND THE DRAWER
    One row: what is waiting to be collected on the left, and the three ways
@@ -6737,23 +6789,23 @@ button:not(.playbtn):active,
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
-  padding: 13px var(--gutter);
+  gap: calc(8 * var(--u));
+  padding: calc(13 * var(--u)) var(--gutter);
 }
 #home .granpill,
 #home #granaryPill.granpill {
-  flex: 0 1 163px;
+  flex: 0 1 calc(163 * var(--u));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  width: 163px;
+  gap: calc(8 * var(--u));
+  width: calc(163 * var(--u));
   min-height: 0;
   margin: 0;
-  padding: 8px 12px;
+  padding: calc(8 * var(--u)) calc(12 * var(--u));
   overflow: hidden;
   border: none;
-  border-radius: 7px;
+  border-radius: calc(7 * var(--u));
   background: var(--hud-face);
   color: var(--hud-ink);
   box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
@@ -6761,20 +6813,24 @@ button:not(.playbtn):active,
 #home .gp-l {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: calc(5 * var(--u));
   min-width: 0;
 }
 #home .gp-ic { display: flex; color: var(--hud-ink); }
 #home .gp-ic svg,
-#home .gp-ic .hudmark { width: 14px; height: 14px; display: block; }
+#home .gp-ic .hudmark {
+  width: calc(14 * var(--u));
+  height: calc(14 * var(--u));
+  display: block;
+}
 #home .granpill .gp-n {
-  font-size: 16px;
+  font-size: calc(16 * var(--u));
   line-height: 1;
   color: var(--hud-ink);
   /* ONE pixel here and two on the colony figure, which is the two frames' own
      difference: this figure is 16px and that one is 30, and a ledge is sized to the
      letter it sits under. */
-  text-shadow: 1px 1px 0 #000 !important;
+  text-shadow: calc(1 * var(--u)) calc(1 * var(--u)) 0 #000 !important;
 }
 /* ONE WORD IN THE RIGHT-HAND SLOT whichever state the store is in, so the
    row does not change shape as it fills. */
@@ -6785,19 +6841,19 @@ button:not(.playbtn):active,
   padding: 0;
   border-radius: 0;
   background: none;
-  font-size: 10px;
+  font-size: calc(10 * var(--u));
   line-height: 1;
   letter-spacing: 0;
   text-transform: uppercase;
   color: var(--hud-ink);
-  text-shadow: 1px 1px 0 #000 !important;
+  text-shadow: calc(1 * var(--u)) calc(1 * var(--u)) 0 #000 !important;
 }
 
 #home .homefabs {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: calc(16 * var(--u));
 }
 #home .settingsfab,
 #home .dailyfab {
@@ -6805,12 +6861,21 @@ button:not(.playbtn):active,
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: calc(48 * var(--u));
+  height: calc(48 * var(--u));
+  /* THE DESIGN SCALE DOES NOT OUTRANK THE TAP FLOOR. These three are the
+     only controls on the screen whose own box is their target, and at the
+     bottom of the scale 48 design px is 42 real ones — under `--tap`, which
+     is a physical rule about a thumb rather than a measurement off the
+     mock-up and so does not scale with it. Every other control here is
+     either bigger than 44 at every scale or carries its target on an
+     invisible `::after` (the avatar, the steppers). */
+  min-width: var(--tap);
+  min-height: var(--tap);
   padding: 0;
   gap: 0;
   border: none;
-  border-radius: 5px;
+  border-radius: calc(5 * var(--u));
   background: var(--hud-face);
   color: var(--hud-ink);
   box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
@@ -6820,14 +6885,22 @@ button:not(.playbtn):active,
    given its own number — and BOTH are named, or whichever one is not falls back to the
    file's own height. That is the trap the match history already paid for. */
 #home .settingsfab svg,
-#home .dailyfab svg { width: 26px; height: 26px; display: block; }
+#home .dailyfab svg {
+  width: calc(26 * var(--u));
+  height: calc(26 * var(--u));
+  display: block;
+}
 #home .settingsfab .hudmark,
-#home .dailyfab .hudmark { width: 36px; height: 36px; display: block; }
+#home .dailyfab .hudmark {
+  width: calc(36 * var(--u));
+  height: calc(36 * var(--u));
+  display: block;
+}
 #home .settingsfab:active,
 #home .dailyfab:active {
   background: var(--hud-face);
-  transform: translate(1px, 2px);
-  box-shadow: 1px 2px 0 #000, var(--hud-gloss) !important;
+  transform: translate(calc(1 * var(--u)), calc(2 * var(--u)));
+  box-shadow: calc(1 * var(--u)) calc(2 * var(--u)) 0 #000, var(--hud-gloss) !important;
 }
 
 /* The two bands that are NOT in the design — a match left unfinished, and
@@ -6835,9 +6908,9 @@ button:not(.playbtn):active,
    same kind of object as everything above: a dark tile on a ledge. They
    keep their own markup and take the screen's face. */
 #home .saveguard {
-  margin: 0 var(--gutter) 13px;
+  margin: 0 var(--gutter) calc(13 * var(--u));
   border: none;
-  border-radius: 7px;
+  border-radius: calc(7 * var(--u));
   background: var(--hud-face);
   box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
 }
@@ -6858,25 +6931,56 @@ button:not(.playbtn):active,
      gutter and padding a flat 50 was the other way round and cost the column: the
      responsive block caps this row at `--homemax` and centres it, which is what keeps
      PLAY the same width as the banner above it on a tablet. */
-  padding: 8px calc(50px - var(--gutter));
-  margin-bottom: 50px;
+  padding: calc(8 * var(--u)) calc(50 * var(--u) - var(--gutter));
+  /* AND THE GAP UNDER IT FOLLOWS THE SCREEN'S HEIGHT, not its width. Everything else
+     here is scaled by `--u`, which is measured ACROSS — right for how big a button is
+     and wrong for the air beneath it, because what decides whether PLAY sits low enough
+     is how TALL the phone is. On `--u` a short phone (320x568) kept a gap drawn for an
+     800-tall frame and the button floated above the bar; reported exactly that way.
+
+     WHAT IS HELD CONSTANT IS WHERE THE BUTTON SITS, not the gap: in the design PLAY's
+     foot is 128px off the bottom of an 800 frame — the bar's 70, this gap's 50 and the
+     row's own 8 — which is 16% of the height. So the gap is what is LEFT of 16vh once
+     the bar and the padding have taken theirs, and it has to be, because the bar is
+     width-scaled (its tiles are thumb targets, not drawings) and is therefore a bigger
+     share of a short screen than of a tall one. Simply scaling the gap by height would
+     have left that difference on the button.
+
+     AND ON THE SHORTEST PHONE IT GOES FURTHER DOWN THAN THAT, asked for directly: on a
+     568-tall screen the proportion still left twenty-odd pixels of air under a button
+     that had nowhere else to be, and what a short screen wants is the button near the
+     bar with just enough between them to read as two things. So the second term is a
+     straight line through two named points — 8px at 568, the shortest screen that
+     ships, and the design's own 50 at 800 — and the gap is the SMALLER of the two
+     rules. They cross at the design's height by construction, so a short phone is
+     governed by the line and a tall one by the proportion, with 360x800 still landing
+     on exactly 50 either way. Measured: 8 at 568, 25 at 667, 39 at 740, 50 at 800,
+     56 at 932. */
+  margin-bottom: clamp(
+    calc(6 * var(--u)),
+    min(
+      calc(16vh - var(--navh) - 8 * var(--u)),
+      calc((100vh - 568px) * 0.181 + 8px)
+    ),
+    calc(80 * var(--u))
+  );
 }
 #home .playbtn {
   width: auto;
-  height: 54px;
+  height: calc(54 * var(--u));
   padding: 0;
   border: none;
-  border-radius: 5px;
+  border-radius: calc(5 * var(--u));
   background: var(--hud-go);
   color: var(--hud-ink);
-  font-size: 32px;
+  font-size: calc(32 * var(--u));
   line-height: 1;
   text-align: center;
   box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
 }
 #home .playbtn:active {
-  transform: translate(1px, 2px);
-  box-shadow: 1px 2px 0 #000, var(--hud-gloss) !important;
+  transform: translate(calc(1 * var(--u)), calc(2 * var(--u)));
+  box-shadow: calc(1 * var(--u)) calc(2 * var(--u)) 0 #000, var(--hud-gloss) !important;
   filter: none;
 }
 
@@ -6886,9 +6990,9 @@ button:not(.playbtn):active,
    a phone is what made these tall and the type tiny. */
 #mainNav.homenav {
   display: flex;
-  gap: 5px;
-  height: calc(70px + env(safe-area-inset-bottom));
-  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  gap: calc(5 * var(--u));
+  height: calc(var(--navh) + env(safe-area-inset-bottom));
+  padding: calc(8 * var(--u)) calc(8 * var(--u)) calc(8 * var(--u) + env(safe-area-inset-bottom));
   border: none;
   background: none;
 }
@@ -6901,14 +7005,18 @@ button:not(.playbtn):active,
   gap: 0;
   padding: 0;
   border: none;
-  border-radius: 5px;
+  border-radius: calc(5 * var(--u));
   background: var(--hud-face);
   color: var(--hud-ink);
   box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
 }
 #mainNav .navitem .ni { display: flex; font-size: 0; line-height: 0; }
 #mainNav .navitem svg,
-#mainNav .navitem .hudmark { width: 40px; height: 40px; display: block; }
+#mainNav .navitem .hudmark {
+  width: calc(40 * var(--u));
+  height: calc(40 * var(--u));
+  display: block;
+}
 #mainNav .navitem.active {
   background: var(--hud-go);
   color: var(--hud-ink);
@@ -6919,8 +7027,8 @@ button:not(.playbtn):active,
    answer to a question already answered, hanging outside the tray it belongs to. */
 #mainNav .navitem.active::before { content: none; }
 #mainNav .navitem:active {
-  transform: translate(1px, 2px);
-  box-shadow: 1px 2px 0 #000, var(--hud-gloss) !important;
+  transform: translate(calc(1 * var(--u)), calc(2 * var(--u)));
+  box-shadow: calc(1 * var(--u)) calc(2 * var(--u)) 0 #000, var(--hud-gloss) !important;
 }
 
 /* THE TAB BAR GREW, so the room reserved for it has to. The legacy sheet
@@ -6929,7 +7037,7 @@ button:not(.playbtn):active,
    or it is clipped by the edge of the screen. */
 #home, #profile, #rules, #shop, #achievements, #settings, #news, #friends,
 #support, #luckyhatch, #antarium, #anthill, #challenges {
-  padding-bottom: calc(70px + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--navh) + env(safe-area-inset-bottom));
 }
 
 /* ==========================================================================
@@ -6947,19 +7055,19 @@ button:not(.playbtn):active,
    moves by the notch and nothing else. The legacy sheet pads this wrapper to place
    the panel, so that is the property to set. */
 .menuwrap {
-  padding: calc(166px + env(safe-area-inset-top)) var(--gutter, 12px) 12px;
+  padding: calc(166 * var(--u) + env(safe-area-inset-top)) var(--gutter, 12px) calc(12 * var(--u));
   background: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
 .menudraw {
   width: auto;
-  min-width: 158px;
+  min-width: calc(158 * var(--u));
   max-width: 76vw;
-  gap: 16px;
-  padding: 12px;
+  gap: calc(16 * var(--u));
+  padding: calc(12 * var(--u));
   border: none;
-  border-radius: 7px;
+  border-radius: calc(7 * var(--u));
   background: var(--hud-face);
   box-shadow: var(--hud-ledge) !important;
 }
@@ -6967,16 +7075,16 @@ button:not(.playbtn):active,
    icon stands a little proud of the plate it sits on at both ends. The 16px gap is
    what leaves room for it, so neither number moves without the other. */
 .menudraw .menuitem {
-  height: 24px;
-  gap: 12px;
-  padding: 0 0 0 5px;
+  height: calc(24 * var(--u));
+  gap: calc(12 * var(--u));
+  padding: 0 0 0 calc(5 * var(--u));
   border: none;
-  border-radius: 7px;
+  border-radius: calc(7 * var(--u));
   background: rgba(255, 255, 255, .05);
   color: var(--hud-ink);
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 12px;
+  font-size: calc(12 * var(--u));
   line-height: 1;
 }
 .menudraw .menuitem:active {
@@ -6985,8 +7093,8 @@ button:not(.playbtn):active,
 }
 .menudraw .menuitem .mi {
   flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
+  width: calc(30 * var(--u));
+  height: calc(30 * var(--u));
   display: grid;
   place-items: center;
   border-radius: 0;
@@ -6995,7 +7103,11 @@ button:not(.playbtn):active,
   color: var(--hud-ink);
 }
 .menudraw .menuitem .mi svg,
-.menudraw .menuitem .mi .hudmark { width: 30px; height: 30px; display: block; }
+.menudraw .menuitem .mi .hudmark {
+  width: calc(30 * var(--u));
+  height: calc(30 * var(--u));
+  display: block;
+}
 /* The badge keeps its own colour — it is the one thing in the drawer that is not
    a label, and the whole point of it is that it is not the same as the row. */
 .menudraw .menudot {

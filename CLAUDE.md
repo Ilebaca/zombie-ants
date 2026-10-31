@@ -2791,6 +2791,56 @@ and lands on the design's figure exactly.
   every figure in white; the drawer frame that followed sets all of them in the cream,
   which is the colour the artwork itself is lit in — a pure white figure on a painted
   ground reads as a sticker laid on top of it. One token, because it is on nine things.
+- **AND THE WHOLE COMPOSITION SCALES WITH THE SCREEN** (`--u`, one design pixel). The
+  mock-up is a FIXED 360x800 frame, and left at its own pixels it was a 360-sized HUD
+  sitting in whatever the phone happened to be: measured in a browser, at 320 it crowded
+  the picture and at 430 it floated in it — the granary pill a 163px island, PLAY a thin
+  bar, the colony figure small inside its own banner. `--u` is
+  `clamp(.875px, 100vw / 360, 1.2px)` and every box on home is written
+  `calc(N * var(--u))` with N the design's own figure, so **360 reproduces the mock-up to
+  the pixel** and everything else is the same picture at a different size. Measured at
+  320 / 360 / 375 / 390 / 412 / 430: nothing overflows at any of them, and 360 lands on
+  the design's numbers exactly.
+  - **IT IS NOT `--page`, and both rules stand.** `--page` is the READING column for the
+    screens that are a list of cards, and its rule is that the column grows and the TYPE
+    DOES NOT — right for a 15px label. Home is the opposite kind of screen: one picture
+    with a HUD drawn over it in fixed proportions, where type that did not grow with the
+    boxes around it is the thing that reads as wrong.
+  - **`zoom` and `transform` are both out**, for the reasons already on record: `#app` is
+    `position: fixed` with the bar fixed inside it, and a fixed box under `zoom` is sized
+    in scaled units against an unscaled viewport; a transform scales the paint and not
+    the layout.
+  - **THE TAP FLOOR DOES NOT SCALE.** `--tap` is a rule about a thumb rather than a
+    measurement off the mock-up, so the three side buttons carry `min-width/min-height:
+    var(--tap)` — at the bottom of the scale 48 design px is 42 real ones. Everything
+    else here is either over 44 at every scale or carries its target on an invisible
+    `::after` (the avatar, the currency steppers).
+  - **`--navh` IS NOW LITERALLY ONE NUMBER.** The bar is on every deck screen and the
+    padding that keeps the last row out from under it is a separate rule; a scaled bar
+    over an unscaled reservation clips the last row's ledge on every phone but one. Both
+    name `var(--navh)`, and the test that used to compare two integers compares the two
+    tokens.
+  - **A TEST MAY NOT ASSERT THE BARE NUMBER.** `dp(prop, n)` in `css-sanity` builds the
+    `calc(N * var(--u))` pattern, because asserting `height: 24px` passes just as well
+    against a rule that has quietly fallen off the scale — which is the regression worth
+    catching.
+- **THE AIR UNDER PLAY FOLLOWS THE SCREEN'S HEIGHT, NOT ITS WIDTH, AND IT IS THE FOOT
+  THAT IS HELD.** Everything else here scales by `--u`, which is measured ACROSS — right
+  for how big a button is and wrong for the air beneath it. In the design PLAY's foot is
+  128px off the bottom of an 800 frame (the bar's 70, the gap's 50, the row's 8), which
+  is **16% of the height**, so the gap is what is LEFT of `16vh` once the bar and the
+  padding have taken theirs. It has to be worked out that way round because the bar is
+  width-scaled — its tiles are thumb targets, not drawings — and is therefore a bigger
+  share of a short screen than of a tall one; scaling the gap by height alone leaves that
+  difference on the button.
+  - **AND THE SHORTEST PHONE GOES FURTHER DOWN THAN THE PROPORTION**, asked for directly:
+    at 568 tall the proportion still left twenty-odd pixels under a button with nowhere
+    else to be. A second term is a straight line through two named points — 8px at 568,
+    the design's 50 at 800 — and the gap is the SMALLER of the two rules. They cross at
+    the design's own height by construction, so a short phone is governed by the line and
+    a tall one by the proportion, and 360x800 lands on 50 either way. Measured: **8 at
+    568, 25 at 667, 39 at 740, 50 at 800, 56 at 932** — PLAY's foot on 84% of the height
+    everywhere but the smallest, where it is 86%.
 - **THE TOP BLOCK STARTS AT THE TOP OF THE FRAME, and that took undoing TWO insets.**
   `.screen` pads every page by `--sp4` plus the notch, which is right for a page with a
   header and wrong here; and the legacy `.tophead` then pulls itself UP by both, to sit
