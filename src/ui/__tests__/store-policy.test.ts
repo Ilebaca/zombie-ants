@@ -57,7 +57,7 @@ describe("loot box odds, before the purchase", () => {
    * bought in the shop — two screens away from any statement of what a larva is worth.
    */
   it("prints every tier's chance on the screen that sells larva", () => {
-    const root = buildShop(store(), gateway(), () => {});
+    const root = buildShop(store(), gateway());
     const text = root.textContent ?? "";
     for (const tier of TRAIT_TIERS) {
       expect(text, `${tier} has no printed chance in the shop`)
@@ -68,7 +68,7 @@ describe("loot box odds, before the purchase", () => {
   /** And it says what they are the odds OF. A row of percentages under a price with no
    *  subject is worse than no disclosure at all. */
   it("says what the percentages are for", () => {
-    const root = buildShop(store(), gateway(), () => {});
+    const root = buildShop(store(), gateway());
     expect(root.textContent).toMatch(/larva can hatch/i);
   });
 
@@ -82,7 +82,7 @@ describe("loot box odds, before the purchase", () => {
 
 describe("restoring a purchase", () => {
   it("offers the mechanism Apple requires", () => {
-    const root = buildShop(store(), gateway(), () => {});
+    const root = buildShop(store(), gateway());
     expect(root.querySelector("#shopRestore"), "there is no restore control").not.toBeNull();
   });
 
@@ -91,7 +91,7 @@ describe("restoring a purchase", () => {
    * back, and a button that implied otherwise would be the shop promising a refund.
    */
   it("says currency is not restorable", () => {
-    const root = buildShop(store(), gateway(), () => {});
+    const root = buildShop(store(), gateway());
     expect(root.textContent).toMatch(/cannot be restored/i);
   });
 

@@ -1,25 +1,67 @@
 /**
- * The shop.
+ * THE SHOP, DRAWN TO THE DESIGN (Figma `Zombie Ants` → `06-07-shop 2`, node `134:158`).
  *
- * Sells only what the game can actually give: mycelium, pheromone, the Colony Pass and the
- * one premium colony. The legacy build also sells larva and cosmetic rolls; neither the
- * lucky hatch nor the cosmetics pool is ported, so those tiles are not here rather than
- * taking money against a feature that does not exist.
+ * Sells only what the game can actually give: mycelium, pheromone, larva, the Colony Pass
+ * and the one premium colony. Every sale goes through a `PurchaseGateway`
+ * (platform/purchases.ts) — on the web that is the demo gateway, which grants without
+ * charging and says so, so the screen never needs to know which gateway it is talking to.
  *
- * Every sale goes through a PurchaseGateway (platform/purchases.ts). On the web that is the
- * demo gateway, which grants without charging and says so — the screen never needs to know
- * which gateway it is talking to.
+ * WHAT THE DESIGN CHANGED, and it is the same language home was given:
+ * - A TILE IS A CARD on the shared `--hud-card` face, with the ledge and the gloss every
+ *   other raised thing in the app wears, and a 70px PAINTING rather than a 26px glyph on
+ *   a plate. The picture is the product (`ui/shelf.ts`), which is what makes a shelf read
+ *   as goods instead of as a row of list rows.
+ * - THE PRICE IS A GREEN BUTTON, the one bright colour on the screen, so what is for sale
+ *   and what it costs are the same object.
+ * - A SECTION IS ONE SMALL LABEL. It was a rule-line-title-rule header plus a grey
+ *   subtitle under it — three elements and two lines for a word, repeated six times down
+ *   a scroller. The label names the shelf and the shelf shows the rest.
+ * - THE ORDER IS THE DESIGN'S: the gift, then larva with the odds panel directly under it
+ *   (the panel is a disclosure about what a larva buys, so it belongs against the row that
+ *   sells one, §LOOT BOX ODDS), then pheromone, mycelium, the bundles and the unlocks.
+ * - NO BACK ARROW AND NO SUBTITLE. The shop is a deck screen reached by a tab, the way
+ *   Challenges is — and Challenges has never drawn one. An arrow on a screen the bar is
+ *   standing under is a second way out of a page nobody is deep inside.
  *
- * Markup is the legacy build's (shopwrap → sechead → tilerow → stile → buybar).
+ * The hooks the rest of the app holds it by are unchanged: `.shopwrap` (the tour),
+ * `.stile` and `.buybar` (the tests), `#shopLarva` (the hatch's plus sign) and
+ * `#shopRestore` (the store-policy test).
  */
 import { DAILY_GIFT, SHOP_PRODUCTS } from "../platform";
 import type { ProfileStore, Product, PurchaseGateway } from "../platform";
-import { el, redraw, screenEl, screenHeader, toast } from "./chrome";
+import { el, hudMark, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 import { buildOdds } from "./odds";
+import { shelfArt } from "./shelf";
+
+/** The design's sizes, in its own numbers: a shelf's painting and the gift's. */
+const ART = 70;
+const GIFT_ART = 62;
+
+/**
+ * A product's picture.
+ *
+ * The painted shelf if there is one, else the currency's own chrome mark — which is
+ * painted too, so the fallback is a smaller version of the right thing rather than a
+ * placeholder (§ ui/shelf.ts).
+ */
+function art(product: { id: string; icon: string }, size = ART): HTMLElement {
+  const painted = shelfArt(product.id);
+  if (!painted) {
+    const mark = hudMark(product.icon, size);
+    mark.classList.add("sh-art");
+    return mark as HTMLElement;
+  }
+  const img = el("img", "sh-art") as HTMLImageElement;
+  img.src = painted;
+  img.alt = "";
+  img.width = size;
+  img.height = size;
+  return img;
+}
 
 export function buildShop(
-  store: ProfileStore, gateway: PurchaseGateway, onBack: () => void,
+  store: ProfileStore, gateway: PurchaseGateway,
 ): HTMLElement {
   const root = screenEl("shop");
   /** Guards against a second tap while a purchase is in flight. */
@@ -27,7 +69,8 @@ export function buildShop(
 
   const render = (): void => {
     redraw(root);
-    screenHeader(root, { title: "Shop", sub: "Bundles, currency & the pass", onBack });
+    // Title only: no subtitle and no arrow (see the note at the head of this file).
+    screenHeader(root, { title: "Shop" });
 
     const body = el("div", "screenbody shopbody");
     body.id = "shopBody";
@@ -45,47 +88,51 @@ export function buildShop(
 
     wrap.appendChild(dailyGift());
 
-    wrap.append(...section("Bundles"), row(byKind("bundle")));
-    wrap.append(...section("Mycelium", "Chambers, research and colonies"), row(byKind("currency", "mycel")));
-    wrap.append(...section("Pheromone dust", "Spent in the shop and on the road"), row(byKind("currency", "pheromone")));
-
-    // ANCHORED, because the lucky hatch's plus sign comes straight here. A shop that opens
-    // at the top and leaves the player to find the row they asked for has not answered the
-    // tap — and the id is on the HEADING, not the tiles, so what scrolls into view is the
-    // section rather than the middle of it.
-    const larva = section("Larva", "Hatched in the lucky hatch");
-    larva[0]?.setAttribute("id", "shopLarva");
-    wrap.append(...larva, row(byKind("currency", "brood")));
     /*
-     * THE ODDS, BESIDE THE THING THAT BUYS THE ROLL, AND BOTH STORES REQUIRE IT THERE.
+     * LARVA LEADS, AND THE ODDS SIT DIRECTLY UNDER IT.
      *
      * Google Play and Apple say the same thing in almost the same words: an app offering a
      * mechanism that provides randomised virtual items for purchase must disclose the odds
-     * of each outcome PRIOR TO PURCHASE. They were printed on the hatch, which is where a
-     * player rolls — and the purchase is here, two screens away from any statement of what
-     * a larva is worth. That gap is the whole of the requirement.
+     * of each outcome PRIOR TO PURCHASE. They used to be printed on the hatch, which is
+     * where a player ROLLS — and the purchase is here. The design puts the panel against
+     * the row that sells the roll, which is the requirement drawn rather than merely met.
      *
-     * It is the same panel the hatch shows (`ui/odds.ts`), derived from the weights the
-     * roll really uses, so there is one set of numbers rather than two that can drift.
+     * The id is on the LABEL, not on the tiles, because the hatch's plus sign scrolls
+     * here: what should come into view is the shelf, not the middle of it.
      */
+    const larva = label("Larva");
+    larva.id = "shopLarva";
+    wrap.append(larva, row(byKind("currency", "brood")));
     wrap.appendChild(buildOdds("What a larva can hatch"));
 
-    wrap.append(...section("Unlocks"), row([...byKind("pass"), ...byKind("species")]));
+    wrap.append(label("Pheromone dust"), row(byKind("currency", "pheromone")));
+    wrap.append(label("Mycelium"), row(byKind("currency", "mycel")));
+    wrap.append(label("Bundles"), row(byKind("bundle")));
+    wrap.append(label("Unlocks"), row([...byKind("pass"), ...byKind("species")]));
     wrap.appendChild(restoreRow());
 
     body.appendChild(wrap);
     root.appendChild(body);
   };
 
-  const section = (title: string, sub?: string): HTMLElement[] => {
-    const head = el("div", "sechead");
-    head.append(el("span", "l"), el("h3", undefined, title), el("span", "l"));
-    return sub ? [head, el("div", "secsub", sub)] : [head];
-  };
+  /**
+   * A SHELF'S NAME, and nothing else.
+   *
+   * It was a `sechead` — a rule, a heading and a second rule — with a `secsub` grey line
+   * under it: three elements and two lines of chrome for one word, six times down one
+   * scroller. The design asks for a label, and the tiles under it say the rest.
+   */
+  const label = (title: string): HTMLElement => el("div", "sh-label", title);
 
   const byKind = (kind: Product["kind"], icon?: string): Product[] =>
     SHOP_PRODUCTS.filter((p) => p.kind === kind && (!icon || p.icon === icon));
 
+  /**
+   * A SHELF: three tiles across, or two where that is what the shelf holds.
+   *
+   * `two` is the Unlocks row in the design — a wider card carrying a title AND a line of
+   * copy, which is why it is a different shape rather than a three-column row with a hole.
+   */
   const row = (products: Product[]): HTMLElement => {
     const box = el("div", "tilerow" + (products.length === 2 ? " two" : ""));
     for (const p of products) box.appendChild(tile(p));
@@ -99,24 +146,17 @@ export function buildShop(
       cell.appendChild(el("span", `ribbon ${product.ribbonClass ?? ""}`.trim(), product.ribbon));
     }
 
-    const art = el("div", "art");
-    // A mark from the icon family on its own plate. These were emoji — a gift, a cardboard
-    // box and a crown from three different sets, which is what made the shop look like a
-    // list of stock images rather than a storefront.
-    const mark = el("span", "ic");
-    mark.appendChild(icon(product.icon, product.kind === "currency" ? 30 : 26));
-    art.appendChild(mark);
+    cell.appendChild(art(product));
+
+    // WHAT IT IS, in one line. A currency tile says the AMOUNT, because that is the whole
+    // of what it sells; a pass or a colony says its name and then what it does.
     const amount = (product.grant.mycel ?? 0) + (product.grant.pheromone ?? 0)
       + (product.grant.larva ?? 0);
-    if (product.kind === "currency") {
-      art.appendChild(el("span", "amt", amount.toLocaleString()));
-    } else {
-      art.append(
-        el("span", "amt", product.title ?? ""),
-        el("span", "sub", product.sub ?? ""),
-      );
+    cell.appendChild(el("span", "sh-name",
+      product.kind === "currency" ? amount.toLocaleString() : product.title ?? ""));
+    if (product.kind !== "currency" && product.sub) {
+      cell.appendChild(el("span", "sh-sub", product.sub));
     }
-    cell.appendChild(art);
 
     const buy = el("button", "buybar" + (owned ? " off" : ""), owned ? "Owned" : product.price);
     buy.disabled = owned;
@@ -196,21 +236,37 @@ export function buildShop(
       .finally(() => { busy = false; btn.disabled = false; });
   };
 
+  /**
+   * THE GIFT IS ONE WIDE CARD: the chest, what it pays, and the button.
+   *
+   * The amounts are the two currencies' own painted marks beside their figures, which is
+   * the same pair the top bar carries — a reward stated in the marks a player already
+   * reads everywhere else, rather than in words only this screen uses.
+   */
   const dailyGift = (): HTMLElement => {
     const ready = store.dailyGiftReady();
-    const cell = el("div", "stile");
-    const art = el("div", "art");
-    const mark = el("span", "ic");
-    mark.appendChild(icon("gift", 26));
-    const amount = el("span", "amt reward");
-    amount.append(
-      icon("mycel", 15), el("b", undefined, String(DAILY_GIFT.mycel)),
-      icon("pheromone", 15), el("b", undefined, String(DAILY_GIFT.pheromone)),
-    );
-    art.append(mark, amount, el("span", "sub", "Daily gift"));
-    cell.appendChild(art);
+    const cell = el("div", "stile sh-gift");
+    cell.appendChild(art({ id: "daily.gift", icon: "gift" }, GIFT_ART));
+
+    const mid = el("div", "sh-giftmid");
+    const amounts = el("div", "sh-amounts");
+    for (const [mark, n] of [["pheromone", DAILY_GIFT.pheromone], ["mycel", DAILY_GIFT.mycel]] as const) {
+      const one = el("span", "sh-amt");
+      one.append(hudMark(mark, 26), el("b", undefined, String(n)));
+      amounts.appendChild(one);
+    }
 
     const btn = el("button", "buybar " + (ready ? "free" : "off"), ready ? "FREE" : hoursLeft());
+    /*
+     * AND THE BUTTON IS WHAT NAMES IT. The design's card is a chest, two amounts and the
+     * word FREE — no title anywhere on it, which is right on the glass (a chest beside two
+     * currency marks is not ambiguous) and leaves the one CONTROL saying "FREE" and
+     * nothing else. `title`/`aria-label` carry the name, which is the rule every other
+     * unlabelled mark in this app follows (§ EVERY CONTROL SAYS WHAT IT IS) — and it is
+     * the hook the test holds the card by, now that no text does.
+     */
+    btn.title = "Daily gift";
+    btn.setAttribute("aria-label", "Daily gift");
     btn.disabled = !ready;
     if (ready) {
       btn.onclick = () => {
@@ -220,13 +276,9 @@ export function buildShop(
         }
       };
     }
-    cell.appendChild(btn);
-
-    // On its own row, full width: a half-width tile with nothing beside it reads as a gap.
-    const solo = el("div", "tilerow");
-    solo.style.gridTemplateColumns = "1fr";
-    solo.appendChild(cell);
-    return solo;
+    mid.append(amounts, btn);
+    cell.appendChild(mid);
+    return cell;
   };
 
   const hoursLeft = (): string => {
