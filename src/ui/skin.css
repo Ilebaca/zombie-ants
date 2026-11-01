@@ -7660,6 +7660,7 @@ button:not(.playbtn):active,
    of one thing. */
 #antarium .an-tile {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
   border: none;
   border-radius: var(--r-card);
@@ -7871,9 +7872,17 @@ button:not(.playbtn):active,
   box-shadow: none !important;
 }
 #antarium .ccard .an-tile { aspect-ratio: 9 / 8; }
-/* The one card the banner is describing. A ring on the TILE, because the
-   card has no edges of its own to ring. */
-#antarium .ccard.sel .an-tile { outline: 2px solid var(--hud-ink); outline-offset: -2px; }
+/* The selected ring is a separate layer above both the artwork and level badge. */
+#antarium .ccard.sel .an-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  border: 2px solid var(--hud-ink);
+  border-radius: inherit;
+  pointer-events: none;
+}
 #antarium .cname {
   font-size: var(--fs-small);
   line-height: 1.2;
