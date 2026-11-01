@@ -4454,9 +4454,18 @@ button:not(.playbtn):active,
      granary pill ended up at when the tab tray's gutter came off — an item
      touching the glass reads as a layout that overflowed. */
   --gutter: calc(12 * var(--u));
-  /* THE COLONY ROW'S ONE HEIGHT: the figure's line box, which the crossed swords mark
-     and the progress bar are both sized to. */
+  /* THE COLONY ROW'S ONE HEIGHT, AND IT IS THE INK RATHER THAN THE LINE BOX.
+     `--colline` is the figure's font-size; `--colink` is how tall the digits actually
+     ARE, which is the number the mark and the bar are matched to. A font-size is the em
+     box, and an em box is always taller than the glyphs in it — matched to that, both
+     stood visibly proud of the figure at top and bottom, reported exactly that way.
+     0.7385 is MEASURED, in a browser, on Poetsen One: the ink box of the rendered text
+     over its font-size, identical to four decimals for every shape `compact()` can
+     produce (40, 940, 1.2M, 23K, 4.8B, 6T) — digits and the K/M/B/T suffixes are all
+     cap height in this face, and none of them descends. It is a property of the TYPEFACE,
+     so it is re-measured if the display face ever changes. */
   --colline: calc(30 * var(--u));
+  --colink: calc(var(--colline) * 0.7385);
   /* Wider than the reading column on purpose: clamping home's furniture to
      a 360px measure inside a 390px phone put a second gutter inside the
      first. The cap only bites on a tablet, where a banner spread across the
@@ -6684,7 +6693,13 @@ button:not(.playbtn):active,
   overflow: hidden;
   padding: calc(2 * var(--u)) calc(5 * var(--u)) calc(2 * var(--u)) calc(2 * var(--u));
   border: none;
-  border-radius: calc(5 * var(--u));
+  /* THE LEFT END IS A SEMICIRCLE, asked for directly. Both left corners go all the way
+     round and the right two keep the design's 5 — the mark at that end is a painted
+     DISC, so a square-ish corner behind it is a second shape fighting the first. It is
+     written as a huge radius rather than half the height: the chip is sized by what is
+     in it (`height: auto`), and a browser clamps a radius that exceeds the box, so one
+     number stays right at every scale and if the contents ever grow. */
+  border-radius: 999px calc(5 * var(--u)) calc(5 * var(--u)) 999px;
   background: var(--hud-face);
   box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
 }
@@ -6762,15 +6777,16 @@ button:not(.playbtn):active,
   gap: calc(5 * var(--u));
 }
 #home .col-mark { display: flex; color: var(--hud-ink); }
-/* THE MARK IS THE HEIGHT OF THE FIGURE BESIDE IT, asked for directly. It was 21 against
-   a 30 figure, which reads as a small picture stuck on the front of a big number rather
-   than as one line. `--colline` is the figure's own line box (its `font-size`, at
-   `line-height: 1`), and the bar below takes the same number — so the three things on
-   this row are one height by construction rather than by three numbers agreeing. */
+/* THE MARK IS THE HEIGHT OF THE DIGITS, asked for directly — twice. It was 21 against a
+   30 figure, which reads as a small picture stuck on the front of a big number; matched
+   to the font-SIZE it was visibly taller than the figure instead, because an em box is
+   always bigger than the ink in it. `--colink` is the measured ink, and the bar below
+   takes the same number, so the three things on this row are one height by construction
+   rather than by three numbers agreeing. */
 #home .col-mark svg,
 #home .col-mark .hudmark {
-  width: var(--colline);
-  height: var(--colline);
+  width: var(--colink);
+  height: var(--colink);
   display: block;
 }
 #home .col-n {
@@ -6798,7 +6814,7 @@ button:not(.playbtn):active,
   justify-content: center;
   gap: 0;
 }
-/* THE BAR IS THE HEIGHT OF THE FIGURE, asked for directly — the same `--colline` the
+/* THE BAR IS THE HEIGHT OF THE DIGITS, asked for directly — the same `--colink` the
    crossed swords take, so the row is one height rather than three. It was a 6px rule
    with a chapter label stacked over it; the label is gone (`chrome.ts`). The corners
    are 2 design px: barely rounded, which is what keeps five hard-edged fifths reading
@@ -6808,7 +6824,7 @@ button:not(.playbtn):active,
   flex: none;
   align-self: center;
   width: 100%;
-  height: var(--colline);
+  height: var(--colink);
   overflow: hidden;
   border: 1px solid #000;
   border-radius: calc(2 * var(--u));
@@ -6826,7 +6842,7 @@ button:not(.playbtn):active,
   height: 100%;
   border-radius: calc(2 * var(--u));
   background: var(--hud-go);
-  box-shadow: inset 0 calc(var(--colline) / 3) 0 rgba(255, 255, 255, .22) !important;
+  box-shadow: inset 0 calc(var(--colink) / 3) 0 rgba(255, 255, 255, .22) !important;
 }
 /* THE FOUR DIVIDERS, 1px of BLACK through the bar, asked for directly. A chapter is five
    checkpoints, so the bar is ruled into five and fills one at a time. Black is the

@@ -725,27 +725,45 @@ describe("the colony bar and the tab tray", () => {
   const css = read("skin.css");
 
   /*
-   * ONE HEIGHT DOWN THE WHOLE ROW, asked for directly: the crossed swords mark and the
-   * progress bar are both the FIGURE's own line box. The mark was 21 against a 30
-   * figure, which reads as a small picture stuck on the front of a big number.
+   * ONE HEIGHT DOWN THE WHOLE ROW, asked for directly — and it is the INK, not the em
+   * box. The mark was 21 against a 30 figure, which reads as a small picture stuck on
+   * the front of a big number; matched to the font-SIZE it came back visibly TALLER
+   * than the figure, because an em box is always bigger than the glyphs in it.
    *
-   * What is held is that all three name the SAME TOKEN. Three copies of `30 * var(--u)`
-   * would satisfy an assertion about the number while being three chances for the rule
-   * to stop being true — the lesson `--vgap` is already on record for.
+   * `--colink` is the measured ink height (see the token's own comment — 0.7385 of the
+   * font-size, read off Poetsen One in a browser). What is held here is that the mark
+   * and the bar both name THAT token and the figure names the font-size one: four
+   * copies of a number would satisfy an assertion about the number while being four
+   * chances for the rule to stop being true — the lesson `--vgap` is on record for.
    */
-  it("gives the mark, the figure and the bar one height", () => {
-    expect(rulesFor(css, "#home"), "the row has no height of its own")
-      .toMatch(dp("--colline", 30));
+  it("gives the mark and the bar the figure's ink height", () => {
+    const root = rulesFor(css, "#home");
+    expect(root, "the row has no font-size of its own").toMatch(dp("--colline", 30));
+    expect(root, "the ink height is not derived from the font-size")
+      .toMatch(/--colink:\s*calc\(var\(--colline\) \* 0?\.\d+\)/);
+    // The FIGURE is set in the font-size; the two things matched to it take the INK.
     expect(ruleFor(css, "#home .col-n")).toMatch(/font-size:\s*var\(--colline\)/);
     expect(ruleFor(css, "#home .col-mark svg,\n#home .col-mark .hudmark"))
-      .toMatch(/height:\s*var\(--colline\)/);
+      .toMatch(/height:\s*var\(--colink\)/);
     expect(ruleFor(css, "#home .col-rail .tr-bar"))
-      .toMatch(/height:\s*var\(--colline\)/);
+      .toMatch(/height:\s*var\(--colink\)/);
     // ...and nothing in the row is stretched to a different one.
     for (const sel of ["#home .col-size", "#home .col-pay", "#home .col-rail .tr-bar"]) {
       expect(ruleFor(css, sel), `${sel} does not hold its own middle`)
         .toMatch(/align-self:\s*center/);
     }
+  });
+
+  /*
+   * THE CURRENCY CHIP'S LEFT END IS A SEMICIRCLE, asked for directly. The mark at that
+   * end is a painted DISC, so a square-ish corner behind it is a second shape fighting
+   * the first. A huge radius rather than half the height: the chip is sized by what is
+   * in it, and a browser clamps a radius that exceeds the box — one number that stays
+   * right at every scale. The RIGHT two keep the design's 5.
+   */
+  it("rounds the currency chip's left end all the way", () => {
+    expect(ruleFor(css, "#home .tn-coin"), "the chip's left end is not fully rounded")
+      .toMatch(/border-radius:\s*999px calc\(5 \* var\(--u\)\) calc\(5 \* var\(--u\)\) 999px/);
   });
 
   /*
@@ -769,7 +787,7 @@ describe("the colony bar and the tab tray", () => {
    */
   it("lights the top third of the fill", () => {
     expect(ruleFor(css, "#home .col-rail .tr-fill"), "the band is not a third of the bar")
-      .toMatch(/box-shadow:\s*inset 0 calc\(var\(--colline\) \/ 3\) 0 [^;]*!important/);
+      .toMatch(/box-shadow:\s*inset 0 calc\(var\(--colink\) \/ 3\) 0 [^;]*!important/);
   });
 
   /*

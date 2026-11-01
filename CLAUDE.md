@@ -2805,6 +2805,12 @@ and lands on the design's figure exactly.
   padding every scrolling screen keeps at its foot is the only thing stopping the last
   row sitting under it. Two places spelling out one rule (§7), so a test reads both and
   compares them.
+- **THE CURRENCY CHIP'S LEFT END IS A SEMICIRCLE**, asked for directly. Both left
+  corners go all the way round and the right two keep the design's 5: the mark at that
+  end is a painted DISC, so a square-ish corner behind it is a second shape fighting the
+  first. Written as a huge radius rather than half the height — the chip is sized by what
+  is in it (`height: auto`) and a browser clamps a radius that exceeds the box, so one
+  number stays right at every scale and if the contents ever grow.
 - **TWO FIXED SIZES NEEDED THE LEGACY SHEET OVERRULED, and neither shows in jsdom.**
   `.tn-coin` is pinned to `height: 26px` there — exactly the currency mark's own height,
   so the 2px of padding around it had nowhere to go and the chip clipped itself; it is
@@ -2837,13 +2843,26 @@ and lands on the design's figure exactly.
     SCREENS, none of which a `.tr-cut` is (§10). A 1px hairline in the banner's own green
     is a background COLOUR, and it reads as a gap between five pieces over the filled
     part AND over the empty track.
-  - **ONE HEIGHT DOWN THE WHOLE ROW** (`--colline`), asked for directly. The crossed
-    swords mark and the bar are both the FIGURE's own line box — the mark was 21 against
-    a 30 figure, which reads as a small picture stuck on the front of a big number. It
-    is a TOKEN, not the number written three times, for the reason `--vgap` is: three
-    copies would satisfy an assertion about the number while being three chances for the
-    rule to stop being true. The corner is 2px, because the old 30px pill rounded five
-    hard-edged fifths back into one object.
+  - **ONE HEIGHT DOWN THE WHOLE ROW, AND IT IS THE INK RATHER THAN THE EM BOX**
+    (`--colink`), asked for directly — twice. The crossed swords mark was 21 against a 30
+    figure, which reads as a small picture stuck on the front of a big number; matched to
+    the FONT-SIZE instead, both the mark and the bar came back visibly TALLER than the
+    digits, because an em box is always bigger than the glyphs in it. Reported exactly
+    that way, with the fix attached: "count pixels if you have to".
+    - **0.7385 IS MEASURED, not a cap-height table.** The ink box of the rendered text
+      over its font-size, read off Poetsen One in a browser two ways that agree
+      (`measureText`'s actual bounding box, and a 4x-supersampled pixel scan): **24.0 of
+      32.5**, identical to four decimals for every shape `compact()` can produce — 40,
+      940, 1.2M, 23K, 4.8B, 6T. Digits and the K/M/B/T suffixes are all cap height in
+      this face and none of them descends, so one ratio covers the whole figure. It is a
+      property of the TYPEFACE, so it is re-measured if the display face changes.
+    - **The figure keeps `--colline` (the font-size) and the other two take `--colink`.**
+      Two tokens rather than four numbers, for the reason `--vgap` is one: a copy
+      satisfies an assertion about the number while being another chance for the rule to
+      stop being true. Measured after: the mark and the bar land **within a pixel under**
+      the digits at 360 and 390, rather than a pixel and a half over.
+    - The bar's corner is 2px, because the old 30px pill rounded five hard-edged fifths
+      back into one object.
   - **AND THE GREEN IS IN THE BAR, NOT ON THE PLATE**, asked for directly. The banner was
     `--hud-go` with a cream fill on it; it is `--hud-face` now, the same dark card as
     everything else on the screen, and the design's one bright colour marks the thing
@@ -3007,6 +3026,14 @@ seven illustrators (§10). The redesign paints them, and only them.
     were drawn and failed the day they were painted, with the rail perfectly correct —
     the same two-tag trap the stylesheet is swept for (§ A COLLECTION CARD). What a box
     owes is A MARK: `svg, .hudmark`.
+  - **AND A MARK IS REPLACED BY DROPPING THE NEW FILE IN, which is the point of the
+    table.** Both currency marks were repainted and the whole change was two files at
+    `src/ui/hud/mycel.webp` and `.../pheromone.webp` — no code, no test, no name. **Which
+    file is which was settled by COLOUR, against the ones already there**, not by looking
+    at them: `mycel` is the PURPLE one and `pheromone` the BLUE one, which is the
+    opposite of what the names suggest to anybody who has not checked. A mean-RGB
+    comparison answers in a second and swapping the two would be invisible to every test
+    in the suite.
   - **A PICTURE IN THE CONVERSATION IS NOT A FILE, and that cost two rounds.** Three
     batches were sent and were perfectly visible in the chat while nothing whatever
     existed on disk — a sweep of the whole container found only this session's own
