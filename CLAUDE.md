@@ -2807,9 +2807,32 @@ and lands on the design's figure exactly.
   above the active tab is gone with them — the tile is GREEN now, which is the loudest
   difference on the bar, and the tick was a second answer to a question already answered.
 - **THE BAR AND THE ROOM RESERVED FOR IT ARE ONE NUMBER.** It grew 64 → 70, and the
-  padding every scrolling screen keeps at its foot is the only thing stopping the last
-  row sitting under it. Two places spelling out one rule (§7), so a test reads both and
-  compares them.
+  padding that keeps the last row from sitting under it is the only thing stopping it.
+  Two places spelling out one rule (§7), so a test reads both and compares them.
+  - **AND A SCREEN DOES NOT SHORTEN ITSELF FOR THE BAR — ITS SCROLLER KEEPS THE ROOM.**
+    Reported from a phone as "a black frame under the menu that is cutting off the
+    content", and that is exactly what it was. The legacy rule pads the SCREEN, so the
+    scroller inside ends at the TOP of the bar — while the bar is transparent down to its
+    half-height shelf. What is left between the two is a band of bare page with nothing in
+    it: a list that stops dead, a gap, then the shelf. It never showed on HOME, because
+    home is a full-bleed picture with nothing to clip and nothing that scrolls, which is
+    why it survived the redesign and why home still takes the room as its own padding.
+    - **The INNERMOST scroller is what takes it, and it is named per screen** because it
+      differs: the shop and the Antarium scroll their `.screenbody`, the Anthill scrolls a
+      wrapper inside it and the Challenges list scrolls itself. Padding an OUTER box only
+      moves the dead band inwards — the inner scroller then ends where the padding starts,
+      which is the same fault one element down.
+    - **And content passing behind the tiles is the point**, not a side effect: that is
+      what every bottom bar on a phone does, and it is what "only the buttons and the half
+      tall frame" means.
+  - **AND THE EIGHT SCREENS THE BAR NO LONGER STANDS ON RESERVE NOTHING FOR IT.** The
+    legacy list is thirteen screens, from a build where every one of them showed the bar;
+    it is the five deck screens now. On the other eight that padding was a 70px strip of
+    nothing at the foot of the page — most visibly the Colony Road, whose sticky footer is
+    meant to sit flush on the bottom edge and was floating clear of it.
+  - Three of these are held by `css-sanity`, because nothing a jsdom test can see would
+    notice any of them: there is no layout, the markup is identical, and only the cascade
+    decides where a scroller ends.
 - **THE CURRENCY CHIP'S LEFT END IS A SEMICIRCLE AND ITS RIGHT END IS THE BLOCK'S OWN
   CORNER**, both asked for. The mark at the left is a painted DISC, so a square-ish
   corner behind it is a second shape fighting the first; the right two are **7**, which
@@ -3074,11 +3097,14 @@ all tokens.
   (`levelOf`): 0 locked, 1 on purchase, a rung per research level after. The grey tile
   beside it is the same sentence said in colour. `min-width`, never `width` — a two-digit
   level has to widen the badge rather than overflow it.
-  - **The banner's RUNGS and the badge are two views of one number.** The bar is one pip
-    per `RESEARCH_TOTAL_MAX`, never a count written down — the design drew ten and the
-    tree is fifteen, and a bar that disagrees with the screen it opens is the app lying
-    about how far there is to go. They share the row's width, so retuning the tree moves
-    the rungs rather than overflowing them.
+  - **The banner's RUNGS ARE THE BADGE, DRAWN LONG.** One square per level the colony can
+    reach, lit as far as it has come — asked for directly, "there should be 16 of those
+    green squares showing the level". It was research-out-of-fifteen for a day, which put
+    a badge reading 1 over a bar with nothing in it: two readings of one number that did
+    not agree. The count is `LEVEL_MAX`, derived rather than typed — the design drew ten
+    and the ladder is sixteen, and a bar written out would quietly stop one square short
+    of a level a player can reach the day the research tree is retuned. They share the
+    row's width, so retuning it moves the rungs rather than overflowing them.
   - **The top is 16, not the 12 that was asked for**, because 15 research levels plus the
     one for owning it is where three equal tracks land. Shortening the tree to make 12
     exact would re-open the economy (§8c: pheromone's only sink is this tree), so it was

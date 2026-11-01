@@ -110,23 +110,28 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
       meta,
       el("div", "rb-name", species.name),
       el("div", "rb-tag", species.blurb),
-      segments(researchTotal(research)),
+      segments(levelOf(store, id)),
     );
     box.appendChild(info);
     return box;
   };
 
   /**
-   * RESEARCH AS RUNGS, one per level the colony can hold.
+   * THE LEVEL AS RUNGS, one per level the colony can reach.
    *
-   * The count is `RESEARCH_TOTAL_MAX`, never a number written down here — the design drew
-   * ten and the tree is fifteen, and a bar that disagrees with the screen it opens is the
-   * app lying about how far there is to go. They share the row's width, so retuning the
-   * tree moves the rungs rather than overflowing them.
+   * It is the SAME number the badge carries, drawn long instead of short — so a colony
+   * on 16 has sixteen lit squares and one that was bought this minute has one. It was
+   * research-out-of-fifteen for a day, which meant the badge said 1 over a bar with
+   * nothing in it; two readings of one thing that did not agree.
+   *
+   * The count is `LEVEL_MAX`, never a number written down here — the design drew ten and
+   * the ladder is sixteen, and a bar that disagrees with the screen it opens is the app
+   * lying about how far there is to go. They share the row's width, so retuning the
+   * research tree moves the rungs rather than overflowing them.
    */
   const segments = (done: number): HTMLElement => {
     const bar = el("div", "rb-seg");
-    for (let i = 0; i < RESEARCH_TOTAL_MAX; i++) {
+    for (let i = 0; i < LEVEL_MAX; i++) {
       bar.appendChild(el("span", "rb-pip" + (i < done ? " on" : "")));
     }
     return bar;
@@ -241,6 +246,15 @@ const researchTotal = (r: Research): number => r.reservoir + r.mandible + r.cuti
  */
 export const levelOf = (store: ProfileStore, id: SpeciesId): number =>
   store.isUnlocked(id) ? 1 + researchTotal(researchOf(store, id)) : 0;
+
+/**
+ * The top of that ladder: every research level, plus the one for owning the colony.
+ *
+ * DERIVED, never typed. It is what the banner draws a square for, so a retune of the
+ * research tree moves the bar and the badge's ceiling together — written out, the bar
+ * would quietly stop one short of a level the player can actually reach.
+ */
+export const LEVEL_MAX = 1 + RESEARCH_TOTAL_MAX;
 
 /** One species stat: a mark and a number, in the pill the stylesheet draws. */
 function statChip(mark: string, value: string): HTMLElement {

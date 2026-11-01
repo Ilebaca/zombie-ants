@@ -705,12 +705,52 @@ describe("the home screen's ledge survives the blanket", () => {
     // in real ones clips the last row's ledge on every phone that is not 360 wide.
     const bar = /height:\s*calc\(([^;]+) \+ env\(safe-area-inset-bottom\)\)/
       .exec(ruleFor(css, "#mainNav.homenav"))?.[1];
-    const reserved = /padding-bottom:\s*calc\(([^;]+) \+ env\(safe-area-inset-bottom\)\)/
-      .exec(rulesFor(css, "#home, #profile, #rules, #shop, #achievements, #settings, #news, #friends,\n#support, #luckyhatch, #antarium, #anthill, #challenges"))?.[1];
+    const roomIn = (sel: string): string | undefined =>
+      /padding-bottom:\s*calc\(([^;]+) \+ env\(safe-area-inset-bottom\)\)/
+        .exec(rulesFor(css, sel))?.[1];
     expect(bar, "the tab bar has no height of its own").toBe("var(--navh)");
-    expect(reserved, `the screens reserve ${String(reserved)} for a ${String(bar)} bar`).toBe(bar);
+    // Home takes it as its own padding, because nothing on it scrolls.
+    expect(roomIn("#home"), "home reserves the wrong room for the bar").toBe(bar);
+    // The four that SCROLL keep it on the scroller instead — see below.
+    expect(roomIn("#shop .screenbody,\n#antarium .screenbody,\n#anthill .hillwrap,\n#challenges .challist"),
+      "a deck screen's scroller reserves the wrong room").toBe(bar);
     expect(rulesFor(css, ":root"), "the bar's height is not the design's 70")
       .toMatch(/--navh:\s*calc\(70 \* var\(--u\)\)/);
+  });
+
+  /**
+   * A SCREEN DOES NOT SHORTEN ITSELF FOR THE BAR.
+   *
+   * Reported from a phone as "a black frame under the menu cutting off the content", and
+   * that is what it was: the legacy rule pads the SCREEN, so the scroller inside ends at
+   * the TOP of the bar — while the bar is transparent down to its half-height shelf. The
+   * band between the two is bare page with nothing in it. It never showed on home, which
+   * is a full-bleed picture with nothing to clip, so it survived the redesign.
+   *
+   * Nothing a jsdom test can see would notice this: there is no layout, the markup is
+   * identical, and only the cascade decides where a scroller ends.
+   */
+  it("lets the deck screens run under the bar rather than stopping above it", () => {
+    for (const id of ["#shop", "#anthill", "#antarium", "#challenges"]) {
+      const rule = rulesFor(css, "#shop, #anthill, #antarium, #challenges");
+      expect(rule, `${id} still shortens itself for the bar`)
+        .toMatch(/padding-bottom:\s*0/);
+    }
+  });
+
+  /**
+   * AND THE SCREENS THE BAR NO LONGER STANDS ON RESERVE NOTHING FOR IT. The legacy list
+   * is thirteen screens, from a build where every one of them showed the bar; it is the
+   * five deck screens now (§ NAV_SCREENS), so on the other eight that padding is a 70px
+   * strip of nothing at the foot of the page — the road's sticky footer floating clear of
+   * the bottom edge it is meant to sit on.
+   */
+  it("reserves no bar room on the screens that no longer show one", () => {
+    const rule = rulesFor(css,
+      "#profile, #rules, #achievements, #settings, #news, #friends,\n#support, #luckyhatch");
+    expect(rule, "the non-deck screens still reserve room for a bar that is not there")
+      .toMatch(/padding-bottom:\s*env\(safe-area-inset-bottom\)/);
+    expect(rule).not.toMatch(/--navh/);
   });
 });
 
