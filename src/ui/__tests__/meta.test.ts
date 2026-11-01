@@ -1251,7 +1251,8 @@ describe("legacy markup parity", () => {
     expect(root.querySelector("#aupTitle")?.textContent).toBe("Fire Ant");
     expect(root.querySelector("#aupSub")).toBeTruthy();
     expect(root.querySelector("#aupBack")).toBeTruthy();
-    expect(root.querySelector("#aupPort")).toBeTruthy();
+    expect(root.querySelector("#aupPort")).toBeNull();
+    expect(root.querySelector("#aupCover img")).toBeTruthy();
   });
 
   it("keeps the Colony screen's qhero → qcard skeleton", () => {

@@ -401,16 +401,16 @@ describe("the drawer is drawn to the design", () => {
  * It shows the CUT-OUT set, so the ground under the ant is the screen's own. The box
  * carried `#1a120a` from when the rail showed the painted set, and a brown rectangle
  * behind a transparent picture is the one thing a cut-out is made to remove — reported
- * as the image "somehow still having a brown background". The species page's hero keeps
- * that colour, because the paintings are lit on exactly it.
+ * as the image "somehow still having a brown background". The species cover must also
+ * stay transparent so its cut-out stands directly on the page.
  */
 describe("the colony rail", () => {
   it("shows the cut-out on the screen's own ground", () => {
     const css = read("skin.css");
     expect(rulesFor(css, ".coverslide"), "the rail grew a plate under the cut-out again")
       .not.toMatch(/background(-color)?\s*:\s*#/);
-    expect(rulesFor(css, ".spgcover"), "the hero lost the ground its paintings are lit on")
-      .toMatch(/background\s*:\s*#1a120a/);
+    expect(rulesFor(css, ".spgcover"), "the cover grew a separate fill behind the cut-out")
+      .toMatch(/background\s*:\s*(?:transparent|none)\s*;/);
   });
 });
 
