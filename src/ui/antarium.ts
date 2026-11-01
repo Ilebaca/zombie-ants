@@ -1,13 +1,19 @@
 /**
- * The Antarium: the collection, and per-species research.
+ * The Antarium: the collection, and the way into per-species research.
  *
- * Two screens, exactly as the legacy build lays them out:
- *   #antarium — a banner for the selected colony, one call-to-action, and the collection
- *               grouped by rarity tier.
- *   #antup    — that colony's page: combat profile, three research tracks, notes and trait.
+ * DRAWN TO A DESIGN (Figma `Zombie Ants` → node `134:305`), the third screen handed over
+ * finished rather than described — after home and the shop — and built from the same
+ * shared language they are (`:root` in `skin.css`). What that language could not already
+ * supply is the one thing this screen is about: a colony is a TILE OF ITS RARITY'S
+ * COLOUR, big enough to read across a grid, which is `TierDef.fill` (engine/tiers.ts).
  *
- * Class names come from the ported stylesheet (src/ui/game.css) and are load-bearing.
- * Research is per species (CLAUDE.md §11), so levelling Fire buys nothing for Ghost.
+ * THE LEVEL IS A BADGE IN THE TILE'S CORNER, and it says whether the colony is YOURS
+ * before it says anything else: 0 on a colony you do not own, 1 the moment you buy one,
+ * and a rung per research level after that. A locked tile is grey, which is the same
+ * sentence said in colour.
+ *
+ * Class names that come from the ported stylesheet (src/ui/game.css) are load-bearing;
+ * the ones added here are dressed at the foot of `skin.css`.
  *
  * Nothing here computes a modifier. `ProfileStore.modsFor` stays the only source of
  * PlayerMods; this screen reads levels and prices, and asks the store to spend.
@@ -18,8 +24,8 @@ import {
   RESEARCH_TOTAL_MAX, SPECIES_ORDER, SPECIES_UNLOCK, TIERS, tierOf,
 } from "../platform";
 import type { ProfileStore, Research } from "../platform";
-import { SPECIES_COL } from "../render";
-import { antPortrait, el, redraw, screenEl, screenHeader, toast } from "./chrome";
+import { cardArt } from "./cards";
+import { el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 
 export interface AntariumOptions {
@@ -35,68 +41,95 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
   let selected: SpeciesId = store.get().lastSpecies;
 
   const render = (): void => {
-    const profile = store.get();
     redraw(root);
     // No back arrow: this is a bottom-nav tab, and the nav is how the player leaves it.
-    screenHeader(root, {
-      title: "Antarium",
-      sub: "Collection & research",
-      mycel: profile.mycel,
-    });
+    // And no purse chip — the design's header is the title alone. What the player spends
+    // is named by the call to action the moment a locked colony is selected, which is the
+    // only place on this screen a price can actually be acted on.
+    screenHeader(root, { title: "Antarium" });
 
     const body = el("div", "screenbody sb-top");
     body.append(banner(), cta(), grid());
     root.appendChild(body);
   };
 
-  /** The hero strip: portrait, tier, name, blurb and the researched combat numbers. */
+  /**
+   * THE TILE IS THE COLONY: its rarity's colour, the level in the corner, and the picture
+   * on top once there is one.
+   *
+   * The picture is deliberately absent today — asked for directly, "you can just add
+   * colored background and later we place portraits on top of it" — and `cardArt` answers
+   * null until a file lands in `src/ui/cards/`. The drawn head is NOT the fallback: it is
+   * sized for a 40px row, and blown up to fill a 108px tile it reads as a mistake where a
+   * flat colour reads as a tile waiting for its picture.
+   */
+  const tile = (id: SpeciesId): HTMLElement => {
+    const owned = store.isUnlocked(id);
+    const box = el("div", "an-tile" + (owned ? "" : " locked"));
+    // A LOCKED TILE TAKES NO FILL AT ALL rather than being painted grey here: the
+    // stylesheet's `.locked` rule is what greys it, so there is one place that decides
+    // what "you do not own this" looks like.
+    if (owned) box.style.setProperty("--fill", tierOf(id).fill);
+    box.appendChild(el("span", "an-lv", String(levelOf(store, id))));
+
+    const art = cardArt(id);
+    if (art) {
+      const img = document.createElement("img");
+      img.className = "an-art";
+      img.src = art;
+      // Silent: the tile always sits inside something already naming the colony — the
+      // banner's own name line, or the card's name underneath it.
+      img.alt = "";
+      img.setAttribute("aria-hidden", "true");
+      box.appendChild(img);
+    }
+    return box;
+  };
+
+  /** The hero strip: the colony's tile, its two numbers, its name and its research. */
   const banner = (): HTMLElement => {
     const id = selected;
     const species = SPECIES[id];
-    const pal = SPECIES_COL[id];
-    const tier = tierOf(id);
     const research = researchOf(store, id);
-    const owned = store.isUnlocked(id);
 
     const box = el("div", "rbanner");
     box.id = "antBanner";
-    box.style.setProperty("--tc", tier.col);
-    box.style.setProperty("--tglow", tier.glow);
-    // The colony is drawn WEARING what the player put on it (engine/skins.ts) — this is
-    // their own collection, so showing the base look here and the skin on the board would
-    // be two answers to one question.
-    box.appendChild(antPortrait(id, 128, undefined, store.lookFor(id)));
+    box.appendChild(tile(id));
 
     const info = el("div", "rb-info");
-    info.appendChild(el("div", "rb-tier", species.premium ? "Mythic · Premium" : tier.name));
-    // THE LEVEL RIDES WITH THE NAME, hard right.
-    //
-    // It used to lead the chip row, where it was the widest thing in it and pushed the
-    // cooldown onto a second line — four chips wrapping 3 + 1, which reads as a row that
-    // did not fit rather than as one that was laid out. It is also not the same KIND of
-    // fact as the other three: attack, defence and cooldown are what the colony DOES, and
-    // the level is how far this player has taken it. Moved up, the three that belong
-    // together sit on one line.
-    const nameline = el("div", "rb-nl");
-    const name = el("div", "rb-name", species.name);
-    name.style.color = pal[1];
-    nameline.append(name, el("span", "lv",
-      owned ? `LV ${researchTotal(research)}/${RESEARCH_TOTAL_MAX}` : "LOCKED"));
-    info.append(nameline, el("div", "rb-tag", species.blurb));
-
-    // TWO CHIPS, NOT THREE. The cooldown was the one that would not fit: even shorn to
-    // "7t" it left three chips sharing a 202px line, each too narrow to read comfortably.
-    // It is also the one this screen is not about — the colony's own page states it, once
-    // (ui/species.ts), and the cards below this hero already pair attack with defence, so
-    // the hero now says the same two things in the same order.
+    // THE TWO NUMBERS LEAD, because they are what the colony IS. The rarity word that
+    // used to sit here is gone: the tile under it is painted in that rarity's colour and
+    // the section the card sits in is headed with its name, so a third saying was the
+    // same fact written three ways on one screen.
     const meta = el("div", "rb-meta");
     meta.append(
       statChip("attack", (species.atk * (1 + research.mandible * 0.05)).toFixed(2)),
       statChip("defence", (species.def * (1 + research.cuticle * 0.05)).toFixed(2)),
     );
-    info.appendChild(meta);
+    info.append(
+      meta,
+      el("div", "rb-name", species.name),
+      el("div", "rb-tag", species.blurb),
+      segments(researchTotal(research)),
+    );
     box.appendChild(info);
     return box;
+  };
+
+  /**
+   * RESEARCH AS RUNGS, one per level the colony can hold.
+   *
+   * The count is `RESEARCH_TOTAL_MAX`, never a number written down here — the design drew
+   * ten and the tree is fifteen, and a bar that disagrees with the screen it opens is the
+   * app lying about how far there is to go. They share the row's width, so retuning the
+   * tree moves the rungs rather than overflowing them.
+   */
+  const segments = (done: number): HTMLElement => {
+    const bar = el("div", "rb-seg");
+    for (let i = 0; i < RESEARCH_TOTAL_MAX; i++) {
+      bar.appendChild(el("span", "rb-pip" + (i < done ? " on" : "")));
+    }
+    return bar;
   };
 
   /**
@@ -109,8 +142,11 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
     const owned = store.isUnlocked(id);
     const price = SPECIES_UNLOCK[id];
     const affordable = store.get().mycel >= price;
+    // A slab that cannot do anything darkens its FILL rather than staying green and
+    // refusing — the same rule the shop's sold-out price follows.
+    const dead = !owned && (species.premium || !affordable);
 
-    const btn = el("button", "cta antcta" + (owned ? "" : " locked"));
+    const btn = el("button", "cta antcta" + (owned ? "" : " locked") + (dead ? " off" : ""));
     btn.id = "antCTA";
     btn.textContent = owned
       ? "Upgrade & research"
@@ -139,58 +175,46 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
       const ids = SPECIES_ORDER.filter((id) => tierOf(id).k === tier.k);
       if (!ids.length) continue;
 
+      // THE HEADING IS NOT PAINTED IN THE TIER'S COLOUR. Every tile under it already is,
+      // in a far larger area — and a rule drawn between the name and the count, which the
+      // legacy heading carried, is a third mark on a line that is two short words.
       const head = el("div", "tierhead");
-      head.style.color = tier.col;
       head.append(
         el("span", "tl", tier.name),
-        el("span", "tline"),
         el("span", "tc", `${ids.filter((id) => store.isUnlocked(id)).length}/${ids.length}`),
       );
-      wrap.appendChild(head);
-
       const cards = el("div", "cgrid");
-      for (const id of ids) cards.appendChild(collectionCard(id, tier.col, tier.glow));
-      wrap.appendChild(cards);
+      for (const id of ids) cards.appendChild(collectionCard(id));
+
+      // A HEADING AND ITS GRID ARE ONE BLOCK. Left as siblings of the scroller they sat
+      // on its single gap, so the space above a heading and the space under it were the
+      // same — which reads as a label floating between two rows rather than as the name
+      // of the one below it.
+      const group = el("div", "tiergrp");
+      group.append(head, cards);
+      wrap.appendChild(group);
     }
     return wrap;
   };
 
-  const collectionCard = (id: SpeciesId, col: string, glow: string): HTMLElement => {
-    const species = SPECIES[id];
+  const collectionCard = (id: SpeciesId): HTMLElement => {
     const owned = store.isUnlocked(id);
-    const research = researchOf(store, id);
-    const total = researchTotal(research);
-
     const card = el("div",
-      ["ccard", owned ? "" : "locked", species.premium ? "prem" : "", id === selected ? "sel" : ""]
-        .filter(Boolean).join(" "));
+      ["ccard", owned ? "" : "locked", SPECIES[id].premium ? "prem" : "",
+        id === selected ? "sel" : ""].filter(Boolean).join(" "));
     card.dataset.ant = id;
-    card.style.setProperty("--tc", col);
-    card.style.setProperty("--tglow", glow);
 
-    if (owned) card.appendChild(el("span", "clv", `LV ${total}`));
-    card.appendChild(antPortrait(id, 112, undefined, store.lookFor(id)));
+    card.appendChild(tile(id));
     // THE NAME AND NOTHING UNDER IT. The card used to carry the colony's attack and
     // defence as a bare pair — "0.86 · 0.87" — which is two numbers with no label, no
     // scale and nothing to compare them against, and reads as some kind of level rather
     // than as a stat. Both figures are a tap away as LABELLED chips on the banner above,
     // and the colony's own page draws them as bars measured against every other colony.
-    card.appendChild(el("div", "cname", species.name));
-
-    // NO RESEARCH BAR. It drew the same number the "LV 15" badge already carries, in a
-    // form with no label on it — and because it only appeared once a colony HAD research,
-    // it showed under some cards and not others, which reads as a stray rule under two of
-    // them rather than as a measure of anything. The badge says the level; the colony's
-    // own page is where research is actually read.
-    if (!owned) {
-      const veil = el("div", "cveil");
-      const shut = el("span", "cl");
-      shut.appendChild(iconMark("lock", 18));
-      const price = el("span", "cc");
-      price.append(iconMark("mycel", 13), el("span", undefined, String(SPECIES_UNLOCK[id])));
-      veil.append(shut, price);
-      card.appendChild(veil);
-    }
+    //
+    // The PRICE went with the veil that used to carry it. A locked tile is grey and its
+    // level is 0, which is what says it is not yours; the price is a thing to act on, so
+    // it belongs on the one control that can act on it.
+    card.appendChild(el("div", "cname", SPECIES[id].name));
 
     card.onclick = () => { selected = id; render(); };
     return card;
@@ -207,15 +231,20 @@ const researchOf = (store: ProfileStore, id: SpeciesId): Research =>
 
 const researchTotal = (r: Research): number => r.reservoir + r.mandible + r.cuticle;
 
-/** Species portrait. Locked colonies are drawn as silhouettes by the stylesheet's veil. */
-/** A mark from the icon family; `iconMark` because `icon` is a parameter name in here. */
-function iconMark(name: string, size: number): SVGSVGElement {
-  return icon(name, size);
-}
+/**
+ * THE NUMBER IN THE TILE'S CORNER.
+ *
+ * Zero means "not yours" and nothing else, which is why it is the one value a colony you
+ * own can never show: buying one is itself the first level. Everything after that is a
+ * research level, so the badge and the banner's rungs are two views of one number rather
+ * than two numbers that can drift.
+ */
+export const levelOf = (store: ProfileStore, id: SpeciesId): number =>
+  store.isUnlocked(id) ? 1 + researchTotal(researchOf(store, id)) : 0;
 
-/** One species stat: a mark and a number, in the pill the stylesheet already draws. */
+/** One species stat: a mark and a number, in the pill the stylesheet draws. */
 function statChip(mark: string, value: string): HTMLElement {
   const chip = el("span", "statchip");
-  chip.append(icon(mark, 13), el("span", undefined, value));
+  chip.append(icon(mark, 14), el("span", undefined, value));
   return chip;
 }

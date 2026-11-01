@@ -877,13 +877,25 @@ describe("the colony bar and the tab tray", () => {
  *
  * So these are SWEEPS over the whole block rather than assertions about single rules.
  */
+/**
+ * THE SLICE IS BOUNDED AT BOTH ENDS, and that is not tidiness: the sweeps below run over
+ * everything from a block's marker onwards, so an unbounded shop slice swallowed the
+ * ANTARIUM block the day it landed and failed it for the shop's rules. A design block
+ * runs from its own marker to the next one.
+ */
+const designBlock = (css: string, marker: string): string => {
+  const at = css.indexOf(marker);
+  expect(at, `the ${marker} block is gone`).toBeGreaterThan(-1);
+  const rest = css.slice(at + marker.length);
+  const next = rest.search(/^ {3}[A-Z][A-Z ,'`]+, DRAWN TO THE DESIGN$/m);
+  return code(next === -1 ? rest : rest.slice(0, next));
+};
+
 describe("the shop is written in the shared language", () => {
   const whole = read("skin.css");
-  const at = whole.indexOf("THE SHOP, DRAWN TO THE DESIGN");
-  const shop = code(whole.slice(at));
+  const shop = designBlock(whole, "THE SHOP, DRAWN TO THE DESIGN");
 
   it("still has a shop block to check", () => {
-    expect(at, "the shop's design block is gone").toBeGreaterThan(-1);
     expect(shop).toMatch(/#shop \.stile\s*\{/);
   });
 
@@ -969,5 +981,122 @@ describe("the shop is written in the shared language", () => {
     }
     expect(ruleFor(shop, "#shop .hatchodds,\n#luckyhatch .hatchodds"))
       .toMatch(/background:\s*var\(--hud-well\)/);
+  });
+});
+
+/**
+ * THE ANTARIUM, DRAWN TO THE DESIGN.
+ *
+ * Same two sweeps as the shop, because the request behind both was the same one: what a
+ * screen is built from is shared, and a literal typed into one rule renders perfectly
+ * while the design quietly comes apart. What is different here is the one thing this
+ * screen needed that the language did not have — a rarity painted as a SURFACE — and the
+ * rules below are the ones nothing a jsdom test can see would ever notice breaking.
+ */
+describe("the antarium is written in the shared language", () => {
+  const whole = read("skin.css");
+  const ant = designBlock(whole, "THE ANTARIUM, DRAWN TO THE DESIGN");
+
+  it("still has an antarium block to check", () => {
+    expect(ant).toMatch(/#antarium \.an-tile\s*\{/);
+  });
+
+  /** The four, plus the hero — which is a token in the same table, not a literal. */
+  it("sets no type size of its own", () => {
+    const bad = [...ant.matchAll(/font-size:\s*([^;]+);/g)]
+      .map((m) => (m[1] ?? "").trim())
+      .filter((v) => !/^var\(--fs-(label|small|body|title|hero)\)$/.test(v));
+    expect(bad, "the antarium types a size instead of naming one").toEqual([]);
+  });
+
+  /**
+   * Two radii, a pill, and an explicit reset. The research PIP is the one exemption and
+   * it is named: it is a 12px mark rather than a card or a button, and either token on it
+   * is a lozenge.
+   */
+  it("rounds every corner with a token, a pill or a reset", () => {
+    const bad: string[] = [];
+    for (const m of ant.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      if ((m[1] ?? "").includes("rb-pip")) continue;
+      for (const d of (m[2] ?? "").matchAll(/border-radius:\s*([^;]+);/g)) {
+        const v = (d[1] ?? "").trim();
+        if (!/^(var\(--r-(card|btn)\)|999px|0)$/.test(v)) bad.push(`${(m[1] ?? "").trim()} → ${v}`);
+      }
+    }
+    expect(bad, "the antarium rounds a corner to its own number").toEqual([]);
+  });
+
+  /**
+   * A RARITY PAINTED AS A SURFACE. The tile reads its colour off a custom property the
+   * SCREEN sets from the one tier table — so a retune moves it here and on every other
+   * screen at once. A literal green written into this rule would be a second ladder, the
+   * exact fault `engine/tiers.ts` exists to prevent.
+   */
+  it("takes the tile's colour from the tier the screen hands it", () => {
+    const rule = ruleFor(ant, "#antarium .an-tile");
+    expect(rule, "the tile paints itself instead of being told")
+      .toMatch(/background:\s*var\(--fill,\s*var\(--hud-lock\)\)/);
+  });
+
+  /**
+   * AND A COLONY YOU DO NOT OWN IS GREY IN EXACTLY ONE PLACE. The screen sets no fill at
+   * all on a locked tile, so this rule is the whole of "not yours" — and the grey is a
+   * token rather than a sixth rung on a ladder it is not part of.
+   */
+  it("greys a locked tile from one rule", () => {
+    expect(ruleFor(ant, "#antarium .an-tile.locked"))
+      .toMatch(/background:\s*var\(--hud-lock\)/);
+    expect(rulesFor(code(whole), ":root")).toMatch(/--hud-lock:\s*#696b72/i);
+  });
+
+  /**
+   * THE LEDGE IS THE TILE'S, NOT THE CARD'S. The name stands on the page under the tile;
+   * a card carrying the ledge would draw a box around the pair and turn the name into the
+   * bottom half of it. Both halves are load-bearing, so both are asserted — and the
+   * card's `none` has to be `!important` or the LEDGE wins by specificity, not the
+   * blanket.
+   */
+  it("hangs the ledge on the tile and clears it off the card", () => {
+    expect(ruleFor(ant, "#antarium .an-tile"))
+      .toMatch(/box-shadow:\s*var\(--hud-ledge\), var\(--hud-gloss\)\s*!important/);
+    expect(ruleFor(ant, "#antarium .ccard"), "the card grew a ledge of its own")
+      .toMatch(/box-shadow:\s*none\s*!important/);
+  });
+
+  /**
+   * THE CARD MUST STRETCH ITS TILE, and this is here because it was a real bug on the
+   * first build of this screen: the legacy `.ccard` rule CENTRES its children, so a tile
+   * whose only content is a colour sized itself to that content and came out ZERO WIDE.
+   * Every card on the screen was a name with nothing above it. The markup is identical
+   * either way, and jsdom has no layout, so a test that reads the rule is the only thing
+   * that can see it.
+   */
+  it("stretches the tile across the card it sits in", () => {
+    expect(ruleFor(ant, "#antarium .ccard"), "the legacy centring is back and the tile is zero wide")
+      .toMatch(/align-items:\s*stretch/);
+  });
+
+  /**
+   * THE HEADING IS ONE LABEL, SO IT IS ONE COLOUR. The legacy sheet paints the tier name
+   * and its count separately — cream and green — which read as two different kinds of
+   * fact on a line that is two short words. Nothing a jsdom test can see would notice
+   * this rule going: the markup is identical either way and only the cascade decides.
+   */
+  it("gives both halves of a tier heading the heading's own ink", () => {
+    const rule = ruleFor(ant, "#antarium .tierhead .tl,\n#antarium .tierhead .tc");
+    expect(rule, "the count keeps a colour of its own").toMatch(/color:\s*inherit/);
+    expect(rule, "the count keeps a face of its own").toMatch(/font:\s*inherit/);
+  });
+
+  /** The badge sits IN the tile's corner, on the well, and widens for a second digit. */
+  it("puts the level badge in the tile's corner", () => {
+    const rule = ruleFor(ant, "#antarium .an-lv");
+    expect(rule).toMatch(/position:\s*absolute/);
+    expect(rule).toMatch(/top:\s*2px/);
+    expect(rule).toMatch(/left:\s*2px/);
+    expect(rule).toMatch(/background:\s*var\(--hud-well\)/);
+    expect(rule, "a two-digit level would overflow a fixed width")
+      .toMatch(/min-width:\s*26px/);
+    expect(rule, "the badge is sized rather than left to grow").not.toMatch(/[^-]width:\s*26px/);
   });
 });

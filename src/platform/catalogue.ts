@@ -142,6 +142,8 @@ export interface Tier {
   name: string;
   col: string;
   glow: string;
+  /** The rung painted as a whole surface rather than as ink — see `TierDef.fill`. */
+  fill: string;
 }
 
 /**
@@ -164,6 +166,7 @@ export const TIERS: readonly Tier[] = RANKS.map((id) => ({
   // The glow is the tier's own colour at low alpha, derived rather than typed out: two
   // places spelling one colour is two chances for a retune to move only one of them.
   glow: `${TIER_DEFS[id].colour}55`,
+  fill: TIER_DEFS[id].fill,
 }));
 
 /** Tier is derived from price, never stored — one number decides colour, name and order. */

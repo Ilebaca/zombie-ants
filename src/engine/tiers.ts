@@ -32,16 +32,28 @@ export interface TierDef {
   name: string;
   /** The one colour this rarity is known by, anywhere in the app. */
   colour: string;
+  /**
+   * The same rung painted as a LARGE SURFACE, rather than as ink.
+   *
+   * It is not a second ladder — it is one rung in two jobs, in the one table, which is
+   * the whole reason it lives here rather than being mixed up at each call site. `colour`
+   * is what a rarity is WRITTEN in: a dot, a border, a word, read against the page, and
+   * tuned so it clears AA there. `fill` is what a whole tile is PAINTED in, where nothing
+   * is read off the colour itself and a muted ink reads as a dull rectangle rather than
+   * as a rarity. The Antarium's collection cards are the first surface big enough to need
+   * it, and these are the values measured off the design frame.
+   */
+  fill: string;
   /** 0 for the commonest. Used for ordering, never for value. */
   rank: number;
 }
 
 export const TIERS: Record<TierId, TierDef> = {
-  common:      { id: "common",      name: "Common",      colour: "#9aa5a0", rank: 0 },
-  uncommon:    { id: "uncommon",    name: "Uncommon",    colour: "#5fc86b", rank: 1 },
-  rare:        { id: "rare",        name: "Rare",        colour: "#4c9df0", rank: 2 },
-  exceptional: { id: "exceptional", name: "Exceptional", colour: "#a86df0", rank: 3 },
-  mythic:      { id: "mythic",      name: "Mythic",      colour: "#f2674c", rank: 4 },
+  common:      { id: "common",      name: "Common",      colour: "#9aa5a0", fill: "#6b6e78", rank: 0 },
+  uncommon:    { id: "uncommon",    name: "Uncommon",    colour: "#5fc86b", fill: "#2edd1c", rank: 1 },
+  rare:        { id: "rare",        name: "Rare",        colour: "#4c9df0", fill: "#0187fa", rank: 2 },
+  exceptional: { id: "exceptional", name: "Exceptional", colour: "#a86df0", fill: "#b116ed", rank: 3 },
+  mythic:      { id: "mythic",      name: "Mythic",      colour: "#f2674c", fill: "#fa031e", rank: 4 },
 };
 
 /** The ladder in order, commonest first. */

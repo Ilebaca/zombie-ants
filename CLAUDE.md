@@ -3051,6 +3051,73 @@ screens like font size, gap, corner radius".
   BUTTON (`title`/`aria-label`) — which §EVERY CONTROL SAYS WHAT IT IS asks for anyway.
   Two tests that found the gift by text on the card had to be repointed at it.
 
+**THE ANTARIUM IS DRAWN TO A DESIGN** (Figma node `134:305`; the ANTARIUM block at the
+foot of `skin.css`). The third screen handed over finished, after home and the shop — and
+the first one where the SHARED DESIGN LANGUAGE was already there, so almost nothing new
+was needed: the card face, the well, the two radii, the type sizes and the two gaps are
+all tokens.
+- **A COLONY IS A TILE OF ITS RARITY'S COLOUR**, and that is the one thing the language
+  could not supply. `TierDef.fill` is the rung painted as a SURFACE rather than as ink —
+  `colour` is what a rarity is WRITTEN in (a dot, a border, a word, read against the page
+  and tuned to clear AA there), `fill` is what a whole tile is PAINTED in, where nothing
+  is read off the colour and a muted ink reads as a dull rectangle rather than a rarity.
+  - **IT IS NOT A SECOND LADDER.** It is one rung in two jobs, in the ONE table
+    (`engine/tiers.ts`), which is the whole reason it lives there rather than being mixed
+    at each call site — the fault § ONE RARITY LADDER exists to prevent. `platform`'s copy
+    is derived, and a test holds that too.
+  - The five fills were MEASURED off the design frame (`#2edd1c` / `#0187fa` / `#b116ed` /
+    `#fa031e`), and a test holds that no two rungs share one and that none is GREY —
+    because grey is what a colony you do not own is, so a grey fill would say "locked" on
+    a colony the player bought.
+- **THE LEVEL IS A BADGE IN THE TILE'S CORNER, and 0 means "not yours".** It is the one
+  value an owned colony can never show, because buying one IS the first level
+  (`levelOf`): 0 locked, 1 on purchase, a rung per research level after. The grey tile
+  beside it is the same sentence said in colour. `min-width`, never `width` — a two-digit
+  level has to widen the badge rather than overflow it.
+  - **The banner's RUNGS and the badge are two views of one number.** The bar is one pip
+    per `RESEARCH_TOTAL_MAX`, never a count written down — the design drew ten and the
+    tree is fifteen, and a bar that disagrees with the screen it opens is the app lying
+    about how far there is to go. They share the row's width, so retuning the tree moves
+    the rungs rather than overflowing them.
+  - **The top is 16, not the 12 that was asked for**, because 15 research levels plus the
+    one for owning it is where three equal tracks land. Shortening the tree to make 12
+    exact would re-open the economy (§8c: pheromone's only sink is this tree), so it was
+    left and said out loud rather than changed quietly.
+- **THE PICTURE IS NOT THERE YET, ON PURPOSE** (`src/ui/cards.ts`, `src/ui/cards/`), asked
+  for directly — "you can just add colored background and later we place portraits on top
+  of it". The folder is the table for the sixth time, and **the drawn head is deliberately
+  NOT the fallback**: it is sized for a 40px row, and blown up to fill a 108px tile it
+  reads as a mistake where a flat colour reads as a tile waiting for its picture.
+  - **It is DIFFERENT ART from `src/ui/faces/`.** A face is a 512 square close crop of the
+    head for a row beside a name; this is a full body on a coloured ground, bleeding to
+    the tile's edges. Same reason the covers and the faces are two sets.
+- **THE CARD IS THE TILE WITH ITS NAME UNDER IT, and the card itself is nothing** — no
+  face, no padding, and the LEDGE belongs to the tile. A ledge on the card would draw a
+  box around the pair and turn the name into the bottom half of it.
+  - **AND THE CARD HAS TO STRETCH ITS TILE.** The legacy `.ccard` rule CENTRES its
+    children, so a tile whose only content is a colour sized itself to that content and
+    came out ZERO WIDE — every card on the screen was a name with nothing above it, on the
+    first build of this. jsdom has no layout and the markup is identical either way, so
+    `css-sanity` reading the rule is the only thing that can ever see it.
+- **THREE THINGS WENT, and each was the same fact said twice.** The rarity WORD on the
+  banner (the tile under it is painted in that rarity and the section is headed with its
+  name); the rule drawn between a heading and its count; and the VEIL that printed a price
+  on every locked card — eight prices on screen at once, none of them pressable. A price
+  is a thing to act on, so it is on the one control that can act on it.
+  - **The header's purse went with them**, because the design's header is the title alone.
+    What the player spends is named by that call to action.
+- **AND BOTH HALVES OF A TIER HEADING TAKE ONE INK.** The legacy sheet colours the name and
+  the count separately — cream and green — so a line that is two short words read as two
+  different kinds of fact. Another cascade-only rule, held by a test for that reason.
+- **`--fs-hero` (22) IS A FIFTH TYPE SIZE and it is not a label.** It is the one line on a
+  screen that is a NAME, set in the display face and read first; the banner is the only
+  thing wearing it. `--hud-lock` (#696b72) is beside it: a locked tile is that grey
+  whatever rung it sits on, which is why it is a token rather than a sixth entry in a
+  ladder it is not part of.
+- **The design-block sweeps are BOUNDED AT BOTH ENDS now.** They run from a block's marker
+  onwards, so the shop's unbounded slice swallowed this block the day it landed and failed
+  it for the shop's rules. A design block runs from its own marker to the next one.
+
 **THE PAINTED CHROME MARKS** (`src/ui/hud/`, `ui/hud.ts`, `hudMark` in `chrome.ts`).
 Every mark in the chrome was DRAWN — `ui/icons.ts`, one family of solid shapes on a 24
 grid in `currentColor`, which is what stopped the bar looking like a row of emoji from
