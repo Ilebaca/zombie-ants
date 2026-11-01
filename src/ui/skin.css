@@ -6557,6 +6557,36 @@ button:not(.playbtn):active,
      colour the game's own artwork is lit in — a pure white figure on a painted ground
      reads as a sticker laid on top of it. One token, because it is on nine things. */
   --hud-ink: #fcf7e6;
+  /* ------------------------------------------------- THE SHARED DESIGN LANGUAGE
+     The three things above are the CHROME's. These are what a SCREEN is built from,
+     and they are shared on purpose — asked for directly, "some things should be
+     uniform for all screens like font size, gap, corner radius". Every one is the
+     design's own number at its 360 frame.
+
+     A CARD is lighter than the chrome it sits on (`--hud-card` against `--hud-face`),
+     which is what lets a tile read as something ON the page rather than as a hole cut
+     in it; a WELL is darker than both, for the one panel that is a disclosure rather
+     than a thing to press. `--hud-dim` is the secondary ink, for a label naming what
+     is under it.
+
+     THEY DO NOT SCALE BY `--u`, and that is the rule this file already states twice:
+     `--u` is for HOME, one picture with a HUD drawn over it in fixed proportions, and
+     `--page` is for every screen that is a column of cards — where the column grows
+     and the TYPE DOES NOT. The shop is the second kind. */
+  --hud-card: #282930;
+  --hud-well: #12151c;
+  --hud-dim: #d5d5d5;
+  /* Two radii, and only two: a CARD and the button inside it. */
+  --r-card: 7px;
+  --r-btn: 5px;
+  /* Four sizes, and only four: a label, a figure, body, a title. */
+  --fs-label: 8px;
+  --fs-small: 10px;
+  --fs-body: 12px;
+  --fs-title: 14px;
+  /* The gap between BLOCKS down a screen, and between CARDS across a row. */
+  --block: 12px;
+  --inrow: 8px;
   /* Poetsen One, with the body stack behind it: a colony named in an
      alphabet this face does not carry falls through rather than vanishing. */
   --font-display: Poetsen, var(--font);
@@ -7250,4 +7280,292 @@ button:not(.playbtn):active,
   /* It carries its own colour. `currentColor` is the drawn mark's contract and a painted
      one has no use for it, so a tile that tints its ink must not tint this. */
   flex: 0 0 auto;
+}
+
+/* ======================================================================
+   THE SHOP, DRAWN TO THE DESIGN
+   (Figma `Zombie Ants` → `06-07-shop 2`, node `134:158`.)
+
+   Every number here is the mock-up's own at its 360 frame, and every one that
+   is shared with another screen is a TOKEN rather than a literal: the card
+   face, the two radii, the four type sizes and the two gaps all live on
+   `:root` (see THE SHARED DESIGN LANGUAGE above), because that was the whole
+   of the request — uniform font size, gap and corner radius across screens.
+
+   It does NOT ride `--u`. That scale is home's, where a fixed composition is
+   drawn over one picture; this is a column of cards, and the rule for those
+   has always been that the COLUMN grows with the screen and the TYPE does not.
+   ====================================================================== */
+
+/* ONE GAP DOWN THE WHOLE SCROLLER. The design spaces the gift, every label,
+   every shelf, the odds panel and the restore row at exactly 12 — so this is
+   one rule on the container rather than a margin per block, which is the
+   lesson `--stack` is already on record for. */
+#shop .shopwrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--block);
+  padding: var(--block) 0;
+}
+
+/* A SHELF'S NAME. Eight pixels of dim ink, and nothing else on the line. */
+#shop .sh-label {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  line-height: 1;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--hud-dim);
+}
+
+/* THREE ACROSS, OR TWO. Equal columns, never auto-sized: a tile holding "4,000"
+   beside one holding "200" must be the same width, and content-sized columns
+   are exactly how a row of prices ends up ragged. */
+#shop .tilerow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--inrow);
+  margin: 0;
+}
+#shop .tilerow.two { grid-template-columns: repeat(2, 1fr); }
+
+/* A TILE IS A CARD, with the ledge and the gloss every raised thing here wears.
+   `!important` on the shadow because the blanket clears every box-shadow in the
+   app (§10) — the same reason every `--hud-ledge` on home is marked. */
+#shop .stile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--inrow);
+  min-width: 0;
+  padding: 12px 10px;
+  overflow: hidden;
+  border: none;
+  border-radius: var(--r-card);
+  background: var(--hud-card);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+
+/* The painting, and the mark that stands in until one is painted. Both tags are
+   sized, because `shelfArt` answers with an `<img>` and the fallback with an
+   `<img>` or an `<svg>` — the two-tag trap the stylesheet is swept for. */
+#shop .sh-art,
+#shop img.sh-art,
+#shop svg.sh-art {
+  display: block;
+  flex: none;
+  width: 70px;
+  height: 70px;
+  object-fit: contain;
+}
+#shop .sh-gift .sh-art,
+#shop .sh-gift img.sh-art,
+#shop .sh-gift svg.sh-art { width: 62px; height: 62px; }
+
+/* WHAT IT IS, then what it does. The name is the figure on a currency tile, so
+   it carries the body size; the line under it on an unlock is the small one. */
+#shop .sh-name {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-body);
+  line-height: 1.15;
+  text-align: center;
+  color: var(--hud-ink);
+  word-break: break-word;
+}
+#shop .sh-sub {
+  margin-top: -4px;
+  font-size: var(--fs-small);
+  line-height: 1.2;
+  text-align: center;
+  color: var(--hud-dim);
+}
+
+/* THE PRICE IS THE ONE BRIGHT THING ON THE SCREEN, and it is the full width of
+   the card it is in — what is for sale and what it costs as one object. */
+#shop .buybar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: auto 0 0;
+  padding: 6px 8px;
+  overflow: hidden;
+  border: none;
+  border-radius: var(--r-btn);
+  background: var(--hud-go);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-body);
+  line-height: 1.15;
+  color: var(--hud-ink);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+/* A thing already owned, or a gift not yet due, is not for sale. It keeps its
+   FILL and darkens it rather than going see-through — the lesson the hatch's
+   button is on record for: a slab that turns transparent reads as gone. */
+#shop .buybar.off,
+#shop .buybar[disabled] {
+  background: #3a3c45;
+  color: var(--hud-dim);
+  opacity: 1;
+}
+
+/* THE GIFT IS ONE WIDE CARD: the chest on the left, what it pays and the button
+   stacked beside it. */
+#shop .stile.sh-gift {
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+  padding: 14px;
+}
+#shop .sh-giftmid {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fs-small);
+}
+#shop .sh-amounts { display: flex; align-items: center; gap: 16px; }
+#shop .sh-amt { display: flex; align-items: center; gap: 5px; }
+#shop .sh-amt img,
+#shop .sh-amt svg { display: block; width: 26px; height: 26px; }
+#shop .sh-amt b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-body);
+  color: var(--hud-ink);
+}
+
+/* The ribbon stays a ribbon, on the card's own corner. */
+#shop .stile .ribbon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 2px 6px;
+  border-radius: var(--r-card) 0 var(--r-btn) 0;
+  font-size: var(--fs-label);
+  letter-spacing: .4px;
+}
+
+/* RESTORE IS A CARD TOO, and the sentence under it is a disclosure rather than
+   part of the control — Apple asks for the mechanism, and the line says what it
+   cannot bring back. */
+#shop .restorerow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--inrow);
+  margin: 0;
+}
+#shop .restorebtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 10px;
+  border: none;
+  border-radius: var(--r-card);
+  background: var(--hud-card);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-title);
+  color: var(--hud-ink);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+#shop .restorenote {
+  font-size: var(--fs-label);
+  line-height: 1.5;
+  color: var(--hud-dim);
+}
+
+/* ------------------------------------------------- THE ODDS PANEL
+   It is the same panel the hatch shows (`ui/odds.ts`), so this dresses it on
+   BOTH screens: a WELL — darker than the page, the one surface here that is a
+   disclosure rather than something to press — holding five tier CARDS.
+
+   THE TIER'S COLOUR IS THE DOT AND ONLY THE DOT. Each frame used to be filled
+   with a dark shade of its own tier, which cost a contrast round (the name fell
+   to 4.22 and a figure to 3.95, both under AA) and had to be bought back by
+   lifting the figure toward white. On one shared card face the name measures
+   9.6 and the figure 13.2 against the same two colours everywhere, and the
+   swatch still says which rung it is. */
+#shop .hatchodds,
+#luckyhatch .hatchodds {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 10px;
+  border: none;
+  border-radius: var(--r-card);
+  background: var(--hud-well);
+}
+#shop .hatchodds .ho-h,
+#luckyhatch .hatchodds .ho-h {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--hud-dim);
+}
+#shop .hatchodds .ho-rows,
+#luckyhatch .hatchodds .ho-rows {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+#shop .hatchodds .ho-row,
+#luckyhatch .hatchodds .ho-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 5px;
+  overflow: hidden;
+  border: none;
+  border-radius: var(--r-btn);
+  background: var(--hud-card);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+#shop .hatchodds .ho-dot,
+#luckyhatch .hatchodds .ho-dot {
+  width: 8px;
+  height: 8px;
+  border: none;
+  /* A pill, not a number: the swatch is sized by what it sits in, and a browser
+     clamps a radius larger than the box — so one value stays a circle at every
+     size, which half a hard-coded 8 does not. */
+  border-radius: 999px;
+  background: var(--tier);
+}
+#shop .hatchodds .ho-n,
+#luckyhatch .hatchodds .ho-n {
+  font-size: var(--fs-label);
+  line-height: 1.1;
+  text-align: center;
+  color: var(--hud-dim);
+}
+#shop .hatchodds .ho-p,
+#luckyhatch .hatchodds .ho-p {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-small);
+  line-height: 1.1;
+  text-align: center;
+  color: var(--hud-ink);
+}
+#shop .hatchodds .ho-note,
+#luckyhatch .hatchodds .ho-note {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--fs-label);
+  line-height: 1.5;
+  color: var(--hud-dim);
 }

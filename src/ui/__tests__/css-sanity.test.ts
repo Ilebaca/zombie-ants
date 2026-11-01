@@ -865,3 +865,109 @@ describe("the colony bar and the tab tray", () => {
       .toMatch(/#mainNav\{position:fixed;[^}]*bottom:0/);
   });
 });
+
+/**
+ * THE SHOP, DRAWN TO THE DESIGN.
+ *
+ * What was asked for is not a layout — it is that the things a screen is BUILT from are
+ * the same on every screen: "some things should be uniform for all screens like font
+ * size, gap, corner radius". That is a rule about the file rather than about a box, and
+ * nothing a jsdom test can see would notice it breaking: a literal `font-size: 11px`
+ * typed into one card renders perfectly and is the design quietly coming apart.
+ *
+ * So these are SWEEPS over the whole block rather than assertions about single rules.
+ */
+describe("the shop is written in the shared language", () => {
+  const whole = read("skin.css");
+  const at = whole.indexOf("THE SHOP, DRAWN TO THE DESIGN");
+  const shop = code(whole.slice(at));
+
+  it("still has a shop block to check", () => {
+    expect(at, "the shop's design block is gone").toBeGreaterThan(-1);
+    expect(shop).toMatch(/#shop \.stile\s*\{/);
+  });
+
+  /** FOUR SIZES, AND ONLY FOUR. A fifth typed in as a number is the thing this holds. */
+  it("sets no type size of its own", () => {
+    const bad = [...shop.matchAll(/font-size:\s*([^;]+);/g)]
+      .map((m) => (m[1] ?? "").trim())
+      .filter((v) => !/^var\(--fs-(label|small|body|title)\)$/.test(v));
+    expect(bad, "the shop types a size instead of naming one").toEqual([]);
+  });
+
+  /**
+   * TWO RADII, AND ONLY TWO: a CARD and the button inside it. A pill is the one
+   * exception and it is not a third number — it is "round this as far as the box
+   * allows", which a browser clamps for itself.
+   */
+  it("rounds every corner with a token or a pill", () => {
+    const bad = [...shop.matchAll(/border-radius:\s*([^;]+);/g)]
+      .map((m) => (m[1] ?? "").trim())
+      .filter((v) => !/^(var\(--r-(card|btn)\)|999px)/.test(v));
+    expect(bad, "the shop rounds a corner to its own number").toEqual([]);
+  });
+
+  /** ONE GAP DOWN THE SCROLLER AND ONE ACROSS A ROW, both named. */
+  it("spaces the blocks and the shelves with the shared gaps", () => {
+    expect(ruleFor(shop, "#shop .shopwrap")).toMatch(/gap:\s*var\(--block\)/);
+    expect(ruleFor(shop, "#shop .tilerow")).toMatch(/gap:\s*var\(--inrow\)/);
+  });
+
+  /** And the tokens themselves are in ONE place, with the design's own values. */
+  it("keeps the shared language on :root", () => {
+    const root = rulesFor(code(whole), ":root");
+    for (const [name, value] of [
+      ["--hud-card", "#282930"], ["--hud-well", "#12151c"], ["--hud-dim", "#d5d5d5"],
+      ["--r-card", "7px"], ["--r-btn", "5px"],
+      ["--fs-label", "8px"], ["--fs-small", "10px"],
+      ["--fs-body", "12px"], ["--fs-title", "14px"],
+      ["--block", "12px"], ["--inrow", "8px"],
+    ]) {
+      expect(root, `${name} is not the design's value`)
+        .toMatch(new RegExp(`${name}:\\s*${value}`, "i"));
+    }
+  });
+
+  /**
+   * A SHELF'S PICTURE ANSWERS WITH TWO DIFFERENT TAGS, so the box has to size BOTH —
+   * an `<img>` where the shelf is painted (`ui/shelf.ts`) and an `<img>` or `<svg>`
+   * from the chrome's mark where it is not. This is the trap the match history paid
+   * for once: a rule naming one tag sizes half the shelves and lets the rest render
+   * at the file's own size.
+   */
+  it("sizes a shelf's picture whichever tag it comes back as", () => {
+    const art = shop.slice(shop.indexOf("#shop .sh-art"));
+    expect(art, "the shelf art sizes no img").toMatch(/#shop img\.sh-art/);
+    expect(art, "the shelf art sizes no svg").toMatch(/#shop svg\.sh-art/);
+    expect(ruleFor(shop, "#shop .sh-art,\n#shop img.sh-art,\n#shop svg.sh-art"))
+      .toMatch(/width:\s*70px/);
+  });
+
+  /**
+   * A SLAB THAT CANNOT BE PRESSED DARKENS ITS FILL, never its opacity. The legacy
+   * `[disabled]` rule drops the whole control to .7 — which on a lit card reads as the
+   * button having gone missing rather than as one that is not for sale. Exactly the
+   * lesson the hatch's own button is on record for, and the half a jsdom test cannot
+   * see: the attribute is set either way and only the cascade decides how it looks.
+   */
+  it("darkens a sold-out price rather than fading it", () => {
+    const rule = ruleFor(shop, "#shop .buybar.off,\n#shop .buybar[disabled]");
+    expect(rule, "a dead price has no fill of its own").toMatch(/background:\s*#/);
+    expect(rule, "a dead price goes see-through").toMatch(/opacity:\s*1/);
+  });
+
+  /**
+   * THE ODDS PANEL IS ONE PANEL ON TWO SCREENS (`ui/odds.ts`) — the shop, where the
+   * purchase is, and the hatch, where the roll is. Dressing it on one would leave the
+   * other wearing whatever the legacy sheet gives it, which is the compliance half of
+   * this screen looking like a different app.
+   */
+  it("dresses the odds panel on both screens that show it", () => {
+    for (const part of [".hatchodds", ".hatchodds .ho-rows", ".hatchodds .ho-row"]) {
+      expect(shop, `${part} is dressed on the shop alone`)
+        .toMatch(new RegExp(`#shop ${part.replace(/[.\s]/g, (c) => (c === "." ? "\\." : "\\s"))},\\s*\\n#luckyhatch `));
+    }
+    expect(ruleFor(shop, "#shop .hatchodds,\n#luckyhatch .hatchodds"))
+      .toMatch(/background:\s*var\(--hud-well\)/);
+  });
+});

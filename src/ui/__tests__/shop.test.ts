@@ -37,7 +37,7 @@ const gateway = (answer: (id: string) => PurchaseResult, live = false): {
 };
 
 const build = (s: ProfileStore, gw: PurchaseGateway): HTMLElement => {
-  const root = buildShop(s, gw, () => {});
+  const root = buildShop(s, gw);
   document.body.replaceChildren(root);
   return root;
 };
@@ -179,9 +179,11 @@ describe("buying", () => {
 
 describe("the daily gift", () => {
   const giftButton = (root: HTMLElement): HTMLButtonElement | null =>
-    Array.from(root.querySelectorAll<HTMLElement>(".stile"))
-      .find((t) => t.textContent?.includes("Daily gift"))
-      ?.querySelector<HTMLButtonElement>(".buybar") ?? null;
+    // BY THE CONTROL'S NAME, not by text on the card. The design's gift card carries no
+    // title at all — a chest, the two amounts and the word FREE — so the thing that says
+    // what it is, is the button, through `title`/`aria-label` (§ EVERY CONTROL SAYS WHAT
+    // IT IS). Reading the card's text found nothing the day the heading went.
+    root.querySelector<HTMLButtonElement>(".stile .buybar[aria-label='Daily gift']") ?? null;
 
   it("is free the first time and pays both currencies", () => {
     const s = store();

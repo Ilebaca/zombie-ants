@@ -863,7 +863,7 @@ export class App {
       return buildHistory(this.profile, () => this.show("profile"), (log) => this.watch(log));
     }
     if (id === "rules") return buildRules(() => this.show("home"));
-    if (id === "shop") return buildShop(this.profile, this.purchases, () => this.show("home"));
+    if (id === "shop") return buildShop(this.profile, this.purchases);
     // THE STORE, not a copy of three fields off it: the screen settles the week that has
     // ended and pays what it was worth (platform/league.ts), which is a write.
     if (id === "leaderboard") return buildLeaderboard(this.profile, () => this.show("home"));

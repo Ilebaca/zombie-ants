@@ -41,6 +41,15 @@ export const trimPct = (pct: number): string =>
 export function buildOdds(heading = ""): HTMLElement {
   const box = el("div", "hatchodds");
   if (heading) box.appendChild(el("div", "ho-h", heading));
+  /*
+   * THE FIVE SIT IN THEIR OWN ROW.
+   *
+   * They used to be children of the panel itself, beside the heading and the note — which
+   * works while the panel is a stack and cannot work once the five are a GRID, because a
+   * heading and a two-line note would be cells in it. One wrapper, and the panel stays a
+   * column of three things: what it is, the five, and what else to know.
+   */
+  const rows = el("div", "ho-rows");
   for (const id of TRAIT_TIERS) {
     const tier = TRAIT_TIER[id];
     const row = el("div", "ho-row");
@@ -50,8 +59,9 @@ export function buildOdds(heading = ""): HTMLElement {
       el("span", "ho-n", tier.name),
       el("span", "ho-p", `${trimPct(tierOdds(id))}%`),
     );
-    box.appendChild(row);
+    rows.appendChild(row);
   }
+  box.appendChild(rows);
   // A skin has no chance of its own — it IS the top of this row (platform/skins.ts) — so
   // the note names the tiers rather than a second number. Printed all the same: an outcome
   // a player can get and was never told about is exactly what this panel prevents.

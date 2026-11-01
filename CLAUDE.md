@@ -2997,6 +2997,60 @@ the same three things — and the one that is missing is the point.
   route to the manual (§ THE HOME ARTWORK), so dropping the row to match a seven-item
   list would make it unreachable from anywhere in the app.
 
+**THE SHOP IS DRAWN TO A DESIGN, AND WHAT IT IS BUILT FROM IS NOW SHARED** (Figma
+`06-07-shop 2`, node `134:158`; the SHOP block at the foot of `skin.css` and the SHARED
+DESIGN LANGUAGE block on `:root`). Home was handed over as a finished mock-up and its
+numbers stayed home's; the shop is the second screen drawn that way, and the request
+that came with it was the important half — "some things should be uniform for all
+screens like font size, gap, corner radius".
+- **SO THE PIECES ARE TOKENS, NOT NUMBERS.** `--hud-card` (#282930) is a card, lighter
+  than the chrome it sits on, which is what lets a tile read as something ON the page
+  rather than as a hole cut in it; `--hud-well` (#12151c) is darker than both, for the
+  one panel that is a disclosure rather than a thing to press; `--hud-dim` is the
+  secondary ink. Two radii and only two — `--r-card` (7) and `--r-btn` (5), the button
+  inside the card. Four type sizes and only four — `--fs-label` (8), `--fs-small` (10),
+  `--fs-body` (12), `--fs-title` (14). Two gaps — `--block` (12) down a screen and
+  `--inrow` (8) across a row.
+  - **AND THE SWEEPS ARE THE RULE, not the single assertions.** "Uniform" is a fact
+    about the FILE, and a literal `font-size: 11px` typed into one card renders
+    perfectly — nothing a jsdom test can see would ever notice. `css-sanity` reads the
+    whole shop block and fails on any type size that is not one of the four, and any
+    radius that is not one of the two (or `999px`, which is not a third number: it is
+    "round this as far as the box allows", which a browser clamps for itself).
+- **IT DOES NOT RIDE `--u`, and that is the rule already on record twice.** `--u` is
+  HOME's — one picture with a HUD drawn over it in fixed proportions — and `--page` is
+  for every screen that is a column of cards, where the COLUMN grows and the TYPE DOES
+  NOT. The shop is the second kind.
+- **THE SHELVES ARE A FOLDER** (`src/ui/shelf.ts`, `src/ui/shelf/`), the fifth time:
+  `shelf/mycel-220.webp` IS the 220-mycelium tile, resolved by a build-time glob.
+  - **THE KEY IS THE PRODUCT ID WITH ITS DOT HYPHENATED**, because a dot in a filename
+    is an extension to everything that will ever touch this folder — the glob's own
+    name pattern stops at one. `shelfKey` is the single place that rule lives, asked of
+    by the lookup AND by the test, or the two would spell it twice and agree by luck.
+  - **A MISSING FILE IS NOT A HOLE**: `shelfArt` answers null and the tile draws the
+    currency's own chrome mark, which is already painted. That is what let this screen
+    land before a single shelf existed — a shop showing its currencies at 70px is a
+    shop mid-redesign, where one showing nine empty boxes is a broken one. **It is also
+    why a shelf that was painted and is not shown is INVISIBLE**: the fallback looks
+    identical. `shelf.test.ts` holds the naming from both ends — every product can be
+    painted, and no file in the folder belongs to nothing.
+- **THE ODDS PANEL IS DRESSED ON BOTH SCREENS THAT SHOW IT.** It is one panel
+  (`ui/odds.ts`) on the hatch, where the roll is, and in the shop, where the PURCHASE
+  is — which is the store requirement it exists for (§ LOOT BOX ODDS GO BEFORE THE
+  PURCHASE). Dressing it on one would leave the other wearing whatever the legacy sheet
+  gives it, which is the compliance half of the app looking like a different app. It
+  gained a `.ho-rows` wrapper so the five tier cards can be a five-column grid.
+- **A SOLD-OUT PRICE DARKENS ITS FILL, never its opacity.** The legacy `[disabled]`
+  rule drops a control to .7, which on a lit card reads as the button having gone
+  missing rather than as one that is not for sale — exactly the lesson the hatch's own
+  button is on record for, and the half nothing but a test would notice, since the
+  attribute is set either way and only the cascade decides how it looks.
+- **THE HEADING LOST ITS BACK ARROW, like Challenges.** The shop is a deck screen; the
+  way out is the tab bar. `buildShop` takes the store and the gateway and nothing else.
+- **THE DAILY GIFT'S CARD CARRIES NO WORDS**, so the thing that says what it is, is the
+  BUTTON (`title`/`aria-label`) — which §EVERY CONTROL SAYS WHAT IT IS asks for anyway.
+  Two tests that found the gift by text on the card had to be repointed at it.
+
 **THE PAINTED CHROME MARKS** (`src/ui/hud/`, `ui/hud.ts`, `hudMark` in `chrome.ts`).
 Every mark in the chrome was DRAWN — `ui/icons.ts`, one family of solid shapes on a 24
 grid in `currentColor`, which is what stopped the bar looking like a row of emoji from
