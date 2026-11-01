@@ -45,7 +45,7 @@ interface Payout { mark: string; amount: number; name: string }
 
 const payouts = (r: RoadReward): Payout[] => [
   ...(r.mycel ? [{ mark: "mycel", amount: r.mycel, name: "mycelium" }] : []),
-  ...(r.pheromone ? [{ mark: "pheromone", amount: r.pheromone, name: "pheromone" }] : []),
+  ...(r.pheromone ? [{ mark: "pheromone", amount: r.pheromone, name: r.pheromone === 1 ? "pheromone crystal" : "pheromone crystals" }] : []),
 ];
 
 /** The label a button carries, so a disc showing only an icon still says what it is. */

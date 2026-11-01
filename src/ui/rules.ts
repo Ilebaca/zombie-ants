@@ -357,7 +357,7 @@ const SECTIONS: Section[] = [
         "troops — and the smaller the share, so the climb keeps its shape all the way up.",
       ] },
       { p: [
-        "Matches also pay mycelium for the nest chambers, and pheromone for research. The ",
+        "Matches also pay mycelium for the nest chambers, and pheromone crystals for research. The ",
         "enemy AI gets neither: it plays every match on the plain rules.",
       ] },
     ],

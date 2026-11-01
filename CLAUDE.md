@@ -3788,11 +3788,15 @@ The progression layer sits in three files, and none of them is reachable from th
   checkpoints split it), pure functions of a colony size.
 - `platform/quests.ts` — the daily pool and a day-seeded roll.
 
-A new player starts with nothing — no mycelium, no pheromone, a colony of forty. The legacy
+The blue currency is called **pheromone crystal** (plural **pheromone crystals**) in
+player-facing text, and uses the painted blue crystal icon. Keep the internal
+`pheromone` field, icon key and purchase SKU identifiers unchanged for compatibility.
+
+A new player starts with nothing — no mycelium, no pheromone crystals, a colony of forty. The legacy
 build's 120-mycelium welcome grant is deliberately gone: it bought the first chamber
 before the player knew what a chamber was.
 
-Currencies have separate jobs: **mycelium** buys chambers and species, **pheromone** buys
+Currencies have separate jobs: **mycelium** buys chambers and species, **pheromone crystals** buy
 research. Every purchase goes through a `ProfileStore` method that returns `false` rather
 than throwing when the player cannot afford it, so a screen can tap optimistically and
 nothing ever goes half-spent.

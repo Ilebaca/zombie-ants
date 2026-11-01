@@ -265,6 +265,6 @@ export const chapterOf = (colony: number): number =>
 export function rewardText(r: RoadReward): string {
   return [
     r.mycel ? `+${r.mycel} mycelium` : "",
-    r.pheromone ? `+${r.pheromone} pheromone` : "",
+    r.pheromone ? `+${r.pheromone} pheromone crystal${r.pheromone === 1 ? "" : "s"}` : "",
   ].filter(Boolean).join("  ");
 }

@@ -108,7 +108,7 @@ export const NEWS: readonly NewsPost[] = [
       + "is what you GAIN over the week — not what you already hold. A big colony and a "
       + "young one are playing for the same thing, and a defeat takes troops off your "
       + "score the same way it takes them off your colony.",
-      "The top ten are paid when the week ends, first place best: mycelium, pheromone and "
+      "The top ten are paid when the week ends, first place best: mycelium, pheromone crystals and "
       + "larva for the hatch. Your placing is waiting on the ladder the next time you open "
       + "it, and the next season is already running.",
       "Biggest Colonies is the second tab now — every colony by total troops with the "

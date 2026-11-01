@@ -3980,7 +3980,7 @@ function buildShop(){
    + tile({ic:"🥚", amt:15, price:"€2.49", attr:'data-buy="1" data-cur="larva" data-amt="15"'})
    + tile({ic:"🥚", amt:40, price:"€4.99", ribbon:"BEST VALUE", attr:'data-buy="1" data-cur="larva" data-amt="40"'})
    + `</div>`;
-  h+=shopSec("Pheromone dust");
+  h+=shopSec("Pheromone crystal");
   h+=`<div class="tilerow">`
    + tile({ic:"🧪", amt:500,  price:"€0.99", attr:'data-buy="1" data-cur="pher" data-amt="500"'})
    + tile({ic:"🧪", amt:1800, price:"€2.99", attr:'data-buy="1" data-cur="pher" data-amt="1800"'})
@@ -4021,7 +4021,7 @@ function buildShop(){
 function grantCurrency(cur, amt){
   const key = cur==="pher" ? "pher" : cur;
   PROFILE[key]=(PROFILE[key]||0)+amt;
-  return `+${amt.toLocaleString()} ${({mycel:"🍄 mycel",larva:"🥚 larva",pher:"🧪 pheromone dust"})[cur]}`;
+  return `+${amt.toLocaleString()} ${({mycel:"🍄 mycel",larva:"🥚 larva",pher:"💎 pheromone crystals"})[cur]}`;
 }
 function grantCosmetic(type){
   PROFILE.owned=PROFILE.owned||[];
@@ -4161,7 +4161,7 @@ function topNavHTML(){
       <div class="tn-cur">
         <div class="tn-coin"><span class="tn-ic">🏆</span><span class="tn-num lb-pts">0</span><span class="tn-plus ghost" aria-hidden="true">+</span></div>
         <div class="tn-coin"><span class="tn-ic">🍄</span><span class="tn-num ophio-pts">0</span><button class="tn-plus" data-go="shop" aria-label="Get mycel">+</button></div>
-        <div class="tn-coin"><span class="tn-ic">🧪</span><span class="tn-num pher-pts">0</span><button class="tn-plus" data-go="shop" aria-label="Get pheromone">+</button></div>
+        <div class="tn-coin"><span class="tn-ic">🧪</span><span class="tn-num pher-pts">0</span><button class="tn-plus" data-go="shop" aria-label="Get pheromone crystals">+</button></div>
       </div>
     </header>
     <button class="troadbar" data-go="achievements" title="Trophy Road">

@@ -100,7 +100,7 @@ export function buildQuests(store: ProfileStore, onBack: () => void): HTMLElemen
 
     const rewards = [
       def.reward.mycel ? `+${def.reward.mycel} mycelium` : "",
-      def.reward.pheromone ? `+${def.reward.pheromone} pheromone` : "",
+      def.reward.pheromone ? `+${def.reward.pheromone} pheromone crystals` : "",
     ].filter(Boolean).join("  ");
     info.appendChild(el("div", "qmeta", `+${def.xp} XP · ${rewards}`));
     card.appendChild(info);
