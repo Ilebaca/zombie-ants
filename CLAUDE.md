@@ -2795,6 +2795,11 @@ and lands on the design's figure exactly.
   shelf they stand on, which is what lets the artwork behind the bar still read as the
   screen. A background COLOUR on a pseudo-element, never a gradient — the blanket clears
   every background IMAGE on every `::before` with no exemption at all (§10).
+  - **AND IT WEARS `--hud-gloss` LIKE EVERY OTHER FRAME**, asked for directly. It shipped
+    with a face and no gloss, which is what made it read as a band of flat colour rather
+    than as a ledge the tiles stand on — it was the one surface on this screen without
+    one. `!important`, or the box-shadow blanket clears it: the same reason every
+    `--hud-ledge` here is marked, and the half nothing but a test would notice.
 - **THE TAB BAR LOST ITS WORDS AND NOT ITS NAMES.** Five labels across a phone is what
   made the tiles tall and the type tiny; the mark is the tab. Each button still carries
   `title` and `aria-label` (§ EVERY CONTROL SAYS WHAT IT IS) and `a11y.test.ts` fails on
@@ -2805,12 +2810,18 @@ and lands on the design's figure exactly.
   padding every scrolling screen keeps at its foot is the only thing stopping the last
   row sitting under it. Two places spelling out one rule (§7), so a test reads both and
   compares them.
-- **THE CURRENCY CHIP'S LEFT END IS A SEMICIRCLE**, asked for directly. Both left
-  corners go all the way round and the right two keep the design's 5: the mark at that
-  end is a painted DISC, so a square-ish corner behind it is a second shape fighting the
-  first. Written as a huge radius rather than half the height — the chip is sized by what
-  is in it (`height: auto`) and a browser clamps a radius that exceeds the box, so one
-  number stays right at every scale and if the contents ever grow.
+- **THE CURRENCY CHIP'S LEFT END IS A SEMICIRCLE AND ITS RIGHT END IS THE BLOCK'S OWN
+  CORNER**, both asked for. The mark at the left is a painted DISC, so a square-ish
+  corner behind it is a second shape fighting the first; the right two are **7**, which
+  is what the colony banner and the granary pill beside it carry.
+  - **The right end was never changed by the left one, and it still read as squared
+    off** — reported as the radius having been removed. It had not: it was the design's
+    own 5, untouched. But 5 on a 30-tall chip is a tighter corner than anything else in
+    that block, so "unchanged" and "looks wrong" were both true. Worth knowing before
+    defending a number: a corner is read against its NEIGHBOURS, not against the file.
+  - The left is written as a huge radius rather than half the height — the chip is sized
+    by what is in it (`height: auto`) and a browser clamps a radius that exceeds the box,
+    so one number stays right at every scale and if the contents ever grow.
 - **TWO FIXED SIZES NEEDED THE LEGACY SHEET OVERRULED, and neither shows in jsdom.**
   `.tn-coin` is pinned to `height: 26px` there — exactly the currency mark's own height,
   so the 2px of padding around it had nowhere to go and the chip clipped itself; it is
