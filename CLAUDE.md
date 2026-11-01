@@ -2809,22 +2809,32 @@ and lands on the design's figure exactly.
 - **THE BAR AND THE ROOM RESERVED FOR IT ARE ONE NUMBER.** It grew 64 → 70, and the
   padding that keeps the last row from sitting under it is the only thing stopping it.
   Two places spelling out one rule (§7), so a test reads both and compares them.
-  - **AND A SCREEN DOES NOT SHORTEN ITSELF FOR THE BAR — ITS SCROLLER KEEPS THE ROOM.**
-    Reported from a phone as "a black frame under the menu that is cutting off the
-    content", and that is exactly what it was. The legacy rule pads the SCREEN, so the
-    scroller inside ends at the TOP of the bar — while the bar is transparent down to its
-    half-height shelf. What is left between the two is a band of bare page with nothing in
-    it: a list that stops dead, a gap, then the shelf. It never showed on HOME, because
-    home is a full-bleed picture with nothing to clip and nothing that scrolls, which is
-    why it survived the redesign and why home still takes the room as its own padding.
-    - **The INNERMOST scroller is what takes it, and it is named per screen** because it
-      differs: the shop and the Antarium scroll their `.screenbody`, the Anthill scrolls a
-      wrapper inside it and the Challenges list scrolls itself. Padding an OUTER box only
-      moves the dead band inwards — the inner scroller then ends where the padding starts,
-      which is the same fault one element down.
-    - **And content passing behind the tiles is the point**, not a side effect: that is
-      what every bottom bar on a phone does, and it is what "only the buttons and the half
-      tall frame" means.
+  - **AND THE WHOLE DECK SCREEN SCROLLS, HEADER AND ALL.** Two reports, one cause. The
+    legacy shape is `.screen > .screentop + .screenbody` with the BODY scrolling, so the
+    title sat still while everything moved under it ("shouldn't be sticky, should scroll
+    normally with the rest of the content") and the screen paid for the bar by SHORTENING
+    itself — which left the scroller ending at the top of a bar that is transparent down
+    to its half-height shelf, with a band of bare page between the two ("a black frame
+    under the menu that is cutting off the content"). Neither showed on HOME, which is a
+    fixed composition with nothing to clip and nothing that scrolls, which is why both
+    survived the redesign and why home still takes the room as its own padding.
+    - **Making the SCREEN the scroller answers both at once.** The header scrolls because
+      it is inside the thing that moves, and the padding becomes room at the END of the
+      scroll rather than a shorter box — so content runs to the bottom of the viewport and
+      passes BEHIND the tiles, which is what every bottom bar on a phone does and what
+      "only the buttons and the half tall frame" means.
+    - **And nothing inside may scroll on its own.** An inner scroller takes the gesture
+      and holds the page still: the header stops moving again and the dead band comes back
+      one element down, wearing a different selector. The four are named because they
+      differed — the shop and the Antarium scrolled their `.screenbody`, the Anthill a
+      wrapper inside it and the Challenges list itself.
+    - **The deck's swipe survives it** — `scrollableUnder` walks up from the touch target,
+      and the screen is still an ancestor. Re-measured with real touch events (§9a): a
+      vertical flick scrolls, a horizontal swipe turns the page both ways.
+    - **AND A `padding` SHORTHAND IN A LATER BLOCK WIPED THE ROOM ONCE.** The Antarium's
+      own design block said `padding: var(--block) 0`, which reads as "12 at the top" and
+      silently sets the bottom to 12 as well — the last card went straight back under the
+      tiles with every other rule here still correct. One side at a time.
   - **AND THE EIGHT SCREENS THE BAR NO LONGER STANDS ON RESERVE NOTHING FOR IT.** The
     legacy list is thirteen screens, from a build where every one of them showed the bar;
     it is the five deck screens now. On the other eight that padding was a 70px strip of
@@ -2842,9 +2852,17 @@ and lands on the design's figure exactly.
     own 5, untouched. But 5 on a 30-tall chip is a tighter corner than anything else in
     that block, so "unchanged" and "looks wrong" were both true. Worth knowing before
     defending a number: a corner is read against its NEIGHBOURS, not against the file.
-  - The left is written as a huge radius rather than half the height — the chip is sized
-    by what is in it (`height: auto`) and a browser clamps a radius that exceeds the box,
-    so one number stays right at every scale and if the contents ever grow.
+  - **AND THEN IT WAS SQUARE FOR REAL, AND THE CAUSE IS WORTH KEEPING.** The left end was
+    written as `999px`, on the argument that a browser clamps a radius larger than its
+    box. It does not. When the two radii on ANY EDGE add up to more than that edge, the
+    spec scales EVERY corner of the box by the same factor — 999 + 999 down the left edge
+    of a 30-tall chip is about one sixtieth, so the RIGHT corners came out at a seventh of
+    a pixel. **`getComputedStyle` reports the value as WRITTEN, not as used**, so the rule
+    measured as correct every single time it was checked, and the only way to see it was
+    to count pixels in a screenshot — it was reported as square twice before that was
+    done. It is `calc(15 * var(--u))` now: exactly half, because the chip is its mark (26)
+    plus 2 of padding at each end, so the left edge sums to its own height and nothing is
+    scaled. A test DERIVES that half from those two numbers rather than restating 15.
 - **TWO FIXED SIZES NEEDED THE LEGACY SHEET OVERRULED, and neither shows in jsdom.**
   `.tn-coin` is pinned to `height: 26px` there — exactly the currency mark's own height,
   so the 2px of padding around it had nowhere to go and the chip clipped itself; it is

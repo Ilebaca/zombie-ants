@@ -711,9 +711,9 @@ describe("the home screen's ledge survives the blanket", () => {
     expect(bar, "the tab bar has no height of its own").toBe("var(--navh)");
     // Home takes it as its own padding, because nothing on it scrolls.
     expect(roomIn("#home"), "home reserves the wrong room for the bar").toBe(bar);
-    // The four that SCROLL keep it on the scroller instead — see below.
-    expect(roomIn("#shop .screenbody,\n#antarium .screenbody,\n#anthill .hillwrap,\n#challenges .challist"),
-      "a deck screen's scroller reserves the wrong room").toBe(bar);
+    // And the four that SCROLL take it on the screen itself, which IS the scroller.
+    expect(roomIn("#shop, #anthill, #antarium, #challenges"),
+      "a deck screen reserves the wrong room for the bar").toBe(bar);
     expect(rulesFor(css, ":root"), "the bar's height is not the design's 70")
       .toMatch(/--navh:\s*calc\(70 \* var\(--u\)\)/);
   });
@@ -730,12 +730,36 @@ describe("the home screen's ledge survives the blanket", () => {
    * Nothing a jsdom test can see would notice this: there is no layout, the markup is
    * identical, and only the cascade decides where a scroller ends.
    */
-  it("lets the deck screens run under the bar rather than stopping above it", () => {
-    for (const id of ["#shop", "#anthill", "#antarium", "#challenges"]) {
-      const rule = rulesFor(css, "#shop, #anthill, #antarium, #challenges");
-      expect(rule, `${id} still shortens itself for the bar`)
-        .toMatch(/padding-bottom:\s*0/);
-    }
+  it("scrolls the whole deck screen, header and all", () => {
+    const rule = rulesFor(css, "#shop, #anthill, #antarium, #challenges");
+    // THE SCREEN IS THE SCROLLER. That is what makes the header scroll — it is inside
+    // the thing that moves — and what turns the padding above from a shorter box into
+    // room at the END of the scroll.
+    expect(rule, "the deck screens do not scroll themselves").toMatch(/overflow-y:\s*auto/);
+
+    // AND NOTHING INSIDE THEM MAY SCROLL. An inner scroller takes the gesture and holds
+    // the page still: the header stops moving again and the dead band comes back one
+    // element down, wearing a different selector.
+    const inner = rulesFor(css,
+      "#shop .screenbody,\n#antarium .screenbody,\n#anthill .screenbody,\n#anthill .hillwrap,"
+      + "\n#challenges .screenbody,\n#challenges .challist");
+    expect(inner, "an inner box still scrolls on its own").toMatch(/overflow:\s*visible/);
+    expect(inner, "an inner box still takes the leftover height").toMatch(/flex:\s*none/);
+  });
+
+  /**
+   * AND THE ANTARIUM'S BODY MAY NOT USE THE `padding` SHORTHAND.
+   *
+   * `padding: var(--block) 0` reads as a tidy way to say "12 at the top" and silently
+   * sets padding-bottom to 12 as well. It is in a block that comes LATER in the file than
+   * the bar's room, so it wiped it — and the last card went back under the tiles with
+   * every other rule here still correct.
+   */
+  it("sets the antarium body's padding on one side only", () => {
+    const rule = ruleFor(code(read("skin.css")), "#antarium .screenbody");
+    expect(rule, "a padding shorthand here wipes whatever the rules above set")
+      .not.toMatch(/(^|[;{])\s*padding:/);
+    expect(rule).toMatch(/padding-top:\s*var\(--block\)/);
   });
 
   /**
@@ -798,13 +822,34 @@ describe("the colony bar and the tab tray", () => {
    * THE CURRENCY CHIP'S LEFT END IS A SEMICIRCLE AND ITS RIGHT END MATCHES THE BLOCK.
    * Both asked for. The mark at the left is a painted DISC, so a square-ish corner
    * behind it is a second shape fighting the first; the right two are the 7 the colony
-   * banner and the granary pill beside it carry. The left is a huge radius rather than
-   * half the height: the chip is sized by its contents and a browser clamps a radius
-   * that exceeds the box, so one number stays right at every scale.
+   * banner and the granary pill beside it carry.
+   *
+   * AND THE LEFT END IS EXACTLY HALF THE HEIGHT, NEVER A HUGE NUMBER. `999px` was
+   * written here on the argument that a browser clamps a radius larger than its box.
+   * It does not: when the two radii on ANY EDGE add up to more than that edge, the spec
+   * scales EVERY corner of the box by the same factor — 999 + 999 down the left edge of
+   * a 30-tall chip is about one sixtieth, so the RIGHT corners came out at a seventh of
+   * a pixel. `getComputedStyle` reports the value as written, so the rule measured as
+   * correct every time it was checked, and was reported as square twice.
+   *
+   * The half is DERIVED here from the two numbers that decide the chip's height — its
+   * mark and its padding — so retuning either moves this with it rather than leaving a
+   * radius that quietly starts scaling the corners down again.
    */
-  it("rounds the currency chip's left end all the way", () => {
-    expect(ruleFor(css, "#home .tn-coin"), "the chip's left end is not fully rounded")
-      .toMatch(/border-radius:\s*999px calc\(7 \* var\(--u\)\) calc\(7 \* var\(--u\)\) 999px/);
+  it("rounds the currency chip's left end to exactly half its height", () => {
+    const rule = ruleFor(css, "#home .tn-coin");
+    const mark = /width:\s*calc\((\d+) \* var\(--u\)\)/
+      .exec(ruleFor(css, "#home .tn-coin .tn-ic"))?.[1];
+    const padY = /padding:\s*calc\((\d+) \* var\(--u\)\)/.exec(rule)?.[1];
+    expect(mark, "the chip's mark has no size to measure").toBeTruthy();
+    expect(padY, "the chip's padding has no size to measure").toBeTruthy();
+    const half = (Number(mark) + 2 * Number(padY)) / 2;
+    expect(rule, `the chip's left end is not half its ${half * 2} height`).toMatch(
+      new RegExp(`border-radius:\\s*calc\\(${half} \\* var\\(--u\\)\\)`
+        + ` calc\\(7 \\* var\\(--u\\)\\) calc\\(7 \\* var\\(--u\\)\\)`
+        + ` calc\\(${half} \\* var\\(--u\\)\\)`));
+    expect(rule, "a radius this big scales every other corner to nothing")
+      .not.toMatch(/border-radius:[^;]*\d{3,}px/);
     // ...and the right end is the SAME corner the frames around it carry, never its own.
     for (const sel of ["#home .colhero",
       "#home .granpill,\n#home #granaryPill.granpill"]) {
