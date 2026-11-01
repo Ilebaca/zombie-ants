@@ -159,15 +159,16 @@ describe("a colony's cover", () => {
    * would sit inside that box as a brown rectangle on a darker plate — a frame around
    * the ant that no rule in the stylesheet admits to, and the kind of fault that looks
    * like a considered choice. Read off the WebP header: an extended (`VP8X`) file
-   * carries its alpha flag in the feature byte at offset 20, and a plain lossy one has
-   * no alpha channel at all.
+   * carries its alpha flag in the feature byte at offset 20; a lossless (`VP8L`) file
+   * carries it in bit 28 of its image header. A plain lossy file has no alpha.
    */
   it("ships cut-outs with no background on them", () => {
     for (const f of webps(CUTS)) {
       const d = readFileSync(resolve(CUTS, f));
-      const extended = d.subarray(12, 16).toString("latin1") === "VP8X";
-      const features = extended ? d.readUInt8(20) : 0;
-      const alpha = (features & 0x10) !== 0;
+      const tag = d.subarray(12, 16).toString("latin1");
+      const alpha = tag === "VP8X"
+        ? (d.readUInt8(20) & 0x10) !== 0
+        : tag === "VP8L" && (d.readUInt32LE(21) & 0x10000000) !== 0;
       expect(alpha, `${f} carries its own background — it has to be a cut-out`).toBe(true);
     }
   });

@@ -586,6 +586,7 @@ export function antPortrait(
     img.src = art;
     img.width = size;
     img.height = size;
+    img.style.objectFit = "cover";
     if (cls) img.className = cls;
     // Silent, for the reason the canvas below is: the face always sits inside something
     // that is already named, and a second announcement is noise rather than access.
