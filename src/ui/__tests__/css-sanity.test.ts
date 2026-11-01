@@ -755,15 +755,22 @@ describe("the colony bar and the tab tray", () => {
   });
 
   /*
-   * THE CURRENCY CHIP'S LEFT END IS A SEMICIRCLE, asked for directly. The mark at that
-   * end is a painted DISC, so a square-ish corner behind it is a second shape fighting
-   * the first. A huge radius rather than half the height: the chip is sized by what is
-   * in it, and a browser clamps a radius that exceeds the box — one number that stays
-   * right at every scale. The RIGHT two keep the design's 5.
+   * THE CURRENCY CHIP'S LEFT END IS A SEMICIRCLE AND ITS RIGHT END MATCHES THE BLOCK.
+   * Both asked for. The mark at the left is a painted DISC, so a square-ish corner
+   * behind it is a second shape fighting the first; the right two are the 7 the colony
+   * banner and the granary pill beside it carry. The left is a huge radius rather than
+   * half the height: the chip is sized by its contents and a browser clamps a radius
+   * that exceeds the box, so one number stays right at every scale.
    */
   it("rounds the currency chip's left end all the way", () => {
     expect(ruleFor(css, "#home .tn-coin"), "the chip's left end is not fully rounded")
-      .toMatch(/border-radius:\s*999px calc\(5 \* var\(--u\)\) calc\(5 \* var\(--u\)\) 999px/);
+      .toMatch(/border-radius:\s*999px calc\(7 \* var\(--u\)\) calc\(7 \* var\(--u\)\) 999px/);
+    // ...and the right end is the SAME corner the frames around it carry, never its own.
+    for (const sel of ["#home .colhero",
+      "#home .granpill,\n#home #granaryPill.granpill"]) {
+      expect(ruleFor(css, sel), `${sel} no longer carries the block's corner`)
+        .toMatch(dp("border-radius", 7));
+    }
   });
 
   /*
@@ -835,6 +842,14 @@ describe("the colony bar and the tab tray", () => {
     expect(before).toMatch(/height:\s*50%/);
     expect(before).toMatch(/background:\s*var\(--hud-face\)/);
     expect(before).toMatch(/bottom:\s*0/);
+    /*
+     * AND IT WEARS THE SAME INNER OUTLINE AS EVERY OTHER FRAME, asked for directly: it
+     * was the one surface on this screen with a face and no gloss, which read as a band
+     * of flat colour rather than as a ledge the tiles stand on. `!important` or the
+     * blanket clears it, which is the half nothing a jsdom test can see would notice.
+     */
+    expect(before, "the shelf has no gloss, or the blanket will clear it")
+      .toMatch(/box-shadow:\s*var\(--hud-gloss\)\s*!important/);
     // ...and the tiles stand ON it rather than under it.
     expect(ruleFor(css, "#mainNav.homenav .navitem")).toMatch(/z-index:\s*1/);
     /*

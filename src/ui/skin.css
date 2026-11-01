@@ -6693,13 +6693,16 @@ button:not(.playbtn):active,
   overflow: hidden;
   padding: calc(2 * var(--u)) calc(5 * var(--u)) calc(2 * var(--u)) calc(2 * var(--u));
   border: none;
-  /* THE LEFT END IS A SEMICIRCLE, asked for directly. Both left corners go all the way
-     round and the right two keep the design's 5 — the mark at that end is a painted
-     DISC, so a square-ish corner behind it is a second shape fighting the first. It is
-     written as a huge radius rather than half the height: the chip is sized by what is
-     in it (`height: auto`), and a browser clamps a radius that exceeds the box, so one
-     number stays right at every scale and if the contents ever grow. */
-  border-radius: 999px calc(5 * var(--u)) calc(5 * var(--u)) 999px;
+  /* THE LEFT END IS A SEMICIRCLE AND THE RIGHT END IS EVERY OTHER FRAME'S CORNER, both
+     asked for directly. The mark at the left is a painted DISC, so a square-ish corner
+     behind it is a second shape fighting the first; the right two are 7, which is what
+     the colony banner and the granary pill in the same block carry. It was the design's
+     5 — untouched by the left-end change and still reported as looking squared off,
+     which it was: 5 against a 30-tall chip is a tighter corner than anything beside it.
+     The left is written as a huge radius rather than half the height: the chip is sized
+     by what is in it (`height: auto`), and a browser clamps a radius that exceeds the
+     box, so one number stays right at every scale and if the contents ever grow. */
+  border-radius: 999px calc(7 * var(--u)) calc(7 * var(--u)) 999px;
   background: var(--hud-face);
   box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
 }
@@ -7107,6 +7110,12 @@ button:not(.playbtn):active,
   bottom: 0;
   height: 50%;
   background: var(--hud-face);
+  /* AND IT WEARS THE SAME INNER OUTLINE AS EVERY OTHER FRAME, asked for directly. The
+     shelf was the one surface on this screen with a face and no gloss, which is what
+     made it read as a band of flat colour rather than as a raised ledge the tiles stand
+     on. `!important` or the blanket clears it (§10) — the same reason every `--hud-ledge`
+     on this screen is marked, and the half nothing but a test would notice. */
+  box-shadow: var(--hud-gloss) !important;
 }
 /* ...and the tiles stand ON it rather than under it. */
 #mainNav.homenav .navitem { position: relative; z-index: 1; }
