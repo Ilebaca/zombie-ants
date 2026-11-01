@@ -2977,6 +2977,8 @@ button:not(.playbtn):active,
 #formation {
   display: flex;
   flex-direction: column;
+  /* The artwork clips at the viewport edges; controls carry their own gutter. */
+  padding-inline: 0;
   /* THE PICTURE AND ITS NAME SIT IN THE MIDDLE; THE BUTTON HOLDS THE BOTTOM.
      Two flexible gaps, one above the board and one under the name, split what is left
      over equally — so the board rides near the middle of the screen and the button stays
@@ -2990,6 +2992,7 @@ button:not(.playbtn):active,
   min-height: 0;
 }
 .setuptop {
+  width: min(calc(100% - var(--sp8)), var(--page));
   position: absolute;
   top: 0;
   left: 0;
@@ -3030,10 +3033,8 @@ button:not(.playbtn):active,
    rebuilding, or every press would restart the slide from a standing start. */
 #setupBoard.off, .coverslide:not(.on) { display: none; }
 .coverslide {
-  /* The same ceiling the board is sized to in JS (`MAX_BOARD_PX`), so the two steps are
-     the same width and the picture does not jump sideways between them. The stage adds
-     no inset of its own, so 100% here IS the reading column. */
-  width: min(100%, 520px);
+  /* Each sliding image spans the viewport, with no inset mask or reading-width cap. */
+  width: 100%;
   aspect-ratio: 1567 / 900;
   overflow: hidden;
   /* NO PLATE. The rail shows the CUT-OUT (ui/covers.ts), so the ground under the
@@ -3071,7 +3072,7 @@ button:not(.playbtn):active,
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  width: min(100%, var(--page));
+  width: min(calc(100% - var(--sp8)), var(--page));
   margin-inline: auto;
   /* The 20px Milan asked for, measured from the bottom edge of the picture. `.screen`
      owns the bottom inset and the safe area. */
