@@ -176,7 +176,8 @@ export function screenHeader(parent: HTMLElement, opts: HeaderOptions): void {
 function purseChip(mark: string, value: number): HTMLElement {
   const chip = el("div", "mycelchip");
   chip.dataset.purse = mark;
-  chip.append(hudMark(mark, 18), el("b", "mycelv", String(value)));
+  chip.append(mark === "pheromone" ? hudMark(mark, 18) : icon(mark, 18),
+    el("b", "mycelv", String(value)));
   chip.title = mark === "pheromone" ? "Pheromone crystal" : "Mycelium";
   chip.setAttribute("aria-label", mark === "pheromone"
     ? `${value} pheromone crystal${value === 1 ? "" : "s"}`
