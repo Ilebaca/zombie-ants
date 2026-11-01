@@ -6734,13 +6734,19 @@ button:not(.playbtn):active,
   /* THE LEFT END IS A SEMICIRCLE AND THE RIGHT END IS EVERY OTHER FRAME'S CORNER, both
      asked for directly. The mark at the left is a painted DISC, so a square-ish corner
      behind it is a second shape fighting the first; the right two are 7, which is what
-     the colony banner and the granary pill in the same block carry. It was the design's
-     5 — untouched by the left-end change and still reported as looking squared off,
-     which it was: 5 against a 30-tall chip is a tighter corner than anything beside it.
-     The left is written as a huge radius rather than half the height: the chip is sized
-     by what is in it (`height: auto`), and a browser clamps a radius that exceeds the
-     box, so one number stays right at every scale and if the contents ever grow. */
-  border-radius: 999px calc(7 * var(--u)) calc(7 * var(--u)) 999px;
+     the colony banner and the granary pill in the same block carry.
+
+     AND THE LEFT END IS HALF THE HEIGHT, NEVER A HUGE NUMBER. It was `999px`, on the
+     argument that a browser clamps a radius larger than its box — which is true and is
+     not what it does. When the two radii on ANY EDGE add up to more than that edge, the
+     spec scales EVERY corner of the box by the same factor: 999 + 999 down the left edge
+     of a 30-tall chip is a factor of about one sixtieth, so the right corners came out at
+     a seventh of a pixel. Square. `getComputedStyle` reports the value as written, so the
+     rule read as correct every time it was checked and was reported as square twice —
+     this is the third time it has been asked for.
+     15 is exactly half: the chip is its mark (26) plus 2 of padding at each end, so the
+     left edge sums to its own height and nothing is scaled. */
+  border-radius: calc(15 * var(--u)) calc(7 * var(--u)) calc(7 * var(--u)) calc(15 * var(--u));
   background: var(--hud-face);
   box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
 }
@@ -7202,30 +7208,42 @@ button:not(.playbtn):active,
   padding-bottom: calc(var(--navh) + env(safe-area-inset-bottom));
 }
 
-/* A SCREEN DOES NOT SHORTEN ITSELF FOR THE BAR — ITS SCROLLER KEEPS THE ROOM.
-   Reported from a phone as "a black frame under the menu cutting off the
-   content", and that is exactly what it was. The legacy rule pads the SCREEN,
-   so the scroller inside it ends at the TOP of the bar — while the bar itself
-   is transparent down to the half-height shelf. What is left between the two
-   is a band of bare page with nothing in it: a list that stops dead, a gap,
-   then the shelf. On home it never showed, because home is a full-bleed
-   picture with nothing to clip.
-   So the screen runs to the bottom of the viewport and the content passes
-   BEHIND the tiles, the way it does behind every bottom bar on a phone, and
-   the room to scroll the last row clear of them is the scroller's own
-   padding. */
-#shop, #anthill, #antarium, #challenges { padding-bottom: 0; }
-/* THE INNERMOST SCROLLER IS WHAT TAKES IT, and it is named per screen because
-   it differs: the shop and the Antarium scroll their `.screenbody`, the
-   Anthill scrolls a wrapper inside it and the Challenges list scrolls itself.
-   Padding an OUTER box would only move the dead band inwards — the inner
-   scroller would end where the padding starts, which is the same fault one
-   element down. */
+/* THE WHOLE DECK SCREEN SCROLLS, HEADER AND ALL, AND THE BAR'S ROOM IS ITS
+   OWN PADDING.
+   Two reports, one cause. The legacy shape is `.screen > .screentop +
+   .screenbody`, with the BODY scrolling and the header pinned above it — so
+   the title sat still while everything moved under it ("shouldn't be sticky,
+   should scroll normally with the rest of the content"), and the screen paid
+   for the bar by SHORTENING itself, which left the scroller ending at the top
+   of a bar that is transparent down to its half-height shelf: a band of bare
+   page with nothing in it ("a black frame under the menu cutting off the
+   content"). Neither showed on home, which is a fixed composition with
+   nothing to clip and nothing that scrolls.
+   Making the SCREEN the scroller answers both at once. The header scrolls
+   because it is inside the thing that moves; the padding is now room at the
+   END of the scroll rather than a shorter box, so the content runs to the
+   bottom of the viewport and passes BEHIND the tiles the way it does behind
+   every bottom bar on a phone. */
+#shop, #anthill, #antarium, #challenges {
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding-bottom: calc(var(--navh) + env(safe-area-inset-bottom));
+}
+/* AND NOTHING INSIDE MAY SCROLL ON ITS OWN. An inner scroller takes the
+   gesture and holds the page still — the header stops moving again and the
+   dead band comes back one element down, which is the same fault wearing a
+   different selector. The four are named because they differ: the shop and
+   the Antarium scrolled their `.screenbody`, the Anthill a wrapper inside it
+   and the Challenges list itself. */
 #shop .screenbody,
 #antarium .screenbody,
+#anthill .screenbody,
 #anthill .hillwrap,
+#challenges .screenbody,
 #challenges .challist {
-  padding-bottom: calc(var(--navh) + env(safe-area-inset-bottom));
+  flex: none;
+  height: auto;
+  overflow: visible;
 }
 
 /* AND THE SCREENS THE BAR NO LONGER STANDS ON RESERVE NOTHING FOR IT. The
@@ -7633,7 +7651,11 @@ button:not(.playbtn):active,
   display: flex;
   flex-direction: column;
   gap: var(--block);
-  padding: var(--block) 0;
+  /* PADDING-TOP, never the shorthand. `padding: var(--block) 0` reads as a tidy
+     way to say the same thing and silently sets padding-bottom to 12 — which is
+     what wiped the bar's room out of the rule above and put the last card back
+     under the tiles. */
+  padding-top: var(--block);
 }
 
 /* ------------------------------------------------- THE TILE
