@@ -3041,8 +3041,7 @@ button:not(.playbtn):active,
      thing the cut-out was made to remove, and it read as a photograph in a frame
      rather than as the colony being stepped through. The box stays, because it is
      what holds the rail's size and the slide; only its fill goes.
-     The species page's hero keeps `#1a120a`, and that is not an inconsistency:
-     it shows the PAINTED set, which is lit on exactly that colour. */
+     The species cover also leaves its background transparent. */
   background: none;
 }
 /* ONE ROW, MOVED BY WHOLE PANES. `translate3d` rather than `left`, so the slide is
@@ -3950,12 +3949,8 @@ button:not(.playbtn):active,
   width: 100%;
   aspect-ratio: 1567 / 900;
   overflow: hidden;
-  /* The paintings are CUT-OUTS — an ant on transparent ground — so this is not a
-     fallback, it is the backdrop they stand on. The colony with no cover yet stands
-     on the same colour the painted ones do, and the setup rail's pane carries the
-     same value for the same reason: the two cannot disagree without one screen
-     lighting the ant on a different ground from the other. */
-  background: #1a120a;
+  /* The cut-out stands directly on the page, with no rectangle behind the ant. */
+  background: transparent;
 }
 .spgcover-img {
   display: block;
@@ -3970,7 +3965,7 @@ button:not(.playbtn):active,
 /* ------------------------------------------------------------------- THE HERO */
 .spghero {
   display: grid;
-  grid-template-columns: 96px 1fr;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: 6px 14px;
   padding: 14px;
@@ -3980,8 +3975,6 @@ button:not(.playbtn):active,
      one thing that colours it. */
   border: 1px solid color-mix(in srgb, var(--tc) 45%, var(--line));
 }
-/* Drawn at twice the size it is shown at, which is what keeps it sharp. */
-.spgport { display: block; width: 96px; height: 96px; }
 .spgwho { min-width: 0; display: grid; gap: 2px; }
 .spgtier {
   font-size: 9.5px;
