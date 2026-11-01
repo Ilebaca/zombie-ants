@@ -2993,6 +2993,7 @@ button:not(.playbtn):active,
 }
 .setuptop {
   width: min(calc(100% - var(--sp8)), var(--page));
+  margin-inline: auto;
   position: absolute;
   top: 0;
   left: 0;
