@@ -7675,6 +7675,7 @@ button:not(.playbtn):active,
    the screen sets no fill on a locked tile at all, so there is one place
    deciding what "not yours" looks like. */
 #antarium .an-tile.locked { background: var(--hud-lock); }
+#antarium .an-tile.locked .an-art { filter: grayscale(1); }
 
 /* THE LEVEL, in the corner the design puts it in. Inset by two, so the
    badge reads as something lying ON the tile rather than as a bite out of
@@ -7742,9 +7743,10 @@ button:not(.playbtn):active,
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 0;
+  padding: 4px 6px;
   border: none;
-  background: none;
+  border-radius: var(--r-btn);
+  background: var(--hud-well);
   font-family: var(--font-display);
   font-weight: 400;
   font-size: var(--fs-body);

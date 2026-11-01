@@ -25,8 +25,7 @@ import {
 } from "../platform";
 import type { ProfileStore, Research } from "../platform";
 import { cardArt } from "./cards";
-import { el, redraw, screenEl, screenHeader, toast } from "./chrome";
-import { icon } from "./icons";
+import { el, hudMark, redraw, screenEl, screenHeader, toast } from "./chrome";
 
 export interface AntariumOptions {
   /** Opens the per-species page. The app router owns which screen is showing. */
@@ -57,11 +56,9 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
    * THE TILE IS THE COLONY: its rarity's colour, the level in the corner, and the picture
    * on top once there is one.
    *
-   * The picture is deliberately absent today — asked for directly, "you can just add
-   * colored background and later we place portraits on top of it" — and `cardArt` answers
-   * null until a file lands in `src/ui/cards/`. The drawn head is NOT the fallback: it is
-   * sized for a 40px row, and blown up to fill a 108px tile it reads as a mistake where a
-   * flat colour reads as a tile waiting for its picture.
+   * `cardArt` supplies the collection portraits from `src/ui/cards/`; colonies without
+   * artwork keep their rarity colour. Locked portraits are desaturated by the same
+   * tile state that supplies their grey background.
    */
   const tile = (id: SpeciesId): HTMLElement => {
     const owned = store.isUnlocked(id);
@@ -259,6 +256,6 @@ export const LEVEL_MAX = 1 + RESEARCH_TOTAL_MAX;
 /** One species stat: a mark and a number, in the pill the stylesheet draws. */
 function statChip(mark: string, value: string): HTMLElement {
   const chip = el("span", "statchip");
-  chip.append(icon(mark, 14), el("span", undefined, value));
+  chip.append(hudMark(mark, 14), el("span", undefined, value));
   return chip;
 }
