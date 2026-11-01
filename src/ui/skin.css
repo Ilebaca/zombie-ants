@@ -7880,7 +7880,7 @@ button:not(.playbtn):active,
   z-index: 2;
   box-sizing: border-box;
   border: 2px solid var(--hud-ink);
-  border-radius: inherit;
+  border-radius: var(--r-card);
   pointer-events: none;
 }
 #antarium .cname {
