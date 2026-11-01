@@ -20,7 +20,7 @@ import { backdropFor, bandFor } from "../backdrops";
 import { buildAnthill } from "../anthill";
 import { buildProfile } from "../profile";
 import { clockOf, colonyBanner, granaryPill } from "../chrome";
-import { buildAntarium, levelOf } from "../antarium";
+import { LEVEL_MAX, buildAntarium, levelOf } from "../antarium";
 import { buildSpeciesPage } from "../species";
 import type { EngineEvent } from "../../engine";
 import { dayIndex, questDef } from "../../platform";
@@ -475,6 +475,44 @@ describe("antarium collection", () => {
     expect(levelOf(s, "army"), "buying a colony left it at level zero").toBe(1);
     s.buyResearch("army", "mandible");
     expect(levelOf(s, "army"), "a research level did not move the badge").toBe(2);
+  });
+
+  /**
+   * THE RUNGS ARE THE BADGE, DRAWN LONG.
+   *
+   * One square per level the colony can reach, lit as far as it has come — asked for
+   * directly, "there should be 16 of those green squares showing the level". It was
+   * research-out-of-fifteen for a day, which put a badge reading 1 over a bar with
+   * nothing in it: two readings of one number that did not agree.
+   *
+   * The COUNT is derived (`LEVEL_MAX`), never typed, or retuning the research tree
+   * leaves the bar quietly one square short of a level a player can actually reach.
+   */
+  it("draws one rung per level and lights them as far as the colony has come", () => {
+    const s = store(100_000, 100_000);
+    const root = openAntarium(s);
+    expect(root.querySelectorAll("#antBanner .rb-pip").length).toBe(LEVEL_MAX);
+    expect(LEVEL_MAX, "the ladder stopped following the research tree")
+      .toBe(1 + RESEARCH_TOTAL_MAX);
+
+    const lit = (r: HTMLElement): number => r.querySelectorAll("#antBanner .rb-pip.on").length;
+    // The colony the banner opens on is owned, so it is already on its first rung.
+    expect(lit(root)).toBe(1);
+
+    const id = s.get().lastSpecies;
+    for (let i = 0; i < 3; i++) s.buyResearch(id, "mandible");
+    const again = openAntarium(s);
+    expect(lit(again), "the rungs did not follow the research").toBe(4);
+    expect(again.querySelector("#antBanner .an-lv")?.textContent,
+      "the badge and the rungs disagree").toBe(String(lit(again)));
+  });
+
+  /** A colony you do not own lights none of them, which is the badge's 0 drawn long. */
+  it("lights no rung on a colony you do not own", () => {
+    const root = openAntarium(store());
+    click(cardFor(root, "Bullet Ant"));
+    expect(root.querySelectorAll("#antBanner .rb-pip.on").length).toBe(0);
+    expect(root.querySelector("#antBanner .an-lv")?.textContent).toBe("0");
   });
 
   /**

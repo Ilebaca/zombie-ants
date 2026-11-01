@@ -7193,12 +7193,48 @@ button:not(.playbtn):active,
 }
 
 /* THE TAB BAR GREW, so the room reserved for it has to. The legacy sheet
-   reserves `64px + safe-area` on every screen that shows the bar; the bar
-   is 70 now, and the ledge under the last row of tiles needs the extra 4
-   or it is clipped by the edge of the screen. */
-#home, #profile, #rules, #shop, #achievements, #settings, #news, #friends,
-#support, #luckyhatch, #antarium, #anthill, #challenges {
+   reserves `64px + safe-area`; the bar is 70 now, and the ledge under the
+   last row of tiles needs the extra 4 or it is clipped by the edge of the
+   screen. HOME is the one screen that takes it as its own padding, because
+   nothing on it scrolls: it is a fixed composition and PLAY's gap is
+   measured against this same number. */
+#home {
   padding-bottom: calc(var(--navh) + env(safe-area-inset-bottom));
+}
+
+/* A SCREEN DOES NOT SHORTEN ITSELF FOR THE BAR — ITS SCROLLER KEEPS THE ROOM.
+   Reported from a phone as "a black frame under the menu cutting off the
+   content", and that is exactly what it was. The legacy rule pads the SCREEN,
+   so the scroller inside it ends at the TOP of the bar — while the bar itself
+   is transparent down to the half-height shelf. What is left between the two
+   is a band of bare page with nothing in it: a list that stops dead, a gap,
+   then the shelf. On home it never showed, because home is a full-bleed
+   picture with nothing to clip.
+   So the screen runs to the bottom of the viewport and the content passes
+   BEHIND the tiles, the way it does behind every bottom bar on a phone, and
+   the room to scroll the last row clear of them is the scroller's own
+   padding. */
+#shop, #anthill, #antarium, #challenges { padding-bottom: 0; }
+/* THE INNERMOST SCROLLER IS WHAT TAKES IT, and it is named per screen because
+   it differs: the shop and the Antarium scroll their `.screenbody`, the
+   Anthill scrolls a wrapper inside it and the Challenges list scrolls itself.
+   Padding an OUTER box would only move the dead band inwards — the inner
+   scroller would end where the padding starts, which is the same fault one
+   element down. */
+#shop .screenbody,
+#antarium .screenbody,
+#anthill .hillwrap,
+#challenges .challist {
+  padding-bottom: calc(var(--navh) + env(safe-area-inset-bottom));
+}
+
+/* AND THE SCREENS THE BAR NO LONGER STANDS ON RESERVE NOTHING FOR IT. The
+   list above is the legacy build's, where every one of these showed the bar;
+   the bar is the five deck screens only now (§ NAV_SCREENS), so on the other
+   eight that padding is a 70px strip of nothing at the foot of the page. */
+#profile, #rules, #achievements, #settings, #news, #friends,
+#support, #luckyhatch {
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* ==========================================================================
