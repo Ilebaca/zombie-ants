@@ -1231,7 +1231,7 @@ export class App {
     const hatch = el("button", "dailyfab hatchfab");
     hatch.title = "Lucky hatch";
     hatch.setAttribute("aria-label", "Lucky hatch");
-    hatch.appendChild(hudMark("brood", 36, 26));
+    hatch.appendChild(hudMark("lucky-hatch", 36, 26));
     hatch.onclick = () => this.show("luckyhatch");
 
     fabs.append(settings, daily, hatch);
