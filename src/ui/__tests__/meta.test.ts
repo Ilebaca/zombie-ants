@@ -20,7 +20,7 @@ import { backdropFor, bandFor } from "../backdrops";
 import { buildAnthill } from "../anthill";
 import { buildProfile } from "../profile";
 import { clockOf, colonyBanner, granaryPill } from "../chrome";
-import { buildAntarium } from "../antarium";
+import { buildAntarium, levelOf } from "../antarium";
 import { buildSpeciesPage } from "../species";
 import type { EngineEvent } from "../../engine";
 import { dayIndex, questDef } from "../../platform";
@@ -450,15 +450,73 @@ describe("antarium collection", () => {
     expect(heads[1]?.textContent).toContain(`0/${sizeOf(rungs[1]!)}`);
   });
 
-  it("veils a locked colony with its price and leaves owned ones open", () => {
-    const root = openAntarium(store());
+  /**
+   * THE LEVEL BADGE SAYS WHOSE THE COLONY IS BEFORE IT SAYS ANYTHING ELSE.
+   *
+   * Zero means "not yours" and is the one value an owned colony can never show, because
+   * buying one IS the first level — so the badge is a complete sentence on its own and
+   * the grey tile beside it is the same sentence said in colour.
+   */
+  it("reads 0 on a colony you do not own and 1 the moment you do", () => {
+    const s = store(10_000, 10_000);
+    const root = openAntarium(s);
     const army = cardFor(root, "Army Ant");
     expect(army?.className).toContain("locked");
-    expect(army?.querySelector(".cveil")?.textContent).toContain(String(SPECIES_UNLOCK.army));
+    expect(army?.querySelector(".an-lv")?.textContent).toBe("0");
 
     const fire = cardFor(root, "Fire Ant");
     expect(fire?.className).not.toContain("locked");
-    expect(fire?.querySelector(".clv")?.textContent).toBe("LV 0");
+    expect(fire?.querySelector(".an-lv")?.textContent, "a colony you own reads as unowned")
+      .toBe("1");
+
+    // And buying one moves it off zero with no research bought at all.
+    expect(levelOf(s, "army")).toBe(0);
+    s.unlockSpecies("army");
+    expect(levelOf(s, "army"), "buying a colony left it at level zero").toBe(1);
+    s.buyResearch("army", "mandible");
+    expect(levelOf(s, "army"), "a research level did not move the badge").toBe(2);
+  });
+
+  /**
+   * A TILE IS PAINTED IN ITS RARITY, AND THE SCREEN IS WHAT SAYS SO.
+   *
+   * The stylesheet only knows `var(--fill, …)`, so this is the half that decides WHICH
+   * colour — and it is the half nothing visual would catch: every locked card is grey
+   * whatever the screen hands it, so a tier wired to the wrong fill shows up only on a
+   * colony somebody has actually bought.
+   */
+  it("paints an owned tile in its rarity and leaves a locked one to the stylesheet", () => {
+    const s = store(100_000);
+    for (const id of Object.keys(SPECIES) as SpeciesId[]) {
+      if (!SPECIES[id].premium) s.unlockSpecies(id);
+    }
+    const root = openAntarium(s);
+    for (const card of Array.from(root.querySelectorAll<HTMLElement>(".ccard"))) {
+      const id = card.dataset.ant as SpeciesId;
+      const tile = card.querySelector<HTMLElement>(".an-tile");
+      const fill = tile?.style.getPropertyValue("--fill") ?? "";
+      if (s.isUnlocked(id)) {
+        expect(fill, `${id} is not painted in its rarity`).toBe(tierOf(id).fill);
+      } else {
+        // A LOCKED TILE IS HANDED NO COLOUR AT ALL, so one rule owns what "not yours"
+        // looks like. Setting a grey here would be the second place deciding it.
+        expect(fill, `${id} was painted while locked`).toBe("");
+      }
+    }
+  });
+
+  /**
+   * THE PRICE IS ON THE CONTROL THAT CAN ACT ON IT, and nowhere else.
+   *
+   * It used to be printed on a veil over every locked card — eight prices on screen at
+   * once, none of them pressable. A price is a thing to act on, so it belongs on the one
+   * button that acts, which names it the moment that colony is selected.
+   */
+  it("prints no price on the cards themselves", () => {
+    const root = openAntarium(store());
+    expect(root.querySelector(".cveil"), "the price veil came back").toBeNull();
+    expect(cardFor(root, "Army Ant")?.textContent)
+      .not.toContain(String(SPECIES_UNLOCK.army));
   });
 
   it("re-points the banner and the call to action at the colony you tap", () => {
@@ -466,10 +524,10 @@ describe("antarium collection", () => {
     click(cardFor(root, "Bullet Ant"));
     expect(root.querySelector(".rb-name")?.textContent).toBe("Bullet Ant");
     expect(root.querySelector("#antCTA")?.textContent).toContain(String(SPECIES_UNLOCK.bullet));
-    // The level rides on the NAME line, not in the chip row — it is how far this player
-    // has taken the colony, where the three chips are what the colony does.
-    expect(root.querySelector(".rb-nl .lv")?.textContent).toContain("LOCKED");
-    // Two chips, not four: the level rides on the name line, and the cooldown — the one
+    // The level is the badge on the tile now, so nothing on the name line says it.
+    expect(root.querySelector(".rb-nl"), "the old level line came back").toBeNull();
+    expect(root.querySelector("#antBanner .an-lv")?.textContent).toBe("0");
+    // Two chips, not four: the level is in the tile's corner, and the cooldown — the one
     // fact this screen is not about — is stated on the colony's own page instead.
     expect(root.querySelectorAll(".rb-meta .statchip").length).toBe(2);
     expect(root.querySelector(".rb-meta .lv"), "the level rejoined the chips").toBeNull();
@@ -1091,10 +1149,18 @@ describe("legacy markup parity", () => {
   it("keeps the Antarium's banner → cta → tiered grid skeleton", () => {
     const root = buildAntarium(store(), { onOpenSpecies: () => {} });
     expect(root.id).toBe("antarium");
-    for (const cls of ["rbanner", "rb-info", "rb-tier", "rb-name", "rb-tag", "rb-meta",
-      "antcta", "antscroll", "tierhead", "tl", "tline", "tc", "cgrid", "ccard", "cname",
-      "cveil"]) {
+    // THE SKELETON IS THE DESIGN'S NOW, not the legacy build's — the third screen drawn
+    // to a handed-over frame, after home and the shop. What went with the old one: the
+    // rarity WORD on the banner (the tile under it is painted in that rarity and the
+    // section is headed with its name), the rule between a heading and its count, and the
+    // veil that printed a price on every locked card.
+    for (const cls of ["rbanner", "rb-info", "rb-name", "rb-tag", "rb-meta", "rb-seg",
+      "an-tile", "an-lv", "antcta", "antscroll", "tierhead", "tiergrp", "tl", "tc",
+      "cgrid", "ccard", "cname"]) {
       expect(landmarks(root), `.${cls} missing`).toContain(cls);
+    }
+    for (const gone of ["rb-tier", "tline", "cveil", "clv"]) {
+      expect(landmarks(root), `.${gone} came back with the legacy skeleton`).not.toContain(gone);
     }
     // A card carries the NAME and nothing under it: the stat pair was two unlabelled
     // numbers that read as a level, and both are a tap away as labelled chips.
@@ -1120,7 +1186,11 @@ describe("legacy markup parity", () => {
     const root = buildAntarium(s, { onOpenSpecies: () => {} });
     const card = Array.from(root.querySelectorAll<HTMLElement>(".ccard"))
       .find((c) => c.dataset.ant === "fire");
-    expect(card?.textContent, "the level badge went with it").toContain("LV 3");
+    // Three research levels on a colony that was already owned: 1 for owning it, 3 for
+    // the research. The badge is read off `levelOf`, so it cannot drift from the rungs.
+    expect(card?.querySelector(".an-lv")?.textContent, "the level badge went with it")
+      .toBe("4");
+    expect(card?.querySelectorAll(".rb-pip").length, "a card grew the banner's rungs").toBe(0);
     expect(card?.querySelector(".cbar"), "a research bar grew under the name").toBeNull();
     expect(root.querySelector(".cbar"), "a research bar grew under some card").toBeNull();
     // The name is the last thing on the card, so nothing can creep back under it unseen.

@@ -6584,6 +6584,14 @@ button:not(.playbtn):active,
   --fs-small: 10px;
   --fs-body: 12px;
   --fs-title: 14px;
+  /* And a fifth that is not one of the four, because it is not a label of any kind: the
+     one line on a screen that is a NAME, set in the display face and read first. The
+     Antarium's banner is the only thing wearing it so far. */
+  --fs-hero: 22px;
+  /* A COLONY YOU DO NOT OWN. Not a rarity — a locked tile is this grey whatever rung it
+     sits on, which is the whole point of it, so it is a token here rather than a sixth
+     entry in a ladder it is not part of. */
+  --hud-lock: #696b72;
   /* The gap between BLOCKS down a screen, and between CARDS across a row. */
   --block: 12px;
   --inrow: 8px;
@@ -7569,3 +7577,253 @@ button:not(.playbtn):active,
   line-height: 1.5;
   color: var(--hud-dim);
 }
+
+/* ======================================================================
+   THE ANTARIUM, DRAWN TO THE DESIGN
+   (Figma `Zombie Ants` → node `134:305`.)
+
+   Third screen handed over finished, and the first one where the SHARED
+   LANGUAGE above was already in place — the card face, the well, the two
+   radii, the type sizes and the two gaps are all tokens, and the only new
+   thing this screen needed is a rarity painted as a SURFACE rather than as
+   ink (`TierDef.fill` in the engine) plus the grey of a colony you do not
+   own.
+
+   Like the shop and unlike home, it does NOT ride `--u`: a column of cards
+   grows its column and keeps its type.
+   ====================================================================== */
+
+#antarium .screenbody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--block);
+  padding: var(--block) 0;
+}
+
+/* ------------------------------------------------- THE TILE
+   A colony is a tile of its rarity's colour with its level in the corner,
+   and it is the SAME object in the banner and in the grid — one rule, so
+   the hero and the card can never drift into being two different pictures
+   of one thing. */
+#antarium .an-tile {
+  position: relative;
+  overflow: hidden;
+  border: none;
+  border-radius: var(--r-card);
+  background: var(--fill, var(--hud-lock));
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+/* A COLONY YOU DO NOT OWN IS GREY, and this is the only rule that says so —
+   the screen sets no fill on a locked tile at all, so there is one place
+   deciding what "not yours" looks like. */
+#antarium .an-tile.locked { background: var(--hud-lock); }
+
+/* THE LEVEL, in the corner the design puts it in. Inset by two, so the
+   badge reads as something lying ON the tile rather than as a bite out of
+   its corner. `min-width` and not `width`: a two-digit level must widen the
+   badge rather than overflow it. */
+#antarium .an-lv {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 5px;
+  border: none;
+  border-radius: var(--r-btn);
+  background: var(--hud-well);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-body);
+  line-height: 1;
+  color: var(--hud-dim);
+}
+
+/* The picture, once there is one. It fills the tile and is allowed to bleed:
+   the art is painted on its own ground, so anything it does at the edges is
+   the artist's decision rather than a crop. */
+#antarium .an-art {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ------------------------------------------------- THE BANNER */
+#antarium .rbanner {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  margin: 0;
+  padding: 12px;
+  border: none;
+  border-radius: var(--r-card);
+  background: var(--hud-card);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+/* The hero tile is as tall as the card it sits in rather than square: what
+   is beside it is four stacked lines, and a square tile would either leave
+   a band of empty card under it or push the card taller than its contents. */
+#antarium .rbanner .an-tile { flex: none; width: 110px; }
+
+#antarium .rb-info {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#antarium .rb-meta { display: flex; align-items: center; gap: 10px; }
+#antarium .rb-meta .statchip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-body);
+  color: var(--hud-ink);
+}
+#antarium .rb-name {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-hero);
+  line-height: 1.05;
+  color: var(--hud-ink);
+}
+#antarium .rb-tag {
+  font-size: var(--fs-small);
+  line-height: 1.2;
+  color: var(--hud-dim);
+}
+
+/* RESEARCH AS RUNGS. They SHARE the row rather than being sized, so the
+   count can follow the tree (`RESEARCH_TOTAL_MAX`) without the bar having
+   to be re-measured — the design drew ten of them and the tree is fifteen. */
+#antarium .rb-seg {
+  display: flex;
+  gap: 2px;
+  margin-top: auto;
+}
+#antarium .rb-pip {
+  flex: 1 1 0;
+  height: 12px;
+  border: none;
+  border-radius: 2px;
+  background: var(--hud-well);
+}
+#antarium .rb-pip.on { background: var(--hud-go); }
+
+/* ------------------------------------------------- THE CALL TO ACTION */
+#antarium .antcta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--tap);
+  margin: 0;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--r-btn);
+  background: var(--hud-go);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-title);
+  color: var(--hud-ink);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+/* It only goes dark when it cannot DO anything — a colony you can afford is
+   still the green slab, because pressing it buys. */
+#antarium .antcta.off {
+  background: #3a3c45;
+  color: var(--hud-dim);
+  opacity: 1;
+}
+
+/* ------------------------------------------------- THE COLLECTION */
+#antarium .antscroll {
+  display: flex;
+  flex-direction: column;
+  gap: var(--block);
+  padding: 0;
+  overflow: visible;
+}
+#antarium .tierhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--inrow);
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  line-height: 1;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--hud-dim);
+}
+/* BOTH HALVES TAKE THE HEADING'S INK. The legacy sheet colours the name and the count
+   separately — cream and green — so the line read as two different kinds of fact rather
+   than as one label. The count is part of the heading. */
+#antarium .tierhead .tl,
+#antarium .tierhead .tc {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+/* A heading belongs to the grid under it, so the two are one block and the
+   gap between groups is the bigger one. */
+#antarium .tiergrp {
+  display: flex;
+  flex-direction: column;
+  gap: var(--inrow);
+}
+#antarium .cgrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--inrow);
+  margin: 0;
+}
+
+/* A CARD IS THE TILE WITH ITS NAME UNDER IT, and the card itself is nothing:
+   no face, no ledge, no padding. The LEDGE belongs to the tile, which is why
+   the name reads as standing on the page beside the others rather than as
+   the bottom half of a box. */
+#antarium .ccard {
+  display: flex;
+  flex-direction: column;
+  /* STRETCH, and that is not the default here: the legacy `.ccard` rule centres its
+     children, which leaves a tile sized by its own content — and a tile whose content is
+     a colour is zero wide. It collapsed to nothing on every card. */
+  align-items: stretch;
+  gap: var(--inrow);
+  min-width: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  outline: none;
+  box-shadow: none !important;
+}
+#antarium .ccard .an-tile { aspect-ratio: 9 / 8; }
+/* The one card the banner is describing. A ring on the TILE, because the
+   card has no edges of its own to ring. */
+#antarium .ccard.sel .an-tile { outline: 2px solid var(--hud-ink); outline-offset: -2px; }
+#antarium .cname {
+  font-size: var(--fs-small);
+  line-height: 1.2;
+  text-align: center;
+  color: var(--hud-ink);
+  word-break: break-word;
+}
+#antarium .ccard.locked .cname { color: var(--hud-dim); }
