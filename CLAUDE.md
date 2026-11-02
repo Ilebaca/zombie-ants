@@ -1005,94 +1005,31 @@ Ten numbered sections now, with a picture beside the rules that need one.
   middle of the board, which is inside most of these windows.
 
 **THE COLONY ROAD IS A PATH THROUGH TEN PLACES** (`src/ui/road.ts`, the table in
-`platform/road.ts`). It was a LADDER: two columns of grey cards either side of a hairline,
-a chapter label every two rungs, fifty times — every fact on it a word ("+105 mycelium",
-"Claim", "Locked"), so the one thing a road is FOR, how far have I come and how far is
-left, was the hardest thing on it to see. The shape it has now was asked for directly, and
-each of these is one of those requests.
-- **A CHAPTER IS FIVE CHECKPOINTS AND THE FIFTH IS BIGGER.** `ROAD_CHAPTER_STOPS` is 5,
-  so the road is 250 rungs rather than 100.
-  - **WIDENING IT DID NOT MULTIPLY THE ROAD'S INCOME, and that is the whole of the care
-    in the table.** A chapter has a PURSE (`freePurse`/`passPurse`) and its five
-    checkpoints SPLIT it (`splitPurse`): each of the first four takes an eighth and the
-    last takes WHAT IS LEFT, which is four times an eighth and a chapter that pays
-    exactly its purse however the eighths round. Paying each of the five what the single
-    stop used to pay would have been two and a half times the free track's lifetime
-    income, straight through the band `economy.test.ts` holds mycelium to — and nothing
-    else in the suite measures it. The totals are the two-rung road's to the troop (5,625
-    mycelium and 1,000 pheromone free, 7,750 and 1,400 on the pass), and a test holds all
-    four.
-  - **The pass track's purse is its old per-chapter AVERAGE**, on the opposite phase to
-    the free one, so every chapter still pays both currencies somewhere.
-  - **Chapter boundaries barely moved**, because the ladder is solved from its two ends:
-    chapter N still closes at about the colony it always did. What DID move is the
-    rounding (§8a) and a handful of tests that computed "the colony in chapter N" as
-    `stopColony((N - 1) * 2)` with the 2 written out.
-- **EVERY CHAPTER WEARS A PICTURE, and it is home's own** (`bandFor`). Ten paintings, one
-  per region, so home and the stretch of road it announces are the same place.
-  - **THE REGION'S, NEVER THE CHAPTER'S, and that is the one rule here that was learned
-    the hard way.** Every chapter has its own home picture now (§ THE HOME ARTWORK) and
-    every one of those has five numbered mounds painted on it with crossed swords on the
-    one the player is standing at — while this screen draws five checkpoint discs of its
-    own down the middle of every panel. Dropped straight in, the road came back with two
-    sets of progress marks on one panel: painted numbers reading through the discs, a
-    scorpion across a claim button. `bandFor` is the band with nothing painted on it, and
-    both halves are held by a test, because swapping the call back looks like a tidy-up.
-  - **`.rd-chap` IS THE FOURTH EXEMPTION ON THE BACKGROUND BLANKET** (§10), and the only
-    one that is not a whole screen. Without `:not(.rd-chap)` all fifty pictures are
-    stripped off with `!important` and the road comes back grey, silently. `css-sanity`
-    holds it, because nothing a jsdom test can see would notice: the inline style is set
-    either way and only the cascade removes it. A pseudo-element is blanketed with no
-    exemption at all, so the picture cannot hide on one.
-  - **AND NOTHING IS LAID OVER IT: no tint, no radius, no gap, no side margins.** All
-    four asked for directly, and they are one decision — the artwork is the SCREEN here
-    rather than a card's decoration, so the road is a single painted strip the player
-    climbs. The panels butt, the corners are square, the scrim that used to sit on
-    `.rd-chap::before` is gone, and the body escapes `.screen`'s 16px gutter by the same
-    number (home's `.tophead` trick) instead of that padding being removed: the HEADER
-    above it still wants the gutter under the notch. **The bottom padding is NOT
-    escaped** — that one is `64px + safe-area`, the room the tab bar stands in, so the
-    road's bottom edge is the tab bar and the sticky footer strip sits flush on it.
-    All four are ABSENCES, which is the one kind of decision a stylesheet cannot show,
-    so `css-sanity` holds each of them.
-- **A CHECKPOINT IS AN ICON ON THE PATH, NOT A CARD BESIDE IT.** The disc carries the
-  resource's mark and nothing else; the pass reward is a smaller disc hanging off the
-  right-hand column, wearing a crown or a lock. The path is drawn per checkpoint
-  (`.rd-stop::before`) and goes gold as far as the colony has reached, so "how far have I
-  come" is answered by where the colour stops — which one bar down the scroller could only
-  do by measuring the DOM.
-- **THE AMOUNT IS THE REWARD FOR CLAIMING IT.** A popup names it, with the resource's
-  mark, so walking the road is a sequence of small openings rather than a priced list. It
-  is still on the button's own label, because a control has to say what it is. The card is
-  raised INSIDE the screen and `#achievements.popped` lifts the screen — the hatch's trap,
-  `.screen` being z-index 20 against `#mainNav`'s 60 — and its own z-index clears the
-  STICKY footer as well, which sat on top of the first version of it.
-- **A BREAKER BETWEEN THE AREAS, and a "theme" is a REGION.** Ten of them, five chapters
-  each, so nine gates — between chapter 5 and 6, 10 and 11, and so on — each naming the
-  area being ENTERED. Drawn, not an image: an arch is two borders and a radius, and a file
-  would be a tenth thing to keep in step with `REGIONS`.
-- **IT OPENS WHERE THE PLAYER STANDS**, with the checkpoint they are working towards
-  centred — and the offset is measured off the RECTS. A checkpoint's offset parent is its
-  own `.rd-path` (both are positioned), so `offsetTop` answers where it sits inside its
-  CHAPTER: a couple of hundred pixels into a thirty-six-thousand-pixel scroller, which
-  clamped to zero and opened every colony at chapter fifty.
-- **THE LABELS SIT ON NEAR-OPAQUE PLATES, and that is a contrast decision — and it is
-  what lets the panel carry no tint at all.** Written onto the picture they are read
-  against TEN paintings — measured at 5.1 over the Mangrove, which is AA with nothing in
-  hand, and the next region somebody paints decides whether it still is. On a `.88` plate
-  the ratio is a property of two colours in this file: **4.82 against the brightest
-  artwork there could ever be**, which is a stronger statement than a sweep of the ten —
-  and the scrim was never in that calculation, which is why removing it took nothing
-  away. The one thing that failed that test was the target pill's own darker wash
-  (4.10); it wears the same plate as the rest now, and what marks the target is the ring.
-- **NOTHING PULSES.** The claimable disc was animated, and a save that has not claimed in
-  twenty chapters has two hundred of them on screen at once. Gold filled against dim
-  outlined is already the loudest difference on the page.
-- **The ladder's classes went WITH the markup.** `road2`, `roadchap`, `roadrow`, `rnode`,
-  `roadcell` and the rest are out of `skin.css` as well as out of `road.ts`, and the parity
-  test holds that they do not come back. What survives of the legacy build is the footer
-  strip — `roadhead`, `roadt`, the pass button — which is still the last child, still
-  sticky, and still says where the player stands.
+`platform/road.ts`).
+- Fifty chapters, five checkpoints each; the fifth pays more and has a larger icon.
+  Checkpoints split a chapter purse (four eighths, then the remainder).
+- Each region has a distinct dark flat fill. The road is full viewport width, with no
+  artwork, scrims, side gutters, rounded panels, or gaps between chapters.
+- An 18px rail spans each entire chapter and area gate. Completed chapters and gates
+  are gold; reached checkpoint segments cover the neutral rail inside unfinished chapters.
+  Chapter names, area names and colony thresholds sit beside the rail so it stays continuous.
+- Each checkpoint pays **one resource type**, including an owned pass bonus of the same
+  currency. Odd chapters pay mycelium; even chapters pay pheromone crystals. The road's
+  totals remain 5,625 mycelium / 1,000 crystals free, plus 7,750 / 1,400 on the pass.
+  The pass phase was aligned with the free reward to avoid mixed-resource nodes.
+- There is one claim button, no separate pass column or pass promotion. Free/pass claim
+  keys stay separate, so granting the pass after a free claim pays only the unclaimed bonus.
+  Existing saved claim keys remain honored.
+- The painted resource is the node: 64px normally and 80px at chapter ends, raised slightly
+  above its button center. No extra circle or outline. A small amount badge sits above the
+  icon and reflects what that tap will pay; a claimed reward carries a check.
+- A popup confirms the amount actually banked. It is inside the screen and the
+  `#achievements.popped` stacking context clears both the nav and sticky troop footer.
+- It opens at the next checkpoint, centered using bounding rects rather than
+  `offsetTop` (the latter is relative to the chapter, not the whole scroller). Claiming
+  preserves scroll position. Nothing pulses.
+- Legacy ladder classes remain removed. The sticky `roadhead` footer remains last and
+  reports the player's colony and chapter.
 
 **CHALLENGES ARE A LADDER, AND BEATING ONE IS REMEMBERED** (`src/ui/challenges.ts`). Five
 identical cards — a title, a run-on grey sentence, a green Play button — and nothing

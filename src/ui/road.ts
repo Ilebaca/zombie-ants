@@ -43,7 +43,7 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop
   const root = screenEl("achievements");
   /** Kept across renders so claiming a reward does not throw the player back to the top. */
   let scrollTop: number | null = null;
-  /** What was just claimed, if anything. The popup is the only thing that reads it. */
+  /** What was just claimed, if anything, for the confirmation popup. */
   let took: RoadReward | null = null;
 
   const render = (): void => {
@@ -65,7 +65,7 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop
       road.appendChild(panel(chapter, stops, nextStop));
       // The gate goes above the chapter that OPENS an area, announcing that area — which
       // in a descending list means directly after its panel.
-      if (chapter > 1 && chapter % REGION_CHAPTERS === 1) road.appendChild(gate(chapter));
+      if (chapter > 1 && chapter % REGION_CHAPTERS === 1) road.appendChild(gate(chapter, stops));
     }
     body.appendChild(road);
     body.appendChild(head());
@@ -103,6 +103,8 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop
     const box = el("section", "rd-chap");
     box.dataset.region = String(regionOf(chapter));
     box.style.backgroundColor = areaColor(chapter);
+    const closes = stops[chapter * ROAD_CHAPTER_STOPS - 1]?.colony ?? Infinity;
+    box.classList.toggle("complete", store.get().colony >= closes);
 
     const opens = stops[(chapter - 1) * ROAD_CHAPTER_STOPS]?.colony ?? Infinity;
     const reached = store.get().colony >= opens;
@@ -122,13 +124,12 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop
   };
 
   /** The breaker between two areas: a doorway with the name of the one being entered. */
-  const gate = (chapter: number): HTMLElement => {
+  const gate = (chapter: number, stops: RoadStop[]): HTMLElement => {
     const box = el("div", "rd-gate");
     box.style.backgroundColor = areaColor(chapter);
-    const arch = el("div", "rd-arch");
-    arch.appendChild(icon("next", 22));
+    const opens = stops[(chapter - 1) * ROAD_CHAPTER_STOPS]?.colony ?? Infinity;
+    box.classList.toggle("reached", store.get().colony >= opens);
     box.append(
-      arch,
       el("div", "rd-gatek", "Entering"),
       el("div", "rd-gaten", regionName(regionOf(chapter))),
     );
@@ -156,9 +157,7 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop
     const mid = el("div", "rd-mid");
     const parts = partsFor(stop);
     if (parts.length) mid.appendChild(prize(stop, parts));
-    const at = el("div", "rd-at");
-    if (reached) at.appendChild(icon("check", 12));
-    else at.textContent = compact(stop.colony);
+    const at = el("div", "rd-at", compact(stop.colony));
     mid.appendChild(at);
     box.appendChild(mid);
     return box;
@@ -178,9 +177,11 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop
     const marks = payouts(reward);
     const art = el("span", "rd-mark");
     const big = isChapterEnd(stop.index);
-    const size = marks.length > 1 ? (big ? 30 : 24) : (big ? 40 : 32);
+    const size = big ? 80 : 64;
     for (const p of marks) art.appendChild(hudMark(p.mark, size));
-    disc.appendChild(art);
+    const amount = el("span", "rd-amount", String(marks[0]?.amount ?? 0));
+    amount.setAttribute("aria-hidden", "true");
+    disc.append(amount, art);
     disc.title = spoken(reward);
     disc.setAttribute("aria-label", spoken(reward));
 
@@ -205,7 +206,7 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop
   };
 
   /**
-   * WHAT THE CLAIM PAID — the one place the figure is written.
+   * Confirms the amount actually banked, including any owned pass bonus.
    *
    * It is raised INSIDE the screen rather than on the body, so leaving the road takes it
    * with it; and the SCREEN is what is lifted (`#achievements.popped`), because `.screen`

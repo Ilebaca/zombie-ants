@@ -451,7 +451,7 @@ describe("the road's area fills", () => {
 
   it("keeps the fills unobstructed and edge to edge", () => {
     const css = code(read("skin.css"));
-    expect(css, "the chapter panels are tinted again").not.toMatch(/^\.rd-chap::(before|after)\s*\{/m);
+    expect(css, "area fills have a full-panel overlay").not.toMatch(/^\.rd-chap::after\s*\{/m);
 
     const panel = rulesFor(css, ".rd-chap");
     expect(panel, "the panels are rounded again").not.toMatch(/border-radius/);

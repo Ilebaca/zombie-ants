@@ -195,11 +195,15 @@ describe("colony road layout", () => {
     expect(stopReached(1e15), "a colony past the end is not on the last rung").toBe(ROAD_STOPS);
   });
 
-  it("pays both tracks at every one of a chapter's five checkpoints", () => {
+  it("pays one resource type including the pass bonus at every checkpoint", () => {
     expect(ROAD_CHAPTER_STOPS).toBe(5);
     for (const stop of roadStops()) {
       expect(!!stop.free, `rung ${stop.index} paid nothing on the free track`).toBe(true);
       expect(!!stop.pass, `rung ${stop.index} paid nothing on the pass track`).toBe(true);
+      const freeKinds = Object.keys(stop.free!).filter(k => stop.free![k as keyof RoadReward]);
+      const passKinds = Object.keys(stop.pass!).filter(k => stop.pass![k as keyof RoadReward]);
+      expect(freeKinds.length).toBe(1);
+      expect(passKinds).toEqual(freeKinds);
     }
   });
 

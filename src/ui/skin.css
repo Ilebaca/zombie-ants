@@ -6155,33 +6155,42 @@ button:not(.playbtn):active,
 .kssteps::marker, .kssteps li::marker { color: var(--grass-glow); font-weight: 900; }
 .kscard .setpanel { margin-top: 10px; padding: 0; background: none; border: none; }
 
-/* THE COLONY ROAD: dark area fills, one centered reward per checkpoint.
-   Path segments turn gold as the player reaches them. The painted reward marks
-   float above smaller discs; pass bonuses are included in the same claim. */
+/* The Colony Road: large single-resource rewards on an unbroken area-colored path. */
 .rd-road { display: block; }
 
-/* Every chapter uses its area's dark fill, flush with the next chapter. */
+/* The rail spans the whole panel, including chapter labels and area boundaries. */
 .rd-chap {
   position: relative;
   overflow: hidden;
   background-color: var(--bg2);
   background-image: none;
 }
+.rd-chap::before,
+.rd-gate::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  background: rgba(255, 255, 255, .16);
+}
+.rd-chap.complete::before,
+.rd-gate.reached::before { background: var(--gold); }
 
-/* Consistent dark plates keep chapter labels readable across the area fills. */
+/* Names sit beside the rail so neither a plate nor a label cuts across it. */
 .rd-chapname {
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   gap: 2px;
   width: fit-content;
-  margin: 16px auto 2px;
-  padding: 6px 16px;
-  border: 1px solid var(--hud-line);
-  border-radius: 999px;
-  background: rgba(10, 18, 12, .88);
+  max-width: calc(50% - 48px);
+  margin: 16px calc(50% + 32px) 2px auto;
+  padding: 6px 0;
+  text-align: right;
 }
 .rd-chapname b {
   font-size: 13px;
@@ -6192,75 +6201,59 @@ button:not(.playbtn):active,
 .rd-chapname span { font-size: 11px; font-weight: 800; color: var(--muted); opacity: .85; }
 .rd-chapname.reached b { color: var(--gold-glow); }
 
-/* No padding at the foot: the path has to reach the edge of the panel, or it stops
-   short of the seam with the chapter below and the road reads as fifty ladders. */
 .rd-path { position: relative; display: block; }
-
-/* ---------------------------------------------------------- A CHECKPOINT */
 .rd-stop {
   position: relative;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  min-height: 118px;
+  min-height: 150px;
 }
-/* The path itself, one segment per checkpoint, gold as far as the colony got. */
-.rd-stop::before {
+/* Only reached segments cover the neutral rail; its backing never stops. */
+.rd-stop.reached::before {
   content: "";
   position: absolute;
-  top: 0;
-  bottom: 0;
+  inset-block: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 10px;
-  background: rgba(255, 255, 255, .13);
+  width: 18px;
+  background: var(--gold);
 }
-.rd-stop.reached::before { background: var(--gold); }
-
 .rd-mid {
   grid-column: 2;
   position: relative;
   z-index: 1;
   display: grid;
   justify-items: center;
-  gap: 7px;
 }
 
-/* The size the checkpoint asks for, under the disc. A tick once it is behind you. */
+/* Colony thresholds remain readable beside the reward without hiding the line. */
 .rd-at {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 42px;
-  min-height: 20px;
-  padding: 2px 9px;
-  border-radius: 999px;
-  /* The plate separates the checkpoint label from its path. */
-  background: rgba(10, 18, 12, .88);
+  position: absolute;
+  left: calc(100% + 18px);
+  top: 50%;
+  transform: translateY(-50%);
   font-size: 11px;
   font-weight: 900;
+  white-space: nowrap;
   color: var(--muted);
 }
-/* Behind you it carries a mark instead of a figure, so it needs no room for one. */
-.rd-stop.reached .rd-at { min-width: 26px; color: var(--gold-glow); }
+.rd-stop.reached .rd-at,
+.rd-stop.next .rd-at { color: var(--gold-glow); }
 
-/* ------------------------------------------------------------- THE PRIZE
-   The disc carries the resource's MARK and nothing else: the figure is on
-   the popup the claim raises, and on this button's own label so a control
-   still says what it is. */
+/* The painted resource is the reward node; no extra circle or outline surrounds it. */
 .rd-prize {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  width: 44px;
-  height: 44px;
+  width: 68px;
+  height: 68px;
   padding: 0;
-  border: 3px solid rgba(255, 255, 255, .16);
-  border-radius: 50%;
-  background: var(--panel);
-  color: var(--muted);
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--hud-ink);
   cursor: pointer;
 }
 .rd-mark {
@@ -6270,41 +6263,41 @@ button:not(.playbtn):active,
   transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
-  gap: 2px;
   pointer-events: none;
 }
 .rd-mark img, .rd-mark svg { display: block; flex: none; }
+.rd-amount {
+  position: absolute;
+  bottom: calc(100% + 9px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 34px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--hud-face);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+}
 .rd-prize:disabled { cursor: default; }
-.rd-prize.locked { color: var(--muted); }
-.rd-prize.locked .rd-mark { opacity: .72; }
-.rd-prize.ready {
-  background: var(--gold);
-  border-color: var(--gold-glow);
-  color: #3a2600;
-}
-.rd-prize.got {
-  background: color-mix(in srgb, var(--grass) 26%, var(--panel));
-  border-color: color-mix(in srgb, var(--grass) 60%, transparent);
-  color: var(--grass-glow);
-}
+.rd-prize.locked .rd-mark { opacity: .85; }
+.rd-prize.ready .rd-amount { background: var(--gold); color: #3a2600; }
+.rd-prize.got .rd-mark,
+.rd-prize.got .rd-amount { opacity: .55; }
+.rd-prize:focus-visible { outline: none; }
+.rd-prize:focus-visible .rd-amount { background: var(--grass); color: var(--hud-ink); }
+.rd-stop.next .rd-amount { color: var(--gold-glow); }
 
-/* THE CHAPTER'S LAST CHECKPOINT IS BIGGER, because it pays four times what
-   any of the four before it does (`splitPurse`). A reward that is worth
-   more and looks identical is the screen keeping it to itself. */
-.rd-stop.big { min-height: 146px; }
-.rd-stop.big .rd-prize.main { width: 60px; height: 60px; border-width: 4px; }
+.rd-stop.big { min-height: 180px; }
+.rd-stop.big .rd-prize.main { width: 84px; height: 84px; }
 .rd-stop.big .rd-at { font-size: 12px; }
-
-/* WHERE YOU ARE HEADED. Exactly one checkpoint is the target, and the ring
-   around it is the only thing on a road this long that says which. */
-.rd-stop.next .rd-prize.main { border-color: var(--gold-glow); color: var(--gold-glow); }
-/* The target keeps its plate, with gold text and a gold ring. */
-.rd-stop.next .rd-at { color: var(--gold-glow); }
 
 .rd-done {
   position: absolute;
-  right: -3px;
-  bottom: -3px;
+  right: 0;
+  bottom: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6315,35 +6308,19 @@ button:not(.playbtn):active,
   color: var(--grass-glow);
 }
 
-/* --------------------------------------------------------- THE BREAKER
-   Ten regions, five chapters each, and the gate at a boundary announces
-   the area being entered. Drawn rather than an image: an arch is two
-   borders and a radius, and a file would be a tenth thing to keep in step
-   with `REGIONS`. */
+/* Area names also sit beside the same continuous rail. */
 .rd-gate {
   position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 3px;
-  padding: 24px 0 30px;
-}
-.rd-arch {
   display: flex;
+  flex-direction: column;
   align-items: flex-end;
-  justify-content: center;
-  width: 88px;
-  height: 54px;
-  padding-bottom: 9px;
-  border: 3px solid var(--gold);
-  border-bottom: none;
-  border-radius: 48px 48px 0 0;
-  background: rgba(0, 0, 0, .4);
-  color: var(--gold-glow);
+  gap: 3px;
+  padding: 24px calc(50% + 32px) 30px 16px;
+  text-align: right;
 }
-/* The mark is a chevron; an entrance is the way UP. */
-.rd-arch svg { transform: rotate(-90deg); }
+.rd-gatek,
+.rd-gaten { position: relative; z-index: 1; }
 .rd-gatek {
-  margin-top: 8px;
   font-size: 10.5px;
   font-weight: 900;
   letter-spacing: 1.6px;
@@ -6353,7 +6330,7 @@ button:not(.playbtn):active,
 .rd-gaten { font-size: 15px; font-weight: 900; color: var(--gold-glow); }
 
 /* ------------------------------------------------------- WHAT IT PAID
-   The one place a figure is written. `#achievements.popped` is what lifts
+   Confirms the currency and amount actually banked. `#achievements.popped` is what lifts
    it: `.screen` is z-index 20 in the legacy sheet and `#mainNav` is 60 in
    the same stacking context, so a card inside the screen cannot out-stack
    the tab bar at any z-index of its own. */

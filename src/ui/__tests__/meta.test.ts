@@ -860,11 +860,7 @@ describe("colony road screen", () => {
     expect(root.querySelectorAll(".rd-prize.main.got").length).toBe(1);
   });
 
-  /**
-   * THE FIGURE IS ON THE POPUP, and only there. The disc says WHICH resource is waiting;
-   * what it pays is the reward for claiming it, which is what was asked for — so the
-   * amount has to be on the card, with the resource's mark beside it.
-   */
+  /** Claim confirmation repeats the amount shown above the reward icon. */
   it("names what the claim paid, with the resource's mark, and closes on a tap", () => {
     const s = atRung(RUNG);
     const root = buildColonyRoad(s, () => {}, () => {});
@@ -892,6 +888,22 @@ describe("colony road screen", () => {
     expect(s.get().pheromone).toBe(paid.pheromone ?? 0);
     expect(s.get().roadClaimed).toEqual([roadKey("free", RUNG)]);
     expect(root.querySelector(".rd-prize.pass, .passbuy, .passon")).toBeNull();
+  });
+
+  it("shows one resource and its full payable amount at every checkpoint", () => {
+    const s = atRung(RUNG);
+    s.grantPass();
+    const root = buildColonyRoad(s, () => {}, () => {});
+    for (const disc of Array.from(root.querySelectorAll<HTMLButtonElement>(".rd-prize"))) {
+      const index = Number(disc.dataset.stop);
+      const free = freeReward(index)!;
+      const bonus = passReward(index)!;
+      const amount = (free.mycel ?? 0) + (bonus.mycel ?? 0)
+        + (free.pheromone ?? 0) + (bonus.pheromone ?? 0);
+      expect(disc.querySelectorAll(".rd-mark img").length).toBe(1);
+      expect(disc.querySelector(".rd-amount")?.textContent).toBe(String(amount));
+      expect(disc.getAttribute("aria-label")).not.toContain(" and ");
+    }
   });
 
   it("claims the free reward and owned pass bonus together exactly once", () => {
@@ -923,12 +935,13 @@ describe("colony road screen", () => {
     const free = freeReward(RUNG)!;
     const disc = root.querySelector(`.rd-prize.main[data-stop="${RUNG}"]`)!;
     expect(disc.classList.contains("ready")).toBe(true);
-    expect(disc.getAttribute("aria-label")).toBe(`+${bonus.pheromone} pheromone crystals`);
+    expect(disc.getAttribute("aria-label")).toBe(`+${bonus.mycel} mycelium`);
+    expect(disc.querySelector(".rd-amount")?.textContent).toBe(String(bonus.mycel));
     click(disc);
     expect(s.get().mycel).toBe((free.mycel ?? 0) + (bonus.mycel ?? 0));
     expect(s.get().pheromone).toBe((free.pheromone ?? 0) + (bonus.pheromone ?? 0));
     expect(s.get().roadClaimed).toEqual([roadKey("free", RUNG), roadKey("pass", RUNG)]);
-    expect(root.querySelector(".rd-popn")?.textContent).toBe(`+${bonus.pheromone}`);
+    expect(root.querySelector(".rd-popn")?.textContent).toBe(`+${bonus.mycel}`);
   });
 
   it("offers nothing to a colony that has not reached the first checkpoint", () => {
@@ -940,25 +953,20 @@ describe("colony road screen", () => {
   it("colours the path as far as the colony has walked it", () => {
     const root = buildColonyRoad(atRung(4), () => {}, () => {});
     expect(root.querySelectorAll(".rd-stop.reached").length).toBe(4);
-    // A checkpoint behind you stops asking for a size and carries a mark instead: the
-    // figure on it is what the colony still has to reach.
+    // Thresholds stay visible beside reached checkpoints as well as future ones.
     const done = root.querySelector(".rd-stop.reached .rd-at");
-    expect(done?.textContent).toBe("");
-    expect(done?.querySelector("svg"), "a walked checkpoint has nothing on it").toBeTruthy();
+    expect(done?.textContent).toBe(compact(stopColony(4)));
     // And the chapter it is in reads as reached, which is the only thing saying so from
     // the top of a panel the player has not scrolled into yet.
     expect(root.querySelectorAll(".rd-chapname.reached").length).toBe(1);
   });
 
-  /**
-   * THE DISC IS THE RESOURCE AND NOTHING ELSE. No figure on it — that is the popup's job —
-   * and a claimed one wears a tick so a walked chapter does not read as five locked discs.
-   */
+  /** An amount sits above each resource, with a check after it has been claimed. */
   it("says which resource is waiting, and marks the ones already taken", () => {
     const s = atRung(RUNG);
     const root = buildColonyRoad(s, () => {}, () => {});
     const disc = root.querySelector<HTMLButtonElement>(".rd-prize.main.ready")!;
-    expect(disc.textContent, "the figure is on the disc, not the popup").toBe("");
+    expect(disc.querySelector(".rd-amount")?.textContent).toBe(String(freeReward(RUNG)!.mycel));
     expect(disc.querySelector(".rd-mark img.hudmark"), "no resource mark on the checkpoint").toBeTruthy();
     // Unlabelled marks, so the figure survives as the name a screen reader reads out.
     expect(disc.getAttribute("aria-label")).toBe(`+${freeReward(RUNG)!.mycel} mycelium`);

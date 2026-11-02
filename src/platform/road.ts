@@ -134,9 +134,9 @@ export const isChapterEnd = (index: number): boolean =>
 /**
  * WHAT A WHOLE CHAPTER PAYS, per track. The checkpoints inside it divide this up.
  *
- * The two tracks alternate on OPPOSITE phases, so every chapter pays both currencies
- * somewhere — the free track pays mycelium on the odd chapters and the pass pays
- * pheromone on them.
+ * Both parts use the same currency at a checkpoint, so the owned pass bonus can be
+ * included in one resource reward. Chapters alternate mycelium and pheromone crystals.
+ * Aligning the pass phase leaves the fifty-chapter totals unchanged.
  *
  * Both are the totals the two-rung road paid, carried over exactly: the free track's
  * per-chapter reward is the number it always was, and the pass track's is its old
@@ -147,7 +147,7 @@ const freePurse = (chapter: number): RoadReward =>
   chapter % 2 === 0 ? { pheromone: 10 * LARVA_IN_PHEROMONE } : { mycel: 100 + chapter * 5 };
 
 const passPurse = (chapter: number): RoadReward =>
-  chapter % 2 === 0 ? { mycel: 310 } : { pheromone: 56 };
+  chapter % 2 === 0 ? { pheromone: 56 } : { mycel: 310 };
 
 /**
  * HOW ONE CHAPTER'S PURSE IS SHARED OUT ACROSS ITS FIVE CHECKPOINTS.
