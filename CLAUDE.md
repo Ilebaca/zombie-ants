@@ -1010,7 +1010,7 @@ Ten numbered sections now, with a picture beside the rules that need one.
   Checkpoints split a chapter purse (four eighths, then the remainder).
 - Each region has a distinct dark flat fill. The road is full viewport width, with no
   artwork, scrims, side gutters, rounded panels, or gaps between chapters.
-- An 18px rail spans each entire chapter and area gate. Completed chapters and gates
+- A 30px rose-colored rail spans each entire chapter and area gate. Completed chapters and gates
   are gold; reached checkpoint segments cover the neutral rail inside unfinished chapters.
   Chapter names, area names and colony thresholds sit beside the rail so it stays continuous.
 - Each checkpoint pays **one resource type**, including an owned pass bonus of the same
@@ -1020,9 +1020,13 @@ Ten numbered sections now, with a picture beside the rules that need one.
 - There is one claim button, no separate pass column or pass promotion. Free/pass claim
   keys stay separate, so granting the pass after a free claim pays only the unclaimed bonus.
   Existing saved claim keys remain honored.
-- The painted resource is the node: 64px normally and 80px at chapter ends, raised slightly
-  above its button center. No extra circle or outline. A small amount badge sits above the
-  icon and reflects what that tap will pay; a claimed reward carries a check.
+- The portrait layout borrows the reference's bright resource tickets and oversized reward art.
+  Normal nodes use an 80px single resource; chapter ends use a 100px three-coin stack, and
+  area ends a 112px heap. Every painting still represents one resource type.
+  No extra circle or outline. Pointed cyan amount tags show a small currency icon and the
+  payable quantity directly above the reward; claimable tickets are gold.
+  Claimed art uses a color filter rather than transparency, so the path cannot show through it.
+  A claimed reward carries a check.
 - A popup confirms the amount actually banked. It is inside the screen and the
   `#achievements.popped` stacking context clears both the nav and sticky troop footer.
 - It opens at the next checkpoint, centered using bounding rects rather than

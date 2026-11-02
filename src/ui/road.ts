@@ -11,6 +11,7 @@ import {
 import type { ProfileStore, RoadReward, RoadStop } from "../platform";
 import { el, hudMark, redraw, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
+import { shelfArt } from "./shelf";
 
 const AREA_COLORS = [
   "#11271e", "#2b2114", "#2c1918", "#10252a", "#172d28",
@@ -94,8 +95,9 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop
   const restTop = (body: HTMLElement): number => {
     const target = body.querySelector<HTMLElement>(".rd-stop.next");
     if (!target) return body.scrollHeight;
-    const above = target.getBoundingClientRect().top - body.getBoundingClientRect().top;
-    return Math.max(0, body.scrollTop + above - Math.round(body.clientHeight / 2));
+    const rect = target.getBoundingClientRect();
+    const center = rect.top + rect.height / 2 - body.getBoundingClientRect().top;
+    return Math.max(0, body.scrollTop + center - Math.round(body.clientHeight / 2));
   };
 
   /** One chapter: its area color, name, and five checkpoints climbing. */
@@ -151,6 +153,7 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop
     const reached = store.get().colony >= stop.colony;
     const classes = ["rd-stop"];
     if (isChapterEnd(stop.index)) classes.push("big");
+    if (isChapterEnd(stop.index) && stop.chapter % REGION_CHAPTERS === 0) classes.push("grand");
     if (reached) classes.push("reached");
     if (stop.index === nextStop) classes.push("next");
     const box = el("div", classes.join(" "));
@@ -177,10 +180,24 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop
     const marks = payouts(reward);
     const art = el("span", "rd-mark");
     const big = isChapterEnd(stop.index);
-    const size = big ? 80 : 64;
-    for (const p of marks) art.appendChild(hudMark(p.mark, size));
-    const amount = el("span", "rd-amount", String(marks[0]?.amount ?? 0));
+    const grand = big && stop.chapter % REGION_CHAPTERS === 0;
+    const size = grand ? 112 : big ? 100 : 80;
+    for (const p of marks) {
+      const stack = big ? shelfArt(p.mark === "mycel"
+        ? (grand ? "mycel.1500" : "mycel.650")
+        : (grand ? "pher.900" : "pher.420")) : null;
+      if (stack) {
+        const img = el("img", "hudmark");
+        img.src = stack;
+        img.width = size;
+        img.height = size;
+        img.alt = "";
+        art.appendChild(img);
+      } else art.appendChild(hudMark(p.mark, size));
+    }
+    const amount = el("span", "rd-amount");
     amount.setAttribute("aria-hidden", "true");
+    for (const p of marks) amount.append(hudMark(p.mark, 22), el("b", undefined, String(p.amount)));
     disc.append(amount, art);
     disc.title = spoken(reward);
     disc.setAttribute("aria-label", spoken(reward));
