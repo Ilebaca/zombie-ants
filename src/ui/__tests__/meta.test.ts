@@ -16,7 +16,6 @@ import {
   RESEARCH_TOTAL_MAX, ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, ROAD_STOPS, SPECIES_UNLOCK, TIERS,
   chapterOf, compact, freeReward, granaryFull, passReward, regionName, regionOf, roadKey, stopColony, tierOf,
 } from "../../platform";
-import { backdropFor } from "../backdrops";
 import { buildAnthill } from "../anthill";
 import { buildProfile } from "../profile";
 import { clockOf, colonyBanner, granaryPill } from "../chrome";
