@@ -1010,8 +1010,8 @@ Ten numbered sections now, with a picture beside the rules that need one.
   Checkpoints split a chapter purse (four eighths, then the remainder).
 - Each region has a distinct dark flat fill. The road is full viewport width, with no
   artwork, scrims, side gutters, rounded panels, or gaps between chapters.
-- A 30px rose-colored rail spans each entire chapter and area gate. Completed chapters and gates
-  are gold; reached checkpoint segments cover the neutral rail inside unfinished chapters.
+- A 30px green rail spans each entire chapter and area gate, using the game's grass colors.
+  Completed chapters and gates are bright green; future stretches use the darker grass edge.
   Chapter names, area names and colony thresholds sit beside the rail so it stays continuous.
 - Each checkpoint pays **one resource type**, including an owned pass bonus of the same
   currency. Odd chapters pay mycelium; even chapters pay pheromone crystals. The road's
@@ -1020,11 +1020,12 @@ Ten numbered sections now, with a picture beside the rules that need one.
 - There is one claim button, no separate pass column or pass promotion. Free/pass claim
   keys stay separate, so granting the pass after a free claim pays only the unclaimed bonus.
   Existing saved claim keys remain honored.
-- The portrait layout borrows the reference's bright resource tickets and oversized reward art.
-  Normal nodes use an 80px single resource; chapter ends use a 100px three-coin stack, and
-  area ends a 112px heap. Every painting still represents one resource type.
-  No extra circle or outline. Pointed cyan amount tags show a small currency icon and the
-  payable quantity directly above the reward; claimable tickets are gold.
+- The road always scrolls vertically. Every reward uses a **single resource coin**, including
+  chapter and area milestones; no stacked-coin artwork and no resource icon in the quantity display.
+  Single icons are 80px normally, 100px at chapter ends, and 112px at area ends.
+- Each coin floats 16px above a flat rectangular platform. A number-only rectangle above
+  the coin and the platform share the road's green state color. No outlines.
+  Reward spacing is 208px normally, 232px at chapter ends, and 248px at area ends.
   Claimed art uses a color filter rather than transparency, so the path cannot show through it.
   A claimed reward carries a check.
 - A popup confirms the amount actually banked. It is inside the screen and the

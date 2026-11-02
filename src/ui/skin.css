@@ -6173,10 +6173,10 @@ button:not(.playbtn):active,
   left: 50%;
   transform: translateX(-50%);
   width: 30px;
-  background: #704455;
+  background: var(--grass-edge);
 }
 .rd-chap.complete::before,
-.rd-gate.reached::before { background: var(--gold); }
+.rd-gate.reached::before { background: var(--grass); }
 
 /* Names sit beside the rail so neither a plate nor a label cuts across it. */
 .rd-chapname {
@@ -6199,8 +6199,8 @@ button:not(.playbtn):active,
   text-transform: uppercase;
   color: var(--hud-ink);
 }
-.rd-chapname span { font-size: 12px; font-weight: 800; color: #d5b5c3; }
-.rd-chapname.reached b { color: var(--gold-glow); }
+.rd-chapname span { font-size: 12px; font-weight: 800; color: #b5c8ae; }
+.rd-chapname.reached b { color: var(--grass-glow); }
 
 .rd-path { position: relative; display: block; }
 .rd-stop {
@@ -6208,8 +6208,11 @@ button:not(.playbtn):active,
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  min-height: 144px;
+  min-height: 208px;
+  --rd-node: var(--grass-edge);
+  --rd-ink: var(--hud-ink);
 }
+.rd-stop.reached { --rd-node: var(--grass); --rd-ink: #0f2417; }
 /* Only reached segments cover the neutral rail; its backing never stops. */
 .rd-stop.reached::before {
   content: "";
@@ -6218,7 +6221,7 @@ button:not(.playbtn):active,
   left: 50%;
   transform: translateX(-50%);
   width: 30px;
-  background: var(--gold);
+  background: var(--grass);
 }
 .rd-mid {
   grid-column: 2;
@@ -6231,17 +6234,17 @@ button:not(.playbtn):active,
 /* Colony thresholds remain readable beside the reward without hiding the line. */
 .rd-at {
   position: absolute;
-  left: calc(100% + 10px);
-  top: calc(50% + 24px);
+  left: calc(100% + 12px);
+  top: calc(100% - 9px);
   transform: translateY(-50%);
   font-family: var(--font-display);
   font-size: 14px;
   font-weight: 400;
   white-space: nowrap;
-  color: #d5b5c3;
+  color: #b5c8ae;
 }
 .rd-stop.reached .rd-at,
-.rd-stop.next .rd-at { color: var(--gold-glow); }
+.rd-stop.next .rd-at { color: var(--grass-glow); }
 
 /* The painted resource is the reward node; no extra circle or outline surrounds it. */
 .rd-prize {
@@ -6249,8 +6252,8 @@ button:not(.playbtn):active,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 84px;
-  height: 84px;
+  width: 104px;
+  height: 112px;
   padding: 0;
   border: none;
   border-radius: 0;
@@ -6261,33 +6264,40 @@ button:not(.playbtn):active,
 .rd-mark {
   position: absolute;
   left: 50%;
-  top: calc(50% - 6px);
+  top: calc(50% - 18px);
   transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
   pointer-events: none;
 }
 .rd-mark img, .rd-mark svg { display: block; flex: none; }
+/* Each resource floats above a flat rectangular platform. */
+.rd-base {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 100%;
+  height: 18px;
+  border-radius: 0;
+  background: var(--rd-node);
+  pointer-events: none;
+}
 .rd-amount {
   position: absolute;
-  bottom: calc(100% - 3px);
+  bottom: calc(100% + 6px);
   left: 50%;
   z-index: 2;
   transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  min-width: 66px;
-  height: 36px;
-  padding: 3px 9px 9px 5px;
+  min-width: 58px;
+  height: 30px;
+  padding: 4px 10px;
   border-radius: 0;
-  /* The pointed tag tucks above the painting like the reference's resource tickets. */
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px),
-    calc(50% + 5px) calc(100% - 6px), 50% 100%,
-    calc(50% - 5px) calc(100% - 6px), 0 calc(100% - 6px));
-  background: #52d9f1;
-  color: #08242d;
+  background: var(--rd-node);
+  color: var(--rd-ink);
   font-family: var(--font-display);
   font-size: 18px;
   font-weight: 400;
@@ -6295,28 +6305,24 @@ button:not(.playbtn):active,
   white-space: nowrap;
   pointer-events: none;
 }
-.rd-amount b { font: inherit; }
-.rd-amount img, .rd-amount svg { display: block; flex: none; }
+.rd-amount b { font: inherit; color: inherit; }
 .rd-prize:disabled { cursor: default; }
-.rd-prize.ready .rd-amount { background: var(--gold); color: #3a2600; }
 /* Filters keep claimed paintings solid, so the path never shows through the coin. */
 .rd-prize.locked .rd-mark { opacity: 1; }
 .rd-prize.got .rd-mark { opacity: 1; filter: saturate(.55) brightness(.7); }
-.rd-prize.got .rd-amount { opacity: 1; background: #2c4447; color: #c1d3cf; }
 .rd-prize:focus-visible { outline: none; }
-.rd-prize:focus-visible .rd-amount { background: var(--grass); color: var(--hud-ink); }
-.rd-stop.next .rd-amount { background: #a5effb; color: #08242d; }
+.rd-prize:focus-visible .rd-amount { background: var(--grass-glow); color: #0f2417; }
 
-.rd-stop.big { min-height: 176px; }
-.rd-stop.big .rd-prize.main { width: 104px; height: 104px; }
+.rd-stop.big { min-height: 232px; }
+.rd-stop.big .rd-prize.main { width: 124px; height: 132px; }
 .rd-stop.big .rd-at { font-size: 15px; }
-.rd-stop.grand { min-height: 192px; }
-.rd-stop.grand .rd-prize.main { width: 116px; height: 116px; }
+.rd-stop.grand { min-height: 248px; }
+.rd-stop.grand .rd-prize.main { width: 136px; height: 144px; }
 
 .rd-done {
   position: absolute;
-  right: 0;
-  bottom: 0;
+  right: -6px;
+  bottom: -6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6346,7 +6352,7 @@ button:not(.playbtn):active,
   text-transform: uppercase;
   color: var(--muted);
 }
-.rd-gaten { font-family: var(--font-display); font-size: 19px; font-weight: 400; color: var(--gold-glow); }
+.rd-gaten { font-family: var(--font-display); font-size: 19px; font-weight: 400; color: var(--grass-glow); }
 
 /* ------------------------------------------------------- WHAT IT PAID
    Confirms the currency and amount actually banked. `#achievements.popped` is what lifts
