@@ -6295,6 +6295,7 @@ button:not(.playbtn):active,
   min-width: 58px;
   height: 30px;
   padding: 4px 10px;
+  border: 2px solid var(--gold);
   border-radius: 0;
   background: var(--rd-node);
   color: var(--rd-ink);

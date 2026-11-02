@@ -1024,7 +1024,8 @@ Ten numbered sections now, with a picture beside the rules that need one.
   chapter and area milestones; no stacked-coin artwork and no resource icon in the quantity display.
   Single icons are 80px normally, 100px at chapter ends, and 112px at area ends.
 - Each coin floats 16px above a filled 56px circular base. A number-only rectangle above
-  the coin and the circular base share the road's green state color. No outlines.
+  the coin and the circular base share the road's green state color. The amount display has
+  a 2px yellow frame (`--gold`); the coin and circular base have no outlines.
   Reward spacing is 208px normally, 232px at chapter ends, and 248px at area ends.
   Claimed art uses a color filter rather than transparency, so the path cannot show through it.
   A claimed reward carries a check.
