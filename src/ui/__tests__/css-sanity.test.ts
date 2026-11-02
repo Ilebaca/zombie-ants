@@ -438,40 +438,18 @@ describe("the hatch button while it is hatching", () => {
   });
 });
 
-/**
- * THE ROAD'S CHAPTER PANELS ARE EXEMPT FROM THE BACKGROUND BLANKET.
- *
- * `*:not(#home)… { background-image: none !important }` near the top of `skin.css` clears
- * every background image in the app, because a gradient cannot be selected for (§10). Each
- * chapter of the Colony Road wears its own painting, set inline by `ui/road.ts` — so
- * without `:not(.rd-chap)` the fifty pictures are stripped off with `!important` and the
- * screen comes back grey, silently, which is exactly the fault that blanket creates. The
- * blanket's own comment says adding a picture means adding it there; this is the fourth.
- *
- * It is held HERE as well as by the screen's test because nothing a jsdom test can see
- * would notice: the inline style is set either way, and only the cascade removes it.
- */
-describe("the road's artwork", () => {
-  it("is let through the stylesheet's background blanket", () => {
+/** Road areas use uninterrupted flat fills from edge to edge. */
+describe("the road's area fills", () => {
+  it("clears background images from the chapter panels", () => {
     const blanket = read("skin.css").split("\n")
       .find((l) => l.includes("background-image: none !important"));
-    expect(blanket, "the blanket rule moved").toBeTruthy();
-    expect(blanket, "every chapter's picture is being stripped off").toContain(":not(.rd-chap)");
-    // And the picture cannot be hidden on a pseudo-element instead — those are blanketed
-    // with no exemption at all, so the art has to be on the element itself.
+    expect(blanket).toBeTruthy();
+    expect(blanket).not.toContain(":not(.rd-chap)");
     expect(blanket).toContain("*::before");
+    expect(rulesFor(read("skin.css"), ".rd-chap")).toMatch(/background-image:\s*none/);
   });
 
-  /**
-   * AND NOTHING IS LAID OVER IT. Asked for directly: no dark overlay, no rounded
-   * corners, no gap between the chapters and no margins at the sides. All four are
-   * absences, which is the one kind of decision a stylesheet cannot show — a scrim
-   * written back onto the panel, or the reading column reapplied, looks like an
-   * ordinary rule rather than the thing the screen was corrected for. The ratios the
-   * labels pass are measured against the PICTURE now (the plates under them), so a
-   * tint put back would be contrast nobody is relying on.
-   */
-  it("lays nothing over the picture and keeps no margins", () => {
+  it("keeps the fills unobstructed and edge to edge", () => {
     const css = code(read("skin.css"));
     expect(css, "the chapter panels are tinted again").not.toMatch(/^\.rd-chap::(before|after)\s*\{/m);
 

@@ -142,14 +142,9 @@
    has even been fetched — and for a beat afterwards, which is exactly long
    enough for the blanket to strip the picture off it in front of the player.
 
-   `.rd-chap` is the FOURTH and the only one that is not a whole screen: the
-   Colony Road's chapter panels each wear that chapter's painting (`ui/road.ts`
-   sets it inline, from `backdropFor`). It is a CLASS because there are fifty of
-   them down one scroller, and it is exempt for the same reason `#home` is — it
-   is a picture rather than a gradient. Note the pseudo-elements are blanketed
-   too, so a picture cannot be hidden on a `::before` to dodge this.
+   Colony Road uses flat area colors; its panels need no artwork exemption.
    ====================================================================== */
-*:not(#home):not(#luckyhatch):not(#splash):not(.rd-chap), *::before, *::after { background-image: none !important; }
+*:not(#home):not(#luckyhatch):not(#splash), *::before, *::after { background-image: none !important; }
 
 /* Surfaces the legacy sheet fills with a gradient and this file does not
    otherwise dress. */
@@ -6160,58 +6155,20 @@ button:not(.playbtn):active,
 .kssteps::marker, .kssteps li::marker { color: var(--grass-glow); font-weight: 900; }
 .kscard .setpanel { margin-top: 10px; padding: 0; background: none; border: none; }
 
-/* ======================================================================
-   THE COLONY ROAD — A PATH THROUGH TEN PLACES
-
-   It was two columns of grey cards either side of a hairline, a chapter
-   label every two rungs, fifty times: a spreadsheet of prices with the one
-   thing a road is FOR — how far have I come — the hardest fact on it to
-   find. The shape here is the one that was asked for, and each rule below
-   is one of those requests.
-
-   SPACIOUS. A checkpoint is 118px tall and a chapter is five of them, so
-   one chapter fills most of a phone and the road is something walked
-   rather than scrolled past.
-
-   EVERY CHAPTER WEARS ITS PICTURE, set inline by `ui/road.ts` from
-   `backdropFor` — which is exactly why `.rd-chap` is the fourth exemption
-   on the blanket at the top of this file. Nothing is laid OVER it: no tint,
-   no radius, no gap and no side margins, all four asked for directly, so
-   the road is one painted strip rather than fifty cards on a dark page.
-   Every label on it rides its own near-opaque plate for that reason.
-
-   THE PATH IS PER-CHECKPOINT, not one bar down the scroller. It is drawn
-   on `.rd-stop::before` and goes gold as far as the colony has reached, so
-   "how far have I come" is answered by where the colour stops — which a
-   single bar could only do by measuring the DOM.
-
-   NO `box-shadow` ANYWHERE BELOW. The rule at line 1792 clears every one
-   of them with `!important`, so depth here is tone and a border, the same
-   way the Anthill's chambers carry theirs.
-   ====================================================================== */
+/* THE COLONY ROAD: dark area fills, one centered reward per checkpoint.
+   Path segments turn gold as the player reaches them. The painted reward marks
+   float above smaller discs; pass bonuses are included in the same claim. */
 .rd-road { display: block; }
 
-/* SQUARE, FLUSH AND UNDIMMED, all three asked for directly. No radius, no gap to
-   the panel below and no scrim over the picture: the road is one continuous
-   painted strip the player climbs, rather than fifty cards on a dark page. The
-   artwork is the screen, so nothing may be laid over it — which is why every
-   label on it rides its own near-opaque plate (below), measured against the
-   brightest artwork there could ever be rather than against a tint. */
+/* Every chapter uses its area's dark fill, flush with the next chapter. */
 .rd-chap {
   position: relative;
   overflow: hidden;
   background-color: var(--bg2);
-  background-size: cover;
-  background-position: center;
+  background-image: none;
 }
 
-/* THE LABEL SITS ON ITS OWN PLATE, and that is a contrast decision rather than a
-   decorative one. Written straight onto the picture it is read against TEN different
-   paintings — measured at 11.2 over the Mangrove and 5.1 over its subtitle, which is AA
-   with very little in hand, and the next region somebody paints decides whether it still
-   is. On a near-opaque plate the ratio is a property of two colours in this file, so no
-   artwork can take it under — which is what lets the panel carry no tint at all. The
-   pill is the legacy build's answer to the same problem. */
+/* Consistent dark plates keep chapter labels readable across the area fills. */
 .rd-chapname {
   position: relative;
   z-index: 1;
@@ -6255,7 +6212,7 @@ button:not(.playbtn):active,
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 8px;
+  width: 10px;
   background: rgba(255, 255, 255, .13);
 }
 .rd-stop.reached::before { background: var(--gold); }
@@ -6278,8 +6235,7 @@ button:not(.playbtn):active,
   min-height: 20px;
   padding: 2px 9px;
   border-radius: 999px;
-  /* Near-opaque for the same reason the chapter plate is: it is read over ten
-     paintings and over the gold path, and a wash would depend on both. */
+  /* The plate separates the checkpoint label from its path. */
   background: rgba(10, 18, 12, .88);
   font-size: 11px;
   font-weight: 900;
@@ -6293,12 +6249,13 @@ button:not(.playbtn):active,
    the popup the claim raises, and on this button's own label so a control
    still says what it is. */
 .rd-prize {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 2px;
-  width: 58px;
-  height: 58px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 3px solid rgba(255, 255, 255, .16);
   border-radius: 50%;
@@ -6306,8 +6263,20 @@ button:not(.playbtn):active,
   color: var(--muted);
   cursor: pointer;
 }
+.rd-mark {
+  position: absolute;
+  left: 50%;
+  top: calc(50% - 6px);
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.rd-mark img, .rd-mark svg { display: block; flex: none; }
 .rd-prize:disabled { cursor: default; }
 .rd-prize.locked { color: var(--muted); }
+.rd-prize.locked .rd-mark { opacity: .72; }
 .rd-prize.ready {
   background: var(--gold);
   border-color: var(--gold-glow);
@@ -6318,37 +6287,21 @@ button:not(.playbtn):active,
   border-color: color-mix(in srgb, var(--grass) 60%, transparent);
   color: var(--grass-glow);
 }
-.rd-prize.passlock { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 34%, transparent); }
 
 /* THE CHAPTER'S LAST CHECKPOINT IS BIGGER, because it pays four times what
    any of the four before it does (`splitPurse`). A reward that is worth
    more and looks identical is the screen keeping it to itself. */
 .rd-stop.big { min-height: 146px; }
-.rd-stop.big .rd-prize.free { width: 78px; height: 78px; border-width: 4px; }
+.rd-stop.big .rd-prize.main { width: 60px; height: 60px; border-width: 4px; }
 .rd-stop.big .rd-at { font-size: 12px; }
 
 /* WHERE YOU ARE HEADED. Exactly one checkpoint is the target, and the ring
    around it is the only thing on a road this long that says which. */
-.rd-stop.next .rd-prize.free { border-color: var(--gold-glow); color: var(--gold-glow); }
-/* The target's pill keeps the SAME plate. Darkening it to a 60% black wash was the one
-   thing on this screen that failed AA against a bright painting — 4.10 over pure white,
-   against 9.89 on the plate everything else wears. What marks the target is the ring on
-   the disc and the gold ink, neither of which depends on what is painted behind it. */
+.rd-stop.next .rd-prize.main { border-color: var(--gold-glow); color: var(--gold-glow); }
+/* The target keeps its plate, with gold text and a gold ring. */
 .rd-stop.next .rd-at { color: var(--gold-glow); }
 
-/* The pass prize hangs off the right-hand column — a smaller disc, still a
-   thumb wide, marked with a crown it is wearing or a lock it is behind. */
-.rd-prize.pass {
-  grid-column: 3;
-  justify-self: start;
-  position: relative;
-  z-index: 1;
-  width: 44px;
-  height: 44px;
-  margin-left: 16px;
-  border-width: 2px;
-}
-.rd-tag, .rd-done {
+.rd-done {
   position: absolute;
   right: -3px;
   bottom: -3px;
@@ -6359,9 +6312,8 @@ button:not(.playbtn):active,
   height: 18px;
   border-radius: 50%;
   background: var(--panel-edge);
-  color: var(--gold-glow);
+  color: var(--grass-glow);
 }
-.rd-done { color: var(--grass-glow); }
 
 /* --------------------------------------------------------- THE BREAKER
    Ten regions, five chapters each, and the gate at a boundary announces
