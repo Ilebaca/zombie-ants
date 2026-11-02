@@ -6271,15 +6271,15 @@ button:not(.playbtn):active,
   pointer-events: none;
 }
 .rd-mark img, .rd-mark svg { display: block; flex: none; }
-/* Each resource floats above a flat rectangular platform. */
+/* Each resource floats above a filled circular base. */
 .rd-base {
   position: absolute;
   left: 50%;
-  bottom: 0;
+  top: calc(100% - 18px);
   transform: translateX(-50%);
-  width: 100%;
-  height: 18px;
-  border-radius: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
   background: var(--rd-node);
   pointer-events: none;
 }
