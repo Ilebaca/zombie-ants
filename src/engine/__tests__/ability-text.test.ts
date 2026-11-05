@@ -98,3 +98,19 @@ describe("what an ability says it does", () => {
     }
   });
 });
+
+/**
+ * EVERY COLONY IS AN ANT, AND ITS NAME SAYS SO.
+ *
+ * Six of the eight always did — Fire Ant, Ghost Ant, Army Ant — and two were bare,
+ * "Leafcutter" and "Carpenter", which reads as two kinds of thing in one list: a species
+ * beside a trade. Reported as exactly that, and it is a rule rather than a pair of typos,
+ * so it is held for whatever is added next rather than for the two that were fixed.
+ */
+describe("a colony's name", () => {
+  it("names every colony as an ant", () => {
+    for (const s of Object.values(SPECIES)) {
+      expect(s.name, `${s.id} is not named as an ant`).toMatch(/\bAnt$/);
+    }
+  });
+});
