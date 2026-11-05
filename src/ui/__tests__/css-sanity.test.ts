@@ -126,8 +126,12 @@ describe("the design scales", () => {
    */
   it("puts everything on home on one gutter", () => {
     const css = code(read("skin.css"));
-    expect(rulesFor(css, "#home"), "home has no gutter of its own")
-      .toMatch(/--gutter:\s*calc\(12 \* var\(--u\)\)/);
+    // AND IT IS THE ROOT TOKEN, because the TAB BAR is lifted by the same number and
+    // the bar is on every deck screen — outside `#home`, where this variable lives.
+    expect(rulesFor(css, ":root"), "the frame's inset is not the design's 12")
+      .toMatch(/--hudgut:\s*calc\(12 \* var\(--u\)\)/);
+    expect(rulesFor(css, "#home"), "home has a gutter of its own")
+      .toMatch(/--gutter:\s*var\(--hudgut\)/);
     for (const sel of ["#home #colonyHero,\n#home .granpill", "#home .homeplay"]) {
       expect(ruleFor(css, sel), `${sel} is not on home's gutter`)
         .toMatch(/var\(--gutter\)|var\(--homemax\)/);
@@ -135,6 +139,36 @@ describe("the design scales", () => {
     // The full-bleed top block escapes by the SAME number it is put back by, or it
     // overhangs the screen it is meant to fill.
     expect(rulesFor(css, "#home .tophead")).toContain("calc(-1 * var(--gutter))");
+  });
+
+  /**
+   * AND THE SAME INSET ON ALL FOUR SIDES, asked for directly — the top bar sat flush on
+   * the glass while everything beside it stood 12 off it, and the tray sat flush on the
+   * bottom. Three rules, one number: the screen's top padding, its side padding and the
+   * lift under the tab bar.
+   *
+   * THE GAP UNDER PLAY IS THREE OF IT, also asked for directly ("roughly side margin
+   * times 3"), minus the row's own 8 of padding — what is read is the air between the
+   * two BOXES, and the padding is already inside it. What it replaced was a share of the
+   * viewport HEIGHT, which on a phone that is not the design's 800 tall put most of a
+   * quarter of the screen between the button and the menu.
+   *
+   * Nothing a jsdom test can see would notice any of this: there is no layout, so only
+   * the stylesheet says where the edges are.
+   */
+  it("insets the frame by one number on every side, and PLAY by three of it", () => {
+    const css = code(read("skin.css"));
+    const home = rulesFor(css, "#home");
+    expect(home, "the top edge is not on the frame's inset")
+      .toMatch(/padding-top:\s*calc\(var\(--gutter\) \+ env\(safe-area-inset-top\)\)/);
+    expect(home, "the sides are not on the frame's inset")
+      .toMatch(/padding-inline:\s*var\(--gutter\)/);
+    expect(ruleFor(css, "#mainNav.homenav"), "the bottom edge is not on the frame's inset")
+      .toMatch(/bottom:\s*calc\(var\(--hudgut\) \+ env\(safe-area-inset-bottom\)\)/);
+    // `rulesFor`, because `#home .homeplay` is written twice — the column cap in the
+    // responsive block and the design's own padding in the HOME one.
+    expect(rulesFor(css, "#home .homeplay"), "the gap under PLAY is not three insets")
+      .toMatch(/margin-bottom:\s*calc\(3 \* var\(--gutter\) - 8 \* var\(--u\)\)/);
   });
 
   /**
@@ -346,14 +380,18 @@ describe("the drawer is drawn to the design", () => {
   const css = code(read("skin.css"));
 
   it("hangs off the menu button", () => {
+    // 166 is measured from the TOP OF THE FRAME, so the screen's own inset has to be
+    // added here as well or the panel climbs back up over the button it hangs off.
     expect(rulesFor(css, ".menuwrap"))
-      .toMatch(/padding:\s*calc\(166 \* var\(--u\) \+ env\(safe-area-inset-top\)\)/);
+      .toMatch(/padding:\s*calc\(166 \* var\(--u\) \+ var\(--hudgut\) \+ env\(safe-area-inset-top\)\)/);
   });
 
   /** The block above it is what 166 is measured from, so the screen's own top inset has
-   *  to be the NOTCH and nothing else — `.screen` pads by `--sp4` on top of that. */
-  it("starts the top block at the top of the frame", () => {
-    expect(rulesFor(css, "#home")).toMatch(/padding-top:\s*env\(safe-area-inset-top\)/);
+   *  to be the frame's own gutter and the NOTCH and nothing else — `.screen` pads by
+   *  `--sp4` on top of both, which pushed the whole block down by another 16. */
+  it("starts the top block at the frame's own inset", () => {
+    expect(rulesFor(css, "#home"))
+      .toMatch(/padding-top:\s*calc\(var\(--gutter\) \+ env\(safe-area-inset-top\)\)/);
     expect(rulesFor(css, "#home .tophead"), "the bar's own escape would hang it off the top")
       .toMatch(/margin-top:\s*0/);
   });
@@ -681,19 +719,30 @@ describe("the home screen's ledge survives the blanket", () => {
     // It is ONE token now rather than two numbers that have to agree, which is what the
     // design scale forced: a bar measured in design pixels over a reservation measured
     // in real ones clips the last row's ledge on every phone that is not 360 wide.
-    const bar = /height:\s*calc\(([^;]+) \+ env\(safe-area-inset-bottom\)\)/
-      .exec(ruleFor(css, "#mainNav.homenav"))?.[1];
+    //
+    // AND THE BAR IS LIFTED OFF THE BOTTOM EDGE by the frame's own inset, so the room
+    // is the bar's HEIGHT PLUS THAT LIFT. Reserving only the height put the last card's
+    // ledge behind the tray on every screen the moment the tray came off the glass.
+    const nav = ruleFor(css, "#mainNav.homenav");
+    const lift = /bottom:\s*calc\(([^;]+) \+ env\(safe-area-inset-bottom\)\)/.exec(nav)?.[1];
+    const bar = /height:\s*([^;]+);/.exec(nav)?.[1];
     const roomIn = (sel: string): string | undefined =>
       /padding-bottom:\s*calc\(([^;]+) \+ env\(safe-area-inset-bottom\)\)/
         .exec(rulesFor(css, sel))?.[1];
-    expect(bar, "the tab bar has no height of its own").toBe("var(--navh)");
+    expect(bar, "the tab bar has a height of its own").toBe("var(--navh)");
+    expect(lift, "the tab bar sits on the bottom edge").toBe("var(--hudgut)");
+    const room = `${bar} + ${lift}`;
     // Home takes it as its own padding, because nothing on it scrolls.
-    expect(roomIn("#home"), "home reserves the wrong room for the bar").toBe(bar);
+    expect(roomIn("#home"), "home reserves the wrong room for the bar").toBe(room);
     // And the four that SCROLL take it on the screen itself, which IS the scroller.
     expect(roomIn("#shop, #anthill, #antarium, #challenges"),
-      "a deck screen reserves the wrong room for the bar").toBe(bar);
+      "a deck screen reserves the wrong room for the bar").toBe(room);
     expect(rulesFor(css, ":root"), "the bar's height is not the design's 70")
       .toMatch(/--navh:\s*calc\(70 \* var\(--u\)\)/);
+    // The notch is carried ONCE, by the lift — in the height or the padding as well it
+    // would be counted twice and the tray would float a thumb's width off the glass.
+    expect(nav, "the bar's own box carries the notch as well as the lift")
+      .not.toMatch(/(height|padding):[^;]*safe-area-inset-bottom/);
   });
 
   /**

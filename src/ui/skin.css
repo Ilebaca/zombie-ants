@@ -4443,7 +4443,7 @@ button:not(.playbtn):active,
      of nothing. It is not ZERO either, which is what the banner and the
      granary pill ended up at when the tab tray's gutter came off — an item
      touching the glass reads as a layout that overflowed. */
-  --gutter: calc(12 * var(--u));
+  --gutter: var(--hudgut);
   /* THE COLONY ROW'S ONE HEIGHT, AND IT IS THE INK RATHER THAN THE LINE BOX.
      `--colline` is the figure's font-size; `--colink` is how tall the digits actually
      ARE, which is the number the mark and the bar are matched to. A font-size is the em
@@ -6488,6 +6488,13 @@ button:not(.playbtn):active,
      keeps the last row out from under it is a separate rule, so a scaled
      bar over an unscaled reservation clips the last row's ledge. */
   --navh: calc(70 * var(--u));
+  /* ONE INSET FOR THE WHOLE FRAME, AND IT IS THE SAME NUMBER ON ALL FOUR SIDES,
+     asked for directly: "the bottom screen margin should be the same as the side
+     margins... top screen margin should also be the same as the side margins".
+     It is home's own gutter — so it is a token rather than the number written
+     twice, because the TAB BAR is lifted by it and the bar is on every deck
+     screen, which puts it outside `#home` where that variable lives. */
+  --hudgut: calc(12 * var(--u));
   /* ONE VERTICAL GAP FOR THE WHOLE TOP BLOCK, asked for directly. The mock-up spaces
      it three different ways — 5 under the bar, then 5 + 5 + 8 stacked between the
      banner and the buttons, then 16 down the button column — which measured out as
@@ -6587,7 +6594,12 @@ button:not(.playbtn):active,
    whole block — bar, banner, granary, buttons — down by that much. What is LEFT is the
    notch, which is the honest half of that padding and the only reason it was ever two
    numbers. It is what puts the drawer under the menu button, too (see THE DRAWER). */
-#home { padding-top: env(safe-area-inset-top); }
+/* AND THE FRAME'S OWN INSET IS ON TOP OF THAT, asked for directly: the top bar sat
+   flush on the glass while everything beside it stood 12 off it, so the one edge of
+   the screen with no margin was the first one read. It is the gutter plus the notch —
+   the notch is room under a camera and the gutter is the margin, and a screen with a
+   notch wants both. */
+#home { padding-top: calc(var(--gutter) + env(safe-area-inset-top)); }
 /* AND THE BAR'S OWN ESCAPE GOES WITH IT. The legacy `.tophead` pulls itself up by
    `--sp4` AND the notch, to sit flush on a screen that pads for both; with the padding
    gone that margin is a block hanging 16px off the top of the viewport, with the
@@ -7022,38 +7034,25 @@ button:not(.playbtn):active,
      responsive block caps this row at `--homemax` and centres it, which is what keeps
      PLAY the same width as the banner above it on a tablet. */
   padding: calc(8 * var(--u)) calc(50 * var(--u) - var(--gutter));
-  /* AND THE GAP UNDER IT FOLLOWS THE SCREEN'S HEIGHT, not its width. Everything else
-     here is scaled by `--u`, which is measured ACROSS — right for how big a button is
-     and wrong for the air beneath it, because what decides whether PLAY sits low enough
-     is how TALL the phone is. On `--u` a short phone (320x568) kept a gap drawn for an
-     800-tall frame and the button floated above the bar; reported exactly that way.
+  /* AND THE GAP UNDER IT IS THREE OF THE FRAME'S OWN INSET, asked for directly —
+     "the gap between the play button and bottom menu is too big, it should be roughly
+     side margin times 3". So it is written as three gutters rather than as the 36 that
+     comes out, because the whole point is that it is the SAME number as the margin
+     round the screen, counted three times.
 
-     WHAT IS HELD CONSTANT IS WHERE THE BUTTON SITS, not the gap: in the design PLAY's
-     foot is 128px off the bottom of an 800 frame — the bar's 70, this gap's 50 and the
-     row's own 8 — which is 16% of the height. So the gap is what is LEFT of 16vh once
-     the bar and the padding have taken theirs, and it has to be, because the bar is
-     width-scaled (its tiles are thumb targets, not drawings) and is therefore a bigger
-     share of a short screen than of a tall one. Simply scaling the gap by height would
-     have left that difference on the button.
+     What came before it was a measured curve: the design puts PLAY's foot 128px off
+     the bottom of an 800 frame, which is 16% of the height, so the gap was what was
+     left of `16vh` once the bar and the row's padding had taken theirs, floored by a
+     straight line through 8px at 568. It held the button in the design's PROPORTION
+     at every height — and on a phone that is not 800 tall the proportion is most of a
+     quarter of the screen between the button and the menu, which is what was reported.
+     An inset is the honest thing to measure air by; a share of the height is not.
 
-     AND ON THE SHORTEST PHONE IT GOES FURTHER DOWN THAN THAT, asked for directly: on a
-     568-tall screen the proportion still left twenty-odd pixels of air under a button
-     that had nowhere else to be, and what a short screen wants is the button near the
-     bar with just enough between them to read as two things. So the second term is a
-     straight line through two named points — 8px at 568, the shortest screen that
-     ships, and the design's own 50 at 800 — and the gap is the SMALLER of the two
-     rules. They cross at the design's height by construction, so a short phone is
-     governed by the line and a tall one by the proportion, with 360x800 still landing
-     on exactly 50 either way. Measured: 8 at 568, 25 at 667, 39 at 740, 50 at 800,
-     56 at 932. */
-  margin-bottom: clamp(
-    calc(6 * var(--u)),
-    min(
-      calc(16vh - var(--navh) - 8 * var(--u)),
-      calc((100vh - 568px) * 0.181 + 8px)
-    ),
-    calc(80 * var(--u))
-  );
+     It is 36 MINUS the row's own 8 of padding, because what the eye reads is the gap
+     between the two BOXES — PLAY's foot to the top edge of the tray — and the row's
+     padding is already inside that. Measured: 32 at 320 wide, 36 at 360, 39 at 390,
+     43 at 430, and the same at every height. */
+  margin-bottom: calc(3 * var(--gutter) - 8 * var(--u));
 }
 #home .playbtn {
   width: auto;
@@ -7086,8 +7085,17 @@ button:not(.playbtn):active,
      already a containing block for the plate. */
   display: flex;
   gap: calc(5 * var(--u));
-  height: calc(var(--navh) + env(safe-area-inset-bottom));
-  padding: calc(8 * var(--u)) calc(8 * var(--u)) calc(8 * var(--u) + env(safe-area-inset-bottom));
+  /* IT STANDS THE FRAME'S OWN INSET OFF THE BOTTOM EDGE, asked for directly, and that
+     is the SAME inset the sides carry — so the tray hovers over a strip of the artwork
+     exactly as the top bar now sits under one. `bottom` is the one property that can
+     do it: the legacy sheet pins the bar with `#mainNav { bottom: 0 }`, ONE id, which
+     this id-and-class rule beats. A `position` here would NOT be safe (§ THE DRAWER's
+     neighbour above) — being fixed already, the bar needs none.
+     AND THE NOTCH MOVES WITH IT rather than being counted twice: lifted by the
+     safe-area, the bar's own height and bottom padding no longer carry it. */
+  bottom: calc(var(--hudgut) + env(safe-area-inset-bottom));
+  height: var(--navh);
+  padding: calc(8 * var(--u));
   border: none;
   background: none;
 }
@@ -7155,7 +7163,7 @@ button:not(.playbtn):active,
    nothing on it scrolls: it is a fixed composition and PLAY's gap is
    measured against this same number. */
 #home {
-  padding-bottom: calc(var(--navh) + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--navh) + var(--hudgut) + env(safe-area-inset-bottom));
 }
 
 /* THE WHOLE DECK SCREEN SCROLLS, HEADER AND ALL, AND THE BAR'S ROOM IS ITS
@@ -7177,7 +7185,7 @@ button:not(.playbtn):active,
 #shop, #anthill, #antarium, #challenges {
   overflow-y: auto;
   overscroll-behavior-y: contain;
-  padding-bottom: calc(var(--navh) + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--navh) + var(--hudgut) + env(safe-area-inset-bottom));
 }
 /* AND NOTHING INSIDE MAY SCROLL ON ITS OWN. An inner scroller takes the
    gesture and holds the page still — the header stops moving again and the
@@ -7220,7 +7228,7 @@ button:not(.playbtn):active,
    moves by the notch and nothing else. The legacy sheet pads this wrapper to place
    the panel, so that is the property to set. */
 .menuwrap {
-  padding: calc(166 * var(--u) + env(safe-area-inset-top)) var(--gutter, 12px) calc(12 * var(--u));
+  padding: calc(166 * var(--u) + var(--hudgut) + env(safe-area-inset-top)) var(--gutter, 12px) calc(12 * var(--u));
   background: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;

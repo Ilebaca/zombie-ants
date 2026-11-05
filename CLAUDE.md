@@ -2787,7 +2787,8 @@ and lands on the design's figure exactly.
   difference on the bar, and the tick was a second answer to a question already answered.
 - **THE BAR AND THE ROOM RESERVED FOR IT ARE ONE NUMBER.** It grew 64 → 70, and the
   padding that keeps the last row from sitting under it is the only thing stopping it.
-  Two places spelling out one rule (§7), so a test reads both and compares them.
+  Two places spelling out one rule (§7), so a test reads both and compares them — the
+  bar's HEIGHT PLUS ITS LIFT off the bottom edge (§ ONE INSET FOR THE WHOLE FRAME).
   - **AND THE WHOLE DECK SCREEN SCROLLS, HEADER AND ALL.** Two reports, one cause. The
     legacy shape is `.screen > .screentop + .screenbody` with the BODY scrolling, so the
     title sat still while everything moved under it ("shouldn't be sticky, should scroll
@@ -2971,30 +2972,51 @@ and lands on the design's figure exactly.
     HIGHER than the burger (107 against 115), because the pill's column has no vertical
     padding and each button's own box carries `py-8`. They share one top edge here — a
     deviation, flagged and kept.
-- **THE AIR UNDER PLAY FOLLOWS THE SCREEN'S HEIGHT, NOT ITS WIDTH, AND IT IS THE FOOT
-  THAT IS HELD.** Everything else here scales by `--u`, which is measured ACROSS — right
-  for how big a button is and wrong for the air beneath it. In the design PLAY's foot is
-  128px off the bottom of an 800 frame (the bar's 70, the gap's 50, the row's 8), which
-  is **16% of the height**, so the gap is what is LEFT of `16vh` once the bar and the
-  padding have taken theirs. It has to be worked out that way round because the bar is
-  width-scaled — its tiles are thumb targets, not drawings — and is therefore a bigger
-  share of a short screen than of a tall one; scaling the gap by height alone leaves that
-  difference on the button.
-  - **AND THE SHORTEST PHONE GOES FURTHER DOWN THAN THE PROPORTION**, asked for directly:
-    at 568 tall the proportion still left twenty-odd pixels under a button with nowhere
-    else to be. A second term is a straight line through two named points — 8px at 568,
-    the design's 50 at 800 — and the gap is the SMALLER of the two rules. They cross at
-    the design's own height by construction, so a short phone is governed by the line and
-    a tall one by the proportion, and 360x800 lands on 50 either way. Measured: **8 at
-    568, 25 at 667, 39 at 740, 50 at 800, 56 at 932** — PLAY's foot on 84% of the height
-    everywhere but the smallest, where it is 86%.
-- **THE TOP BLOCK STARTS AT THE TOP OF THE FRAME, and that took undoing TWO insets.**
-  `.screen` pads every page by `--sp4` plus the notch, which is right for a page with a
-  header and wrong here; and the legacy `.tophead` then pulls itself UP by both, to sit
-  flush on a screen that pads for both. Zero the padding alone and the bar hangs 16px off
-  the top with the chips cut in half. What is left is the notch, which is the honest half
-  of that padding — and it is what puts the drawer under the menu button, since every
-  number below is measured from the frame.
+- **ONE INSET FOR THE WHOLE FRAME, THE SAME NUMBER ON ALL FOUR SIDES** (`--hudgut`),
+  asked for directly from a small iPhone: "the bottom screen margin should be the same as
+  the side margins... top screen margin should also be the same as the side margins". The
+  sides already were — home's own 12 — and the other two were ZERO: the top bar sat flush
+  on the glass and the tab tray sat flush on the bottom, so the two edges with no margin
+  were the first things read on a short screen. It is a TOKEN on `:root` rather than
+  home's `--gutter`, because the TAB BAR is what carries the bottom one and the bar is on
+  every deck screen — outside `#home`, where that variable lives.
+  - **THE BOTTOM ONE IS A LIFT ON THE BAR, and `bottom` is the one property that can do
+    it.** The legacy sheet pins the bar with `#mainNav { bottom: 0 }` — ONE id, which
+    `#mainNav.homenav` beats. A `position` here still must NOT be set (the rule two
+    bullets up), and none is needed: being fixed, the bar is already placed.
+  - **AND THE NOTCH IS CARRIED ONCE, BY THE LIFT.** The bar's height and its own bottom
+    padding both used to add `safe-area-inset-bottom`; lifted by it as well, the tray
+    would float a thumb's width off the glass on every iPhone. Held by a test, because
+    the two cancel out to something that merely looks slightly wrong.
+  - **AND THE ROOM EVERY DECK SCREEN RESERVES GROWS WITH IT** — the bar's height PLUS the
+    lift, on home and on the four that scroll. Reserving only the height puts the last
+    card's ledge behind the tray the moment the tray comes off the glass, which is the
+    same fault as § A SCREEN DOES NOT SHORTEN ITSELF FOR THE BAR, one number smaller.
+  - **AND THE DRAWER MOVES DOWN WITH THE BUTTON IT HANGS OFF.** `.menuwrap`'s padding is
+    measured from the TOP OF THE FRAME, so the inset has to be added there too or the
+    panel climbs back up over the menu button.
+- **THE AIR UNDER PLAY IS THREE OF THAT INSET**, asked for directly in the same breath —
+  "the gap between the play button and bottom menu is too big, it should be roughly side
+  margin times 3". Written as three gutters rather than as the 36 that comes out, because
+  the whole point is that it is the SAME number as the margin round the screen, counted
+  three times; minus the row's own 8 of padding, because what the eye reads is the gap
+  between the two BOXES and the padding is already inside it. Measured: **32 at 320 wide,
+  36 at 360, 39 at 390, 43 at 430**, and the same at every height.
+  - **WHAT IT REPLACED WAS A SHARE OF THE HEIGHT, and that is the lesson.** The design
+    puts PLAY's foot 128px off the bottom of an 800 frame, which is 16% of it, so the gap
+    was what was left of `16vh` once the bar and the padding had taken theirs, floored by
+    a straight line through 8px at 568. It held the button in the design's PROPORTION at
+    every height and was measured at five of them — and a proportion of a screen that is
+    not 800 tall is most of a quarter of it between the button and the menu, which is
+    exactly what came back. An INSET is the honest thing to measure air by; a share of
+    the viewport is not.
+- **THE TOP BLOCK STARTS AT THE FRAME'S OWN INSET, and that took undoing TWO insets to
+  get to.** `.screen` pads every page by `--sp4` plus the notch, which is right for a page
+  with a header and wrong here; and the legacy `.tophead` then pulls itself UP by both, to
+  sit flush on a screen that pads for both. Zero the padding alone and the bar hangs 16px
+  off the top with the chips cut in half. What is left is the gutter and the notch — the
+  notch is room under a camera and the gutter is the margin, and a screen with a notch
+  wants both.
 
 **THE DRAWER IS DRAWN TO A DESIGN TOO** (Figma `05-menu-drawer 3`, node `245:1249`; the
 block at the foot of `skin.css`). It is the same screen with the burger open, so it is
