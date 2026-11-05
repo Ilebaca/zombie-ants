@@ -2765,6 +2765,56 @@ the fix attached: "make buttons smaller if needed so all fits".
   fault as the shop's unbounded slice, one marker further on. Every one of these blocks
   opens on a `=====` rule, so that is what ends the one before it.
 
+**AND THE GROUND IS THE WHOLE SCREEN, WITH THE CHROME FLOATING ON IT.** Reported from an
+iPhone in one message with three faults in it: the top chips cut in half, the surrender
+slab, and "that block with a button both on the bottom and the top should have transparent
+background, now it's dark gray but it should be just transparent so the background is
+visible".
+- **THE DARK GREY WAS NOT A FILL. It was the PAGE, showing where the canvas stopped.** The
+  header's and the footer's own gradients have been cleared by the blanket (§10) since the
+  day it landed; `main` was a flex child BETWEEN the two strips, so the painted region only
+  ever reached the band it was given and the rest of the screen was `body`. The canvas is
+  `position: absolute; inset: 0` now and the two strips lie over it.
+  - **THE BOARD IS STILL 90vw AND STILL CENTRED** (§5, `BOARD_VW`) — on the SCREEN rather
+    than on the band, which is where a player reads it as being once the chrome is glass.
+    Measured from 320x480 to 430x932: it clears the clock above it by 7px at the smallest
+    and 148 at the largest, and the action row below it by 29 to 160. The 7 is a viewport
+    no phone has (the shortest is 320x568, which clears 47) and nothing with a notch comes
+    near it, because a notch pushes the chrome down while the board stays centred.
+  - **THE PICTURE STILL COVERS, because it is pinned by its own grid** (§ THE PICTURE
+    CARRIES THE GRID): the file is 1.21 board-widths across — 1.09 of the viewport — and
+    about 2.4 viewport-widths tall, so a portrait phone cannot see past it. A region
+    painted with less margin round its grid would show the plate's bare colour at the
+    screen's edges now rather than at the canvas's, which is a bigger hole than it was.
+  - **AND BOTH STRIPS NEEDED A `position`, which neither had.** They carry `z-index: 5` in
+    the legacy sheet and nothing to apply it to, so the moment `main` became positioned it
+    painted straight OVER them: the entire HUD behind the board. A z-index without a
+    position is not a rule, and this is the second time that sentence has had to be written
+    in this file.
+  - **What stays FILLED is every chip and every button**, asked for in the same breath. The
+    strips are the glass; the controls on them are objects, and a transparent button is one
+    nobody can find.
+- **THE CLOCK IS A CARD NOW, like the three chips above it**, asked for directly — "the
+  timer bar with that text under should be wrapped in a block like the info above them for
+  each player, just so we can see the timer better". It was a full-bleed band with a
+  hairline under it, which is right over a dark page and wrong over artwork: a bright bar
+  and a bright word written straight onto ten different paintings. It wears the chips' own
+  face, border and radius — so it is read against two colours in this file, which is the
+  decision the Colony Road's label plates are already on record for — and the bar's own
+  track is its own dark with rounded ends.
+- **THE HEADER CARRIES THE NOTCH, and the match screen is the one page that has to ask.**
+  Every other screen is a `.screen`, which pads for `env(safe-area-inset-top)`; `.match` is
+  `display: contents`, so its header is a direct child of `#app`, which pads for nothing.
+  That is exactly why this screen never did it, and why the chips sat under the clock and
+  the status icons with half of each one cut off.
+- **SURRENDER IS A MARK IN THE CORNER, NOT A ROW** — "a small floating button above the
+  other 4 buttons, on the corner". It FLOATS (`bottom: 100%` of the footer), so it costs
+  the footer no height at all, and it is the mark ALONE until it is armed: the confirm is a
+  second press on the same button, which has to say so, so the label appears with `.armed`
+  and the pill grows into it. A control still has to name itself with nothing written on
+  it, so the markup carries `title` and `aria-label` (§ EVERY CONTROL SAYS WHAT IT IS)
+  rather than relying on a word that is `display: none`.
+
 **A COLONY IS AN ANT, AND ITS NAME SAYS SO.** Six of the eight always did — Fire Ant,
 Ghost Ant, Army Ant — and two were bare, "Leafcutter" and "Carpenter", which reads as two
 kinds of thing in one list: a species beside a trade. A test holds the rule rather than
