@@ -1262,8 +1262,6 @@ describe("the match chrome gives the board room on a short screen", () => {
       [".match .brow4 .btn", "min-height", "58px"],
       [".match footer", "gap", "8px"],
       [".match .brow4", "gap", "6px"],
-      [".match header", "padding-block", "8px"],
-      [".match .timeband", "padding-bottom", "8px"],
       [".match .timeband .timebar", "height", "10px"],
     ] as const) {
       expect(ruleFor(match, sel), `${sel} no longer tops out at its old ${prop}`)
@@ -1287,10 +1285,69 @@ describe("the match chrome gives the board room on a short screen", () => {
    * four above it, which is the most room on the screen given to the least used control
    * in the game.
    */
-  it("lays surrender out on one line", () => {
-    const rule = ruleFor(match, ".match .brow .btn.surr");
-    expect(rule, "surrender stacks its mark over its label again")
+  /**
+   * THE HEADER TOPS OUT AT THE SAME 8 and carries the NOTCH on top of it. The match
+   * screen is the one page in the app that is not a `.screen`, so nothing pads it for
+   * the status bar — reported from an iPhone as the top chips being cut in half.
+   */
+  it("pads the header for the notch and still tops out at the old 8", () => {
+    const rule = rulesFor(match, ".match header");
+    expect(rule, "the header does not make room for the status bar")
+      .toMatch(/padding-block:\s*calc\(clamp\([^)]*\) \+ env\(safe-area-inset-top\)\)/);
+    expect(rule, "the header's own padding no longer tops out at 8px")
+      .toMatch(/clamp\(4px, 1\.1vh, 8px\);/);
+  });
+
+  /**
+   * SURRENDER IS A MARK IN THE CORNER, asked for directly — a small floating button above
+   * the four, rather than a full-width slab the same height as them. It costs the footer
+   * no height (it is OUT of the flow) and it says nothing until it is armed, which is the
+   * only state where the word matters.
+   */
+  it("floats surrender in the corner above the four", () => {
+    const row = ruleFor(match, ".match .brow.surrow");
+    expect(row, "surrender is still in the footer's flow").toMatch(/position:\s*absolute/);
+    expect(row, "surrender does not stand above the action row").toMatch(/bottom:\s*100%/);
+    expect(row, "surrender is not in a corner").toMatch(/right:/);
+    expect(rulesFor(match, ".match footer"), "the floating row has nothing to hang off")
+      .toMatch(/position:\s*relative/);
+    const btn = ruleFor(match, ".match .brow .btn.surr");
+    expect(btn, "surrender still stretches the row").toMatch(/flex:\s*none/);
+    expect(btn, "surrender stacks its mark over its label again")
       .toMatch(/flex-direction:\s*row/);
-    expect(rule).toMatch(/min-height:\s*clamp\(/);
+    expect(ruleFor(match, ".match .brow .btn.surr .lb"), "the word is shown unarmed")
+      .toMatch(/display:\s*none/);
+    expect(ruleFor(match, ".match .brow .btn.surr.armed .lb"), "the confirm says nothing")
+      .toMatch(/display:\s*block/);
+  });
+
+  /**
+   * THE GROUND IS THE WHOLE SCREEN AND THE CHROME FLOATS ON IT, asked for directly. The
+   * dark grey above and below the board was the PAGE showing where the canvas stopped,
+   * not a fill on those strips — so the fix is the canvas covering the screen, with the
+   * two strips lying over it.
+   *
+   * `position` on both is the load-bearing half: they carry `z-index: 5` in the legacy
+   * sheet with nothing to apply it to, so a positioned `main` paints straight over them
+   * and the whole HUD disappears behind the board. Nothing a jsdom test can see would
+   * notice any of this — there is no layout and the markup is identical.
+   */
+  it("spreads the board's canvas behind the chrome", () => {
+    expect(ruleFor(match, ".match main"), "the canvas is still a band between the strips")
+      .toMatch(/position:\s*absolute;\s*inset:\s*0/);
+    expect(rulesFor(match, ".match header"), "the header has no position to stack with")
+      .toMatch(/position:\s*relative/);
+    expect(rulesFor(match, ".match footer"), "the footer has no position to stack with")
+      .toMatch(/position:\s*relative/);
+    expect(rulesFor(match, ".match footer"), "the footer no longer holds the bottom")
+      .toMatch(/margin-top:\s*auto/);
+    expect(ruleFor(match, ".match header,\n.match footer"),
+      "a strip still paints over the ground").toMatch(/background:\s*none/);
+    // THE CLOCK IS THE EXCEPTION, and it is a card on the glass rather than part of it:
+    // a bright bar and a bright word written straight onto ten paintings is the Colony
+    // Road's label problem again. It wears the chips' own face, so it is read against two
+    // colours in this file.
+    expect(ruleFor(match, ".match .timeband"), "the clock is not a card like the chips")
+      .toMatch(/background:\s*var\(--hud\)/);
   });
 });

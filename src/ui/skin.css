@@ -7904,24 +7904,113 @@ button:not(.playbtn):active,
   height: clamp(15px, 2.7vh, 20px);
 }
 
-/* SURRENDER IS A LINE, NOT A TILE. It was a full-width row the same height
-   as the four above it — the most room on the screen given to the least
-   used control in the game. Its mark and its label sit on ONE line now, so
-   it reads as a way out rather than as a fifth action. */
-.match .brow .btn.surr {
-  flex-direction: row;
-  gap: 8px;
-  min-height: clamp(32px, 5.4vh, 42px);
-  padding: clamp(3px, .8vh, 8px) 10px;
+/* SURRENDER IS A MARK IN THE CORNER, NOT A ROW, asked for directly: "it
+   should be a small floating button above the other 4 buttons, on the
+   corner". It was a full-width slab the same height as the four above it —
+   the most room on the screen given to the least used control in the game,
+   and the thing that read as a fifth action.
+   - It FLOATS, so it costs the footer no height at all: `bottom: 100%` of
+     the footer stands it just above the action row, over the ground rather
+     than over the board (the board is centred on the screen and ends well
+     clear of it — measured at every size from 320x480 up).
+   - AND IT IS THE MARK ALONE UNTIL IT IS ARMED. The confirm is a second
+     press on the same button (§ SETTINGS' reset row), which has to SAY so,
+     so the label appears with `.armed` and the pill grows into it. A
+     control still has to name itself with nothing written on it, which is
+     why the markup carries `title` and `aria-label` (§ EVERY CONTROL SAYS
+     WHAT IT IS) rather than relying on the hidden word. */
+.match footer { position: relative; }
+.match .brow.surrow {
+  position: absolute;
+  right: 12px;
+  bottom: 100%;
+  margin-bottom: clamp(4px, 1vh, 8px);
 }
-.match .brow .btn.surr .lb { font-size: clamp(9.5px, 1.4vh, 11px); }
+.match .brow .btn.surr {
+  flex: none;
+  flex-direction: row;
+  gap: 6px;
+  min-height: 0;
+  border-radius: 999px;
+  padding: clamp(5px, 1vh, 8px) clamp(8px, 1.6vh, 11px);
+}
+.match .brow .btn.surr .lb { display: none; font-size: clamp(9.5px, 1.4vh, 11px); }
+.match .brow .btn.surr.armed .lb { display: block; }
 .match .brow .btn.surr .ic svg {
-  width: clamp(13px, 2.2vh, 16px);
-  height: clamp(13px, 2.2vh, 16px);
+  width: clamp(14px, 2.4vh, 18px);
+  height: clamp(14px, 2.4vh, 18px);
 }
 
 /* The two strips above the board give a little too, and the turn label is
-   the one line of the three that can lose a pixel without being read less. */
-.match header { padding-block: clamp(4px, 1.1vh, 8px); }
-.match .timeband { padding-bottom: clamp(4px, 1.1vh, 8px); }
+   the one line of the three that can lose a pixel without being read less.
+   THE TOP ONE ALSO CARRIES THE NOTCH, and that is what was reported: the
+   chips sat UNDER the iPhone's clock and status icons, half of each one
+   cut off. The match screen is the one place in the app that is not a
+   `.screen` — `.match` is `display: contents`, so its header is a direct
+   child of `#app`, which pads for nothing. Nobody else has to ask for the
+   notch, which is exactly why this screen never did. */
+.match header {
+  padding-block: calc(clamp(4px, 1.1vh, 8px) + env(safe-area-inset-top))
+                 clamp(4px, 1.1vh, 8px);
+}
 .match .timeband .timebar { height: clamp(6px, 1.3vh, 10px); }
+
+/* ---------------------------------------------------------------------
+   THE GROUND IS THE WHOLE SCREEN, AND THE CHROME FLOATS ON IT, asked for
+   directly: "that block with a button both on the bottom and the top
+   should have transparent background, now it's dark gray but it should be
+   just transparent so the background is visible".
+
+   The dark grey was not a fill on those blocks — the header's and the
+   footer's own gradients are cleared by the blanket (§10) and had been for
+   months. It was the PAGE showing where the canvas stopped: `main` was a
+   flex child between the two strips, so the painted region only ever
+   reached the band it was given. The canvas covers the screen now and the
+   two strips lie over it.
+   - THE BOARD IS STILL 90vw AND STILL CENTRED (§5, `BOARD_VW`) — it is now
+     centred on the SCREEN rather than on the band, which is where a player
+     reads it as being anyway once the chrome is glass.
+   - THE PICTURE STILL COVERS, because it is pinned by its own grid: the
+     file is 1.21 board-widths across and about 2.4 screen-widths tall, so
+     a portrait phone cannot see past it (§ THE PICTURE CARRIES THE GRID).
+   - AND BOTH STRIPS NEED `position`, which they did not have. They carry
+     `z-index: 5` in the legacy sheet and nothing to apply it to, so the
+     moment `main` became positioned it painted OVER them — the whole HUD
+     gone behind the board. A z-index without a position is not a rule.
+   - What stays filled is every CHIP and every BUTTON. The strips are the
+     glass; the controls on them are objects, and a transparent button is
+     one nobody can find. */
+.match main { position: absolute; inset: 0; z-index: 0; }
+.match header { position: relative; }
+.match footer { margin-top: auto; }
+.match header,
+.match footer {
+  background: none;
+  border: none;
+}
+/* AND THE CLOCK IS A CARD, LIKE THE THREE ABOVE IT, asked for directly:
+   "the timer bar with that text under should be wrapped in a block like
+   the info above them for each player, just so we can see the timer
+   better". It was a full-bleed BAND with a hairline under it — right while
+   the page behind it was dark and wrong the moment the artwork came
+   through, because then it is a bright line and a bright word written
+   straight onto ten different paintings. As a card it is read against two
+   colours in this file instead, which is the same decision the Colony
+   Road's label plates are on record for.
+   It wears the chips' own face, border and radius rather than a copy of
+   the numbers: one more card on the row, a line lower. */
+.match .timeband {
+  margin: clamp(4px, 1vh, 6px) var(--sp3) 0;
+  padding: var(--sp2) var(--sp3);
+  border: 1px solid var(--hud-line);
+  border-radius: var(--r-md);
+  background: var(--hud);
+}
+/* The empty part of the turn bar was a 6% white over the page; inside a
+   card of its own it wants the card's own dark, and the ROUNDED ends are
+   what stop a square bar reading as a second box inside the first. */
+.match .timeband .timebar {
+  background: rgba(0, 0, 0, .45);
+  border-radius: 999px;
+}
+.match .timelabel { padding-bottom: 0; }

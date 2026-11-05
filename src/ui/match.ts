@@ -1379,8 +1379,8 @@ const MARKUP = `
       <button class="btn ability" id="bAbility"><span class="ic" data-ic="spark"></span><span class="lb">Ability</span></button>
       <button class="btn end" id="bEnd"><span class="ic" data-ic="skip"></span><span class="lb">End turn</span></button>
     </div>
-    <div class="brow">
-      <button class="btn surr" id="bSurr"><span class="ic" data-ic="surrender"></span><span class="lb">Surrender</span></button>
+    <div class="brow surrow">
+      <button class="btn surr" id="bSurr" title="Surrender" aria-label="Surrender"><span class="ic" data-ic="surrender"></span><span class="lb">Surrender</span></button>
     </div>
   </footer>
   <div class="spellcard" id="spellCard" aria-hidden="true">
