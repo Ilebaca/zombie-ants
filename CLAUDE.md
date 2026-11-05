@@ -2844,8 +2844,7 @@ and lands on the design's figure exactly.
   difference on the bar, and the tick was a second answer to a question already answered.
 - **THE BAR AND THE ROOM RESERVED FOR IT ARE ONE NUMBER.** It grew 64 → 70, and the
   padding that keeps the last row from sitting under it is the only thing stopping it.
-  Two places spelling out one rule (§7), so a test reads both and compares them — the
-  bar's HEIGHT PLUS ITS LIFT off the bottom edge (§ ONE INSET FOR THE WHOLE FRAME).
+  Two places spelling out one rule (§7), so a test reads both and compares them.
   - **AND THE WHOLE DECK SCREEN SCROLLS, HEADER AND ALL.** Two reports, one cause. The
     legacy shape is `.screen > .screentop + .screenbody` with the BODY scrolling, so the
     title sat still while everything moved under it ("shouldn't be sticky, should scroll
@@ -3029,26 +3028,33 @@ and lands on the design's figure exactly.
     HIGHER than the burger (107 against 115), because the pill's column has no vertical
     padding and each button's own box carries `py-8`. They share one top edge here — a
     deviation, flagged and kept.
-- **ONE INSET FOR THE WHOLE FRAME, THE SAME NUMBER ON ALL FOUR SIDES** (`--hudgut`),
-  asked for directly from a small iPhone: "the bottom screen margin should be the same as
-  the side margins... top screen margin should also be the same as the side margins". The
-  sides already were — home's own 12 — and the other two were ZERO: the top bar sat flush
-  on the glass and the tab tray sat flush on the bottom, so the two edges with no margin
-  were the first things read on a short screen. It is a TOKEN on `:root` rather than
-  home's `--gutter`, because the TAB BAR is what carries the bottom one and the bar is on
-  every deck screen — outside `#home`, where that variable lives.
-  - **THE BOTTOM ONE IS A LIFT ON THE BAR, and `bottom` is the one property that can do
-    it.** The legacy sheet pins the bar with `#mainNav { bottom: 0 }` — ONE id, which
-    `#mainNav.homenav` beats. A `position` here still must NOT be set (the rule two
-    bullets up), and none is needed: being fixed, the bar is already placed.
+- **ONE INSET FOR THE FRAME'S TOP AND SIDES** (`--hudgut`), asked for directly from a
+  small iPhone: "the bottom screen margin should be the same as the side margins... top
+  screen margin should also be the same as the side margins". The sides already were —
+  home's own 12 — and the top was ZERO: the bar sat flush on the glass while everything
+  beside it stood 12 off it, so the one edge with no margin was the first thing read on a
+  short screen. It is a TOKEN on `:root` rather than home's `--gutter`, because the PLAY
+  gap and the drawer both measure against it from outside `#home`, where that variable
+  lives.
+  - **AND THE BOTTOM IS THE DEVICE'S, NOT OURS. This was shipped the other way for one
+    build and came straight back.** The tray was lifted by the same 12, and on an
+    installed iPhone that showed up as a **46px band of flat dark** under it — measured
+    off the screenshot at 45, which is the phone's 34pt home-indicator strip plus our 12.
+    The strip is not something CSS can paint: **iOS keeps it OUTSIDE the web view** and
+    fills it with the page's background colour, which is why it came out `#0c160e` rather
+    than the artwork, and why `env(safe-area-inset-bottom)` reads 0 in there. The device
+    had already left a margin and we added a second one to the end of it.
+    - The TOP is the opposite and that is the asymmetry to keep in mind: in a standalone
+      web app the status bar is INSIDE the view (the artwork runs behind the clock) and
+      `env(safe-area-inset-top)` is the real number, so 12 plus the notch is right there
+      and 12 plus nothing is right at the bottom.
+    - So the bar's lift is `env(safe-area-inset-bottom)` and nothing else: zero where the
+      system has taken its strip, the real inset on a browser that hands it over. A test
+      holds that `--hudgut` never gets back into that rule.
   - **AND THE NOTCH IS CARRIED ONCE, BY THE LIFT.** The bar's height and its own bottom
-    padding both used to add `safe-area-inset-bottom`; lifted by it as well, the tray
-    would float a thumb's width off the glass on every iPhone. Held by a test, because
-    the two cancel out to something that merely looks slightly wrong.
-  - **AND THE ROOM EVERY DECK SCREEN RESERVES GROWS WITH IT** — the bar's height PLUS the
-    lift, on home and on the four that scroll. Reserving only the height puts the last
-    card's ledge behind the tray the moment the tray comes off the glass, which is the
-    same fault as § A SCREEN DOES NOT SHORTEN ITSELF FOR THE BAR, one number smaller.
+    padding both used to add `safe-area-inset-bottom` as well; with the lift carrying it
+    the tray would otherwise float a thumb's width up. Held by a test, because the two
+    cancel out to something that merely looks slightly wrong.
   - **AND THE DRAWER MOVES DOWN WITH THE BUTTON IT HANGS OFF.** `.menuwrap`'s padding is
     measured from the TOP OF THE FRAME, so the inset has to be added there too or the
     panel climbs back up over the menu button.
@@ -3057,7 +3063,8 @@ and lands on the design's figure exactly.
   margin times 3". Written as three gutters rather than as the 36 that comes out, because
   the whole point is that it is the SAME number as the margin round the screen, counted
   three times; minus the row's own 8 of padding, because what the eye reads is the gap
-  between the two BOXES and the padding is already inside it. Measured: **32 at 320 wide,
+  between the two BOXES and the padding is already inside it. (The inset itself is the
+  top and the sides only — see above for why the bottom is the phone's.) Measured: **32 at 320 wide,
   36 at 360, 39 at 390, 43 at 430**, and the same at every height.
   - **WHAT IT REPLACED WAS A SHARE OF THE HEIGHT, and that is the lesson.** The design
     puts PLAY's foot 128px off the bottom of an 800 frame, which is 16% of it, so the gap

@@ -7135,15 +7135,21 @@ button:not(.playbtn):active,
      already a containing block for the plate. */
   display: flex;
   gap: calc(5 * var(--u));
-  /* IT STANDS THE FRAME'S OWN INSET OFF THE BOTTOM EDGE, asked for directly, and that
-     is the SAME inset the sides carry — so the tray hovers over a strip of the artwork
-     exactly as the top bar now sits under one. `bottom` is the one property that can
-     do it: the legacy sheet pins the bar with `#mainNav { bottom: 0 }`, ONE id, which
-     this id-and-class rule beats. A `position` here would NOT be safe (§ THE DRAWER's
-     neighbour above) — being fixed already, the bar needs none.
-     AND THE NOTCH MOVES WITH IT rather than being counted twice: lifted by the
-     safe-area, the bar's own height and bottom padding no longer carry it. */
-  bottom: calc(var(--hudgut) + env(safe-area-inset-bottom));
+  /* IT SITS ON THE BOTTOM OF THE WEB VIEW, AND THE FRAME'S INSET IS NOT ADDED HERE.
+     It was lifted by `--hudgut` for one build — the same margin the top and the sides
+     carry — and on an installed iPhone that came back as a 46px BAND of flat colour
+     under the tray. The reason is the one thing CSS cannot reach: iOS keeps the
+     home-indicator strip OUTSIDE the web view and fills it with the page's background
+     colour, so no element paints there and `env(safe-area-inset-bottom)` reads 0 inside
+     it. The device is already leaving a margin; ours stacked on top of it.
+     So the lift is the safe area and nothing else — 0 where the system has already
+     taken its strip, the real inset on a browser that hands it to us. `bottom` is still
+     the property: the legacy sheet pins the bar with `#mainNav { bottom: 0 }`, ONE id,
+     which this id-and-class rule beats. A `position` here would NOT be safe (§ THE
+     DRAWER's neighbour above) — being fixed already, the bar needs none.
+     AND THE NOTCH IS CARRIED ONCE, by the lift: the bar's own height and bottom padding
+     no longer add it, or the tray would float a thumb's width up. */
+  bottom: env(safe-area-inset-bottom);
   height: var(--navh);
   padding: calc(8 * var(--u));
   border: none;
@@ -7213,7 +7219,7 @@ button:not(.playbtn):active,
    nothing on it scrolls: it is a fixed composition and PLAY's gap is
    measured against this same number. */
 #home {
-  padding-bottom: calc(var(--navh) + var(--hudgut) + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--navh) + env(safe-area-inset-bottom));
 }
 
 /* THE WHOLE DECK SCREEN SCROLLS, HEADER AND ALL, AND THE BAR'S ROOM IS ITS
@@ -7235,7 +7241,7 @@ button:not(.playbtn):active,
 #shop, #anthill, #antarium, #challenges {
   overflow-y: auto;
   overscroll-behavior-y: contain;
-  padding-bottom: calc(var(--navh) + var(--hudgut) + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--navh) + env(safe-area-inset-bottom));
 }
 /* AND NOTHING INSIDE MAY SCROLL ON ITS OWN. An inner scroller takes the
    gesture and holds the page still — the header stops moving again and the

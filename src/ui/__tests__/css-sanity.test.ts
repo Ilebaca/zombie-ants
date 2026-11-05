@@ -142,10 +142,13 @@ describe("the design scales", () => {
   });
 
   /**
-   * AND THE SAME INSET ON ALL FOUR SIDES, asked for directly — the top bar sat flush on
-   * the glass while everything beside it stood 12 off it, and the tray sat flush on the
-   * bottom. Three rules, one number: the screen's top padding, its side padding and the
-   * lift under the tab bar.
+   * AND THE SAME INSET ON THE TOP AS ON THE SIDES, asked for directly — the top bar sat
+   * flush on the glass while everything beside it stood 12 off it. Two rules, one
+   * number: the screen's top padding and its side padding.
+   *
+   * THE BOTTOM IS NOT ONE OF THEM, and that is a device fact rather than a preference:
+   * iOS keeps the home-indicator strip outside the web view, so a lift of our own under
+   * the tray only adds to a margin the phone has already taken. See the bar's own rule.
    *
    * THE GAP UNDER PLAY IS THREE OF IT, also asked for directly ("roughly side margin
    * times 3"), minus the row's own 8 of padding — what is read is the air between the
@@ -156,15 +159,13 @@ describe("the design scales", () => {
    * Nothing a jsdom test can see would notice any of this: there is no layout, so only
    * the stylesheet says where the edges are.
    */
-  it("insets the frame by one number on every side, and PLAY by three of it", () => {
+  it("insets the frame by one number on the sides and the top, and PLAY by three of it", () => {
     const css = code(read("skin.css"));
     const home = rulesFor(css, "#home");
     expect(home, "the top edge is not on the frame's inset")
       .toMatch(/padding-top:\s*calc\(var\(--gutter\) \+ env\(safe-area-inset-top\)\)/);
     expect(home, "the sides are not on the frame's inset")
       .toMatch(/padding-inline:\s*var\(--gutter\)/);
-    expect(ruleFor(css, "#mainNav.homenav"), "the bottom edge is not on the frame's inset")
-      .toMatch(/bottom:\s*calc\(var\(--hudgut\) \+ env\(safe-area-inset-bottom\)\)/);
     // `rulesFor`, because `#home .homeplay` is written twice — the column cap in the
     // responsive block and the design's own padding in the HOME one.
     expect(rulesFor(css, "#home .homeplay"), "the gap under PLAY is not three insets")
@@ -741,30 +742,31 @@ describe("the home screen's ledge survives the blanket", () => {
     // It is ONE token now rather than two numbers that have to agree, which is what the
     // design scale forced: a bar measured in design pixels over a reservation measured
     // in real ones clips the last row's ledge on every phone that is not 360 wide.
-    //
-    // AND THE BAR IS LIFTED OFF THE BOTTOM EDGE by the frame's own inset, so the room
-    // is the bar's HEIGHT PLUS THAT LIFT. Reserving only the height put the last card's
-    // ledge behind the tray on every screen the moment the tray came off the glass.
     const nav = ruleFor(css, "#mainNav.homenav");
-    const lift = /bottom:\s*calc\(([^;]+) \+ env\(safe-area-inset-bottom\)\)/.exec(nav)?.[1];
     const bar = /height:\s*([^;]+);/.exec(nav)?.[1];
     const roomIn = (sel: string): string | undefined =>
       /padding-bottom:\s*calc\(([^;]+) \+ env\(safe-area-inset-bottom\)\)/
         .exec(rulesFor(css, sel))?.[1];
     expect(bar, "the tab bar has a height of its own").toBe("var(--navh)");
-    expect(lift, "the tab bar sits on the bottom edge").toBe("var(--hudgut)");
-    const room = `${bar} + ${lift}`;
     // Home takes it as its own padding, because nothing on it scrolls.
-    expect(roomIn("#home"), "home reserves the wrong room for the bar").toBe(room);
+    expect(roomIn("#home"), "home reserves the wrong room for the bar").toBe(bar);
     // And the four that SCROLL take it on the screen itself, which IS the scroller.
     expect(roomIn("#shop, #anthill, #antarium, #challenges"),
-      "a deck screen reserves the wrong room for the bar").toBe(room);
+      "a deck screen reserves the wrong room for the bar").toBe(bar);
     expect(rulesFor(css, ":root"), "the bar's height is not the design's 70")
       .toMatch(/--navh:\s*calc\(70 \* var\(--u\)\)/);
-    // The notch is carried ONCE, by the lift — in the height or the padding as well it
-    // would be counted twice and the tray would float a thumb's width off the glass.
+    // THE NOTCH IS CARRIED ONCE, by the lift that stands the bar off the bottom edge —
+    // in the height or the padding as well it would be counted twice and the tray would
+    // float a thumb's width off the glass.
+    expect(nav, "the bar does not stand on the safe area")
+      .toMatch(/bottom:\s*env\(safe-area-inset-bottom\)/);
     expect(nav, "the bar's own box carries the notch as well as the lift")
       .not.toMatch(/(height|padding):[^;]*safe-area-inset-bottom/);
+    // AND NOTHING OF OURS IS ADDED TO IT. iOS keeps the home-indicator strip outside
+    // the web view and fills it with the page colour, so a lift of our own on top of
+    // that strip is a band of flat dark under the tray that no element can paint.
+    expect(nav, "the bar adds the frame's inset to the device's own bottom strip")
+      .not.toMatch(/bottom:[^;]*--hudgut/);
   });
 
   /**
