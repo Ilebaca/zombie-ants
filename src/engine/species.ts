@@ -31,7 +31,7 @@ export const SPECIES: Record<SpeciesId, Species> = {
       desc: `Every tile with ${BUD_MIN}+ troops buds a new colony onto an adjacent empty tile — for free.` },
   },
   leafcutter: {
-    id: "leafcutter", name: "Leafcutter", atk: 1.13, def: 1.25, prod: 1.15,
+    id: "leafcutter", name: "Leafcutter Ant", atk: 1.13, def: 1.25, prod: 1.15,
     blurb: "Economic powerhouse.",
     trait: "Fungal cultivation — terraforms the field.",
     ability: { name: "Fungal Garden", kind: "leaf", cooldown: 6,
@@ -52,7 +52,7 @@ export const SPECIES: Record<SpeciesId, Species> = {
       desc: `Bordering tiles lose ${sharePct(SWARM_BITE)}% of their troops — devoured and added to your colony. Enemy veins are destroyed, wild garrisons and the Hive are eaten too. Only tiles touching your colony at cast time.` },
   },
   carpenter: {
-    id: "carpenter", name: "Carpenter", atk: 0.91, def: 1.06, prod: 1.05,
+    id: "carpenter", name: "Carpenter Ant", atk: 0.91, def: 1.06, prod: 1.05,
     blurb: "The fortress.",
     trait: "Reinforced veins — digs in hard.",
     ability: { name: "Fortify", kind: "fortify", cooldown: 6,

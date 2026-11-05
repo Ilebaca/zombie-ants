@@ -7885,3 +7885,68 @@ button:not(.playbtn):active,
   word-break: break-word;
 }
 #antarium .ccard.locked .cname { color: var(--hud-dim); }
+
+/* ======================================================================
+   THE MATCH CHROME SHRINKS WITH THE SCREEN
+   Reported as the gameplay UI needing to be responsive on small devices,
+   with the fix attached: "make buttons smaller if needed so all fits".
+
+   THE BOARD CANNOT GIVE ANY GROUND. It is 90vw exactly, because a painted
+   region's own grid is scaled to that frame (§ THE PICTURE CARRIES THE
+   GRID) — so on a short screen the only thing that can yield is the
+   chrome. A canvas too short for the square falls back to FITTING it,
+   which shrinks the playfield and leaves the artwork's cells no longer
+   the board's; that is the failure this avoids.
+
+   WHAT IT COSTS ON A TALL PHONE IS NOTHING, and that is deliberate: every
+   clamp's UPPER bound is the size the bar already was, and the `vh` term
+   reaches it at about 760px of viewport. A 360x800 phone is pixel for
+   pixel what it was; everything shorter tightens, most at the bottom.
+
+   AND THE FOUR ACTIONS NEVER GO UNDER THE TAP FLOOR. `--tap` is a rule
+   about a thumb rather than a measurement (§10), so it is the clamp's
+   lower bound. Surrender is the one that may: it is a wide row, rare, and
+   destructive — a smaller target for it is the safer trade, not a worse
+   one, and it is what gives the board back the most room.
+   ====================================================================== */
+.match footer {
+  --actpad: clamp(5px, 1.3vh, 10px);
+  gap: clamp(4px, 1vh, 8px);
+  padding: var(--actpad) 12px calc(var(--actpad) + env(safe-area-inset-bottom));
+}
+.match .brow4 { gap: clamp(4px, .8vh, 6px); }
+.match .brow4 .btn {
+  min-height: clamp(var(--tap), 7.6vh, 58px);
+  padding: clamp(4px, 1.2vh, 9px) 3px;
+  gap: clamp(1px, .4vh, 3px);
+}
+.match .brow4 .btn .lb { font-size: clamp(8.5px, 1.25vh, 9.5px); }
+/* The mark is an SVG with width/height ATTRIBUTES on it (the shell fills the
+   slot with `icon(name, 20)`), and an attribute is what CSS overrides here —
+   without this rule the label shrinks under a mark that never does. */
+.match .brow4 .btn .ic svg {
+  width: clamp(15px, 2.7vh, 20px);
+  height: clamp(15px, 2.7vh, 20px);
+}
+
+/* SURRENDER IS A LINE, NOT A TILE. It was a full-width row the same height
+   as the four above it — the most room on the screen given to the least
+   used control in the game. Its mark and its label sit on ONE line now, so
+   it reads as a way out rather than as a fifth action. */
+.match .brow .btn.surr {
+  flex-direction: row;
+  gap: 8px;
+  min-height: clamp(32px, 5.4vh, 42px);
+  padding: clamp(3px, .8vh, 8px) 10px;
+}
+.match .brow .btn.surr .lb { font-size: clamp(9.5px, 1.4vh, 11px); }
+.match .brow .btn.surr .ic svg {
+  width: clamp(13px, 2.2vh, 16px);
+  height: clamp(13px, 2.2vh, 16px);
+}
+
+/* The two strips above the board give a little too, and the turn label is
+   the one line of the three that can lose a pixel without being read less. */
+.match header { padding-block: clamp(4px, 1.1vh, 8px); }
+.match .timeband { padding-bottom: clamp(4px, 1.1vh, 8px); }
+.match .timeband .timebar { height: clamp(6px, 1.3vh, 10px); }

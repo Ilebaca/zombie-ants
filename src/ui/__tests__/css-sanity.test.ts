@@ -967,12 +967,17 @@ describe("the colony bar and the tab tray", () => {
  * everything from a block's marker onwards, so an unbounded shop slice swallowed the
  * ANTARIUM block the day it landed and failed it for the shop's rules. A design block
  * runs from its own marker to the next one.
+ *
+ * THE BOUND IS THE DIVIDER, NOT THE NEXT BLOCK'S NAME. It was a pattern matching the
+ * words "DRAWN TO THE DESIGN", and the first block added whose heading did not say that
+ * was swallowed by the one above it — the same fault again, one marker further on. Every
+ * one of these blocks opens on a `=====` rule, so that is what ends the one before it.
  */
 const designBlock = (css: string, marker: string): string => {
   const at = css.indexOf(marker);
   expect(at, `the ${marker} block is gone`).toBeGreaterThan(-1);
   const rest = css.slice(at + marker.length);
-  const next = rest.search(/^ {3}[A-Z][A-Z ,'`]+, DRAWN TO THE DESIGN$/m);
+  const next = rest.search(/^\/\* ={6,}/m);
   return code(next === -1 ? rest : rest.slice(0, next));
 };
 
@@ -1183,5 +1188,80 @@ describe("the antarium is written in the shared language", () => {
     expect(rule, "a two-digit level would overflow a fixed width")
       .toMatch(/min-width:\s*26px/);
     expect(rule, "the badge is sized rather than left to grow").not.toMatch(/[^-]width:\s*26px/);
+  });
+});
+
+/**
+ * THE MATCH CHROME SHRINKS WITH THE SCREEN.
+ *
+ * The board is 90vw exactly and cannot yield (§ THE PICTURE CARRIES THE GRID), so on a
+ * short phone the chrome is the only thing that can — and a canvas too short for that
+ * square falls back to FITTING it, which shrinks the playfield and takes the painted
+ * region's cells off the board's. Measured: at 320x480 the bar was 239px of a 480 screen
+ * and the board could not hold its square; it is 175 now and does.
+ *
+ * None of this is visible to jsdom, which has no layout and no viewport — the markup is
+ * identical at every size and only the cascade decides how tall a button is.
+ */
+describe("the match chrome gives the board room on a short screen", () => {
+  const whole = read("skin.css");
+  const match = designBlock(whole, "THE MATCH CHROME SHRINKS WITH THE SCREEN");
+
+  it("still has a match block to check", () => {
+    expect(match).toMatch(/\.match footer\s*\{/);
+  });
+
+  /**
+   * THE FOUR ACTIONS NEVER GO UNDER THE TAP FLOOR. `--tap` is a rule about a thumb rather
+   * than a measurement off any mock-up (§10), so it is the clamp's LOWER bound — written
+   * as the token, because a literal 44 here is the floor spelled twice and the copy is
+   * what goes stale.
+   */
+  it("floors the action buttons at a thumb", () => {
+    expect(ruleFor(match, ".match .brow4 .btn"),
+      "an action button can shrink under the tap floor")
+      .toMatch(/min-height:\s*clamp\(var\(--tap\),/);
+  });
+
+  /**
+   * AND A TALL PHONE IS UNCHANGED. Every clamp's UPPER bound is the size the bar already
+   * was, so the `vh` term only ever takes something away — a curve that topped out higher
+   * would be a redesign of a screen that was not reported as wrong.
+   */
+  it("tops every clamp out at the size the bar already was", () => {
+    for (const [sel, prop, top] of [
+      [".match .brow4 .btn", "min-height", "58px"],
+      [".match footer", "gap", "8px"],
+      [".match .brow4", "gap", "6px"],
+      [".match header", "padding-block", "8px"],
+      [".match .timeband", "padding-bottom", "8px"],
+      [".match .timeband .timebar", "height", "10px"],
+    ] as const) {
+      expect(ruleFor(match, sel), `${sel} no longer tops out at its old ${prop}`)
+        .toMatch(new RegExp(`${prop}:\\s*clamp\\([^;]*,\\s*${top}\\)`));
+    }
+  });
+
+  /**
+   * THE MARK IS SIZED TOO, and it has to be done here. The shell fills each slot with
+   * `icon(name, 20)`, which writes width and height ATTRIBUTES onto the SVG — so without
+   * a rule the label shrinks under a mark that never does, and the button ends up mostly
+   * picture.
+   */
+  it("shrinks the mark with the label", () => {
+    expect(ruleFor(match, ".match .brow4 .btn .ic svg"), "the mark keeps its fixed 20px")
+      .toMatch(/width:\s*clamp\(/);
+  });
+
+  /**
+   * SURRENDER IS A LINE, NOT A TILE — a full-width row that was the same height as the
+   * four above it, which is the most room on the screen given to the least used control
+   * in the game.
+   */
+  it("lays surrender out on one line", () => {
+    const rule = ruleFor(match, ".match .brow .btn.surr");
+    expect(rule, "surrender stacks its mark over its label again")
+      .toMatch(/flex-direction:\s*row/);
+    expect(rule).toMatch(/min-height:\s*clamp\(/);
   });
 });

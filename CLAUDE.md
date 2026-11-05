@@ -2734,6 +2734,42 @@ overridden in `skin.css` instead, which also keeps the swap to one declaration.
     Reported as needing a gap under it. It is 50px now, which is the design's own gap
     between the PLAY row and the bar.
 
+**THE MATCH CHROME SHRINKS WITH THE SCREEN** (the MATCH block at the foot of
+`skin.css`). Reported as the gameplay UI needing to be responsive on small devices, with
+the fix attached: "make buttons smaller if needed so all fits".
+- **THE BOARD CANNOT GIVE ANY GROUND.** It is 90vw exactly, because a painted region's
+  own grid is scaled to that frame (§ THE PICTURE CARRIES THE GRID) — so the chrome is
+  the only thing on a short screen that can yield, and the fallback if it does not is the
+  canvas FITTING the square instead, which shrinks the playfield and takes the artwork's
+  cells off the board's. Measured at 320x480: the bar was **239px of a 480 screen** and
+  the board could not hold its square; it is **175** now and does.
+- **A TALL PHONE IS UNCHANGED, and that is what "if needed" means.** Every clamp's UPPER
+  bound is the size the bar already was and the `vh` term reaches it at about 760px of
+  viewport, so the curve only ever takes something away. Measured chrome: 221 at 800 and
+  915 (the surrender row alone), 202 at 667, 197 at 640, 185 at 568, 175 at 480.
+- **THE FOUR ACTIONS NEVER GO UNDER THE TAP FLOOR.** `--tap` is a rule about a thumb
+  rather than a measurement (§10), so it is the clamp's LOWER bound — written as the
+  token, because a literal 44 is that floor spelled twice and the copy is what goes stale.
+- **SURRENDER IS A LINE, NOT A TILE.** A full-width row the same height as the four above
+  it: the most room on the screen given to the least used control in the game. Its mark
+  and label sit on one line now, which is the single biggest saving and the one change a
+  tall phone sees. It is the one control allowed under the tap floor — a wide row, rare
+  and destructive, where a smaller target is the safer trade.
+- **AND THE MARK HAS TO BE SIZED HERE TOO.** The shell fills each slot with
+  `icon(name, 20)`, which writes width and height ATTRIBUTES onto the SVG, so without a
+  rule the label shrinks under a mark that never does and the button ends up mostly
+  picture.
+- **AND THE BLOCK SLICER NOW BOUNDS ON THE DIVIDER, not on the next block's name.** It
+  matched the words "DRAWN TO THE DESIGN", so this block — the first whose heading does
+  not say that — was swallowed by the Antarium's above it and failed its sweeps. Same
+  fault as the shop's unbounded slice, one marker further on. Every one of these blocks
+  opens on a `=====` rule, so that is what ends the one before it.
+
+**A COLONY IS AN ANT, AND ITS NAME SAYS SO.** Six of the eight always did — Fire Ant,
+Ghost Ant, Army Ant — and two were bare, "Leafcutter" and "Carpenter", which reads as two
+kinds of thing in one list: a species beside a trade. A test holds the rule rather than
+the two that were fixed, so the next colony added cannot arrive half-named.
+
 **THE HOME SCREEN IS DRAWN TO A DESIGN, AND THE DESIGN IS THE SOURCE** (Figma
 `Zombie Ants` → `03-home 2`, node `134:31`; the block at the foot of `src/ui/skin.css`).
 Everything above it in that file is the app's older language — flat faces, no gradients,
