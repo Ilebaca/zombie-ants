@@ -1515,9 +1515,31 @@ describe("the avatar picker", () => {
   /** A square picture in a square box: the rounding is the tile's, not the artwork's. */
   it("draws a tile as a rounded square", () => {
     const tile = rulesFor(skin, ".av-t");
-    expect(tile).toMatch(/border-radius:\s*\d/);
+    expect(tile).toMatch(/border-radius:\s*var\(--av-r\)/);
     expect(tile).toMatch(/aspect-ratio:\s*1/);
     expect(tile, "a square picture needs the box to clip it").toMatch(/overflow:\s*hidden/);
+  });
+
+  /**
+   * THE SAME CORNER EVERYWHERE THE PLAYER'S OWN FACE IS DRAWN, asked for directly. It
+   * was a DISC in the top bar, on the profile, in that screen's avatar row and on the
+   * picker's hero, and a rounded square only in the grid — so the thing chosen as a tile
+   * then showed as a circle in all four places it is actually seen.
+   *
+   * The token is what is held, not the number: a percentage is the only way one rule
+   * gives the same CORNER at 26px and at 96px, and five copies of `18%` would satisfy an
+   * assertion about the value while being five chances for one of them to drift.
+   */
+  it("gives the player's face one corner at every size", () => {
+    for (const sel of [".pf-av, img.pf-av, canvas.pf-av",
+                       ".pf-av-mini, img.pf-av-mini, canvas.pf-av-mini",
+                       ".av-hero-f, img.av-hero-f, canvas.av-hero-f",
+                       ".av-t", "#home .tn-id"]) {
+      expect(rulesFor(skin, sel), `${sel} does not wear --av-r`)
+        .toMatch(/border-radius:\s*var\(--av-r\)/);
+    }
+    // ...and it is a PERCENTAGE, or it is a different corner at each of those five sizes.
+    expect(skin).toMatch(/--av-r:\s*\d+(\.\d+)?%/);
   });
 
   /**

@@ -2063,6 +2063,17 @@ belongs to the save rather than to a species, and it is never worn by an opponen
   simply ABSENT is the one regression nothing else in this suite can see**, which is why
   `css-sanity` now holds the picker's SHAPE — five across, a rounded square tile, a locked
   face greyed AND darkened, the worn one the only coloured edge, both tags sized.
+- **THE FACE IS THE SAME SHAPE EVERYWHERE IT IS DRAWN** (`--av-r`, 18%), asked for
+  directly. It was a DISC in the top bar, on the profile, in that screen's avatar row and
+  on the picker's hero, and a rounded SQUARE only in the picker's grid — so the thing a
+  player picks as a tile then appears as a circle in all four places they actually see
+  it. A PERCENTAGE, never a length: the face is drawn at 26, 30, 46, 76 and 96 pixels,
+  and one radius in px is nearly a circle on the smallest and barely a corner on the
+  largest, which is the opposite of what was asked for. 18% is the grid tile's own
+  proportion (12 of 65), so the tiles did not move and everything else came to them.
+  The top bar's disc was the DESIGN's (§ THE HOME SCREEN IS DRAWN TO A DESIGN) — a
+  flagged deviation, kept. The ROAD's checkpoint stays a circle, because every reward on
+  that path is one and a square there would be the single odd shape on the road.
 - **AND EVERY TILE IS FRAMED, not only the worn one.** The art is ninety-eight different
   full-bleed squares, so with no edge the grid reads as one sheet of colour with no seams.
   The worn tile changes that edge's COLOUR rather than adding one, or it would be the only
