@@ -2602,12 +2602,12 @@ button:not(.playbtn):active,
 .pf-face { position: relative; width: 76px; height: 76px; }
 .pf-face canvas, .pf-face img { display: block; width: 76px; height: 76px; }
 /* AN AVATAR IS A SQUARE PICTURE, so the disc is this box rather than the artwork. */
-.pf-av, img.pf-av, canvas.pf-av { border-radius: 50%; object-fit: cover; }
+.pf-av, img.pf-av, canvas.pf-av { border-radius: var(--av-r); object-fit: cover; }
 .pf-av-mini, img.pf-av-mini, canvas.pf-av-mini {
   width: 26px;
   height: 26px;
   display: block;
-  border-radius: 50%;
+  border-radius: var(--av-r);
   object-fit: cover;
 }
 /* The level rides the portrait rather than sitting beside it: one object,
@@ -4593,6 +4593,18 @@ button:not(.playbtn):active,
    is what the thumb actually hits.
    ---------------------------------------------------------------------- */
 :root { --tap: 44px; }
+
+/* THE PLAYER'S OWN FACE IS THE SAME SHAPE EVERYWHERE (§ NINETY-EIGHT AVATARS).
+   Asked for directly. It was a DISC in the top bar, on the profile, in that screen's
+   avatar row and on the picker's hero, and a rounded SQUARE only in the picker's grid —
+   so the thing a player picked as a rounded tile then appeared as a circle in all four
+   places they actually see it, which reads as two different pictures.
+
+   A PERCENTAGE, never a length: the face is drawn at 26, 30, 46, 76 and 96 pixels, and
+   one radius in px is nearly a circle on the smallest and barely a corner on the
+   largest — the opposite of "the same corners". 18% is the grid tile's own proportion
+   (12 of 65), so the tiles are unchanged and everything else now matches them. */
+:root { --av-r: 18%; }
 
 .screentop .backbtn,
 .backbtn {
@@ -6708,7 +6720,9 @@ button:not(.playbtn):active,
   box-shadow: none !important;
 }
 
-/* The avatar is a disc, and the only round thing on the screen. */
+/* The avatar wears the face's own corner (`--av-r`), not a disc: the design drew it
+   round and that made it the one place the picture was a different shape from the
+   picker it is chosen in. Flagged as a deviation from the mock-up, and deliberate. */
 #home .tn-id {
   position: relative;
   flex: 0 0 auto;
@@ -6727,7 +6741,7 @@ button:not(.playbtn):active,
      the only thing there was to clip. */
   overflow: visible;
   border: none;
-  border-radius: 48px;
+  border-radius: var(--av-r);
   background: var(--hud-face);
   box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
 }
@@ -8153,7 +8167,7 @@ button:not(.playbtn):active,
   width: 96px;
   height: 96px;
   display: block;
-  border-radius: 50%;
+  border-radius: var(--av-r);
   object-fit: cover;
   border: 3px solid var(--grass);
 }
@@ -8173,7 +8187,7 @@ button:not(.playbtn):active,
   position: relative;
   padding: 0;
   border: 2px solid rgba(255, 255, 255, .14);
-  border-radius: 12px;
+  border-radius: var(--av-r);
   background: none;
   overflow: hidden;
   cursor: pointer;
