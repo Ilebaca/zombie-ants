@@ -2087,6 +2087,26 @@ belongs to the save rather than to a species, and it is never worn by an opponen
   picker, the road and BOTH hatch cards asserting nothing borrows `.avatar` — the first
   version of that test walked only the first two and the mutation sailed through it.
 
+**THE PROFILE IS DRAWN TO THE DESIGN TOO** (the PROFILE block at the foot of
+`skin.css`). The fourth screen brought into the SHARED DESIGN LANGUAGE, after home, the
+shop and the Antarium — and the FIRST that was not handed over as a mock-up, asked for
+as "recreate here how we did blocks in the home, shop, and antarium".
+- **NOTHING NEW WAS NEEDED, which is the point of there being a language at all.** Every
+  block is `--hud-card` on `--r-card` wearing the ledge and the gloss, with the four type
+  sizes, `--fs-hero` on the one line that is a NAME, and the two gaps. Like the shop and
+  the Antarium and unlike home, it does not ride `--u`: a column of cards grows its
+  COLUMN and keeps its TYPE.
+- **THE RECORD IS ONE CARD CUT BY HAIRLINES, not six tiles.** Six ledges in a block is a
+  pile of objects where the screen means one table, so the grid carries the ledge and the
+  1px gaps over the chrome's own dark are what rule it.
+- **AND THE AVATAR HAD A WHITE FRAME ROUND IT, because `.pf-face` is a BUTTON.** It
+  became one the day the picker landed and the UA's own outset border came with it —
+  reported from a phone as "some whiteish frame behind the image", and invisible to every
+  test in the suite because jsdom has no user-agent stylesheet to apply. A box whose
+  entire content is a picture has nothing to put a frame around. `css-sanity` holds the
+  reset, and sweeps this block for its type sizes, its radii and its marked ledges the
+  same way it sweeps the other three.
+
 **ONE RARITY LADDER, FOR EVERYTHING THAT HAS ONE** (`engine/tiers.ts`). There were TWO and
 they disagreed. Traits ran common / uncommon / rare / exceptional / mythic in grey, green,
 blue, purple and red; colonies ran "Founding castes" / "Rare colonies" / "Elite castes" /

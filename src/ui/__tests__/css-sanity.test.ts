@@ -1571,3 +1571,78 @@ describe("the avatar picker", () => {
     }
   });
 });
+
+/**
+ * THE PROFILE IS WRITTEN IN THE SHARED LANGUAGE TOO.
+ *
+ * The fourth screen brought into it, after home, the shop and the Antarium — and the
+ * first that was NOT handed over as a mock-up, so there is no frame to measure it
+ * against. What makes it right is only that it is built from the tokens the other three
+ * settled, which is exactly the kind of fact a test can hold and an eye cannot: a
+ * literal `font-size: 11px` typed into one card renders perfectly and is the whole
+ * regression. Asked for directly — "recreate here how we did blocks in the home, shop,
+ * and antarium."
+ */
+describe("the profile is written in the shared language", () => {
+  const whole = read("skin.css");
+  const prof = designBlock(whole, "THE PROFILE, DRAWN TO THE DESIGN");
+
+  it("still has a profile block to check", () => {
+    expect(prof).toMatch(/#profile \.pf-hero\s*\{/);
+  });
+
+  /** The four sizes, and the fifth that is a NAME rather than a label (§ --fs-hero). */
+  it("sets no type size of its own", () => {
+    const bad = [...prof.matchAll(/font-size:\s*([^;]+);/g)]
+      .map((m) => (m[1] ?? "").trim())
+      .filter((v) => !/^var\(--fs-(label|small|body|title|hero)\)$/.test(v));
+    expect(bad, "the profile types a size instead of naming one").toEqual([]);
+  });
+
+  it("rounds every corner with a token or a pill", () => {
+    const bad = [...prof.matchAll(/border-radius:\s*([^;]+);/g)]
+      .map((m) => (m[1] ?? "").trim())
+      .filter((v) => !/^(var\(--r-(card|btn)\)|999px)/.test(v));
+    expect(bad, "the profile rounds a corner to its own number").toEqual([]);
+  });
+
+  /** A CARD IS A CARD EVERYWHERE: the same face, the same radius, the same ledge. */
+  it("builds every block out of the shared card", () => {
+    for (const sel of ["#profile .pf-hero", "#profile .pf-colony", "#profile .pf-row"]) {
+      const rule = ruleFor(prof, sel);
+      expect(rule, `${sel} is not the shared card`).toMatch(/background:\s*var\(--hud-card\)/);
+      expect(rule, `${sel} does not take the card radius`)
+        .toMatch(/border-radius:\s*var\(--r-card\)/);
+    }
+  });
+
+  /**
+   * AND THE LEDGE IS MARKED, which is the third time this file has earned the rule:
+   * `*:not(.playbtn) { box-shadow: none !important }` is a considered decision for every
+   * other screen and cannot be unsaid from a later rule without matching its weight.
+   * Lose it on one card and that card goes flat while the ones round it stay raised.
+   */
+  it("marks every ledge important", () => {
+    const weak = [...prof.matchAll(/([^;{}]*box-shadow:[^;]*--hud-ledge[^;]*);/g)]
+      .map((m) => (m[1] ?? "").trim())
+      .filter((d) => !d.includes("!important"));
+    expect(weak, "these would be flattened by the blanket").toEqual([]);
+  });
+
+  /**
+   * THE FACE IS A BUTTON AND CARRIES NO BORDER. It became one when the avatar picker
+   * landed and brought the UA's own outset frame with it — reported from a phone as "a
+   * whiteish frame behind the image". A box whose entire content is a picture has
+   * nothing to put a frame around, and nothing in jsdom can see a UA default.
+   */
+  it("strips the button frame off the avatar", () => {
+    const rule = ruleFor(prof, "#profile .pf-face");
+    expect(rule, "the UA button border is still there").toMatch(/border:\s*none/);
+    expect(rule).toMatch(/background:\s*none/);
+  });
+
+  it("spaces the screen with the shared gaps", () => {
+    expect(ruleFor(prof, "#profile #profileBody")).toMatch(/gap:\s*var\(--block\)/);
+    expect(ruleFor(prof, "#profile .pf-coll")).toMatch(/gap:\s*var\(--inrow\)/);
+  });
+});
