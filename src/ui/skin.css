@@ -6622,7 +6622,15 @@ button:not(.playbtn):active,
      and the TYPE DOES NOT. The shop is the second kind. */
   --hud-card: #282930;
   --hud-well: #12151c;
+  /* ONE STEP ABOVE A CARD, for the face of something pressed or standing open.
+     It is the same KIND of fact as the two above it, which is why it is a token
+     here rather than mixed at each call site. */
+  --hud-hi: #31333b;
   --hud-dim: #d5d5d5;
+  /* And a THIRD ink, for a note under a line that is already dim. Measured at
+     5.3 against a card and 6.1 against the chrome, so it clears AA on both
+     grounds in this design (§ CONTRAST IS MEASURED). */
+  --hud-mute: #9a9ca5;
   /* Two radii, and only two: a CARD and the button inside it. */
   --r-card: 7px;
   --r-btn: 5px;
@@ -8362,3 +8370,241 @@ button:not(.playbtn):active,
 #profile .pf-row-t { font-size: var(--fs-body); }
 #profile .pf-row-c { font-size: var(--fs-small); }
 #profile .pf-row-note { font-size: var(--fs-label); color: var(--hud-dim); }
+
+/* ======================================================================
+   EVERY OTHER SCREEN, DRAWN TO THE DESIGN
+   ======================================================================
+   Four screens had been handed over finished and drawn to the shared
+   language — home, the shop, the Antarium and the profile — and the other
+   nineteen were still wearing the app's FIRST language: deep forest green
+   panels on a deep forest ground, 14px corners, no ledge, and whatever type
+   size each screen had picked for itself. Asked for directly: "do the design
+   adjustments for all other screens as well that we haven't done already."
+   Half the app was green and half of it was charcoal, which is the one thing
+   a player cannot not see.
+
+   IT IS A REMAP, NOT NINETEEN BLOCKS. Those screens carry about four hundred
+   class names between them and every one of their rules already reads its
+   surface, its ink and its corner out of a TOKEN — `--panel`, `--ink-soft`,
+   `--r-lg`. So the whole of the colour and the form is one rule that
+   redefines those tokens inside those screens, and every rule written
+   against them picks the new value up. Enumerating the classes instead would
+   be thousands of lines, nineteen chances to miss one, and a second place
+   every screen's look is decided.
+
+   WHAT A REMAP CANNOT REACH IS THE TYPE, because a size written as `13px`
+   reads no token. So the four sizes reach the furniture every one of these
+   screens SHARES — the header, the section labels — and a screen's own copy
+   keeps its own measure until that screen is drawn to a frame of its own.
+   That is a deliberate stopping point rather than an oversight: shrinking a
+   screen's body copy to a token without a mock-up to check it against is how
+   a readable list becomes a small one.
+
+   THE COLONY ROAD IS NOT IN THE LIST. It is drawn to a design of Milan's
+   own, made directly on `main`, and it is the one screen here nobody asked
+   to have changed.
+
+   THE MATCH IS NOT EITHER. Its chrome is glass over a painted region (§ THE
+   GROUND IS THE WHOLE SCREEN) and its own block above settles it.
+   ====================================================================== */
+
+/* ONE RULE, AND IT IS THE WHOLE OF THE COLOUR AND THE FORM.
+   `--panel-edge` goes to black because the design's ledge is black: a green
+   edge under a charcoal card is the old language's shadow left behind. */
+#anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news,
+#friends, #support, #antup, #traits, #inventory, #history, #replay,
+#keepsafe, #rules, #formation, #luckyhatch, #avatars {
+  /* SURFACES. A card is lighter than the chrome it sits on, a well darker
+     than both — which is the rule the shared language already states. */
+  --bg0: var(--hud-face);
+  --bg1: var(--hud-face);
+  --bg2: var(--hud-well);
+  --panel: var(--hud-card);
+  --panel-hi: var(--hud-hi);
+  --panel-edge: #000;
+  --hud: var(--hud-card);
+  --hud-line: rgba(255, 255, 255, .08);
+  --line: rgba(255, 255, 255, .08);
+
+  /* INK. The cream the artwork is lit in, the dim grey for a label naming
+     what is under it, and a mid grey for a note — measured at 5.3 against a
+     card and 6.1 against the chrome, so all three clear AA (§ CONTRAST IS
+     MEASURED). The old `--muted` on this ground was 3.7, which is under it. */
+  --ink: var(--hud-ink);
+  --ink-soft: var(--hud-dim);
+  --muted: var(--hud-mute);
+
+  /* FORM. Two radii and only two, so every corner in these nineteen screens
+     collapses onto the card's or the button's. */
+  --r-xl: var(--r-card);
+  --r-lg: var(--r-card);
+  --r-md: var(--r-btn);
+  --r-sm: var(--r-btn);
+  --bevel: var(--hud-ledge);
+  --bevel-sm: var(--hud-ledge);
+
+  /* THE ONE BRIGHT THING. The design's green, so a Play on a challenge card
+     is the same green as the shop's buy button and home's own slab. */
+  --grass: var(--hud-go);
+}
+
+/* THE LEDGE HAS TO BE PUT BACK BY NAME, and it has to be marked.
+   `*:not(.playbtn) { box-shadow: none !important }` is a considered decision
+   that still holds for the rest of the app, and it cannot be unsaid from a
+   later rule without matching its weight — the third time this file has
+   earned that `!important` (§ THE HOME SCREEN). Remapping `--bevel` is not
+   enough on its own: the blanket clears the property, not the token.
+
+   And the radius is set here as well, because the shared card rule above
+   writes `13px` as a LITERAL — a token remap reads nothing. */
+:is(#anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news,
+    #friends, #support, #antup, #traits, #inventory, #history, #replay,
+    #keepsafe, #rules, #formation, #luckyhatch)
+:is(.card, .metacard, .chcard, .dcard, .qcard, .qhero, .challcard, .dailycard,
+    .stile, .luckycard, .rbanner, .dhero, .hillcut, .antcell, .lbbanner, .lbrow,
+    .setrow, .setrow2, .setgroup, .setpanel, .room, .room-open, .chalcard, .chalmore, .chalsum, .newscard, .frrow, .frpanel,
+    .spbox, .spfact, .spq, .spgcard, .spghero, .skincard, .spgtd,
+    .trtile, .tropen, .trtotals, .fusebox, .fb-row, .invhead,
+    .histrow, .kscard, .hatchprize, .hp-one, .hatchshut,
+    .coverpane, .setupbox, .ru-fig) {
+  border-radius: var(--r-card);
+  background: var(--hud-card);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+
+/* A WELL IS THE ONE SURFACE THAT IS NOT PRESSED. A track, a code box, a
+   disclosure, an empty state: darker than the card it is cut into, and no
+   ledge at all, because nothing here stands out of the page. An EMPTY STATE
+   is in this group rather than the one above for exactly that reason — a
+   raised tile saying "nothing found yet" is a thing to press that is not. */
+:is(#anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news,
+    #friends, #support, #antup, #traits, #inventory, #history, #keepsafe,
+    #luckyhatch)
+:is(.lbtrack, .qbar, .spgstat-b, .setcode, .frfield, .sptext, .rtrack,
+    .frghost, .histempty, .trempty) {
+  border-radius: var(--r-btn);
+  background: var(--hud-well);
+  box-shadow: none !important;
+}
+
+/* EVERY BUTTON INSIDE A CARD TAKES THE BUTTON'S CORNER, which is the second
+   of the two radii and the only other one these screens may have. */
+:is(#anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news,
+    #friends, #support, #antup, #traits, #inventory, #history, #replay,
+    #keepsafe, #rules, #formation, #luckyhatch)
+:is(.cta, .buybtn, .qbtn, .passbuy, .buybar, .setbtn, .claimchip, .antcta,
+    .hbuy, .setval, .frbtn, .hp-go, .ht-go, .replaybtn, .chalplay, .challplay,
+    .spsend, .hatchbtn, .ghostbtn, .btn) {
+  border-radius: var(--r-btn);
+}
+
+/* ------------------------------------------------------------------ THE HEADER
+   THE ONE PIECE OF FURNITURE EVERY SCREEN SHARES, so it is dressed for ALL
+   of them rather than for the nineteen. The dressed four never restyled it,
+   so until now the shop's title was the old language's 21px bold while the
+   Antarium's banner beside it was the display face at 22 — the same line, in
+   two faces, on two screens a swipe apart.
+
+   It is `--fs-hero`, because a screen's title is exactly what that size is
+   for: the one line on a page that is a NAME, read first. */
+.screentop .screenh {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-hero);
+  letter-spacing: 0;
+  color: var(--hud-ink);
+}
+.screentop .screensub {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  letter-spacing: .4px;
+  color: var(--hud-dim);
+}
+
+/* THE BACK ARROW IS A CARD, with the ledge every other raised thing wears.
+   It was a green panel with a 9px corner — the last control in the app still
+   drawn in the first language, and it is on top of every screen there is. */
+.screentop .backbtn {
+  border-radius: var(--r-card);
+  background: var(--hud-card);
+  color: var(--hud-ink);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+.screentop .backbtn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #000 !important;
+}
+
+/* ---------------------------------------------------------------- THE LABELS
+   A SECTION HEADING IS A LABEL, NOT A TITLE — which is what this file has
+   said about them since the beginning, in the older language's own words
+   ("Labels, not titles"). The design agrees and is more specific: eight
+   pixels of dim ink in the display face, which is exactly what the shop's
+   shelf names and the profile's headings already are. So the same rule,
+   reaching the twenty-one places `.secthead` is written.
+
+   `.tierhead .tname` is the Antarium's and is settled in its own block; it is
+   named here because the Traits screen uses the same class. */
+:is(#anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news,
+    #friends, #support, #antup, #traits, #inventory, #history, #replay,
+    #keepsafe, #rules, #formation, #luckyhatch)
+:is(.sechead h3, .secthead, .tierhead .tname) {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  line-height: 1;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--hud-dim);
+  white-space: normal;
+}
+
+/* ----------------------------------------------------------------- THE RHYTHM
+   One gap down a screen and one across a row, which is the other half of the
+   request that produced the shared language. `--stack` is the older sheet's
+   answer to the same question and is 10; the design's is 12, so the two are
+   brought together rather than left to disagree by two pixels. */
+:is(#anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news,
+    #friends, #support, #antup, #traits, #inventory, #history, #replay,
+    #keepsafe, #rules, #formation, #luckyhatch) {
+  --stack: var(--block);
+  --gap: var(--block);
+  --pad: var(--block);
+}
+
+/* ONE GROUND FOR THE WHOLE APP. The three dressed screens sat on the first
+   language's deep green-black while the nineteen remapped above sit on the
+   design's chrome, and two neighbouring tabs of a deck cannot be two
+   different colours of nothing. `--hud-face` is the colour the top bar and
+   the tab tray are already cut from, so the page under a card is the same
+   dark as the chrome around it. Home and the match paint over it. */
+body,
+.screen {
+  background: var(--hud-face);
+}
+
+/* AND THE ANTHILL'S EARTH IS NOT A SURFACE. It is a cross-section of soil
+   with chambers cut into it (§ THE ANTHILL IS A PICTURE OF THE NEST), so the
+   two things that belong to the GROUND rather than to the page — the
+   excavation summary written on it and the granary's store — keep their own
+   flat faces and are deliberately out of the card list above. A ledge on
+   either would be a tile floating in front of the dirt, and the summary sits
+   over the mound, so a raised one covers the entrance. */
+/* AND A PARAGRAPH IS NOT A CARD. The manual's prose (`.ru-p`) is the one
+   body of running text in the app, and the shared card rule caught it — so
+   every sentence came up as its own raised tile and the page read as a wall
+   of objects, which is the exact fault the no-shadows decision was taken to
+   fix (§10). Its FIGURES are cards, because a figure is a picture of the
+   board sitting on the page. */
+
+/* AND THE DESTRUCTIVE ROWS HAD TO COME UP. Measured on the real screen (§
+   CONTRAST IS MEASURED): Reset, Delete and Restore are `--danger` ink on a
+   7% white wash over the card, which is 3.44 against the first language's
+   green panel and 3.92 against the design's — better, and still under AA at
+   12px. Lifted toward white it measures 5.2. It is the INK that moves and
+   not the token: `--danger` is a FILL elsewhere, and a paler one would want
+   dark text on it. */
+#settings .setdanger {
+  color: color-mix(in srgb, var(--danger) 72%, #fff);
+}
