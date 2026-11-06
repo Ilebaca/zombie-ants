@@ -8211,3 +8211,154 @@ button:not(.playbtn):active,
    answered by the grid as well as by the hero above it. */
 .av-t.on { border-color: var(--grass); }
 .av-note { font-size: 11px; font-weight: 700; line-height: 1.5; color: var(--muted); }
+
+/* ======================================================================
+   THE PROFILE, DRAWN TO THE DESIGN
+   ======================================================================
+   The fourth screen brought into the SHARED DESIGN LANGUAGE, after home,
+   the shop and the Antarium — and the first one that was not handed over
+   as a mock-up, so it is built from the tokens the other three settled
+   rather than from numbers of its own. Asked for directly: "recreate here
+   how we did blocks in the home, shop, and antarium."
+
+   Everything here is `--hud-card` on `--r-card` wearing the ledge and the
+   gloss, with the four type sizes and the two gaps. Nothing new was
+   needed, which is the point of there being a language at all.
+
+   Like the shop and the Antarium and unlike home, it does NOT ride `--u`:
+   a column of cards grows its COLUMN and keeps its TYPE.
+   ====================================================================== */
+
+#profile #profileBody { gap: var(--block); }
+/* A heading belongs to the block under it, so what separates two SECTIONS is
+   the heading's own air rather than a second gap. */
+#profile #profileBody > .secthead {
+  margin: var(--inrow) 0 0;
+  padding: 0;
+  border: none;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  line-height: 1;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--hud-dim);
+}
+#profile #profileBody > .secthead:first-child { margin-top: 0; }
+
+/* ------------------------------------------------------------- THE HERO */
+#profile .pf-hero {
+  gap: var(--block);
+  padding: var(--block);
+  border: none;
+  border-radius: var(--r-card);
+  background: var(--hud-card);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+/* THE FACE IS A BUTTON, AND A BUTTON CARRIES A BORDER NOBODY ASKED FOR.
+   It became one the day the avatar picker landed, and the UA's own 2px outset
+   frame came with it — reported from a phone as "some whiteish frame behind
+   the image". A box whose whole content is a picture has nothing to put a
+   frame around. */
+#profile .pf-face {
+  padding: 0;
+  border: none;
+  background: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+#profile .pf-name {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-hero);
+  letter-spacing: 0;
+  color: var(--hud-ink);
+}
+#profile .pf-sub { font-size: var(--fs-small); color: var(--hud-dim); }
+#profile .pf-xp { font-size: var(--fs-small); color: var(--hud-dim); }
+#profile .pf-bar { height: 8px; border-radius: var(--r-btn); background: var(--hud-well); }
+#profile .pf-bar i { border-radius: var(--r-btn); }
+/* The level badge is the Antarium's, which is the same object doing the same job:
+   a number lying ON a picture, in the well's dark so it reads at any size. */
+#profile .pf-level {
+  right: -3px;
+  bottom: -3px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-btn);
+  background: var(--hud-go);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-body);
+  line-height: 1;
+}
+
+/* A LEVEL REWARD IS A BUTTON INSIDE A CARD, so it takes the inner radius and the
+   body size — five full-width gold slabs stacked down the hero was the loudest
+   thing on a screen that is a record. */
+#profile .claimrow { gap: var(--inrow); margin-top: var(--inrow); }
+#profile .claimchip {
+  padding: 7px 10px;
+  border: none;
+  border-radius: var(--r-btn);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-small);
+  line-height: 1;
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+
+/* --------------------------------------------------------- THE COLONY */
+#profile .pf-colony {
+  border: none;
+  border-radius: var(--r-card);
+  background: var(--hud-card);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+#profile .pf-colony-k,
+#profile .pf-colony-s { font-size: var(--fs-label); color: var(--hud-dim); }
+#profile .pf-colony-n { font-family: var(--font-display); font-weight: 400; }
+
+/* ---------------------------------------------------------- THE RECORD
+   The grid is ONE card cut by hairlines rather than six tiles: six ledges
+   in a block is a pile of objects where the screen means one table. The
+   1px gaps over the chrome's own dark are what rule it. */
+#profile .pf-stats {
+  gap: 1px;
+  border-radius: var(--r-card);
+  background: var(--hud-face);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+#profile .pf-stat { padding: 10px var(--block); background: var(--hud-card); }
+#profile .pf-k { font-size: var(--fs-label); letter-spacing: .4px; color: var(--hud-dim); }
+#profile .pf-v {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-title);
+  letter-spacing: 0;
+  color: var(--hud-ink);
+}
+
+/* ------------------------------------------------------ THE COLLECTION */
+#profile .pf-coll { gap: var(--inrow); }
+#profile .pf-row {
+  gap: var(--block);
+  padding: 10px var(--block);
+  border: none;
+  border-radius: var(--r-card);
+  background: var(--hud-card);
+  color: var(--hud-ink);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+#profile .pf-row-i { border-radius: var(--r-btn); background: var(--hud-well); }
+/* ...except the one whose collectable IS a picture, which leads with the face
+   rather than with a plate behind it. */
+#profile .pf-row-i:has(.pf-av-mini) { background: none; }
+#profile .pf-row-t { font-size: var(--fs-body); }
+#profile .pf-row-c { font-size: var(--fs-small); }
+#profile .pf-row-note { font-size: var(--fs-label); color: var(--hud-dim); }
