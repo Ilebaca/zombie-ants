@@ -16,6 +16,7 @@ import { SPECIES } from "../../engine";
 import type { SpeciesId } from "../../engine";
 import { MemoryStore, ProfileStore, defaultProfile, normalise } from "../index";
 import { SKIN_TIERS, lockedLooks, rollSkin, skinProgress, skinTier } from "../skins";
+import { HATCH_AVATARS } from "../avatars";
 
 const ALL = Object.keys(SPECIES) as SpeciesId[];
 
@@ -310,12 +311,28 @@ describe("hatching one", () => {
     if (prize?.kind === "skin") expect(prize.look.tier).toBe("exceptional");
   });
 
-  it("pays a trait at every tier below them", () => {
+  /**
+   * NO SKIN COMES OUT OF A COMMON ROLL, which is the half of this that is about skins.
+   *
+   * What a common roll pays INSTEAD is an avatar while one is still locked — the same
+   * rule at the other end of the ladder (`platform/avatars.ts`) — so the collection is
+   * filled first here, and only then is the prize the trait it always was. Both halves
+   * are asserted, because "a common roll pays no skin" is true of either outcome and
+   * would pass against a build that had quietly stopped paying traits at all.
+   */
+  it("pays no skin at any tier below them", () => {
     const s = store(1);
     const prize = s.hatch(rolls(COMMON));
-    expect(prize?.kind).toBe("trait");
-    expect(s.skins, "a common roll paid a skin").toEqual([]);
-    expect(s.bag.length).toBe(1);
+    expect(prize?.kind, "a common roll paid a skin").not.toBe("skin");
+    expect(s.skins).toEqual([]);
+
+    const done = store(1);
+    for (const id of HATCH_AVATARS) done.findAvatar(id);
+    const after = done.hatch(rolls(COMMON));
+    expect(after?.kind, "a finished avatar collection did not fall back to a trait")
+      .toBe("trait");
+    expect(done.skins).toEqual([]);
+    expect(done.bag.length).toBe(1);
   });
 
   /**

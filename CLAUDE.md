@@ -1990,6 +1990,78 @@ field notes.
   corrected where it counts the colonies; its record of what the legacy build shipped was
   not.
 
+**NINETY-EIGHT AVATARS — THE ONE THING COLLECTED THAT IS NOT ABOUT A COLONY**
+(`src/ui/avatars/`, `ui/avatars.ts`, `platform/avatars.ts`, `ui/avatarpicker.ts`). A skin
+says what the Fire Ant looks like; an avatar is the face beside the player's OWN name — on
+the top bar, on the profile, and one day across the board from somebody else. So it
+belongs to the save rather than to a species, and it is never worn by an opponent.
+- **THE FOLDER IS THE TABLE, the seventh time**: `src/ui/avatars/av43.webp` IS avatar
+  `av43`, resolved by a build-time glob. A file whose name is not in the catalogue is
+  IGNORED and an id with no file keeps the drawn head — the same null fallback the chrome
+  marks and the colony cards follow, which is what let the table and the art land apart.
+- **THE ART IS IN `ui/` AND THE TABLE IS IN `platform/`**, the split every collectable
+  here already has. Which avatar is free, which chapter pays which and how rare one is are
+  PROGRESSION decisions that will be retuned; where the picture lives is not. `platform/`
+  holds ids and never a url, so it never has to know the folder exists.
+- **THEY ARRIVE THREE WAYS, and the three lists are the whole of the design.** TEN are
+  there from the first launch (`FREE_AVATARS`) — deliberately the PLAIN ones, ordinary
+  workers in a range of colours, nothing with a costume, so none of them reads as
+  something that was earned; a picker with one entry is not a choice. FIFTY are on the
+  COLONY ROAD, one per chapter (`roadAvatar`), asked for in those words. THE REST —
+  thirty-eight — are the hatch's lowest rung, and `HATCH_AVATARS` is DERIVED from the
+  other two: a third hand-kept list is a third chance for an id to be in two places or in
+  none, and a test gives every avatar exactly one way in.
+- **THE ORDER IN `ROAD_AVATARS` IS THE ONLY THING THAT DECIDES WHICH CHAPTER PAYS WHICH**,
+  and it climbs — small charm early, the showpieces in the last ten. "The best ones" is a
+  judgement about pictures that only a person looking at them can make, so moving an id
+  between the lists, or along the road, is an edit to that one file and to nothing else.
+- **THE AVATAR IS THE BOTTOM RUNG, WHICH IS THE SKIN RULE STOOD ON ITS HEAD.** A skin is
+  the top two rungs, so a roll there pays a skin while one is locked (§ THE LUCKY HATCH);
+  an avatar is the LOWEST rung, so a common roll pays an avatar while one is locked.
+  Neither carries a chance of its own, which is the only way the odds printed on the
+  screen can be the odds the game uses. `AVATAR_TIER` is `TIER_IDS[0]`, derived rather
+  than typed, so a retune of the ladder cannot leave it pointing at the wrong end.
+  It falls back to a common TRAIT when the collection is finished, exactly as `rollSkin`
+  does at the other end — the last avatar found is never the hatch getting worse.
+- **THE ROAD PAYS IT AT ONE CHECKPOINT IN FIVE, NOT AS A SIXTH THING** (`AVATAR_RUNG`, 3).
+  The chapter's PURSE is unchanged and is split between the four checkpoints that still
+  pay currency, so the whole road still pays exactly what it paid before — to the troop,
+  which `economy.test.ts` would otherwise have caught. The closer takes what is LEFT
+  rather than an eighth of its own, so a chapter pays its purse however the shares round.
+- **AND BOTH TRACKS SIT OUT THAT RUNG, which is the SCREEN'S rule rather than the
+  reward's.** The road draws ONE disc per checkpoint carrying the free and pass rewards
+  pooled, so a rung paying a face on one track and currency on the other is one disc
+  trying to show two kinds of thing — and the face wins, silently swallowing the pass's
+  share of that chapter. So `passReward` names the same avatar there and its purse splits
+  across the other four: a pass holder is paid exactly what they always were, concentrated
+  rather than lost, and the face is still the FREE track's so the set is walked to rather
+  than bought. `splitPurse` takes how many stops are PAYING for that reason.
+- **THE SAVE HOLDS A NULLABLE CHOICE AND THE ACCESSOR IS NEVER NULL**, which is the
+  `lookFor` shape: `profile.avatar` is null for "has not chosen" and `store.face` answers
+  `DEFAULT_AVATAR` — a real painting, the plainest of the free ten. The drawn worker is
+  left as what shows when a FILE is missing, which is the folder's own fallback: it reads
+  fine at thirty pixels and like a placeholder at ninety-six.
+- **A FREE ONE IS NEVER STORED AS FOUND**, the rule a basic look already follows. It is
+  not something that happened to this player, and storing it would make "how many have I
+  collected" start at ten for a colony that has collected nothing. `normalise` owns that
+  rule and the store methods do NOT restate it — `update()` re-normalises every write, so
+  a guard in `findAvatar` is unreachable code dressed as a rule (the mutation that deleted
+  it passed every test, which is how it was found). What `findAvatar` DOES guard is the
+  id being in the table at all, because that one is observable: its null is what stops the
+  hatch raising a prize card for a face that was never stored.
+- **`avatarFace` ANSWERS WITH TWO DIFFERENT TAGS**, an `<img>` where the file exists and a
+  `<canvas>` where it does not, so every box that sizes one must size BOTH — the trap the
+  match history and the chrome marks are already on record for. And it sets the canvas's
+  width and height as ATTRIBUTES, never inline styles: an inline style outranks the sheet.
+- **THE LEGACY SHEET OWNS `.avatar`, AND IT IS A 40px DISC.** `game.css` line 214 is
+  `.avatar { width: 40px; height: 40px; border-radius: 50% }`, so that string is STYLING
+  rather than a label (§10) — and borrowing it as a modifier collapsed the ten-hatch
+  card's avatar rows to a 40px circle with both lines of text at ZERO width. The two boxes
+  that survived it (`.hatchprize`, `.rd-prize`) only did so because `skin.css` sets their
+  own size later, which is luck. The modifier is `.avprize` now, and a test walks the
+  picker, the road and BOTH hatch cards asserting nothing borrows `.avatar` — the first
+  version of that test walked only the first two and the mutation sailed through it.
+
 **ONE RARITY LADDER, FOR EVERYTHING THAT HAS ONE** (`engine/tiers.ts`). There were TWO and
 they disagreed. Traits ran common / uncommon / rare / exceptional / mythic in grey, green,
 blue, purple and red; colonies ran "Founding castes" / "Rare colonies" / "Elite castes" /

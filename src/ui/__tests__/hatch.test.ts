@@ -10,7 +10,7 @@ import {
   HATCH_COST, LARVA_MYCEL, MemoryStore, ProfileStore, TRAITS, TRAITS_CHAPTER, TRAIT_TIER,
   TRAIT_TIERS, itemDef, tierOdds,
 } from "../../platform";
-import { SKIN_TIERS } from "../../platform";
+import { HATCH_AVATARS, SKIN_TIERS } from "../../platform";
 import type { Cue, Feedback } from "../../platform";
 import { TIERS, lookById } from "../../engine";
 import { buildHatch } from "../hatch";
@@ -19,8 +19,23 @@ HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getC
 
 beforeEach(() => { document.body.replaceChildren(); });
 
-/** A store past the chapter gate, with larva in it. */
+/**
+ * A store past the chapter gate, with larva in it — AND EVERY AVATAR ALREADY FOUND.
+ *
+ * A common roll pays an avatar while one is still locked (`platform/avatars.ts`), and
+ * commons are six rolls in ten, so a store with the collection open would make most of
+ * the tests below about avatars rather than about the trait path they were written for.
+ * Finishing it here is what keeps them testing what they say they test; `avatarStore`
+ * below is the other half, for the tests that ARE about a face.
+ */
 const store = (larva = 5): ProfileStore => {
+  const s = avatarStore(larva);
+  for (const id of HATCH_AVATARS) s.findAvatar(id);
+  return s;
+};
+
+/** The same, with the avatar collection still to find. */
+const avatarStore = (larva = 5): ProfileStore => {
   const s = new ProfileStore(new MemoryStore());
   s.update((p) => {
     p.colony = 2_000_000;
@@ -30,14 +45,15 @@ const store = (larva = 5): ProfileStore => {
   return s;
 };
 
-interface Spy { shop: number; bag: number; changed: number }
+interface Spy { shop: number; bag: number; changed: number; profile: number }
 
 const build = (s: ProfileStore, random = (): number => 0.5): { root: HTMLElement; spy: Spy } => {
-  const spy: Spy = { shop: 0, bag: 0, changed: 0 };
+  const spy: Spy = { shop: 0, bag: 0, changed: 0, profile: 0 };
   const root = buildHatch(s, {
     onBack: () => {},
     onBuyLarva: () => { spy.shop++; },
     onInventory: () => { spy.bag++; },
+    onProfile: () => { spy.profile++; },
     onChanged: () => { spy.changed++; },
     random,
   });
@@ -451,6 +467,95 @@ describe("what it sounds like", () => {
  * be paid for; what that actually did was make a shortcut vanish between visits, which
  * reads as the screen having lost it rather than as a price to save up to.
  */
+/**
+ * AN AVATAR IS THE BOTTOM OF THE LADDER, which is the skin rule stood on its head.
+ *
+ * A common roll — six in ten — pays a FACE while one is still locked, and falls back to
+ * a common trait once the collection is finished. Neither carries a chance of its own,
+ * which is the only way the odds printed on this screen stay the odds the game uses.
+ */
+describe("a face in the larva", () => {
+  /** Pick the trait, then the tier, then which face. The tier roll runs over 0-1. */
+  const rolls = (tier: number): (() => number) => {
+    const values = [0.1, tier, 0];
+    let i = 0;
+    return () => values[i++] ?? 0.5;
+  };
+  const COMMON = 0.1, MYTHIC = 0.995;
+
+  it("pays an avatar on a common roll while one is still locked", () => {
+    const s = avatarStore(3);
+    const prize = s.hatch(rolls(COMMON));
+    expect(prize?.kind).toBe("avatar");
+    if (prize?.kind === "avatar") {
+      expect(HATCH_AVATARS).toContain(prize.id);
+      expect(s.hasAvatar(prize.id)).toBe(true);
+    }
+    expect(s.bag.length, "a common roll paid a trait as well").toBe(0);
+    expect(s.get().larva).toBe(3 - HATCH_COST);
+  });
+
+  /** It never reaches above its own rung: the skins own the top and keep it. */
+  it("pays no avatar on any tier above the bottom one", () => {
+    for (const tier of [0.7, 0.9, MYTHIC]) {
+      const s = avatarStore(3);
+      expect(s.hatch(rolls(tier))?.kind).not.toBe("avatar");
+      expect(s.avatars).toEqual([]);
+    }
+  });
+
+  /** THE CHASE MUST NOT DEAD-END: a finished collection falls back, never to nothing. */
+  it("falls back to a trait once every avatar is found", () => {
+    const s = avatarStore(3);
+    for (const id of HATCH_AVATARS) s.findAvatar(id);
+    const prize = s.hatch(rolls(COMMON));
+    expect(prize?.kind).toBe("trait");
+    expect(s.bag.length).toBe(1);
+  });
+
+  it("shows the face, and points at the profile it is worn from", () => {
+    vi.useFakeTimers();
+    try {
+      const s = avatarStore(3);
+      const { root, spy } = build(s);
+      tap(root, "hatchGo");
+      vi.advanceTimersByTime(2000);
+      const card = root.querySelector("#hatchPrize");
+      expect(card?.classList.contains("avprize"), "the avatar card is not the one shown")
+        .toBe(true);
+      expect(card?.querySelector(".hp-port"), "the card does not show the face").toBeTruthy();
+      expect(card?.textContent).toContain("avatar");
+      // It is not an item and not a colony's appearance, so neither of the other two
+      // ways out is right: a face is worn from the profile and nowhere else.
+      root.querySelector<HTMLButtonElement>("#hatchToProfile")?.click();
+      expect(spy.profile).toBe(1);
+      expect(spy.bag, "an avatar sent the player to the inventory").toBe(0);
+      expect(root.querySelector("#hatchPrize"), "the card stayed up behind the profile")
+        .toBeNull();
+    } finally { vi.useRealTimers(); }
+  });
+
+  /**
+   * A HANDFUL SAYS WHERE THEY WENT. At six rolls in ten this is the common case rather
+   * than an edge, so the note under the table is the one that is actually read.
+   */
+  it("names the avatars in a handful", () => {
+    vi.useFakeTimers();
+    try {
+      const s = avatarStore(20);
+      const { root } = build(s, () => 0.1);
+      tap(root, "hatchGo10");
+      vi.advanceTimersByTime(2000);
+      const card = root.querySelector("#hatchPrize");
+      expect(card?.querySelectorAll(".hp-one.avprize").length).toBe(10);
+      expect(card?.textContent).toContain("The avatars are worn on your profile.");
+      // ...and every one of the ten is a DIFFERENT face: the rolls are committed one at
+      // a time precisely so a batch cannot hand back the same one twice.
+      expect(new Set(s.avatars).size).toBe(10);
+    } finally { vi.useRealTimers(); }
+  });
+});
+
 describe("the handful", () => {
   const BULK = 10;
 

@@ -5,7 +5,7 @@ import { MemoryStore } from "../storage";
 import { ProfileStore, normalise } from "../profile";
 import { CHAMBERS, RESEARCH_TRACKS, SPECIES_ORDER, SPECIES_UNLOCK } from "../catalogue";
 import {
-  ROAD_CHAPTER_STOPS, ROAD_FIRST, ROAD_LAST, ROAD_STOPS, freeReward, isChapterEnd, passReward,
+  ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, ROAD_FIRST, ROAD_LAST, ROAD_STOPS, freeReward, isChapterEnd, passReward,
   rewardFor, roadColony, roadKey, roadStops, rungOfChapter, stopColony, stopReached,
 } from "../road";
 import type { RoadReward } from "../road";
@@ -249,13 +249,29 @@ describe("colony road layout", () => {
   /** What a reward is worth at all, for the comparisons above. */
   const worth = (r: RoadReward | null): number => (r?.mycel ?? 0) + (r?.pheromone ?? 0);
 
+  /**
+   * A reward of nothing is a checkpoint that lied, and "nothing" is not the same as "no
+   * currency" any more: one rung a chapter pays the chapter's AVATAR instead of a share
+   * of the purse (`platform/avatars.ts`). So what is held is that every checkpoint hands
+   * over SOMETHING — and that the avatar rungs are the only ones paying no currency, or
+   * the test would pass against a purse that had quietly stopped splitting.
+   */
   it("always pays something when it pays at all", () => {
+    let faces = 0;
     for (const stop of roadStops()) {
       for (const r of [stop.free, stop.pass]) {
         if (!r) continue;
-        expect((r.mycel ?? 0) + (r.pheromone ?? 0)).toBeGreaterThan(0);
+        const coin = (r.mycel ?? 0) + (r.pheromone ?? 0);
+        if (r.avatar) { faces++; expect(coin, "an avatar rung paid currency too").toBe(0); }
+        else expect(coin).toBeGreaterThan(0);
       }
     }
+    // BOTH TRACKS NAME THE SAME FACE at that rung, and it is the SCREEN that decides
+    // this: the road draws one disc per checkpoint with the two tracks pooled, so a rung
+    // paying a face on one and currency on the other would be one disc showing two kinds
+    // of thing — with the face winning and the pass's share silently swallowed. The pass
+    // purse is split across its other four instead, which `economy.test.ts` holds.
+    expect(faces, "one avatar a chapter, named by both tracks").toBe(ROAD_CHAPTERS * 2);
   });
 
   /**

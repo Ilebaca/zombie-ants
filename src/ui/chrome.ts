@@ -12,11 +12,13 @@ import {
   ROAD_CHAPTER_STOPS, compact, freeReward, passReward, rungOfChapter, stopColony,
   stopReached,
 } from "../platform";
+import { faceOf } from "../platform";
 import type { Profile, ProfileStore } from "../platform";
 import type { Look, SpeciesId } from "../engine";
 import { antHead, basicLook, lookCol } from "../render";
 import { icon } from "./icons";
 import { hudIcon } from "./hud";
+import { avatarArt } from "./avatars";
 import { faceFor } from "./faces";
 
 /**
@@ -206,12 +208,9 @@ export function topBar(profile: Readonly<Profile>, opts: TopBarOptions): HTMLEle
   const id = el("button", "tn-id");
   id.title = "Profile";
   const av = el("span", "tn-av");
-  const canvas = el("canvas", "topav");
-  canvas.id = "topav_0";
-  canvas.setAttribute("aria-hidden", "true");   // the button around it carries the name
-  canvas.width = 46; canvas.height = 46;
-  drawAvatar(canvas);
-  av.appendChild(canvas);
+  // THE FACE THE PLAYER CHOSE, and the drawn worker until they choose one. `profile`
+  // has already been through `normalise`, so a worn id here is one they really have.
+  av.appendChild(avatarFace(faceOf(profile.avatar), 46, "topav"));
   id.appendChild(av);
   id.onclick = opts.onProfile;
   nav.appendChild(id);
@@ -394,6 +393,51 @@ function coin(
     box.appendChild(ghost);
   }
   return box;
+}
+
+/**
+ * THE PLAYER'S OWN FACE, WHEREVER IT IS DRAWN.
+ *
+ * One function, because it is on three screens already — the top bar's disc, the profile
+ * hero and the hatch's prize card — and a fourth place drawing it by hand is a fourth
+ * place to fix when the fallback or the size changes (§7). An avatar the player has not
+ * chosen, or one whose file is missing, is the drawn worker this app has always had:
+ * `avatarArt` answering null is not a hole, it is the picture that was there before.
+ *
+ * AND IT ANSWERS WITH TWO DIFFERENT TAGS, so every box that sizes it has to size BOTH —
+ * an `<img>` where there is a painting and a `<canvas>` where there is not. That is the
+ * trap the match history and the chrome marks have each paid for once already, and
+ * `css-sanity` sweeps the stylesheet for it.
+ *
+ * Silent either way: the face always sits inside something already named — a button, a
+ * row, a card with the name beside it — so a second announcement is noise, not access.
+ */
+export function avatarFace(
+  id: string | null, size: number, cls?: string,
+): HTMLElement {
+  const art = id ? avatarArt(id) : null;
+  if (art) {
+    const img = document.createElement("img");
+    img.src = art;
+    img.width = size;
+    img.height = size;
+    if (cls) img.className = cls;
+    img.alt = "";
+    img.setAttribute("aria-hidden", "true");
+    return img;
+  }
+  const cv = document.createElement("canvas");
+  // THE BACKING STORE ONLY, never an inline size. A caller passes the size it wants
+  // DRAWN and the stylesheet decides the box — which is both how `antPortrait` keeps a
+  // face sharp (drawn at twice what it is shown at) and the only way this can go in a
+  // 30px disc whose rule is in `skin.css`: an inline `width` outranks the sheet, and the
+  // app has paid for that one before (§5, the zero-sized canvas).
+  cv.width = size;
+  cv.height = size;
+  if (cls) cv.className = cls;
+  cv.setAttribute("aria-hidden", "true");
+  drawAvatar(cv);
+  return cv;
 }
 
 /** The little worker drawn in the avatar chip — three blobs and two eyes, as in legacy. */

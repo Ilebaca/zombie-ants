@@ -41,6 +41,7 @@ import {
   slotChapter, slotsOpen, totalsOf, traitDef,
 } from "./traits";
 import type { TraitItem, TraitScope, TraitTier, TraitTotals } from "./traits";
+import { avatarTier, faceOf, isAvatar, isFreeAvatar, rollAvatar } from "./avatars";
 import { rollSkin, skinTier } from "./skins";
 import { LARVA_MYCEL, fuseDeal } from "./exchange";
 import type { DuelInvite } from "./duels";
@@ -214,6 +215,19 @@ export interface Profile {
    */
   skins: string[];
   look: Partial<Record<SpeciesId, string>>;
+  /**
+   * AVATARS, WHICH ARE NOT A COLONY'S ANYTHING.
+   *
+   * A look belongs to a species and a trait belongs to a bench; an avatar belongs to the
+   * PLAYER — it is the face beside their own name, so there is exactly one worn and it is
+   * not indexed by anything. `avatars` is the set that has been FOUND, by avatar id;
+   * `avatar` is the one being worn, null meaning the drawn head the app has always had.
+   *
+   * The ten free ones are never in `avatars` (`platform/avatars.ts`), for the reason a
+   * basic look is never in `skins`: they are not something that happened to this player.
+   */
+  avatars: string[];
+  avatar: string | null;
   /** The newest post the player has read, as a stamp. Older than every post = all unread. */
   newsSeen: number;
   /** Messages sent to support, kept so nothing a player wrote is thrown away. */
@@ -293,7 +307,8 @@ const STARTER_SPECIES: SpeciesId[] = ["leafcutter", "fire", "carpenter"];
  */
 export type HatchPrize =
   | { kind: "trait"; item: TraitItem }
-  | { kind: "skin"; look: Look };
+  | { kind: "skin"; look: Look }
+  | { kind: "avatar"; id: string };
 
 export function defaultProfile(): Profile {
   return {
@@ -337,6 +352,10 @@ export function defaultProfile(): Profile {
     traitSeq: 0,
     skins: [],
     look: {},
+    // Nothing found and nothing chosen: a new colony wears the drawn head until it picks
+    // one of the ten it already has (`platform/avatars.ts`).
+    avatars: [],
+    avatar: null,
     friendsOut: [],
     newsSeen: 0,
     tickets: [],
@@ -474,6 +493,7 @@ export function normalise(raw: unknown): Profile {
     history: matchLogs(p.history),
     ...bagAndBenches(p),
     ...skinsAndLooks(p),
+    ...avatarsAndWorn(p),
     newsSeen: int(p.newsSeen, 0, 1e15, 0),
     tickets: tickets(p.tickets),
     challenges: Array.isArray(p.challenges)
@@ -676,6 +696,31 @@ function skinsAndLooks(p: Partial<Profile>): Pick<Profile, "skins" | "look"> {
     if (def && def.species === species) look[species as SpeciesId] = id;
   }
   return { skins: [...found], look };
+}
+
+/**
+ * THE AVATARS FOUND AND THE ONE BEING WORN, rebuilt together.
+ *
+ * Together for the reason the skins and the looks are: the worn one refers to the found
+ * set, so rebuilding them apart leaves a save able to wear a face it does not have. An id
+ * the table no longer knows is dropped rather than kept — a save outlives the build that
+ * wrote it, and `avatarArt` would answer null for it on every screen that draws one.
+ *
+ * A FREE AVATAR IS NEVER STORED AS FOUND, and may still be WORN: it is not something that
+ * happened to this player, and keeping it in the set would make "how many have I
+ * collected" start at ten for everybody. `hasAvatar` on the store is what puts the two
+ * halves back together, so nothing else has to remember the rule.
+ */
+function avatarsAndWorn(p: Partial<Profile>): Pick<Profile, "avatars" | "avatar"> {
+  const found = new Set<string>();
+  for (const id of Array.isArray(p.avatars) ? p.avatars : []) {
+    if (typeof id === "string" && isAvatar(id) && !isFreeAvatar(id)) found.add(id);
+  }
+  const worn = typeof p.avatar === "string" && isAvatar(p.avatar)
+    && (isFreeAvatar(p.avatar) || found.has(p.avatar))
+    ? p.avatar
+    : null;
+  return { avatars: [...found], avatar: worn };
 }
 
 function bagAndBenches(p: Partial<Profile>): Pick<Profile, "bag" | "wearing" | "traitSeq"> {
@@ -1047,6 +1092,72 @@ export class ProfileStore {
       if (basic) delete p.look[species];
       else p.look[species] = id;
     });
+    return true;
+  }
+
+  /* -------------------------------------------------------------- AVATARS */
+
+  /** Every avatar this player has FOUND. The free ten are not in here (see below). */
+  get avatars(): readonly string[] { return this.profile.avatars; }
+
+  /**
+   * Whether this player may wear this one.
+   *
+   * The free ten are held by the TABLE rather than by the save (`platform/avatars.ts`),
+   * so this is the single place the two halves are put back together — every screen and
+   * every spend asks this rather than reading `profile.avatars` and remembering the rule.
+   */
+  hasAvatar(id: string): boolean {
+    return isFreeAvatar(id) || this.profile.avatars.includes(id);
+  }
+
+  /**
+   * An avatar is found. No uid and no bag, exactly like a skin: a face is not a thing you
+   * carry, so finding one twice is finding it once.
+   *
+   * A FREE ONE IS NOT FILTERED HERE, deliberately. `normalise` drops it on the way back
+   * out (`avatarsAndWorn`) and `update` normalises every write, so a guard here would be
+   * unreachable code dressed as a rule — the trap the setup arrows and the ability card's
+   * clock are both on record for. One function owns the rule (§7), and it is the one that
+   * also has to hold against a hand-edited save.
+   */
+  findAvatar(id: string): string | null {
+    if (!isAvatar(id)) return null;
+    if (!this.profile.avatars.includes(id)) {
+      this.update((p) => { p.avatars = [...p.avatars, id]; });
+    }
+    return id;
+  }
+
+  /**
+   * The avatar being worn, or null for the drawn head every colony starts behind.
+   *
+   * Null rather than a default id, for the reason wearing a basic look CLEARS the field:
+   * "has not chosen" and "chose the one everybody starts with" are different states, and
+   * only one of them should change when the free ten are retuned.
+   */
+  get avatar(): string | null {
+    const id = this.profile.avatar;
+    return id && this.hasAvatar(id) ? id : null;
+  }
+
+  /**
+   * The face to DRAW, which is never null — the `lookFor` shape.
+   *
+   * A colony always has a face, because it always has the ten it started with. Screens
+   * ask this; the picker and the save ask `avatar`, which is the CHOICE and can be null.
+   */
+  get face(): string { return faceOf(this.avatar); }
+
+  /**
+   * Wear one, or pass null to go back to the drawn head.
+   *
+   * False rather than a throw when it has not been found — the same contract every other
+   * spend on this store has, so a screen can tap optimistically.
+   */
+  wearAvatar(id: string | null): boolean {
+    if (id !== null && !(isAvatar(id) && this.hasAvatar(id))) return false;
+    this.update((p) => { p.avatar = id; });
     return true;
   }
 
@@ -1496,6 +1607,13 @@ export class ProfileStore {
     this.update((p) => {
       p.mycel += reward.mycel ?? 0;
       p.pheromone += reward.pheromone ?? 0;
+      // ONE WRITE, the currency and the face together. A claim that banked the mycelium
+      // and then found the avatar is two writes a player can close the app between, and
+      // the key is already down by the time the second one runs — so the checkpoint would
+      // read as claimed with nothing to show for it.
+      if (reward.avatar && !p.avatars.includes(reward.avatar)) {
+        p.avatars = [...p.avatars, reward.avatar];
+      }
       p.roadClaimed.push(key);
     });
     return true;
@@ -1553,10 +1671,27 @@ export class ProfileStore {
       ? rollSkin(random, this.profile.unlocked, this.profile.skins, drop.tier)
       : null;
 
+    // AND AN AVATAR IS THE SAME RULE AT THE OTHER END OF THE LADDER. A skin is the top
+    // two rungs; an avatar is the BOTTOM one, so a common roll pays an avatar while one
+    // is still locked and falls back to a common TRAIT once the collection is finished.
+    // Neither carries a chance of its own, which is what keeps the odds printed on the
+    // hatch screen the odds the game really uses.
+    //
+    // It is rolled only when a skin did not land, because the two tiers never overlap —
+    // the `&&` is belt and braces against a retune that made them, where paying both
+    // would be one larva buying two prizes and a card that can only show one of them.
+    const avatar = !skin && avatarTier(drop.tier)
+      ? rollAvatar(random, this.profile.avatars)
+      : null;
+
     this.update((p) => { p.larva -= HATCH_COST; });
     if (skin) {
       const found = this.findSkin(skin.id);
       return found ? { kind: "skin", look: found } : null;
+    }
+    if (avatar) {
+      const found = this.findAvatar(avatar);
+      return found ? { kind: "avatar", id: found } : null;
     }
     const item = this.findTrait(drop.def, drop.tier);
     return item ? { kind: "trait", item } : null;
@@ -1569,7 +1704,9 @@ export class ProfileStore {
    * independent of each other. A skin is rolled against the collection AS IT STANDS
    * (platform/skins.ts), so committing each one before the next is what stops a batch
    * paying the SAME skin twice; rolling ten against one snapshot would hand out
-   * duplicates of the rarest thing in the game.
+   * duplicates of the rarest thing in the game. An AVATAR is rolled the same way and it
+   * matters far more often here: commons are six rolls in ten, so a batch of ten against
+   * one snapshot would hand back the same face several times over.
    *
    * THE PURSE IS CHECKED ONCE, FOR THE WHOLE BATCH. A run that paid for six and then
    * stopped would be a button that did not do what it said, and the screen's own guard

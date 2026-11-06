@@ -9,7 +9,7 @@ import {
   regionName, regionOf, roadKey, roadStops,
 } from "../platform";
 import type { ProfileStore, RoadReward, RoadStop } from "../platform";
-import { el, hudMark, redraw, screenEl, screenHeader } from "./chrome";
+import { avatarFace, el, hudMark, redraw, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 
 const AREA_COLORS = [
@@ -25,6 +25,9 @@ interface ClaimPart { key: string; reward: RoadReward }
 const totalReward = (rewards: readonly RoadReward[]): RoadReward => ({
   mycel: rewards.reduce((sum, reward) => sum + (reward.mycel ?? 0), 0),
   pheromone: rewards.reduce((sum, reward) => sum + (reward.pheromone ?? 0), 0),
+  // A face is not a currency, so it does not SUM — a checkpoint pays one or none, and
+  // dropping the field here is how an avatar checkpoint pays nothing at all.
+  avatar: rewards.find((reward) => reward.avatar)?.avatar,
 });
 
 /** What a reward pays, as the popup reads it out: a mark, a figure and a word. */
@@ -37,7 +40,7 @@ const payouts = (r: RoadReward): Payout[] => [
 
 /** The label a button carries, so a disc showing only an icon still says what it is. */
 const spoken = (r: RoadReward): string =>
-  payouts(r).map((p) => `+${p.amount} ${p.name}`).join(" and ");
+  r.avatar ? "A new avatar" : payouts(r).map((p) => `+${p.amount} ${p.name}`).join(" and ");
 
 export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop: () => void): HTMLElement {
   const root = screenEl("achievements");
@@ -173,7 +176,7 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop
     const claimable = pending.some((part) => store.canClaimRoad(part.key));
     const state = claimed ? "got" : claimable ? "ready" : "locked";
     const reward = totalReward((pending.length ? pending : parts).map((part) => part.reward));
-    const disc = el("button", "rd-prize main " + state);
+    const disc = el("button", `rd-prize main ${state}${reward.avatar ? " avprize" : ""}`);
     disc.type = "button";
     disc.dataset.stop = String(stop.index);
     const marks = payouts(reward);
@@ -181,13 +184,23 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop
     const big = isChapterEnd(stop.index);
     const grand = big && stop.chapter % REGION_CHAPTERS === 0;
     const size = grand ? 112 : big ? 100 : 80;
-    for (const p of marks) art.appendChild(hudMark(p.mark, size));
+    // AN AVATAR CHECKPOINT WEARS THE FACE IT PAYS, rather than a mark standing for it.
+    // Every other disc carries the MARK of the resource behind it because a resource has
+    // no picture; an avatar is nothing BUT a picture, so a badge here would be the one
+    // checkpoint on the road that refuses to show what it is giving.
+    if (reward.avatar) art.appendChild(avatarFace(reward.avatar, size, "rd-face"));
+    else for (const p of marks) art.appendChild(hudMark(p.mark, size));
     const amount = el("span", "rd-amount");
     amount.setAttribute("aria-hidden", "true");
     for (const p of marks) amount.appendChild(el("b", undefined, String(p.amount)));
     const base = el("span", "rd-base");
     base.setAttribute("aria-hidden", "true");
-    disc.append(base, amount, art);
+    // THE FIGURE IS NOT DRAWN AT ALL ON AN AVATAR RUNG, rather than drawn empty. It is a
+    // bordered plate in this design, so an avatar checkpoint left one hanging over the
+    // face — a frame with nothing in it, which reads as a label that failed to fill
+    // rather than as a reward that has no number. A face has no amount.
+    if (reward.avatar) disc.append(base, art);
+    else disc.append(base, amount, art);
     disc.title = spoken(reward);
     disc.setAttribute("aria-label", spoken(reward));
 
@@ -231,6 +244,13 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop
     x.appendChild(icon("cross", 16));
 
     card.append(x, el("div", "rd-popk", "Reward claimed"));
+    if (reward.avatar) {
+      const line = el("div", "rd-popline");
+      const disc = el("span", "rd-popic");
+      disc.appendChild(avatarFace(reward.avatar, 30, "rd-face"));
+      line.append(disc, el("span", "rd-popu", "A new avatar"));
+      card.appendChild(line);
+    }
     for (const p of payouts(reward)) {
       const line = el("div", "rd-popline");
       const disc = el("span", "rd-popic");

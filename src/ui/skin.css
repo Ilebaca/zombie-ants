@@ -6288,6 +6288,36 @@ button:not(.playbtn):active,
   pointer-events: none;
 }
 .rd-mark img, .rd-mark svg { display: block; flex: none; }
+
+/* AN AVATAR CHECKPOINT IS THE FACE IT PAYS, not a mark standing for it. It rides in
+   `.rd-mark` like every other disc's picture and takes the same size, so it floats over
+   the base exactly as a coin does — and it is ROUND, because the art is an opaque square
+   and a square face on a road of circles reads as a picture that failed to load.
+
+   BOTH TAGS ARE SIZED. `avatarFace` answers an `<img>` where there is a painting and a
+   `<canvas>` where there is not (§ A COLLECTION CARD), so a rule naming only one of them
+   sizes half the cases and lets the rest render at the file's own 250px. */
+.rd-mark .rd-face,
+.rd-mark img.rd-face,
+.rd-mark canvas.rd-face {
+  display: block;
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+}
+/* It is a PICTURE, so it does not take the state colours the marks do — a face tinted
+   gold on the claimable rung would be a different avatar from the one being paid. What
+   says the state is the disc around it, which every checkpoint already has. */
+.rd-prize.locked .rd-face { filter: grayscale(1) brightness(.55); }
+.rd-popic .rd-face,
+.rd-popic img.rd-face,
+.rd-popic canvas.rd-face {
+  width: 48px;
+  height: 48px;
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
+}
 /* Each resource floats above a filled circular base. */
 .rd-base {
   position: absolute;

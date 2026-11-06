@@ -19,6 +19,7 @@
  * split five ways — but the PASS half only to players who hold the Colony Pass. The pass is the RevenueCat integration point
  * (roadmap step 5) — `ProfileStore.grantPass()` is what a purchase calls.
  */
+import { roadAvatar } from "./avatars";
 import { COLONY_START } from "./colony";
 
 /**
@@ -64,6 +65,8 @@ export type RoadTrack = "free" | "pass";
 export interface RoadReward {
   mycel?: number;
   pheromone?: number;
+  /** An avatar id (`platform/avatars.ts`). One checkpoint a chapter pays one of these. */
+  avatar?: string;
 }
 
 export interface RoadStop {
@@ -160,13 +163,43 @@ const passPurse = (chapter: number): RoadReward =>
  */
 const STEP_SHARE = 1 / 8;
 
-function splitPurse(purse: RoadReward, rung: number): RoadReward {
+/**
+ * THE ONE CHECKPOINT A CHAPTER THAT PAYS A FACE INSTEAD OF A PURSE.
+ *
+ * Fifty avatars, one per chapter, asked for directly — "50 best ones available in colony
+ * road, one per each chapter, somewhere instead of the resources". The THIRD of five is
+ * the one, and that is a choice: the fifth closes the chapter and has to stay the visibly
+ * biggest currency payout (that is what `splitPurse` exists for), and the first is a
+ * player's introduction to the chapter. The middle is a beat in the walk.
+ *
+ * It is the FREE track, so the whole set is walked to rather than bought.
+ */
+const AVATAR_RUNG = 3;
+
+/**
+ * HOW ONE CHAPTER'S PURSE IS SHARED OUT ACROSS THE CHECKPOINTS THAT PAY CURRENCY.
+ *
+ * AND THE CHAPTER STILL PAYS EXACTLY ITS PURSE, which is the entire care here. The free
+ * track's avatar rung pays no currency, so letting its eighth simply fall on the floor
+ * would quietly cut the road's lifetime income by an eighth of every chapter — straight
+ * through the band `economy.test.ts` holds mycelium and pheromone to (§8c), for a change
+ * that is supposed to be about pictures.
+ *
+ * So `paying` is how many checkpoints of this track's chapter take a share, and it is
+ * FOUR on both: the road draws ONE disc per checkpoint carrying the two tracks pooled,
+ * so neither may pay currency at the rung the other pays a face at. Each ordinary stop
+ * takes an eighth and the CLOSER takes WHAT IS LEFT rather than a fraction of its own —
+ * so the sum is the purse to the troop. Computed as its own eighth the closer would
+ * drift by a troop or two per chapter, which over fifty of them is the road quietly
+ * paying something other than what it says.
+ */
+function splitPurse(purse: RoadReward, rung: number, paying: number): RoadReward {
   // A floor of one, so a purse small enough to round an eighth to nothing still pays
   // something at every checkpoint: a reward of zero is a checkpoint that lied.
   const share = (total: number): number => {
     const step = Math.max(1, Math.round(total * STEP_SHARE));
     if (rung !== ROAD_CHAPTER_STOPS) return step;
-    return Math.max(1, total - step * (ROAD_CHAPTER_STOPS - 1));
+    return Math.max(1, total - step * (paying - 1));
   };
   const out: RoadReward = {};
   if (purse.mycel) out.mycel = share(purse.mycel);
@@ -174,16 +207,51 @@ function splitPurse(purse: RoadReward, rung: number): RoadReward {
   return out;
 }
 
-/** Free track: a share of the chapter's purse at every one of its five checkpoints. */
+/** The free track pays currency at every checkpoint but the avatar one. */
+const FREE_PAYING = ROAD_CHAPTER_STOPS - 1;
+
+/**
+ * Free track: a share of the chapter's purse at four of its five checkpoints, and the
+ * chapter's AVATAR at the fifth of them.
+ */
 export function freeReward(index: number): RoadReward | null {
   if (index < 1 || index > ROAD_STOPS) return null;
-  return splitPurse(freePurse(chapterAt(index)), rungOfChapter(index));
+  const chapter = chapterAt(index);
+  const rung = rungOfChapter(index);
+  if (rung === AVATAR_RUNG) {
+    const id = roadAvatar(chapter);
+    // A chapter with no avatar left in the table falls back to an ordinary share rather
+    // than paying nothing: a checkpoint that hands over nothing at all is the one thing
+    // this road may not have, and the table is shorter than the road the day somebody
+    // retunes `ROAD_CHAPTERS` without painting more faces. It over-pays that chapter by
+    // an eighth, which is the right way round — the alternative is a dead rung.
+    return id ? { avatar: id } : splitPurse(freePurse(chapter), 1, FREE_PAYING);
+  }
+  return splitPurse(freePurse(chapter), rung, FREE_PAYING);
 }
 
-/** Pass track: the same, out of the pass purse, and only to a player holding the pass. */
+/**
+ * Pass track: the same, out of the pass purse, and only to a player holding the pass.
+ *
+ * IT SITS OUT THE AVATAR RUNG, and that is a consequence of the SCREEN rather than of
+ * the reward. The road draws one disc per checkpoint carrying BOTH tracks pooled, so a
+ * rung paying a face on one track and currency on the other would be one disc trying to
+ * show two different kinds of thing — and the face would win, silently swallowing the
+ * pass's share of that chapter. The pass purse is split across the other four instead,
+ * so a pass holder is paid exactly what they always were: concentrated, never lost.
+ *
+ * The avatar itself is the FREE track's, so the set is still walked to rather than
+ * bought — the pass simply does not pay EXTRA at the stop where a face is handed over.
+ */
 export function passReward(index: number): RoadReward | null {
   if (index < 1 || index > ROAD_STOPS) return null;
-  return splitPurse(passPurse(chapterAt(index)), rungOfChapter(index));
+  const chapter = chapterAt(index);
+  const rung = rungOfChapter(index);
+  if (rung === AVATAR_RUNG) {
+    const id = roadAvatar(chapter);
+    return id ? { avatar: id } : splitPurse(passPurse(chapter), 1, FREE_PAYING);
+  }
+  return splitPurse(passPurse(chapter), rung, FREE_PAYING);
 }
 
 export function roadStops(): RoadStop[] {
@@ -266,5 +334,6 @@ export function rewardText(r: RoadReward): string {
   return [
     r.mycel ? `+${r.mycel} mycelium` : "",
     r.pheromone ? `+${r.pheromone} pheromone crystal${r.pheromone === 1 ? "" : "s"}` : "",
+    r.avatar ? "A new avatar" : "",
   ].filter(Boolean).join("  ");
 }

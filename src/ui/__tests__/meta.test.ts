@@ -24,6 +24,7 @@ import { buildSpeciesPage } from "../species";
 import type { EngineEvent } from "../../engine";
 import { dayIndex, questDef } from "../../platform";
 import { scoreQuestEvents } from "../../platform";
+import { AVATAR_IDS, FREE_AVATARS } from "../../platform";
 import { buildQuests } from "../quests";
 import { buildColonyRoad } from "../road";
 import { buildRules } from "../rules";
@@ -266,7 +267,7 @@ describe("anthill screen", () => {
  * every number the game kept about their career sat in the save and on no screen at all.
  */
 describe("profile screen", () => {
-  const nowhere = { onBack: () => {}, onColonies: () => {}, onChambers: () => {}, onQuests: () => {}, onHistory: () => {}, onTraits: () => {} };
+  const nowhere = { onBack: () => {}, onColonies: () => {}, onChambers: () => {}, onQuests: () => {}, onHistory: () => {}, onTraits: () => {}, onAvatars: () => {} };
   const played = (over: Partial<Record<string, number>> = {}): ProfileStore => {
     const s = store();
     s.update((p) => {
@@ -315,12 +316,16 @@ describe("profile screen", () => {
     s.buyChamber("royal");
     const root = buildProfile(s, nowhere);
     const rows = Array.from(root.querySelectorAll<HTMLElement>(".pf-row-coll"));
-    expect(rows.length, "the collection block is not there").toBe(3);
+    expect(rows.length, "the collection block is not there").toBe(4);
     expect(rows[0]?.textContent).toContain("Colonies");
     expect(rows[0]?.textContent).toContain(`/ ${Object.keys(SPECIES).length}`);
     expect(rows[1]?.textContent).toContain("Nest chambers");
     expect(rows[1]?.textContent, "the chamber just bought is not counted").toContain("1 / ");
     expect(rows[2]?.textContent).toContain("Research levels");
+    // The faces, which are the one row here that is NEVER gated: a colony that has
+    // collected nothing already has the ten it starts with.
+    expect(rows[3]?.textContent).toContain("Avatars");
+    expect(rows[3]?.textContent).toContain(`${FREE_AVATARS.length} / ${AVATAR_IDS.length}`);
     // One head per colony, so the row says WHICH rather than only how many.
     expect(root.querySelectorAll(".pf-head").length).toBe(Object.keys(SPECIES).length);
   });
@@ -334,10 +339,13 @@ describe("profile screen", () => {
       onQuests: () => seen.push("quests"),
       onHistory: () => seen.push("history"),
       onTraits: () => seen.push("traits"),
+      onAvatars: () => seen.push("avatars"),
     });
     const rows = Array.from(root.querySelectorAll<HTMLButtonElement>(".pf-row"));
     for (const r of rows) r.click();
-    expect(seen).toEqual(["history", "quests", "colonies", "chambers", "colonies"]);
+    // The avatars are the one collection row that is NEVER gated — a new colony already
+    // has ten of them, so the door is open before anything has been earned.
+    expect(seen).toEqual(["history", "quests", "colonies", "chambers", "colonies", "avatars"]);
   });
 
   /**
@@ -898,9 +906,19 @@ describe("colony road screen", () => {
       const index = Number(disc.dataset.stop);
       const free = freeReward(index)!;
       const bonus = passReward(index)!;
+      // ONE PICTURE EITHER WAY: a resource mark, or the FACE an avatar rung pays. What
+      // differs is the figure under it — an avatar has no amount, and printing a 0 there
+      // would be the one checkpoint on the road announcing that it pays nothing.
+      expect(disc.querySelectorAll(".rd-mark img").length).toBe(1);
+      if (free.avatar) {
+        expect(disc.querySelector(".rd-face"), "an avatar rung shows no face").toBeTruthy();
+        expect(disc.querySelector(".rd-amount"), "an empty figure plate over the face")
+          .toBeNull();
+        expect(disc.getAttribute("aria-label")).toBe("A new avatar");
+        continue;
+      }
       const amount = (free.mycel ?? 0) + (bonus.mycel ?? 0)
         + (free.pheromone ?? 0) + (bonus.pheromone ?? 0);
-      expect(disc.querySelectorAll(".rd-mark img").length).toBe(1);
       expect(disc.querySelector(".rd-amount")?.textContent).toBe(String(amount));
       expect(disc.getAttribute("aria-label")).not.toContain(" and ");
     }

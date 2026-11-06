@@ -12,7 +12,7 @@
  * neither is a screen nobody can get to with every unit test still green.
  */
 import { describe, expect, it, beforeEach } from "vitest";
-import { MemoryStore, ProfileStore, TOUR_VERSION } from "../../platform";
+import { FREE_AVATARS, MemoryStore, ProfileStore, TOUR_VERSION } from "../../platform";
 import { App } from "../app";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
@@ -35,6 +35,12 @@ const showing = (host: HTMLElement): string[] =>
   Array.from(host.querySelectorAll<HTMLElement>(".screen"))
     .filter((el) => !el.classList.contains("hidden") && !el.closest(".deck"))
     .map((el) => el.id);
+
+/** Whether the tab bar is standing on whatever is showing. */
+const navShowing = (host: HTMLElement): boolean => {
+  const nav = host.querySelector("#mainNav");
+  return !!nav && !nav.classList.contains("hidden");
+};
 
 const drawer = (host: HTMLElement): void => {
   host.querySelector<HTMLButtonElement>(".settingsfab")?.click();
@@ -110,11 +116,6 @@ describe("the lucky hatch", () => {
  * a screen whose chrome never ran.
  */
 describe("the bottom bar", () => {
-  const navShowing = (host: HTMLElement): boolean => {
-    const nav = host.querySelector("#mainNav");
-    return !!nav && !nav.classList.contains("hidden");
-  };
-
   it("stands on the five deck screens", () => {
     const { host, app } = open();
     for (const tab of ["shop", "anthill", "home", "antarium", "challenges"]) {
@@ -153,6 +154,106 @@ describe("the bottom bar", () => {
     expect(back, "the manual has no way out at all").toBeTruthy();
     back?.click();
     expect(showing(host), "back off the manual goes nowhere").not.toContain("rules");
+    app.destroy();
+  });
+});
+
+/**
+ * THE AVATARS, which are reached from the one screen they change.
+ *
+ * A face is the player's own, so the picker hangs off the PROFILE rather than off the
+ * drawer or a colony's page — and there are two ways in from it, the hero face and the
+ * collection row, because the hero is where a player looks and the row is where they
+ * browse. Both land on the same screen, which is the thing a route test can see and a
+ * unit test cannot: every other test here builds the picker directly.
+ */
+describe("the avatars", () => {
+  const profile = (host: HTMLElement): void => {
+    host.querySelector<HTMLButtonElement>(".tn-id")?.click();
+  };
+
+  it("opens from the face on the profile", () => {
+    const { host, app } = open();
+    profile(host);
+    host.querySelector<HTMLButtonElement>("#profile .pf-face")?.click();
+    expect(showing(host)).toContain("avatars");
+    app.destroy();
+  });
+
+  it("opens from the collection row as well, and both land in one place", () => {
+    const { host, app } = open();
+    profile(host);
+    host.querySelector<HTMLButtonElement>("#pfAvatars")?.click();
+    expect(showing(host)).toContain("avatars");
+    app.destroy();
+  });
+
+  /** Back goes to the profile, which is the face it just changed. */
+  it("goes back to the profile", () => {
+    const { host, app } = open();
+    profile(host);
+    host.querySelector<HTMLButtonElement>("#pfAvatars")?.click();
+    host.querySelector<HTMLButtonElement>("#avBack")?.click();
+    expect(showing(host)).toContain("profile");
+    expect(showing(host)).not.toContain("avatars");
+    app.destroy();
+  });
+
+  /**
+   * AND THE TOP BAR WEARS IT — which is most of the point of choosing one.
+   *
+   * The disc is the drawn worker until a face is chosen and the chosen face after, so
+   * what is held is the tag: `avatarFace` answers an `<img>` for a painting and a
+   * `<canvas>` for the drawn fallback, and that swap IS the feature working.
+   */
+  it("puts the chosen face on the top bar", () => {
+    const host = document.createElement("div");
+    host.id = "app";
+    document.body.appendChild(host);
+    const store = new ProfileStore(new MemoryStore());
+    store.update((p) => { p.tourSeen = TOUR_VERSION; });
+    const app = new App(host, store);
+    app.start();
+
+    const src = (): string =>
+      host.querySelector<HTMLImageElement>("#home .tn-av img")?.src ?? "";
+    // A brand-new colony already wears one, so the bar is a painting from the start.
+    expect(src(), "the bar opens on no face at all").not.toBe("");
+    const before = src();
+
+    profile(host);
+    host.querySelector<HTMLButtonElement>("#pfAvatars")?.click();
+    host.querySelector<HTMLButtonElement>(`.av-t[data-av="${FREE_AVATARS[1]}"]`)?.click();
+    host.querySelector<HTMLButtonElement>("#avBack")?.click();
+    host.querySelector<HTMLButtonElement>("#profile .backbtn")?.click();
+    expect(src(), "the bar is still wearing the one it opened on").not.toBe(before);
+    app.destroy();
+  });
+
+  /**
+   * And the profile's own hero wears it too — one picture of the player, on both the
+   * screen the picker opens from and the bar behind it.
+   */
+  it("puts the chosen face on the profile", () => {
+    const { host, app } = open();
+    profile(host);
+    const src = (): string =>
+      host.querySelector<HTMLImageElement>("#profile .pf-face img.pf-av")?.src ?? "";
+    expect(src(), "the hero is not wearing a face at all").not.toBe("");
+    const before = src();
+    host.querySelector<HTMLButtonElement>("#pfAvatars")?.click();
+    host.querySelector<HTMLButtonElement>(`.av-t[data-av="${FREE_AVATARS[1]}"]`)?.click();
+    host.querySelector<HTMLButtonElement>("#avBack")?.click();
+    expect(src(), "the hero did not take the new face").not.toBe(before);
+    app.destroy();
+  });
+
+  /** And the tab bar does not stand on it: it is a page over the deck, not a deck screen. */
+  it("does not stand the tab bar on it", () => {
+    const { host, app } = open();
+    profile(host);
+    host.querySelector<HTMLButtonElement>("#pfAvatars")?.click();
+    expect(navShowing(host), "the bar is still standing on the avatars").toBe(false);
     app.destroy();
   });
 });
