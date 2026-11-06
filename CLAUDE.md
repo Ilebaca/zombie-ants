@@ -2708,6 +2708,83 @@ the fix attached: "make buttons smaller if needed so all fits".
   fault as the shop's unbounded slice, one marker further on. Every one of these blocks
   opens on a `=====` rule, so that is what ends the one before it.
 
+**EVERY SCREEN, EVERY PHONE, EVERY TABLET — THE SWEEP, AND WHAT IT FOUND.**
+Asked for directly: "check responsiveness for all mobile screens and sizes... that
+includes tablet... everything should be visible and accounted for". Twenty screens were
+driven through the real app in a browser at eleven viewports from 320x480 to 1024x1366,
+reading back overflow, clipping, hit regions and whether anything ran past the fold with
+nowhere to scroll. Most of what a sweep like that reports is noise and the triage is the
+work — the deck is five slides side by side, so four of them are always off-screen; a
+`::after` tap target inside a clipped box reports as an overflow; an overlay screen's
+scroller is its `.screenbody` rather than the screen. What survived:
+- **THREE CAPS WERE WIPED BY A `padding` SHORTHAND, and the whole tablet layout with
+  them.** The responsive block caps the top bar, the side buttons and the tab tray to
+  `--homemax` so a big screen gets the same composition as a phone. Three rules in the
+  DESIGN blocks then set `padding` as a shorthand, which sets all four sides — so on a
+  1024 screen the currency chips ran the full width with a lone "0" in the middle of
+  each, the granary pill sat on the left edge, the menu button on the right and the
+  five tabs came out 196px each, while the banner and PLAY sat correctly in their 640
+  column. It is the third time a `padding` shorthand in a later block has quietly
+  undone a rule written earlier, so the fix is a TOKEN the shorthand itself carries
+  (`--homeside`), not a fourth `padding-inline` to be overwritten next time. `--navmax`
+  is now `var(--homemax)` rather than a second 640.
+- **THE ANTHILL'S CHAMBER NAMES WERE WRITTEN OUT PAST THEIR OWN CARDS, on every phone.**
+  A card gets half of what is left after the shaft — 112px at 320 for a 44px disc, 34px
+  of padding and the name — so "Metapleural Gland" overhung by 40px at 320 and the
+  Granary overhung on every width in the list. The shaft, the card's inset, its padding,
+  its disc, its gap and the name's own size all clamp down together below about 400px;
+  every clamp's UPPER bound is the number that was already there, so a tall phone is
+  unchanged. `--nest-stub` (the tunnel from the shaft to the card) is DERIVED from the
+  shaft rather than written, or it points at thin air the day the shaft moves, and
+  `overflow-wrap: break-word` on the name is the guarantee for the seventh chamber
+  rather than the mechanism for these six.
+- **AN INVITATION ANNOUNCED A WHOLE COLONY AS "P…".** The bar's first line was the name
+  and "challenged you" side by side, with the VERB set `flex: none` — so the half that
+  gave way was the name, ellipsised to one letter on a 320 phone. `duel.ts` said the
+  opposite in a comment ("the NAME is the line that must survive") and had said it for
+  as long as the bar existed. The verb is the same on every invitation there will ever
+  be, so it reads at the head of the SECOND line now, with the board and the colony size
+  behind it. One structure at every width rather than a breakpoint where the sentence
+  has to be re-read.
+- **TWO TAP TARGETS WERE BEING CLIPPED AWAY, and only a hit-test could see it.** The
+  avatar is a 30px disc and the currency stepper an 18px mark; both carry the app's 44px
+  floor on an invisible `::after`, which is the answer this file settled on long ago.
+  Both boxes then clipped — the disc to round its picture, the chip for an ellipsis that
+  lives on `.tn-num` anyway — and **an overflow clip is not hit-testable outside the
+  clip**, so both targets were cut straight back to the box. Measured by sampling
+  `elementFromPoint` across the page: the avatar answered taps over exactly 30x30. The
+  rules all read as correct, the pseudo-element is invisible and `getBoundingClientRect`
+  cannot see it, so nothing but a hit-test was ever going to find this. The crop moved
+  onto the picture inside the disc; the chip simply does not clip. Six more controls
+  carried a literal `42px` where the block they sit in exists to hold `var(--tap)`.
+- **THE ODDS PANEL'S LONGEST TIER NAME RAN INTO ITS OWN BORDER.** Five tiles across a
+  320px phone is 48.8 each and "Exceptional" is 46 of that, so the cell's padding was
+  clipped away behind the label — on the one panel in the app that exists because a
+  store requires it (§ LOOT BOX ODDS GO BEFORE THE PURCHASE), and on both screens that
+  show it. The panel's side padding, the grid's gap and the cell's padding came down;
+  the TYPE did not, because this block allows exactly four sizes and that is the whole
+  point of it. Flat, not clamped — five tiles two pixels apart rather than three is not
+  something a wide screen needs to look different about. **And the first attempt made it
+  worse**: `overflow-wrap` alone, with only 0.4px of slack, broke "Exceptional" across
+  two lines as "Exceptiona / l", which is the guarantee firing because the mechanism was
+  not there yet. It is the guarantee for a SIXTH rung now, as it should have been.
+- **AND THE LEADERBOARD'S TWO TABS WERE THE LAST PAIR UNDER THE TAP FLOOR**, at their
+  own literal 36 — the one switcher in the app that was never added to the group every
+  other tab and chip sits in. Found by hit-testing rather than by reading, like the two
+  above it.
+- **TWO THINGS WERE LEFT ALONE, on purpose.** The granary pill (28px tall) and the
+  colony banner (41px at 320) are both under `--tap`, and both are the handed-over
+  design's own boxes — the pill's `min-height: 0` is a deliberate override of the floor,
+  already on record. They are wide, easy targets and the floor is about reach; an
+  invisible `::after` on either would overlap the other's, which is a worse thing to
+  introduce than the two pixels it buys.
+- **AND WHAT WAS CHECKED AND IS FINE**, so it is not re-derived: the tab tiles are not
+  clipped at 320 (that is the ledge, which has no blur and reads as a cut edge in a
+  screenshot); the match screen fits 320x480 since the chrome clamps landed; the overlay
+  screens all scroll; and the three bodies that ignored the reading column still honour
+  it. `--page` is unchanged — on a tablet the type stays phone-sized and the COLUMN
+  grows, which is the rule and is what a tablet is supposed to look like.
+
 **AND THE GROUND IS THE WHOLE SCREEN, WITH THE CHROME FLOATING ON IT.** Reported from an
 iPhone in one message with three faults in it: the top chips cut in half, the surrender
 slab, and "that block with a button both on the bottom and the top should have transparent
