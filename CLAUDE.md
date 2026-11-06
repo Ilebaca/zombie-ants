@@ -2107,6 +2107,60 @@ as "recreate here how we did blocks in the home, shop, and antarium".
   reset, and sweeps this block for its type sizes, its radii and its marked ledges the
   same way it sweeps the other three.
 
+**AND THE OTHER NINETEEN CAME OVER AS ONE REMAP** (the EVERY OTHER SCREEN block at the
+foot of `skin.css`). Four screens had been drawn to the shared language and the rest were
+still in the app's FIRST one — deep forest green panels on a deep forest ground, 14px
+corners, no ledge. Asked for directly: "do the design adjustments for all other screens
+as well that we haven't done already." Half the app was green and half was charcoal,
+which is the one thing a player cannot not see.
+- **IT IS A REMAP, NOT NINETEEN BLOCKS.** Those screens carry about four hundred class
+  names between them, and every one of their rules already reads its surface, its ink
+  and its corner out of a TOKEN — `--panel`, `--ink-soft`, `--r-lg`. So the whole of the
+  colour and the form is ONE rule redefining those tokens inside those screens, and
+  every rule written against them picks the new value up. Enumerating the classes would
+  be thousands of lines, nineteen chances to miss one, and a second place each screen's
+  look is decided. The sweep that holds it is a different shape from the other four's:
+  what it checks is that each remapped token points at a SHARED one.
+- **WHAT A REMAP CANNOT REACH IS THE TYPE**, because a size written as `13px` reads no
+  token. So the four sizes reach the furniture every screen SHARES — the header, the
+  section labels — and a screen's own copy keeps its own measure until that screen is
+  drawn to a frame of its own. A deliberate stopping point: shrinking body copy to a
+  token with no mock-up to check it against is how a readable list becomes a small one.
+- **THE HEADER IS DRESSED FOR EVERY SCREEN, not for the nineteen.** None of the four
+  dressed blocks had ever touched `.screentop`, so the shop's title was the first
+  language's 21px bold while the Antarium's banner a swipe away was the display face at
+  22 — the same line, two faces, two screens. It is `--fs-hero` now, which is what that
+  size is for, and the back arrow is a card with the ledge like everything else raised.
+- **AND THERE IS ONE GROUND FOR THE WHOLE APP.** The dressed four sat on the first
+  language's green-black `--bg0` while the remapped nineteen sat on the design's chrome,
+  and two neighbouring tabs of one deck cannot be two different colours of nothing.
+  `body, .screen` is `--hud-face`, the colour the top bar and the tab tray are cut from.
+- **THREE THINGS WERE WRONG ON THE FIRST PASS AND ONLY LOOKING FOUND THEM.** Each is a
+  case of the shared card list catching something that is not a card, and each is now
+  held by its own assertion:
+  - **The anthill's earth is not a surface.** It is a cross-section of soil with
+    chambers cut into it, so the excavation summary written ON it came up as a tile
+    floating in front of the dirt — and it sits over the mound, so a raised one covered
+    the nest's entrance. The summary and the granary's store stay flat; the CHAMBERS are
+    cards, which is what the screen wanted all along.
+  - **A paragraph is not a card.** The manual's prose was in the list, so every sentence
+    in How to play became its own raised tile and the page read as a wall of objects —
+    the exact fault the no-shadows decision was taken to fix (§10). Its FIGURES stay
+    cards, because a figure is a picture of the board sitting on the page.
+  - **An empty state is a well, not a tile.** "Nothing found yet" raised on a ledge is a
+    thing to press that is not one.
+- **AND THE ODDS PANEL'S TIER FRAMES WERE NEARLY FLATTENED.** `.hp-tier` went into the
+  card list and painted all five rungs the same charcoal — undoing the fill that is the
+  whole point of them (§ THE LUCKY HATCH). Nothing in the suite would have said so.
+- **THE DESTRUCTIVE ROWS WERE MEASURED AND LIFTED.** Reset, Delete and Restore are
+  `--danger` ink on a 7% white wash over the card: 3.44 against the old green panel,
+  3.92 against the design's — better, and still under AA at 12px. Mixed toward white it
+  is 5.2. It is the INK that moves, not the token, because `--danger` is a FILL
+  elsewhere and a paler one would want dark text on it.
+- **TWO SCREENS ARE DELIBERATELY OUT OF IT.** The Colony Road is drawn to a design of
+  Milan's own, made directly on `main`; and the match's chrome is glass over a painted
+  region (§ THE GROUND IS THE WHOLE SCREEN) with a block of its own.
+
 **ONE RARITY LADDER, FOR EVERYTHING THAT HAS ONE** (`engine/tiers.ts`). There were TWO and
 they disagreed. Traits ran common / uncommon / rare / exceptional / mythic in grey, green,
 blue, purple and red; colonies ran "Founding castes" / "Rare colonies" / "Elite castes" /

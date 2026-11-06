@@ -1646,3 +1646,144 @@ describe("the profile is written in the shared language", () => {
     expect(ruleFor(prof, "#profile .pf-coll")).toMatch(/gap:\s*var\(--inrow\)/);
   });
 });
+
+/**
+ * EVERY OTHER SCREEN, DRAWN TO THE DESIGN.
+ *
+ * The nineteen screens that were still in the app's first language are brought over by a
+ * token REMAP rather than by nineteen blocks of their own (see the block's own note), so
+ * the sweeps here are a different shape from the four above: what has to hold is that the
+ * remap names SHARED TOKENS rather than values of its own, that the furniture it dresses
+ * is rounded and typed out of the same two sets, and that the three things found by
+ * looking at the result — the anthill's ground, the manual's prose, an empty state — stay
+ * out of the raised-card list they were wrongly in.
+ *
+ * None of it is visible to a jsdom test: there is no layout, the markup never changed,
+ * and only the cascade decides any of it.
+ */
+describe("every other screen is written in the shared language", () => {
+  const whole = read("skin.css");
+  const rest = designBlock(whole, "EVERY OTHER SCREEN, DRAWN TO THE DESIGN");
+
+  /** The nineteen screens the remap reaches. The Colony Road and the match are not here
+      on purpose — each is drawn to a design of its own. */
+  const SCREENS = [
+    "#anthill", "#challenges", "#daily", "#quests", "#leaderboard", "#settings", "#news",
+    "#friends", "#support", "#antup", "#traits", "#inventory", "#history", "#replay",
+    "#keepsafe", "#rules", "#formation", "#luckyhatch", "#avatars",
+  ];
+
+  it("still has a block to check", () => {
+    expect(rest).toMatch(/--panel:\s*var\(--hud-card\)/);
+  });
+
+  /**
+   * THE REMAP IS THE WHOLE OF THE COLOUR AND THE FORM, so what it must never do is
+   * invent a value. Each of these is the first language's token pointed at the design's.
+   */
+  it("points every remapped token at a shared one", () => {
+    for (const [from, to] of [
+      ["--bg0", "--hud-face"], ["--bg1", "--hud-face"], ["--bg2", "--hud-well"],
+      ["--panel", "--hud-card"], ["--panel-hi", "--hud-hi"], ["--hud", "--hud-card"],
+      ["--ink", "--hud-ink"], ["--ink-soft", "--hud-dim"], ["--muted", "--hud-mute"],
+      ["--r-xl", "--r-card"], ["--r-lg", "--r-card"], ["--r-md", "--r-btn"],
+      ["--r-sm", "--r-btn"], ["--bevel", "--hud-ledge"], ["--bevel-sm", "--hud-ledge"],
+      ["--grass", "--hud-go"], ["--stack", "--block"], ["--gap", "--block"],
+      ["--pad", "--block"],
+    ]) {
+      expect(rest, `${from} is not remapped onto ${to}`)
+        .toMatch(new RegExp(`${from}:\\s*var\\(${to}\\)`));
+    }
+  });
+
+  /** And it reaches every one of the nineteen. A screen left out stays green. */
+  it("reaches every screen it names", () => {
+    const remap = rest.slice(0, rest.indexOf("--grass"));
+    for (const id of SCREENS) {
+      expect(remap, `${id} is not in the remap`).toMatch(new RegExp(`${id}[,\\s]`));
+    }
+  });
+
+  /** FOUR SIZES AND THE HERO, AND NOTHING ELSE TYPED AS A NUMBER. */
+  it("sets no type size of its own", () => {
+    const bad = [...rest.matchAll(/font-size:\s*([^;]+);/g)]
+      .map((m) => (m[1] ?? "").trim())
+      .filter((v) => !/^var\(--fs-(label|small|body|title|hero)\)$/.test(v));
+    expect(bad, "a remapped screen types a size instead of naming one").toEqual([]);
+  });
+
+  /** TWO RADII, AND ONLY TWO. */
+  it("rounds every corner with a token or a pill", () => {
+    const bad = [...rest.matchAll(/border-radius:\s*([^;]+);/g)]
+      .map((m) => (m[1] ?? "").trim())
+      .filter((v) => !/^(var\(--r-(card|btn)\)|999px)/.test(v));
+    expect(bad, "a remapped screen rounds a corner to its own number").toEqual([]);
+  });
+
+  /**
+   * THE LEDGE HAS TO BE MARKED. `*:not(.playbtn) { box-shadow: none !important }` is a
+   * blanket, so a ledge written without `!important` is silently nothing — the control
+   * goes flat while everything round it stays raised, and no test that can see a DOM
+   * would notice. The fourth time this file has held that rule.
+   */
+  it("marks every ledge it puts back", () => {
+    const shadows = [...rest.matchAll(/box-shadow:[^;]*--hud-ledge[^;]*;/g)].map((m) => m[0]);
+    expect(shadows.length, "no ledge is restored at all").toBeGreaterThan(0);
+    for (const s of shadows) expect(s, `an unmarked ledge: ${s}`).toContain("!important");
+  });
+
+  /**
+   * THE ANTHILL'S EARTH IS NOT A SURFACE. Both of these were in the card list on the
+   * first pass: the excavation summary came up as a tile floating over the mound and
+   * covered the nest's entrance, and the granary's store went with it.
+   */
+  it("leaves the anthill's ground flat", () => {
+    for (const cls of [".nest-sum", ".gstore"]) {
+      expect(rest, `${cls} is a raised card again`).not.toContain(`${cls},`);
+    }
+  });
+
+  /**
+   * AND A PARAGRAPH IS NOT A CARD. The manual's prose was caught by the same list, so
+   * every sentence in How to play came up as its own raised tile — the "pile of objects"
+   * fault the no-shadows decision was taken to fix. Its FIGURES stay cards.
+   */
+  it("leaves the manual's prose on the page and keeps its figures as cards", () => {
+    expect(rest, "the manual's paragraphs are cards again").not.toContain(".ru-p,");
+    expect(rest).toContain(".ru-fig)");
+  });
+
+  /** AN EMPTY STATE IS A WELL, not a tile saying there is nothing to press. */
+  it("sinks the empty states rather than raising them", () => {
+    const at = rest.indexOf(".frghost, .histempty, .trempty)");
+    expect(at, "the empty states are out of the well group").toBeGreaterThan(-1);
+    const well = rest.slice(at, rest.indexOf("}", at));
+    expect(well).toMatch(/background:\s*var\(--hud-well\)/);
+    expect(well).toMatch(/box-shadow:\s*none\s*!important/);
+  });
+
+  /**
+   * ONE GROUND FOR THE WHOLE APP. The three screens already drawn to the design sat on
+   * the first language's green-black while the nineteen sat on the chrome, and two
+   * neighbouring tabs of one deck cannot be two different colours of nothing.
+   */
+  it("gives every screen the same ground", () => {
+    expect(ruleFor(rest, "body,\n.screen")).toMatch(/background:\s*var\(--hud-face\)/);
+  });
+
+  /** THE HEADER IS THE ONE PIECE OF FURNITURE EVERY SCREEN SHARES, so it is dressed for
+      all of them — unscoped — rather than for the nineteen. */
+  it("dresses the header for every screen, not only the remapped ones", () => {
+    const head = ruleFor(rest, ".screentop .screenh");
+    expect(head).toMatch(/font-size:\s*var\(--fs-hero\)/);
+    expect(head).toMatch(/font-family:\s*var\(--font-display\)/);
+    expect(ruleFor(rest, ".screentop .backbtn")).toMatch(/background:\s*var\(--hud-card\)/);
+  });
+
+  /** And the two tokens the remap needed are on `:root` with the rest of the language. */
+  it("keeps the two new inks on :root", () => {
+    const root = rulesFor(code(whole), ":root");
+    expect(root).toMatch(/--hud-hi:\s*#31333b/i);
+    expect(root).toMatch(/--hud-mute:\s*#9a9ca5/i);
+  });
+});
