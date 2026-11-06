@@ -192,6 +192,144 @@ describe("the design scales", () => {
       /\.homenav\s*\{[^}]*padding-inline:\s*max\(0px,/,
     );
   });
+
+  /**
+   * EVERYTHING ON HOME LINES UP ON ONE EDGE, AT EVERY WIDTH — and it is held here
+   * because the way it broke is invisible to everything else.
+   *
+   * The responsive block caps the top bar, the side buttons and the tab tray to
+   * `--homemax` so a tablet gets the same composition as a phone rather than a bar
+   * stretched across the glass. Three rules in the DESIGN blocks then set `padding` as a
+   * SHORTHAND, which sets all four sides — so all three caps were silently gone, and
+   * measured on a 1024 screen the chips ran the full width, the granary pill sat on the
+   * left edge, the menu button on the right, and the five tabs came out 196px each while
+   * the banner and PLAY sat correctly in their 640 column.
+   *
+   * There is no layout in jsdom and the markup is identical either way, so a cascade is
+   * the only thing that can see this. What it checks is that each of the four rules
+   * carries the column in its own declaration.
+   */
+  it("keeps home's whole composition on one pair of edges past the cap", () => {
+    const css = code(read("skin.css"));
+    expect(rulesFor(css, ":root"), "the edge is not one token")
+      .toMatch(/--homeside:\s*max\(var\(--hudgut\), calc\(\(100% - var\(--homemax\)\) \/ 2\)\)/);
+    // One 640, not two: the tray's cap is the same number as home's furniture.
+    expect(rulesFor(css, ":root")).toMatch(/--navmax:\s*var\(--homemax\)/);
+    for (const sel of ["#home .topnav", "#home .homerow", ".menuwrap"]) {
+      expect(rulesFor(css, sel), `${sel} does not carry the column`).toContain("var(--homeside)");
+    }
+    // The tray does not join the reading column — it keeps its own floor and caps on
+    // `--navmax`, which is what the shorthand threw away.
+    const tray = rulesFor(css, "#mainNav.homenav");
+    expect(tray, "the tray lost its cap to a padding shorthand")
+      .toMatch(/padding:\s*calc\(8 \* var\(--u\)\) max\(calc\(8 \* var\(--u\)\), calc\(\(100% - var\(--navmax\)\) \/ 2\)\)/);
+  });
+
+  /**
+   * TWO TAP TARGETS ON HOME WERE BEING CLIPPED AWAY, and only a hit-test could see it.
+   *
+   * The avatar is a 30px disc and the currency stepper an 18px mark; both carry the
+   * app's 44px floor on an invisible `::after` centred on them, which is the answer this
+   * file settled on long ago. Both of their boxes then clipped — the disc to round its
+   * picture, the chip for an ellipsis it does not need — and an overflow clip is not
+   * hit-testable outside the clip, so both targets were cut back to the box. Measured in
+   * a browser by sampling `elementFromPoint`: the avatar answered over exactly 30x30.
+   *
+   * `getBoundingClientRect` cannot see it, the pseudo-element is invisible, and the rules
+   * all read as correct. Nothing but this can hold it.
+   */
+  it("does not clip away the tap targets it hangs on a pseudo-element", () => {
+    const css = code(read("skin.css"));
+    for (const sel of ["#home .tn-id", "#home .tn-coin"]) {
+      expect(rulesFor(css, sel), `${sel} clips its own tap target`)
+        .toMatch(/overflow:\s*visible/);
+      expect(rulesFor(css, sel), `${sel} clips its own tap target`)
+        .not.toMatch(/overflow:\s*hidden/);
+    }
+    // The round crop the avatar gave up is on the picture inside it instead.
+    expect(rulesFor(css, "#home .tn-id .tn-av,\n#home .tn-id .topav"))
+      .toMatch(/overflow:\s*hidden/);
+  });
+
+  /**
+   * THE FLOOR IS THE TOKEN, never the number. These six selectors carried a literal
+   * `42px` — two under `--tap`, on every switch in Settings and every chip in Friends,
+   * Support and the Leaderboard — while the block they sit in exists to hold 44.
+   */
+  /**
+   * THE NEST NARROWS ON A NARROW PHONE, and the tunnel stub follows the shaft.
+   *
+   * A chamber card gets half of what is left after the shaft, which at 320 was 112px for
+   * a 44px disc, 34px of padding and the name — so five of the six chambers wrote their
+   * name out past their own card and under the shaft, and the Granary did it on every
+   * phone in the list. Measured before: 40px over at 320, still 4px over at 430. After:
+   * `.nest` has no horizontal overflow at any width and no name overflows its box.
+   *
+   * What is held is that every clamp's UPPER bound is the number that was already there,
+   * so a tall phone is unchanged and the curve only ever takes something away — and that
+   * the stub is DERIVED from the shaft rather than written, or it points at thin air the
+   * day the shaft moves.
+   */
+  it("shrinks the nest's own geometry rather than letting a chamber name spill", () => {
+    const css = code(read("skin.css"));
+    const lvl = ruleFor(css, ".nest-lvl");
+    expect(lvl).toMatch(/--nest-shaft:\s*clamp\([^)]*34px\)/);
+    expect(lvl).toMatch(/--nest-inset:\s*clamp\([^)]*14px\)/);
+    expect(lvl, "the tunnel stub is a second number instead of the gap it spans")
+      .toMatch(/--nest-stub:\s*calc\(var\(--nest-shaft\) \/ 2 \+ var\(--nest-inset\) - 6px\)/);
+    expect(lvl).toMatch(/grid-template-columns:\s*1fr var\(--nest-shaft\) 1fr/);
+    expect(ruleFor(css, ".nest-node::after")).toMatch(/width:\s*var\(--nest-stub/);
+
+    const room = ruleFor(css, ".room");
+    expect(room).toMatch(/grid-template-columns:\s*clamp\([^)]*44px\) 1fr/);
+    expect(room, "the card's inset is not the one the shaft is measured against")
+      .toMatch(/width:\s*calc\(100% - var\(--nest-inset/);
+    expect(ruleFor(css, ".room-pocket")).toMatch(/width:\s*clamp\([^)]*44px\)/);
+
+    const nm = ruleFor(css, ".room-nm");
+    expect(nm).toMatch(/font-size:\s*clamp\([^)]*13px\)/);
+    expect(nm, "a name longer than the catalogue's would spill rather than break")
+      .toMatch(/overflow-wrap:\s*break-word/);
+  });
+
+  /**
+   * FIVE TIER TILES ACROSS A 320px PHONE, and the longest name has to fit in one.
+   *
+   * The odds panel is the store requirement (§ LOOT BOX ODDS GO BEFORE THE PURCHASE),
+   * so it is drawn on the hatch AND in the shop and has to read on the narrowest phone
+   * there is. At 320 the cells came out 48.8 and "Exceptional" is 46 of that, so the
+   * longest label ran into its own border with the padding clipped away behind it.
+   * The panel's side padding, the grid's gap and the cell's padding all came down —
+   * flat, not clamped, because five tiles two pixels apart is not something a wide
+   * screen needs to look different about. Measured after: 52px cells, all five names on
+   * one line at 320.
+   *
+   * The TYPE did not come down with them, and that is the part worth holding: this
+   * block allows exactly four sizes and a fifth typed in here would render perfectly.
+   */
+  it("fits all five tier names in the odds panel on the narrowest phone", () => {
+    const css = code(read("skin.css"));
+    const panel = ruleFor(css, "#shop .hatchodds,\n#luckyhatch .hatchodds");
+    expect(panel).toMatch(/padding:\s*10px 6px/);
+    const rows = ruleFor(css, "#shop .hatchodds .ho-rows,\n#luckyhatch .hatchodds .ho-rows");
+    expect(rows).toMatch(/gap:\s*4px/);
+    const row = ruleFor(css, "#shop .hatchodds .ho-row,\n#luckyhatch .hatchodds .ho-row");
+    expect(row).toMatch(/padding:\s*5px 1px/);
+    const nm = ruleFor(css, "#shop .hatchodds .ho-n,\n#luckyhatch .hatchodds .ho-n");
+    expect(nm, "the label is no longer on one of the block's four sizes")
+      .toMatch(/font-size:\s*var\(--fs-label\)/);
+    expect(nm, "a sixth rung's name would be clipped in half rather than wrapped")
+      .toMatch(/overflow-wrap:\s*anywhere/);
+  });
+
+  it("holds every control on the tap floor to the token", () => {
+    const css = code(read("skin.css"));
+    const rule = ruleFor(css, ".setval,\n.setswitch,\n.frtab,\n.lbtab,\n.spkind,\n.spqhead,\n.lbchip");
+    expect(rule).toMatch(/min-height:\s*var\(--tap\)/);
+    // The Leaderboard's two tabs were the last pair under it, at their own literal 36.
+    expect(ruleFor(css, ".lbtab"), "the Leaderboard's tabs keep a height of their own")
+      .not.toMatch(/min-height/);
+  });
 });
 
 describe("the game is played upright", () => {
@@ -683,7 +821,7 @@ describe("the home screen's ledge survives the blanket", () => {
       .toMatch(/margin:\s*var\(--vgap\) var\(--gutter\) 0/);
     // Under the banner, and above whatever follows the row.
     expect(ruleFor(css, "#home .homerow"))
-      .toMatch(/padding:\s*var\(--vgap\) var\(--gutter\)/);
+      .toMatch(/padding:\s*var\(--vgap\) var\(--homeside\)/);
     // Down the column of three side buttons.
     expect(ruleFor(css, "#home .homefabs")).toMatch(/gap:\s*var\(--vgap\)/);
     /*
@@ -694,7 +832,7 @@ describe("the home screen's ledge survives the blanket", () => {
      * value: `padding: Xu Ygutter 0`.
      */
     expect(rulesFor(css, "#home .topnav"), "the bar pads its own bottom, doubling the gap")
-      .toMatch(/padding:\s*calc\(8 \* var\(--u\)\) var\(--gutter\) 0\s*;/);
+      .toMatch(/padding:\s*calc\(8 \* var\(--u\)\) var\(--homeside\) 0\s*;/);
   });
 
   /**

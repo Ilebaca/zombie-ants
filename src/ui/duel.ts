@@ -47,14 +47,21 @@ export function inviteBar(opts: InviteBarOptions): HTMLElement {
   const face = el("div", "invface");
   face.appendChild(antPortrait(invite.from.species, 64));
 
-  // The NAME is the line that must survive: "…challenged you" is the same on every
-  // invitation there will ever be, so it is the half that gets cut when the bar is narrow.
+  // THE NAME HAS THE FIRST LINE TO ITSELF, and the verb went down to the second.
+  //
+  // That was always the intent — "…challenged you" is the same on every invitation there
+  // will ever be, so it is the half that should give way — and the layout did the exact
+  // opposite: the verb was `flex: none` beside a name that could ellipsise, so on a
+  // 320px phone the name was cut to "P…" and a whole colony was announced by one letter.
+  // Shrinking the verb instead is not the answer either (half a word reads as a
+  // rendering fault), and neither is dropping it below some width: that is a breakpoint
+  // where the sentence has to be re-read. One structure at every width instead. The
+  // second line still ellipsises, which it already did, and the words that matter are
+  // at its head.
   const mid = el("div", "invmid");
-  const who = el("div", "invwho");
-  who.append(el("b", "invname", invite.from.name), el("span", "invverb", " challenged you"));
   mid.append(
-    who,
-    el("div", "invwhat", `${MAPS[invite.map].name} · ${compact(invite.from.colony)} troops · ${waitingFor(invite.at)}`),
+    el("div", "invwho", invite.from.name),
+    el("div", "invwhat", `challenged you · ${MAPS[invite.map].name} · ${compact(invite.from.colony)} troops · ${waitingFor(invite.at)}`),
   );
 
   const accept = el("button", "invbtn", "Accept");

@@ -2167,7 +2167,24 @@ button:not(.playbtn):active,
    column of comparison text would be a paragraph in a gutter. */
 .nest-lvl {
   display: grid;
-  grid-template-columns: 1fr 34px 1fr;
+  /* THE SHAFT NARROWS ON A NARROW PHONE, AND SO DOES EVERYTHING ELSE ON THIS ROW.
+     A chamber gets HALF of what is left after the shaft, so at 320 the card came out
+     112px wide — a 44px disc, 34px of padding and 34px for the name. "Metapleural
+     Gland" needs 73 for its longest word alone, so five of the six chambers wrote their
+     name out past their own card and under the shaft, and the Granary did it on every
+     phone in the list. Measured, not guessed: 40px over at 320 and still 4px over at
+     430.
+     So the shaft, the card's inset, its padding, its disc and its gap all come down
+     together below about 400px of viewport, and the name's own size with them. Every
+     clamp's UPPER bound is the number that was already there, so a tall phone is
+     unchanged and the curve only ever takes something away — the same rule the match
+     chrome follows. `--nest-stub` is derived rather than written: it is the tunnel from
+     the shaft to the card, so it is exactly the gap between them and cannot be left
+     pointing at thin air when the shaft moves. */
+  --nest-shaft: clamp(20px, 6.2vw, 34px);
+  --nest-inset: clamp(6px, 2.6vw, 14px);
+  --nest-stub: calc(var(--nest-shaft) / 2 + var(--nest-inset) - 6px);
+  grid-template-columns: 1fr var(--nest-shaft) 1fr;
   align-items: start;
   column-gap: 0;
 }
@@ -2214,7 +2231,7 @@ button:not(.playbtn):active,
   content: "";
   position: absolute;
   top: 50%;
-  width: 26px;
+  width: var(--nest-stub, 26px);
   height: 4px;
   margin-top: -2px;
   background: var(--soil-cut);
@@ -2242,12 +2259,12 @@ button:not(.playbtn):active,
    than the soil around it. Unbroken earth is an outline and nothing else. */
 .room {
   display: grid;
-  grid-template-columns: 44px 1fr;
+  grid-template-columns: clamp(32px, 10vw, 44px) 1fr;
   align-items: center;
-  gap: 10px;
-  width: calc(100% - 14px);
+  gap: clamp(7px, 2.2vw, 10px);
+  width: calc(100% - var(--nest-inset, 14px));
   margin: 16px 0 0;
-  padding: 10px 12px;
+  padding: 10px clamp(8px, 2.6vw, 12px);
   border: 1px solid var(--soil-line);
   border-radius: 14px 14px 14px 14px;
   background: var(--soil-cut);
@@ -2263,8 +2280,8 @@ button:not(.playbtn):active,
 .room-pocket {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: clamp(32px, 10vw, 44px);
+  height: clamp(32px, 10vw, 44px);
   border-radius: 99px;
   background: rgba(0, 0, 0, .34);
   color: var(--muted);
@@ -2274,10 +2291,15 @@ button:not(.playbtn):active,
 
 .room-txt { display: grid; gap: 3px; min-width: 0; }
 .room-nm {
-  font-size: 13px;
+  font-size: clamp(11px, 3.3vw, 13px);
   font-weight: 900;
   line-height: 1.2;
   letter-spacing: .1px;
+  /* THE GUARANTEE, not the mechanism. The clamps above are what make every chamber in
+     the catalogue fit on every phone; this is what stops the SEVENTH one written out
+     past its card the way the first six were. A long word breaks here rather than
+     spilling under the shaft, which is contained where the old behaviour was not. */
+  overflow-wrap: break-word;
 }
 .room-lv {
   font-size: 10px;
@@ -3440,7 +3462,8 @@ button:not(.playbtn):active,
   border: 1px solid var(--line);
 }
 .lbtab {
-  min-height: 36px;
+  /* No height of its own: it is on the app's tap floor with every other tab and chip
+     in this app (§ `--tap`), which the Leaderboard's two were the last pair to miss. */
   border: none;
   border-radius: var(--r-pill);
   background: transparent;
@@ -4434,7 +4457,6 @@ button:not(.playbtn):active,
    than the reading column on purpose, because a tab bar is furniture
    rather than text and wants to stay near the screen's own edges. */
 .homenav {
-  --navmax: 640px;
   padding-inline: max(0px, calc((100% - var(--navmax)) / 2));
 }
 
@@ -4466,14 +4488,6 @@ button:not(.playbtn):active,
      so it is re-measured if the display face ever changes. */
   --colline: calc(30 * var(--u));
   --colink: calc(var(--colline) * 0.7385);
-  /* Wider than the reading column on purpose: clamping home's furniture to
-     a 360px measure inside a 390px phone put a second gutter inside the
-     first. The cap only bites on a tablet, where a banner spread across the
-     whole screen would be the thing that looked wrong. */
-  /* Wider than the reading column on purpose: clamping home's furniture to a
-     360px measure inside a 390px phone puts a second gutter inside the first.
-     The cap only bites on a tablet. */
-  --homemax: 640px;
   padding-inline: var(--gutter);
 }
 /* The top bar and the banner are one BACKGROUND that runs edge to edge, so
@@ -4517,13 +4531,13 @@ button:not(.playbtn):active,
    glass and the buttons over it stop sixteen — two right edges on one screen. */
 #home .settingsfab,
 #home .dailyfab {
-  right: max(var(--gutter), calc((100% - var(--homemax)) / 2));
+  right: var(--homeside);
 }
 /* ...and so does the currency row above them. Everything on this screen lines up
    on one pair of edges, or the top bar reads as a narrower screen sitting on a
    wider one — which is exactly how it looked on a tablet. */
 #home .topnav {
-  padding-inline: max(var(--gutter), calc((100% - var(--homemax)) / 2));
+  padding-inline: var(--homeside);
 }
 
 /* ----------------------------------------------------------------------
@@ -4603,10 +4617,15 @@ button:not(.playbtn):active,
 .setval,
 .setswitch,
 .frtab,
+.lbtab,
 .spkind,
 .spqhead,
 .lbchip {
-  min-height: 42px;
+  /* THE TOKEN, never the number. These were a literal 42 — two pixels under the floor
+     this whole block exists to hold, on every switch in Settings and every chip in
+     Friends, Support and the Leaderboard. A copy of a number is a copy that can be
+     two off, and nothing measures it. */
+  min-height: var(--tap);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -4722,22 +4741,20 @@ button:not(.playbtn):active,
 .invface { width: 34px; height: 34px; flex: 0 0 34px; }
 .invface canvas, .invface img { width: 100%; height: 100%; display: block; }
 .invmid { flex: 1; min-width: 0; }
+/* WHO IT IS, ON ITS OWN LINE. It used to share the line with "challenged you", which
+   was `flex: none` — so the thing that gave way was the NAME, down to a single letter
+   and an ellipsis on a 320px phone. The verb reads on the second line now (`duel.ts`),
+   so this line has the whole bar and only ellipsises for a name that genuinely needs
+   it. */
 .invwho {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
   font-size: 12.5px;
+  font-weight: 900;
   color: var(--ink);
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-/* The name can shrink and ellipsise; the words after it are dropped whole
-   rather than cut, because half a sentence reads as a rendering fault. */
-.invname { font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* NEVER SHRINKS. It was `flex: 0 1 auto`, so a long colony name pushed "challenged
-   you" down to "challenged yc" — half a word, which reads as a rendering fault. The
-   NAME is the part that ellipsises, which is what the line above says and what this
-   now does. */
-.invverb { flex: none; font-weight: 700; color: var(--ink-soft); white-space: nowrap; }
 .invwhat {
   font-size: 10.5px;
   font-weight: 700;
@@ -6545,6 +6562,25 @@ button:not(.playbtn):active,
      twice, because the TAB BAR is lifted by it and the bar is on every deck
      screen, which puts it outside `#home` where that variable lives. */
   --hudgut: calc(12 * var(--u));
+  /* HOW WIDE HOME'S FURNITURE IS ALLOWED TO GET.
+     Wider than the reading column (`--page`) on purpose: clamping home to a 360px
+     measure inside a 390px phone puts a second gutter inside the first, so the cap only
+     bites on a tablet, where a banner spread across the whole screen is the thing that
+     looks wrong. `--navmax` is the same number and is deliberately the same token — the
+     tab tray is furniture on the same screen, and two 640s would be two chances to move
+     one and not the other. It is on `:root` rather than on `#home` because the TRAY and
+     the DRAWER both measure against it from outside that element. */
+  --homemax: 640px;
+  --navmax: var(--homemax);
+  /* THE EDGE EVERYTHING ON HOME LINES UP ON, at every width.
+     On a phone it is the frame's own inset; past `--homemax` it is whatever is left
+     over, so the top bar, the granary row and the drawer centre on the same column the
+     banner and PLAY already did. It is a TOKEN because three of the four rules that
+     want it set `padding` as a SHORTHAND — and a shorthand in this block is what wiped
+     the responsive cap off all three in the first place (§ A `padding` SHORTHAND IN A
+     LATER BLOCK), so the honest fix is for the shorthand itself to carry the column.
+     The `100%` resolves where the token is USED, never here. */
+  --homeside: max(var(--hudgut), calc((100% - var(--homemax)) / 2));
   /* ONE VERTICAL GAP FOR THE WHOLE TOP BLOCK, asked for directly. The mock-up spaces
      it three different ways — 5 under the bar, then 5 + 5 + 8 stacked between the
      banner and the buttons, then 16 down the button column — which measured out as
@@ -6674,7 +6710,7 @@ button:not(.playbtn):active,
      to the banner where every other gap on the block was 8, and reported exactly
      that way. The TOP padding stays: that one is the air under the notch, and there
      is nothing above it to double up with. */
-  padding: calc(8 * var(--u)) var(--gutter) 0;
+  padding: calc(8 * var(--u)) var(--homeside) 0;
   background: none;
   border: none;
   box-shadow: none !important;
@@ -6692,7 +6728,12 @@ button:not(.playbtn):active,
      answer the currency steppers already use. Nothing on the row moves by a pixel. */
   min-height: calc(30 * var(--u));
   padding: 0;
-  overflow: hidden;
+  /* AND IT MUST NOT CLIP, or the `::after` below is clipped with everything else and the
+     target is the 30px disc again. It was `overflow: hidden` — invisible, because the
+     pseudo-element is invisible; measured by hit-testing the page, the avatar answered
+     taps over exactly 30x30. The round crop belongs to the PICTURE inside it, which is
+     the only thing there was to clip. */
+  overflow: visible;
   border: none;
   border-radius: 48px;
   background: var(--hud-face);
@@ -6712,6 +6753,9 @@ button:not(.playbtn):active,
   width: 100%;
   height: 100%;
   display: block;
+  /* The disc's crop, moved off the button so the button's hit area can reach past it. */
+  overflow: hidden;
+  border-radius: inherit;
   /* The gold ring goes with it. It was a 2px border on the avatar's own box — a second
      edge inside the disc's edge, which at 30px is most of the mark. */
   border: none;
@@ -6740,7 +6784,12 @@ button:not(.playbtn):active,
   align-items: center;
   justify-content: space-between;
   gap: 0;
-  overflow: hidden;
+  /* NOT `hidden`, for the same reason the avatar beside it is not. The `+` in this chip
+     is a 18px mark whose thumb target is a `var(--tap)` `::after` (§ the steppers), and a
+     clip on the chip cut that target back to the chip's own 30px height — silently, since
+     what was being clipped is invisible. The ellipsis that wanted a clip is on `.tn-num`,
+     which has one of its own; nothing else in here reaches a corner. */
+  overflow: visible;
   padding: calc(2 * var(--u)) calc(5 * var(--u)) calc(2 * var(--u)) calc(2 * var(--u));
   border: none;
   /* THE LEFT END IS A SEMICIRCLE AND THE RIGHT END IS EVERY OTHER FRAME'S CORNER, both
@@ -6942,7 +6991,7 @@ button:not(.playbtn):active,
   align-items: flex-start;
   justify-content: space-between;
   gap: calc(8 * var(--u));
-  padding: var(--vgap) var(--gutter);
+  padding: var(--vgap) var(--homeside);
 }
 #home .granpill,
 #home #granaryPill.granpill {
@@ -7151,7 +7200,12 @@ button:not(.playbtn):active,
      no longer add it, or the tray would float a thumb's width up. */
   bottom: env(safe-area-inset-bottom);
   height: var(--navh);
-  padding: calc(8 * var(--u));
+  /* AND THE SIDES CARRY `--navmax`, which this shorthand used to throw away. The
+     responsive block caps the tray at 640 so five tabs do not spread across a tablet;
+     `padding: calc(8 * var(--u))` here is ONE declaration and it sets all four sides, so
+     the cap was silently gone and the tiles measured 196px each on a 1024 screen. The
+     tray's own 8 is the FLOOR of the inset rather than the whole of it. */
+  padding: calc(8 * var(--u)) max(calc(8 * var(--u)), calc((100% - var(--navmax)) / 2));
   border: none;
   background: none;
 }
@@ -7284,7 +7338,7 @@ button:not(.playbtn):active,
    moves by the notch and nothing else. The legacy sheet pads this wrapper to place
    the panel, so that is the property to set. */
 .menuwrap {
-  padding: calc(166 * var(--u) + var(--hudgut) + env(safe-area-inset-top)) var(--gutter, 12px) calc(12 * var(--u));
+  padding: calc(166 * var(--u) + var(--hudgut) + env(safe-area-inset-top)) var(--homeside) calc(12 * var(--u));
   background: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -7576,7 +7630,9 @@ button:not(.playbtn):active,
   display: flex;
   flex-direction: column;
   gap: 15px;
-  padding: 10px;
+  /* TIGHTER AT THE SIDES THAN AT THE ENDS, because what is in here is five tiles across
+     and the narrowest phone is what sizes them. See the row below. */
+  padding: 10px 6px;
   border: none;
   border-radius: var(--r-card);
   background: var(--hud-well);
@@ -7594,7 +7650,14 @@ button:not(.playbtn):active,
 #luckyhatch .hatchodds .ho-rows {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
+  /* FIVE ACROSS AT EVERY WIDTH, so the NARROWEST phone is what sizes the gap and the
+     cell's padding — not a clamp, because five tiles two pixels apart rather than three
+     is not something a wide screen has any reason to look different about. At 320 the
+     cells came out 48.8 and "Exceptional" is 46 of that, so the longest label ran
+     straight into its own border with the 5px of padding clipped away behind it. The
+     type does NOT come down with them: it is already `--fs-label`, and the four sizes
+     in this block are the whole point of it. */
+  gap: 4px;
 }
 #shop .hatchodds .ho-row,
 #luckyhatch .hatchodds .ho-row {
@@ -7603,7 +7666,7 @@ button:not(.playbtn):active,
   align-items: center;
   gap: 4px;
   min-width: 0;
-  padding: 5px;
+  padding: 5px 1px;
   overflow: hidden;
   border: none;
   border-radius: var(--r-btn);
@@ -7627,6 +7690,11 @@ button:not(.playbtn):active,
   line-height: 1.1;
   text-align: center;
   color: var(--hud-dim);
+  /* THE GUARANTEE, not the mechanism — the same shape as the chamber names. The gap and
+     the cell's padding above are what make all five of these tiers fit on a 320 phone;
+     this is what stops a SIXTH rung's name being clipped in half by the tile it sits in
+     the day the ladder grows. */
+  overflow-wrap: anywhere;
 }
 #shop .hatchodds .ho-p,
 #luckyhatch .hatchodds .ho-p {

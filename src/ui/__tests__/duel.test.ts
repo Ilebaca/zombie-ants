@@ -195,6 +195,30 @@ describe("being invited", () => {
   });
 
   /**
+   * THE NAME HAS THE FIRST LINE TO ITSELF, AND IT IS THE WHOLE NAME.
+   *
+   * It used to share that line with "challenged you", which was `flex: none` — so on a
+   * 320px phone the half that gave way was the NAME, ellipsised down to its first
+   * letter: a whole colony announced as "P…". The verb is the same on every invitation
+   * there will ever be, so it belongs on the second line with the rest of the detail,
+   * and this holds the two apart. Measured in a browser after the change: the name reads
+   * in full at 320.
+   */
+  it("gives the whole name a line of its own, and the verb the next one", () => {
+    const store = ready();
+    for (const d of [...store.duels]) store.answerDuel(d.id);
+    store.addDuel(inviteFrom("Pheromone53", 31_000, "small", Date.now()));
+    const host = mount(store);
+    press(host, ".playbtn");
+    const who = host.querySelector<HTMLElement>("#formation .invbar .invwho");
+    const what = host.querySelector<HTMLElement>("#formation .invbar .invwhat");
+    expect(who?.textContent, "the name does not own the first line")
+      .toBe("Pheromone53");
+    expect(what?.textContent, "the verb did not go down to the second line")
+      .toMatch(/^challenged you · /);
+  });
+
+  /**
    * ACCEPTING KEEPS THE CHOICES THAT ARE STILL THE GUEST'S. The colony and the formation
    * are theirs to pick; what the invitation settled is who is across the board.
    */
