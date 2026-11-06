@@ -1489,3 +1489,63 @@ describe("the match chrome gives the board room on a short screen", () => {
       .toMatch(/background:\s*var\(--hud\)/);
   });
 });
+
+/**
+ * THE AVATAR PICKER'S BLOCK EXISTS AT ALL.
+ *
+ * This is here because the whole block went missing once — dropped while resolving a
+ * `skin.css` merge conflict — and the SUITE STAYED GREEN: 1,591 tests, none of which
+ * could see it. jsdom has no layout, the markup never changed, and `buildAvatarPicker`
+ * went on producing exactly the right elements. What the player got was ninety-eight
+ * full-colour squares at the file's own size with no rounding, no gaps and no grey on
+ * the locked ones — reported from a phone, which was the only place it was visible.
+ *
+ * So what is held is the SHAPE of the screen rather than any one number: the grid is
+ * five across, a tile is square and rounded, a locked tile is greyed and darkened, the
+ * worn one is the only coloured edge, and every rule names BOTH tags. A rule asserted
+ * here is a rule that cannot silently cease to exist.
+ */
+describe("the avatar picker", () => {
+  const skin = read("skin.css");
+
+  it("lays the faces out five across", () => {
+    expect(rulesFor(skin, ".avgrid")).toMatch(/grid-template-columns:\s*repeat\(5,/);
+  });
+
+  /** A square picture in a square box: the rounding is the tile's, not the artwork's. */
+  it("draws a tile as a rounded square", () => {
+    const tile = rulesFor(skin, ".av-t");
+    expect(tile).toMatch(/border-radius:\s*\d/);
+    expect(tile).toMatch(/aspect-ratio:\s*1/);
+    expect(tile, "a square picture needs the box to clip it").toMatch(/overflow:\s*hidden/);
+  });
+
+  /**
+   * GREYED AND DARKENED, which is the half that was reported. A locked face in full
+   * colour is indistinguishable from one the player owns, so the screen stops saying
+   * what it is for — and nothing but this assertion can see the rule has gone.
+   */
+  it("greys and darkens a face that is not owned yet", () => {
+    const off = rulesFor(skin, ".av-t.off .av-f");
+    expect(off, "a locked face is not greyed").toMatch(/filter:[^;]*grayscale\(1\)/);
+    expect(off, "a locked face is not darkened").toMatch(/filter:[^;]*brightness\(\s*\.?\d/);
+  });
+
+  /** Every tile is framed, so the grid reads as objects rather than one sheet of colour
+   *  — and the worn one changes that edge's COLOUR rather than being the only tile to
+   *  have one, or it would sit at a different size from all ninety-seven others. */
+  it("frames every tile and colours only the worn one", () => {
+    expect(rulesFor(skin, ".av-t")).toMatch(/border:\s*2px solid/);
+    expect(rulesFor(skin, ".av-t.on")).toMatch(/border-color:/);
+  });
+
+  /** `avatarFace` answers an `<img>` or a `<canvas>` (§ A COLLECTION CARD), so a rule
+   *  naming one sizes half the cases and lets the rest render at the file's own 250px. */
+  it("sizes both tags everywhere it sizes a face", () => {
+    for (const cls of ["av-hero-f", "av-f", "pf-av-mini"]) {
+      const block = skin.slice(skin.indexOf(`.${cls}`));
+      expect(block.slice(0, 400), `img.${cls} is unsized`).toContain(`img.${cls}`);
+      expect(block.slice(0, 400), `canvas.${cls} is unsized`).toContain(`canvas.${cls}`);
+    }
+  });
+});

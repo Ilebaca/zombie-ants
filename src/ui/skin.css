@@ -2601,6 +2601,15 @@ button:not(.playbtn):active,
 }
 .pf-face { position: relative; width: 76px; height: 76px; }
 .pf-face canvas, .pf-face img { display: block; width: 76px; height: 76px; }
+/* AN AVATAR IS A SQUARE PICTURE, so the disc is this box rather than the artwork. */
+.pf-av, img.pf-av, canvas.pf-av { border-radius: 50%; object-fit: cover; }
+.pf-av-mini, img.pf-av-mini, canvas.pf-av-mini {
+  width: 26px;
+  height: 26px;
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
+}
 /* The level rides the portrait rather than sitting beside it: one object,
    and the number is the thing that changes. */
 .pf-level {
@@ -2706,6 +2715,9 @@ button:not(.playbtn):active,
 
 /* The nine colonies, so the row says which ones rather than only how many. Sized to fit
    on ONE line: a strip that wraps stops reading as a set and starts reading as a list. */
+/* The avatar row leads with the face it is about, so its slot carries no plate behind
+   it — a tinted square under a square picture is a second shape round the first. */
+.pf-row-i:has(.pf-av-mini) { background: none; }
 .pf-faces { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
 .pf-head { display: block; width: 22px; height: 22px; }
 .pf-head canvas, .pf-head img { display: block; width: 22px; height: 22px; }
@@ -8112,3 +8124,76 @@ button:not(.playbtn):active,
   border-radius: 999px;
 }
 .match .timelabel { padding-bottom: 0; }
+
+/* ======================================================================
+   THE AVATAR PICKER — the face beside your own name (§ NINETY-EIGHT AVATARS)
+   ======================================================================
+   Ninety-eight faces in a grid, with the one being worn above them at the size it is
+   actually judged at. Five across, which is the same count the trait tiles use and for
+   the same reason: five is where a collection reads as a collection at a glance rather
+   than as a list to scroll, and five across a 320px phone is why there is no room for a
+   word on a tile.
+
+   EVERY RULE HERE NAMES BOTH TAGS. `avatarFace` answers an `<img>` where there is a
+   painting and a `<canvas>` where there is not (§ A COLLECTION CARD), so a rule written
+   for one of them sizes half the cases and lets the rest render at the file's own 250px.
+   `css-sanity` sweeps the stylesheet for exactly this.
+
+   AND THIS WHOLE BLOCK WENT MISSING ONCE, which is worth recording: it was dropped
+   resolving a `skin.css` merge conflict, and the screen still BUILT — every tile in full
+   colour at its file's own size, locked and owned alike, with the hero a bare square.
+   Nothing failed, because jsdom has no layout and the markup was untouched. A stylesheet
+   that is simply absent is the one kind of regression no test in this suite can see. */
+.avwrap { display: grid; gap: var(--stack); }
+
+/* THE ONE BEING WORN, big. The grid below is too small to choose a face by; this is the
+   only one the player is deciding about, so it is shown at the size that decides it. */
+.av-hero { display: grid; justify-items: center; gap: 8px; }
+.av-hero-f, img.av-hero-f, canvas.av-hero-f {
+  width: 96px;
+  height: 96px;
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--grass);
+}
+.av-hero-k { font-size: 11.5px; font-weight: 800; color: var(--ink-soft); }
+
+.avgrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+/* EVERY TILE IS FRAMED, not only the worn one. The art is ninety-eight different
+   full-bleed squares, so without an edge the grid reads as one sheet of colour with no
+   seams — the rounded corner and the hairline are what make each one a separate object.
+   The worn tile changes that edge's COLOUR rather than adding one, or it would be the
+   only tile a different size. */
+.av-t {
+  position: relative;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, .14);
+  border-radius: 12px;
+  background: none;
+  overflow: hidden;
+  cursor: pointer;
+  aspect-ratio: 1;
+}
+.av-t .av-f,
+.av-t img.av-f,
+.av-t canvas.av-f {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+/* A LOCKED ONE IS DRAWN, not hidden: seeing the ninety-odd still to find is the whole
+   reason to walk the road and open the hatch. Dimmed rather than padlocked, because the
+   tile already says where it comes from (`title`) and a padlock would say only "no".
+   Its frame dims with it, or a grey picture sits inside a bright edge. */
+.av-t.off { cursor: default; border-color: rgba(255, 255, 255, .07); }
+.av-t.off .av-f { filter: grayscale(1) brightness(.5); }
+/* The worn one is the only tile with a COLOURED edge, so "which am I wearing" is
+   answered by the grid as well as by the hero above it. */
+.av-t.on { border-color: var(--grass); }
+.av-note { font-size: 11px; font-weight: 700; line-height: 1.5; color: var(--muted); }

@@ -2053,6 +2053,20 @@ belongs to the save rather than to a species, and it is never worn by an opponen
   `<canvas>` where it does not, so every box that sizes one must size BOTH — the trap the
   match history and the chrome marks are already on record for. And it sets the canvas's
   width and height as ATTRIBUTES, never inline styles: an inline style outranks the sheet.
+- **THE PICKER'S WHOLE STYLESHEET BLOCK WENT MISSING ONCE, AND THE SUITE STAYED GREEN.**
+  It was dropped resolving a `skin.css` merge conflict — main had been reworked directly
+  and the conflicted hunk was taken wholesale — and **1,591 tests passed**. What the
+  player got was ninety-eight full-colour squares at the file's own size, no rounding, no
+  gaps, and locked faces indistinguishable from owned ones; reported from a phone, which
+  was the only place it was visible. jsdom has no layout, the markup never changed, and
+  `buildAvatarPicker` went on producing exactly the right elements. **A stylesheet that is
+  simply ABSENT is the one regression nothing else in this suite can see**, which is why
+  `css-sanity` now holds the picker's SHAPE — five across, a rounded square tile, a locked
+  face greyed AND darkened, the worn one the only coloured edge, both tags sized.
+- **AND EVERY TILE IS FRAMED, not only the worn one.** The art is ninety-eight different
+  full-bleed squares, so with no edge the grid reads as one sheet of colour with no seams.
+  The worn tile changes that edge's COLOUR rather than adding one, or it would be the only
+  tile a different size from the other ninety-seven.
 - **THE LEGACY SHEET OWNS `.avatar`, AND IT IS A 40px DISC.** `game.css` line 214 is
   `.avatar { width: 40px; height: 40px; border-radius: 50% }`, so that string is STYLING
   rather than a label (§10) — and borrowing it as a modifier collapsed the ten-hatch
