@@ -20,6 +20,7 @@ import type {
 } from "../platform";
 import { groundReady, setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
+import { buildAvatarPicker } from "./avatarpicker";
 import { buildInventory, buildTraitBench } from "./traits";
 import { settleMatch } from "./settle";
 import { buildAntarium } from "./antarium";
@@ -77,7 +78,8 @@ type ScreenId =
   | "home" | "formation" | "history"
   | "anthill" | "antarium" | "antup" | "achievements" | "quests" | "profile"
   | "challenges" | "daily" | "rules" | "settings" | "news" | "friends" | "support"
-  | "luckyhatch" | "leaderboard" | "shop" | "traits" | "inventory" | "keepsafe";
+  | "luckyhatch" | "leaderboard" | "shop" | "traits" | "inventory" | "keepsafe"
+  | "avatars";
 
 /**
  * Is this press on something that ACTS?
@@ -836,6 +838,15 @@ export class App {
         onOpen: (scope) => this.openTraits(scope, "inventory"),
       });
     }
+    if (id === "avatars") {
+      return buildAvatarPicker(this.profile, {
+        // Back to the profile, because that is the face the picker just changed and the
+        // only other screen it is reachable from sends the player here to change it.
+        onBack: () => this.show("profile"),
+        // The top bar wears the avatar too, so home is stale the moment one is chosen.
+        onChanged: () => this.deck?.refresh("home"),
+      });
+    }
     if (id === "traits") {
       return buildTraitBench(this.profile, {
         scope: this.traitScope,
@@ -857,6 +868,8 @@ export class App {
         // is fielded, so they are the right first thing to see from a screen about the
         // player rather than about one species.
         onTraits: () => this.openTraits("hill", "profile"),
+        // The face on this screen is the one the picker changes, so it opens from here.
+        onAvatars: () => this.show("avatars"),
       });
     }
     if (id === "history") {
@@ -892,6 +905,9 @@ export class App {
           this.paintYou();
           this.show("antup");
         },
+        // AND AN AVATAR GOES SOMEWHERE ELSE AGAIN. It is not an item and it is not a
+        // colony's appearance — it is the player's own face, worn from one screen.
+        onProfile: () => this.show("avatars"),
         // The trait went to the bag, so anything counting the bag is now stale.
         onChanged: () => { this.rebuildHomeBar(); },
       });

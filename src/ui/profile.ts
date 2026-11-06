@@ -24,12 +24,12 @@
  * match did (app.ts → ProfileStore), so opening this can never move one.
  */
 import { CHAMBER_MAX, SPECIES } from "../engine";
-import type { SpeciesId } from "../engine";
 import {
-  CHAMBERS, RESEARCH_TOTAL_MAX, SPECIES_ORDER, TRAIT_SLOTS, compact, exact, levelReward,
+  CHAMBERS, RESEARCH_TOTAL_MAX, SPECIES_ORDER, TRAIT_SLOTS, avatarProgress, compact, exact,
+  levelReward,
 } from "../platform";
 import type { ProfileStore, TraitScope } from "../platform";
-import { antPortrait, clockOf, el, redraw, screenEl, screenHeader, toast } from "./chrome";
+import { antPortrait, avatarFace, clockOf, el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 
 export interface ProfileOptions {
@@ -42,6 +42,8 @@ export interface ProfileOptions {
   onHistory: () => void;
   /** The collection's fourth door, once traits are open. */
   onTraits: () => void;
+  /** The faces: the one worn is on this screen, so the picker opens from it. */
+  onAvatars: () => void;
 }
 
 export function buildProfile(store: ProfileStore, opts: ProfileOptions): HTMLElement {
@@ -58,7 +60,7 @@ export function buildProfile(store: ProfileStore, opts: ProfileOptions): HTMLEle
     const scroll = el("div", "antscroll");
     scroll.id = "profileBody";
 
-    scroll.appendChild(who(store, render, root));
+    scroll.appendChild(who(store, render, root, opts));
 
     // THE RECORD IS A COUNT; THIS IS THE LIST. A player who has won 61 of 104 could not
     // see one of them — no idea who they played last night or how it went.
@@ -144,18 +146,31 @@ export function buildProfile(store: ProfileStore, opts: ProfileOptions): HTMLEle
 }
 
 /** Name, level, the bar to the next one, and any reward still standing uncollected. */
-function who(store: ProfileStore, render: () => void, root: HTMLElement): HTMLElement {
+function who(
+  store: ProfileStore, render: () => void, root: HTMLElement, opts: ProfileOptions,
+): HTMLElement {
   const profile = store.get();
   const progress = store.level();
-  const fav = favourite(store);
 
   const box = el("div", "pf-hero");
 
-  const face = el("div", "pf-face");
-  // The player's own colony, wearing what they put on it. Everywhere else a portrait is
-  // somebody else's and is drawn basic.
-  const me = fav ?? profile.lastSpecies;
-  face.appendChild(antPortrait(me, 76, undefined, store.lookFor(me)));
+  // THE FACE IS A CONTROL NOW, because there is something to choose.
+  const face = el("button", "pf-face") as HTMLButtonElement;
+  face.type = "button";
+  face.onclick = opts.onAvatars;
+  /*
+   * THE AVATAR, AND NOT THE COLONY ANY MORE.
+   *
+   * This hero used to draw the colony the player fields most, which was the best picture
+   * of them the app had. It is not any more: every colony has a face from its first
+   * launch (`platform/avatars.ts`), and the top bar on the screen behind is already
+   * wearing it — a hero showing something else would be two different pictures of the
+   * same player, one screen apart. The colonies are still all over this page, as the
+   * strip of heads on the collection row.
+   */
+  face.appendChild(avatarFace(store.face, 76, "pf-av"));
+  face.title = store.avatar ? "Change your avatar" : "Choose an avatar";
+  face.setAttribute("aria-label", face.title);
   // The level rides the portrait rather than sitting beside it: one object, and the
   // number is the part that changes.
   face.appendChild(el("span", "pf-level", String(progress.level)));
@@ -238,7 +253,24 @@ function collection(store: ProfileStore, opts: ProfileOptions): HTMLElement {
    * rides beside it as the thing there is more of.
    */
   if (store.traitsOpen()) box.appendChild(traitRow(store, opts.onTraits));
+  /*
+   * THE FACES ARE A DOOR LIKE THE REST, AND THEY ARE NEVER GATED.
+   *
+   * Every other row here opens at some point on the road; this one is open from the
+   * first launch, because a new colony already has ten (`platform/avatars.ts`) and a
+   * player should be able to choose a face before they have earned anything.
+   */
+  box.appendChild(avatarRow(store, opts.onAvatars));
   return box;
+}
+
+/** The collection's last door: ninety-eight faces, and the one being worn beside them. */
+function avatarRow(store: ProfileStore, onOpen: () => void): HTMLElement {
+  const { has, of } = avatarProgress(store.avatars);
+  const row = collRow("star", "Avatars", has, of, onOpen,
+    undefined, avatarFace(store.face, 22, "pf-av-mini"));
+  row.id = "pfAvatars";
+  return row;
 }
 
 /** The collection's fourth door: fifty slots, and a bag with no ceiling. */
@@ -256,10 +288,16 @@ function traitRow(store: ProfileStore, onOpen: () => void): HTMLElement {
 
 function collRow(
   mark: string, label: string, have: number, max: number,
-  onOpen: () => void, extra?: HTMLElement,
+  onOpen: () => void, extra?: HTMLElement, lead?: HTMLElement,
 ): HTMLElement {
   const row = el("button", "pf-row pf-row-coll");
-  row.append(iconSlot("pf-row-i", mark, 18));
+  // A row whose own collectable is a PICTURE leads with the picture rather than with a
+  // mark standing for it — the same reason the road's avatar checkpoint wears its face.
+  if (lead) {
+    const slot = el("span", "pf-row-i");
+    slot.appendChild(lead);
+    row.appendChild(slot);
+  } else row.append(iconSlot("pf-row-i", mark, 18));
 
   const mid = el("div", "pf-row-mid");
   const top = el("div", "pf-row-top");
@@ -288,16 +326,7 @@ function faces(store: ProfileStore): HTMLElement {
   return strip;
 }
 
-/** The colony fielded most often — the face the profile wears. */
-function favourite(store: ProfileStore): SpeciesId | null {
-  const fav = store.get().fav;
-  let best: { id: SpeciesId; n: number } | null = null;
-  for (const id of SPECIES_ORDER) {
-    const n = fav[id] ?? 0;
-    if (n > 0 && (!best || n > best.n)) best = { id, n };
-  }
-  return best?.id ?? null;
-}
+
 
 function iconSlot(cls: string, name: string, size: number): HTMLElement {
   const box = el("span", cls);

@@ -2604,8 +2604,27 @@ button:not(.playbtn):active,
   background: var(--panel);
   border: 1px solid var(--line);
 }
-.pf-face { position: relative; width: 76px; height: 76px; }
+/* It is a BUTTON now — the picker opens from the face it changes — so it gives up the
+   browser's own button chrome and keeps nothing but its size. */
+.pf-face {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
 .pf-face canvas, .pf-face img { display: block; width: 76px; height: 76px; }
+/* AN AVATAR IS A SQUARE PICTURE, so the disc is this box rather than the artwork. */
+.pf-av, img.pf-av, canvas.pf-av { border-radius: 50%; object-fit: cover; }
+.pf-av-mini, img.pf-av-mini, canvas.pf-av-mini {
+  width: 26px;
+  height: 26px;
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
+}
 /* The level rides the portrait rather than sitting beside it: one object,
    and the number is the thing that changes. */
 .pf-level {
@@ -2711,6 +2730,9 @@ button:not(.playbtn):active,
 
 /* The nine colonies, so the row says which ones rather than only how many. Sized to fit
    on ONE line: a strip that wraps stops reading as a set and starts reading as a list. */
+/* The avatar row leads with the face it is about, so its slot carries no plate behind
+   it — a tinted square under a square picture is a second shape round the first. */
+.pf-row-i:has(.pf-av-mini) { background: none; }
 .pf-faces { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
 .pf-head { display: block; width: 22px; height: 22px; }
 .pf-head canvas, .pf-head img { display: block; width: 22px; height: 22px; }
@@ -6342,6 +6364,36 @@ button:not(.playbtn):active,
 }
 .rd-prize.passlock { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 34%, transparent); }
 
+/* AN AVATAR CHECKPOINT IS THE FACE IT PAYS, cropped round by the disc it sits in.
+   The padding goes, because the picture IS the disc here rather than a mark inside one —
+   and `overflow: hidden` is what rounds it, since the art is an opaque square.
+
+   BOTH TAGS ARE SIZED. `avatarFace` answers an `<img>` where there is a painting and a
+   `<canvas>` where there is not (§ A COLLECTION CARD), so a rule naming one of them sizes
+   half the cases and lets the rest render at the file's own 250px. */
+.rd-prize.avprize { overflow: hidden; }
+.rd-prize .rd-face,
+.rd-prize img.rd-face,
+.rd-prize canvas.rd-face {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+/* It is a PICTURE, so it does not take the state colours the marks do — a face tinted
+   gold on the claimable rung would be a different avatar from the one being paid. What
+   says the state is the ring, which every disc on this road already has. */
+.rd-prize.avprize.locked .rd-face { filter: grayscale(1) brightness(.55); }
+.rd-popic .rd-face,
+.rd-popic img.rd-face,
+.rd-popic canvas.rd-face {
+  width: 48px;
+  height: 48px;
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 /* THE CHAPTER'S LAST CHECKPOINT IS BIGGER, because it pays four times what
    any of the four before it does (`splitPurse`). A reward that is worth
    more and looks identical is the screen keeping it to itself. */
@@ -8121,3 +8173,65 @@ button:not(.playbtn):active,
   border-radius: 999px;
 }
 .match .timelabel { padding-bottom: 0; }
+
+/* ============================================================================
+   ==  THE AVATARS  ===========================================================
+   ============================================================================
+
+   Ninety-eight faces in a grid, with the one being worn above them at the size it is
+   actually judged at. Five across, which is the same count the trait tiles use and for
+   the same reason: five is where a collection reads as a collection at a glance rather
+   than as a list to scroll, and five across a 320px phone is why there is no room for a
+   word on a tile.
+
+   EVERY RULE HERE NAMES BOTH TAGS. `avatarFace` answers an `<img>` where there is a
+   painting and a `<canvas>` where there is not (§ A COLLECTION CARD), so a rule written
+   for one of them sizes half the cases and lets the rest render at the file's own 250px.
+   `css-sanity` sweeps the stylesheet for exactly this. */
+.avwrap { display: grid; gap: var(--stack); }
+
+/* THE ONE BEING WORN, big. The grid below is too small to choose a face by; this is the
+   only one the player is deciding about, so it is shown at the size that decides it. */
+.av-hero { display: grid; justify-items: center; gap: 8px; }
+.av-hero-f, img.av-hero-f, canvas.av-hero-f {
+  width: 96px;
+  height: 96px;
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--grass);
+}
+.av-hero-k { font-size: 11.5px; font-weight: 800; color: var(--ink-soft); }
+
+.avgrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.av-t {
+  position: relative;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: none;
+  overflow: hidden;
+  cursor: pointer;
+  aspect-ratio: 1;
+}
+.av-t .av-f,
+.av-t img.av-f,
+.av-t canvas.av-f {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+/* A LOCKED ONE IS DRAWN, not hidden: seeing the ninety-odd still to find is the whole
+   reason to walk the road and open the hatch. Dimmed rather than padlocked, because the
+   tile already says where it comes from (`title`) and a padlock would say only "no". */
+.av-t.off { cursor: default; }
+.av-t.off .av-f { filter: grayscale(1) brightness(.5); }
+/* The worn one is the only tile with an edge, so "which am I wearing" is answered by the
+   grid as well as by the hero above it. */
+.av-t.on { border-color: var(--grass); }
+.av-note { font-size: 11px; font-weight: 700; line-height: 1.5; color: var(--muted); }

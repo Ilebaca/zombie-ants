@@ -35,7 +35,7 @@ import {
 } from "../platform";
 import type { ProfileStore, RoadReward, RoadStop } from "../platform";
 import { bandFor } from "./backdrops";
-import { el, redraw, screenEl, screenHeader } from "./chrome";
+import { avatarFace, el, redraw, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 
 type Track = "free" | "pass";
@@ -50,7 +50,7 @@ const payouts = (r: RoadReward): Payout[] => [
 
 /** The label a button carries, so a disc showing only an icon still says what it is. */
 const spoken = (r: RoadReward): string =>
-  payouts(r).map((p) => `+${p.amount} ${p.name}`).join(" and ");
+  r.avatar ? "A new avatar" : payouts(r).map((p) => `+${p.amount} ${p.name}`).join(" and ");
 
 export function buildColonyRoad(store: ProfileStore, onBack: () => void, onShop: () => void): HTMLElement {
   const root = screenEl("achievements");
@@ -184,10 +184,14 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, onShop:
     const passLocked = track === "pass" && !profile.pass;
     const state = claimed ? "got" : passLocked ? "passlock" : claimable ? "ready" : "locked";
 
-    const disc = el("button", `rd-prize ${track} ${state}`);
+    const disc = el("button", `rd-prize ${track} ${state}${reward.avatar ? " avprize" : ""}`);
     disc.type = "button";
-    const marks = payouts(reward);
-    for (const p of marks) disc.appendChild(icon(p.mark, track === "pass" ? 18 : 24));
+    // AN AVATAR CHECKPOINT WEARS THE FACE IT PAYS, rather than a mark standing for it.
+    // Every other disc on this road carries the MARK of the resource behind it because a
+    // resource has no picture; an avatar is nothing BUT a picture, so a generic badge
+    // here would be the one checkpoint that refuses to show what it is giving.
+    if (reward.avatar) disc.appendChild(avatarFace(reward.avatar, 34, "rd-face"));
+    else for (const p of payouts(reward)) disc.appendChild(icon(p.mark, track === "pass" ? 18 : 24));
     const label = `${spoken(reward)}${track === "pass" ? ", Colony Pass" : ""}`;
     disc.title = label;
     disc.setAttribute("aria-label", label);
@@ -236,6 +240,13 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, onShop:
     x.appendChild(icon("cross", 16));
 
     card.append(x, el("div", "rd-popk", "Reward claimed"));
+    if (reward.avatar) {
+      const line = el("div", "rd-popline");
+      const disc = el("span", "rd-popic");
+      disc.appendChild(avatarFace(reward.avatar, 48, "rd-face"));
+      line.append(disc, el("span", "rd-popu", "A new avatar"));
+      card.appendChild(line);
+    }
     for (const p of payouts(reward)) {
       const line = el("div", "rd-popline");
       const disc = el("span", "rd-popic");

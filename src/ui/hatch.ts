@@ -16,12 +16,13 @@
  * whole reason the tiers have colours at all.
  */
 import {
-  HATCH_COST, LARVA_MYCEL, TRAITS_CHAPTER, TRAIT_TIER, effectText, itemDef, markOf,
+  AVATAR_TIER, HATCH_COST, LARVA_MYCEL, TRAITS_CHAPTER, TRAIT_TIER, effectText, itemDef,
+  markOf,
 } from "../platform";
 import type { Cue, Feedback, HatchPrize, ProfileStore, TraitItem } from "../platform";
 import { SPECIES, TIER_IDS, TIERS } from "../engine";
 import type { Look } from "../engine";
-import { antPortrait, el, screenEl, screenHeader } from "./chrome";
+import { antPortrait, avatarFace, el, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 import { buildOdds } from "./odds";
 import LARVA_ART from "./backdrops/larva.webp";
@@ -54,6 +55,8 @@ export interface HatchOptions {
   onChanged?: () => void;
   /** Into the colony a found skin belongs to — that is where it is worn from. */
   onColony?: (species: string) => void;
+  /** Into the profile, from a found avatar: a face is worn there and nowhere else. */
+  onProfile?: () => void;
   /** Injected so a test is not a coin flip. */
   random?: () => number;
   /**
@@ -77,7 +80,9 @@ const prizeCue = (tier: string | undefined): Cue =>
 
 /** What a prize is worth to the ear, whichever kind it is. */
 const tierOf = (prize: HatchPrize): string | undefined =>
-  prize.kind === "skin" ? prize.look.tier : prize.item.tier;
+  prize.kind === "skin" ? prize.look.tier
+    : prize.kind === "avatar" ? AVATAR_TIER
+      : prize.item.tier;
 
 /**
  * ONE CUE FOR A BATCH, AND IT IS THE LOUDEST THING IN IT.
@@ -322,6 +327,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     // throwing inside a screen builder.
     if (haul.length > 0) pop.append(x, hoard(haul));
     else if (found?.kind === "skin") pop.append(x, skinPrize(found.look));
+    else if (found?.kind === "avatar") pop.append(x, avatarPrize(found.id));
     else if (found) pop.append(x, prize(found.item));
     else pop.appendChild(x);
     return pop;
@@ -350,7 +356,13 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     box.appendChild(el("div", "hp-many-h", `${prizes.length} hatched`));
     const grid = el("div", "hp-grid");
     grid.id = "hatchHaul";
-    for (const p of prizes) grid.appendChild(p.kind === "skin" ? skinRow(p.look) : traitRow(p.item));
+    for (const p of prizes) {
+      grid.appendChild(
+        p.kind === "skin" ? skinRow(p.look)
+          : p.kind === "avatar" ? avatarRow(p.id)
+            : traitRow(p.item),
+      );
+    }
     box.appendChild(grid);
 
     // A SKIN IN THE BATCH GOES SOMEWHERE ELSE, so the card has to say so. At five rolls
@@ -365,7 +377,18 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
           : "The skins are worn on their colonies' own pages."));
     }
 
-    const traits = prizes.length - skins;
+    // AND SO DOES AN AVATAR, to a different place again. Commons are six rolls in ten, so
+    // a handful of ten carries one most of the time until the collection is finished —
+    // which makes this the note that is actually read, not an edge case.
+    const faces = prizes.filter((p) => p.kind === "avatar").length;
+    if (faces > 0) {
+      box.appendChild(el("div", "hp-many-n",
+        faces === 1
+          ? "The avatar is worn on your profile."
+          : "The avatars are worn on your profile."));
+    }
+
+    const traits = prizes.length - skins - faces;
     if (traits > 0) {
       const go = el("button", "hp-go") as HTMLButtonElement;
       go.type = "button";
@@ -414,6 +437,24 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     );
     row.append(mark, text);
     row.title = `${look.name} · ${tier?.name ?? ""} skin`;
+    return row;
+  };
+
+  /** ...and an avatar, which is the picture and nothing else. */
+  const avatarRow = (id: string): HTMLElement => {
+    const tier = TIERS[AVATAR_TIER];
+    const row = el("div", "hp-one avprize");
+    row.style.setProperty("--tier", tier.colour);
+
+    const mark = el("span", "hp-one-i");
+    mark.appendChild(avatarFace(id, 44, "hp-one-port"));
+    const text = el("span", "hp-one-t");
+    text.append(
+      el("span", "hp-one-n", "Avatar"),
+      el("span", "hp-one-e", "Worn on your profile"),
+    );
+    row.append(mark, text);
+    row.title = `Avatar · ${tier.name}`;
     return row;
   };
 
@@ -492,6 +533,42 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     go.id = "hatchToColony";
     go.append(el("span", undefined, `Wear it on the ${SPECIES[look.species].name}`), icon("next", 13));
     go.onclick = (e) => { e.stopPropagation(); close(); opts.onColony?.(look.species); };
+    box.appendChild(go);
+    return box;
+  };
+
+  /**
+   * AN AVATAR CAME OUT.
+   *
+   * Shown as the thing itself, for the reason the skin card is: a face is a PICTURE, and
+   * a name over a generic mark would be the screen refusing to show the one thing that
+   * was found. It carries NO NAME, and that is not an omission — there are ninety-eight
+   * of them and inventing ninety-eight names would be a second table to keep in step with
+   * the folder, for a word nobody needs when the picture is right there.
+   *
+   * It does not go to the inventory either: an avatar belongs to the player rather than
+   * to a bench, so the way out points at the profile, which is the only place it is worn.
+   */
+  const avatarPrize = (id: string): HTMLElement => {
+    const tier = TIERS[AVATAR_TIER];
+    const box = el("div", "hatchprize avprize");
+    box.id = "hatchPrize";
+    box.style.setProperty("--tier", tier.colour);
+
+    const disc = el("div", "hp-disc hp-face");
+    disc.appendChild(avatarFace(id, 108, "hp-port"));
+
+    box.append(
+      disc,
+      el("div", "hp-tier", `${tier.name} avatar`),
+      el("div", "hp-eff", "A new face for your profile"),
+    );
+
+    const go = el("button", "hp-go") as HTMLButtonElement;
+    go.type = "button";
+    go.id = "hatchToProfile";
+    go.append(el("span", undefined, "Wear it on your profile"), icon("next", 13));
+    go.onclick = (e) => { e.stopPropagation(); close(); opts.onProfile?.(); };
     box.appendChild(go);
     return box;
   };
@@ -587,7 +664,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
       // THE TIER, THE MOMENT THE COLOUR ARRIVES. Same instant as the card, off the same
       // ladder — a mythic that sounds like a common is the feature failing at the one
       // moment it exists for.
-      opts.feedback?.play(prizeCue(item.kind === "skin" ? item.look.tier : item.item.tier));
+      opts.feedback?.play(prizeCue(tierOf(item)));
       opts.onChanged?.();
     }, SHAKE_MS);
   };
