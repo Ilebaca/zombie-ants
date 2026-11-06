@@ -105,7 +105,7 @@ export function buildShop(
     wrap.append(larva, row(byKind("currency", "brood")));
     wrap.appendChild(buildOdds("What a larva can hatch"));
 
-    wrap.append(label("Pheromone dust"), row(byKind("currency", "pheromone")));
+    wrap.append(label("Pheromone crystal"), row(byKind("currency", "pheromone")));
     wrap.append(label("Mycelium"), row(byKind("currency", "mycel")));
     wrap.append(label("Bundles"), row(byKind("bundle")));
     wrap.append(label("Unlocks"), row([...byKind("pass"), ...byKind("species")]));
@@ -211,7 +211,7 @@ export function buildShop(
     go.append(icon("granary", 15), el("span", undefined, "Restore purchases"));
     go.onclick = () => restore(go);
     box.append(go, el("div", "restorenote",
-      "Brings back the Colony Pass and any colony you have bought. Mycelium, pheromone and "
+      "Brings back the Colony Pass and any colony you have bought. Mycelium, pheromone crystals and "
       + "larva are spent as you use them and cannot be restored."));
     return box;
   };
@@ -272,7 +272,7 @@ export function buildShop(
       btn.onclick = () => {
         if (store.claimDailyGift()) {
           render();
-          toast(root, `Daily gift claimed: +${DAILY_GIFT.mycel} mycelium, +${DAILY_GIFT.pheromone} pheromone`, "good");
+          toast(root, `Daily gift claimed: +${DAILY_GIFT.mycel} mycelium, +${DAILY_GIFT.pheromone} pheromone crystals`, "good");
         }
       };
     }
@@ -302,7 +302,7 @@ export function buildShop(
 function describe(product: Product): string {
   const parts = [
     product.grant.mycel ? `+${product.grant.mycel} mycelium` : "",
-    product.grant.pheromone ? `+${product.grant.pheromone} pheromone` : "",
+    product.grant.pheromone ? `+${product.grant.pheromone} pheromone crystals` : "",
     product.grant.larva ? `+${product.grant.larva} larva` : "",
     product.grant.pass ? "Colony Pass unlocked" : "",
     product.grant.species ? `${product.title ?? "Colony"} unlocked` : "",

@@ -481,7 +481,7 @@ export class App {
       {
         id: "currency",
         title: "Your three currencies",
-        text: "Mycelium buys chambers and new colonies. Pheromone pays for research. "
+        text: "Mycelium buys chambers and new colonies. Pheromone crystals pay for research. "
           + "Trophies are what you win and lose with each match. You start with none — "
           + "every one of them is earned on the board.",
         find: find(".tn-cur"),
@@ -502,7 +502,7 @@ export class App {
         pad: 2,
       },
       deckStep("shop", ".shopwrap", "The Shop",
-        "Mycelium and pheromone in bulk, the Colony Pass, and the premium colony. "
+        "Mycelium and pheromone crystals in bulk, the Colony Pass, and the premium colony. "
         + "Nothing here is needed to win — it is a shortcut, not a wall."),
       deckStep("anthill", ".hillwrap", "The Anthill",
         "Chambers upgrade your whole colony: more income, tougher soldiers, a longer "
@@ -510,7 +510,7 @@ export class App {
       deckStep("antarium", ".antscroll", "The Antarium",
         "Every colony is a real ant species, with a real behaviour as its ability. "
         + "Unlock them "
-        + "here, and spend pheromone on research for the one you field."),
+        + "here, and spend pheromone crystals on research for the one you field."),
       deckStep("challenges", ".challist", "Challenges",
         "Set matches with a twist and a fixed objective, plus a fresh one every day."),
       {
@@ -1247,7 +1247,7 @@ export class App {
     const hatch = el("button", "dailyfab hatchfab");
     hatch.title = "Lucky hatch";
     hatch.setAttribute("aria-label", "Lucky hatch");
-    hatch.appendChild(hudMark("brood", 36, 26));
+    hatch.appendChild(hudMark("lucky-hatch", 36, 26));
     hatch.onclick = () => this.show("luckyhatch");
 
     fabs.append(settings, daily, hatch);

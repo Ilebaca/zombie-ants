@@ -195,11 +195,15 @@ describe("colony road layout", () => {
     expect(stopReached(1e15), "a colony past the end is not on the last rung").toBe(ROAD_STOPS);
   });
 
-  it("pays both tracks at every one of a chapter's five checkpoints", () => {
+  it("pays one resource type including the pass bonus at every checkpoint", () => {
     expect(ROAD_CHAPTER_STOPS).toBe(5);
     for (const stop of roadStops()) {
       expect(!!stop.free, `rung ${stop.index} paid nothing on the free track`).toBe(true);
       expect(!!stop.pass, `rung ${stop.index} paid nothing on the pass track`).toBe(true);
+      const freeKinds = Object.keys(stop.free!).filter(k => stop.free![k as keyof RoadReward]);
+      const passKinds = Object.keys(stop.pass!).filter(k => stop.pass![k as keyof RoadReward]);
+      expect(freeKinds.length).toBe(1);
+      expect(passKinds).toEqual(freeKinds);
     }
   });
 
@@ -262,7 +266,12 @@ describe("colony road layout", () => {
         else expect(coin).toBeGreaterThan(0);
       }
     }
-    expect(faces, "one avatar a chapter, on the free track only").toBe(ROAD_CHAPTERS);
+    // BOTH TRACKS NAME THE SAME FACE at that rung, and it is the SCREEN that decides
+    // this: the road draws one disc per checkpoint with the two tracks pooled, so a rung
+    // paying a face on one and currency on the other would be one disc showing two kinds
+    // of thing — with the face winning and the pass's share silently swallowed. The pass
+    // purse is split across its other four instead, which `economy.test.ts` holds.
+    expect(faces, "one avatar a chapter, named by both tracks").toBe(ROAD_CHAPTERS * 2);
   });
 
   /**

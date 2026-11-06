@@ -137,9 +137,9 @@ export const isChapterEnd = (index: number): boolean =>
 /**
  * WHAT A WHOLE CHAPTER PAYS, per track. The checkpoints inside it divide this up.
  *
- * The two tracks alternate on OPPOSITE phases, so every chapter pays both currencies
- * somewhere — the free track pays mycelium on the odd chapters and the pass pays
- * pheromone on them.
+ * Both parts use the same currency at a checkpoint, so the owned pass bonus can be
+ * included in one resource reward. Chapters alternate mycelium and pheromone crystals.
+ * Aligning the pass phase leaves the fifty-chapter totals unchanged.
  *
  * Both are the totals the two-rung road paid, carried over exactly: the free track's
  * per-chapter reward is the number it always was, and the pass track's is its old
@@ -150,7 +150,7 @@ const freePurse = (chapter: number): RoadReward =>
   chapter % 2 === 0 ? { pheromone: 10 * LARVA_IN_PHEROMONE } : { mycel: 100 + chapter * 5 };
 
 const passPurse = (chapter: number): RoadReward =>
-  chapter % 2 === 0 ? { mycel: 310 } : { pheromone: 56 };
+  chapter % 2 === 0 ? { pheromone: 56 } : { mycel: 310 };
 
 /**
  * HOW ONE CHAPTER'S PURSE IS SHARED OUT ACROSS ITS FIVE CHECKPOINTS.
@@ -185,13 +185,13 @@ const AVATAR_RUNG = 3;
  * through the band `economy.test.ts` holds mycelium and pheromone to (§8c), for a change
  * that is supposed to be about pictures.
  *
- * So `paying` is how many checkpoints of this track's chapter take a share: FOUR on the
- * free track and FIVE on the pass, which pays at every rung and knows nothing about
- * avatars. Each ordinary one takes an eighth and the CLOSER takes WHAT IS LEFT rather
- * than a fraction of its own — so the sum is the purse to the troop whichever track it
- * is, and the closer is simply a little bigger on the free one (five eighths rather than
- * four). Computed as its own half it would drift by a troop or two per chapter, which
- * over fifty of them is the road quietly paying something else.
+ * So `paying` is how many checkpoints of this track's chapter take a share, and it is
+ * FOUR on both: the road draws ONE disc per checkpoint carrying the two tracks pooled,
+ * so neither may pay currency at the rung the other pays a face at. Each ordinary stop
+ * takes an eighth and the CLOSER takes WHAT IS LEFT rather than a fraction of its own —
+ * so the sum is the purse to the troop. Computed as its own eighth the closer would
+ * drift by a troop or two per chapter, which over fifty of them is the road quietly
+ * paying something other than what it says.
  */
 function splitPurse(purse: RoadReward, rung: number, paying: number): RoadReward {
   // A floor of one, so a purse small enough to round an eighth to nothing still pays
@@ -233,14 +233,25 @@ export function freeReward(index: number): RoadReward | null {
 /**
  * Pass track: the same, out of the pass purse, and only to a player holding the pass.
  *
- * IT PAYS AT THE AVATAR RUNG TOO, and knows nothing whatever about avatars: the faces
- * are on the FREE track so that the set is walked to rather than bought. That is the
- * whole reason `splitPurse` takes how many checkpoints are paying — five here, four
- * there — rather than deciding for itself.
+ * IT SITS OUT THE AVATAR RUNG, and that is a consequence of the SCREEN rather than of
+ * the reward. The road draws one disc per checkpoint carrying BOTH tracks pooled, so a
+ * rung paying a face on one track and currency on the other would be one disc trying to
+ * show two different kinds of thing — and the face would win, silently swallowing the
+ * pass's share of that chapter. The pass purse is split across the other four instead,
+ * so a pass holder is paid exactly what they always were: concentrated, never lost.
+ *
+ * The avatar itself is the FREE track's, so the set is still walked to rather than
+ * bought — the pass simply does not pay EXTRA at the stop where a face is handed over.
  */
 export function passReward(index: number): RoadReward | null {
   if (index < 1 || index > ROAD_STOPS) return null;
-  return splitPurse(passPurse(chapterAt(index)), rungOfChapter(index), ROAD_CHAPTER_STOPS);
+  const chapter = chapterAt(index);
+  const rung = rungOfChapter(index);
+  if (rung === AVATAR_RUNG) {
+    const id = roadAvatar(chapter);
+    return id ? { avatar: id } : splitPurse(passPurse(chapter), 1, FREE_PAYING);
+  }
+  return splitPurse(passPurse(chapter), rung, FREE_PAYING);
 }
 
 export function roadStops(): RoadStop[] {
@@ -322,7 +333,7 @@ export const chapterOf = (colony: number): number =>
 export function rewardText(r: RoadReward): string {
   return [
     r.mycel ? `+${r.mycel} mycelium` : "",
-    r.pheromone ? `+${r.pheromone} pheromone` : "",
+    r.pheromone ? `+${r.pheromone} pheromone crystal${r.pheromone === 1 ? "" : "s"}` : "",
     r.avatar ? "A new avatar" : "",
   ].filter(Boolean).join("  ");
 }

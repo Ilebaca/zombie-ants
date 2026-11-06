@@ -87,7 +87,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     // colony IS (its numbers, and how far its research has come), so the loadout belongs
     // with them; a section is for a list, and this is not one. It stays a door: the pips
     // say which five, and the row opens the bench.
-    page.appendChild(hero(id, research, tier.name, tier.col, store.lookFor(id),
+    page.appendChild(hero(id, research, tier.name, tier.col,
       traitOpener(store, id, () => opts.onTraits?.(),
         store.traitsOpen() ? null : `Chapter ${TRAITS_CHAPTER}`)));
 
@@ -216,7 +216,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
 /* ------------------------------------------------------------------------ THE HERO */
 
 /**
- * The colony itself: its face, its tier, and where it sits against every other colony.
+ * The colony itself: its tier, and where it sits against every other colony.
  *
  * The stat bars run over the REAL span of the game's species rather than a made-up
  * ceiling, so "0.90" means something: it is read off `SPECIES`, and a balance change moves
@@ -256,17 +256,13 @@ function cover(id: SpeciesId, look: Look): HTMLElement {
 }
 
 function hero(
-  id: SpeciesId, research: Research, tierName: string, tierCol: string, look: Look,
+  id: SpeciesId, research: Research, tierName: string, tierCol: string,
   traits: HTMLElement,
 ): HTMLElement {
   const species = SPECIES[id];
   const pal = SPECIES_COL[id];
   const box = el("div", "spghero");
   box.style.setProperty("--tc", tierCol);
-
-  const port = antPortrait(id, 240, "spgport", look);
-  port.id = "aupPort";
-  box.appendChild(port);
 
   const who = el("div", "spgwho");
   who.appendChild(el("div", "spgtier", species.premium ? "Mythic · Premium" : tierName));

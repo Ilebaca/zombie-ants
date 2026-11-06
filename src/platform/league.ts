@@ -253,7 +253,7 @@ export function prizeFor(place: number): Prize | null {
 export function prizeText(p: Prize): string {
   return [
     p.mycel ? `${p.mycel} mycelium` : "",
-    p.pheromone ? `${p.pheromone} pheromone` : "",
+    p.pheromone ? `${p.pheromone} pheromone crystal${p.pheromone === 1 ? "" : "s"}` : "",
     p.larva ? `${p.larva} larva` : "",
   ].filter(Boolean).join(" · ");
 }

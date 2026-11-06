@@ -142,14 +142,9 @@
    has even been fetched — and for a beat afterwards, which is exactly long
    enough for the blanket to strip the picture off it in front of the player.
 
-   `.rd-chap` is the FOURTH and the only one that is not a whole screen: the
-   Colony Road's chapter panels each wear that chapter's painting (`ui/road.ts`
-   sets it inline, from `backdropFor`). It is a CLASS because there are fifty of
-   them down one scroller, and it is exempt for the same reason `#home` is — it
-   is a picture rather than a gradient. Note the pseudo-elements are blanketed
-   too, so a picture cannot be hidden on a `::before` to dodge this.
+   Colony Road uses flat area colors; its panels need no artwork exemption.
    ====================================================================== */
-*:not(#home):not(#luckyhatch):not(#splash):not(.rd-chap), *::before, *::after { background-image: none !important; }
+*:not(#home):not(#luckyhatch):not(#splash), *::before, *::after { background-image: none !important; }
 
 /* Surfaces the legacy sheet fills with a gradient and this file does not
    otherwise dress. */
@@ -2604,27 +2599,8 @@ button:not(.playbtn):active,
   background: var(--panel);
   border: 1px solid var(--line);
 }
-/* It is a BUTTON now — the picker opens from the face it changes — so it gives up the
-   browser's own button chrome and keeps nothing but its size. */
-.pf-face {
-  position: relative;
-  width: 76px;
-  height: 76px;
-  padding: 0;
-  border: none;
-  background: none;
-  cursor: pointer;
-}
+.pf-face { position: relative; width: 76px; height: 76px; }
 .pf-face canvas, .pf-face img { display: block; width: 76px; height: 76px; }
-/* AN AVATAR IS A SQUARE PICTURE, so the disc is this box rather than the artwork. */
-.pf-av, img.pf-av, canvas.pf-av { border-radius: 50%; object-fit: cover; }
-.pf-av-mini, img.pf-av-mini, canvas.pf-av-mini {
-  width: 26px;
-  height: 26px;
-  display: block;
-  border-radius: 50%;
-  object-fit: cover;
-}
 /* The level rides the portrait rather than sitting beside it: one object,
    and the number is the thing that changes. */
 .pf-level {
@@ -2730,9 +2706,6 @@ button:not(.playbtn):active,
 
 /* The nine colonies, so the row says which ones rather than only how many. Sized to fit
    on ONE line: a strip that wraps stops reading as a set and starts reading as a list. */
-/* The avatar row leads with the face it is about, so its slot carries no plate behind
-   it — a tinted square under a square picture is a second shape round the first. */
-.pf-row-i:has(.pf-av-mini) { background: none; }
 .pf-faces { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
 .pf-head { display: block; width: 22px; height: 22px; }
 .pf-head canvas, .pf-head img { display: block; width: 22px; height: 22px; }
@@ -3021,6 +2994,8 @@ button:not(.playbtn):active,
 #formation {
   display: flex;
   flex-direction: column;
+  /* The artwork clips at the viewport edges; controls carry their own gutter. */
+  padding-inline: 0;
   /* THE PICTURE AND ITS NAME SIT IN THE MIDDLE; THE BUTTON HOLDS THE BOTTOM.
      Two flexible gaps, one above the board and one under the name, split what is left
      over equally — so the board rides near the middle of the screen and the button stays
@@ -3034,6 +3009,8 @@ button:not(.playbtn):active,
   min-height: 0;
 }
 .setuptop {
+  width: min(calc(100% - var(--sp8)), var(--page));
+  margin-inline: auto;
   position: absolute;
   top: 0;
   left: 0;
@@ -3074,10 +3051,8 @@ button:not(.playbtn):active,
    rebuilding, or every press would restart the slide from a standing start. */
 #setupBoard.off, .coverslide:not(.on) { display: none; }
 .coverslide {
-  /* The same ceiling the board is sized to in JS (`MAX_BOARD_PX`), so the two steps are
-     the same width and the picture does not jump sideways between them. The stage adds
-     no inset of its own, so 100% here IS the reading column. */
-  width: min(100%, 520px);
+  /* Each sliding image spans the viewport, with no inset mask or reading-width cap. */
+  width: 100%;
   aspect-ratio: 1567 / 900;
   overflow: hidden;
   /* NO PLATE. The rail shows the CUT-OUT (ui/covers.ts), so the ground under the
@@ -3085,8 +3060,7 @@ button:not(.playbtn):active,
      thing the cut-out was made to remove, and it read as a photograph in a frame
      rather than as the colony being stepped through. The box stays, because it is
      what holds the rail's size and the slide; only its fill goes.
-     The species page's hero keeps `#1a120a`, and that is not an inconsistency:
-     it shows the PAINTED set, which is lit on exactly that colour. */
+     The species cover also leaves its background transparent. */
   background: none;
 }
 /* ONE ROW, MOVED BY WHOLE PANES. `translate3d` rather than `left`, so the slide is
@@ -3116,7 +3090,7 @@ button:not(.playbtn):active,
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  width: min(100%, var(--page));
+  width: min(calc(100% - var(--sp8)), var(--page));
   margin-inline: auto;
   /* The 20px Milan asked for, measured from the bottom edge of the picture. `.screen`
      owns the bottom inset and the safe area. */
@@ -3995,12 +3969,8 @@ button:not(.playbtn):active,
   width: 100%;
   aspect-ratio: 1567 / 900;
   overflow: hidden;
-  /* The paintings are CUT-OUTS — an ant on transparent ground — so this is not a
-     fallback, it is the backdrop they stand on. The colony with no cover yet stands
-     on the same colour the painted ones do, and the setup rail's pane carries the
-     same value for the same reason: the two cannot disagree without one screen
-     lighting the ant on a different ground from the other. */
-  background: #1a120a;
+  /* The cut-out stands directly on the page, with no rectangle behind the ant. */
+  background: transparent;
 }
 .spgcover-img {
   display: block;
@@ -4015,7 +3985,7 @@ button:not(.playbtn):active,
 /* ------------------------------------------------------------------- THE HERO */
 .spghero {
   display: grid;
-  grid-template-columns: 96px 1fr;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: 6px 14px;
   padding: 14px;
@@ -4025,8 +3995,6 @@ button:not(.playbtn):active,
      one thing that colours it. */
   border: 1px solid color-mix(in srgb, var(--tc) 45%, var(--line));
 }
-/* Drawn at twice the size it is shown at, which is what keeps it sharp. */
-.spgport { display: block; width: 96px; height: 96px; }
 .spgwho { min-width: 0; display: grid; gap: 2px; }
 .spgtier {
   font-size: 9.5px;
@@ -6204,186 +6172,143 @@ button:not(.playbtn):active,
 .kssteps::marker, .kssteps li::marker { color: var(--grass-glow); font-weight: 900; }
 .kscard .setpanel { margin-top: 10px; padding: 0; background: none; border: none; }
 
-/* ======================================================================
-   THE COLONY ROAD — A PATH THROUGH TEN PLACES
-
-   It was two columns of grey cards either side of a hairline, a chapter
-   label every two rungs, fifty times: a spreadsheet of prices with the one
-   thing a road is FOR — how far have I come — the hardest fact on it to
-   find. The shape here is the one that was asked for, and each rule below
-   is one of those requests.
-
-   SPACIOUS. A checkpoint is 118px tall and a chapter is five of them, so
-   one chapter fills most of a phone and the road is something walked
-   rather than scrolled past.
-
-   EVERY CHAPTER WEARS ITS PICTURE, set inline by `ui/road.ts` from
-   `backdropFor` — which is exactly why `.rd-chap` is the fourth exemption
-   on the blanket at the top of this file. Nothing is laid OVER it: no tint,
-   no radius, no gap and no side margins, all four asked for directly, so
-   the road is one painted strip rather than fifty cards on a dark page.
-   Every label on it rides its own near-opaque plate for that reason.
-
-   THE PATH IS PER-CHECKPOINT, not one bar down the scroller. It is drawn
-   on `.rd-stop::before` and goes gold as far as the colony has reached, so
-   "how far have I come" is answered by where the colour stops — which a
-   single bar could only do by measuring the DOM.
-
-   NO `box-shadow` ANYWHERE BELOW. The rule at line 1792 clears every one
-   of them with `!important`, so depth here is tone and a border, the same
-   way the Anthill's chambers carry theirs.
-   ====================================================================== */
+/* The Colony Road: large single-resource rewards on an unbroken area-colored path. */
 .rd-road { display: block; }
 
-/* SQUARE, FLUSH AND UNDIMMED, all three asked for directly. No radius, no gap to
-   the panel below and no scrim over the picture: the road is one continuous
-   painted strip the player climbs, rather than fifty cards on a dark page. The
-   artwork is the screen, so nothing may be laid over it — which is why every
-   label on it rides its own near-opaque plate (below), measured against the
-   brightest artwork there could ever be rather than against a tint. */
+/* The rail spans the whole panel, including chapter labels and area boundaries. */
 .rd-chap {
   position: relative;
   overflow: hidden;
   background-color: var(--bg2);
-  background-size: cover;
-  background-position: center;
+  background-image: none;
 }
+.rd-chap::before,
+.rd-gate::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  background: var(--grass-edge);
+}
+.rd-chap.complete::before,
+.rd-gate.reached::before { background: var(--grass); }
 
-/* THE LABEL SITS ON ITS OWN PLATE, and that is a contrast decision rather than a
-   decorative one. Written straight onto the picture it is read against TEN different
-   paintings — measured at 11.2 over the Mangrove and 5.1 over its subtitle, which is AA
-   with very little in hand, and the next region somebody paints decides whether it still
-   is. On a near-opaque plate the ratio is a property of two colours in this file, so no
-   artwork can take it under — which is what lets the panel carry no tint at all. The
-   pill is the legacy build's answer to the same problem. */
+/* Names sit beside the rail so neither a plate nor a label cuts across it. */
 .rd-chapname {
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   gap: 2px;
   width: fit-content;
-  margin: 16px auto 2px;
-  padding: 6px 16px;
-  border: 1px solid var(--hud-line);
-  border-radius: 999px;
-  background: rgba(10, 18, 12, .88);
+  max-width: calc(50% - 64px);
+  margin: 16px calc(50% + 48px) 2px auto;
+  padding: 6px 0;
+  text-align: right;
 }
 .rd-chapname b {
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: .5px;
-  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 400;
+  text-transform: uppercase;
+  color: var(--hud-ink);
 }
-.rd-chapname span { font-size: 11px; font-weight: 800; color: var(--muted); opacity: .85; }
-.rd-chapname.reached b { color: var(--gold-glow); }
+.rd-chapname span { font-size: 12px; font-weight: 800; color: #b5c8ae; }
+.rd-chapname.reached b { color: var(--grass-glow); }
 
-/* No padding at the foot: the path has to reach the edge of the panel, or it stops
-   short of the seam with the chapter below and the road reads as fifty ladders. */
 .rd-path { position: relative; display: block; }
-
-/* ---------------------------------------------------------- A CHECKPOINT */
 .rd-stop {
   position: relative;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  min-height: 118px;
+  min-height: 208px;
+  --rd-node: var(--grass-edge);
+  --rd-ink: var(--hud-ink);
 }
-/* The path itself, one segment per checkpoint, gold as far as the colony got. */
-.rd-stop::before {
+.rd-stop.reached { --rd-node: var(--grass); --rd-ink: #0f2417; }
+/* Only reached segments cover the neutral rail; its backing never stops. */
+.rd-stop.reached::before {
   content: "";
   position: absolute;
-  top: 0;
-  bottom: 0;
+  inset-block: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 8px;
-  background: rgba(255, 255, 255, .13);
+  width: 30px;
+  background: var(--grass);
 }
-.rd-stop.reached::before { background: var(--gold); }
-
 .rd-mid {
   grid-column: 2;
   position: relative;
   z-index: 1;
   display: grid;
   justify-items: center;
-  gap: 7px;
 }
 
-/* The size the checkpoint asks for, under the disc. A tick once it is behind you. */
+/* Colony thresholds remain readable beside the reward without hiding the line. */
 .rd-at {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 42px;
-  min-height: 20px;
-  padding: 2px 9px;
-  border-radius: 999px;
-  /* Near-opaque for the same reason the chapter plate is: it is read over ten
-     paintings and over the gold path, and a wash would depend on both. */
-  background: rgba(10, 18, 12, .88);
-  font-size: 11px;
-  font-weight: 900;
-  color: var(--muted);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: calc(100% - 9px);
+  transform: translateY(-50%);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 400;
+  white-space: nowrap;
+  color: #b5c8ae;
 }
-/* Behind you it carries a mark instead of a figure, so it needs no room for one. */
-.rd-stop.reached .rd-at { min-width: 26px; color: var(--gold-glow); }
+.rd-stop.reached .rd-at,
+.rd-stop.next .rd-at { color: var(--grass-glow); }
 
-/* ------------------------------------------------------------- THE PRIZE
-   The disc carries the resource's MARK and nothing else: the figure is on
-   the popup the claim raises, and on this button's own label so a control
-   still says what it is. */
+/* The painted resource is the reward node; no extra circle or outline surrounds it. */
 .rd-prize {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  width: 58px;
-  height: 58px;
+  width: 104px;
+  height: 112px;
   padding: 0;
-  border: 3px solid rgba(255, 255, 255, .16);
-  border-radius: 50%;
-  background: var(--panel);
-  color: var(--muted);
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--hud-ink);
   cursor: pointer;
 }
-.rd-prize:disabled { cursor: default; }
-.rd-prize.locked { color: var(--muted); }
-.rd-prize.ready {
-  background: var(--gold);
-  border-color: var(--gold-glow);
-  color: #3a2600;
+.rd-mark {
+  position: absolute;
+  left: 50%;
+  top: calc(50% - 18px);
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
 }
-.rd-prize.got {
-  background: color-mix(in srgb, var(--grass) 26%, var(--panel));
-  border-color: color-mix(in srgb, var(--grass) 60%, transparent);
-  color: var(--grass-glow);
-}
-.rd-prize.passlock { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 34%, transparent); }
+.rd-mark img, .rd-mark svg { display: block; flex: none; }
 
-/* AN AVATAR CHECKPOINT IS THE FACE IT PAYS, cropped round by the disc it sits in.
-   The padding goes, because the picture IS the disc here rather than a mark inside one —
-   and `overflow: hidden` is what rounds it, since the art is an opaque square.
+/* AN AVATAR CHECKPOINT IS THE FACE IT PAYS, not a mark standing for it. It rides in
+   `.rd-mark` like every other disc's picture and takes the same size, so it floats over
+   the base exactly as a coin does — and it is ROUND, because the art is an opaque square
+   and a square face on a road of circles reads as a picture that failed to load.
 
    BOTH TAGS ARE SIZED. `avatarFace` answers an `<img>` where there is a painting and a
-   `<canvas>` where there is not (§ A COLLECTION CARD), so a rule naming one of them sizes
-   half the cases and lets the rest render at the file's own 250px. */
-.rd-prize.avprize { overflow: hidden; }
-.rd-prize .rd-face,
-.rd-prize img.rd-face,
-.rd-prize canvas.rd-face {
-  width: 100%;
-  height: 100%;
+   `<canvas>` where there is not (§ A COLLECTION CARD), so a rule naming only one of them
+   sizes half the cases and lets the rest render at the file's own 250px. */
+.rd-mark .rd-face,
+.rd-mark img.rd-face,
+.rd-mark canvas.rd-face {
   display: block;
+  flex: none;
+  border-radius: 50%;
   object-fit: cover;
 }
 /* It is a PICTURE, so it does not take the state colours the marks do — a face tinted
    gold on the claimable rung would be a different avatar from the one being paid. What
-   says the state is the ring, which every disc on this road already has. */
-.rd-prize.avprize.locked .rd-face { filter: grayscale(1) brightness(.55); }
+   says the state is the disc around it, which every checkpoint already has. */
+.rd-prize.locked .rd-face { filter: grayscale(1) brightness(.55); }
 .rd-popic .rd-face,
 .rd-popic img.rd-face,
 .rd-popic canvas.rd-face {
@@ -6393,39 +6318,59 @@ button:not(.playbtn):active,
   border-radius: 50%;
   object-fit: cover;
 }
-
-/* THE CHAPTER'S LAST CHECKPOINT IS BIGGER, because it pays four times what
-   any of the four before it does (`splitPurse`). A reward that is worth
-   more and looks identical is the screen keeping it to itself. */
-.rd-stop.big { min-height: 146px; }
-.rd-stop.big .rd-prize.free { width: 78px; height: 78px; border-width: 4px; }
-.rd-stop.big .rd-at { font-size: 12px; }
-
-/* WHERE YOU ARE HEADED. Exactly one checkpoint is the target, and the ring
-   around it is the only thing on a road this long that says which. */
-.rd-stop.next .rd-prize.free { border-color: var(--gold-glow); color: var(--gold-glow); }
-/* The target's pill keeps the SAME plate. Darkening it to a 60% black wash was the one
-   thing on this screen that failed AA against a bright painting — 4.10 over pure white,
-   against 9.89 on the plate everything else wears. What marks the target is the ring on
-   the disc and the gold ink, neither of which depends on what is painted behind it. */
-.rd-stop.next .rd-at { color: var(--gold-glow); }
-
-/* The pass prize hangs off the right-hand column — a smaller disc, still a
-   thumb wide, marked with a crown it is wearing or a lock it is behind. */
-.rd-prize.pass {
-  grid-column: 3;
-  justify-self: start;
-  position: relative;
-  z-index: 1;
-  width: 44px;
-  height: 44px;
-  margin-left: 16px;
-  border-width: 2px;
-}
-.rd-tag, .rd-done {
+/* Each resource floats above a filled circular base. */
+.rd-base {
   position: absolute;
-  right: -3px;
-  bottom: -3px;
+  left: 50%;
+  top: calc(100% - 18px);
+  transform: translateX(-50%);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--rd-node);
+  pointer-events: none;
+}
+.rd-amount {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  height: 30px;
+  padding: 4px 10px;
+  border: 2px solid var(--gold);
+  border-radius: 0;
+  background: var(--rd-node);
+  color: var(--rd-ink);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.rd-amount b { font: inherit; color: inherit; }
+.rd-prize:disabled { cursor: default; }
+/* Filters keep claimed paintings solid, so the path never shows through the coin. */
+.rd-prize.locked .rd-mark { opacity: 1; }
+.rd-prize.got .rd-mark { opacity: 1; filter: saturate(.55) brightness(.7); }
+.rd-prize:focus-visible { outline: none; }
+.rd-prize:focus-visible .rd-amount { background: var(--grass-glow); color: #0f2417; }
+
+.rd-stop.big { min-height: 232px; }
+.rd-stop.big .rd-prize.main { width: 124px; height: 132px; }
+.rd-stop.big .rd-at { font-size: 15px; }
+.rd-stop.grand { min-height: 248px; }
+.rd-stop.grand .rd-prize.main { width: 136px; height: 144px; }
+
+.rd-done {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6433,49 +6378,32 @@ button:not(.playbtn):active,
   height: 18px;
   border-radius: 50%;
   background: var(--panel-edge);
-  color: var(--gold-glow);
+  color: var(--grass-glow);
 }
-.rd-done { color: var(--grass-glow); }
 
-/* --------------------------------------------------------- THE BREAKER
-   Ten regions, five chapters each, and the gate at a boundary announces
-   the area being entered. Drawn rather than an image: an arch is two
-   borders and a radius, and a file would be a tenth thing to keep in step
-   with `REGIONS`. */
+/* Area names also sit beside the same continuous rail. */
 .rd-gate {
   position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 3px;
-  padding: 24px 0 30px;
-}
-.rd-arch {
   display: flex;
+  flex-direction: column;
   align-items: flex-end;
-  justify-content: center;
-  width: 88px;
-  height: 54px;
-  padding-bottom: 9px;
-  border: 3px solid var(--gold);
-  border-bottom: none;
-  border-radius: 48px 48px 0 0;
-  background: rgba(0, 0, 0, .4);
-  color: var(--gold-glow);
+  gap: 3px;
+  padding: 24px calc(50% + 48px) 30px 16px;
+  text-align: right;
 }
-/* The mark is a chevron; an entrance is the way UP. */
-.rd-arch svg { transform: rotate(-90deg); }
+.rd-gatek,
+.rd-gaten { position: relative; z-index: 1; }
 .rd-gatek {
-  margin-top: 8px;
   font-size: 10.5px;
   font-weight: 900;
   letter-spacing: 1.6px;
   text-transform: uppercase;
   color: var(--muted);
 }
-.rd-gaten { font-size: 15px; font-weight: 900; color: var(--gold-glow); }
+.rd-gaten { font-family: var(--font-display); font-size: 19px; font-weight: 400; color: var(--grass-glow); }
 
 /* ------------------------------------------------------- WHAT IT PAID
-   The one place a figure is written. `#achievements.popped` is what lifts
+   Confirms the currency and amount actually banked. `#achievements.popped` is what lifts
    it: `.screen` is z-index 20 in the legacy sheet and `#mainNav` is 60 in
    the same stacking context, so a card inside the screen cannot out-stack
    the tab bar at any z-index of its own. */
@@ -7799,6 +7727,7 @@ button:not(.playbtn):active,
    of one thing. */
 #antarium .an-tile {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
   border: none;
   border-radius: var(--r-card);
@@ -7809,6 +7738,7 @@ button:not(.playbtn):active,
    the screen sets no fill on a locked tile at all, so there is one place
    deciding what "not yours" looks like. */
 #antarium .an-tile.locked { background: var(--hud-lock); }
+#antarium .an-tile.locked .an-art { filter: grayscale(1); }
 
 /* THE LEVEL, in the corner the design puts it in. Inset by two, so the
    badge reads as something lying ON the tile rather than as a bite out of
@@ -7876,9 +7806,10 @@ button:not(.playbtn):active,
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 0;
+  padding: 4px 6px;
   border: none;
-  background: none;
+  border-radius: var(--r-btn);
+  background: var(--hud-well);
   font-family: var(--font-display);
   font-weight: 400;
   font-size: var(--fs-body);
@@ -8008,9 +7939,17 @@ button:not(.playbtn):active,
   box-shadow: none !important;
 }
 #antarium .ccard .an-tile { aspect-ratio: 9 / 8; }
-/* The one card the banner is describing. A ring on the TILE, because the
-   card has no edges of its own to ring. */
-#antarium .ccard.sel .an-tile { outline: 2px solid var(--hud-ink); outline-offset: -2px; }
+/* The selected ring is a separate layer above both the artwork and level badge. */
+#antarium .ccard.sel .an-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  border: 2px solid var(--hud-ink);
+  border-radius: var(--r-card);
+  pointer-events: none;
+}
 #antarium .cname {
   font-size: var(--fs-small);
   line-height: 1.2;
@@ -8173,65 +8112,3 @@ button:not(.playbtn):active,
   border-radius: 999px;
 }
 .match .timelabel { padding-bottom: 0; }
-
-/* ============================================================================
-   ==  THE AVATARS  ===========================================================
-   ============================================================================
-
-   Ninety-eight faces in a grid, with the one being worn above them at the size it is
-   actually judged at. Five across, which is the same count the trait tiles use and for
-   the same reason: five is where a collection reads as a collection at a glance rather
-   than as a list to scroll, and five across a 320px phone is why there is no room for a
-   word on a tile.
-
-   EVERY RULE HERE NAMES BOTH TAGS. `avatarFace` answers an `<img>` where there is a
-   painting and a `<canvas>` where there is not (§ A COLLECTION CARD), so a rule written
-   for one of them sizes half the cases and lets the rest render at the file's own 250px.
-   `css-sanity` sweeps the stylesheet for exactly this. */
-.avwrap { display: grid; gap: var(--stack); }
-
-/* THE ONE BEING WORN, big. The grid below is too small to choose a face by; this is the
-   only one the player is deciding about, so it is shown at the size that decides it. */
-.av-hero { display: grid; justify-items: center; gap: 8px; }
-.av-hero-f, img.av-hero-f, canvas.av-hero-f {
-  width: 96px;
-  height: 96px;
-  display: block;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid var(--grass);
-}
-.av-hero-k { font-size: 11.5px; font-weight: 800; color: var(--ink-soft); }
-
-.avgrid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-}
-.av-t {
-  position: relative;
-  padding: 0;
-  border: 2px solid transparent;
-  border-radius: 12px;
-  background: none;
-  overflow: hidden;
-  cursor: pointer;
-  aspect-ratio: 1;
-}
-.av-t .av-f,
-.av-t img.av-f,
-.av-t canvas.av-f {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-}
-/* A LOCKED ONE IS DRAWN, not hidden: seeing the ninety-odd still to find is the whole
-   reason to walk the road and open the hatch. Dimmed rather than padlocked, because the
-   tile already says where it comes from (`title`) and a padlock would say only "no". */
-.av-t.off { cursor: default; }
-.av-t.off .av-f { filter: grayscale(1) brightness(.5); }
-/* The worn one is the only tile with an edge, so "which am I wearing" is answered by the
-   grid as well as by the hero above it. */
-.av-t.on { border-color: var(--grass); }
-.av-note { font-size: 11px; font-weight: 700; line-height: 1.5; color: var(--muted); }

@@ -17,9 +17,9 @@ import { cardArt } from "../cards";
 const DIR = resolve(__dirname, "..", "cards");
 
 describe("a collection tile is painted by dropping a file in", () => {
-  /** Nothing is painted yet, and that is a legal state — the tile is its own colour. */
-  it("answers null for a colony with no picture", () => {
-    expect(cardArt("fire")).toBeNull();
+  /** An unrecognised colony never borrows another colony\'s portrait. */
+  it("answers null for an unknown colony", () => {
+    expect(cardArt("no-such-colony" as keyof typeof SPECIES)).toBeNull();
   });
 
   /**

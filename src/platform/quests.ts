@@ -181,9 +181,9 @@ export function levelProgress(totalXp: number): LevelProgress {
 
 /** Every few levels pays something the player must tap to claim. */
 export function levelReward(level: number): QuestReward & { label: string } {
-  if (level % 10 === 0) return { mycel: 90, pheromone: 200, label: "90 mycelium + 200 pheromone" };
+  if (level % 10 === 0) return { mycel: 90, pheromone: 200, label: "90 mycelium + 200 pheromone crystals" };
   if (level % 5 === 0) return { mycel: 60, label: "60 mycelium" };
-  if (level % 2 === 0) return { pheromone: 200, label: "200 pheromone" };
+  if (level % 2 === 0) return { pheromone: 200, label: "200 pheromone crystals" };
   return { mycel: 25, label: "25 mycelium" };
 }
 

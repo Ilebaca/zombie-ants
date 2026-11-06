@@ -178,7 +178,12 @@ export function screenHeader(parent: HTMLElement, opts: HeaderOptions): void {
 function purseChip(mark: string, value: number): HTMLElement {
   const chip = el("div", "mycelchip");
   chip.dataset.purse = mark;
-  chip.append(icon(mark, 18), el("b", "mycelv", String(value)));
+  chip.append(mark === "pheromone" ? hudMark(mark, 18) : icon(mark, 18),
+    el("b", "mycelv", String(value)));
+  chip.title = mark === "pheromone" ? "Pheromone crystal" : "Mycelium";
+  chip.setAttribute("aria-label", mark === "pheromone"
+    ? `${value} pheromone crystal${value === 1 ? "" : "s"}`
+    : `${value} mycelium`);
   return chip;
 }
 
@@ -215,7 +220,7 @@ export function topBar(profile: Readonly<Profile>, opts: TopBarOptions): HTMLEle
   // screens a player moves between agree, and the mock-up is the one that decides.
   const cur = el("div", "tn-cur");
   cur.append(
-    coin("pheromone", "pher-pts", profile.pheromone, { label: "Get pheromone", onClick: opts.onShop }),
+    coin("pheromone", "pher-pts", profile.pheromone, { label: "Get pheromone crystals", onClick: opts.onShop }),
     coin("mycel", "ophio-pts", profile.mycel, { label: "Get mycel", onClick: opts.onShop }),
   );
   nav.appendChild(cur);
@@ -630,6 +635,7 @@ export function antPortrait(
     img.src = art;
     img.width = size;
     img.height = size;
+    img.style.objectFit = "cover";
     if (cls) img.className = cls;
     // Silent, for the reason the canvas below is: the face always sits inside something
     // that is already named, and a second announcement is noise rather than access.
