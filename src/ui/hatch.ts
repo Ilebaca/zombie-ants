@@ -119,9 +119,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
   const render = (): void => {
     root.replaceChildren();
     screenHeader(root, {
-      title: "Lucky hatch",
-      sub: "Where traits and skins come from",
-      onBack: opts.onBack,
+      title: "Lucky hatch", onBack: opts.onBack,
       backId: "hatchBack",
     });
 

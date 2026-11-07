@@ -120,7 +120,7 @@ export function challengeState(store: ProfileStore): {
 
 export function buildChallenges(store: ProfileStore, onPlay: (index: number) => void): HTMLElement {
   const root = screenEl("challenges");
-  screenHeader(root, { title: "Challenges", sub: "Positions to beat" });
+  screenHeader(root, { title: "Challenges"});
 
   const { beaten, open, done } = challengeState(store);
 
@@ -218,7 +218,7 @@ export function buildDaily(
   onLadder: () => void = () => {}, now: number = Date.now(),
 ): HTMLElement {
   const root = screenEl("daily");
-  screenHeader(root, { title: "Daily challenge", sub: "A new position every day", onBack });
+  screenHeader(root, { title: "Daily challenge", onBack });
 
   const index = dailyIndex(now);
   const challenge = CHALLENGES[index] as Challenge;

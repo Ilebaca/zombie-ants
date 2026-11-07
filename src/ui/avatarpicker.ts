@@ -53,15 +53,23 @@ export function buildAvatarPicker(
     redraw(root);
     const { has, of } = avatarProgress(store.avatars);
     screenHeader(root, {
-      title: "Avatars",
-      sub: `${has} of ${of} collected`,
-      onBack: opts.onBack,
+      title: "Avatars", onBack: opts.onBack,
       backId: "avBack",
     });
 
     const body = el("div", "screenbody sb-top");
     const wrap = el("div", "avwrap");
     wrap.id = "avBody";
+
+    /**
+     * HOW MANY OF THEM YOU HAVE, AS A LABEL ON THE SCREEN.
+     *
+     * It rode the header's subtitle, which is gone everywhere (§ A TITLE IS NOT A
+     * BLOCK) — and it is not a subtitle anyway: a title says what the screen is and
+     * this is the one number the screen is ABOUT. It reads as a section label over the
+     * thing it counts, which is where every other count on these screens sits.
+     */
+    wrap.appendChild(el("div", "secthead", `Collected ${has} of ${of}`));
 
     /**
      * THE ONE BEING WORN, ABOVE THE REST AND AT THE SIZE IT IS CHOSEN AT.

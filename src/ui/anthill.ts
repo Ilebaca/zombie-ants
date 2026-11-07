@@ -42,9 +42,7 @@ export function buildAnthill(store: ProfileStore, opts: AnthillOptions = {}): HT
     redraw(root);
     // No back arrow: this is a bottom-nav tab, and the nav is how the player leaves it.
     screenHeader(root, {
-      title: "Anthill",
-      sub: "Nest chambers & excavation",
-      mycel: profile.mycel,
+      title: "Anthill", mycel: profile.mycel,
     });
 
     const body = el("div", "screenbody sb-top");

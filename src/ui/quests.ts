@@ -19,7 +19,7 @@ export function buildQuests(store: ProfileStore, onBack: () => void): HTMLElemen
     const quests = store.dailyQuests();
     const profile = store.get();
     redraw(root);
-    screenHeader(root, { title: "Colony", sub: "Level & daily quests", onBack });
+    screenHeader(root, { title: "Colony", onBack });
 
     const body = el("div", "screenbody sb-top");
     const list = el("div", "antscroll");

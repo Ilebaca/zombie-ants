@@ -51,7 +51,6 @@ export function buildLeaderboard(store: ProfileStore, onBack: () => void): HTMLE
     redraw(root);
     screenHeader(root, {
       title: tab === "week" ? "This week" : "Biggest colonies",
-      sub: tab === "week" ? "League season" : "Every colony, by size",
       onBack,
     });
 

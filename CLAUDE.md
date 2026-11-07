@@ -2215,6 +2215,46 @@ in-game] screens and try to keep it clean".
   day the bar became a card with the shared padding they stopped. As a block in the
   column it takes its own room and the gap under it is the one every other block has.
 
+**AND THEN THREE OF THOSE DECISIONS CAME BACK THE OTHER WAY.** Reported against that
+build, one message each, and every one of them is now the rule:
+- **A TITLE IS NOT A BLOCK.** "These main titles on top should NEVER be blocks like
+  other content. They are stand-alone with no background or frames. Just title, also
+  remove the small subtitle as well." So the plate is off `.screentop`, the plate that
+  had moved out to `.setuptop` on the setup screen is gone with it, and the back arrow
+  is a CARD again rather than the well it became inside one.
+  - The reasoning is worth keeping, because it is the opposite of the rule every other
+    box on these screens follows: a title is not a thing you press or a thing that holds
+    something — it NAMES the page, and a name in a frame is a label on a lid.
+  - **THE SUBTITLE IS OUT OF THE MARKUP, not hidden.** `screenHeader` stops building it
+    and `sub`/`subId` are off `HeaderOptions`, so the nineteen screens that passed one
+    had to drop it and the three dead `.screensub` rules came out of `skin.css`. A line
+    nobody wants, left in the type behind a `display: none`, is a line the next screen
+    writes again.
+  - **ONE OF THEM WAS CARRYING A FACT.** The avatar picker's subtitle was the collection
+    count, which is the one number that screen is ABOUT — it is a section label over the
+    grid now. A subtitle is the wrong place for content; deleting the content with it
+    would have been the wrong fix.
+- **AND THE DARK BEHIND THE CHROME IS THE DESIGN'S.** The status bar and the home strip
+  came back green: those are painted by the SYSTEM from `theme-color` and the manifest,
+  which no stylesheet reaches, and both still said `#0e1a12`. They are `#1c1e25` now,
+  and so is the cover's own ground in `index.html` — a cold boot flashed the old colour
+  for two seconds before the app it covers.
+- **AND A BLOCK WEARS NO STROKE.** "I see a small outline stroke for the blocks, we
+  don't use that — remove it everywhere. We just sometimes have that stroke if the
+  element is SELECTED." TWO different things were drawing one:
+  - The first language outlines a panel with `1px solid var(--line)`, and the remap
+    pointed `--line` at a pale white — so every one of those strokes survived and became
+    visible against the design's dark card. A sweep clears them and exempts exactly the
+    states a stroke is for: `.on`, `.armed`, `.worn`, `.sel`, `.active`, `:focus-visible`.
+  - **AND THE REST OF IT WAS THE GLOSS, which only a measurement would have found.**
+    `border` computed as `none` on every card and the edge was still there. On a rounded
+    box a 2px white inset at the TOP carries round both corners and reads as an outline
+    starting down each side: measured on a settings row, the top four device pixels were
+    `126,126,130` against the card's own `40,41,48`, with the left and right edges clean.
+    `--hud-gloss` is off every card in the app, home's included — the LEDGE is what says
+    a thing is solid (§10), and it stays. What still wears it is the tab tray's shelf,
+    which is chrome rather than a block and was asked for by name.
+
 **ONE RARITY LADDER, FOR EVERYTHING THAT HAS ONE** (`engine/tiers.ts`). There were TWO and
 they disagreed. Traits ran common / uncommon / rare / exceptional / mythic in grey, green,
 blue, purple and red; colonies ran "Founding castes" / "Rare colonies" / "Elite castes" /

@@ -30,7 +30,7 @@ export function buildSupport(
   const render = (): void => {
     const profile = store.get();
     redraw(root);
-    screenHeader(root, { title: "Support", sub: "Answers & contact", onBack });
+    screenHeader(root, { title: "Support", onBack });
 
     const body = el("div", "screenbody sb-top");
     const wrap = el("div", "spwrap");

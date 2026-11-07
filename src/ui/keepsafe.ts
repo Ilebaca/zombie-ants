@@ -32,9 +32,7 @@ export interface KeepSafeOptions {
 export function buildKeepSafe(store: ProfileStore, opts: KeepSafeOptions): HTMLElement {
   const root = screenEl("keepsafe");
   screenHeader(root, {
-    title: "Keep your colony",
-    sub: "Where your progress lives",
-    onBack: opts.onBack,
+    title: "Keep your colony", onBack: opts.onBack,
     backId: "ksBack",
   });
 

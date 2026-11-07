@@ -54,7 +54,7 @@ export function buildProfile(store: ProfileStore, opts: ProfileOptions): HTMLEle
     const s = profile.stats;
 
     redraw(root);
-    screenHeader(root, { title: "Profile", sub: "Record & collection", onBack: opts.onBack });
+    screenHeader(root, { title: "Profile", onBack: opts.onBack });
 
     const body = el("div", "screenbody sb-top");
     const scroll = el("div", "antscroll");

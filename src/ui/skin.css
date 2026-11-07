@@ -330,7 +330,6 @@ body {
   color: var(--ink);
   text-shadow: 0 2px 0 rgba(255, 255, 255, .55);
 }
-.screensub { color: var(--muted); }
 
 .backbtn {
   border: none;
@@ -914,17 +913,6 @@ body,
   text-shadow: none;
   text-align: left;
 }
-.screentop .screensub {
-  grid-area: sub;
-  align-self: start;
-  margin: 2px 0 0;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: .5px;
-  text-transform: uppercase;
-  color: var(--muted);
-  text-align: left;
-}
 .screentop .mycelchip { grid-area: chip; position: static; transform: none; }
 
 /* ------------------------------------------------------------- SECTIONS
@@ -1222,16 +1210,6 @@ body,
 
 .dailyfab small { font-size: 8.5px; font-weight: 900; letter-spacing: .4px; }
 
-/* -------------------------------------------------- HEADER, SECOND LOOK
-   Uppercasing the subtitle made it ~15% wider, so "Nest chambers &
-   excavation" wrapped and the bar grew a line. Sentence case, and it fits. */
-.screentop .screensub {
-  text-transform: none;
-  letter-spacing: .1px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-}
 
 /* ---------------------------------------------------------- ICON PLATES
    Every mark in a list sits on the same 40px plate, so rows line up down a
@@ -1750,7 +1728,6 @@ button:not(.playbtn):active,
 .screentop .backbtn { justify-self: start; }
 .screentop .mycelchip { justify-self: end; }
 .screentop .screenh { text-align: center; }
-.screentop .screensub { grid-area: sub; text-align: center; }
 
 /* ------------------------------------------------------- SHOP TILE MARKS
    Every icon carries the class `ic`, and the tile's plate was written as
@@ -6507,7 +6484,16 @@ button:not(.playbtn):active,
        It is not a soft drop shadow: there is no blur in it at all, which is
        what makes these read as stamped tiles rather than as cards floating
        over a picture;
-     - a GLOSS, `--hud-gloss`, one inset hairline of white along the top
+     - a GLOSS, `--hud-gloss`, one inset hairline of white along the top. IT IS
+       OFF EVERY CARD NOW, asked for directly: "I see a small outline stroke for
+       the blocks, we don't use that — remove it everywhere. We just sometimes
+       have that stroke if the element is SELECTED." On a rounded card a 2px
+       white band at the top carries round both corners and reads as an outline
+       starting down each side, which is exactly what was reported — measured
+       on a settings row, the top four device pixels were `126,126,130` against
+       the card's own `40,41,48` and the left and right edges were clean. What
+       is left wearing it is the TAB TRAY's shelf, which is chrome rather than a
+       block and was asked for by name; the ledge is what says a thing is solid
        edge. That is the light, and it is why the tiles look convex.
 
    THE LEDGE NEEDS `!important`, and that is the third time this file has
@@ -6751,7 +6737,7 @@ button:not(.playbtn):active,
   border: none;
   border-radius: var(--av-r);
   background: var(--hud-face);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 #home .tn-id::after {
   content: "";
@@ -6823,7 +6809,7 @@ button:not(.playbtn):active,
      left edge sums to its own height and nothing is scaled. */
   border-radius: calc(15 * var(--u)) calc(7 * var(--u)) calc(7 * var(--u)) calc(15 * var(--u));
   background: var(--hud-face);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 #home .tn-coin .tn-ic {
   flex: 0 0 auto;
@@ -6889,7 +6875,7 @@ button:not(.playbtn):active,
      plate. It also settles a contrast note this file has carried since the redesign:
      the cream figure measured 2.22 on the green, under AA, and measures 16.6 here. */
   background: var(--hud-face);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 #home .col-size {
   flex: 0 0 auto;
@@ -7023,7 +7009,7 @@ button:not(.playbtn):active,
   border-radius: calc(7 * var(--u));
   background: var(--hud-face);
   color: var(--hud-ink);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 #home .gp-l {
   display: flex;
@@ -7093,7 +7079,7 @@ button:not(.playbtn):active,
   border-radius: calc(5 * var(--u));
   background: var(--hud-face);
   color: var(--hud-ink);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 /* TWO TAGS, TWO SIZES. A painted mark nearly fills the tile (the design's 36 inside a
    48) and a drawn glyph at that size is a burger with no button round it, so each is
@@ -7115,7 +7101,7 @@ button:not(.playbtn):active,
 #home .dailyfab:active {
   background: var(--hud-face);
   transform: translate(calc(1 * var(--u)), calc(2 * var(--u)));
-  box-shadow: calc(1 * var(--u)) calc(2 * var(--u)) 0 #000, var(--hud-gloss) !important;
+  box-shadow: calc(1 * var(--u)) calc(2 * var(--u)) 0 #000 !important;
 }
 
 /* The two bands that are NOT in the design — a match left unfinished, and
@@ -7127,7 +7113,7 @@ button:not(.playbtn):active,
   border: none;
   border-radius: calc(7 * var(--u));
   background: var(--hud-face);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 
 /* ------------------------------------------------------------- THE ACTION
@@ -7178,11 +7164,11 @@ button:not(.playbtn):active,
   font-size: calc(32 * var(--u));
   line-height: 1;
   text-align: center;
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 #home .playbtn:active {
   transform: translate(calc(1 * var(--u)), calc(2 * var(--u)));
-  box-shadow: calc(1 * var(--u)) calc(2 * var(--u)) 0 #000, var(--hud-gloss) !important;
+  box-shadow: calc(1 * var(--u)) calc(2 * var(--u)) 0 #000 !important;
   filter: none;
 }
 
@@ -7257,7 +7243,7 @@ button:not(.playbtn):active,
   border-radius: calc(5 * var(--u));
   background: var(--hud-face);
   color: var(--hud-ink);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 #mainNav .navitem .ni { display: flex; font-size: 0; line-height: 0; }
 #mainNav .navitem svg,
@@ -7277,7 +7263,7 @@ button:not(.playbtn):active,
 #mainNav .navitem.active::before { content: none; }
 #mainNav .navitem:active {
   transform: translate(calc(1 * var(--u)), calc(2 * var(--u)));
-  box-shadow: calc(1 * var(--u)) calc(2 * var(--u)) 0 #000, var(--hud-gloss) !important;
+  box-shadow: calc(1 * var(--u)) calc(2 * var(--u)) 0 #000 !important;
 }
 
 /* THE TAB BAR GREW, so the room reserved for it has to. The legacy sheet
@@ -7490,7 +7476,7 @@ button:not(.playbtn):active,
   border: none;
   border-radius: var(--r-card);
   background: var(--hud-card);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 
 /* The painting, and the mark that stands in until one is painted. Both tags are
@@ -7546,7 +7532,7 @@ button:not(.playbtn):active,
   font-size: var(--fs-body);
   line-height: 1.15;
   color: var(--hud-ink);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 /* A thing already owned, or a gift not yet due, is not for sale. It keeps its
    FILL and darkens it rather than going see-through — the lesson the hatch's
@@ -7620,7 +7606,7 @@ button:not(.playbtn):active,
   font-weight: 400;
   font-size: var(--fs-title);
   color: var(--hud-ink);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 #shop .restorenote {
   font-size: var(--fs-label);
@@ -7685,7 +7671,7 @@ button:not(.playbtn):active,
   border: none;
   border-radius: var(--r-btn);
   background: var(--hud-card);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 #shop .hatchodds .ho-dot,
 #luckyhatch .hatchodds .ho-dot {
@@ -7766,7 +7752,7 @@ button:not(.playbtn):active,
   border: none;
   border-radius: var(--r-card);
   background: var(--fill, var(--hud-lock));
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 /* A COLONY YOU DO NOT OWN IS GREY, and this is the only rule that says so —
    the screen sets no fill on a locked tile at all, so there is one place
@@ -7821,7 +7807,7 @@ button:not(.playbtn):active,
   border: none;
   border-radius: var(--r-card);
   background: var(--hud-card);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 /* The hero tile is as tall as the card it sits in rather than square: what
    is beside it is four stacked lines, and a square tile would either leave
@@ -7895,7 +7881,7 @@ button:not(.playbtn):active,
   font-weight: 400;
   font-size: var(--fs-title);
   color: var(--hud-ink);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 /* It only goes dark when it cannot DO anything — a colony you can afford is
    still the green slab, because pressing it buys. */
@@ -8261,7 +8247,7 @@ button:not(.playbtn):active,
   border: none;
   border-radius: var(--r-card);
   background: var(--hud-card);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 /* THE FACE IS A BUTTON, AND A BUTTON CARRIES A BORDER NOBODY ASKED FOR.
    It became one the day the avatar picker landed, and the UA's own 2px outset
@@ -8318,7 +8304,7 @@ button:not(.playbtn):active,
   font-weight: 400;
   font-size: var(--fs-small);
   line-height: 1;
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 
 /* --------------------------------------------------------- THE COLONY */
@@ -8326,7 +8312,7 @@ button:not(.playbtn):active,
   border: none;
   border-radius: var(--r-card);
   background: var(--hud-card);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 #profile .pf-colony-k,
 #profile .pf-colony-s { font-size: var(--fs-label); color: var(--hud-dim); }
@@ -8340,7 +8326,7 @@ button:not(.playbtn):active,
   gap: 1px;
   border-radius: var(--r-card);
   background: var(--hud-face);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 #profile .pf-stat { padding: 10px var(--block); background: var(--hud-card); }
 #profile .pf-k { font-size: var(--fs-label); letter-spacing: .4px; color: var(--hud-dim); }
@@ -8361,7 +8347,7 @@ button:not(.playbtn):active,
   border-radius: var(--r-card);
   background: var(--hud-card);
   color: var(--hud-ink);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 #profile .pf-row-i { border-radius: var(--r-btn); background: var(--hud-well); }
 /* ...except the one whose collectable IS a picture, which leads with the face
@@ -8467,9 +8453,19 @@ button:not(.playbtn):active,
     .trtile, .tropen, .trtotals, .fusebox, .fb-row, .invhead,
     .histrow, .kscard, .hatchprize, .hp-one, .hatchshut,
     .coverpane, .setupbox, .ru-fig) {
+  /* NO OUTLINE ON A BLOCK, asked for directly: "I see a small outline stroke
+     for the blocks, we don't use that — remove it everywhere. We just
+     sometimes have that stroke if the element is SELECTED."
+     It arrived with the remap rather than being drawn on purpose: the first
+     language outlines a panel with `1px solid var(--line)`, and pointing
+     `--line` at a pale white kept every one of those strokes and made them
+     visible against the design's dark card. A stroke on a thing that is not
+     selected is a stroke that means nothing, and it leaves the one that does
+     — the green frame on a switch that is ON — saying the same as the rest. */
+  border: none;
   border-radius: var(--r-card);
   background: var(--hud-card);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 
 /* A WELL IS THE ONE SURFACE THAT IS NOT PRESSED. A track, a code box, a
@@ -8482,6 +8478,7 @@ button:not(.playbtn):active,
     #luckyhatch)
 :is(.lbtrack, .qbar, .spgstat-b, .setcode, .frfield, .sptext, .rtrack,
     .frghost, .histempty, .trempty) {
+  border: none;
   border-radius: var(--r-btn);
   background: var(--hud-well);
   box-shadow: none !important;
@@ -8514,27 +8511,8 @@ button:not(.playbtn):active,
   letter-spacing: 0;
   color: var(--hud-ink);
 }
-.screentop .screensub {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--fs-label);
-  letter-spacing: .4px;
-  color: var(--hud-dim);
-}
-
-/* THE BACK ARROW IS A CARD, with the ledge every other raised thing wears.
-   It was a green panel with a 9px corner — the last control in the app still
-   drawn in the first language, and it is on top of every screen there is. */
-.screentop .backbtn {
-  border-radius: var(--r-card);
-  background: var(--hud-card);
-  color: var(--hud-ink);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
-}
-.screentop .backbtn:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 #000 !important;
-}
+/* The back arrow's own dressing is in the block below, beside the decision
+   that took the plate off the title — one place decides what the header is. */
 
 /* ---------------------------------------------------------------- THE LABELS
    A SECTION HEADING IS A LABEL, NOT A TITLE — which is what this file has
@@ -8626,33 +8604,48 @@ body,
    it, and no two plates the same inside.
    ====================================================================== */
 
-/* THE HEADER IS A BLOCK. It is the one piece of furniture every screen has
-   (§ EVERY OTHER SCREEN) and it was the only thing on a page with nothing
-   behind it — a 22px name floating over the ground beside a back arrow that
-   WAS a card, which read as the title having lost its plate rather than as
-   a title. It wears the same face, corner, ledge and padding as everything
-   under it, so the first block on a page is a block.
+/* A TITLE IS NOT A BLOCK, AND THAT IS THE SECOND ANSWER TO THIS.
+   It was plated for one build — the same face, corner, ledge and padding as
+   everything under it — on the argument that a bare line of type at the top
+   of a stack of cards read as a title that had lost its plate. The call came
+   back the other way and is final: "these main titles on top should NEVER be
+   blocks like other content. They are stand-alone with no background or
+   frames. Just title, also remove the small subtitle as well."
+
+   So the header is TYPE on the page. The reasoning is worth keeping, because
+   it is the opposite of the rule every other box here follows: a title is not
+   a thing you press or a thing that holds something — it NAMES the page, and
+   a name in a frame is a label on a lid. What a block is for on these screens
+   is content, and the title is not content.
+
+   THE SUBTITLE IS GONE FROM THE MARKUP, not hidden — `screenHeader` stops
+   building it and the option is off `HeaderOptions`, so the nineteen screens
+   that passed one had to drop it (§ chrome.ts). A line nobody wants, left in
+   the type behind a `display: none`, is a line the next screen writes again.
 
    UNSCOPED, like the title rule it joins: home has no `.screentop` and the
    match's header is its own element, so this reaches exactly the pages that
    have one. */
 .screentop {
-  padding: var(--block);
-  border-radius: var(--r-card);
-  background: var(--hud-card);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
-}
-
-/* AND THE ARROW STOPS BEING A CARD INSIDE A CARD. A plate on a plate is a
-   box in a box; inside the header it is the WELL — the language's own
-   "button cut into a card" — so it still reads as pressable without being a
-   second raised object. */
-.screentop .backbtn {
-  border-radius: var(--r-btn);
-  background: var(--hud-well);
+  padding: var(--block) 0;
+  background: none;
   box-shadow: none !important;
 }
-.screentop .backbtn:active { transform: translateY(1px); }
+
+/* THE ARROW IS STILL AN OBJECT, and with no plate behind it, it is a CARD
+   again rather than the well it became inside one. It is the only thing in
+   the header a thumb lands on, and the one control in the app that is on
+   every screen there is. */
+.screentop .backbtn {
+  border-radius: var(--r-card);
+  background: var(--hud-card);
+  color: var(--hud-ink);
+  box-shadow: var(--hud-ledge) !important;
+}
+.screentop .backbtn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #000 !important;
+}
 
 /* ONE PADDING FOR EVERY BLOCK, and it is the gap the screens are already
    spaced by. The six that were in play — 10, 12, 12/10, 12/14, 14 and
@@ -8704,7 +8697,7 @@ body,
   border: none;
   border-radius: var(--r-card);
   background: var(--hud-card);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 .match .timeband { padding: var(--inrow) var(--block); }
 
@@ -8717,7 +8710,7 @@ body,
   border: none;
   border-radius: var(--r-card);
   background: var(--hud-card);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 /* ARMED IS A FRAME, not a wash. `.on` filled itself with 22% of the colony's
    own glow, which over ten different paintings is ten different browns; an
@@ -8726,7 +8719,7 @@ body,
 .match .brow .btn.on,
 .match .brow .btn.ability.armed,
 .match .brow .btn.surr.armed {
-  box-shadow: var(--hud-ledge), var(--hud-gloss),
+  box-shadow: var(--hud-ledge),
               inset 0 0 0 2px currentColor !important;
 }
 /* THE ONE BRIGHT THING IS THE ONE THAT ENDS THE TURN. Everything else on
@@ -8796,24 +8789,12 @@ body,
   box-shadow: none !important;
 }
 
-/* AND ON THE SETUP SCREEN THE BLOCK IS THE WHOLE HEAD, because the step rail
-   is a SIBLING of the title rather than a child of it (`setupSteps` is
-   appended beside `screenHeader`). Plated at `.screentop` the two dots fell
-   just outside the card's bottom edge and read as clipped by it. The plate
-   moves out one level to `.setuptop`, which is the header AND its rail —
-   and they belong together: the rail says which of the two steps the title
-   is naming. */
-#formation .setuptop {
-  padding: var(--block);
-  border-radius: var(--r-card);
-  background: var(--hud-card);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
-}
-#formation .screentop {
-  padding: 0;
-  background: none;
-  box-shadow: none !important;
-}
+/* THE SETUP SCREEN'S HEAD NEEDED A PLATE ONE LEVEL OUT while there was a
+   plate at all: `setupSteps` is appended BESIDE `screenHeader` rather than
+   inside it, so a card on `.screentop` left the two step dots just outside
+   its bottom edge, reading as clipped. With the title standing alone there is
+   nothing for them to fall out of, and all that is left is the gap between
+   the title and the rail under it. */
 #formation .setupsteps { margin-top: var(--inrow); }
 
 /* AN INVITATION IS A BLOCK TOO. It is the first thing on the screen it
@@ -8834,6 +8815,24 @@ body,
   border: none;
   border-radius: var(--r-card);
   background: var(--hud-card);
-  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+  box-shadow: var(--hud-ledge) !important;
 }
 #formation.hasinvite .setuptop { padding-top: 0; }
+
+/* AND THE SAME STROKE WAS ON EVERYTHING ELSE THE FIRST LANGUAGE OUTLINES.
+   The card and well lists above are the blocks; this is every other surface
+   on these screens that the legacy sheet gives `1px solid var(--line)` — the
+   chips, the tabs, the switches, the icon plates, a value button. Written as
+   a sweep rather than a list because the point is the ABSENCE: a border that
+   only showed up when `--line` was repointed is one nobody chose, and the
+   next screen inherits it the same way.
+
+   WHAT IS EXEMPT IS WHAT A STROKE IS FOR. A control that is ON, armed, worn
+   or being chosen keeps its frame — that is the one thing an outline says
+   here, and it only says it while nothing else is wearing one. */
+:is(#anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news,
+    #friends, #support, #antup, #traits, #inventory, #history, #replay,
+    #keepsafe, #rules, #formation, #luckyhatch, #shop, #antarium, #profile)
+*:not(.on):not(.armed):not(.worn):not(.sel):not(.active):not(:focus-visible) {
+  border-color: transparent;
+}

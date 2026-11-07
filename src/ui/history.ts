@@ -27,9 +27,7 @@ export function buildHistory(
 ): HTMLElement {
   const root = screenEl("history");
   screenHeader(root, {
-    title: "Recent matches",
-    sub: "The last twenty, newest first",
-    onBack,
+    title: "Recent matches", onBack,
     backId: "histBack",
   });
 
@@ -141,9 +139,7 @@ export class ReplayScreen {
 
     this.root = screenEl("replay");
     screenHeader(this.root, {
-      title: opts.log.foeName || SPECIES[opts.log.foe].name,
-      sub: `${MAPS[opts.log.map].name} · ${outcomeOf(opts.log) === "won" ? "you won" : outcomeOf(opts.log) === "lost" ? "you lost" : "unfinished"}`,
-      onBack: opts.onBack,
+      title: opts.log.foeName || SPECIES[opts.log.foe].name,onBack: opts.onBack,
       backId: "replayBack",
     });
 
