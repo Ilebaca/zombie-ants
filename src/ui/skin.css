@@ -8608,3 +8608,232 @@ body,
 #settings .setdanger {
   color: color-mix(in srgb, var(--danger) 72%, #fff);
 }
+
+/* ======================================================================
+   A TITLE IS A BLOCK, AND EVERY BLOCK IS PADDED THE SAME
+   ======================================================================
+   Three reports in one line, all about the pass above: "stand-alone titles
+   don't have background or anything from these blocks", "any block should
+   have proper and uniform padding and margins", and "check the match to
+   [the in-game] screens and try to keep it clean".
+
+   The first two are the same fault seen twice. Bringing nineteen screens
+   over as a token remap moved every SURFACE onto the design's card and left
+   two things behind, because neither reads a token: what each card pads
+   itself by — six different answers across the app, from 10px to
+   `16px 14px 18px` — and the screen TITLE, which was never a card at all.
+   So a page was a stack of plates with one bare line of type at the top of
+   it, and no two plates the same inside.
+   ====================================================================== */
+
+/* THE HEADER IS A BLOCK. It is the one piece of furniture every screen has
+   (§ EVERY OTHER SCREEN) and it was the only thing on a page with nothing
+   behind it — a 22px name floating over the ground beside a back arrow that
+   WAS a card, which read as the title having lost its plate rather than as
+   a title. It wears the same face, corner, ledge and padding as everything
+   under it, so the first block on a page is a block.
+
+   UNSCOPED, like the title rule it joins: home has no `.screentop` and the
+   match's header is its own element, so this reaches exactly the pages that
+   have one. */
+.screentop {
+  padding: var(--block);
+  border-radius: var(--r-card);
+  background: var(--hud-card);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+
+/* AND THE ARROW STOPS BEING A CARD INSIDE A CARD. A plate on a plate is a
+   box in a box; inside the header it is the WELL — the language's own
+   "button cut into a card" — so it still reads as pressable without being a
+   second raised object. */
+.screentop .backbtn {
+  border-radius: var(--r-btn);
+  background: var(--hud-well);
+  box-shadow: none !important;
+}
+.screentop .backbtn:active { transform: translateY(1px); }
+
+/* ONE PADDING FOR EVERY BLOCK, and it is the gap the screens are already
+   spaced by. The six that were in play — 10, 12, 12/10, 12/14, 14 and
+   16/14/18 — were each right against their own screen and wrong against the
+   one a swipe away, which is the whole of what "uniform" means here.
+
+   A WRAPPER IS NOT IN THE LIST. `.newscard` bleeds a picture to its own
+   edges, `.setgroup` and `.frpanel` hold rows that pad themselves, and the
+   Antarium's `.ccard` is deliberately nothing (§ THE ANTARIUM): padding any
+   of those would put a margin inside a box that has no content of its own. */
+:is(#anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news,
+    #friends, #support, #antup, #traits, #inventory, #history, #replay,
+    #keepsafe, #rules, #formation, #luckyhatch, #shop, #antarium, #profile)
+:is(.card, .metacard, .chcard, .dcard, .qcard, .qhero, .challcard, .dailycard,
+    .stile, .luckycard, .rbanner, .dhero, .hillcut, .antcell, .lbbanner, .lbrow,
+    .setrow, .setrow2, .setpanel, .room-open, .chalcard, .chalmore, .chalsum,
+    .frrow, .spbox, .spfact, .spq, .spgcard, .spghero, .skincard, .spgtd,
+    .tropen, .trtotals, .fusebox, .invhead, .histrow, .kscard, .hatchprize,
+    .hp-one, .hatchshut, .ru-fig, .restorebtn,
+    .pf-hero, .pf-row, .pf-colony, .pf-stat) {
+  padding: var(--block);
+}
+
+/* AND ONE MARGIN UNDER A HEADING. The section labels were 12 above on
+   Settings and 8 on the profile, which is the same two-answers fault one
+   level down. The gap BELOW is the container's own, never a margin of the
+   heading's — a margin on the thing itself is a different answer everywhere
+   it is not set (§ ONE VERTICAL RHYTHM). */
+:is(#anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news,
+    #friends, #support, #antup, #traits, #inventory, #history, #replay,
+    #keepsafe, #rules, #formation, #luckyhatch, #shop, #antarium, #profile)
+:is(.sechead, .tierhead, .secthead) {
+  margin: var(--block) 0 0;
+}
+
+/* ---------------------------------------------------------------- THE MATCH
+   AND THE MATCH IS THE SAME APP. It was the one screen left in the first
+   language: three dark GREEN pills along the top, a green clock card under
+   them and four action tiles each filled with a different colour, over
+   artwork that every other screen had stopped sitting on. Reported as part
+   of the same line — check the in-game screens and keep it clean.
+
+   WHAT DOES NOT CHANGE is the rule this screen already has: the strips are
+   glass and the controls on them are OBJECTS (§ THE GROUND IS THE WHOLE
+   SCREEN). So every chip, the clock and every button keeps a solid fill —
+   it is just the design's fill now, with the design's corner and ledge.
+   The board itself is untouched: it is a painted region and a canvas. */
+.match :is(.stat, .hivechip, .timeband) {
+  border: none;
+  border-radius: var(--r-card);
+  background: var(--hud-card);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+.match .timeband { padding: var(--inrow) var(--block); }
+
+/* THE COLOUR MOVES OFF THE SLAB AND ONTO THE INK. Four buttons in four
+   different fills is four objects made of four materials; the thing the
+   colour is actually saying — which action this is, and whether it is armed
+   — is said by the mark and the word, which is where the eye already is.
+   One face for all four, so the row reads as one control strip. */
+.match .brow .btn {
+  border: none;
+  border-radius: var(--r-card);
+  background: var(--hud-card);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+/* ARMED IS A FRAME, not a wash. `.on` filled itself with 22% of the colony's
+   own glow, which over ten different paintings is ten different browns; an
+   inset ring is the same brightness on every one of them. It is `inset` so
+   it cannot be cleared by the ledge beside it and costs the button no size. */
+.match .brow .btn.on,
+.match .brow .btn.ability.armed,
+.match .brow .btn.surr.armed {
+  box-shadow: var(--hud-ledge), var(--hud-gloss),
+              inset 0 0 0 2px currentColor !important;
+}
+/* THE ONE BRIGHT THING IS THE ONE THAT ENDS THE TURN. Everything else on
+   this row is a mode; End turn is the action, and it is the only slab on the
+   screen in the design's green — the same rule home follows with PLAY. */
+.match .brow .btn.end {
+  background: var(--hud-go);
+  color: #0d1a05;
+}
+.match .brow .btn.end .ic svg { color: #0d1a05; }
+/* Surrender keeps its own ink and loses its fill, because it is the one
+   control here that must never read as something to press by accident. */
+.match .brow .btn.surr {
+  color: var(--danger);
+  background: var(--hud-card);
+}
+
+/* AND ONE GAP UNDER THE HEADER. Measured across nine screens it was 2, 4,
+   12, 38 and 44 — every `.screenbody` had picked its own top padding, and
+   on two of them the first block's own margin was added to it. The BODY
+   owns that gap now and the wrappers inside it own none, which is the rule
+   `--stack` is already on record for one level down: a gap belongs to the
+   space between two things, never to the thing itself. */
+:is(#anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news,
+    #friends, #support, #antup, #traits, #inventory, #history, #replay,
+    #keepsafe, #rules, #formation, #luckyhatch, #shop, #antarium, #profile)
+.screenbody {
+  padding-top: var(--block);
+  padding-bottom: var(--block);
+}
+:is(#anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news,
+    #friends, #support, #antup, #traits, #inventory, #history, #replay,
+    #keepsafe, #rules, #formation, #luckyhatch, #shop, #antarium, #profile)
+:is(.shopwrap, .setwrap, .antscroll, .hillwrap, .challist, .chalwrap, .newswrap,
+    .frbody, .spwrap, .spgwrap, .trwrap, .histlist, .kswrap, .lblist,
+    .hatchwrap, .quests) {
+  padding-top: 0;
+  margin-top: 0;
+}
+/* AND WHATEVER OPENS A SCREEN HAS NOTHING ABOVE IT TO BE SPACED FROM. Not
+   only a heading: the shop's demo notice carries `margin: var(--sp6) 0 0`
+   of its own, which on the first block is 24px of nobody's gap added to the
+   body's 12. Zeroing it where it is FIRST keeps the margin doing its job
+   everywhere else in the list. */
+:is(#anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news,
+    #friends, #support, #antup, #traits, #inventory, #history, #replay,
+    #keepsafe, #rules, #formation, #luckyhatch, #shop, #antarium, #profile)
+:is(.screenbody, .shopwrap, .setwrap, .antscroll, .hillwrap, .challist,
+    .chalwrap, .newswrap, .frbody, .spwrap, .spgwrap, .trwrap, .histlist,
+    .kswrap, .lblist, .hatchwrap, .quests) > :first-child {
+  margin-top: 0;
+}
+
+/* AND A NOTE IS A WELL. The shop's demo notice, the pass note and the
+   ladder's disclosure were each a tinted box in a colour of their own —
+   blue over a charcoal page, which reads as a different material rather
+   than as a quieter one. Sunk instead of raised, which is what the language
+   already says a disclosure is. */
+:is(#anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news,
+    #friends, #support, #antup, #traits, #inventory, #history, #replay,
+    #keepsafe, #rules, #formation, #luckyhatch, #shop, #antarium, #profile)
+:is(.shopnote, .testnote, .demo-note, .passnote, .hatchnote, .lbnote) {
+  padding: var(--block);
+  border: none;
+  border-radius: var(--r-card);
+  background: var(--hud-well);
+  box-shadow: none !important;
+}
+
+/* AND ON THE SETUP SCREEN THE BLOCK IS THE WHOLE HEAD, because the step rail
+   is a SIBLING of the title rather than a child of it (`setupSteps` is
+   appended beside `screenHeader`). Plated at `.screentop` the two dots fell
+   just outside the card's bottom edge and read as clipped by it. The plate
+   moves out one level to `.setuptop`, which is the header AND its rail —
+   and they belong together: the rail says which of the two steps the title
+   is naming. */
+#formation .setuptop {
+  padding: var(--block);
+  border-radius: var(--r-card);
+  background: var(--hud-card);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+#formation .screentop {
+  padding: 0;
+  background: none;
+  box-shadow: none !important;
+}
+#formation .setupsteps { margin-top: var(--inrow); }
+
+/* AN INVITATION IS A BLOCK TOO. It is the first thing on the screen it
+   interrupts (§ CHALLENGING A FRIEND) and it was the one strip left with
+   square corners running edge to edge — which reads as a system banner
+   rather than as something from this app. It is a card in the column like
+   everything under it; what stays loud is the Accept button on it. */
+#formation .invbar {
+  /* IN THE FLOW, not lifted over the screen. It was `position: absolute;
+     top: 0` with the header then reserving a hand-measured 78px for it —
+     two numbers that have to agree, and the moment the bar became a card
+     with the shared padding they stopped. As a block in the column it takes
+     its own room and the gap under it is the one every other block has. */
+  position: static;
+  width: min(calc(100% - var(--sp8)), var(--page));
+  margin: 0 auto var(--block);
+  padding: var(--block);
+  border: none;
+  border-radius: var(--r-card);
+  background: var(--hud-card);
+  box-shadow: var(--hud-ledge), var(--hud-gloss) !important;
+}
+#formation.hasinvite .setuptop { padding-top: 0; }

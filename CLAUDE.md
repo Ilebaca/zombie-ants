@@ -2161,6 +2161,60 @@ which is the one thing a player cannot not see.
   Milan's own, made directly on `main`; and the match's chrome is glass over a painted
   region (§ THE GROUND IS THE WHOLE SCREEN) with a block of its own.
 
+**AND THEN A TITLE WAS A BLOCK, AND EVERY BLOCK WAS PADDED THE SAME** (the block of that
+name at the foot of `skin.css`). Three reports in one line against the remap above:
+"stand-alone titles don't have background or anything from these blocks", "any block
+should have proper and uniform padding and margins", and "check the match to [the
+in-game] screens and try to keep it clean".
+- **THE FIRST TWO ARE THE SAME FAULT SEEN TWICE.** A token remap moves every SURFACE and
+  leaves behind everything that reads no token: what each card PADS itself by — six
+  different answers across the app, 10, 12, 12/10, 12/14, 14 and `16px 14px 18px` — and
+  the screen TITLE, which was never a card at all. So a page was a stack of plates with
+  one bare line of type at the top and no two plates the same inside.
+- **THE HEADER IS A BLOCK NOW, and the back arrow is a WELL inside it.** A plate on a
+  plate is a box in a box, so the arrow takes the language's own "button cut into a
+  card" and stops being a second raised object. The rule is UNSCOPED like the title rule
+  it joins: home has no `.screentop` and the match's header is its own element.
+- **ONE PADDING, and it is the gap the screens are already spaced by** (`--block`). A
+  WRAPPER is deliberately not in the list: `.newscard` bleeds a picture to its own
+  edges, `.setgroup` and `.frpanel` hold rows that pad themselves, and the Antarium's
+  `.ccard` is nothing on purpose — padding any of those puts a margin inside a box with
+  no content of its own.
+- **AND ONE GAP UNDER THE HEADER.** Measured across nine screens it was 2, 4, 12, 38 and
+  44: every `.screenbody` had its own top padding, the wrappers inside added theirs, and
+  on two screens the first block's own margin was added on top. The BODY owns it and the
+  wrappers own none — and whatever is FIRST has its top margin zeroed, because the shop's
+  demo notice carries `margin: var(--sp6) 0 0` of its own and that was 24px of nobody's
+  gap.
+- **A NOTE IS A WELL.** The demo notice, the pass note and the ladder's disclosure were
+  each a tinted box in a colour of their own — blue over a charcoal page reads as a
+  different material rather than as a quieter one.
+- **AND THE MATCH IS THE SAME APP.** It was the one screen left in the first language:
+  three dark green pills, a green clock card and four action tiles each filled with a
+  different colour, over artwork every other screen had stopped sitting on. What does NOT
+  change is the rule that screen already has — the strips are glass and the controls on
+  them are OBJECTS (§ THE GROUND IS THE WHOLE SCREEN) — so every chip, the clock and
+  every button keeps a solid fill; it is the design's fill now.
+  - **THE COLOUR MOVES OFF THE SLAB AND ONTO THE INK.** Four buttons in four fills is
+    four objects made of four materials, and what the colour is actually saying — which
+    action, and whether it is armed — is said by the mark and the word, which is where
+    the eye already is.
+  - **ARMED IS A FRAME, NOT A WASH.** `.on` filled itself with 22% of the colony's own
+    glow, which over ten painted regions is ten different browns; an inset ring is the
+    same brightness on every one of them. It has to REPEAT the ledge in the same
+    declaration — a box-shadow is one property, so an armed state that forgot would
+    quietly flatten the button it is marking.
+  - **AND END TURN IS THE ONE BRIGHT THING**, the rule home follows with PLAY.
+- **THE SETUP SCREEN'S BLOCK IS ONE LEVEL OUT.** `setupSteps` is appended BESIDE
+  `screenHeader` rather than inside it, so a plate on `.screentop` left the two step dots
+  just below the card's bottom edge, reading as clipped by it. The plate is on
+  `.setuptop`, which is the title AND its rail — and they belong together: the rail says
+  which of the two steps the title is naming.
+- **AND THE INVITATION IS IN THE FLOW.** It was `position: absolute; top: 0` with the
+  header reserving a hand-measured 78px for it — two numbers that have to agree, and the
+  day the bar became a card with the shared padding they stopped. As a block in the
+  column it takes its own room and the gap under it is the one every other block has.
+
 **ONE RARITY LADDER, FOR EVERYTHING THAT HAS ONE** (`engine/tiers.ts`). There were TWO and
 they disagreed. Traits ran common / uncommon / rare / exceptional / mythic in grey, green,
 blue, purple and red; colonies ran "Founding castes" / "Rare colonies" / "Elite castes" /
