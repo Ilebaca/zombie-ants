@@ -31,7 +31,7 @@ import {
 import type {
   GlobalRow, League, Prize, ProfileStore, SeasonResult, Standing,
 } from "../platform";
-import { antPortrait, el, redraw, screenEl, screenHeader } from "./chrome";
+import { antPortrait, el, redraw, resourceMark, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 
 type Tab = "week" | "all";
@@ -210,7 +210,7 @@ function prizeMarks(prize: Prize): HTMLElement {
   ];
   for (const [mark, amount] of pairs) {
     if (!amount) continue;
-    box.append(icon(mark, 11), el("span", undefined, String(amount)));
+    box.append(resourceMark(mark, 11), el("span", undefined, String(amount)));
   }
   return box;
 }

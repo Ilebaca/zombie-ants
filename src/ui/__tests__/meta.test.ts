@@ -248,9 +248,13 @@ describe("anthill screen", () => {
    */
   it("shows the currency as a mark and a figure, not a word", () => {
     const chip = buildAnthill(store()).querySelector(".mycelchip");
-    // The mark is an SVG, so the chip's text is the figure and nothing else.
+    // The mark is a picture either way, so the chip's text is the figure and nothing else.
     expect(chip?.textContent?.trim()).toBe("0");
-    expect(chip?.querySelector("svg"), "the mark went with the word").not.toBeNull();
+    // `svg, .hudmark`, never the tag alone: a resource is the PAINTED mark now and a
+    // painted one is an `<img>` (§ A RESOURCE IS ALWAYS THE PAINTED MARK). This test
+    // named `svg` and failed the day the currency was painted, with the chip correct —
+    // the same two-tag trap the stylesheet is swept for. What the chip owes is A MARK.
+    expect(chip?.querySelector("svg, .hudmark"), "the mark went with the word").not.toBeNull();
   });
 
   /** Nav tabs carry no back arrow — the bottom nav is the way out (legacy behaviour). */

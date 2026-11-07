@@ -24,7 +24,7 @@
 import type { MapId, ShapeId, SpeciesId } from "../engine";
 import { SPECIES } from "../engine";
 import type { ProfileStore } from "../platform";
-import { el, screenEl, screenHeader } from "./chrome";
+import { el, resourceMark, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 
 /** What the player has to do to pass. */
@@ -302,8 +302,8 @@ function chip(mark: string, text: string): HTMLElement {
 /** What beating it pays. It was a sentence under the card; it is the price tag now. */
 function reward(pheromone = 0): HTMLElement {
   const box = el("span", "chalpay");
-  box.append(icon("mycel", 13), el("span", undefined, `+${CHALLENGE_REWARD}`));
-  if (pheromone) box.append(icon("pheromone", 13), el("span", undefined, `+${pheromone}`));
+  box.append(resourceMark("mycel", 13), el("span", undefined, `+${CHALLENGE_REWARD}`));
+  if (pheromone) box.append(resourceMark("pheromone", 13), el("span", undefined, `+${pheromone}`));
   return box;
 }
 

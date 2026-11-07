@@ -8420,10 +8420,21 @@ button:not(.playbtn):active,
 
 /* ONE RULE, AND IT IS THE WHOLE OF THE COLOUR AND THE FORM.
    `--panel-edge` goes to black because the design's ledge is black: a green
-   edge under a charcoal card is the old language's shadow left behind. */
+   edge under a charcoal card is the old language's shadow left behind.
+
+   THE LAST TWO ARE POP-UPS RATHER THAN SCREENS, and they were the last thing
+   in the app still green. `.overlay` is the result card and the what's-new
+   card; `.rd-pop` is the Colony Road's claim confirmation — and the road
+   being drawn to a design of its own does not make its POP-UP part of the
+   road's artwork. They join this list rather than getting a mapping of their
+   own, because two places deciding what a surface is made of is how the app
+   ended up half green. Their card RECIPE is a block of its own at the foot of
+   this file: the shared card list is scoped to the nineteen SCREENS, and a
+   pop-up is not inside one. */
 #anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news,
 #friends, #support, #antup, #traits, #inventory, #history, #replay,
-#keepsafe, #rules, #formation, #luckyhatch, #avatars {
+#keepsafe, #rules, #formation, #luckyhatch, #avatars,
+.overlay, .rd-pop {
   /* SURFACES. A card is lighter than the chrome it sits on, a well darker
      than both — which is the rule the shared language already states. */
   --bg0: var(--hud-face);
@@ -8983,3 +8994,53 @@ body,
   background: none;
   box-shadow: none !important;
 }
+
+/* ======================================================================
+   EVERY POP-UP IS THE SAME APP
+   Reported from a phone: "End game pop up isn't designed the same way with
+   same colours as new design. Make sure all pop ups are."
+
+   The tokens come from the remap above; what is left is the FORM, because
+   the shared card recipe is scoped to the nineteen SCREENS and a pop-up is
+   not inside one — so the result card kept the legacy sheet's 24px corner,
+   its 1px `--line` stroke and a `--panel` fill that nothing had remapped.
+
+   A POP-UP IS A CARD ON A SCRIM, AND WHAT IS INSIDE IT IS A WELL. That is
+   the one place this app has a surface inside a surface by design: a card
+   inside a card would be a second plate, so the payouts and the facts are
+   cut INTO the card rather than laid on it (§ THE SHARED DESIGN LANGUAGE).
+   ====================================================================== */
+
+/* The scrim is the design's neutral dark, not the old language's green-black:
+   over ten painted regions a green cast reads as a tint rather than as dark. */
+.overlay { background: rgba(10, 11, 14, .78); }
+
+.overlay > .overModalWrap > .card,
+.rd-popcard {
+  border: none;
+  border-radius: var(--r-card);
+  background: var(--hud-card);
+  box-shadow: var(--hud-ledge) !important;
+}
+
+/* WELLS, cut into the card. `.payout` carried a flat 26% black, which over the
+   old green read as a recess and over charcoal reads as nothing at all. */
+.overlay .payout { background: var(--hud-well); border-radius: var(--r-btn); }
+.overlay .fact { background: var(--hud-well); }
+/* The facts grid is ruled by its own background showing through 1px gaps, so it
+   has to be DARKER than the cells — the remap points `--line` at a pale white,
+   which drew four bright lines across the quietest block on the card. */
+.overlay .facts { background: var(--hud-face); border-radius: var(--r-btn); }
+
+/* The two ways out are buttons cut into the card, like the back arrow is. */
+.overlay .ghostbtn {
+  border: none;
+  border-radius: var(--r-btn);
+  background: var(--hud-well);
+  color: var(--hud-dim);
+}
+.overlay .resultacts .cta { border-radius: var(--r-btn); }
+
+/* The road's claim card keeps its gold disc — gold is the road's own colour for
+   a reward, and it is a token rather than the green this block is replacing. */
+.rd-popic { background: color-mix(in srgb, var(--gold) 14%, var(--hud-well)); }

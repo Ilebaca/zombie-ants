@@ -12,7 +12,7 @@
 import { SPECIES } from "../engine";
 import type { GameOverReason, Player, SpeciesId } from "../engine";
 import { compact } from "../platform";
-import { clockOf, el } from "./chrome";
+import { clockOf, el, RESOURCE_MARKS, resourceMark } from "./chrome";
 import { icon } from "./icons";
 import { GOAL_TEXT } from "./challenges";
 import type { Challenge } from "./challenges";
@@ -83,7 +83,13 @@ winner: Player | null, recap: Recap, act: ResultActions,
   const reward = (mark: string, value: string, note: string, kind: string): HTMLElement => {
     const cell = el("div", `payout pay-${kind}`);
     const head = el("div", "payv");
-    head.append(icon(mark, 17), el("b", undefined, value));
+    // A RESOURCE takes the painted mark, the same one the top bar carries; the colony and
+    // the XP are not resources and keep their drawn glyph, which is also what lets them be
+    // tinted (`.pay-colony svg`) — an `<img>` cannot take `currentColor`.
+    head.append(
+      (RESOURCE_MARKS as readonly string[]).includes(mark) ? resourceMark(mark, 17) : icon(mark, 17),
+      el("b", undefined, value),
+    );
     cell.append(head, el("small", undefined, note));
     return cell;
   };
@@ -109,7 +115,7 @@ winner: Player | null, recap: Recap, act: ResultActions,
     const line = el("div", "larvawon");
     line.id = "overLarva";
     line.append(
-      icon("brood", 16),
+      resourceMark("brood", 16),
       el("b", undefined, `+${recap.larva} larva`),
       el("span", undefined, recap.larva === 1 ? "one lucky hatch" : "lucky hatches"),
     );

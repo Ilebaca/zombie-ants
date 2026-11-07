@@ -22,7 +22,7 @@ import {
 import type { Cue, Feedback, HatchPrize, ProfileStore, TraitItem } from "../platform";
 import { SPECIES, TIER_IDS, TIERS } from "../engine";
 import type { Look } from "../engine";
-import { antPortrait, avatarFace, el, screenEl, screenHeader } from "./chrome";
+import { antPortrait, avatarFace, el, resourceMark, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 import { buildOdds } from "./odds";
 import LARVA_ART from "./backdrops/larva.webp";
@@ -180,7 +180,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
   const purse = (): HTMLElement => {
     const box = el("div", "hatchpurse");
     const mark = el("span", "hp-i");
-    mark.appendChild(icon("brood", 20));
+    mark.appendChild(resourceMark("brood", 20));
     const n = el("span", "hp-n", String(store.get().larva));
     n.id = "hatchLarva";
 
@@ -221,9 +221,9 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     row.id = "hatchTrade";
 
     const from = el("span", "ht-c");
-    from.append(icon("mycel", 15), el("span", undefined, String(LARVA_MYCEL)));
+    from.append(resourceMark("mycel", 15), el("span", undefined, String(LARVA_MYCEL)));
     const into = el("span", "ht-c ht-to");
-    into.append(icon("brood", 15), el("span", undefined, "1"));
+    into.append(resourceMark("brood", 15), el("span", undefined, "1"));
     row.append(from, icon("next", 12), into, el("span", "ht-go", "Trade"));
 
     row.onclick = () => {

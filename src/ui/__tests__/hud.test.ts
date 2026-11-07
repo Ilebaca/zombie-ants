@@ -12,12 +12,13 @@
  * reason it is safe to ship one is that a missing file is a fallback rather than a hole.
  */
 import { describe, expect, it } from "vitest";
-import { readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { hudIcon, hudPainted } from "../hud";
-import { hudMark } from "../chrome";
+import { hudMark, RESOURCE_MARKS, resourceMark } from "../chrome";
 import { NAV_TABS } from "../chrome";
 import { MENU_ENTRIES } from "../screens-simple";
+import { defaultProfile } from "../../platform";
 
 const FOLDER = resolve(__dirname, "..", "hud");
 
@@ -96,5 +97,69 @@ describe("the painted chrome marks", () => {
     const painted = hudMark("home", 36, 26);
     expect((painted as HTMLImageElement).width, "the painted one took the drawn size")
       .toBe(36);
+  });
+});
+
+/**
+ * A RESOURCE IS ALWAYS THE PAINTED MARK.
+ *
+ * The rule above — painted in the chrome, drawn in the body — holds for every mark that
+ * names a SCREEN or an ACTION, and does not hold for a currency. Asked for directly:
+ * "everywhere where we show resources their official icon should be like it is on the
+ * home screen." The top bar is where a player learns what mycelium looks like, and a
+ * price, a reward and a payout are the same object counted somewhere else; drawn flat in
+ * nine places and painted in the tenth they read as two different currencies.
+ *
+ * The shop is the exception and already was: a purchase tile shows the SHELF art, a
+ * painted pile of the stuff, which is a picture of what is bought rather than its mark.
+ */
+describe("the three resource marks", () => {
+  /**
+   * ONE MARK PER CURRENCY THE SAVE HOLDS, and that is what keeps the sweep below
+   * honest: the sweep only guards the marks in this list, so dropping one from it is a
+   * silent way to stop guarding it. (Mutation-checked: shrinking the list passed every
+   * other assertion here.) The three purse fields are the vocabulary the list has to
+   * cover — add a fourth currency and this fails until it has a mark.
+   */
+  it("names every currency the profile holds, and nothing else", () => {
+    const purse = defaultProfile();
+    const fields: Record<string, number> = {
+      mycel: purse.mycel, pheromone: purse.pheromone, brood: purse.larva,
+    };
+    expect([...RESOURCE_MARKS].sort()).toEqual(Object.keys(fields).sort());
+  });
+
+  it("all have a painting, so `resourceMark` never falls back", () => {
+    for (const mark of RESOURCE_MARKS) {
+      expect(hudIcon(mark), `${mark} is a resource with no painted file`).toBeTruthy();
+      expect(resourceMark(mark, 16).tagName.toLowerCase(),
+        `${mark} came back as a drawing`).toBe("img");
+    }
+  });
+
+  /**
+   * AND NO SHIPPED SCREEN MAY DRAW ONE INSTEAD.
+   *
+   * This is the half a rendering test cannot see: `icon("mycel", 13)` produces a
+   * perfectly good mark, in the wrong family, on one card out of ten. The sweep is the
+   * rule — a reviewer reading one file cannot tell whether the other nine agree.
+   */
+  it("are never drawn with `icon()` anywhere in the app", () => {
+    const dir = resolve(__dirname, "..");
+    const offenders: string[] = [];
+    const walk = (at: string): void => {
+      for (const entry of readdirSync(at, { withFileTypes: true })) {
+        if (entry.name === "__tests__") continue;
+        const full = resolve(at, entry.name);
+        if (entry.isDirectory()) { walk(full); continue; }
+        if (!entry.name.endsWith(".ts")) continue;
+        const src = readFileSync(full, "utf8");
+        for (const mark of RESOURCE_MARKS) {
+          if (src.includes(`icon("${mark}"`)) offenders.push(`${entry.name}: icon("${mark}")`);
+        }
+      }
+    };
+    walk(dir);
+    expect(offenders, "a resource was drawn rather than painted").toEqual([]);
   });
 });
