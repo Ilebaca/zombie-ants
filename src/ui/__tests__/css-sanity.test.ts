@@ -1744,13 +1744,24 @@ describe("every other screen is written in the shared language", () => {
   });
 
   /**
-   * AND A PARAGRAPH IS NOT A CARD. The manual's prose was caught by the same list, so
-   * every sentence in How to play came up as its own raised tile — the "pile of objects"
-   * fault the no-shadows decision was taken to fix. Its FIGURES stay cards.
+   * AND NEITHER A PARAGRAPH NOR A PICTURE IS A CARD. The manual's prose was caught by
+   * the same list, so every sentence in How to play came up as its own raised tile —
+   * the "pile of objects" fault the no-shadows decision was taken to fix. The FIGURES
+   * went the same way a turn later, asked for directly: "images don't need to have
+   * background and drop shadow, those block attributes — just have image there with the
+   * description." A board drawn on a plate is a picture of the game, and a plate under
+   * a picture is a frame nobody asked for.
    */
-  it("leaves the manual's prose on the page and keeps its figures as cards", () => {
+  it("leaves the manual's prose and its figures on the page", () => {
     expect(rest, "the manual's paragraphs are cards again").not.toContain(".ru-p,");
-    expect(rest).toContain(".ru-fig)");
+    // Not in any GROUP — the figure's own rule names it, so the two list shapes are
+    // what is checked rather than the string.
+    expect(rest, "the manual's figures are cards again").not.toContain(".ru-fig,");
+    expect(rest, "the manual's figures are cards again").not.toContain(".ru-fig)");
+    const fig = ruleFor(whole, "#rules .ru-fig");
+    expect(fig).toMatch(/background:\s*none/);
+    expect(fig).toMatch(/box-shadow:\s*none\s*!important/);
+    expect(fig).toMatch(/padding:\s*0/);
   });
 
   /** AN EMPTY STATE IS A WELL, not a tile saying there is nothing to press. */
@@ -1983,5 +1994,74 @@ describe("a block wears no stroke", () => {
     const html = readFileSync(resolve(__dirname, "..", "..", "..", "index.html"), "utf8");
     expect(html).toContain('<meta name="theme-color" content="#1c1e25">');
     expect(html, "the cover still flashes the old green").not.toContain("#0e1a12");
+  });
+});
+
+/**
+ * A BLOCK NEVER HOLDS BLOCKS.
+ *
+ * The remap brought every surface over by NAME and several of those names are
+ * CONTAINERS, so a row with a face, a corner and a ledge sat inside a parent wearing the
+ * same three. A ledge is drawn 3px right and 4px down with no blur, so every row's
+ * shadow hung out past the parent's padding and the rows read as too wide for the panel
+ * holding them. Reported twice in one build, on Support and on Friends.
+ *
+ * None of it is visible to a jsdom test: there is no layout, the markup is identical
+ * either way, and only the cascade decides which boxes are plates.
+ */
+describe("a block never holds blocks", () => {
+  const whole = read("skin.css");
+  const design = designBlock(whole, "EVERY OTHER SCREEN, DRAWN TO THE DESIGN");
+
+  /** The containers whose whole content is blocks of their own. */
+  const HOLDERS = [".setgroup", ".frpanel", ".frlist", ".fusebox", ".spfacts", ".invhead"];
+
+  it("keeps every container out of the card and padding lists", () => {
+    for (const cls of HOLDERS) {
+      expect(design, `${cls} is a raised card again`).not.toContain(`${cls},`);
+      expect(design, `${cls} is a raised card again`).not.toContain(`${cls})`);
+    }
+  });
+
+  /** `.fusebox` is the one holder that carries a face in its BASE rule, so clearing the
+      list is not enough for it — it needs saying. */
+  it("flattens the fuse panel, which has a face of its own", () => {
+    const rule = ruleFor(whole, "#traits .fusebox,\n#inventory .fusebox");
+    expect(rule).toMatch(/background:\s*none/);
+    expect(rule).toMatch(/box-shadow:\s*none\s*!important/);
+    expect(rule).toMatch(/padding:\s*0/);
+  });
+
+  /** AND THE INVENTORY'S GROUP HEADINGS ARE TITLES: text and a chevron, nothing else. */
+  it("leaves the inventory's group headings as type", () => {
+    const rule = ruleFor(whole, "#traits .invhead,\n#inventory .invhead");
+    expect(rule).toMatch(/background:\s*none/);
+    expect(rule).toMatch(/box-shadow:\s*none\s*!important/);
+  });
+
+  /** A ROW STACK IS SPACED BY THE SHARED GAP, which is the one that clears the ledge. */
+  it("spaces the row stacks on the shared gap", () => {
+    const rule = ruleFor(
+      whole,
+      "#settings .setgroup,\n#friends .frpanel,\n#friends .frlist,\n#support .spfacts",
+    );
+    expect(rule).toMatch(/gap:\s*var\(--inrow\)/);
+  });
+
+  /**
+   * AND A READ POST STEPS BACK. The dimming is a colour FILTER on the picture and one
+   * step of ink on the type — never opacity, which shows the page through the drawing,
+   * and never past `--hud-mute`, which is the last step that clears AA on a card.
+   */
+  it("marks a post read without making it unreadable", () => {
+    expect(ruleFor(whole, ".newsnew")).toMatch(/background:\s*var\(--hud-go\)/);
+    const ink = ruleFor(
+      whole,
+      "#news .newscard.read .newstitle,\n#news .newscard.read .newslead",
+    );
+    expect(ink).toMatch(/color:\s*var\(--hud-mute\)/);
+    const hero = ruleFor(whole, "#news .newscard.read .newshero");
+    expect(hero, "a read post is faded rather than filtered").not.toMatch(/opacity/);
+    expect(hero).toMatch(/filter:\s*brightness/);
   });
 });

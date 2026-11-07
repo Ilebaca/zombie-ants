@@ -2255,6 +2255,84 @@ build, one message each, and every one of them is now the rule:
     a thing is solid (§10), and it stays. What still wears it is the tab tray's shelf,
     which is chrome rather than a block and was asked for by name.
 
+**AND THEN A BLOCK NEVER HOLDS BLOCKS** (the block of that name at the foot of
+`skin.css`). Four more reports against that build, and the first two are one rule:
+"reaching us part looks weird — maybe also just have each block, and their parent should
+have no design attributes", and "each request should be a block, their parent don't need
+to have those attributes".
+- **THE REMAP BROUGHT EVERY SURFACE OVER BY NAME, AND SEVERAL OF THOSE NAMES ARE
+  CONTAINERS** — a stack of settings rows, the friends list, the fuse panel, Support's
+  contact box. So a row with a face, a corner and a ledge sat inside a parent wearing the
+  same three, and because the ledge is drawn 3px RIGHT and 4px DOWN with no blur, every
+  row's shadow hung out past the parent's padding: the rows read as too wide for the
+  panel holding them. That is the "looks weird", and it is the same fault the Antarium's
+  `.ccard` was already deliberately nothing to avoid.
+- **THE CONTAINERS CAME OUT OF THE LISTS rather than being overridden after them**, so
+  there is one place that decides what a block is. What is left in the new block is the
+  handful that carry a face in their BASE rule (`.fusebox`) and the gap the stacks are
+  spaced by — `--inrow`, because a gap has to clear the LEDGE as well as the row, and the
+  6px and 9px each screen had picked left one row's shadow on the next row's top edge.
+- **SUPPORT'S CONTACT BOX IS A NEW CLASS, not an exception.** `.spbox` is also the
+  COMPOSER, which has real content of its own and is still a card; the contact stack is
+  `.spfacts` and is nothing. One class doing two jobs is what would have forced an
+  override.
+- **AND `.fb-row` HAD NO SIDE PADDING OF ITS OWN**, because `.fusebox` carried it. With
+  the box gone the gold price button sat flush against the row's edge, so the row joined
+  the shared padding group. Anything taken out of a padded container has that trap.
+- **THE INVENTORY'S GROUP HEADINGS ARE TITLES**, asked for in the same breath: "same goes
+  for these titles, they should just be text with no background or shadow." They are
+  DOORS into a bench, which is why they were plated — but a door drawn as a slab in a
+  column of slabs is one more block in the stack, and what tells it from the tiles under
+  it is that it is a line of type with a chevron. Same answer as the screen title.
+- **AND A PICTURE IS NOT A BLOCK.** "Images don't need to have background and drop
+  shadow, those block attributes — just have image there with the description." The
+  manual's figures went into the card list on the reasoning that a figure is a picture of
+  the board SITTING on the page; it reads the other way round, because the drawing has
+  its own edges and its own ground, so the plate is a frame round a frame and the ledge
+  is a shadow under something that is already an object.
+- **THE ANTHILL'S HEADING OWNS THE GAP UNDER IT**, which is the one place the container
+  cannot. Every other screen here is a column of blocks with `gap: var(--block)` on the
+  scroller, so a heading must NOT carry a bottom margin or it doubles. The anthill's
+  scroller is a continuous DRAWING — the mound and the shaft under it have to touch — so
+  a gap there would cut the nest in half, and the bench at its foot was the one block on
+  that screen with its label sitting flat on it.
+- **AND THE SHAFT CARRIES NO DEPTH NUMBER.** It counted the levels 1-6 down the side of
+  the nest: a number for a thing nobody is choosing between, when the chambers are named
+  and are read top to bottom. Reported as "there are numbers from 1-6 for some reason".
+- **TWO THINGS WERE FOUND BY LOOKING, not by the report.** The FAQ's question came out
+  CENTRED with the chevron tucked against the end of the text — the tap-floor rule gives
+  seven controls `display: inline-flex; justify-content: center`, which is right for the
+  six that are CHIPS and wrong for the one that is a full-width ROW, whose own rule had
+  said `space-between` all along and simply came first. And `.spfact-link` declared three
+  grid columns while Privacy and Terms add a chevron as a FOURTH child, so the arrow
+  wrapped onto a second row under the mark.
+
+**AND A POST SAYS WHETHER IT HAS BEEN READ** (`profile.newsRead`, the `.read` rules in
+`skin.css`). Asked for directly: "we should have a way to know which is read and which
+not — read ones should not be so prominent."
+- **READ MEANS OPENED, and that is why it is a NEW FIELD rather than the stamp.**
+  `newsSeen` answers "has anything landed since you last looked", which is all the
+  drawer's badge needs — and it is set by ARRIVING at the feed, and by the what's-new
+  card two screens earlier. Read off that stamp the whole screen comes up dim on the
+  first visit, which is what the first version did. `newsRead` is the set of post ids the
+  player has actually opened.
+- **THE OPEN POST IS NEVER THE DIM ONE.** It is being read now, and a card greying out
+  under the finger that opened it reads as the tap having failed. It IS marked read, so
+  it loses its "New" at once and dims as soon as it is shut.
+- **THE MARK IS A FILLED PILL, not coloured type.** The tag beside it is already green
+  type on an "update" post, which is most of them, so two green words on one line read as
+  one label cut in half. Dark ink on the green measures 10.9:1.
+- **AND THE DIMMING IS A COLOUR FILTER ON THE PICTURE, never opacity** — the rule the
+  Colony Road's claimed rewards already follow, because a transparent picture shows the
+  page through itself and reads as a drawing that failed rather than one that is behind
+  you. The ink stops at `--hud-mute` (5.3:1 on the card); the next step down is 2.7,
+  under AA, which is a post a player cannot read rather than one they have.
+- **`normalise` IS WHAT KEEPS THE LIST UNIQUE, not the guard in `readPost`.** The screen
+  calls `readPost` on every redraw for whatever stands open, and the early return there
+  only saves the WRITE — a mutation deleting it passes every test, because `update`
+  re-normalises. The list is also filtered to the ids this build carries, so a post
+  dropped from the table cannot keep its id in a save for ever.
+
 **ONE RARITY LADDER, FOR EVERYTHING THAT HAS ONE** (`engine/tiers.ts`). There were TWO and
 they disagreed. Traits ran common / uncommon / rare / exceptional / mythic in grey, green,
 blue, purple and red; colonies ran "Founding castes" / "Rare colonies" / "Elite castes" /

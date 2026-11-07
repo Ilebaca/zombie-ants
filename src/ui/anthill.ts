@@ -145,8 +145,11 @@ function level(
   row.dataset.chamber = ch.id;
 
   const spine = el("div", "nest-spine");
-  spine.append(el("span", "nest-line"), el("span", "nest-node"),
-    el("span", "nest-depth", String(index + 1)));
+  // THE SHAFT CARRIES NO DEPTH NUMBER. It counted the levels 1-6 down the side of the
+  // nest, which is a number for a thing nobody is choosing between: the chambers are
+  // named, they are read top to bottom, and how deep one is dug is not a fact the
+  // screen is about. Reported as "there are numbers from 1-6 for some reason".
+  spine.append(el("span", "nest-line"), el("span", "nest-node"));
 
   const room = el("button", "room");
   room.type = "button";
@@ -250,8 +253,11 @@ function granaryRoom(
   row.dataset.chamber = GRANARY;
 
   const spine = el("div", "nest-spine");
-  spine.append(el("span", "nest-line"), el("span", "nest-node"),
-    el("span", "nest-depth", String(index + 1)));
+  // THE SHAFT CARRIES NO DEPTH NUMBER. It counted the levels 1-6 down the side of the
+  // nest, which is a number for a thing nobody is choosing between: the chambers are
+  // named, they are read top to bottom, and how deep one is dug is not a fact the
+  // screen is about. Reported as "there are numbers from 1-6 for some reason".
+  spine.append(el("span", "nest-line"), el("span", "nest-node"));
 
   const room = el("button", "room");
   room.type = "button";

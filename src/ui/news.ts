@@ -30,18 +30,27 @@ const TAG_LABEL: Record<NewsPost["tag"], string> = {
 export function buildNews(store: ProfileStore, onBack: () => void): HTMLElement {
   const root = screenEl("news");
   const posts = newsFeed();
+
   // The newest post stands open: a feed that opens fully collapsed asks the player to tap
   // before it has told them anything.
   let open = posts[0]?.id ?? "";
 
   const render = (): void => {
     redraw(root);
+    // Whatever is open has been read, the post that stands open on arrival included.
+    if (open) store.readPost(open);
+    const read = store.postsRead();
     screenHeader(root, { title: "News", onBack });
 
     const body = el("div", "screenbody sb-top");
     const list = el("div", "newswrap");
     for (const post of posts) {
-      list.appendChild(card(post, open === post.id, () => {
+      // READ IS A POST THAT HAS BEEN OPENED, which is what the word means to a person —
+      // and a different question from the stamp the drawer's badge counts against, which
+      // is set by ARRIVING here (and by the what's-new card, two screens earlier). Asked
+      // for directly: "we should have a way to know which is read and which not."
+      // The one standing open is being read NOW, so it is never the dim one.
+      list.appendChild(card(post, open === post.id, read.has(post.id), () => {
         // Tapping the open post closes it, so a reader can collapse what they have read.
         open = open === post.id ? "" : post.id;
         render();
@@ -59,8 +68,10 @@ export function buildNews(store: ProfileStore, onBack: () => void): HTMLElement 
 }
 
 /** One post: the picture, the date and tag, the title and lead, and the body when open. */
-function card(post: NewsPost, open: boolean, onToggle: () => void): HTMLElement {
-  const box = el("article", "newscard" + (open ? " open" : ""));
+function card(post: NewsPost, open: boolean, done: boolean, onToggle: () => void): HTMLElement {
+  // DIM ONLY WHEN SHUT: whatever is open is being read now, and a post greyed out under
+  // the finger that opened it reads as the tap having failed.
+  const box = el("article", "newscard" + (open ? " open" : done ? " read" : ""));
   box.dataset.post = post.id;
 
   const head = el("button", "newshead");
@@ -70,6 +81,10 @@ function card(post: NewsPost, open: boolean, onToggle: () => void): HTMLElement 
 
   const text = el("div", "newstext");
   const meta = el("div", "newsmeta");
+  // A WORD, NOT A DOT. A green pip beside the tag would be a mark with no name on a
+  // screen that is nothing but text, and a state has to say what it is. It is a FILLED
+  // pill rather than coloured type, because the tag beside it is already green type.
+  if (!done) meta.appendChild(el("span", "newsnew", "New"));
   meta.append(
     el("span", `newstag tag-${post.tag}`, TAG_LABEL[post.tag]),
     el("span", "newsage", agoOf(post.at)),
