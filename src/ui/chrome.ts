@@ -128,13 +128,20 @@ export function screenEl(id: string): HTMLDivElement {
 }
 
 export interface HeaderOptions {
+  /**
+   * The one line a screen header carries.
+   *
+   * THERE IS NO SUBTITLE, asked for directly: "these main titles on top should never be
+   * blocks like other content — they are stand-alone with no background or frames, just
+   * the title, also remove the small subtitle as well." The field is gone from the type
+   * rather than ignored, so the nineteen screens that passed one had to drop it: an
+   * option nothing reads is a second place the next screen will write a line nobody sees.
+   */
   title: string;
-  sub?: string;
   onBack?: () => void;
   backId?: string;
-  /** Ids the legacy build puts on the title and subtitle of the species page. */
+  /** The id the legacy build puts on the species page's title. */
   titleId?: string;
-  subId?: string;
   /** Adds the gold mycelium chip the Antarium, Anthill and species pages carry. */
   mycel?: number;
   /**
@@ -158,11 +165,6 @@ export function screenHeader(parent: HTMLElement, opts: HeaderOptions): void {
   const title = el("div", "screenh", opts.title);
   if (opts.titleId) title.id = opts.titleId;
   top.appendChild(title);
-  if (opts.sub !== undefined) {
-    const sub = el("div", "screensub", opts.sub);
-    if (opts.subId) sub.id = opts.subId;
-    top.appendChild(sub);
-  }
   if (opts.mycel !== undefined) top.appendChild(purseChip("mycel", opts.mycel));
   if (opts.pheromone !== undefined) top.appendChild(purseChip("pheromone", opts.pheromone));
   parent.appendChild(top);

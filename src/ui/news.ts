@@ -36,7 +36,7 @@ export function buildNews(store: ProfileStore, onBack: () => void): HTMLElement 
 
   const render = (): void => {
     redraw(root);
-    screenHeader(root, { title: "News", sub: "What changed", onBack });
+    screenHeader(root, { title: "News", onBack });
 
     const body = el("div", "screenbody sb-top");
     const list = el("div", "newswrap");

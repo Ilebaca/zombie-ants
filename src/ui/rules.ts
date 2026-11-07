@@ -34,7 +34,7 @@ export function buildRules(onBack: () => void): HTMLElement {
    * left. `App.goBack` follows the arrow a player can see, so the hardware button lands
    * in the same place by itself.
    */
-  screenHeader(root, { title: "How to play", sub: "The rules, in order", onBack });
+  screenHeader(root, { title: "How to play", onBack });
 
   const body = el("div", "screenbody");
   const card = el("div", "card");

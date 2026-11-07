@@ -60,12 +60,9 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     redraw(root);
 
     screenHeader(root, {
-      title: species.name,
-      sub: "Upgrades & research",
-      onBack: opts.onBack,
+      title: species.name, onBack: opts.onBack,
       backId: "aupBack",
       titleId: "aupTitle",
-      subId: "aupSub",
       pheromone: profile.pheromone,
     });
 

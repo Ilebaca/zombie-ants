@@ -59,7 +59,7 @@ export interface SettingsOptions {
 
 export function buildSettings(opts: SettingsOptions): HTMLElement {
   const root = screenEl("settings");
-  screenHeader(root, { title: "Settings", sub: "Preferences", onBack: opts.onBack });
+  screenHeader(root, { title: "Settings", onBack: opts.onBack });
 
   const body = el("div", "screenbody sb-top");
   const scroll = el("div", "setwrap");

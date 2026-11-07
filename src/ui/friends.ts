@@ -46,7 +46,7 @@ export function buildFriends(
   const render = (): void => {
     const profile = store.get();
     redraw(root);
-    screenHeader(root, { title: "Friends", sub: "Colonies on this device", onBack });
+    screenHeader(root, { title: "Friends", onBack });
 
     const body = el("div", "screenbody sb-top frbody");
 

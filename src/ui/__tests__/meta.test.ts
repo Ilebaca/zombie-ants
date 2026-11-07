@@ -1288,7 +1288,7 @@ describe("legacy markup parity", () => {
       expect(landmarks(root), `.${cls} missing`).toContain(cls);
     }
     expect(root.querySelector("#aupTitle")?.textContent).toBe("Fire Ant");
-    expect(root.querySelector("#aupSub")).toBeTruthy();
+    expect(root.querySelector("#aupSub"), "the subtitle is back").toBeNull();
     expect(root.querySelector("#aupBack")).toBeTruthy();
     expect(root.querySelector("#aupPort")).toBeNull();
     expect(root.querySelector("#aupCover img")).toBeTruthy();

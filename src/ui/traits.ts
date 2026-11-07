@@ -46,9 +46,7 @@ export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): H
   const render = (): void => {
     redraw(root);
     screenHeader(root, {
-      title: scopeName(scope),
-      sub: "Traits",
-      onBack: opts.onBack,
+      title: scopeName(scope), onBack: opts.onBack,
       backId: "trBack",
     });
 
@@ -238,9 +236,7 @@ export function buildInventory(store: ProfileStore, opts: InventoryOptions): HTM
   const render = (): void => {
     redraw(root);
     screenHeader(root, {
-      title: "Inventory",
-      sub: "Every trait you have found",
-      onBack: opts.onBack,
+      title: "Inventory", onBack: opts.onBack,
       backId: "invBack",
     });
 

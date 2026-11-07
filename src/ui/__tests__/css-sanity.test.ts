@@ -1315,7 +1315,7 @@ describe("the antarium is written in the shared language", () => {
    */
   it("hangs the ledge on the tile and clears it off the card", () => {
     expect(ruleFor(ant, "#antarium .an-tile"))
-      .toMatch(/box-shadow:\s*var\(--hud-ledge\), var\(--hud-gloss\)\s*!important/);
+      .toMatch(/box-shadow:\s*var\(--hud-ledge\)\s*!important/);
     expect(ruleFor(ant, "#antarium .ccard"), "the card grew a ledge of its own")
       .toMatch(/box-shadow:\s*none\s*!important/);
   });
@@ -1777,7 +1777,6 @@ describe("every other screen is written in the shared language", () => {
     const head = ruleFor(rest, ".screentop .screenh");
     expect(head).toMatch(/font-size:\s*var\(--fs-hero\)/);
     expect(head).toMatch(/font-family:\s*var\(--font-display\)/);
-    expect(ruleFor(rest, ".screentop .backbtn")).toMatch(/background:\s*var\(--hud-card\)/);
   });
 
   /** And the two tokens the remap needed are on `:root` with the rest of the language. */
@@ -1804,30 +1803,43 @@ describe("every block is padded the same", () => {
     expect(pad).toMatch(/\.screentop\s*\{/);
   });
 
-  /** THE HEADER IS A BLOCK, and it is the shared card like everything under it. */
-  it("gives the header the card's face, corner, padding and ledge", () => {
+  /**
+   * A TITLE IS NOT A BLOCK. It was plated for one build and the call came back the other
+   * way: "these main titles on top should NEVER be blocks like other content. They are
+   * stand-alone with no background or frames." The ledge has to be cleared with
+   * `!important` or the blanket is not what is clearing it — the rule that put one there
+   * carried that weight, so taking it off has to as well.
+   */
+  it("leaves the title standing on the page with no plate", () => {
     const head = ruleFor(pad, ".screentop");
-    expect(head).toMatch(/padding:\s*var\(--block\)/);
-    expect(head).toMatch(/border-radius:\s*var\(--r-card\)/);
-    expect(head).toMatch(/background:\s*var\(--hud-card\)/);
-    expect(head).toMatch(/box-shadow:[^;]*--hud-ledge[^;]*!important/);
+    expect(head).toMatch(/background:\s*none/);
+    expect(head).toMatch(/box-shadow:\s*none\s*!important/);
+    expect(head, "a plated title is back").not.toMatch(/--hud-card|--r-card/);
   });
 
   /**
-   * AND THE ARROW IS A WELL, not a card inside a card. Its own ledge has to be cleared
-   * with `!important` or the earlier rule that gave it one still wins.
+   * AND THE ARROW IS STILL AN OBJECT. With no plate behind it, it is a CARD rather than
+   * the well it became inside one — the only thing in the header a thumb lands on.
    */
-  it("sinks the back arrow inside the header", () => {
+  it("keeps the back arrow a card", () => {
     const back = ruleFor(pad, ".screentop .backbtn");
-    expect(back).toMatch(/background:\s*var\(--hud-well\)/);
-    expect(back).toMatch(/box-shadow:\s*none\s*!important/);
+    expect(back).toMatch(/background:\s*var\(--hud-card\)/);
+    expect(back).toMatch(/box-shadow:[^;]*--hud-ledge[^;]*!important/);
+  });
+
+  /** AND THERE IS NO SUBTITLE AT ALL — gone from the markup, not hidden. */
+  it("builds no subtitle to dress", () => {
+    const chrome = read("chrome.ts");
+    expect(chrome, "the header still builds a subtitle").not.toContain("screensub");
+    expect(chrome, "the option is still on the type").not.toMatch(/\bsub\?:/);
+    expect(whole, "a rule is still dressing one").not.toContain(".screentop .screensub");
   });
 
   /** ONE PADDING, and it is the gap the screens are already spaced by. */
   it("pads every card with the one token", () => {
     const pads = [...pad.matchAll(/padding:\s*([^;]+);/g)]
       .map((m) => (m[1] ?? "").trim())
-      .filter((v) => !/^(0|var\(--(block|inrow)\)( var\(--(block|inrow)\))?)$/.test(v));
+      .filter((v) => !/^(0|var\(--(block|inrow)\)( (var\(--(block|inrow)\)|0))?)$/.test(v));
     expect(pads, "a block pads itself with its own number").toEqual([]);
   });
 
@@ -1899,13 +1911,9 @@ describe("the setup screen's head is one block", () => {
   const whole = read("skin.css");
   const pad = designBlock(whole, "A TITLE IS A BLOCK, AND EVERY BLOCK IS PADDED THE SAME");
 
-  it("plates the whole head and not the title alone", () => {
-    const top = ruleFor(pad, "#formation .setuptop");
-    expect(top).toMatch(/background:\s*var\(--hud-card\)/);
-    expect(top).toMatch(/box-shadow:[^;]*--hud-ledge[^;]*!important/);
-    const head = ruleFor(pad, "#formation .screentop");
-    expect(head, "the title keeps a plate inside the plate").toMatch(/background:\s*none/);
-    expect(head).toMatch(/box-shadow:\s*none\s*!important/);
+  it("plates neither the head nor the title, and spaces the rail under it", () => {
+    expect(pad, "the setup head is plated again").not.toContain("#formation .setuptop {");
+    expect(ruleFor(pad, "#formation .setupsteps")).toMatch(/margin-top:\s*var\(--inrow\)/);
   });
 
   /**
@@ -1918,5 +1926,62 @@ describe("the setup screen's head is one block", () => {
     expect(bar).toMatch(/position:\s*static/);
     expect(bar).toMatch(/margin:\s*0 auto var\(--block\)/);
     expect(ruleFor(pad, "#formation.hasinvite .setuptop")).toMatch(/padding-top:\s*0/);
+  });
+});
+
+/**
+ * NO OUTLINE ON A BLOCK, AND A STANDALONE TITLE.
+ *
+ * Three reports against the build before it, each the opposite of a decision that had
+ * just been taken: the title should NOT be a block, the dark behind the chrome should be
+ * the design's grey rather than the first language's green, and the hairline round every
+ * card should go — "we just sometimes have that stroke if the element is SELECTED".
+ *
+ * The stroke was the GLOSS, which is the thing nothing but a measurement would have
+ * settled: `border` read `none` on every card and the edge was still there, because a
+ * 2px white inset at the top of a rounded box carries round both corners.
+ */
+describe("a block wears no stroke", () => {
+  const whole = read("skin.css");
+
+  /** THE GLOSS IS OFF EVERY CARD. What keeps it is the tab tray's shelf, which is
+      chrome rather than a block and was asked for by name. */
+  it("leaves the highlight on nothing but the tray", () => {
+    const uses = [...whole.matchAll(/^[^\n]*var\(--hud-gloss\)[^\n]*$/gm)]
+      .map((m) => m[0].trim())
+      .filter((l) => !l.startsWith("*") && !l.startsWith("-") && !l.startsWith("`")
+        && !l.startsWith("--hud-gloss:"));
+    expect(uses, "a card wears the gloss again")
+      .toEqual(["box-shadow: var(--hud-gloss) !important;"]);
+  });
+
+  /** AND THE LEDGE STAYS, because that is what says a thing is solid (§10). */
+  it("keeps the ledge under the cards it took the gloss off", () => {
+    const ledges = [...whole.matchAll(/box-shadow:[^;]*--hud-ledge[^;]*;/g)].map((m) => m[0]);
+    expect(ledges.length, "the ledge went with it").toBeGreaterThan(10);
+    for (const l of ledges) expect(l, `an unmarked ledge: ${l}`).toContain("!important");
+  });
+
+  /**
+   * AND NOTHING THE FIRST LANGUAGE OUTLINES KEEPS ITS BORDER. `--line` was repointed at
+   * a pale white by the remap, which turned every legacy `1px solid var(--line)` into a
+   * stroke nobody chose. The sweep clears them and exempts the states a stroke is FOR.
+   */
+  it("clears the first language's borders and exempts a selected control", () => {
+    const at = whole.indexOf("*:not(.on):not(.armed)");
+    expect(at, "the border sweep is gone").toBeGreaterThan(-1);
+    const rule = whole.slice(at, whole.indexOf("}", at));
+    expect(rule).toMatch(/border-color:\s*transparent/);
+    for (const state of ["on", "armed", "worn", "sel", "active"]) {
+      expect(whole.slice(at, at + 200), `${state} is no longer exempt`)
+        .toContain(`:not(.${state})`);
+    }
+  });
+
+  /** THE BAR THE SYSTEM PAINTS IS THE CHROME'S DARK, not the first language's green. */
+  it("hands the OS the same dark the app is built on", () => {
+    const html = readFileSync(resolve(__dirname, "..", "..", "..", "index.html"), "utf8");
+    expect(html).toContain('<meta name="theme-color" content="#1c1e25">');
+    expect(html, "the cover still flashes the old green").not.toContain("#0e1a12");
   });
 });

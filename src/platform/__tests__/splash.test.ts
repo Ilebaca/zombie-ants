@@ -68,7 +68,7 @@ describe("the markup", () => {
     expect(block).toContain("ZOMBIE");
     const rule = html.slice(html.indexOf("#splash {"), html.indexOf("#splash.gone"));
     expect(rule, "the artwork is not a background layer").toContain("splash.webp");
-    expect(rule, "there is no colour under the picture").toContain("#0e1a12");
+    expect(rule, "there is no colour under the picture").toContain("#1c1e25");
   });
 
   /** And the file is really there to be named, in `public/` where the document can see it. */

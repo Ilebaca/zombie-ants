@@ -52,7 +52,7 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop
   const render = (): void => {
     const profile = store.get();
     redraw(root);
-    screenHeader(root, { title: "Colony Road", sub: "Grow the colony · claim rewards", onBack });
+    screenHeader(root, { title: "Colony Road", onBack });
 
     const body = el("div", "screenbody achbody");
     body.id = "achBody";
