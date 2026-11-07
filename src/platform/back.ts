@@ -12,9 +12,20 @@
  * screen, back SHOULD leave, and an app that cannot be left with the button that leaves
  * apps is the more annoying of the two failures.
  *
- * It is a no-op in a browser, which is deliberate rather than unfinished. A tab's back
- * button is the browser's history and taking it over would break the one gesture that gets
- * somebody out of a page — and the web build has no "exit" to offer either way.
+ * AND THE BROWSER NEEDS IT TOO, which this file used to say the opposite of. The note
+ * here read "a no-op in a browser, deliberate rather than unfinished: a tab's back button
+ * is the browser's history and taking it over would break the one gesture that gets
+ * somebody out of a page." That is true of a TAB on a desktop and it is wrong about a
+ * PHONE, where back is a swipe in from the edge of the screen and the installed app has
+ * no browser chrome at all. Reported from a Nothing Phone: "when I swipe from the left
+ * edge, usually that's the action for going a step back, but in the game it exits
+ * completely." There was nothing in the history but the page itself, so the system
+ * gesture did the only thing left — it left.
+ *
+ * THE ESCAPE HATCH IS KEPT, which is why the old reasoning can be reversed rather than
+ * overruled: when the app answers `false` — nothing above home to go up to — the gesture
+ * is handed straight back to the browser and it leaves exactly as it always did. What
+ * changes is only that the app's own screens are walked FIRST.
  */
 import { isNative } from "./native";
 
@@ -39,8 +50,57 @@ interface CapApp {
  * torn-down app.
  */
 export function onHardwareBack(handler: BackHandler): () => void {
-  if (!isNative()) return () => {};
+  return isNative() ? nativeBack(handler) : historyBack(handler);
+}
 
+/**
+ * THE BROWSER'S BACK IS ITS HISTORY, so the app has to put something in it.
+ *
+ * One SENTINEL entry is pushed on top of the page. A back gesture pops it, `popstate`
+ * fires, and the app gets its one question; if it consumed the press the sentinel is
+ * pushed again, so the next gesture asks again. One entry rather than one per screen:
+ * the app already knows what is stacked on what (`App.goBack`), and a parallel stack in
+ * the history is a second answer that would drift from it — the same reason this file
+ * asks rather than decides.
+ *
+ * The sentinel changes no URL. `pushState` with no url keeps the address bar, the
+ * service worker's navigation match and the `?v=<commit>` freshness reload all exactly
+ * as they were.
+ */
+function historyBack(handler: BackHandler): () => void {
+  if (typeof window === "undefined" || typeof history?.pushState !== "function") {
+    return () => {};
+  }
+
+  const push = (): void => {
+    try { history.pushState({ zaBack: true }, ""); } catch { /* blocked: back just leaves */ }
+  };
+
+  // LEAVING IS A ONE-WAY LATCH, and it is not belt and braces: `history.back()` from
+  // inside a `popstate` handler can fire another one, and at home the answer is `false`
+  // every time — so without it the app would ask to leave, be asked again, and spin.
+  let leaving = false;
+  const onPop = (): void => {
+    if (leaving) return;
+    let handled = false;
+    // A handler that throws must not take the gesture down with it: back would then do
+    // nothing at all for the rest of the session, which is the fault this is fixing.
+    try { handled = handler(); } catch { handled = true; }
+    if (handled) { push(); return; }
+    // NOTHING ABOVE HOME, so the press belongs to the browser. The sentinel is already
+    // gone, so this is the page's own entry going back — out of the app, exactly as it
+    // behaved before any of this existed.
+    leaving = true;
+    try { history.back(); } catch { /* nowhere to go; the player uses the home gesture */ }
+  };
+
+  window.addEventListener("popstate", onPop);
+  push();
+  return () => { window.removeEventListener("popstate", onPop); };
+}
+
+/** The Android shell's own button, which closes the app unless something consumes it. */
+function nativeBack(handler: BackHandler): () => void {
   let live = true;
   let off: (() => Promise<void>) | null = null;
 

@@ -15,6 +15,11 @@ import type { CapacitorConfig } from "@capacitor/cli";
  *    about applies — which is why `CapacitorStore` declares `durable: true` and the warning
  *    never appears in the app.
  *  - the portrait lock is a real one rather than a request the browser may refuse.
+ *  - the music starts without being tapped. Capacitor's own bridge already calls
+ *    `setMediaPlaybackRequiresUserGesture(false)` on the WebView, so there is nothing to
+ *    configure here — the ask `App` makes at boot (platform/feedback.ts) is simply
+ *    granted. Worth knowing before adding a config key for it: there isn't one, and the
+ *    behaviour is already what it should be.
  *
  * To build it: `npm run build && npx cap sync android`, then open `android/` in Android
  * Studio. The `android/` directory is generated and NOT committed — it is a build output
@@ -30,6 +35,7 @@ const config: CapacitorConfig = {
     allowMixedContent: false,
     backgroundColor: "#0e1a12",
   },
+
   plugins: {
     // The soil, so the splash and the status bar are the ground the game is played on
     // rather than a black band (index.html says the same for the web build).

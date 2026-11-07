@@ -303,8 +303,13 @@ export class App {
       lockPortrait();
       if (pressable(e.target)) this.feedback.play("tap");
     }, { capture: true });
-    // The menu bed goes on at boot. It cannot actually sound until the first press — the
-    // device does not exist yet — and `unlock` picks the wish up from there.
+    // THE BED GOES ON AT BOOT, AND IT TRIES TO SOUND AT BOOT TOO. Reported directly:
+    // "when I enter the game music doesn't start until I click on something." A browser
+    // refuses audio before a gesture — but an INSTALLED app is exempt from that policy,
+    // which is exactly how this game is played — so it is asked for here and the answer
+    // decides. A refusal costs nothing: the first press calls `unlock` again and the bed
+    // starts the way it always did (platform/feedback.ts).
+    this.feedback.unlock();
     this.feedback.setMusic("menu");
     // ANDROID'S BACK BUTTON. In a WebView there is no history to go back through, so the
     // shell's own answer to a press is to CLOSE THE APP — anywhere, mid-match included.
