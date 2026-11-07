@@ -2987,6 +2987,34 @@ nagging the one player who had already done what it asked.**
     segment of each antenna, because they reach to within a few percent of the sides. It
     is recorded rather than fixed, because fixing it here means insetting the picture
     again, which is the one thing that was asked against. The margin belongs in the file.
+- **AND IT ASKS TO BE FULL SCREEN** (`display_override` in `public/manifest.webmanifest`).
+  Reported from a phone: "it doesn't seem that the game is full screen completely — I
+  still have my system things like the very top info bar with battery, time, etc.
+  overlayed on top of the game."
+  - **`display: standalone` HIDES THE BROWSER'S CHROME, NEVER THE SYSTEM'S.** It is what
+    stops the address bar being there; the status bar is the operating system's, and on
+    Android 15 — which draws every app edge to edge — it sits straight on the artwork.
+    `fullscreen` is the display mode that takes it away, and `display_override` is the
+    only way to ask for one: `display` itself stays `standalone`, because a browser that
+    does not read the override has to land somewhere, and the LAST entry of the override
+    list is that same fallback so the two cannot disagree.
+  - **AND `isInstalled()` HAD TO WIDEN WITH IT** (`INSTALLED_MODES`). It matched
+    `display-mode: standalone` alone, so the moment the manifest got what it asked for
+    the check answered FALSE on the one platform that granted it — the app installed and
+    told it was not, which is the save-at-risk prompt nagging the player who did as it
+    asked. That is the exact bug `installable.test.ts` was written for, arrived at from
+    the other side, and the test now walks every mode in the override list and asserts
+    each one reads as installed.
+  - **iOS CANNOT DO IT AT ALL, and that is worth writing down rather than re-attempting.**
+    Safari ignores `display` beyond standalone, and `apple-mobile-web-app-status-bar-style:
+    black-translucent` — which this page already sets — is the closest there is: the
+    artwork runs BEHIND the clock rather than under a bar, and the clock stays. Only a
+    native build can hide it there.
+  - **The manifest is precached, and a new build re-fetches it**: the worker's `install`
+    adds the whole precache list from the network and `activate` deletes every other
+    build's cache, so the change lands with the deploy. What it cannot do is re-install
+    the app — Chrome may keep an already-installed PWA's display mode until it is removed
+    and added again.
 - **Every browser tool points at `/opt/pw-browsers/chromium`**, the stable symlink, never
   at a versioned path — four of them had `chromium-1194` written out and all four broke the
   day the container's Chromium moved.

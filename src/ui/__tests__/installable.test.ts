@@ -12,10 +12,12 @@
  * goes missing or a manifest field that gets dropped breaks nothing anybody would notice
  * until a player's colony is gone.
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { resolve, join } from "node:path";
-import { SUPPORT_EMAIL } from "../../platform";
+import { SUPPORT_EMAIL, isInstalled } from "../../platform";
+
+afterEach(() => { vi.unstubAllGlobals(); });
 
 const root = resolve(__dirname, "../../..");
 const read = (file: string): string => readFileSync(resolve(root, file), "utf8");
@@ -24,6 +26,7 @@ interface Manifest {
   name: string;
   short_name: string;
   display: string;
+  display_override?: string[];
   orientation: string;
   background_color: string;
   theme_color: string;
@@ -46,12 +49,44 @@ describe("the web app manifest", () => {
   });
 
   /**
-   * THE ONE FIELD THE APP'S OWN LOGIC DEPENDS ON. Without `display: standalone` an
-   * installed app opens in browser chrome, `navigator.standalone` stays false, and
-   * `isInstalled()` can never return true — so the save-at-risk prompt would nag for ever.
+   * THE ONE FIELD THE APP'S OWN LOGIC DEPENDS ON. Without an installed display mode an
+   * app opens in browser chrome, `navigator.standalone` stays false, and `isInstalled()`
+   * can never return true — so the save-at-risk prompt would nag for ever.
    */
   it("declares standalone, which is what makes isInstalled() answerable", () => {
     expect(manifest().display).toBe("standalone");
+  });
+
+  /**
+   * AND IT ASKS FOR FULLSCREEN FIRST, which is what hides the system's own status bar
+   * on an installed Android app — reported as the battery and the clock sitting on top
+   * of the game. `display_override` is the only way to ask: `display` itself has to stay
+   * `standalone` as the fallback for a browser that does not read the override, and a
+   * browser that refuses fullscreen falls back along this list in order.
+   */
+  it("asks for fullscreen first and keeps standalone behind it", () => {
+    const over = manifest().display_override;
+    expect(over, "nothing asks for fullscreen").toEqual(["fullscreen", "standalone"]);
+    // The fallback is the LAST word in the list and the `display` field both, or a
+    // browser that reads one and not the other lands somewhere nobody chose.
+    expect(over?.[over.length - 1]).toBe(manifest().display);
+  });
+
+  /**
+   * AND EVERY MODE IN THAT LIST HAS TO READ AS INSTALLED. The manifest asking for
+   * fullscreen and `isInstalled()` only matching standalone is the app being installed
+   * and told it is not — the save-at-risk prompt nagging the player who did as it asked,
+   * which is the exact bug this file was written for, back the other way round.
+   */
+  it("is an installed mode whatever the browser grants", () => {
+    for (const mode of manifest().display_override ?? []) {
+      vi.stubGlobal("navigator", { userAgent: "x" });
+      vi.stubGlobal("window", {
+        matchMedia: (q: string) => ({ matches: q.includes(mode) }),
+      });
+      expect(isInstalled(), `${mode} does not read as installed`).toBe(true);
+      vi.unstubAllGlobals();
+    }
   });
 
   /** The game is portrait-only (CLAUDE.md), so an installed one must open that way. */

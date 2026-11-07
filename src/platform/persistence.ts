@@ -33,9 +33,20 @@ export type SaveRisk =
   | "unwritable";
 
 /**
+ * Every display mode that means "installed", in the order a browser picks one.
+ *
+ * `fullscreen` is what the manifest ASKS for through `display_override` and what an
+ * installed Android app actually runs in, so a check for `standalone` alone answers
+ * FALSE on the one platform that grants the request — the app would be installed and
+ * told it was not. `minimal-ui` is the third thing a browser may hand back; it is still
+ * an installed app, with a thin toolbar.
+ */
+const INSTALLED_MODES = ["fullscreen", "standalone", "minimal-ui"] as const;
+
+/**
  * Is the game running as an installed app rather than in a browser tab?
  *
- * Two checks because neither covers both platforms: `display-mode: standalone` is the
+ * Two kinds of check because neither covers both platforms: `display-mode` is the
  * standard one and iOS Safari answers it inconsistently across versions, while
  * `navigator.standalone` is Apple's own and exists nowhere else.
  */
@@ -43,7 +54,9 @@ export function isInstalled(): boolean {
   try {
     const nav = navigator as Navigator & { standalone?: boolean };
     if (nav.standalone === true) return true;
-    return window.matchMedia?.("(display-mode: standalone)").matches === true;
+    return INSTALLED_MODES.some(
+      (mode) => window.matchMedia?.(`(display-mode: ${mode})`).matches === true,
+    );
   } catch { return false; }
 }
 
