@@ -14,7 +14,7 @@ import {
 } from "../../platform";
 import { MemoryStore, ProfileStore } from "../../platform";
 import { avatarArt, avatarsPainted } from "../avatars";
-import { buildAvatarPicker } from "../avatarpicker";
+import { buildAvatarPicker, hintSide } from "../avatarpicker";
 import { buildColonyRoad } from "../road";
 import { buildHatch } from "../hatch";
 
@@ -112,11 +112,127 @@ describe("the picker", () => {
     expect(label).toContain("Colony Road");
   });
 
-  /** A locked tile is DISABLED rather than refusing on tap — one mechanism, and a visible one. */
-  it("will not let a locked one be worn", () => {
-    const root = build(store());
-    const locked = root.querySelector<HTMLButtonElement>(`.av-t[data-av="${ROAD_AVATARS[0]}"]`);
-    expect(locked?.disabled).toBe(true);
+  /**
+   * A LOCKED TILE IS NOT DISABLED ANY MORE, and that is the mechanism rather than a
+   * detail: a disabled button dispatches no click at all, so the tap that is meant to
+   * raise the bubble would never arrive. What still has to be true is that pressing one
+   * does not WEAR it.
+   */
+  it("will not let a locked one be worn, and is still pressable", () => {
+    const s = store();
+    const root = build(s);
+    const id = ROAD_AVATARS[0] as string;
+    const locked = root.querySelector<HTMLButtonElement>(`.av-t[data-av="${id}"]`);
+    expect(locked?.disabled, "a disabled tile cannot raise its own bubble").toBe(false);
+    locked?.click();
+    expect(s.avatar, "a locked face was worn").toBeNull();
+    expect(s.face).toBe(DEFAULT_AVATAR);
+  });
+
+  /**
+   * AND A TAP ON ONE SAYS HOW IT IS GOT, asked for directly. The route used to live in
+   * `title` and nowhere a finger can reach, so on a phone the locked nine-tenths of this
+   * screen carried nothing at all.
+   */
+  describe("tapping a locked face", () => {
+    const tap = (root: HTMLElement, id: string): void => {
+      root.querySelector<HTMLButtonElement>(`.av-t[data-av="${id}"]`)?.click();
+    };
+    const bubble = (root: HTMLElement): string | null =>
+      root.querySelector(".av-hint")?.textContent ?? null;
+
+    it("names the chapter of the road that pays it", () => {
+      const root = build(store());
+      expect(bubble(root), "a bubble before anything was tapped").toBeNull();
+      tap(root, ROAD_AVATARS[6] as string);
+      expect(bubble(root)).toBe("Reach chapter 7 on the Colony Road");
+    });
+
+    it("sends a hatchable one to the hatch", () => {
+      const root = build(store());
+      tap(root, HATCH_AVATARS[0] as string);
+      expect(bubble(root)).toBe("Open a Lucky hatch");
+    });
+
+    /** It hangs in the GRID, so it can be placed above a tile that clips its own edges. */
+    it("hangs the bubble in the grid, above the tile it is about", () => {
+      const root = build(store());
+      const id = ROAD_AVATARS[3] as string;
+      tap(root, id);
+      const hint = root.querySelector<HTMLElement>(".av-hint");
+      expect(hint?.parentElement?.classList.contains("avgrid")).toBe(true);
+      expect(hint?.dataset.av).toBe(id);
+    });
+
+    /** A bubble with no way out but tapping something else is one to be stuck with. */
+    it("puts it away on a second tap of the same face", () => {
+      const root = build(store());
+      const id = ROAD_AVATARS[0] as string;
+      tap(root, id);
+      expect(bubble(root)).not.toBeNull();
+      tap(root, id);
+      expect(bubble(root)).toBeNull();
+    });
+
+    /** ONE at a time: two bubbles over one grid is two sentences and no tile named. */
+    it("moves to the next locked face rather than opening a second", () => {
+      const root = build(store());
+      tap(root, ROAD_AVATARS[0] as string);
+      tap(root, ROAD_AVATARS[1] as string);
+      expect(root.querySelectorAll(".av-hint").length).toBe(1);
+      expect(bubble(root)).toBe("Reach chapter 2 on the Colony Road");
+    });
+
+    /** Wearing a face is a different answer to the same press, so the bubble goes. */
+    it("puts it away when a face is worn instead", () => {
+      const s = store();
+      const root = build(s);
+      tap(root, ROAD_AVATARS[0] as string);
+      tap(root, FREE_AVATARS[1] as string);
+      expect(s.avatar).toBe(FREE_AVATARS[1]);
+      expect(bubble(root)).toBeNull();
+    });
+
+    /** ...and so does a press on the page that is not a tile at all. */
+    it("puts it away on a press beside the grid", () => {
+      const root = build(store());
+      tap(root, ROAD_AVATARS[0] as string);
+      root.querySelector<HTMLElement>(".av-note")?.click();
+      expect(bubble(root)).toBeNull();
+    });
+
+    /**
+     * ABOVE THE TILE, EXCEPT ON THE FIRST ROW. There is nothing above that row but the
+     * "Collected 23 of 98" heading, and the bubble landed across it with half the count
+     * behind it. jsdom has no layout, so the rule is a pure function of two numbers —
+     * asked of the placed element it could only ever answer one of the two ways.
+     */
+    it("goes under a tile that has no room above it", () => {
+      expect(hintSide(0, 30), "the first row's bubble covers the heading").toBe("below");
+      expect(hintSide(200, 30), "a bubble with room above it went under").toBe("above");
+      // The gap counts: a tile exactly its own bubble's height down still has none.
+      expect(hintSide(30, 30)).toBe("below");
+      expect(hintSide(37, 30)).toBe("above");
+      // ...and the answer reaches the bubble. jsdom measures every offset as 0, which is
+      // the no-room case, so this is the half of the rule a built screen can still show.
+      const root = build(store());
+      tap(root, ROAD_AVATARS[0] as string);
+      expect(root.querySelector(".av-hint")?.classList.contains("below")).toBe(true);
+    });
+
+    /**
+     * THE SENTENCE IS ALREADY THE TILE'S OWN NAME, so the bubble is hidden from a
+     * screen reader — announced twice it reads as two different faces.
+     */
+    it("says nothing twice to a screen reader", () => {
+      const root = build(store());
+      const id = ROAD_AVATARS[0] as string;
+      tap(root, id);
+      const text = root.querySelector(".av-hint")?.textContent ?? "";
+      expect(root.querySelector(`.av-t[data-av="${id}"]`)?.getAttribute("aria-label"))
+        .toContain(text);
+      expect(root.querySelector(".av-hint")?.getAttribute("aria-hidden")).toBe("true");
+    });
   });
 
   it("wears one on a tap", () => {
@@ -163,6 +279,14 @@ describe("the picker", () => {
     expect(label(ROAD_AVATARS[0] as string)).toContain("chapter 1");
     expect(label(ROAD_AVATARS[49] as string)).toContain("chapter 50");
     expect(label(HATCH_AVATARS[0] as string)).toContain("Lucky hatch");
+    // A face the player HOLDS says where it came from; a locked one says how it is GOT,
+    // which is the same three branches in one function and two different sentences.
+    const s = store();
+    s.findAvatar(HATCH_AVATARS[1] as string);
+    const held = buildAvatarPicker(s, { onBack: () => {} })
+      .querySelector(`.av-t[data-av="${HATCH_AVATARS[1]}"]`)?.getAttribute("aria-label") ?? "";
+    expect(held).toContain("Lucky hatch");
+    expect(held, "a face already held is told how to get it").not.toContain("Open a");
   });
 
   it("counts the collection in its own header", () => {
