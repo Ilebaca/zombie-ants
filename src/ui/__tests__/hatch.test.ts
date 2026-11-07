@@ -406,7 +406,7 @@ describe("what it sounds like", () => {
     const feedback = {
       play: (cue: Cue) => { cues.push(cue); },
       setMusic: () => {}, unlock: () => {}, setSound: () => {},
-      setMusicEnabled: () => {}, setHaptics: () => {}, close: () => {},
+      setMusicEnabled: () => {}, setHaptics: () => {}, setAwake: () => {}, close: () => {},
     } satisfies Feedback;
     return { cues, feedback };
   };

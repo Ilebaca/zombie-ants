@@ -45,6 +45,7 @@ function fakeAudio(state: AudioContextState = "running", full = false) {
     destination: {},
     closed: false,
     resume: vi.fn(() => { ctx.state = "running"; return Promise.resolve(); }),
+    suspend: vi.fn(() => { ctx.state = "suspended"; return Promise.resolve(); }),
     close: vi.fn(() => { ctx.closed = true; return Promise.resolve(); }),
     createGain: () => {
       // Every automation point on every note, in order: the ENVELOPE, which is what
@@ -456,6 +457,63 @@ describe("the way out", () => {
   });
 });
 
+/**
+ * OFF SCREEN IS NOT CLOSED.
+ *
+ * Switching to another app leaves the game running — which is what makes it there again
+ * the moment it is switched back to — and the music went on playing out of it.
+ */
+describe("the game going off screen", () => {
+  it("sleeps the device, and wakes it on return", () => {
+    const { ctx } = fakeAudio();
+    const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
+    fb.unlock();
+    fb.setMusic("menu");
+    fb.setAwake(false);
+    expect(ctx.suspend, "the bed kept playing out of a backgrounded app").toHaveBeenCalled();
+    expect(ctx.state).toBe("suspended");
+    fb.setAwake(true);
+    expect(ctx.state).toBe("running");
+  });
+
+  /** And nothing sounds while it is away: a cue on a sleeping device is dropped. */
+  it("drops a cue that lands while the game is away", () => {
+    const { ctx, started } = fakeAudio();
+    const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
+    fb.unlock();
+    fb.setAwake(false);
+    started.length = 0;
+    fb.play("win");
+    expect(started, "a cue sounded out of an app nobody was looking at").toEqual([]);
+  });
+
+  /**
+   * It SUSPENDS rather than stopping, and that is the whole decision. A suspended clock
+   * freezes, so the round comes back mid-bar; stopping and starting would replay the
+   * match bed's drum count-in at somebody returning to a match thirty turns old.
+   */
+  it("keeps the bed it was playing rather than starting it again", () => {
+    const { ctx } = fakeAudio();
+    const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
+    fb.unlock();
+    fb.setMusic("match");
+    fb.setAwake(false);
+    fb.setAwake(true);
+    // Still the same bed: nothing was torn down, so nothing has to be rebuilt.
+    expect(ctx.state).toBe("running");
+    const before = ctx.resume as ReturnType<typeof vi.fn>;
+    expect(before).toHaveBeenCalled();
+  });
+
+  /** Backgrounded before the first press: there is no device yet, and that is fine. */
+  it("says nothing when there is no device to sleep", () => {
+    const { ctx } = fakeAudio();
+    const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
+    expect(() => { fb.setAwake(false); fb.setAwake(true); }).not.toThrow();
+    expect(ctx.suspend).not.toHaveBeenCalled();
+  });
+});
+
 describe("the silent one", () => {
   // Not a stub for something missing: it is the honest implementation for a device that
   // cannot do this, and every test in the suite runs on it.
@@ -464,7 +522,7 @@ describe("the silent one", () => {
     expect(() => {
       fb.unlock();
       for (const c of CUES) fb.play(c);
-      fb.setSound(true); fb.setHaptics(false); fb.close();
+      fb.setSound(true); fb.setHaptics(false); fb.setAwake(false); fb.close();
     }).not.toThrow();
   });
 });
