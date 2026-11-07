@@ -53,6 +53,45 @@ export function hudMark(
   return img;
 }
 
+/**
+ * THE THREE RESOURCE MARKS, which are the ones a player has to recognise anywhere.
+ *
+ * Mycelium, pheromone crystals and larva. Every other mark in this app names a SCREEN or
+ * an ACTION; these three name a thing the player holds a quantity of, and that quantity
+ * is shown on a dozen surfaces — the top bar, a price, a reward, a prize, a payout on the
+ * result card.
+ */
+export const RESOURCE_MARKS = ["mycel", "pheromone", "brood"] as const;
+
+/**
+ * A RESOURCE IS ALWAYS THE PAINTED MARK, and that overturns half of an earlier rule.
+ *
+ * § THE PAINTED CHROME MARKS settled that a mark is painted in the CHROME and still drawn
+ * in the BODY: the painted set is chunky colour art sized for a 36px tile, and the same
+ * picture at 15px inside a line of text reads as clutter where a flat glyph reads as
+ * punctuation. That still holds for `brood` on a shop row, `gear` on a build line and
+ * every other mark that names a screen or an action.
+ *
+ * It does NOT hold for a CURRENCY. Asked for directly: "everywhere where we show
+ * resources their official icon should be like it is on the home screen." The top bar is
+ * where a player learns what mycelium looks like, and a price, a reward and a payout are
+ * the same object counted somewhere else — drawn as a flat glyph in nine of those places
+ * and painted in the tenth, they read as two different currencies. Recognising it at a
+ * glance is worth more than the punctuation argument, because it is the ONE mark the
+ * player has to match across screens.
+ *
+ * THE SHOP IS THE EXCEPTION, and it already was: a purchase tile shows the SHELF art
+ * (`ui/shelf.ts`) — a painted pile of the stuff, which is a picture of what is being
+ * bought rather than the mark for it.
+ *
+ * Mechanically this is `hudMark` with the fallback kept, so a resource whose file went
+ * missing is still a mark rather than a hole. The two TAGS trap comes with it: a painted
+ * mark is an `<img>` and a drawn one an `<svg>`, so a box that sizes one must size both.
+ */
+export function resourceMark(name: string, size: number): HTMLElement | SVGElement {
+  return hudMark(name, size);
+}
+
 /** Small element factory: `el("div", "cls", "text")`. */
 export function el<K extends keyof HTMLElementTagNameMap>(
   tag: K, className?: string, text?: string,
@@ -180,8 +219,7 @@ export function screenHeader(parent: HTMLElement, opts: HeaderOptions): void {
 function purseChip(mark: string, value: number): HTMLElement {
   const chip = el("div", "mycelchip");
   chip.dataset.purse = mark;
-  chip.append(mark === "pheromone" ? hudMark(mark, 18) : icon(mark, 18),
-    el("b", "mycelv", String(value)));
+  chip.append(resourceMark(mark, 18), el("b", "mycelv", String(value)));
   chip.title = mark === "pheromone" ? "Pheromone crystal" : "Mycelium";
   chip.setAttribute("aria-label", mark === "pheromone"
     ? `${value} pheromone crystal${value === 1 ? "" : "s"}`
@@ -553,8 +591,9 @@ export function buyButton(opts: BuyOptions): HTMLButtonElement {
     return b;
   }
   const b = el("button", "buybtn" + (opts.affordable ? "" : " off"));
-  // The currency is a mark from the icon family, not the emoji the price used to carry.
-  b.append(icon(opts.icon, 15), el("span", undefined, String(opts.cost)));
+  // THE PAINTED currency mark, the same one the top bar carries: a price is the purse
+  // counted somewhere else, and two drawings of one currency read as two currencies.
+  b.append(resourceMark(opts.icon, 15), el("span", undefined, String(opts.cost)));
   b.disabled = !opts.affordable;
   if (opts.affordable) b.onclick = opts.onBuy;
   return b;

@@ -2088,3 +2088,64 @@ describe("a block never holds blocks", () => {
     expect(hero).toMatch(/filter:\s*brightness/);
   });
 });
+
+/**
+ * EVERY POP-UP IS THE SAME APP.
+ *
+ * Reported from a phone against the result card: "End game pop up isn't designed the
+ * same way with same colours as new design. Make sure all pop ups are." A pop-up is not
+ * a SCREEN, so neither the token remap nor the shared card recipe reached it — the card
+ * kept the legacy sheet's green `--panel`, its 24px corner and its 1px stroke while
+ * every screen behind it had been charcoal for weeks.
+ *
+ * Nothing a jsdom test can see would notice: the markup never changed and only the
+ * cascade decides the colour. So this reads the stylesheet, the way every other sweep in
+ * this file does.
+ */
+describe("the pop-ups are in the design", () => {
+  const whole = read("skin.css");
+  const pops = designBlock(whole, "EVERY POP-UP IS THE SAME APP");
+
+  /** The remap is ONE list, so a pop-up has to be IN it rather than beside it. */
+  it("takes its tokens from the same remap the nineteen screens do", () => {
+    const remap = rulesFor(whole, [
+      "#anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news",
+      "#friends, #support, #antup, #traits, #inventory, #history, #replay",
+      "#keepsafe, #rules, #formation, #luckyhatch, #avatars",
+      ".overlay, .rd-pop",
+    ].join(",\n"));
+    expect(remap, "the pop-ups fell out of the token remap").toMatch(/--panel:\s*var\(--hud-card\)/);
+  });
+
+  it("gives the card the design's face, corner and ledge", () => {
+    const card = rulesFor(pops, ".overlay > .overModalWrap > .card,\n.rd-popcard");
+    expect(card, "a pop-up card is not the design's surface").toMatch(/background:\s*var\(--hud-card\)/);
+    expect(card, "a pop-up card kept a corner of its own").toMatch(/border-radius:\s*var\(--r-card\)/);
+    expect(card, "a pop-up card kept the first language's stroke").toMatch(/border:\s*none/);
+    // The blanket clears every box-shadow with `!important`, so a ledge that forgets to
+    // match its weight goes flat while everything round it stays raised.
+    expect(card, "the ledge is not marked, so the blanket clears it")
+      .toMatch(/box-shadow:\s*var\(--hud-ledge\)\s*!important/);
+  });
+
+  /**
+   * AND WHAT IS INSIDE THE CARD IS A WELL, not a second card. A card on a card is a
+   * plate on a plate; the payouts and the facts are cut INTO the surface.
+   */
+  it("cuts its inner blocks in rather than laying them on", () => {
+    for (const sel of [".overlay .payout", ".overlay .fact"]) {
+      expect(rulesFor(pops, sel), `${sel} is not a well`).toMatch(/background:\s*var\(--hud-well\)/);
+    }
+    // The facts grid is ruled by its own background showing through 1px gaps, so it has
+    // to be DARKER than its cells — `--line` is a pale white after the remap, which drew
+    // four bright lines across the quietest block on the card.
+    expect(rulesFor(pops, ".overlay .facts"), "the facts grid rules itself in the wrong colour")
+      .toMatch(/background:\s*var\(--hud-face\)/);
+  });
+
+  /** And the scrim is neutral: a green cast over ten painted regions reads as a tint. */
+  it("darkens the screen in the design's own dark", () => {
+    expect(rulesFor(pops, ".overlay"), "the scrim is still green-black")
+      .toMatch(/background:\s*rgba\(10,\s*11,\s*14,/);
+  });
+});

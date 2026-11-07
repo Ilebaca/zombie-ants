@@ -2374,6 +2374,63 @@ to have those attributes".
   grid columns while Privacy and Terms add a chevron as a FOURTH child, so the arrow
   wrapped onto a second row under the mark.
 
+**EVERY POP-UP IS THE SAME APP** (the block of that name at the foot of `skin.css`).
+Reported from a phone against the result card: "End game pop up isn't designed the same
+way with same colours as new design. Make sure all pop ups are."
+- **A POP-UP IS NOT A SCREEN, which is the whole of why it was missed.** Both the token
+  remap and the shared card recipe are scoped to the nineteen SCREENS, so the result card
+  kept the legacy sheet's green `--panel`, its 24px corner and its 1px `--line` stroke
+  while every screen behind it had been charcoal for weeks. `.overlay` (the result card
+  and the what's-new card) and `.rd-pop` (the Colony Road's claim confirmation) join the
+  REMAP LIST rather than getting a mapping of their own — two places deciding what a
+  surface is made of is how the app ended up half green in the first place.
+- **AND THE ROAD BEING ITS OWN DESIGN DOES NOT EXEMPT ITS POP-UP.** The Colony Road is
+  deliberately out of the remap (§ TWO SCREENS ARE DELIBERATELY OUT OF IT), and that is
+  about the ROAD — the rail, the discs, the chapter plates. A confirmation card over it
+  is app chrome, and it was the second thing still wearing the first language.
+- **WHAT IS INSIDE A POP-UP IS A WELL, not a second card.** A card on a card is a plate
+  on a plate, so the payouts and the facts are cut INTO the surface. The facts grid is
+  ruled by its own background showing through 1px gaps, so it has to be DARKER than its
+  cells: left on `--line`, which the remap points at a pale white, it drew four bright
+  lines across the quietest block on the card.
+- **The scrim is the design's neutral dark**, not the old language's green-black: over ten
+  painted regions a green cast reads as a tint rather than as dark.
+
+**A RESOURCE IS ALWAYS THE PAINTED MARK** (`RESOURCE_MARKS`, `resourceMark` in
+`chrome.ts`). Asked for directly in the same breath: "everywhere where we show resources
+their official icon should be like it is on the home screen. Exception is the shop
+purchase options."
+- **IT OVERTURNS HALF OF AN EARLIER RULE, deliberately.** § THE PAINTED CHROME MARKS
+  settled that a mark is painted in the CHROME and still drawn in the BODY, because the
+  painted set is chunky colour art sized for a 36px tile and the same picture at 15px
+  inside a line of text reads as clutter where a flat glyph reads as punctuation. That
+  still holds for every mark naming a SCREEN or an ACTION. It does not hold for a
+  CURRENCY: the top bar is where a player learns what mycelium looks like, and a price, a
+  reward and a payout are the same object counted somewhere else — drawn flat in nine
+  places and painted in the tenth they read as two different currencies. Recognising it
+  at a glance beats the punctuation argument on the one mark that has to match across
+  screens.
+- **THE SHOP IS THE EXCEPTION AND ALREADY WAS.** A purchase tile shows the SHELF art
+  (`ui/shelf.ts`) — a painted pile of the stuff, which is a picture of what is being
+  bought rather than the mark for it.
+- **ONE FUNCTION, and it is `hudMark` with its fallback kept**, so a resource whose file
+  went missing is still a mark rather than a hole. Nine call sites moved: the header purse
+  chip (which was already painting pheromone and drawing mycelium — the two currencies
+  rendered in two families, in one chip row), every price button, the challenge reward,
+  the hatch's purse and fuse rows, the league prize column and the result card's payouts.
+- **THE COLONY AND THE XP ARE NOT RESOURCES** and keep their drawn glyph on the result
+  card, which is also what lets them be TINTED: `.pay-colony svg` colours the mark green
+  or red by whether the colony went up, and an `<img>` cannot take `currentColor`.
+- **THE SWEEP IS THE RULE.** `icon("mycel", 13)` produces a perfectly good mark in the
+  wrong family on one card out of ten, and nothing a rendering test can see would notice;
+  `hud.test.ts` walks every shipped file and fails on any of the three drawn with `icon`.
+  The list itself is tied to the three purse fields on the profile, because shrinking the
+  list is otherwise a silent way to stop guarding one — which a mutation proved.
+- **AND A TEST NAMED THE TAG AGAIN.** `meta.test.ts` asserted `.mycelchip svg`, which was
+  true for exactly as long as the currency was drawn and failed the day it was painted,
+  with the chip perfectly correct. What a box owes is A MARK: `svg, .hudmark`. Third time
+  this file has had to write that sentence.
+
 **AND A POST SAYS WHETHER IT HAS BEEN READ** (`profile.newsRead`, the `.read` rules in
 `skin.css`). Asked for directly: "we should have a way to know which is read and which
 not — read ones should not be so prominent."
