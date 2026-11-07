@@ -2395,6 +2395,14 @@ way with same colours as new design. Make sure all pop ups are."
   lines across the quietest block on the card.
 - **The scrim is the design's neutral dark**, not the old language's green-black: over ten
   painted regions a green cast reads as a tint rather than as dark.
+- **AND THE TUTORIAL'S BUBBLE IS A POP-UP TOO** (§10a), reported in the same words one
+  build later: "tutorial popups needs to be designed in a same manner as the rest of the
+  app, good example is game end pop up screen." It is the one card in the app that is not
+  a `.screen` and not an `.overlay` — a panel the tour builds over whatever is underneath —
+  so it was the last thing still wearing the first language's green panel and 14px corner.
+  `.tourwrap` joins the REMAP LIST with the other two, and the bubble takes the shared card
+  recipe, its button the `--hud-go` slab every primary action wears. Its SHADE is the
+  pop-up scrim's own neutral dark for the same reason, over the same ten regions.
 
 **A RESOURCE IS ALWAYS THE PAINTED MARK** (`RESOURCE_MARKS`, `resourceMark` in
 `chrome.ts`). Asked for directly in the same breath: "everywhere where we show resources
@@ -5064,6 +5072,23 @@ something the board cannot deliver leaves the tutorial stuck with nothing but Sk
   are her four guards, so there is no square she can be attacked from — "attack the enemy,
   then take the queen" needs the enemy standing exactly there. A captured hive tile becomes
   an ordinary stable (§5), so this is a board the game produces by itself.
+- **AND IT IS SUPPLIED HOME BY A TRAIL OF VEINS.** It used to stand on the guard alone, a
+  dozen tiles from anything the enemy held — reported directly: "the tile of the enemy I'm
+  attacking is separated from the nest... has to make sense how it got there." It has to
+  make sense twice over: a detached tile produces nothing and is drawn grey (§4.2), so the
+  first board a player ever sees was teaching the opposite of the rule the step before it
+  had just explained; and a trail of VEINS is exactly what a long send leaves behind (§4.6),
+  so the position now reads as a move the enemy made rather than as a tile that appeared
+  there. A vein, never a row of stables — a garrisoned row out to the middle of the board is
+  a second colony — and the trail is anchored at both ends by a captured tile, which is what
+  satisfies both pruning rules (§4.5).
+  - **`supplyPath` RETURNS NEITHER END, and that is what the one caller hid.** It walks back
+    to the first tile the owner already holds and returns only what is BETWEEN: the far end
+    is theirs already, and the near end is the tile it was asked about. Returning the near
+    end turned the enemy's door — a stable holding the garrison the whole attack lesson is
+    about — into an empty vein, and every species' walkthrough failed at the rally step. The
+    player's camp hid it for as long as this had one caller, because the camp is re-claimed
+    on the line after.
 - **Five lessons, each on its own turn, each in TWO taps.** Move, long send, rally, attack,
   queen — and every one is "pick the tile up, then say where", because that is how the
   player will act for the rest of their life in this game. An earlier walk did the first tap
@@ -5072,9 +5097,32 @@ something the board cannot deliver leaves the tutorial stuck with nothing but Sk
   of empty ground beside the enemy's own colony and nothing else. A turn handed over is half
   of how the game works and a walkthrough where the board never replies teaches a solitaire —
   but it must not be the real search, or the board the next step is about is not the board
-  the step was written for. `MatchScreen.enemyReplies` runs it from the FOLLOWING step's
-  `enter`, so the move animates under the instruction being read rather than in a pause.
-  Its events are muted (`scripted`) or a scripted capture would answer the step on screen.
+  the step was written for. Its events are muted (`scripted`) or a scripted capture would
+  answer the step on screen.
+- **AND THE DARK STANDS BACK SO THE PLAYER CAN WATCH THE TURN** (`standBack`, `tourWatch`).
+  Asked for directly: "when we play steps of attack and move and all those similar we need
+  to see what happens... tell the player what to do like now and when he does just delay
+  animation a bit so whole screen can get visible again, then action is played, enemy plays
+  their move and then we get the next step." The step was marching on the instant the deed
+  resolved, so the thing the player had just been taught played out under four shade panels
+  and a bubble, with the next instruction already over it.
+  - **It is ONE beat with THREE parts, in order:** the overlay fades out, the player's own
+    action plays, the enemy answers, and only then does the next step arrive. The enemy's
+    reply moved OUT of the following step's `enter` to get that order — run from the step, it
+    played after the instruction rather than before it.
+  - **`watchMs` is the one length**, `700 + actGapOf(events)`, which is the same arithmetic
+    `playAI` already waits by — a second copy is a second answer to "how long does a batch
+    take" and it is the copy that goes stale (§7). A batch with no events is zero: there is
+    nothing to watch.
+  - **ONLY THE FOUR LESSONS ARE ANSWERED** (`ANSWERED`). Move, travel, rally and attack hand
+    the turn over; the queen step is the last one and the walk ends on the hand-over it has
+    been rehearsing, so an answer there would be the enemy playing after the tutorial was
+    over.
+  - **The timers are CLEARED on teardown** (`clearWatch`), or a screen torn down mid-beat
+    signals a step into a tour that has moved on.
+  - **And it is FADED, not hidden outright.** `visibility: hidden` with the opacity is what
+    stops the panels taking a tap while they are invisible — a transparent panel is still the
+    gate, which is the one thing it must not be once the player has done what was asked.
 - **The first match is played on EASY**, whatever Settings says, and the real opponent takes
   over the moment the walk ends — the last step hands the turn over, which is the hand-over
   the whole walk has been rehearsing.
@@ -5113,6 +5161,14 @@ second overlay and the meta walk runs straight into the match one.
   player to "pick the one you want" with the picker itself in the dark. They end on `signal`
   — the router says when the screen actually changed — so every control on the screen stays
   live under the tour without a tap on a card marching the step on.
+  - **AND A STEP MAY NOT DARKEN THE THING IT IS TALKING ABOUT.** Reported from a phone with
+    the picture attached: "I'm changing the position on the map but the map part is
+    darkened." The box was the picker alone, so the BOARD the step describes — the one thing
+    a formation step is about — sat under a shade panel while the bubble explained it.
+  - **THERE IS ONE HOLE, so the hole WIDENS; a second lit box would need a second set of
+    panels.** `span(...)` in `app.ts` takes the union of several selectors' boxes and hands
+    back one `SpotRect`, which is how the stage and the footer are lit together. A step that
+    wants two things lit that are not adjacent wants a different mechanism, not two holes.
 - **"Look at this screen" is a step type of its own.** Four steps show a whole screen rather
   than point at a control, so the hole has to be big enough to READ — and a tap inside it
   would navigate out from under the tour. `block` puts a pane of clear glass over the hole:

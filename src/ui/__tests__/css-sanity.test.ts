@@ -2112,7 +2112,7 @@ describe("the pop-ups are in the design", () => {
       "#anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news",
       "#friends, #support, #antup, #traits, #inventory, #history, #replay",
       "#keepsafe, #rules, #formation, #luckyhatch, #avatars",
-      ".overlay, .rd-pop",
+      ".overlay, .rd-pop, .tourwrap",
     ].join(",\n"));
     expect(remap, "the pop-ups fell out of the token remap").toMatch(/--panel:\s*var\(--hud-card\)/);
   });
@@ -2147,5 +2147,40 @@ describe("the pop-ups are in the design", () => {
   it("darkens the screen in the design's own dark", () => {
     expect(rulesFor(pops, ".overlay"), "the scrim is still green-black")
       .toMatch(/background:\s*rgba\(10,\s*11,\s*14,/);
+    expect(rulesFor(pops, ".tourshade"), "the tour's scrim is still green-black")
+      .toMatch(/background:\s*rgba\(10,\s*11,\s*14,/);
+  });
+
+  /**
+   * AND THE TOUR'S BUBBLE IS ONE OF THEM. It is the first card a player ever sees and it
+   * was the app's oldest language — a green panel with a pill button — over a screen that
+   * had been charcoal for weeks.
+   */
+  it("dresses the tour's bubble like every other pop-up card", () => {
+    const card = rulesFor(pops, ".tourbubble");
+    expect(card, "the bubble is not the design's surface").toMatch(/background:\s*var\(--hud-card\)/);
+    expect(card, "the bubble kept a corner of its own").toMatch(/border-radius:\s*var\(--r-card\)/);
+    expect(card, "the bubble kept the first language's stroke").toMatch(/border:\s*none/);
+    expect(card, "the ledge is not marked, so the blanket clears it")
+      .toMatch(/box-shadow:\s*var\(--hud-ledge\)\s*!important/);
+    expect(rulesFor(pops, ".tournext"), "Next is not the design's one bright thing")
+      .toMatch(/background:\s*var\(--hud-go\)/);
+  });
+
+  /**
+   * AND IT CAN STAND BACK. The overlay hides between two lessons so the board can be
+   * seen playing (`Tour.standBack`) — and `visibility` as well as `opacity`, or a shade
+   * at zero opacity is still there to swallow the tap it should no longer take.
+   */
+  it("hides the overlay while the board plays, targets and all", () => {
+    const rule = rulesFor(pops, [
+      ".tourwrap.tourwatch .tourshade",
+      ".tourwrap.tourwatch .tourring",
+      ".tourwrap.tourwatch .tourbubble",
+      ".tourwrap.tourwatch .tourglass",
+    ].join(",\n"));
+    expect(rule, "the overlay is still visible while the board plays").toMatch(/opacity:\s*0/);
+    expect(rule, "a see-through shade still eats the taps").toMatch(/visibility:\s*hidden/);
+    expect(rule, "a see-through shade still eats the taps").toMatch(/pointer-events:\s*none/);
   });
 });

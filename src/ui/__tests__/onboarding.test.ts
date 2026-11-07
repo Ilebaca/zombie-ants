@@ -13,6 +13,7 @@ import { App } from "../app";
 import { normalise } from "../../platform";
 import { MatchScreen } from "../match";
 import { Tour } from "../tour";
+import type { TourStep } from "../tour";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
 
@@ -229,6 +230,13 @@ describe("the first-run tour", () => {
 });
 
 describe("a match with the tour up", () => {
+  /**
+   * Long enough for the whole beat between two lessons: the player's move animating, the
+   * enemy's reply, and the beat after that. Deliberately generous — this is a test of the
+   * ORDER, and pinning it to the exact arithmetic would make it a test of `watchMs`.
+   */
+  const WATCH = 5000;
+
   const running = (): { state: ReturnType<typeof createGame>; screen: MatchScreen; host: HTMLElement } => {
     const host = mount();
     const state = createGame({ map: "small", species: { you: "fire", ai: "fire" }, seed: 7 });
@@ -324,10 +332,40 @@ describe("a match with the tour up", () => {
   });
 
   /**
+   * A STEP MAY NOT PUT THE THING IT IS TALKING ABOUT IN THE DARK.
+   *
+   * "Where your first five tiles sit in the corner" lit the PICKER and shaded the BOARD,
+   * so the player stepped through arrangements they could not see. Reported directly:
+   * "make sure you're not covering important content the tutorial is mentioning."
+   *
+   * The tour has exactly one hole, so the answer is to widen it over both boxes. jsdom
+   * measures everything at zero, so what is held here is the step's own `rect` naming
+   * the stage — an assertion on the measured hole would pass against anything.
+   */
+  it("lights the board as well as the picker on the setup steps", () => {
+    const host = mount();
+    const app = new App(host, new ProfileStore(new MemoryStore()));
+    app.start();
+    const steps = (app as unknown as { metaSteps: () => TourStep[] }).metaSteps();
+    for (const id of ["shape", "species"]) {
+      const step = steps.find((x) => x.id === id);
+      expect(step, `the ${id} step is gone`).toBeTruthy();
+      expect(step?.rect, `the ${id} step lights one box again`).toBeTruthy();
+      expect(step?.find, `the ${id} step is back on a single element`).toBeUndefined();
+    }
+    app.destroy();
+  });
+
+  /**
    * THE ENEMY ANSWERS BETWEEN THE LESSONS. A walkthrough where the board never replies
    * teaches a solitaire — and the hand-over is half of how the game works.
+   *
+   * It answers in the WATCH now rather than under the next step's `enter`, so this has to
+   * advance a clock: the deed, a beat for the player's own move to animate, the reply, a
+   * beat for that, and only then the next instruction.
    */
-  it("gives the enemy a turn between one lesson and the next", () => {
+  it("gives the enemy a turn between one lesson and the next", async () => {
+    vi.useFakeTimers();
     const { state, screen, host } = running();
     screen.start();
     opened(host);
@@ -336,10 +374,44 @@ describe("a match with the tour up", () => {
 
     host.querySelector<HTMLButtonElement>("#tourNext")?.click();
     tour.signal("select");
-    tour.signal("move");
+    (screen as unknown as { consume: (e: unknown[]) => void }).consume(
+      [{ type: "capture", at: { c: 0, r: 7 }, owner: "you" }],
+    );
+    await vi.advanceTimersByTimeAsync(WATCH);
     expect(tour.step?.id, "expected the long send next").toBe("pickSend");
     expect(state.turn, "the enemy never got a turn").toBe(2);
     expect(state.current, "the turn did not come back to the player").toBe("you");
+    screen.destroy();
+  });
+
+  /**
+   * AND THE SCREEN IS CLEAR WHILE IT HAPPENS.
+   *
+   * Everything a lesson teaches happens after the tap it asks for, and all of it used to
+   * happen behind four black panels — the player's own move between them and the enemy's
+   * reply under the next instruction. Reported directly: "we need to see what happens...
+   * delay the animation a bit so the whole screen can get visible again, then the action
+   * is played, the enemy plays their move, and then we get the next step."
+   */
+  it("stands the dark back while the board plays, and brings it back after", async () => {
+    vi.useFakeTimers();
+    const { screen, host } = running();
+    screen.start();
+    opened(host);
+    const tour = (screen as unknown as { opts: { tour: Tour } }).opts.tour;
+    const wrap = (): HTMLElement | null => host.querySelector(".tourwrap");
+    host.querySelector<HTMLButtonElement>("#tourNext")?.click();
+    tour.signal("select");
+    expect(wrap()?.classList.contains("tourwatch"), "it was already standing back").toBe(false);
+
+    (screen as unknown as { consume: (e: unknown[]) => void }).consume(
+      [{ type: "capture", at: { c: 0, r: 7 }, owner: "you" }],
+    );
+    expect(wrap()?.classList.contains("tourwatch"), "the move resolved behind the dark")
+      .toBe(true);
+    await vi.advanceTimersByTimeAsync(WATCH);
+    expect(wrap()?.classList.contains("tourwatch"), "the dark never came back").toBe(false);
+    expect(host.querySelector(".tourbubble"), "the next instruction never arrived").not.toBeNull();
     screen.destroy();
   });
 
@@ -366,7 +438,8 @@ describe("a match with the tour up", () => {
    * back the same way, so a step opened inside the batch had the tile taken straight back
    * out of its hand and the walkthrough stalled on a board it could not act from.
    */
-  it("does not open the next step until the action that ended this one is finished", () => {
+  it("does not open the next step until the action that ended this one is finished", async () => {
+    vi.useFakeTimers();
     const { screen, host } = running();
     screen.start();
     opened(host);
@@ -381,11 +454,9 @@ describe("a match with the tour up", () => {
       [{ type: "move", from: { c: 0, r: 0 }, to: { c: 0, r: 1 }, owner: "you", count: 2 }],
     );
     expect(tour.step?.id, "the step advanced inside the batch that ended it").toBe("move");
-
-    return Promise.resolve().then(() => {
-      expect(tour.step?.id, "the step never advanced at all").toBe("pickSend");
-      screen.destroy();
-    });
+    await vi.advanceTimersByTimeAsync(WATCH);
+    expect(tour.step?.id, "the step never advanced at all").toBe("pickSend");
+    screen.destroy();
   });
 
   it("starts the clock once the tour is out of the way", async () => {

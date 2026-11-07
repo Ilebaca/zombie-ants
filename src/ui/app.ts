@@ -66,7 +66,7 @@ import { buildColonyRoad } from "./road";
 import { Deck } from "./deck";
 import { Tour } from "./tour";
 import { lockPortrait } from "../platform/orientation";
-import type { TourStep } from "./tour";
+import type { SpotRect, TourStep } from "./tour";
 import "./game.css";
 import "./skin.css";   // the look, layered over the structure
 
@@ -467,6 +467,36 @@ export class App {
 
   private metaSteps(): TourStep[] {
     const find = (sel: string) => () => document.querySelector(sel);
+    /**
+     * ONE HOLE OVER SEVERAL BOXES.
+     *
+     * A step must never put the thing it is talking about in the dark, and the setup
+     * screen is where that broke: "Where your first five tiles sit in the corner" lit the
+     * PICKER and shaded the BOARD, so the player was stepping through arrangements they
+     * could not see. Reported directly — "make sure you're not covering important content
+     * the tutorial is mentioning".
+     *
+     * The tour has exactly one hole (a second would need a second set of panels), so the
+     * answer is to make the hole bigger: the union of the boxes the step is about. A
+     * selector that matches nothing is skipped rather than collapsing the union, so a
+     * screen mid-build still lights whatever part of itself exists.
+     */
+    const span = (...sels: readonly string[]) => (): SpotRect | null => {
+      let box: SpotRect | null = null;
+      for (const sel of sels) {
+        const el = document.querySelector(sel);
+        if (!el) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width <= 0 || r.height <= 0) continue;
+        box = box === null ? { left: r.left, top: r.top, width: r.width, height: r.height } : {
+          left: Math.min(box.left, r.left),
+          top: Math.min(box.top, r.top),
+          width: Math.max(box.left + box.width, r.right) - Math.min(box.left, r.left),
+          height: Math.max(box.top + box.height, r.bottom) - Math.min(box.top, r.top),
+        };
+      }
+      return box;
+    };
     /** A screen on the deck, shown whole and made inert while it is being explained. */
     const deckStep = (
       id: DeckId, inner: string, title: string, text: string,
@@ -548,7 +578,7 @@ export class App {
         title: "Your opening",
         text: "Where your first five tiles sit in the corner. A wedge pushes out, a wall "
           + "holds ground. Step through them with the arrows, then tap Next.",
-        find: find("#formation .setupfoot"),
+        rect: span("#formation .setupstage", "#formation .setupfoot"),
         advance: "signal",
         pad: 4,
         bubble: "top",
@@ -559,7 +589,7 @@ export class App {
         text: "Leafcutters farm fungus, fire ants sting in a swarm, carpenters tunnel. The "
           + "ability is the species. Choose one and play — I will walk you through the "
           + "first turn.",
-        find: find("#formation .setupfoot"),
+        rect: span("#formation .setupstage", "#formation .setupfoot"),
         advance: "signal",
         pad: 4,
         bubble: "top",
