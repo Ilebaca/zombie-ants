@@ -53,7 +53,7 @@ import { canReplay } from "../platform";
 import { LocalAccounts } from "../platform";
 import type { Account, AccountService } from "../platform";
 import { buildSignIn } from "./signin";
-import { askToPersist, defaultStore, majorSince, onHardwareBack, saveRisk } from "../platform";
+import { askToPersist, defaultStore, majorSince, onAwake, onHardwareBack, saveRisk } from "../platform";
 import { SuspendStore } from "../platform";
 import type { Resumed, SuspendDifficulty } from "../platform";
 import type { SaveRisk } from "../platform";
@@ -245,6 +245,7 @@ export class App {
 
   /** Unwires the hardware back button. Only the native shell has one. */
   private dropBack: () => void = () => {};
+  private dropAwake: () => void = () => {};
 
   constructor(
     private host: HTMLElement,
@@ -309,6 +310,12 @@ export class App {
     // shell's own answer to a press is to CLOSE THE APP — anywhere, mid-match included.
     // A no-op in a browser (platform/back.ts).
     this.dropBack = onHardwareBack(() => this.goBack());
+    // AND THE MUSIC STOPS WHEN THE GAME GOES OFF SCREEN. Switching to another app
+    // leaves this one RUNNING, which is the point of switching rather than closing —
+    // but a forest bed playing out of an app nobody is looking at is the game talking
+    // over whatever they actually opened. The device is SUSPENDED, so the round comes
+    // back mid-bar rather than restarting (platform/awake.ts, platform/feedback.ts).
+    this.dropAwake = onAwake((awake) => { this.feedback.setAwake(awake); });
     // ASK THE BROWSER TO KEEP THE STORAGE, and settle what it said. Chromium grants this
     // silently and a granted origin is never evicted; iOS refuses, which is the answer
     // that puts the prompt on home. It is fire-and-forget: the game must never wait on it.
@@ -339,6 +346,8 @@ export class App {
   destroy(): void {
     this.dropBack();
     this.dropBack = () => {};
+    this.dropAwake();
+    this.dropAwake = () => {};
     this.clearMatch();
     this.clearReplay();
     this.clearMatchmaking();

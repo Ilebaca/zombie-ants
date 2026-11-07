@@ -27,7 +27,7 @@ function listener(): { cues: Cue[]; music: (Track | null)[]; feedback: Feedback 
     play: (cue: Cue) => { cues.push(cue); },
     setMusic: (t: Track | null) => { music.push(t); },
     unlock: () => {}, setSound: () => {}, setMusicEnabled: () => {},
-    setHaptics: () => {}, close: () => {},
+    setHaptics: () => {}, setAwake: () => {}, close: () => {},
   };
   return { cues, music, feedback };
 }

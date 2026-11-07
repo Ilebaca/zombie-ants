@@ -589,6 +589,29 @@ describe("the colony rail", () => {
     expect(rulesFor(css, ".spgcover"), "the cover grew a separate fill behind the cut-out")
       .toMatch(/background\s*:\s*(?:transparent|none)\s*;/);
   });
+
+  /**
+   * AND NOTHING MAY DRESS THE PANE, from anywhere in the file.
+   *
+   * `.coverpane` was swept into the design remap's shared card list, four thousand lines
+   * below the rule above — so the pane came back with the card's fill, its 7px corner
+   * and its ledge, and the rail showed a lit grey plate behind a cut-out that exists so
+   * the screen's own ground would be what the ant stands on. Reported from a phone.
+   *
+   * `rulesFor` cannot see that: it matches a rule by its WHOLE selector list, and the
+   * one that did this names twenty-odd other classes. So this walks every rule in the
+   * file whose selector list mentions the pane — which is the only shape of check that
+   * catches a plate arriving from a list rather than from a rule of its own.
+   */
+  it("is never given a fill, a corner or a ledge by any rule anywhere", () => {
+    const css = read("skin.css");
+    for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      const sel = m[1] ?? "", body = m[2] ?? "";
+      if (!/\.coverpane\b/.test(sel)) continue;
+      expect(body, `a rule dressed the colony pane: ${sel.trim().slice(-80)}`)
+        .not.toMatch(/(^|[;{])\s*(background|background-color|border-radius|box-shadow)\s*:\s*(?!none|transparent|0)/);
+    }
+  });
 });
 
 describe("the hatch button while it is hatching", () => {

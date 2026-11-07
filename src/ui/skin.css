@@ -3056,6 +3056,14 @@ button:not(.playbtn):active,
 /* `flex: 0 0 100%`, never `width: 100%`: a flex item with a basis of auto is free to
    SHRINK to share the rail between eight of them, which lays all eight across one
    viewport instead of one each. */
+/* AND THE PANE IS NOTHING, which the rule above already said and a later block undid.
+   `.coverpane` was swept into the design remap's shared card list, so the pane came
+   back with the card's fill, its 7px corner and its ledge — a lit grey plate behind a
+   picture that was cut out precisely so the screen's own ground would be what the ant
+   stands on. Reported from a phone as the species frame needing no background, no
+   corners and no design attributes at all. Same shape as the `padding` shorthand that
+   wiped three caps: a rule written early, correct, and silently overruled by a list
+   further down the file. */
 .coverpane { flex: 0 0 100%; height: 100%; position: relative; }
 .coverimg { width: 100%; height: 100%; object-fit: cover; display: block; }
 /* A colony with no painting yet keeps its drawn head, in a pane of the same shape — a
@@ -8468,7 +8476,7 @@ button:not(.playbtn):active,
     .spbox, .spfact, .spq, .spgcard, .spghero, .skincard, .spgtd,
     .trtile, .tropen, .trtotals, .fb-row,
     .histrow, .kscard, .hatchprize, .hp-one, .hatchshut,
-    .coverpane, .setupbox) {
+    .setupbox) {
   /* NO OUTLINE ON A BLOCK, asked for directly: "I see a small outline stroke
      for the blocks, we don't use that — remove it everywhere. We just
      sometimes have that stroke if the element is SELECTED."

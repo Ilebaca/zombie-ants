@@ -964,6 +964,20 @@ colony with no file in either keeps its drawn head in a box of the same shape.
     (`cutCoverFor`), **and the rail's box has no fill at all** — the screen's own ground
     is what the ant stands on, which is the whole point of a cut-out. `#1a120a` stays on
     the HERO, and that is not an inconsistency: it is the colour the paintings are lit on.
+  - **AND THE PLATE CAME BACK FROM FOUR THOUSAND LINES AWAY.** `.coverpane` was swept
+    into the design remap's shared card list (§ AND THE OTHER NINETEEN CAME OVER AS ONE
+    REMAP), so the pane wore the card's fill, its 7px corner and its ledge — a lit grey
+    rectangle behind a cut-out that exists precisely so the screen's own ground would be
+    what the ant stands on. Reported from a phone: the species frame should have no
+    background, no rounded corners and no design attributes at all. Same shape as the
+    `padding` shorthand that wiped three caps and the `#mainNav.homenav` tie that stopped
+    the bar hiding — **a rule written early, correct, and silently overruled by a list
+    further down the file**, which is the one failure this stylesheet keeps repeating.
+  - **So the test SWEEPS every rule that mentions the pane**, rather than reading the
+    pane's own rule. `rulesFor` matches a rule by its WHOLE selector list, so it cannot
+    see a plate arriving from a list of twenty-odd classes; the check walks the file and
+    fails on any rule whose selector mentions `.coverpane` and which sets a background, a
+    radius or a shadow. Anything else that must stay undressed wants the same shape.
   - **Each falls back to the other rather than to nothing**, so a colony with a file in
     one folder and not the other is still shown everywhere. `css-sanity.test.ts` holds
     that the rail has no plate and the hero still has its ground, and `covers.test.ts`
@@ -4889,6 +4903,34 @@ the first tap and a decode on a phone. Each cue is a few oscillators and an enve
   costs the feedback with it. All default ON, and `normalise` reads a missing flag as
   `!== false` — reading it as "off" would silently mute the game for every returning
   player, including on the `music` flag that no older save has at all.
+
+**OFF SCREEN IS NOT CLOSED** (`platform/awake.ts`, `setAwake` in `feedback.ts`). Switching
+to another app leaves the game RUNNING — which is the point of switching rather than
+closing, and is what makes it there again the moment it is switched back to — and the bed
+went on playing out of it. Reported directly: "I want game to be running so I can get back
+to the game quickly but I don't want to hear the music while not in the game."
+- **IT SUSPENDS THE DEVICE RATHER THAN STOPPING THE BED, and that is the whole decision.**
+  Suspending freezes the audio CLOCK, so the round comes back mid-bar exactly where it was
+  left; stopping and starting would replay the match bed's drum count-in (`openBars`), which
+  announces a match beginning at somebody returning to one thirty turns old.
+- **AND NOTHING ELSE HAD TO CHANGE, which is why one line does it.** `pump` already refuses
+  to schedule on a context that is not running and already catches `nextAt` up when it
+  starts again, so a sleeping bed costs nothing and cannot come back as a thousand notes at
+  once; `play` already drops a cue on a context that is not running, which is the same rule
+  as a cue before the first gesture. Both were written for the gap while `resume()` settles
+  and both turn out to be exactly this feature's plumbing.
+- **`visibilitychange`, NEVER `blur`.** A window loses focus for a notification, a dev-tools
+  panel or a second window beside it, all of which leave the game perfectly visible — cutting
+  the music for any of them is the feature firing when nothing has happened. Visibility is
+  what a WebView backgrounded by the OS and a tab switched away from both report.
+- **It does NOT fire on registration.** The caller's audio is in whatever state boot left it
+  in, and announcing "visible" at boot would resume a device no gesture has unlocked yet.
+- **The guard round the handler is about the CRASH PANEL, not the listener.** An exception
+  out of a listener does not unregister it — the browser catches it and reports it on
+  `window.onerror`, which here is `platform/crash.ts` putting a full-screen panel over the
+  game. Switching apps is not a crash. The first test asserted the listener survived, which
+  it does either way and which a mutation sailed through; what it asserts now is that
+  nothing reaches `window.onerror`.
 
 **NO EMOJI, AND A TEST SAYS SO** (`src/ui/__tests__/no-emoji.test.ts`). §10 has said this
 since the beginning and every screen was cleaned by hand, which is exactly why the MATCH

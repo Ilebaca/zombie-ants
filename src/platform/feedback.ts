@@ -80,6 +80,19 @@ export interface Feedback {
    */
   setMusicEnabled(on: boolean): void;
   setHaptics(on: boolean): void;
+  /**
+   * Is the game on screen?
+   *
+   * Switching to another app leaves the game RUNNING — that is what makes it there again
+   * the moment it is switched back to — and a bed that goes on playing out of an app
+   * nobody is looking at is the game talking over whatever they actually opened.
+   *
+   * It SUSPENDS the device rather than stopping the bed, and that is the whole decision.
+   * Suspending freezes the audio clock, so the round comes back mid-bar exactly where it
+   * left off; stopping and starting would replay the match bed's drum count-in, which
+   * announces a match beginning at somebody returning to one thirty turns old.
+   */
+  setAwake(on: boolean): void;
   /** Release the audio device. A match screen torn down must not hold one open. */
   close(): void;
 }
@@ -991,6 +1004,30 @@ export class WebFeedback implements Feedback {
   setHaptics(on: boolean): void { this.haptics = on; }
 
   /**
+   * Put the whole device to sleep while the game is off screen, and wake it on return.
+   *
+   * Nothing else has to know. `pump` refuses to schedule on a context that is not
+   * running and catches `nextAt` up when it starts again, so a suspended bed costs
+   * nothing and cannot come back as a thousand notes at once; `play` already drops a cue
+   * on a context that is not running, which is the same rule as a cue before the first
+   * gesture — a sound that arrives late is worse than one that never came.
+   *
+   * There may be no device yet, which is the ordinary case: the game is backgrounded
+   * before anybody has pressed anything. `unlock` resumes whatever it finds.
+   */
+  setAwake(on: boolean): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    try {
+      if (on) { if (ctx.state === "suspended") void ctx.resume(); }
+      else if (ctx.state === "running") void ctx.suspend();
+    } catch {
+      // A browser that will not suspend keeps playing, which is the behaviour this
+      // replaces rather than something broken.
+    }
+  }
+
+  /**
    * Create the audio device, on a gesture.
    *
    * Also RESUMES it: a context created before the gesture — or suspended when the tab went
@@ -1303,6 +1340,7 @@ export class SilentFeedback implements Feedback {
   unlock(): void {}
   setSound(_on: boolean): void {}
   setHaptics(_on: boolean): void {}
+  setAwake(_on: boolean): void {}
   close(): void {}
 }
 

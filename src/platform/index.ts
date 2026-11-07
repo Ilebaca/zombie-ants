@@ -6,6 +6,7 @@ export { takeNewerBuild } from "./freshness";
 export { goOffline, resetOffline } from "./offline";
 export { CapacitorStore, isNative, loadNative } from "./native";
 export { onHardwareBack } from "./back";
+export { onAwake } from "./awake";
 export type { BackHandler } from "./back";
 export { MemoryStore, defaultStore, readJson, writeJson } from "./storage";
 export type { KeyValueStore } from "./storage";
