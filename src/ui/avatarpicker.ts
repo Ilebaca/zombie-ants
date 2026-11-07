@@ -19,7 +19,7 @@
  */
 import {
   AVATAR_IDS, DEFAULT_AVATAR, FREE_AVATARS, HATCH_AVATARS, ROAD_AVATARS, TRAITS_CHAPTER,
-  avatarProgress,
+  avatarName, avatarProgress,
 } from "../platform";
 import type { ProfileStore } from "../platform";
 import { avatarFace, el, redraw, screenEl, screenHeader } from "./chrome";
@@ -62,16 +62,6 @@ export function buildAvatarPicker(
     wrap.id = "avBody";
 
     /**
-     * HOW MANY OF THEM YOU HAVE, AS A LABEL ON THE SCREEN.
-     *
-     * It rode the header's subtitle, which is gone everywhere (§ A TITLE IS NOT A
-     * BLOCK) — and it is not a subtitle anyway: a title says what the screen is and
-     * this is the one number the screen is ABOUT. It reads as a section label over the
-     * thing it counts, which is where every other count on these screens sits.
-     */
-    wrap.appendChild(el("div", "secthead", `Collected ${has} of ${of}`));
-
-    /**
      * THE ONE BEING WORN, ABOVE THE REST AND AT THE SIZE IT IS CHOSEN AT.
      *
      * The grid is five across so the collection reads at a glance, which makes every
@@ -83,10 +73,28 @@ export function buildAvatarPicker(
     const worn = store.face;
     const hero = el("div", "av-hero");
     hero.appendChild(avatarFace(worn, 96, "av-hero-f"));
-    hero.appendChild(el("div", "av-hero-k", source(worn)));
+    /**
+     * AND THE LINE UNDER IT IS THE FACE'S NAME, asked for directly: "instead of the
+     * road name it has to be the name of the icon."
+     *
+     * It said where the avatar came FROM — "Colony Road · chapter 5" — which is a fact
+     * about a face you have not got yet, and the hero is the one you are WEARING. The
+     * source is still written on every tile (§ EVERY CONTROL SAYS WHAT IT IS) and under
+     * the grid for the ones that are locked, which is where somebody asking "how do I
+     * get that" is looking.
+     */
+    hero.appendChild(el("div", "av-hero-k", avatarName(worn)));
     wrap.appendChild(hero);
 
-    wrap.appendChild(el("div", "secthead", `Collected  ${has} / ${of}`));
+    /**
+     * HOW MANY OF THEM YOU HAVE, ONCE, DIRECTLY OVER THE GRID IT COUNTS.
+     *
+     * It was printed twice — above the hero and again above the tiles — which is the
+     * same fault the cooldown had on the species page: a number said twice on one
+     * screen reads as two different numbers until you check. The one that stays is the
+     * one touching the thing it is about.
+     */
+    wrap.appendChild(el("div", "secthead", `Collected ${has} of ${of}`));
 
     const grid = el("div", "avgrid");
     grid.id = "avGrid";
@@ -97,11 +105,14 @@ export function buildAvatarPicker(
       tile.type = "button";
       tile.dataset.av = id;
       tile.appendChild(avatarFace(id, 62, "av-f"));
-      // A tile is a picture with no words on it at any width, so the name it carries is
-      // where it came from (§ EVERY CONTROL SAYS WHAT IT IS).
+      // A tile is a picture with no words on it at any width, so what it carries is the
+      // face's NAME and where it came from (§ EVERY CONTROL SAYS WHAT IT IS). The name
+      // leads, because that is what the tile is a picture OF; the source is the second
+      // half and is the whole answer on a locked one.
+      const name = avatarName(id);
       const label = had
-        ? (on ? `Worn · ${source(id)}` : `Wear this avatar · ${source(id)}`)
-        : `Locked · ${source(id)}`;
+        ? (on ? `${name} · worn · ${source(id)}` : `Wear ${name} · ${source(id)}`)
+        : `${name} · locked · ${source(id)}`;
       tile.title = label;
       tile.setAttribute("aria-label", label);
       tile.setAttribute("aria-pressed", String(on));

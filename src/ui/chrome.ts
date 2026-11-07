@@ -10,7 +10,7 @@
  */
 import {
   ROAD_CHAPTER_STOPS, compact, freeReward, passReward, rungOfChapter, stopColony,
-  stopReached,
+  stopReached, tierOf,
 } from "../platform";
 import { faceOf } from "../platform";
 import type { Profile, ProfileStore } from "../platform";
@@ -624,6 +624,19 @@ export function setupSteps(current: number, total = 2): HTMLElement {
  * keeps its drawn face. Handing a skinned colony its painted icon would make wearing a
  * skin do nothing on every screen that shows a face, silently.
  *
+ * AND IT STANDS ON ITS RARITY, asked for directly: "wherever the icons of the species are
+ * shown they need to be shown with their respective coloured backgrounds that shows
+ * rarity." The Antarium has painted a colony's tile in its tier since that screen was
+ * drawn to the design, and every OTHER place a face appears — the profile's collection
+ * strip, a friend row, the ladder, the opponent search, the sign-in roster, the result
+ * card — showed the same head on whatever the page happened to be. So the same fact was
+ * said in colour on one screen and nowhere else.
+ *
+ * It is set HERE rather than on each box, which is the whole reason this function exists
+ * (§7): a background per calling site is twelve places to fix when a rung's colour moves,
+ * and the twelfth is the one that gets missed. Inline, because it is read off the SPECIES
+ * — a stylesheet cannot know which rung a given face is on.
+ *
  * jsdom has no canvas and a screen must survive a context it cannot draw into (§6), so a
  * null context returns a blank canvas rather than throwing.
  */
@@ -638,6 +651,7 @@ export function antPortrait(
     img.width = size;
     img.height = size;
     img.style.objectFit = "cover";
+    img.style.background = tierOf(id).fill;
     if (cls) img.className = cls;
     // Silent, for the reason the canvas below is: the face always sits inside something
     // that is already named, and a second announcement is noise rather than access.
@@ -648,6 +662,7 @@ export function antPortrait(
   const cv = document.createElement("canvas");
   cv.width = size;
   cv.height = size;
+  cv.style.background = tierOf(id).fill;
   if (cls) cv.className = cls;
   // DECORATION, and marked as such. A drawn face always sits inside something that is
   // already named — a button, a row, a card with the colony's name beside it — so a screen

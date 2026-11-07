@@ -5,7 +5,7 @@
  * separate so buying the pass later never pays an already claimed reward twice.
  */
 import {
-  REGION_CHAPTERS, ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, chapterOf, compact, isChapterEnd,
+  REGION_CHAPTERS, ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, avatarName, chapterOf, compact, isChapterEnd,
   regionName, regionOf, roadKey, roadStops,
 } from "../platform";
 import type { ProfileStore, RoadReward, RoadStop } from "../platform";
@@ -40,7 +40,7 @@ const payouts = (r: RoadReward): Payout[] => [
 
 /** The label a button carries, so a disc showing only an icon still says what it is. */
 const spoken = (r: RoadReward): string =>
-  r.avatar ? "A new avatar" : payouts(r).map((p) => `+${p.amount} ${p.name}`).join(" and ");
+  r.avatar ? avatarName(r.avatar) : payouts(r).map((p) => `+${p.amount} ${p.name}`).join(" and ");
 
 export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop: () => void): HTMLElement {
   const root = screenEl("achievements");
@@ -248,7 +248,9 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop
       const line = el("div", "rd-popline");
       const disc = el("span", "rd-popic");
       disc.appendChild(avatarFace(reward.avatar, 30, "rd-face"));
-      line.append(disc, el("span", "rd-popu", "A new avatar"));
+      // NAMED, not "a new avatar". Every other checkpoint says exactly what it paid,
+      // and a face is the one reward on this road that has a name of its own.
+      line.append(disc, el("span", "rd-popu", avatarName(reward.avatar)));
       card.appendChild(line);
     }
     for (const p of payouts(reward)) {

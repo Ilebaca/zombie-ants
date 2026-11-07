@@ -75,6 +75,86 @@ export const FREE_AVATARS: readonly string[] =
  */
 export const DEFAULT_AVATAR: string = FREE_AVATARS[0] as string;
 
+/**
+ * WHAT EACH FACE IS CALLED.
+ *
+ * Asked for directly, with the picker's hero in mind: "instead of the road name it has
+ * to be the name of the icon — look at every icon and give it a name based on what's on
+ * it, make some fun names, not classic."
+ *
+ * So these are read off the PICTURES, one at a time, and they are the one thing in this
+ * file that cannot be derived from anything: a name is a judgement about a drawing, the
+ * same way the ORDER of `ROAD_AVATARS` is. A bedsheet ghost, a snail with a moon on its
+ * shell, an ant that has been in amber since the Cretaceous — the name says what you are
+ * looking at and has a bit of fun doing it, because ninety-eight entries of "Red Ant 14"
+ * is a spreadsheet rather than a collection.
+ *
+ * They live here rather than in `ui/` for the reason the three lists do: this file is
+ * the one table of what an avatar IS, it holds no url, and a second table anywhere would
+ * be a second place to keep in step. A test holds that every id has a name and that no
+ * two share one — two faces with one name is a collection a player cannot talk about.
+ */
+const AVATAR_NAMES: Readonly<Record<string, string>> = {
+  av30: "Scout Dustgoggle", av31: "Bedsheet Boo",
+  av32: "Toadstool Trickster", av33: "Gemjaw the Grim",
+  av34: "The Acorn Inn", av35: "Pillowfluff Moth",
+  av36: "Grumpy Rollypoly", av37: "Dewdrop Hoodling",
+  av38: "Pocketful of Pollen", av39: "The Last Berry",
+  av40: "Admiral Breadcrumb", av41: "Snowfluff Jumper",
+  av42: "Thunderquiff", av43: "The Thornheart Crystal",
+  av44: "Nightlight Napper", av45: "Spotty Speedster",
+  av46: "Bad Mood Bitey", av47: "The Petal Assassin",
+  av48: "Nutbolt the Fixer", av49: "Professor Pagefeeler",
+  av50: "Velvet Troublemaker", av51: "Moonshell Dozer",
+  av52: "Sealed by the Queen", av53: "Boulder-Shover Scarab",
+  av54: "Snaggletooth", av55: "Pharaoh of Crumbs",
+  av56: "Peacock Showoff", av57: "Jade Snapjaw",
+  av58: "Bongo Marchmaster", av59: "Blue Buzzbolt",
+  av60: "Travelling Lutebug", av61: "The Honeylamp Hood",
+  av62: "Stuck Since Forever", av63: "The Stargazing Shroom",
+  av64: "Lucky Little Jester", av65: "Pickaxe Tunneller",
+  av66: "The Fern Compass", av67: "Daydream Butterfly",
+  av68: "Hammerhorn", av69: "Deep Bubble Diver",
+  av70: "General Grumpyboots", av71: "Frosty Seedhauler",
+  av72: "Berry Tart Baker", av73: "Mister Longsnoot",
+  av74: "Jade Temple Guard", av75: "Acorn Ninja",
+  av76: "Glasswing Drifter", av77: "Jellybean Spider",
+  av78: "Rainy Day Bloomhead", av79: "The Blueberry Haul",
+  av80: "The Twig Sail", av81: "Hardhat Hammerhand",
+  av82: "The Sun Pharaoh", av83: "Just a Happy Worker",
+  av84: "Seed Hugger", av85: "Blue Scarf Worker",
+  av86: "Magmacrack", av87: "Frostcrown",
+  av88: "The Fossil Fern", av89: "Pink Cap Lurker",
+  av90: "Thistle Bringer", av91: "Bubblegum Beetle",
+  av92: "Quill and Ledger", av93: "Splotchy Painter",
+  av94: "Dewdrop Crown", av96: "The Walnut Submarine",
+  av97: "Flower Hat Pathfinder", av98: "Frosting Swirler",
+  av99: "Eggshell Warbeater", av100: "Circus Rollball",
+  av101: "Scrollwing Messenger", av102: "Always On Time",
+  av103: "Racing Rhino", av104: "Ice Cream Scooper",
+  av105: "Cherry Jester", av106: "Masked Luchador",
+  av107: "Fossil Brusher", av108: "Bubbling Tinkerer",
+  av109: "Biker Fuzz", av110: "Orchid Songstress",
+  av111: "Seedpod Pilot", av112: "Mailbox Postie",
+  av113: "Carved Mask Dancer", av114: "Storm in a Jar",
+  av115: "Pancake Flipper", av116: "Sleepy Tea Sipper",
+  av117: "Fungal Sceptre Bearer", av118: "Megaphone Buccaneer",
+  av119: "Clockwork Keyback", av120: "Mothcloak Oracle",
+  av121: "Top Hat Conjurer", av122: "Acorn Referee",
+  av124: "Desert Longnose", av125: "Peacock Fan Dancer",
+  av126: "Maestro Croak", av127: "Drummer Hopper",
+  av128: "Fiddling Grasshopper", av129: "Spotted Potioneer",
+};
+
+/**
+ * The name to print, and never an empty string.
+ *
+ * An id with no entry falls back to the id itself rather than to nothing: a hero with a
+ * blank line under it reads as a screen that failed, where `av43` reads as a face whose
+ * name has not been written yet — the same null-fallback shape the art folder uses.
+ */
+export const avatarName = (id: string): string => AVATAR_NAMES[id] ?? id;
+
 /** The face to DRAW: the one chosen, or the one every colony starts behind. */
 export const faceOf = (chosen: string | null | undefined): string =>
   chosen ?? DEFAULT_AVATAR;

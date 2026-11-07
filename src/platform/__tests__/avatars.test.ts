@@ -10,7 +10,7 @@
 import { describe, expect, it } from "vitest";
 import {
   AVATAR_IDS, AVATAR_TIER, DEFAULT_AVATAR, FREE_AVATARS, HATCH_AVATARS, ROAD_AVATARS,
-  ROAD_CHAPTERS, avatarProgress, avatarTier, faceOf, isAvatar, isFreeAvatar, lockedAvatars,
+  ROAD_CHAPTERS, avatarName, avatarProgress, avatarTier, faceOf, isAvatar, isFreeAvatar, lockedAvatars,
   roadAvatar, rollAvatar,
 } from "../index";
 import { TIER_IDS } from "../../engine";
@@ -244,5 +244,33 @@ describe("normalising a save", () => {
     });
     expect(p.avatars).toEqual([]);
     expect(p.avatar).toBeNull();
+  });
+});
+
+/**
+ * EVERY FACE IS NAMED, and no two share one.
+ *
+ * The names are read off the PICTURES one at a time — a judgement about a drawing, like
+ * the order of `ROAD_AVATARS` — so the only thing a test can hold is that the table is
+ * complete and that it is a set. A missing entry falls back to the id, which on the
+ * picker's hero would read as "av43"; two faces with one name is a collection a player
+ * cannot talk about.
+ */
+describe("what each face is called", () => {
+  it("names every avatar there is", () => {
+    for (const id of AVATAR_IDS) {
+      expect(avatarName(id), `${id} has no name`).not.toBe(id);
+      expect(avatarName(id).length, `${id}'s name is empty`).toBeGreaterThan(2);
+    }
+  });
+
+  it("gives no two the same name", () => {
+    const names = AVATAR_IDS.map((id) => avatarName(id));
+    expect(new Set(names).size).toBe(AVATAR_IDS.length);
+  });
+
+  /** And the fallback is the ID rather than nothing, so a hero is never a blank line. */
+  it("falls back to the id for a face that is not in the table", () => {
+    expect(avatarName("av999")).toBe("av999");
   });
 });

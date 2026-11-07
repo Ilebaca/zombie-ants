@@ -2087,6 +2087,59 @@ belongs to the save rather than to a species, and it is never worn by an opponen
   picker, the road and BOTH hatch cards asserting nothing borrows `.avatar` — the first
   version of that test walked only the first two and the mutation sailed through it.
 
+**AND EVERY FACE HAS A NAME** (`AVATAR_NAMES` in `platform/avatars.ts`). Asked for
+directly, with the picker's hero in mind: "instead of the road name it has to be the name
+of the icon — look at every icon and give it a name based on what's on it, make some fun
+names, not classic."
+- **THEY ARE READ OFF THE PICTURES, one at a time**, which makes them the second thing in
+  that file that cannot be derived from anything — the first being the ORDER of
+  `ROAD_AVATARS`. A bedsheet ghost, a snail with a moon on its shell, an ant that has
+  been in amber since the Cretaceous: the name says what you are looking at and has a bit
+  of fun doing it, because ninety-eight entries of "Red Ant 14" is a spreadsheet rather
+  than a collection. Renaming one is an edit to that table and to nothing else.
+- **THE TABLE IS IN `platform/` with the other three lists**, because that file is the one
+  catalogue of what an avatar IS and it still holds no url. A second table in `ui/` would
+  be a second place to keep in step the day an id moves.
+- **A MISSING ENTRY FALLS BACK TO THE ID**, never to nothing: a hero with a blank line
+  under it reads as a screen that failed where `av43` reads as a face whose name has not
+  been written. A test holds that all ninety-eight have one and that no two share one —
+  two faces with one name is a collection a player cannot talk about.
+- **AND IT REPLACED THE SOURCE ON THE PICKER'S HERO.** That line said where the avatar
+  came from — "Colony Road · chapter 5" — which is a fact about a face you have NOT got,
+  and the hero is the one being worn. The source is still on every tile and under the
+  grid, which is where somebody asking "how do I get that one" is looking; the tile's
+  label leads with the name now and keeps the source behind it.
+- **THE COUNT IS PRINTED ONCE**, directly over the grid it counts — reported as
+  "collection 23/98 two times, remove the top one". It rode above the hero as well, and
+  a number said twice on one screen reads as two different numbers until it is checked.
+- **AND THE ROAD AND THE HATCH NAME IT TOO.** A checkpoint said "A new avatar" and both
+  hatch cards said "Avatar": every other reward on the road states exactly what it pays
+  and every other prize in a ten-hatch names itself, so those were the two that would
+  not — on the one reward with a name of its own.
+
+**THE PROFILE PRINTS THE COLONY IN FULL** (`pf-colony-n`). Asked for directly: "we need
+to see the exact colony number, not 2K — that's shortened for other screens like the home
+screen." `compact()` exists because the figure rides a 30px banner over artwork and a chip
+in the chrome, where seven digits do not fit (§8a); the profile is the one screen that is
+ABOUT the number, with a whole card for it, and "2K" is any colony between 2,000 and
+2,099. The size clamps below about 470px wide so `5,000,000` still fits a 320 phone — the
+upper bound is the 42px it has always been, so nothing wider changes.
+
+**AND A SPECIES FACE STANDS ON ITS RARITY** (`antPortrait` in `chrome.ts`). Asked for
+directly: "wherever the icons of the species are shown they need to be shown with their
+respective coloured backgrounds that shows rarity." The Antarium has painted a colony's
+tile in its tier since that screen was drawn to the design (§ THE ANTARIUM), and every
+other place a face appears — the profile's collection strip, a friend row, the ladder, the
+opponent search, the sign-in roster, the result card, the match history — drew the same
+head on whatever the page happened to be, so one screen said the rarity in colour and
+twelve said nothing.
+- **It is set in `antPortrait`, not at the calling sites**, which is the whole reason that
+  function exists (§7): a background per screen is twelve places to fix when a rung's
+  colour moves, and the twelfth is the one that gets missed.
+- **INLINE, because the rung is read off the SPECIES** and no stylesheet can know which
+  rung a given face is on — and it has to be set on BOTH tags, since a painted colony
+  answers with an `<img>` and a drawn one with a `<canvas>` (§ A COLLECTION CARD).
+
 **THE PROFILE IS DRAWN TO THE DESIGN TOO** (the PROFILE block at the foot of
 `skin.css`). The fourth screen brought into the SHARED DESIGN LANGUAGE, after home, the
 shop and the Antarium — and the FIRST that was not handed over as a mock-up, asked for

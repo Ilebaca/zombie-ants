@@ -2799,8 +2799,12 @@ button:not(.playbtn):active,
   text-transform: uppercase;
   color: var(--muted);
 }
+/* IT IS WRITTEN OUT IN FULL on this screen, so the size has to survive seven digits
+   and a pair of separators. `5,000,000` at 42px is about 230px of glyph, which fits
+   the 360 column and does not fit a 320 phone's 296; the clamp tops out at the size
+   it has always been and only ever takes something away below about 470px wide. */
 .pf-colony-n {
-  font-size: 42px;
+  font-size: clamp(26px, 9vw, 42px);
   font-weight: 900;
   line-height: 1.05;
   letter-spacing: -1.4px;

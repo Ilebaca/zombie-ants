@@ -13,8 +13,8 @@ import {
 import type { SpeciesId } from "../../engine";
 import {
   COLONY_START, GRANARY_LEVELS, GRANARY_MAX, MemoryStore, ProfileStore, REGIONS,
-  RESEARCH_TOTAL_MAX, ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, ROAD_STOPS, SPECIES_UNLOCK, TIERS,
-  chapterOf, compact, freeReward, granaryFull, passReward, regionName, regionOf, roadKey, stopColony, tierOf,
+  RESEARCH_TOTAL_MAX, ROAD_AVATARS, ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, ROAD_STOPS, SPECIES_UNLOCK, TIERS,
+  avatarName, chapterOf, compact, exact, freeReward, granaryFull, passReward, regionName, regionOf, roadKey, stopColony, tierOf,
 } from "../../platform";
 import { buildAnthill } from "../anthill";
 import { buildProfile } from "../profile";
@@ -293,6 +293,20 @@ describe("profile screen", () => {
     for (const gone of ["Tunnels dug", "Nests cracked", "Abilities cast", "Turns played"]) {
       expect(text, `"${gone}" came back onto the profile`).not.toContain(gone);
     }
+  });
+
+  /**
+   * THE COLONY IS WRITTEN OUT IN FULL HERE, asked for directly: "we need to see the
+   * exact colony number, not 2K — that's shortened for other screens like the home
+   * screen." `compact()` is for a 30px banner and a chip in the chrome; this card is
+   * what the screen is about, and 2K is any number between 2,000 and 2,099.
+   */
+  it("prints the colony exactly rather than rounded", () => {
+    const s = played();
+    s.update((p) => { p.colony = 1_234_567; });
+    const fig = buildProfile(s, nowhere).querySelector(".pf-colony-n");
+    expect(fig?.textContent).toBe(exact(1_234_567));
+    expect(fig?.textContent, "the profile still rounds the colony").not.toBe(compact(1_234_567));
   });
 
   it("says nothing rather than zero for a win that has never happened", () => {
@@ -914,7 +928,12 @@ describe("colony road screen", () => {
         expect(disc.querySelector(".rd-face"), "an avatar rung shows no face").toBeTruthy();
         expect(disc.querySelector(".rd-amount"), "an empty figure plate over the face")
           .toBeNull();
-        expect(disc.getAttribute("aria-label")).toBe("A new avatar");
+        // NAMED, now that every face has one — the road says exactly what it pays at
+        // every other checkpoint and this was the one that would not. Which face goes
+        // on which chapter is held in `avatars.test.ts`; what this loop is about is
+        // that the rung carries a real name rather than "A new avatar".
+        expect(ROAD_AVATARS.map((av) => avatarName(av)))
+          .toContain(disc.getAttribute("aria-label"));
         continue;
       }
       const amount = (free.mycel ?? 0) + (bonus.mycel ?? 0)
