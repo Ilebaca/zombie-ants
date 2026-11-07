@@ -8195,6 +8195,56 @@ button:not(.playbtn):active,
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 8px;
+  /* The locked tiles' bubble is positioned against the GRID, never against a tile: a
+     tile clips its own picture to the rounded corner, so a bubble inside one is cut off
+     at its edge (§ the top bar's clipped tap targets). */
+  position: relative;
+}
+
+/* HOW A LOCKED FACE IS GOT, ON A TAP, ABOVE THE TILE IT IS ABOUT. The sentence used to
+   live in `title` and nowhere else, which on a phone is nowhere at all. It wears the
+   app's own card — face, 7px corner and the ledge — because it is a pop-up like the
+   result card, and `!important` is what gets the ledge past the blanket that clears
+   every shadow in the app.
+   IT TAKES NO TAPS. A bubble that swallowed one would be a lid over the tile behind it
+   and over the press that is meant to put it away; `left` and `--tailx` are set from
+   JavaScript, which is where the measuring is explained. */
+.av-hint {
+  position: absolute;
+  z-index: 3;
+  display: block;
+  width: max-content;
+  max-width: min(200px, 100%);
+  padding: 6px 9px;
+  border-radius: var(--r-card);
+  background: var(--hud-card);
+  box-shadow: var(--hud-ledge) !important;
+  color: var(--hud-ink);
+  font-size: var(--fs-small);
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+  pointer-events: none;
+}
+/* The tail is what says WHICH of five tiles eight pixels apart the bubble is about,
+   once the box has been pushed back inside the grid at either end of a row. */
+.av-hint::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: var(--tailx, 50%);
+  margin-left: -5px;
+  border: 5px solid transparent;
+  border-bottom: 0;
+  border-top-color: var(--hud-card);
+}
+/* The first row has nothing above it but the "Collected 23 of 98" heading, so a bubble
+   there goes UNDER its tile instead and the tail turns over with it. */
+.av-hint.below::after {
+  top: auto;
+  bottom: 100%;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid var(--hud-card);
 }
 /* EVERY TILE IS FRAMED, not only the worn one. The art is ninety-eight different
    full-bleed squares, so without an edge the grid reads as one sheet of colour with no
@@ -8223,7 +8273,9 @@ button:not(.playbtn):active,
    reason to walk the road and open the hatch. Dimmed rather than padlocked, because the
    tile already says where it comes from (`title`) and a padlock would say only "no".
    Its frame dims with it, or a grey picture sits inside a bright edge. */
-.av-t.off { cursor: default; border-color: rgba(255, 255, 255, .07); }
+/* A LOCKED TILE IS STILL A CONTROL: a tap on it raises the bubble that says how the
+   face is got, so the cursor may not say "nothing here". */
+.av-t.off { cursor: pointer; border-color: rgba(255, 255, 255, .07); }
 .av-t.off .av-f { filter: grayscale(1) brightness(.5); }
 /* The worn one is the only tile with a COLOURED edge, so "which am I wearing" is
    answered by the grid as well as by the hero above it. */

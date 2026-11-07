@@ -2118,6 +2118,64 @@ names, not classic."
   under it reads as a screen that failed where `av43` reads as a face whose name has not
   been written. A test holds that all ninety-eight have one and that no two share one —
   two faces with one name is a collection a player cannot talk about.
+**AND A LOCKED FACE SAYS HOW IT IS GOT, ON A TAP** (`route`, `showHint`, `hintSide` in
+`ui/avatarpicker.ts`; `.av-hint` in `skin.css`). Asked for directly: "if a player taps on
+an icon that he doesn't have it should pop up a message above it that says how can he get
+that icon."
+- **THE SENTENCE WAS ALREADY THERE AND NOWHERE A FINGER COULD REACH.** Every tile has
+  carried its source in `title`/`aria-label` since the screen was built — and a phone has
+  no hover, so on the one device this game is played on, the locked nine-tenths of this
+  screen said nothing at all.
+- **SO A LOCKED TILE IS NOT DISABLED ANY MORE, which reverses what stood here.** It was,
+  under "a locked tile is DISABLED rather than refusing on tap with a toast — one
+  mechanism, and a visible one". That argument still holds against a TOAST; it does not
+  survive the tile having something to say, and a disabled button dispatches no click at
+  all, so the tap had nowhere to go. What still has to be true is that pressing one does
+  not WEAR it, and a test holds exactly that.
+- **ONE DELEGATED HANDLER, because three things share one press** — wearing a face,
+  raising a bubble, and putting one away. Split between a per-tile `onclick` and a
+  listener on the page they fight over the same click: the tile's raises the bubble and
+  the page's, firing later up the same path, takes it straight back down.
+- **THE OPEN BUBBLE IS THE STATE**, found by querying the grid. A field on the screen
+  would have to be cleared on every render — the grid is rebuilt whole when a face is
+  worn — and a stale node reference is the fault the tour's "look the target up on every
+  measure" rule exists for. A second tap on the same face puts it away, because a bubble
+  dismissible only by tapping something else is one to be stuck with.
+- **AND WEARING ONE PUTS IT AWAY BY REBUILDING, not by a second `remove()`.** That line
+  was there and the mutation deleting it passed every test — `render()` throws the grid
+  out and the bubble with it. Unreachable code dressed as a rule, the ability card's clock
+  guard again.
+- **IT IS PLACED BY MEASUREMENT, and that is a deliberate exception** to "laid out, never
+  measured". The laid-out answer does not work: `.av-t` carries `overflow: hidden` to clip
+  its picture to the rounded corner, so a bubble inside one is cut off at the tile's own
+  edge — the same clip the top bar's tap targets are on record for. Positioned against the
+  GRID, `offsetLeft`/`offsetTop` give the geometry with no column arithmetic in the
+  TypeScript and nothing for the stylesheet's `repeat(5, 1fr)` to drift against. A
+  measured position goes stale on a resize, which is fine here and nowhere else: the
+  bubble lives for one tap.
+  - **IT IS CLAMPED INTO THE GRID**, or a bubble centred on the first or last column hangs
+    past the screen — and the screen is the scroller, so that is a clipped sentence and a
+    sideways scrollbar. Measured at 390 wide: 0.0px inside the left edge on column one and
+    0.3px inside the right on column five. The TAIL is what keeps it pointing at the right
+    tile once the box has been pushed back in, and it lands on the tile's centre to within
+    half a pixel.
+  - **AND IT FLIPS UNDER THE TILE ON THE FIRST ROW** (`hintSide`). There is nothing above
+    that row but the "Collected 23 of 98" heading, and the bubble landed across it with
+    half the count behind it — a sentence written over another sentence is worse than one
+    on the other side of what it points at. The tail turns over with it.
+  - **`hintSide` IS A PURE FUNCTION OF TWO NUMBERS, so a test can ask it both questions.**
+    jsdom has no layout: every offset there reads 0, which is the no-room case, so a test
+    of the placed element could only ever see one of the two answers. Where the bubble
+    actually sits was checked in a browser.
+- **IT TAKES NO TAPS** (`pointer-events: none`) and is `aria-hidden`. A bubble that
+  swallowed a press would be a lid over the tile behind it and over the press meant to
+  put it away; and the sentence is already the tile's own `aria-label`, so announced again
+  it reads as two different faces.
+- **ONE FUNCTION HOLDS BOTH WORDINGS** (`route`). "Colony Road · chapter 5" is a fact
+  about a face you HOLD and "Reach chapter 5 on the Colony Road" is the route to one you
+  do not — two sentences for two states, and written as two functions they would be two
+  copies of the same three branches.
+
 - **AND IT REPLACED THE SOURCE ON THE PICKER'S HERO.** That line said where the avatar
   came from — "Colony Road · chapter 5" — which is a fact about a face you have NOT got,
   and the hero is the one being worn. The source is still on every tile and under the

@@ -1584,6 +1584,36 @@ describe("the avatar picker", () => {
     expect(rulesFor(skin, ".av-t.on")).toMatch(/border-color:/);
   });
 
+  /**
+   * THE BUBBLE THAT SAYS HOW A LOCKED FACE IS GOT. It is positioned against the GRID,
+   * so the grid has to be a containing block — without that one declaration the bubble
+   * lands relative to the page and sits over whatever happens to be there, with the
+   * markup, the text and every jsdom assertion perfectly correct.
+   */
+  it("hangs the locked bubble off the grid, and lets a tap through it", () => {
+    expect(rulesFor(skin, ".avgrid"), "the bubble has nothing to be positioned against")
+      .toMatch(/position:\s*relative/);
+    const hint = rulesFor(skin, ".av-hint");
+    expect(hint).toMatch(/position:\s*absolute/);
+    // A bubble that took the press would be a lid over the tile behind it AND over the
+    // tap that is meant to put it away.
+    expect(hint, "the bubble swallows taps").toMatch(/pointer-events:\s*none/);
+    // It is a pop-up, so it wears the app's own card rather than the first language's.
+    expect(hint).toMatch(/background:\s*var\(--hud-card\)/);
+    expect(hint).toMatch(/border-radius:\s*var\(--r-card\)/);
+    // ...and the tail is what names one of five tiles eight pixels apart.
+    expect(rulesFor(skin, ".av-hint::after")).toMatch(/left:\s*var\(--tailx/);
+    // ...and it turns over with the bubble on the first row, which has no room above it.
+    const flipped = rulesFor(skin, ".av-hint.below::after");
+    expect(flipped, "the flipped bubble's tail still points down").toMatch(/bottom:\s*100%/);
+    expect(flipped).toMatch(/border-bottom:\s*5px solid var\(--hud-card\)/);
+  });
+
+  /** A locked tile does something now, so the cursor may not say it does not. */
+  it("keeps a pointer on a locked tile", () => {
+    expect(rulesFor(skin, ".av-t.off")).toMatch(/cursor:\s*pointer/);
+  });
+
   /** `avatarFace` answers an `<img>` or a `<canvas>` (§ A COLLECTION CARD), so a rule
    *  naming one sizes half the cases and lets the rest render at the file's own 250px. */
   it("sizes both tags everywhere it sizes a face", () => {
