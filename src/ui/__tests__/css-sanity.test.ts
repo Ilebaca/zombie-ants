@@ -1787,3 +1787,136 @@ describe("every other screen is written in the shared language", () => {
     expect(root).toMatch(/--hud-mute:\s*#9a9ca5/i);
   });
 });
+
+/**
+ * A TITLE IS A BLOCK, AND EVERY BLOCK IS PADDED THE SAME.
+ *
+ * Three reports in one line, all against the remap above: a screen title with nothing
+ * behind it, six different card paddings across the app, and a match screen still in the
+ * first language. None of it is visible to a jsdom test — there is no layout, the markup
+ * never changed, and only the cascade decides any of it.
+ */
+describe("every block is padded the same", () => {
+  const whole = read("skin.css");
+  const pad = designBlock(whole, "A TITLE IS A BLOCK, AND EVERY BLOCK IS PADDED THE SAME");
+
+  it("still has a block to check", () => {
+    expect(pad).toMatch(/\.screentop\s*\{/);
+  });
+
+  /** THE HEADER IS A BLOCK, and it is the shared card like everything under it. */
+  it("gives the header the card's face, corner, padding and ledge", () => {
+    const head = ruleFor(pad, ".screentop");
+    expect(head).toMatch(/padding:\s*var\(--block\)/);
+    expect(head).toMatch(/border-radius:\s*var\(--r-card\)/);
+    expect(head).toMatch(/background:\s*var\(--hud-card\)/);
+    expect(head).toMatch(/box-shadow:[^;]*--hud-ledge[^;]*!important/);
+  });
+
+  /**
+   * AND THE ARROW IS A WELL, not a card inside a card. Its own ledge has to be cleared
+   * with `!important` or the earlier rule that gave it one still wins.
+   */
+  it("sinks the back arrow inside the header", () => {
+    const back = ruleFor(pad, ".screentop .backbtn");
+    expect(back).toMatch(/background:\s*var\(--hud-well\)/);
+    expect(back).toMatch(/box-shadow:\s*none\s*!important/);
+  });
+
+  /** ONE PADDING, and it is the gap the screens are already spaced by. */
+  it("pads every card with the one token", () => {
+    const pads = [...pad.matchAll(/padding:\s*([^;]+);/g)]
+      .map((m) => (m[1] ?? "").trim())
+      .filter((v) => !/^(0|var\(--(block|inrow)\)( var\(--(block|inrow)\))?)$/.test(v));
+    expect(pads, "a block pads itself with its own number").toEqual([]);
+  });
+
+  /** AND ONE GAP under the header, owned by the body rather than by what follows it. */
+  it("lets the body own the gap under the header", () => {
+    const body = ruleFor(pad, ".screenbody");
+    expect(body).toMatch(/padding-top:\s*var\(--block\)/);
+    expect(body).toMatch(/padding-bottom:\s*var\(--block\)/);
+    expect(pad, "the wrappers inside it still add their own")
+      .toMatch(/\.shopwrap, \.setwrap[\s\S]*?padding-top:\s*0/);
+    expect(pad, "whatever opens a screen keeps a top margin")
+      .toMatch(/> :first-child \{\s*margin-top:\s*0/);
+  });
+
+  /** A NOTE IS A WELL — flat and darker, never a tinted box of its own colour. */
+  it("sinks the notices rather than tinting them", () => {
+    const at = pad.indexOf(".passnote, .hatchnote, .lbnote)");
+    expect(at, "the notices are out of the well group").toBeGreaterThan(-1);
+    const note = pad.slice(at, pad.indexOf("}", at));
+    expect(note).toMatch(/background:\s*var\(--hud-well\)/);
+    expect(note).toMatch(/box-shadow:\s*none\s*!important/);
+  });
+
+  /**
+   * AND THE MATCH IS THE SAME APP. Its chips, its clock and its four actions were the
+   * last things in the first language — green pills and four differently coloured tiles
+   * over artwork every other screen had stopped sitting on.
+   */
+  it("gives the match chrome the shared card", () => {
+    const chips = ruleFor(pad, ".match :is(.stat, .hivechip, .timeband)");
+    expect(chips).toMatch(/background:\s*var\(--hud-card\)/);
+    expect(chips).toMatch(/border-radius:\s*var\(--r-card\)/);
+    expect(chips).toMatch(/box-shadow:[^;]*--hud-ledge[^;]*!important/);
+    const btn = ruleFor(pad, ".match .brow .btn");
+    expect(btn).toMatch(/background:\s*var\(--hud-card\)/);
+    expect(btn).toMatch(/box-shadow:[^;]*--hud-ledge[^;]*!important/);
+  });
+
+  /**
+   * ARMED IS A FRAME, NOT A WASH, and the ledge has to survive beside it — a box-shadow
+   * is one declaration, so an armed state that forgot to repeat the ledge would quietly
+   * flatten the button it is marking.
+   */
+  it("marks an armed action with a ring that keeps its ledge", () => {
+    const at = pad.indexOf(".match .brow .btn.on,");
+    expect(at, "the armed rule is gone").toBeGreaterThan(-1);
+    const armed = pad.slice(at, pad.indexOf("}", at));
+    expect(armed).toMatch(/inset 0 0 0 2px currentColor/);
+    expect(armed).toMatch(/--hud-ledge/);
+    expect(armed).toMatch(/!important/);
+  });
+
+  /** AND END TURN IS THE ONE BRIGHT THING, the rule home follows with PLAY. */
+  it("leaves one green slab on the row", () => {
+    expect(ruleFor(pad, ".match .brow .btn.end")).toMatch(/background:\s*var\(--hud-go\)/);
+    expect(ruleFor(pad, ".match .brow .btn.surr")).toMatch(/background:\s*var\(--hud-card\)/);
+  });
+});
+
+/**
+ * AND THE SETUP SCREEN'S HEAD IS A BLOCK ONE LEVEL OUT.
+ *
+ * `setupSteps` is appended BESIDE `screenHeader` rather than inside it, so a plate on
+ * `.screentop` leaves the two step dots just below the card's bottom edge, reading as
+ * clipped by it. Nothing a jsdom test can see would notice: the markup is identical and
+ * only the cascade decides which box the plate lands on.
+ */
+describe("the setup screen's head is one block", () => {
+  const whole = read("skin.css");
+  const pad = designBlock(whole, "A TITLE IS A BLOCK, AND EVERY BLOCK IS PADDED THE SAME");
+
+  it("plates the whole head and not the title alone", () => {
+    const top = ruleFor(pad, "#formation .setuptop");
+    expect(top).toMatch(/background:\s*var\(--hud-card\)/);
+    expect(top).toMatch(/box-shadow:[^;]*--hud-ledge[^;]*!important/);
+    const head = ruleFor(pad, "#formation .screentop");
+    expect(head, "the title keeps a plate inside the plate").toMatch(/background:\s*none/);
+    expect(head).toMatch(/box-shadow:\s*none\s*!important/);
+  });
+
+  /**
+   * AND THE INVITATION IS IN THE FLOW. It was `position: absolute; top: 0` with the
+   * header reserving a hand-measured 78px for it — two numbers that have to agree, and
+   * the day the bar became a card with the shared padding they stopped.
+   */
+  it("lays the invitation out rather than reserving room for it", () => {
+    const bar = ruleFor(pad, "#formation .invbar");
+    expect(bar).toMatch(/position:\s*static/);
+    expect(bar).toMatch(/margin:\s*0 auto var\(--block\)/);
+    expect(ruleFor(pad, "#formation.hasinvite .setuptop")).toMatch(/padding-top:\s*0/);
+  });
+});
