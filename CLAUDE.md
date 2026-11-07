@@ -3010,6 +3010,42 @@ nagging the one player who had already done what it asked.**
     black-translucent` — which this page already sets — is the closest there is: the
     artwork runs BEHIND the clock rather than under a bar, and the clock stays. Only a
     native build can hide it there.
+  - **AND IT BROKE BOTH ENDS OF THE FRAME, because every edge in `skin.css` was written
+    for a window with system bars at its ends.** Reported the next build: "too much
+    space on top and missing some on the bottom under the main menu buttons, just a
+    bit." Every one of those rules says `ours + env(safe-area-inset-*)` — the frame's
+    own 12px margin BELOW whatever the system had taken (§ ONE INSET FOR THE FRAME'S
+    TOP AND SIDES) — and in fullscreen there is nothing in that band to sit under. The
+    window grew UP into the status bar, so the top bar sat the whole of the inset plus
+    12 down; the gesture pill went, so the inset reads 0 and the tray lost the only
+    thing lifting it off the glass. One fault, two ends.
+    - **So in fullscreen the two DO NOT STACK: the larger wins** (`max`, never `+`,
+      at `#home`, `.screen`, `.menuwrap`, the match header, the tray's lift, the
+      deck's reservation, the eight screens the bar does not stand on, and the match
+      footer). Where the inset is a real display CUTOUT it is cleared and nothing is
+      added; where it is zero the frame's own inset is kept. It can only ever take
+      space off a top edge and put space back under a bottom one, which is the
+      direction that was asked for.
+    - **AND `display-mode: fullscreen` IS THE GATE THAT KEEPS IT OFF iOS.** Safari
+      grants no display mode above `standalone`, so this block cannot reach the one
+      platform where a floor under the tray is wrong — iOS keeps the home-indicator
+      strip OUTSIDE the web view and reports 0 inside it, so a floor there stacks our
+      12 on the system's 34 and draws a 46px band of flat colour, which was measured
+      and reverted once already. The same gate keeps it off `standalone` on Android,
+      where the bars are still drawn and the sum is still the right answer.
+    - **The tray's lift and the room reserved for it are STILL one number**, because
+      a tray lifted 12 over a reservation that is not clips the last row's ledge. A
+      test asserts the two spell the same floor.
+    - **AND NOTHING COULD MEASURE THE GATE, so the rule is READ.** jsdom has no
+      display mode and headless Chromium would not grant a fullscreen document, so
+      `css-sanity` reads the block: the gate is fullscreen alone, no declaration in
+      it ADDS to an inset, and every inset sits inside a `max()`. What a browser CAN
+      answer is whether the expressions resolve at all — a nested `max()` inside a
+      `calc()` is exactly the kind of value CSS drops silently — so the block's body
+      was applied unconditionally at 390 wide and measured: the tray went from flush
+      to 13px off the edge with the reservation following it by the same 13, and the
+      drawer's 192.8px was unchanged, which is the inset reading 0 and the floor
+      holding.
   - **The manifest is precached, and a new build re-fetches it**: the worker's `install`
     adds the whole precache list from the network and `activate` deletes every other
     build's cache, so the change lands with the deploy. What it cannot do is re-install

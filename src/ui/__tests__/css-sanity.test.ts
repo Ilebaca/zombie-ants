@@ -2214,3 +2214,74 @@ describe("the pop-ups are in the design", () => {
     expect(rule, "a see-through shade still eats the taps").toMatch(/pointer-events:\s*none/);
   });
 });
+
+/**
+ * FULL SCREEN: THE INSET AND THE SAFE AREA MAY NOT ADD.
+ *
+ * Nothing a jsdom test can see would notice any of this — there is no layout, no system
+ * bars and no display mode — and nothing a BROWSER here can see either, because the one
+ * platform it is wrong on is iOS and the gate is what keeps it off iOS. So the rule is
+ * held by reading it: the gate is `display-mode: fullscreen` and nowhere inside it does
+ * a length get added to a safe-area inset.
+ */
+describe("fullscreen does not stack the frame's inset on the safe area", () => {
+  const whole = read("skin.css");
+  const block = designBlock(whole, "FULL SCREEN: THE FRAME'S INSET AND THE SAFE AREA DO NOT ADD");
+
+  it("still has a fullscreen block to check", () => {
+    expect(block.length, "the fullscreen block is gone").toBeGreaterThan(200);
+  });
+
+  /**
+   * THE GATE IS THE WHOLE SAFETY. Safari grants no display mode above `standalone`, so
+   * `fullscreen` is what cannot reach the platform where a floor under the tray draws a
+   * 46px band — and `standalone` on Android still has its bars, so the sum is still
+   * right there.
+   */
+  it("is gated on fullscreen alone", () => {
+    expect(block).toMatch(/@media \(display-mode: fullscreen\) \{/);
+    expect(block, "this must not reach standalone, where the bars are still drawn")
+      .not.toMatch(/display-mode:\s*(standalone|minimal-ui|browser)/);
+  });
+
+  it("adds nothing to a safe-area inset", () => {
+    const sums = [...block.matchAll(/\+\s*env\(safe-area-inset-[a-z]+\)/g)].map((m) => m[0]);
+    expect(sums, "fullscreen has no bar to sit under, so these would be empty margin")
+      .toEqual([]);
+  });
+
+  /** Every inset in here is one half of a `max()`, never a term of its own. */
+  it("reads every inset through max()", () => {
+    const bad: string[] = [];
+    for (const m of block.matchAll(/(^|[;{])\s*([a-z-]+)\s*:([^;}]*)/g)) {
+      const value = m[3] ?? "";
+      const inset = value.indexOf("env(safe-area-inset-");
+      if (inset === -1) continue;
+      // A `max(` BEFORE the inset: the token in front of it may be a `var()` of its own,
+      // so a paren-free window between the two cannot be what is matched on.
+      const guard = value.indexOf("max(");
+      if (guard === -1 || guard > inset) bad.push(`${m[2]}:${value.trim()}`);
+    }
+    expect(bad, "an inset outside a max() is the same stacking in another shape").toEqual([]);
+  });
+
+  /**
+   * THE TRAY'S LIFT AND THE ROOM RESERVED FOR IT ARE ONE NUMBER (§ THE BAR AND THE ROOM
+   * RESERVED FOR IT), so the floor has to be spelled the same in both — a tray lifted 12
+   * over a reservation that is not clips the last row's ledge.
+   */
+  it("lifts the tray and reserves for it by the same floor", () => {
+    const floor = "max(var(--hudgut), env(safe-area-inset-bottom))";
+    expect(block, "the tray's lift has no floor").toContain(`bottom: ${floor}`);
+    expect(block, "the deck's reservation does not match the lift")
+      .toContain(`calc(var(--navh) + ${floor})`);
+  });
+
+  /** The four top edges and the two bottom ones the bars used to hold up. */
+  it("covers every edge the system bars were holding", () => {
+    for (const sel of ["#home", ".menuwrap", ".match header", ".match footer", "#mainNav.homenav"]) {
+      expect(block, `${sel} is not in the fullscreen block`).toContain(sel);
+    }
+    expect(block, "every other screen pays the notch through `.screen`").toMatch(/\.screen \{/);
+  });
+});
