@@ -363,6 +363,8 @@ export class MatchScreen {
 
   /** True while the walkthrough is playing the enemy's turn for it. */
   private scripted = false;
+  /** The beat between two tutorial lessons, while the board plays in the clear. */
+  private watchTimer: number | null = null;
 
   private get touring(): boolean {
     return this.opts.tour?.running === true;
@@ -469,26 +471,33 @@ export class MatchScreen {
    * engine (`tutorialAiMove`) so the board the next step is about is the board the step was
    * written for. The real opponent takes over the moment the walk ends.
    *
-   * Called from the following step's `enter`, so the enemy's move animates under the
-   * instruction the player is reading rather than in a pause with nothing on screen.
+   * It is run from the WATCH between two lessons (`tourWatch`) rather than from the next
+   * step's `enter`. Under `enter` the reply animated beneath the next instruction and
+   * four black panels — the player was told the enemy had moved and never saw it happen.
+   *
+   * Returns how long its events want to be watched, so the watch can hold the dark off
+   * for exactly that and no longer.
    */
-  private enemyReplies(): void {
-    if (!this.touring || this.state.over || this.state.current !== "you") return;
+  private enemyReplies(): number {
+    if (!this.touring || this.state.over || this.state.current !== "you") return 0;
     this.clearSelection();
     // Everything in here is the enemy's doing, and none of it answers the step the player
     // is looking at — a scripted capture would otherwise complete a "take ground" step
     // that the player had not taken.
     this.scripted = true;
+    let played: readonly EngineEvent[] = [];
     try {
       this.consume(endTurn(this.state, this.opts.mods));
-      if (this.state.over) return;
-      this.consume(tutorialAiMove(this.state, this.opts.ctx));
-      if (this.state.over) return;
+      if (this.state.over) return 0;
+      played = tutorialAiMove(this.state, this.opts.ctx);
+      this.consume(played);
+      if (this.state.over) return 0;
       this.consume(endTurn(this.state, this.opts.mods));
     } finally {
       this.scripted = false;
     }
     this.refreshHUD();
+    return watchMs(played);
   }
 
   /**
@@ -528,7 +537,53 @@ export class MatchScreen {
       && (kinds.has("move") || kinds.has("capture"))) deeds.push("move");
 
     if (!deeds.length) return;
-    queueMicrotask(() => { for (const deed of deeds) tour.signal(deed); });
+    this.tourWatch(tour, deeds, events);
+  }
+
+  /**
+   * THE BEAT BETWEEN TWO LESSONS: the dark stands back, the board plays, the enemy
+   * answers, and only then does the next instruction arrive.
+   *
+   * Everything a lesson teaches happens AFTER the tap it asks for, and all of it used to
+   * happen behind the overlay — the player's own move resolved between four black panels
+   * and the enemy's reply animated under the next instruction. Reported directly: "when
+   * we play steps of attack and move and all those similar we need to see what happens...
+   * tell the player what to do like now, and when he does, just delay the animation a bit
+   * so the whole screen can get visible again, then the action is played, the enemy plays
+   * their move, and then we get the next step."
+   *
+   * THE LENGTHS ARE THE BATCH'S OWN, never a number written here. `watchMs` is the same
+   * arithmetic `playAI` already holds the hand-over open for, so a long send waits for its
+   * trail and a cast-then-march waits for both halves — the one place that decides how
+   * long a batch takes to play is `render/animate.ts` (§7).
+   *
+   * AND THE QUEEN IS NOT ANSWERED. She is the last lesson; what follows is the hand-over
+   * the whole walk has been rehearsing, so a reply there would be the enemy taking a turn
+   * in front of a step that is asking the player to give them one.
+   */
+  private tourWatch(tour: Tour, deeds: readonly string[], events: readonly EngineEvent[]): void {
+    const go = (): void => { for (const deed of deeds) tour.signal(deed); };
+    // Outside the walkthrough there is nothing to stand back from, and the signal still
+    // has to be deferred: it opens the next step, and the caller we are inside of has
+    // not finished — a step opened DURING the batch has the board changed under it.
+    if (!this.touring) { queueMicrotask(go); return; }
+
+    this.clearWatch();
+    tour.standBack(true);
+    const answered = deeds.some((d) => ANSWERED.has(d));
+    this.watchTimer = window.setTimeout(() => {
+      const reply = answered ? this.enemyReplies() : 0;
+      this.watchTimer = window.setTimeout(() => {
+        this.watchTimer = null;
+        tour.standBack(false);
+        go();
+      }, reply);
+    }, watchMs(events));
+  }
+
+  /** Drop a watch in flight, so a torn-down screen leaves no timer calling into it. */
+  private clearWatch(): void {
+    if (this.watchTimer !== null) { clearTimeout(this.watchTimer); this.watchTimer = null; }
   }
 
   /**
@@ -583,7 +638,6 @@ export class MatchScreen {
         title: "The long send",
         text: "That was your turn, and the enemy has just taken theirs. Now something "
           + "further away: tap this tile.",
-        enter: () => this.enemyReplies(),
         rect: () => this.cellRect(this.at(this.travelSource())),
         pad: 4,
         advance: "signal",
@@ -604,7 +658,6 @@ export class MatchScreen {
         title: "Make a fist",
         text: "The Hive is in the middle of the board, and there is an enemy colony sitting "
           + "on the guard in front of her. Time to gather. Tap Rally.",
-        enter: () => this.enemyReplies(),
         find: () => this.root.querySelector("#bRally"),
         advance: "signal",
         awaits: "mode:rally",
@@ -623,7 +676,6 @@ export class MatchScreen {
         id: "pickAttack",
         title: "Pick the fist up",
         text: "Same two taps as before. Tap the tile your army is standing on.",
-        enter: () => this.enemyReplies(),
         rect: () => this.cellRect(this.at(this.camp())),
         pad: 4,
         advance: "signal",
@@ -645,7 +697,6 @@ export class MatchScreen {
         title: "One tile from her",
         text: "Your army moved onto the ground it took, and that ground was the queen's "
           + "guard — so she is next door now. Pick the tile up.",
-        enter: () => this.enemyReplies(),
         rect: () => this.cellRect(this.at(this.doorstep())),
         pad: 4,
         advance: "signal",
@@ -680,6 +731,7 @@ export class MatchScreen {
     this.renderer.stop();
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
     this.clearTimers();
+    this.clearWatch();
     if (this.endTimer) { clearTimeout(this.endTimer); this.endTimer = null; }
     if (this.castTimer) { clearTimeout(this.castTimer); this.castTimer = null; }
     this.afterCard = null;                   // a torn-down screen hands no turn over
@@ -932,7 +984,7 @@ export class MatchScreen {
     // animation off. A turn that CAST and then marched plays for a beat longer, because the
     // march waits for the cast to be seen (render/animate.ts), and the hand-over has to
     // wait with it or the second half is cut off exactly where it matters.
-    const play = events.length ? 700 + actGapOf(events) : 200;
+    const play = events.length ? watchMs(events) : 200;
     this.aiTimer = window.setTimeout(() => {
       // The card plays OVER the board, so it overlaps the move rather than following it —
       // but the turn may not come back to the player from under one they are reading.
@@ -1321,6 +1373,20 @@ export class MatchScreen {
   }
 
 }
+
+/**
+ * How long a batch of events wants to be watched for.
+ *
+ * The same arithmetic the AI's hand-over waits on: a flat beat for the reveal to finish,
+ * plus whatever the second act of a two-part turn is held back by (`actGapOf`). One
+ * function, because a second copy is the one that stops matching `render/animate.ts`.
+ */
+function watchMs(events: readonly EngineEvent[]): number {
+  return events.length ? 700 + actGapOf(events) : 0;
+}
+
+/** The lessons the enemy answers — every one but the last (see `tourWatch`). */
+const ANSWERED = new Set(["move", "travel", "rally", "attack"]);
 
 /**
  * ONE cue per batch, and it is the loudest thing that happened.

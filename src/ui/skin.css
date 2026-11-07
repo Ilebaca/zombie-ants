@@ -8430,11 +8430,15 @@ button:not(.playbtn):active,
    own, because two places deciding what a surface is made of is how the app
    ended up half green. Their card RECIPE is a block of its own at the foot of
    this file: the shared card list is scoped to the nineteen SCREENS, and a
-   pop-up is not inside one. */
+   pop-up is not inside one.
+
+   AND THE TOUR IS A POP-UP TOO. Its bubble is the first thing a new player
+   ever sees and it was the app's oldest language — a green panel with a
+   pill button — over a screen that has been charcoal for weeks. */
 #anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news,
 #friends, #support, #antup, #traits, #inventory, #history, #replay,
 #keepsafe, #rules, #formation, #luckyhatch, #avatars,
-.overlay, .rd-pop {
+.overlay, .rd-pop, .tourwrap {
   /* SURFACES. A card is lighter than the chrome it sits on, a well darker
      than both — which is the rule the shared language already states. */
   --bg0: var(--hud-face);
@@ -9044,3 +9048,47 @@ body,
 /* The road's claim card keeps its gold disc — gold is the road's own colour for
    a reward, and it is a token rather than the green this block is replacing. */
 .rd-popic { background: color-mix(in srgb, var(--gold) 14%, var(--hud-well)); }
+
+/* THE TOUR'S BUBBLE IS A POP-UP CARD, and it is the first one a player meets.
+   Its Next button is the design's one bright thing, the way PLAY and End turn
+   are; Skip stays quiet type, because a walkthrough should not offer leaving
+   as loudly as it offers going on. */
+.tourbubble {
+  border: none;
+  border-radius: var(--r-card);
+  background: var(--hud-card);
+  box-shadow: var(--hud-ledge) !important;
+}
+.tourttl { color: var(--hud-go); }
+.tourtxt { color: var(--hud-dim); }
+.tourcount, .tourskip { color: var(--hud-mute); }
+.tournext {
+  border-radius: var(--r-btn);
+  background: var(--hud-go);
+  color: #06210a;
+  box-shadow: var(--hud-ledge) !important;
+}
+.tournext:active { transform: translateY(2px); }
+/* The scrim is the design's neutral dark, like every other pop-up's: a green
+   cast over ten painted regions reads as a tint rather than as dark. */
+.tourshade { background: rgba(10, 11, 14, .80); }
+
+/* AND IT STANDS BACK WHILE THE BOARD PLAYS (`Tour.standBack`, ui/tour.ts).
+   The step stays current and every piece of it fades out, so the player sees
+   their own move resolve and the enemy answer on a clear screen before the
+   next instruction arrives. `visibility` as well as opacity, or the shade is
+   still there to swallow a tap it should no longer take. */
+.tourshade, .tourring, .tourbubble, .tourglass {
+  transition: opacity .18s ease;
+}
+.tourwrap.tourwatch .tourshade,
+.tourwrap.tourwatch .tourring,
+.tourwrap.tourwatch .tourbubble,
+.tourwrap.tourwatch .tourglass {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tourshade, .tourring, .tourbubble, .tourglass { transition: none; }
+}

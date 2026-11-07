@@ -169,6 +169,26 @@ export class Tour {
     cb?.();
   }
 
+  /**
+   * STAND BACK WHILE THE BOARD PLAYS, without ending the step.
+   *
+   * A lesson ends with the player DOING something, and the thing they did is the thing
+   * they have to see. With the dark still up, a move resolved behind four black panels
+   * and the enemy answered under the next instruction — the two moments the walkthrough
+   * exists to show, both of them hidden. Reported directly: "when we play steps of attack
+   * and move we need to see what happens... delay the animation a bit so the whole screen
+   * can get visible again, then the action is played, the enemy plays their move, and
+   * then we get the next step."
+   *
+   * It is a CLASS rather than a teardown, because the step has not finished: the hole is
+   * still measured, the ring still tracks its tile, and the bubble comes back with the
+   * next instruction rather than being rebuilt. `MatchScreen` decides how long to hold it
+   * — the tour has no idea how long a batch of events takes to animate.
+   */
+  standBack(on: boolean): void {
+    this.wrap?.classList.toggle("tourwatch", on);
+  }
+
   stop(): void {
     this.drop();
     if (this.timer !== null) { clearInterval(this.timer); this.timer = null; }

@@ -64,16 +64,51 @@ export function arrangeTutorial(state: GameState): void {
   const door = doorCell(state, nest);
   if (!door) { recomputeConnectivity(state); return; }
   claim(state, door, "ai", ENEMY);
+  // AND THE ENEMY'S TILE IS CONNECTED TO THEIR OWN COLONY, by a trail of veins running
+  // back to it. It used to stand on the guard alone, a dozen tiles from anything the
+  // enemy held — reported directly: "the tile of the enemy I'm attacking is separated
+  // from the nest... has to make sense how it got there."
+  //
+  // It has to make sense twice over. A detached tile produces nothing and is drawn grey
+  // (§4.2), so the first board a player ever sees was teaching the opposite of the rule
+  // the step before it had just explained; and a trail of VEINS is exactly what a long
+  // send leaves behind (§4.6), so the position now reads as a move the enemy made rather
+  // than as a tile that appeared there.
+  line(state, door, "ai");
 
   const camp = campCell(state, door, nest);
   if (camp) {
     // The line home, so the camp is supplied rather than cut off — a detached tile produces
-    // nothing and would teach the wrong lesson on sight (§4.2).
-    for (const at of supplyPath(state, camp, nest)) claim(state, at, "you", SUPPLY);
+    // nothing and would teach the wrong lesson on sight (§4.2). It is laid AFTER the
+    // enemy's, so the walk routes around their trail rather than through it.
+    for (const at of supplyPath(state, camp, "you")) claim(state, at, "you", SUPPLY);
     claim(state, camp, "you", SUPPLY);
   }
 
   recomputeConnectivity(state);
+}
+
+/**
+ * Run a vein trail from a tile back to its owner's colony.
+ *
+ * A VEIN, never a stable: a trail is what a march leaves behind, and a row of garrisoned
+ * tiles out to the middle of the board is a second colony rather than a supply line. The
+ * tile at each END is a captured one — the enemy's nest at one end and the stable this
+ * starts from at the other — which is what anchors the whole trail under both pruning
+ * rules (§4.5): every vein on it keeps two same-owner neighbours, and every vein can walk
+ * to real ground at either end.
+ */
+function line(state: GameState, from: Coord, owner: Player): void {
+  for (const at of supplyPath(state, from, owner)) {
+    const t = tileAt(state, at.c, at.r);
+    if (!t) continue;
+    t.owner = owner;
+    t.struct = "vein";
+    // A vein holds no garrison (§4.4) — a percentage of it is a percentage of nothing,
+    // and a trail carrying soldiers is the thing `promote` exists to turn into a stable.
+    t.soldiers = 0;
+    t.guard = 0;
+  }
 }
 
 function claim(state: GameState, at: Coord, owner: Player, soldiers: number): void {
@@ -114,10 +149,12 @@ function campCell(state: GameState, door: Coord, nest: Tile): Coord | null {
 /**
  * The tiles between the camp and the colony, walked back from the camp.
  *
- * A breadth-first walk over ground the player could have taken anyway, stopping at the
- * first tile they already hold. The tile it stops ON is theirs already and is not returned.
+ * A breadth-first walk over ground that side could have taken anyway, stopping at the
+ * first tile they already hold. The tile it stops ON is theirs already and is not
+ * returned. It is used for both colonies, which is why it takes the owner rather than
+ * reading "you": the enemy's tile on the guard needs the same line home.
  */
-function supplyPath(state: GameState, from: Coord, nest: Tile): Coord[] {
+function supplyPath(state: GameState, from: Coord, owner: Player): Coord[] {
   const start = tileAt(state, from.c, from.r);
   if (!start) return [];
   const prev = new Map<string, string | null>([[key(from), null]]);
@@ -128,11 +165,16 @@ function supplyPath(state: GameState, from: Coord, nest: Tile): Coord[] {
     for (const n of neighbours(state, cur)) {
       const k = key(n);
       if (prev.has(k)) continue;
-      if (n.owner === "you") {
-        // Found the colony: walk the chain back, dropping the tile they already hold.
+      if (n.owner === owner) {
+        // Found the colony: walk the chain back, and return only what is BETWEEN.
+        // NEITHER END IS RETURNED. The far end is theirs already; the near end is the
+        // tile this was asked about, and it is the caller's — the enemy's door is a
+        // stable holding a garrison, and a path that included it turned the one tile
+        // the whole attack lesson is about into an empty vein. The player's camp hid
+        // that for as long as this had one caller: it is re-claimed straight after.
         const path: Coord[] = [];
         let at: string | null = key(cur);
-        while (at) {
+        while (at && at !== key(from)) {
           const [c, r] = at.split(",").map(Number) as [number, number];
           path.push({ c, r });
           at = prev.get(at) ?? null;
@@ -144,9 +186,8 @@ function supplyPath(state: GameState, from: Coord, nest: Tile): Coord[] {
       queue.push(n);
     }
   }
-  // No route home — better to leave the camp out of the arrangement than to hand the
-  // player a cut-off stack and teach them that supply does not matter.
-  void nest;
+  // No route home — better to leave the tile unconnected than to force a line through
+  // ground the rules would not allow, which is a board the game could not produce.
   return [];
 }
 

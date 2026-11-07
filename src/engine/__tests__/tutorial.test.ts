@@ -130,6 +130,41 @@ describe("the tutorial arrangement", () => {
    * The arrangement decides where things START and nothing else. A tutorial that quietly
    * changed a rule would teach a game the player is not about to play.
    */
+  /**
+   * THE ENEMY'S TILE IS PART OF THE ENEMY'S COLONY.
+   *
+   * It stood on the hive guard alone, a dozen tiles from anything they held — reported
+   * directly: "the tile of the enemy I'm attacking is separated from the nest... has to
+   * make sense how it got there." It teaches the opposite of the rule the walkthrough
+   * explains two steps earlier (a detached tile produces nothing and is drawn grey,
+   * §4.2), and it is a position the game cannot produce by itself.
+   */
+  describe("the enemy's tile on the guard", () => {
+    for (const map of MAPS_UNDER_TEST) {
+      it(`is supplied back to their own colony on ${map}`, () => {
+        const s = board(map, "fire");
+        const d = door(s);
+        expect(d.owner, "nobody is holding the guard").toBe("ai");
+        expect(d.struct, "the trail ate the tile the attack lesson is about").toBe("stable");
+        expect(d.soldiers, "there is nothing there to attack").toBeGreaterThan(0);
+        expect(isConnected(s, d), "the enemy's tile is cut off from their nest").toBe(true);
+      });
+
+      /** A trail is what a march LEAVES BEHIND, which is why it reads as a move. */
+      it(`runs it home as veins rather than a second colony on ${map}`, () => {
+        const s = board(map, "fire");
+        const trail = allTiles(s).filter((t) => t.owner === "ai" && t.struct === "vein");
+        expect(trail.length, "the guard was joined up with garrisoned tiles")
+          .toBeGreaterThan(0);
+        // A vein holds no garrison (§4.4): one that did is what `promote` turns into a
+        // stable, so a trail carrying soldiers is a board the engine would not leave.
+        for (const v of trail) expect(v.soldiers, `vein ${v.c},${v.r} carries a garrison`).toBe(0);
+        // And every one of them survives the pruner — both halves of §4.5.
+        for (const v of trail) expect(isConnected(s, v), `vein ${v.c},${v.r} is stranded`).toBe(true);
+      });
+    }
+  });
+
   it("leaves the rules alone", () => {
     const plain = createGame({ map: "small", species: { you: "fire", ai: "fire" }, seed: 5 });
     const taught = board("small", "fire");
