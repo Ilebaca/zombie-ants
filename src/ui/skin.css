@@ -2215,17 +2215,6 @@ button:not(.playbtn):active,
 .nest-lvl.dug .nest-node { background: var(--grass); border-color: var(--grass); }
 .nest-lvl.maxed .nest-node { background: var(--gold); border-color: var(--gold); }
 /* How deep we are. Small, quiet, and out of the way of the tunnel. */
-.nest-depth {
-  position: absolute;
-  left: 50%;
-  top: 8px;
-  transform: translateX(-50%);
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: .6px;
-  color: var(--muted);
-}
-
 /* --------------------------------------------------------- THE CHAMBERS
    A dug chamber is ground that has been HOLLOWED OUT, so it is lighter
    than the soil around it. Unbroken earth is an outline and nothing else. */
@@ -4617,8 +4606,23 @@ button:not(.playbtn):active,
      Friends, Support and the Leaderboard. A copy of a number is a copy that can be
      two off, and nothing measures it. */
   min-height: var(--tap);
-  display: inline-flex;
   align-items: center;
+}
+
+/* A CHIP IS SHRINK-TO-FIT; A ROW IS NOT. The rule above gave all seven
+   `display: inline-flex; justify-content: center`, which is right for the six
+   that are CHIPS and wrong for the one that is a full-width ROW: the FAQ's
+   question came out centred with the chevron tucked up against the end of the
+   text, instead of the question at the left and the chevron at the right. Its
+   own rule says `display: flex; justify-content: space-between; width: 100%`
+   and had said so all along — the tap floor simply landed after it. */
+.setval,
+.setswitch,
+.frtab,
+.lbtab,
+.spkind,
+.lbchip {
+  display: inline-flex;
   justify-content: center;
 }
 
@@ -5762,6 +5766,9 @@ button:not(.playbtn):active,
   color: var(--ink-soft);
 }
 .fb-p { font-size: 11.5px; font-weight: 700; line-height: 1.45; color: var(--muted); }
+/* No side padding of its own: the row sat inside `.fusebox`, which carried it.
+   The box is nothing now (§ A BLOCK NEVER HOLDS BLOCKS), so the row is in the
+   shared padding group and this is only the legacy fallback. */
 .fb-row {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -5960,7 +5967,12 @@ button:not(.playbtn):active,
 /* The privacy policy is a real page rather than a screen, so its row is an
    anchor rather than a button — same shape as the facts above it, plus the
    chevron that says it leads somewhere. */
+/* A LINK ROW HAS A FOURTH COLUMN. `.spfact` is a mark, a label and a value;
+   Privacy and Terms add a chevron after the value, and with only three tracks
+   declared it wrapped onto a second grid row under the mark — an arrow on a
+   line of its own at the bottom left of the row. */
 .spfact-link {
+  grid-template-columns: 26px auto 1fr auto;
   text-decoration: none;
   color: inherit;
   cursor: pointer;
@@ -8448,11 +8460,11 @@ button:not(.playbtn):active,
     #keepsafe, #rules, #formation, #luckyhatch)
 :is(.card, .metacard, .chcard, .dcard, .qcard, .qhero, .challcard, .dailycard,
     .stile, .luckycard, .rbanner, .dhero, .hillcut, .antcell, .lbbanner, .lbrow,
-    .setrow, .setrow2, .setgroup, .setpanel, .room, .room-open, .chalcard, .chalmore, .chalsum, .newscard, .frrow, .frpanel,
+    .setrow, .setrow2, .setpanel, .room, .room-open, .chalcard, .chalmore, .chalsum, .newscard, .frrow,
     .spbox, .spfact, .spq, .spgcard, .spghero, .skincard, .spgtd,
-    .trtile, .tropen, .trtotals, .fusebox, .fb-row, .invhead,
+    .trtile, .tropen, .trtotals, .fb-row,
     .histrow, .kscard, .hatchprize, .hp-one, .hatchshut,
-    .coverpane, .setupbox, .ru-fig) {
+    .coverpane, .setupbox) {
   /* NO OUTLINE ON A BLOCK, asked for directly: "I see a small outline stroke
      for the blocks, we don't use that — remove it everywhere. We just
      sometimes have that stroke if the element is SELECTED."
@@ -8655,16 +8667,19 @@ body,
    A WRAPPER IS NOT IN THE LIST. `.newscard` bleeds a picture to its own
    edges, `.setgroup` and `.frpanel` hold rows that pad themselves, and the
    Antarium's `.ccard` is deliberately nothing (§ THE ANTARIUM): padding any
-   of those would put a margin inside a box that has no content of its own. */
+   of those would put a margin inside a box that has no content of its own.
+   `.spq` is one of those too and was missed on the first pass — the FAQ's
+   question carries its own padding AND the tap floor, so padding the card
+   round it as well made every question a 146px slab of mostly nothing. */
 :is(#anthill, #challenges, #daily, #quests, #leaderboard, #settings, #news,
     #friends, #support, #antup, #traits, #inventory, #history, #replay,
     #keepsafe, #rules, #formation, #luckyhatch, #shop, #antarium, #profile)
 :is(.card, .metacard, .chcard, .dcard, .qcard, .qhero, .challcard, .dailycard,
     .stile, .luckycard, .rbanner, .dhero, .hillcut, .antcell, .lbbanner, .lbrow,
     .setrow, .setrow2, .setpanel, .room-open, .chalcard, .chalmore, .chalsum,
-    .frrow, .spbox, .spfact, .spq, .spgcard, .spghero, .skincard, .spgtd,
-    .tropen, .trtotals, .fusebox, .invhead, .histrow, .kscard, .hatchprize,
-    .hp-one, .hatchshut, .ru-fig, .restorebtn,
+    .frrow, .spbox, .spfact, .spgcard, .spghero, .skincard, .spgtd,
+    .tropen, .trtotals, .fb-row, .histrow, .kscard, .hatchprize,
+    .hp-one, .hatchshut, .restorebtn,
     .pf-hero, .pf-row, .pf-colony, .pf-stat) {
   padding: var(--block);
 }
@@ -8835,4 +8850,124 @@ body,
     #keepsafe, #rules, #formation, #luckyhatch, #shop, #antarium, #profile)
 *:not(.on):not(.armed):not(.worn):not(.sel):not(.active):not(:focus-visible) {
   border-color: transparent;
+}
+
+
+/* ======================================================================
+   A BLOCK NEVER HOLDS BLOCKS
+   ======================================================================
+   Four reports against the build above, and the first two are one rule:
+   "reaching us part looks weird — maybe also just have each block, and
+   their parent should have no design attributes", and "each request should
+   be a block, their parent don't need to have those attributes".
+
+   The remap brought every surface onto the design's card by NAME, and
+   several of those names are CONTAINERS: a stack of settings rows, the
+   friends list, the fuse panel, the Support contact box. So a row with a
+   face, a corner and a ledge sat inside a parent with the same three — a
+   box in a box — and because a ledge is drawn 3px to the RIGHT and 4px
+   DOWN with no blur, every row's ledge hung out past the parent's padding
+   and read as the rows being too wide for the panel they were in. That is
+   the "looks weird".
+
+   The rule is the one the Antarium's `.ccard` already followed: whatever
+   holds the blocks is NOTHING. The containers came out of the card list
+   and the padding list rather than being overridden here, so there is one
+   place that decides what a block is; what is left below is the handful
+   that carry a face of their own from the first language.
+   ====================================================================== */
+
+/* The one container with a face in its base rule — the rest are bare grids
+   and were only ever raised by the list they have now left. */
+#traits .fusebox,
+#inventory .fusebox {
+  padding: 0;
+  background: none;
+  box-shadow: none !important;
+}
+
+/* A ROW STACK IS SPACED, NOT PADDED. The gap has to clear the LEDGE as
+   well as the row — 4px of it hangs below every block — so these sit on
+   `--inrow` rather than on the 6px and 9px each screen had picked, which
+   left one row's shadow touching the next row's top edge. */
+#settings .setgroup,
+#friends .frpanel,
+#friends .frlist,
+#support .spfacts {
+  display: grid;
+  gap: var(--inrow);
+}
+
+/* AND THE INVENTORY'S GROUP HEADINGS ARE TITLES, asked for directly:
+   "same goes for these titles, they should just be text with no background
+   or shadow." They are doors into a bench rather than labels, which is why
+   they were plated — but a door drawn as a slab in a column of slabs is
+   another block in the stack, and what tells it apart from the tiles under
+   it is that it is a LINE OF TYPE. The chevron is what says it opens.
+   Same answer as the screen title one block up (§ A TITLE IS NOT A BLOCK). */
+#traits .invhead,
+#inventory .invhead {
+  padding: 2px;
+  background: none;
+  box-shadow: none !important;
+}
+
+/* AND A POST THAT HAS BEEN READ STEPS BACK, asked for directly: "we should
+   have a way to know which is read and which not — read ones should not be
+   so prominent."
+
+   TWO HALVES, because one of them alone says nothing. Unread carries the
+   word NEW; read drops its type one step, to the muted grey, and dims its
+   PICTURE with a colour filter rather than with opacity — the rule the
+   Colony Road's claimed rewards already follow, because a transparent
+   picture shows the page through itself and reads as a drawing that failed
+   rather than as one that is behind you.
+
+   THE WORD IS A FILLED PILL, not coloured type. The tag beside it is
+   already green type on an "update" post, which is most of them, so two
+   green words on one line would read as one label that had been cut in
+   half. Dark ink on the green measures 10.9:1.
+
+   And the dim ink stops at `--hud-mute`: measured on the card it is 5.3:1,
+   and the next step down (`--hud-lock`) is 2.7 — under AA, which is a post
+   a player cannot read rather than one they have. */
+.newsnew {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--hud-go);
+  color: #0d1a05;
+  font-size: var(--fs-label);
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+#news .newscard.read .newstitle,
+#news .newscard.read .newslead { color: var(--hud-mute); }
+#news .newscard.read .newshero { filter: brightness(.62) saturate(.72); }
+
+/* AND THE ANTHILL'S HEADING OWNS THE GAP UNDER IT, which is the one place the
+   container cannot. Every other screen here is a column of blocks with
+   `gap: var(--block)` on the scroller, so a heading needs no bottom margin and
+   must not have one — it would ADD to the container's and double it (§ ONE
+   VERTICAL RHYTHM). The anthill's scroller is a continuous DRAWING: the mound
+   and the shaft under it have to touch, so a gap on `.hillwrap` would cut the
+   nest in half. The bench at its foot is the only thing on that screen that is
+   a block, and its label sat flat on it — reported as the Traits title having
+   no margin under it. */
+#anthill .secthead { margin-bottom: var(--inrow); }
+
+/* AND A PICTURE IS NOT A BLOCK EITHER, asked for directly: "images don't need
+   to have background and drop shadow, those [are] block attribute[s] — just
+   have the image there with the description."
+
+   The manual's figures went into the card list on the reasoning that a figure
+   is a picture of the board SITTING on the page, which is the opposite of the
+   way round it reads: the drawing already has its own edges and its own
+   ground, so a plate behind it is a frame round a frame and the ledge is a
+   shadow under something that is already an object. What a figure needs is the
+   picture and the line under it, which is all it was before. */
+#rules .ru-fig {
+  padding: 0;
+  background: none;
+  box-shadow: none !important;
 }

@@ -19,7 +19,7 @@ import {
   QUEST_SWEEP_BONUS, dayIndex, isClaimable, levelProgress, levelReward, questDef, rollQuests,
   unclaimedLevels, type QuestKind, type QuestState,
 } from "./quests";
-import { newsLatestAt, unreadNews } from "./news";
+import { NEWS, newsLatestAt, unreadNews } from "./news";
 import {
   LEAGUES, openSeason, placeOf, prizeFor, seasonScore, table, weekIndex,
 } from "./league";
@@ -228,8 +228,23 @@ export interface Profile {
    */
   avatars: string[];
   avatar: string | null;
-  /** The newest post the player has read, as a stamp. Older than every post = all unread. */
+  /** The newest post the player has SEEN, as a stamp. It is what the drawer's badge
+      counts against, and it is stamped by arriving at the feed rather than by reading
+      anything in it. */
   newsSeen: number;
+  /**
+   * AND THE POSTS ACTUALLY READ, by id.
+   *
+   * A different question from `newsSeen`, which is why it is a different field. The
+   * stamp answers "has anything landed since you last looked", which is all a badge
+   * needs; it cannot answer "which of these have I read", because opening the screen
+   * stamps every post at once — and the what's-new card stamps the major ones before
+   * the screen is even reached. Asked for directly: "we should have a way to know which
+   * is read and which not."
+   *
+   * A post is read when it has been OPENED, which is what the word means to a person.
+   */
+  newsRead: string[];
   /** Messages sent to support, kept so nothing a player wrote is thrown away. */
   tickets: Ticket[];
   /**
@@ -358,6 +373,7 @@ export function defaultProfile(): Profile {
     avatar: null,
     friendsOut: [],
     newsSeen: 0,
+    newsRead: [],
     tickets: [],
     challenges: [],
     dailyDay: 0,
@@ -495,6 +511,11 @@ export function normalise(raw: unknown): Profile {
     ...skinsAndLooks(p),
     ...avatarsAndWorn(p),
     newsSeen: int(p.newsSeen, 0, 1e15, 0),
+    // Filtered to the ids the build actually carries: a post dropped from the table is
+    // gone, and keeping its id would let the list grow for ever off old saves.
+    newsRead: Array.isArray(p.newsRead)
+      ? [...new Set(p.newsRead.filter((id): id is string => NEWS.some((n) => n.id === id)))]
+      : [],
     tickets: tickets(p.tickets),
     challenges: Array.isArray(p.challenges)
       ? p.challenges.filter((c): c is string => typeof c === "string").slice(0, 200)
@@ -1430,6 +1451,23 @@ export class ProfileStore {
    */
   markNewsRead(upTo: number = newsLatestAt()): void {
     if (this.profile.newsSeen < upTo) this.update((p) => { p.newsSeen = upTo; });
+  }
+
+  /** Which posts have been opened. */
+  postsRead(): ReadonlySet<string> { return new Set(this.profile.newsRead); }
+
+  /**
+   * Remember that a post has been opened and read.
+   *
+   * The early return is NOT what keeps the list unique — `update` re-normalises every
+   * write and that is where the rule lives, which a mutation of this line proves by
+   * passing (§ a guard that is unreachable is not a rule). What it saves is the WRITE:
+   * the News screen calls this on every redraw for whatever stands open, and a save
+   * written to storage on each one is a storage write per tap for no change at all.
+   */
+  readPost(id: string): void {
+    if (this.profile.newsRead.includes(id)) return;
+    this.update((p) => { p.newsRead = [...p.newsRead, id]; });
   }
 
   /**

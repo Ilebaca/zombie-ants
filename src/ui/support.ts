@@ -119,7 +119,10 @@ export function buildSupport(
 
     /* ------------------------------------------------------------------- CONTACT */
     wrap.appendChild(el("div", "secthead", "Reaching us"));
-    const contact = el("div", "spbox");
+    // A STACK, NOT A BOX. Every row below is its own block, and a block inside a block
+    // is a box in a box — reported as this section looking weird, which it did because
+    // each row's ledge hung out past the panel's padding (§ A BLOCK NEVER HOLDS BLOCKS).
+    const contact = el("div", "spfacts");
     contact.append(
       factRow("support", "Email", SUPPORT_EMAIL),
       // The code is what matches a message to a save, and it is on the screen rather than

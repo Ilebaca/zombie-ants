@@ -78,6 +78,33 @@ describe("the news feed", () => {
     expect(s.unread(), "everything was marked read").toBe(NEWS.length - 1);
   });
 
+  /**
+   * AND THE POSTS READ ARE A SET, NOT A TALLY. `readPost` is called on every redraw of
+   * the News screen for whatever stands open, so without this the same id would be
+   * appended a dozen times in a sitting — a list that grows for ever inside a profile a
+   * player can carry as a backup code. What enforces it is `normalise` (below), not the
+   * early return in `readPost`, which only saves the write.
+   */
+  it("records a post read once however often it is opened", () => {
+    const s = store();
+    s.update((p) => { p.newsRead = []; });
+    const id = NEWS[0]?.id ?? "";
+    for (let i = 0; i < 5; i++) s.readPost(id);
+    expect(s.get().newsRead).toEqual([id]);
+    expect(s.postsRead().has(id)).toBe(true);
+  });
+
+  /** And a save edited by hand, or written by a build with other posts in it, comes back
+      as ids this build actually carries — with no duplicates. */
+  it("rebuilds the read list from the posts that exist", () => {
+    const id = NEWS[0]?.id ?? "";
+    const s = store();
+    s.update((p) => {
+      (p as { newsRead: unknown }).newsRead = [id, id, "gone.post", 7, null];
+    });
+    expect(s.get().newsRead).toEqual([id]);
+  });
+
   /** Never backwards: a stale stamp must not un-read what the player has already seen. */
   it("never moves the mark backwards", () => {
     const s = store();

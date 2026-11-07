@@ -79,6 +79,55 @@ describe("the news screen", () => {
     expect(s.unread()).toBe(0);
   });
 
+  /**
+   * WHICH POSTS HAVE BEEN READ, asked for directly: "we should have a way to know which
+   * is read and which not — read ones should not be so prominent."
+   *
+   * READ means OPENED, which is what the word means to a person, and it is a different
+   * question from `newsSeen` — that stamp is set by ARRIVING at the feed (and by the
+   * what's-new card before that), so every post would read as read on the first visit.
+   * The first version did exactly that and the whole screen came up dim.
+   */
+  it("marks nothing read on a feed nobody has opened, bar the one standing open", () => {
+    const s = store();
+    s.update((p) => { p.newsRead = []; });
+    const root = build(s);
+    // The newest stands open, so it is being read now — never the dim one.
+    expect(root.querySelectorAll(".newscard.read").length).toBe(0);
+    expect(root.querySelectorAll(".newsnew").length).toBe(newsFeed().length - 1);
+  });
+
+  it("remembers a post the player opened, and dims it once it is shut", () => {
+    const s = store();
+    s.update((p) => { p.newsRead = []; });
+    const root = build(s);
+    const third = newsFeed()[2]?.id ?? "";
+    click(root.querySelector(`.newscard[data-post="${third}"] .newshead`));
+    expect([...s.postsRead()].sort()).toEqual([newsFeed()[0]?.id, third].sort());
+    // The one just opened is open, so it is not dim; the one it displaced now is.
+    expect(root.querySelector(`.newscard[data-post="${third}"]`)?.classList)
+      .not.toContain("read");
+    expect(root.querySelector(`.newscard[data-post="${newsFeed()[0]?.id}"]`)?.classList)
+      .toContain("read");
+  });
+
+  it("opens a returning player's feed with what they read already stepped back", () => {
+    const s = store();
+    s.update((p) => { p.newsRead = newsFeed().slice(1, 4).map((n) => n.id); });
+    const root = build(s);
+    expect(root.querySelectorAll(".newscard.read").length).toBe(3);
+    expect(root.querySelectorAll(".newsnew").length).toBe(newsFeed().length - 4);
+  });
+
+  // The stamp and the set answer different questions, so arriving must not fill the set.
+  it("does not count arriving at the feed as reading it", () => {
+    const s = store();
+    s.update((p) => { p.newsSeen = 0; p.newsRead = []; });
+    build(s);
+    expect(s.unread()).toBe(0);
+    expect(s.postsRead().size).toBe(1);
+  });
+
   it("gives every post a picture", () => {
     const root = build();
     for (const card of Array.from(root.querySelectorAll<HTMLElement>(".newscard"))) {
