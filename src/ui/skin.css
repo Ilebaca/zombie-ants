@@ -9144,3 +9144,68 @@ body,
 @media (prefers-reduced-motion: reduce) {
   .tourshade, .tourring, .tourbubble, .tourglass { transition: none; }
 }
+
+/* ==========================================================================
+   FULL SCREEN: THE FRAME'S INSET AND THE SAFE AREA DO NOT ADD
+
+   The manifest asks for `fullscreen` first (§ THE GAME IS FULL SCREEN), and
+   where Android grants it the system bars are GONE — no clock, no battery, no
+   gesture pill. Every edge in this file was written for a window with those
+   bars at its ends, and all of them say `ours + env(safe-area-inset-*)`: the
+   frame's own 12px margin BELOW whatever the system had taken. With nothing
+   drawn in that band any more, the sum is a margin under a bar that is not
+   there — which is exactly what came back from the phone, "too much space on
+   top and missing some on the bottom under the main menu buttons".
+
+   Both halves are the same arithmetic seen at two ends:
+     TOP    the window grew upward into the status bar, so the inset is now
+            empty picture and the top bar sat the whole of it plus 12 down.
+     BOTTOM the pill is gone, so the inset reads 0 and the tray lost the only
+            thing lifting it off the glass.
+
+   So in fullscreen the two do not stack: the LARGER wins. Where the inset is
+   a real display cutout we clear it and add nothing; where it is zero we keep
+   the frame's own inset. It can only ever take space off a top edge and put
+   space back under a bottom one, which is the direction that was asked for.
+
+   AND IT IS GATED ON `display-mode: fullscreen`, WHICH IS WHAT KEEPS IT OFF
+   iOS. Safari grants no display mode above `standalone`, so this block cannot
+   reach the one platform where a floor under the tray is wrong: iOS keeps the
+   home-indicator strip OUTSIDE the web view and reports 0 inside it, so a
+   floor there stacks our 12 on the system's 34 and draws a 46px band of flat
+   colour (§ THE TAB TRAY, where that was measured and reverted). The same
+   gate keeps it off `standalone` on Android, where the bars are still drawn
+   and the sum is still the right answer.
+   ========================================================================== */
+@media (display-mode: fullscreen) {
+  /* Every screen with a header: the legacy `.screen` pays `--sp4` + the notch. */
+  .screen { padding-top: max(var(--sp4), env(safe-area-inset-top)); }
+  #home { padding-top: max(var(--gutter), env(safe-area-inset-top)); }
+  /* The drawer hangs off the menu button and has to move with it, or the
+     panel detaches from the control it belongs to. */
+  .menuwrap {
+    padding-top: calc(166 * var(--u) + max(var(--hudgut), env(safe-area-inset-top)));
+  }
+  /* The match screen is not a `.screen` and asks for the notch itself. */
+  .match header {
+    padding-block: max(clamp(4px, 1.1vh, 8px), env(safe-area-inset-top))
+                   clamp(4px, 1.1vh, 8px);
+  }
+
+  /* THE TRAY'S LIFT, and the room reserved for it is the SAME number (§ THE
+     BAR AND THE ROOM RESERVED FOR IT ARE ONE NUMBER) — a tray lifted 12 over
+     a reservation that is not clips the last row's ledge. */
+  #mainNav.homenav { bottom: max(var(--hudgut), env(safe-area-inset-bottom)); }
+  #home, #shop, #anthill, #antarium, #challenges {
+    padding-bottom: calc(var(--navh) + max(var(--hudgut), env(safe-area-inset-bottom)));
+  }
+  /* The eight screens the bar does not stand on, and the match's action row:
+     each ended flush on the glass with the pill gone. */
+  #profile, #rules, #achievements, #settings, #news, #friends,
+  #support, #luckyhatch {
+    padding-bottom: max(var(--hudgut), env(safe-area-inset-bottom));
+  }
+  .match footer {
+    padding-bottom: calc(var(--actpad) + max(var(--hudgut), env(safe-area-inset-bottom)));
+  }
+}
