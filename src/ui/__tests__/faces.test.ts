@@ -18,6 +18,15 @@ import { SPECIES, basicLook, looksFor } from "../../engine";
 import type { SpeciesId } from "../../engine";
 import { antPortrait } from "../chrome";
 import { faceFor, facesPainted, paintedFaces } from "../faces";
+import { tierOf } from "../../platform";
+
+/** jsdom reports a background as `rgb(...)`; the table writes `#rrggbb`. */
+const hex = (v: string): string => {
+  const m = v.match(/(\d+),\s*(\d+),\s*(\d+)/);
+  if (!m) return v.trim().toLowerCase();
+  return "#" + [m[1], m[2], m[3]]
+    .map((n) => Number(n).toString(16).padStart(2, "0")).join("");
+};
 
 const FOLDER = resolve(__dirname, "..", "faces");
 /**
@@ -82,5 +91,35 @@ describe("a colony's painted icon", () => {
     for (const id of ALL) {
       expect(antPortrait(id, 64).getAttribute("aria-hidden"), id).toBe("true");
     }
+  });
+
+  /**
+   * AND IT STANDS ON ITS RARITY, asked for directly: "wherever the icons of the species
+   * are shown they need to be shown with their respective coloured backgrounds that
+   * shows rarity."
+   *
+   * Set on the element rather than at each of the twelve calling sites, which is the
+   * whole reason `antPortrait` exists (§7) — a background per screen is twelve places
+   * to fix when a rung's colour moves, and the twelfth is the one that gets missed.
+   * Inline, because the rung is read off the SPECIES and no stylesheet can know it.
+   */
+  it("paints the ground behind a face in that colony's rarity", () => {
+    for (const id of ALL) {
+      const want = hex(tierOf(id).fill);
+      // Both tags, because a painted colony answers with an `<img>` and a drawn one with
+      // a `<canvas>` — the trap this app has paid for twice (§ A COLLECTION CARD).
+      expect(hex((antPortrait(id, 64) as HTMLElement).style.background), `${id} basic`)
+        .toBe(want);
+      for (const look of looksFor(id)) {
+        expect(hex((antPortrait(id, 64, undefined, look) as HTMLElement).style.background),
+          `${id} wearing ${look.id}`).toBe(want);
+      }
+    }
+  });
+
+  /** And no two rungs share a ground, or the colour says nothing. */
+  it("gives the rungs different grounds", () => {
+    const grounds = new Set(ALL.map((id) => tierOf(id).fill));
+    expect(grounds.size, "every colony is painted the same rarity").toBeGreaterThan(1);
   });
 });

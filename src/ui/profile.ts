@@ -25,7 +25,7 @@
  */
 import { CHAMBER_MAX, SPECIES } from "../engine";
 import {
-  CHAMBERS, RESEARCH_TOTAL_MAX, SPECIES_ORDER, TRAIT_SLOTS, avatarProgress, compact, exact,
+  CHAMBERS, RESEARCH_TOTAL_MAX, SPECIES_ORDER, TRAIT_SLOTS, avatarProgress, exact,
   levelReward,
 } from "../platform";
 import type { ProfileStore, TraitScope } from "../platform";
@@ -100,9 +100,15 @@ export function buildProfile(store: ProfileStore, opts: ProfileOptions): HTMLEle
     const rate = s.games ? Math.round((s.wins / s.games) * 100) : 0;
     // THE COLONY LEADS. It is what every match is played for and the only number in the
     // game with no ceiling, so it is a line of its own rather than a cell in a grid.
+    //
+    // AND IT IS WRITTEN OUT IN FULL HERE, asked for directly: "we need to see the exact
+    // colony number, not 2K — that's shortened for other screens like the home screen."
+    // `compact()` exists because the figure rides a 30px banner over artwork and a chip
+    // in the top bar, where seven digits do not fit (§8a); this is the one screen that is
+    // ABOUT the number, there is a whole card for it, and a player who wants to know
+    // whether they are at 1,960 or 2,040 has nowhere else to look.
     const size = el("div", "pf-colony");
-    size.title = `${exact(profile.colony)} troops`;
-    const fig = el("div", "pf-colony-n", compact(profile.colony));
+    const fig = el("div", "pf-colony-n", exact(profile.colony));
     size.append(el("div", "pf-colony-k", "Colony"), fig, el("div", "pf-colony-s", "troops"));
     scroll.append(el("div", "secthead", "Record"), size);
 

@@ -10,7 +10,7 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
   AVATAR_IDS, DEFAULT_AVATAR, FREE_AVATARS, HATCH_AVATARS, ROAD_AVATARS,
-  ROAD_CHAPTER_STOPS, freeReward,
+  ROAD_CHAPTER_STOPS, avatarName, freeReward,
 } from "../../platform";
 import { MemoryStore, ProfileStore } from "../../platform";
 import { avatarArt, avatarsPainted } from "../avatars";
@@ -65,6 +65,51 @@ describe("the picker", () => {
     const tiles = root.querySelectorAll<HTMLButtonElement>(".av-t");
     expect(tiles.length).toBe(AVATAR_IDS.length);
     expect(root.querySelectorAll(".av-t.off").length).toBe(AVATAR_IDS.length - FREE_AVATARS.length);
+  });
+
+  /**
+   * THE COUNT IS PRINTED ONCE, directly over the grid it counts.
+   *
+   * It was printed twice — above the hero and again above the tiles — reported as
+   * "collection 23/98 two times, remove the top one, keep one directly above the
+   * icons". A number said twice on one screen reads as two different numbers until
+   * somebody checks.
+   */
+  it("counts the collection once, over the grid", () => {
+    const root = build(store());
+    const heads = Array.from(root.querySelectorAll(".secthead"))
+      .filter((h) => (h.textContent ?? "").startsWith("Collected"));
+    expect(heads.length, "the count is printed twice again").toBe(1);
+    expect(heads[0]?.textContent)
+      .toBe(`Collected ${FREE_AVATARS.length} of ${AVATAR_IDS.length}`);
+    // ...and it is the LAST thing before the grid, which is what "directly above" means.
+    expect(heads[0]?.nextElementSibling?.classList.contains("avgrid")).toBe(true);
+  });
+
+  /**
+   * AND THE LINE UNDER THE HERO IS THE FACE'S NAME, not where it came from.
+   *
+   * Asked for directly: "instead of the road name it has to be the name of the icon."
+   * The hero is the one being WORN, so how it is come by is a fact the player has
+   * already settled; the tiles still carry the source, which is where a locked face
+   * needs it.
+   */
+  it("names the face under the hero", () => {
+    const s = store();
+    const root = build(s);
+    expect(root.querySelector(".av-hero-k")?.textContent).toBe(avatarName(s.face));
+    const worn = FREE_AVATARS[2] as string;
+    root.querySelector<HTMLButtonElement>(`.av-t[data-av="${worn}"]`)?.click();
+    expect(root.querySelector(".av-hero-k")?.textContent).toBe(avatarName(worn));
+  });
+
+  /** A tile is a picture with no words, so its NAME leads and the source follows. */
+  it("names every tile and still says where it comes from", () => {
+    const root = build(store());
+    const locked = root.querySelector(`.av-t[data-av="${ROAD_AVATARS[0]}"]`);
+    const label = locked?.getAttribute("aria-label") ?? "";
+    expect(label).toContain(avatarName(ROAD_AVATARS[0] as string));
+    expect(label).toContain("Colony Road");
   });
 
   /** A locked tile is DISABLED rather than refusing on tap — one mechanism, and a visible one. */
@@ -153,8 +198,14 @@ describe("the road pays one a chapter", () => {
     for (const disc of Array.from(faces)) {
       expect(disc.querySelector(".rd-face"), "an avatar checkpoint with no face on it")
         .toBeTruthy();
-      expect(disc.getAttribute("aria-label")).toBe("A new avatar");
     }
+    // AND EACH ONE IS NAMED, like every other checkpoint says what it pays. "A new
+    // avatar" was the road declining to say WHICH, on the one reward with a name of its
+    // own. Compared against the fifty names the road really pays rather than against
+    // the SHAPE of a name — a label that merely looked like one would pass that. Sorted,
+    // because the screen's own order is the road's and is not this list's business.
+    expect(Array.from(faces).map((d) => d.getAttribute("aria-label")).sort())
+      .toEqual(ROAD_AVATARS.map((id) => avatarName(id)).sort());
   });
 
   /** And claiming it is what puts it in the collection. */

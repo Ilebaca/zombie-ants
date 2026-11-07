@@ -16,7 +16,7 @@
  * whole reason the tiers have colours at all.
  */
 import {
-  AVATAR_TIER, HATCH_COST, LARVA_MYCEL, TRAITS_CHAPTER, TRAIT_TIER, effectText, itemDef,
+  AVATAR_TIER, HATCH_COST, LARVA_MYCEL, TRAITS_CHAPTER, TRAIT_TIER, avatarName, effectText, itemDef,
   markOf,
 } from "../platform";
 import type { Cue, Feedback, HatchPrize, ProfileStore, TraitItem } from "../platform";
@@ -447,12 +447,15 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     const mark = el("span", "hp-one-i");
     mark.appendChild(avatarFace(id, 44, "hp-one-port"));
     const text = el("span", "hp-one-t");
+    // IT IS NAMED, like every other prize in the batch. A row reading only "Avatar"
+    // beside a trait that says what it is and what it is worth is the one line in the
+    // table that makes the player go and look it up.
     text.append(
-      el("span", "hp-one-n", "Avatar"),
+      el("span", "hp-one-n", avatarName(id)),
       el("span", "hp-one-e", "Worn on your profile"),
     );
     row.append(mark, text);
-    row.title = `Avatar · ${tier.name}`;
+    row.title = `${avatarName(id)} · avatar · ${tier.name}`;
     return row;
   };
 
@@ -559,7 +562,10 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     box.append(
       disc,
       el("div", "hp-tier", `${tier.name} avatar`),
-      el("div", "hp-eff", "A new face for your profile"),
+      // THE NAME IS THE LINE THAT GETS READ. A skin's card names the colony and a
+      // trait's names the trait; this one said only what the thing was, which on the
+      // best moment in the feature is the card declining to say what you found.
+      el("div", "hp-eff", avatarName(id)),
     );
 
     const go = el("button", "hp-go") as HTMLButtonElement;

@@ -98,7 +98,7 @@ export {
 export { SKIN_TIERS, lockedLooks, rollSkin, skinProgress, skinTier } from "./skins";
 export {
   AVATAR_IDS, AVATAR_TIER, DEFAULT_AVATAR, FREE_AVATARS, HATCH_AVATARS, ROAD_AVATARS,
-  avatarProgress, avatarTier, faceOf, isAvatar, isFreeAvatar, lockedAvatars, roadAvatar,
+  avatarName, avatarProgress, avatarTier, faceOf, isAvatar, isFreeAvatar, lockedAvatars, roadAvatar,
   rollAvatar,
 } from "./avatars";
 export type {
