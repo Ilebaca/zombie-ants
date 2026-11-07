@@ -1019,8 +1019,11 @@ export class WebFeedback implements Feedback {
     const ctx = this.ctx;
     if (!ctx) return;
     try {
-      if (on) { if (ctx.state === "suspended") void ctx.resume(); }
-      else if (ctx.state === "running") void ctx.suspend();
+      // The rejections are swallowed for the reason `unlock` swallows its own: a promise
+      // rejecting out of here is asynchronous, so the `try` cannot catch it and it would
+      // land on `window.onerror` as a crash.
+      if (on) { if (ctx.state === "suspended") void ctx.resume().catch(() => {}); }
+      else if (ctx.state === "running") void ctx.suspend().catch(() => {});
     } catch {
       // A browser that will not suspend keeps playing, which is the behaviour this
       // replaces rather than something broken.
@@ -1028,10 +1031,18 @@ export class WebFeedback implements Feedback {
   }
 
   /**
-   * Create the audio device, on a gesture.
+   * Create the audio device, and resume it.
    *
-   * Also RESUMES it: a context created before the gesture — or suspended when the tab went
-   * to the background — is silent until something resumes it, and nothing else will.
+   * A context created before the gesture — or suspended when the app went off screen — is
+   * silent until something resumes it, and nothing else will.
+   *
+   * IT IS CALLED AT BOOT AS WELL AS ON THE FIRST PRESS, and the boot call is allowed to
+   * fail. Reported directly: "when I enter the game music doesn't start until I click on
+   * something, that should not be the case." A browser refuses audio before a gesture,
+   * and an INSTALLED app is exempt from that policy — so the honest answer is to ask at
+   * boot and let the answer decide, rather than to wait for a press that an installed
+   * player should not have to make. Where it is refused nothing is lost: the first press
+   * calls this again and the bed starts exactly as it did before.
    */
   unlock(): void {
     if (this.broken || !this.makeContext) return;
@@ -1065,7 +1076,12 @@ export class WebFeedback implements Feedback {
         this.musicBus.connect(this.master);
         this.noise = makeNoise(this.ctx);
       }
-      if (this.ctx.state === "suspended") void this.ctx.resume();
+      // A REFUSED RESUME IS THE ORDINARY CASE, so its rejection is swallowed. This is
+      // called at BOOT as well as on the first press (§ THE MUSIC STARTS AT BOOT WHERE
+      // THE BROWSER ALLOWS IT), and before a gesture most browsers reject it — an
+      // unhandled rejection there would reach `platform/crash.ts` and put a full-screen
+      // "something went wrong" panel over a game that is working perfectly.
+      if (this.ctx.state === "suspended") void this.ctx.resume().catch(() => {});
       // Whatever was asked for before there was a device to ask: start it now.
       this.syncMusic();
     } catch {

@@ -463,6 +463,72 @@ describe("the way out", () => {
  * Switching to another app leaves the game running — which is what makes it there again
  * the moment it is switched back to — and the music went on playing out of it.
  */
+/**
+ * THE MUSIC STARTS AT BOOT WHERE THE BROWSER ALLOWS IT.
+ *
+ * Reported directly: "when I enter the game music doesn't start until I click on
+ * something." A browser refuses audio before a gesture and an INSTALLED app is exempt,
+ * so the app asks at boot and lets the answer decide — which only works if a REFUSAL is
+ * harmless, and a rejected promise here is asynchronous, so the `try` around it cannot
+ * catch it and it lands on `window.onerror` as a crash panel over a working game.
+ */
+describe("asking for the device before a gesture", () => {
+  it("attaches a catch to the resume it fires and forgets", () => {
+    // THE ASSERTION IS THAT A CATCH WAS ATTACHED, not that no rejection was observed.
+    // A real rejected promise is reported asynchronously by the runtime and vitest owns
+    // that hook, so both mutations — dropping either `.catch` — sailed through a test
+    // written that way. A thenable that records the call asks the question directly.
+    const { ctx } = fakeAudio("suspended");
+    let caught = false;
+    ctx.resume = vi.fn(() => ({
+      catch: (fn: () => void) => { caught = true; fn(); return Promise.resolve(); },
+      then: () => Promise.resolve(),
+    }));
+    const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
+    fb.unlock();
+    expect(ctx.resume).toHaveBeenCalled();
+    expect(caught, "a refused autoplay would reach the crash panel").toBe(true);
+  });
+
+  /** And a refusal costs nothing: the first press asks again and the bed starts. */
+  it("starts on the first press after the boot ask was refused", () => {
+    const { ctx, started } = fakeAudio("suspended");
+    let allow = false;
+    ctx.resume = vi.fn(() => {
+      if (!allow) return Promise.reject(new Error("NotAllowedError"));
+      ctx.state = "running";
+      return Promise.resolve();
+    });
+    const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
+    fb.unlock();                       // boot: refused
+    fb.setMusic("menu");
+    allow = true;
+    fb.unlock();                       // the first press
+    expect(ctx.state).toBe("running");
+    fb.play("win");
+    expect(started.length, "the device never woke after the press").toBeGreaterThan(0);
+  });
+
+  /** The same rejection can come out of waking up, and must be swallowed there too. */
+  it("attaches one to the wake-up too, and to the sleep", () => {
+    const { ctx } = fakeAudio();
+    const fb = new WebFeedback(() => ctx as unknown as AudioContext, () => {});
+    fb.unlock();
+    let wake = false, sleep = false;
+    const thenable = (mark: () => void) => () => ({
+      catch: (fn: () => void) => { mark(); fn(); return Promise.resolve(); },
+      then: () => Promise.resolve(),
+    });
+    ctx.suspend = vi.fn(thenable(() => { sleep = true; }));
+    fb.setAwake(false);
+    ctx.state = "suspended";
+    ctx.resume = vi.fn(thenable(() => { wake = true; }));
+    fb.setAwake(true);
+    expect(sleep, "going off screen could raise the crash panel").toBe(true);
+    expect(wake, "coming back to the app could raise the crash panel").toBe(true);
+  });
+});
+
 describe("the game going off screen", () => {
   it("sleeps the device, and wakes it on return", () => {
     const { ctx } = fakeAudio();

@@ -20,16 +20,19 @@ beforeEach(() => { document.body.replaceChildren(); });
 afterEach(() => { vi.useRealTimers(); });
 
 /** A device that only remembers what it was asked to play, and what bed it was asked for. */
-function listener(): { cues: Cue[]; music: (Track | null)[]; feedback: Feedback } {
+function listener(): {
+  cues: Cue[]; music: (Track | null)[]; unlocks: number; feedback: Feedback;
+} {
   const cues: Cue[] = [];
   const music: (Track | null)[] = [];
+  const seen = { unlocks: 0 };
   const feedback: Feedback = {
     play: (cue: Cue) => { cues.push(cue); },
     setMusic: (t: Track | null) => { music.push(t); },
-    unlock: () => {}, setSound: () => {}, setMusicEnabled: () => {},
+    unlock: () => { seen.unlocks++; }, setSound: () => {}, setMusicEnabled: () => {},
     setHaptics: () => {}, setAwake: () => {}, close: () => {},
   };
-  return { cues, music, feedback };
+  return { cues, music, get unlocks() { return seen.unlocks; }, feedback };
 }
 
 /** Play a challenge and surrender it, which is the shortest real route to a result card. */
@@ -54,6 +57,29 @@ function playAndSurrender(): { cues: Cue[]; music: (Track | null)[]; host: HTMLE
   vi.advanceTimersByTime(8000);
   return { cues, music, host };
 }
+
+/**
+ * THE BED IS ASKED FOR AT BOOT, AND SO IS THE DEVICE.
+ *
+ * Reported directly: "when I enter the game music doesn't start until I click on
+ * something." The bed was always wished for at boot and the DEVICE was not — it waited
+ * for the first press — so an installed app, which browsers exempt from the autoplay
+ * policy, opened in silence for no reason. A refusal still costs nothing; what must not
+ * happen is never asking.
+ */
+describe("opening the game", () => {
+  it("asks for the audio device before anything is pressed", () => {
+    const host = document.createElement("div");
+    host.id = "app";
+    document.body.appendChild(host);
+    const profile = new ProfileStore(new MemoryStore());
+    profile.update((p) => { p.tourSeen = TOUR_VERSION; });
+    const rig = listener();
+    new App(host, profile, undefined, rig.feedback).start();
+    expect(rig.unlocks, "the device is only asked for on a press").toBeGreaterThan(0);
+    expect(rig.music, "the menu bed was not wished for at boot").toContain("menu");
+  });
+});
 
 describe("the end of a match", () => {
   it("sounds, and sounds like a defeat when it is one", () => {

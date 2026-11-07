@@ -4088,8 +4088,30 @@ checks it.
 - **A match goes home rather than nowhere, and it only can because a match survives being
   left now.** Before the suspension this had to either swallow the press or throw the game
   away. Leaving is not a defeat: nothing is settled and nothing is paid.
-- **It is a no-op in a browser, deliberately.** A tab's back button is the browser's history
-  and taking it over breaks the one gesture that gets somebody out of a page.
+- **AND IT IS NOT A NO-OP IN A BROWSER ANY MORE, which reverses what stood here.** This
+  said: "a no-op in a browser, deliberately — a tab's back button is the browser's history
+  and taking it over breaks the one gesture that gets somebody out of a page." True of a
+  TAB on a desktop, wrong about a PHONE. Reported from a Nothing Phone: "when I swipe from
+  the left edge, usually that's the action for going a step back, but in the game it exits
+  completely." On Android that swipe IS back, the installed app has no browser chrome at
+  all, and the history held exactly one entry — so the only thing the gesture could do was
+  leave, mid-match included.
+  - **ONE SENTINEL ENTRY, never one per screen.** `historyBack` pushes a state entry on top
+    of the page; a gesture pops it, `popstate` fires, the app gets its one question, and a
+    consumed press pushes it back so the next gesture asks again. A parallel stack in the
+    history would be a second answer to "what is above what" — which `App.goBack` already
+    owns — and it is the copy that drifts. It changes no URL, so the address bar, the
+    service worker's navigation match and the `?v=<commit>` freshness reload are untouched.
+  - **THE ESCAPE HATCH IS WHAT LETS THE OLD RULE BE REVERSED rather than overruled.** When
+    the app answers `false` — nothing above home — the sentinel is already gone and
+    `history.back()` hands the press straight to the browser, which leaves exactly as it
+    always did. Measured in a browser: from Settings and from the setup screen it goes to
+    home and stays in the app; from home it lands on the page that was there before.
+  - **LEAVING IS A ONE-WAY LATCH, and it is not belt and braces.** `history.back()` inside
+    a `popstate` handler can fire another one, and at home the answer is `false` every
+    time — without it the app asks to leave, is asked again, and spins.
+  - A throwing handler is swallowed for the same reason the native half swallows one: back
+    doing nothing at all for the rest of the session is worse than the fault it reports.
 
 **WHEN SOMETHING THROWS** (`platform/crash.ts`). There was nothing at all: an exception in
 a render loop or a screen builder went to a console nobody has on a phone, and the game
@@ -4988,6 +5010,30 @@ to the game quickly but I don't want to hear the music while not in the game."
   game. Switching apps is not a crash. The first test asserted the listener survived, which
   it does either way and which a mutation sailed through; what it asserts now is that
   nothing reaches `window.onerror`.
+
+**THE MUSIC STARTS AT BOOT WHERE THE BROWSER ALLOWS IT** (`App.start`, `unlock` in
+`feedback.ts`). Reported directly: "when I enter the game music doesn't start until I
+click on something, that should not be the case."
+- **THE BED WAS ALWAYS WISHED FOR AT BOOT AND THE DEVICE WAS NOT.** `setMusic("menu")`
+  ran at boot and `unlock` only ever ran from the first press, so the wish sat there until
+  somebody tapped. That was right while the rule was "a browser refuses audio before a
+  gesture" — and an INSTALLED app is EXEMPT from that policy, which is how this game is
+  played. So the device is asked for at boot and the answer decides.
+- **A REFUSAL COSTS NOTHING, which is the whole reason this is safe.** The first press
+  calls `unlock` again and the bed starts exactly as it did before; nothing waits on the
+  boot ask and nothing is queued (§ a cue before the first gesture is DROPPED).
+- **BUT A REFUSED RESUME MUST NOT REACH THE CRASH PANEL.** `resume()` returns a promise
+  and the refusal is a REJECTION — asynchronous, so the `try` around it cannot catch it,
+  and it lands on `window.onerror`, which is `platform/crash.ts` putting a full-screen
+  "something went wrong" over a game that is working perfectly. Every `resume()` and
+  `suspend()` in that file carries a `.catch` now, including `setAwake`'s both ways.
+- **AND THE TEST HAD TO ASSERT THE CATCH, not the absence of a rejection.** A real
+  rejected promise is reported asynchronously by the runtime and vitest owns that hook, so
+  a test watching for one passed against BOTH mutations — dropping either `.catch`. A
+  thenable that records whether `catch` was called asks the question directly.
+- **The Android shell needs no config for it.** Capacitor's own bridge already calls
+  `setMediaPlaybackRequiresUserGesture(false)` on the WebView, and there is no
+  `CapacitorConfig` key for it — worth knowing before adding one that does not typecheck.
 
 **NO EMOJI, AND A TEST SAYS SO** (`src/ui/__tests__/no-emoji.test.ts`). §10 has said this
 since the beginning and every screen was cleaned by hand, which is exactly why the MATCH
