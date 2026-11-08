@@ -49,6 +49,8 @@ export function buildColonyRoad(
 ): HTMLElement {
   const root = screenEl("achievements");
   root.setAttribute("aria-label", "Colony Road");
+  root.style.setProperty("--rd-foot", roadTheme(1).colors[1]);
+  root.style.setProperty("--rd-summit", roadTheme(regionOf(ROAD_CHAPTERS)).colors[1]);
   const stops = roadStops();
   let scrollTop: number | null = null;
   let took: RoadReward | null = null;

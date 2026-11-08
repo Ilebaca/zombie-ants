@@ -1050,7 +1050,7 @@ Ten numbered sections now, with a picture beside the rules that need one.
 - The premium half has only a sparse, static sprinkle of tiny gold light specks and a
   soft glow. No branching texture. Keep graphics bold, simple and consistent with the
   game's cartoon icons; detailed painted dividers were rejected.
-  Chapter, premium wash, divider and card classes bypass the flat-background blanket.
+  Road end padding, chapter, premium wash, divider and card classes bypass the flat-background blanket.
 - One continuous central rail is dark ahead and gold behind the current colony. Circular
   checkpoint badges show rung numbers with compact troop thresholds underneath. The gold
   current-colony marker shares exactly the fill endpoint.

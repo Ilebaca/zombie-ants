@@ -144,7 +144,7 @@
 
    Colony Road uses flat area colors; its panels need no artwork exemption.
    ====================================================================== */
-*:not(#home):not(#luckyhatch):not(#splash):not(.rd-chap):not(.rd-premiumwash):not(.rd-breaker):not(.rd-card):not(.rd-cardface), *::before, *::after { background-image: none !important; }
+*:not(#home):not(#luckyhatch):not(#splash):not(.rd-road):not(.rd-chap):not(.rd-premiumwash):not(.rd-breaker):not(.rd-card):not(.rd-cardface), *::before, *::after { background-image: none !important; }
 
 /* Surfaces the legacy sheet fills with a gradient and this file does not
    otherwise dress. */
@@ -6172,7 +6172,7 @@ button:not(.playbtn):active,
 /* Colony Road: two reward tracks arranged around a continuous vertical rail. */
 #achievements {
   padding: 0;
-  background: #221051;
+  background: #102d24;
   color: #fff;
   font-family: var(--font-display);
   font-weight: 400;
@@ -6216,6 +6216,7 @@ button:not(.playbtn):active,
   isolation: isolate;
   padding-top: calc(72 * var(--rd-u) - var(--rd-gate) / 2 + var(--safe-top));
   padding-bottom: var(--rd-endpad);
+  background-image: linear-gradient(var(--rd-summit) 0 50%, var(--rd-foot) 50% 100%);
 }
 .rd-road::before {
   content: "";
