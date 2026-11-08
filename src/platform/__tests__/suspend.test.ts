@@ -191,9 +191,9 @@ describe("putting it down", () => {
  * the wrong opponent.
  */
 describe("the difficulty list", () => {
-  it("is the same three the AI has", () => {
-    const mirrored: SuspendDifficulty[] = ["easy", "normal", "hard"];
-    const real: Difficulty[] = ["easy", "normal", "hard"];
+  it("is the same four the AI has", () => {
+    const mirrored: SuspendDifficulty[] = ["easy", "normal", "hard", "impossible"];
+    const real: Difficulty[] = ["easy", "normal", "hard", "impossible"];
     // Each list assignable to the other: neither may gain a level the other does not have.
     const a: Difficulty[] = mirrored;
     const b: SuspendDifficulty[] = real;

@@ -28,7 +28,9 @@ export type { Action, Candidate } from "./moves";
  * horizons. That is what makes them tell apart across a match rather than on a spreadsheet.
  */
 
-export type Difficulty = "easy" | "normal" | "hard";
+import type { Difficulty } from "../engine";
+export type { Difficulty } from "../engine";
+import { executePlannedTurn, planImpossibleTurn } from "./impossible";
 
 export interface Profile {
   /** Plies of full-width search. One ply = one action by one side. */
@@ -49,6 +51,11 @@ export interface Profile {
 }
 
 export const PROFILES: Record<Difficulty, Profile> = {
+  impossible: {
+    depth: 8, branching: 6, quiescence: true,
+    gen: { travel: true, rally: true, reinforce: true, veinGuard: true },
+    weights: FULL, searchAbility: true, nodeBudget: 48000, timeBudgetMs: 1200,
+  },
   /**
    * A beginner. One ply, no idea what is hanging, and it never masses an army — it cannot
    * reinforce, so with a floor of one soldier per tile it fights every battle with whatever
@@ -286,6 +293,13 @@ export function chooseMove(
   state: GameState, me: Player, difficulty: Difficulty, ctx: ActionContext,
 ): Decision {
   const profile = PROFILES[difficulty];
+  if (difficulty === "impossible") {
+    const decision = planImpossibleTurn(state, me, ctx, profile, true);
+    return {
+      move: decision.plan.action ? { action: decision.plan.action, score: decision.value } : null,
+      value: decision.value, depth: decision.depth, nodes: decision.nodes,
+    };
+  }
   const s: Ctx = {
     ctx, me, profile, nodes: 0, killers: [],
     deadline: Date.now() + profile.timeBudgetMs, checkAt: 512, out: false,
@@ -378,12 +392,16 @@ export function aiTurn(
   into?: Move[],
 ): EngineEvent[] {
   if (state.over) return [];
+  if (difficulty === "impossible") {
+    const decision = planImpossibleTurn(state, me, ctx, PROFILES.impossible);
+    return executePlannedTurn(state, me, decision.plan, ctx, into);
+  }
   const profile = PROFILES[difficulty];
   const events: EngineEvent[] = [];
 
   // An ability is a free extra action, so fire it first and still take a move afterwards —
   // unless it is one that spends the turn, and then the cast IS the move.
-  // The AI runs on NEUTRAL_MODS — it never gets research scaling (PROJECT_GUIDE.md §4.8).
+  // Easy, Normal and Hard retain neutral modifiers; Impossible is configured at match setup.
   if (abilityReady(state, me) && shouldCast(state, me, ctx, profile)) {
     state.current = me;
     const cast = activateAbility(state, me, ctx.mods[me]);

@@ -7,14 +7,13 @@
  * result comes from the first-move advantage or a species matchup.
  */
 import {
-  createGame, defaultContext, endTurn, allTiles, NEUTRAL_MODS,
+  createGame, defaultContext, endTurn, allTiles, opponentModifiers,
 } from "../src/engine";
 import type { GameState, Player, SpeciesId, MapId } from "../src/engine";
 import { aiTurn, PROFILES } from "../src/ai/search";
 import type { Difficulty } from "../src/ai/search";
 
-const mods = { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } };
-const ctx = defaultContext();
+
 
 export interface GameResult {
   winner: Player | null;
@@ -32,7 +31,9 @@ export function playGame(
   // between games — which only works if the side that moves first is the same one every
   // time. Left to the coin, half the swaps would cancel nothing and the ladder would be
   // measuring the seed.
-  const state: GameState = createGame({ map, species, seed, first: "you" });
+  const mods = { you: opponentModifiers(youAI), ai: opponentModifiers(aiAI) };
+  const ctx = { ...defaultContext(), mods };
+  const state: GameState = createGame({ map, species, seed, first: "you", mods });
   let guard = 0;
   let reason = "";
   /*

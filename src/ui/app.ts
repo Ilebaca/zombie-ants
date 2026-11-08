@@ -103,7 +103,7 @@ const DECK = ["shop", "anthill", "home", "antarium", "challenges"] as const;
 type DeckId = (typeof DECK)[number];
 const isDeck = (id: string): id is DeckId => (DECK as readonly string[]).includes(id);
 
-const DIFFICULTY_LABEL: Record<Difficulty, string> = { easy: "Easy", normal: "Normal", hard: "Hard" };
+const DIFFICULTY_LABEL: Record<Difficulty, string> = { easy: "Easy", normal: "Normal", hard: "Hard", impossible: "Impossible" };
 
 /** Setup choices that survive between matches. */
 /**
@@ -982,7 +982,7 @@ export class App {
         onBack: () => this.show("home"),
         difficulty: DIFFICULTY_LABEL[this.difficulty],
         onCycleDifficulty: () => {
-          const order: Difficulty[] = ["easy", "normal", "hard"];
+          const order: Difficulty[] = ["easy", "normal", "hard", "impossible"];
           this.difficulty = order[(order.indexOf(this.difficulty) + 1) % order.length] as Difficulty;
           this.profile.update((p) => { p.difficulty = this.difficulty; });
           this.show("settings");
@@ -1529,7 +1529,9 @@ export class App {
     // Anthill and research come from the profile; the AI always gets the neutral set. A
     // resumed match keeps the ones it was OPENED with: research bought between two sittings
     // must not change a board that is already half played, or the record stops replaying.
-    const mods = resume?.setup.mods ?? this.profile.modsFor(mySpecies);
+    const difficulty: SuspendDifficulty = resume?.difficulty
+      ?? (tutorial ? "easy" : this.difficulty === "impossible" ? "impossible" : seated ? "hard" : this.difficulty);
+    const mods = resume?.setup.mods ?? this.profile.modsFor(mySpecies, difficulty);
     // Counted as the match runs: by the time it ends the surge may have lapsed and the
     // hive handed its tiles back, so the board can no longer say it happened.
     let queensTaken = resume?.queens ?? 0;
@@ -1608,8 +1610,6 @@ export class App {
     // it is resumed onto is the board the player actually left (platform/suspend.ts). The
     // tutorial is never suspended: it is a walkthrough with an overlay counting through it,
     // and half of one is not something to hand back to anybody.
-    const difficulty: SuspendDifficulty =
-      resume?.difficulty ?? (tutorial ? "easy" : seated ? "hard" : this.difficulty);
     const keep = (): void => {
       if (tutorial) return;
       const held = this.match;

@@ -31,6 +31,8 @@ export interface Candidate { action: Action; score: number }
 export interface GenOptions {
   /** How many candidates survive ordering. The search's real branching factor. */
   limit: number;
+  /** Include sacrifices and every rally destination for full-turn planning. */
+  complete?: boolean;
   travel: boolean;
   rally: boolean;
   /** Moves onto our own tiles. Off for Easy, which therefore never masses an army. */
@@ -78,7 +80,7 @@ export function generate(
       if (n.terrain === "blocked" || blockedByEnemyLeaf(state, n, p)) continue;
       const forward = oppNest ? Math.max(0, srcDist - distance(n, oppNest)) : 0;
       const score = rateStep(state, src, n, commit, p, opp, atkMul, defMul, ctx, forward, opts, myNest);
-      if (score > 0) out.push({ action: { kind: "move", from: xy(src), to: xy(n) }, score });
+      if (score > 0 || opts.complete) out.push({ action: { kind: "move", from: xy(src), to: xy(n) }, score });
     }
 
     /**
@@ -91,7 +93,7 @@ export function generate(
      * point, not an incidental. It still sits below a capture, because taking ground off
      * the opponent beats claiming empty ground, and the search sorts out the rest.
      */
-    if (opts.travel && commit >= 4) {
+    if (opts.travel && commit >= (opts.complete ? 1 : 4)) {
       for (const to of travelTargets(state, src)) {
         const gain = oppNest ? Math.max(0, srcDist - distance(to, oppNest)) : 0;
         const t = state.grid[to.r]?.[to.c];
@@ -103,7 +105,7 @@ export function generate(
     }
   }
 
-  if (opts.rally) out.push(...rallyCandidates(state, p, opp, ctx, atkMul, defMul));
+  if (opts.rally) out.push(...rallyCandidates(state, p, opp, ctx, atkMul, defMul, opts.complete));
   if (opts.veinGuard) {
     out.push(...veinGuardCandidates(state, p, opp));
     out.push(...nestDefenceCandidates(state, p, opp, ctx));
@@ -352,13 +354,13 @@ function rateReinforce(
  */
 function rallyCandidates(
   state: GameState, p: Player, opp: Player, ctx: ActionContext,
-  atkMul: number, defMul: number,
+  atkMul: number, defMul: number, complete = false,
 ): Candidate[] {
   let spare = 0;
   for (const t of allTiles(state)) {
     if (t.owner === p && isConnected(state, t)) spare += Math.max(0, t.soldiers - keepOn(t));
   }
-  if (spare < 6) return [];
+  if (spare < (complete ? 1 : 6)) return [];
 
   const out: Candidate[] = [];
   for (const dst of rallyTargets(state, p)) {
@@ -381,7 +383,7 @@ function rallyCandidates(
       if (threat > dst.soldiers && pooled > threat) best = Math.max(best, 300);
     }
 
-    if (best > 0) out.push({ action: { kind: "rally", to: xy(dst) }, score: best });
+    if (best > 0 || complete) out.push({ action: { kind: "rally", to: xy(dst) }, score: best });
   }
   return out;
 }

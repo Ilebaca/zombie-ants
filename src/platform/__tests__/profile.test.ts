@@ -299,3 +299,16 @@ describe("a save that names a colony the game no longer has", () => {
     expect(s.isUnlocked(s.get().lastSpecies)).toBe(true);
   });
 });
+
+it("persists Impossible and grants upgrades only to that opponent", () => {
+  const kv = new MemoryStore();
+  const profile = new ProfileStore(kv);
+  profile.update((p) => { p.difficulty = "impossible"; });
+  const loaded = new ProfileStore(kv);
+  expect(loaded.get().difficulty).toBe("impossible");
+  const mods = loaded.modsFor("fire", "impossible");
+  expect(mods.ai.royal).toBe(CHAMBER_MAX.royal);
+  expect(mods.ai.cultivate).toBe(CHAMBER_MAX.cultivate);
+  expect(mods.ai.reservoir).toBe(RESEARCH_MAX);
+  expect(loaded.modsFor("fire", "hard").ai.royal).toBe(0);
+});

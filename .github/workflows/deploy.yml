@@ -39,6 +39,10 @@ jobs:
       - run: npm run lint
       - run: npm test
 
+      - name: Screen Impossible against Hard with paired sides and upgrade controls
+        timeout-minutes: 15
+        run: npx tsx tools/impossible-bench.ts 32 8
+
       - run: npm run build
 
       # The TypeScript build is the game now. The legacy single-file build ships beside it

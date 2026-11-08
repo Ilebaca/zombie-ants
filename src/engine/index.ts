@@ -22,3 +22,6 @@ export {
 export type {
   MatchRecord, MatchSetup, Move, MoveResult, Refusal, Replay,
 } from "./protocol";
+
+export * from "./difficulty";
+export * from "./opponent-mods";

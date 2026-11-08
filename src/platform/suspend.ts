@@ -24,18 +24,13 @@
  * suffix, so each account suspends its own match and two colonies on one phone can never
  * resume into each other.
  */
-import type { MatchRecord, MatchSetup, Move, SpeciesId } from "../engine";
-import { replayMatch } from "../engine";
+import type { Difficulty, MatchRecord, MatchSetup, Move, SpeciesId } from "../engine";
+import { DIFFICULTIES, replayMatch } from "../engine";
 import type { GameState } from "../engine";
 import type { KeyValueStore } from "./storage";
 
-/**
- * Mirrors `Difficulty` in `ai/search.ts`, spelled out rather than imported: `platform/`
- * may not reach into `ai/` (PROJECT_GUIDE.md §3), and a suspended match has to remember which of
- * the three opponents it was being played against. `suspend.test.ts` holds the two lists
- * together, so a fourth level cannot be added to one and not the other.
- */
-export type SuspendDifficulty = "easy" | "normal" | "hard";
+/** Saved matches use the shared difficulty identifiers. */
+export type SuspendDifficulty = Difficulty;
 
 /** Who was across the board. Absent for a match with nobody found — a challenge. */
 export interface SuspendFoe {
@@ -166,4 +161,4 @@ export class SuspendStore {
   }
 }
 
-const DIFFICULTIES: readonly SuspendDifficulty[] = ["easy", "normal", "hard"];
+

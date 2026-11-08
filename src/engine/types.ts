@@ -148,7 +148,7 @@ export interface Species {
   ability: Ability;
 }
 
-/** Per-player modifiers supplied by the meta game. The AI always gets the neutral set. */
+/** Per-player modifiers supplied by the meta game. Easy through Hard get neutral modifiers; Impossible uses capped chamber/research upgrades. */
 export interface PlayerMods {
   /** Anthill chamber levels. */
   royal: number;

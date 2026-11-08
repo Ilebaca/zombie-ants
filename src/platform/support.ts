@@ -114,10 +114,10 @@ export const FAQ: readonly FaqEntry[] = [
       + "third of what a win there pays. The granary adds to it while you are away.",
   },
   {
-    q: "Why is the enemy always Hard?",
-    a: "A matched opponent stands in for a person, and a person who folds is worse than no "
-      + "opponent, so they play at full strength. The difficulty in Settings is what the "
-      + "challenges use.",
+    q: "What does Enemy AI change?",
+    a: "Easy, Normal and Hard control challenge opponents; matched opponents use Hard. "
+      + "Selecting Impossible applies to both: the enemy plans complete turns and has "
+      + "maximum chamber and research upgrades.",
   },
   {
     q: "I bought something and it has not arrived.",

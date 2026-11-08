@@ -207,8 +207,9 @@ These were each decided deliberately, several after bugs. Changing one silently 
    species gets one. `abilitySpendsTurn()` in the engine owns the rule so the screen and the
    AI cannot disagree about it — `aiTurn` used to cast and march in the same turn.
 
-10. **The AI gets no anthill upgrades, no research and no traits.** It competes on decision
-   quality only, so player progression never becomes mandatory. `neutralMods()` spreads the
+10. **Easy, Normal and Hard get no anthill upgrades, research or traits.** Impossible is
+   an explicit exception: it uses the same capped chamber and research levels as the player.
+   It receives no extra actions, invented combat bonuses or free soldiers. `neutralMods()` spreads the
    engine's own `NEUTRAL_MODS` rather than writing the fields out, or a field added there
    is silently zero here and reads as a deliberate neutral value.
 
@@ -5343,3 +5344,24 @@ what keeps AI search from writing stats or currencies (§5).
 - Native storage writes are queued in call order; reads remain synchronous from memory.
 - Renderer resets replace options as well as board state, including identities and ground.
 - Account sign-in normalises account IDs and player codes consistently.
+
+## Impossible difficulty
+
+The user explicitly requested a fully upgraded fourth difficulty. Easy/Normal/Hard retain
+their existing search and neutral enemy modifiers. Shared difficulty IDs live in
+`engine/difficulty.ts`; capped enemy upgrades live in `engine/opponent-mods.ts`.
+Impossible is selectable in Settings and applies to both challenges and matched opponents;
+tutorials remain Easy. Modifiers and difficulty are stored in match setup for accurate
+resumption and replay.
+
+`ai/impossible.ts` searches complete legal turns for both players: travel, rally,
+reinforcement, captures, waiting, abilities before/after movement, and targeted tunnelling.
+Production, status effects and cooldowns advance in simulated turns. Iterative deepening
+keeps only completed search iterations, with node/time limits, exact state deduplication
+and a bounded transposition table. Income remains valuable after the expected match length.
+Nest threats, resources, surge and attacking progress guide move ordering/evaluation.
+
+This is bounded selective search, not a proof of perfect or unbeatable play.
+`tools/impossible-bench.ts` runs accelerated paired screening against Hard, including an
+equal-upgrade control. Draws at the measurement horizon are reported as draws; they are
+never relabelled wins. The shipping turn budget is larger than the screening budget.

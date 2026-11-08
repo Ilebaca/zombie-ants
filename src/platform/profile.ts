@@ -1,19 +1,18 @@
 /**
  * The player's persistent colony record.
  *
- * This is the ONLY source of PlayerMods for the human side. The AI is always handed
- * NEUTRAL_MODS — it competes on decision quality, never on progression (PROJECT_GUIDE.md §4.8),
- * so no code path here may ever feed the "ai" player.
+ * Human modifiers come from the saved colony. Enemy modifiers come from the selected
+ * difficulty: Easy through Hard remain neutral; Impossible has capped chamber/research levels.
  *
  * The engine does not import this module. Search runs on engine state alone, which is what
  * keeps simulation from writing stats or currencies (PROJECT_GUIDE.md §5).
  */
 import {
-  CHAMBER_MAX, MAPS, NEUTRAL_MODS, RESEARCH_MAX, SPECIES, basicLook, chamberCost, lookById,
+  DIFFICULTIES, opponentModifiers, CHAMBER_MAX, MAPS, NEUTRAL_MODS, RESEARCH_MAX, SPECIES, basicLook, chamberCost, lookById,
   looksFor, researchCost,
 } from "../engine";
 import { COLONY_START, grownColony } from "./colony";
-import type { Look, Player, PlayerMods, SpeciesId } from "../engine";
+import type { Difficulty, Look, Player, PlayerMods, SpeciesId } from "../engine";
 import { SPECIES_UNLOCK, type ResearchTrack } from "./catalogue";
 import {
   QUEST_SWEEP_BONUS, dayIndex, isClaimable, levelProgress, levelReward, questDef, rollQuests,
@@ -284,7 +283,7 @@ export interface Profile {
   /** Last setup choices, so the pickers open where the player left off. */
   lastSpecies: SpeciesId;
   /** The difficulty the player last chose. Kept here so it survives a reload. */
-  difficulty: "easy" | "normal" | "hard";
+  difficulty: Difficulty;
   lastShape: string;
   /**
    * Which guided tour this player has already been walked through.
@@ -549,8 +548,8 @@ export function normalise(raw: unknown): Profile {
           .map((l) => Math.floor(l)))]
       : [],
     lastSpecies: isSpecies(p.lastSpecies) ? p.lastSpecies : base.lastSpecies,
-    difficulty: p.difficulty === "easy" || p.difficulty === "normal" || p.difficulty === "hard"
-      ? p.difficulty : base.difficulty,
+    difficulty: DIFFICULTIES.includes(p.difficulty as Difficulty)
+      ? p.difficulty as Difficulty : base.difficulty,
     lastShape: typeof p.lastShape === "string" ? p.lastShape : base.lastShape,
     // An old save's `tutorialDone` is deliberately NOT read: see `tourSeen`.
     tourSeen: typeof p.tourSeen === "number" && p.tourSeen > 0 ? Math.floor(p.tourSeen) : 0,
@@ -1201,11 +1200,10 @@ export class ProfileStore {
   }
 
   /**
-   * Modifiers for a match. `you` is derived from the profile; `ai` is ALWAYS neutral —
-   * the AI gets no anthill and no research (PROJECT_GUIDE.md §4.8).
+   * Modifiers for a match. Human progress and the selected enemy upgrade policy stay separate.
    */
-  modsFor(species: SpeciesId): Record<Player, PlayerMods> {
-    return { you: modsFrom(this.profile, species), ai: neutralMods() };
+  modsFor(species: SpeciesId, difficulty: Difficulty = "normal"): Record<Player, PlayerMods> {
+    return { you: modsFrom(this.profile, species), ai: opponentModifiers(difficulty) };
   }
 
   isUnlocked(id: SpeciesId): boolean { return this.profile.unlocked.includes(id); }

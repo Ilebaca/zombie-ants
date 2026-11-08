@@ -88,7 +88,9 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
       title: "Enemy AI",
       // Said plainly, because it is surprising: a matchmade opponent stands in for a
       // person and always plays hard, so this is the challenge difficulty.
-      desc: "Challenge difficulty. A matched opponent plays Hard.",
+      desc: opts.difficulty === "Impossible"
+        ? "Maxed chambers and research. Applies to challenges and matched opponents."
+        : "Challenge difficulty. Matched opponents use Hard unless you select Impossible.",
       value: opts.difficulty,
       id: "setDiff",
       onPick: opts.onCycleDifficulty,

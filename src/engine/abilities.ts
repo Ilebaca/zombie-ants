@@ -30,7 +30,7 @@ export { SWARM_BITE } from "./config";
 
 /* ------------------------------------------------------- RESEARCH SCALING */
 
-/** Exocrine Reservoir level. The AI always passes NEUTRAL_MODS, so it scales at zero. */
+/** Exocrine Reservoir level. Easy through Hard use level zero; Impossible uses the same research cap as the player. */
 const abilityLevel = (mods: PlayerMods): number => mods.reservoir;
 
 /**
