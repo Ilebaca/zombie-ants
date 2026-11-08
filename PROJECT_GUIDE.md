@@ -3036,6 +3036,18 @@ nagging the one player who had already done what it asked.**
     visual viewport, fullscreen, inset and menu geometry events for on-device diagnosis.
     It contains no save data and sends nothing. Android owns Recents and system
     window animations; a web page cannot force native window inset policy.
+  - **Android framed-window compensation** (`android-fullscreen #app`):
+    the phone report on e95a5a0 showed a 914px full window with a 52px top cutout,
+    changing to 838px with a 0px cutout while display-mode remained fullscreen.
+    Freezing height alone kept the entire game below the new status-bar origin:
+    the top gap doubled and the tray fell outside the visible window. The Android
+    fullscreen surface now subtracts the withdrawn safe-top inset from its top.
+    CSS env() updates the position with the host; the calibrated height, padding
+    and all child dimensions stay unchanged. Browser tabs and other platforms do
+    not get this compensation. Android still owns the appearance of its bars.
+    Regression verification uses real Chromium safe-area overrides and an inset
+    host window, checks unchanged screen coordinates for HUD, Play and tray, and
+    clicks a tray button while framed. It must not just mock innerHeight.
   - **The manifest is precached, and a new build re-fetches it**: the worker's `install`
     adds the whole precache list from the network and `activate` deletes every other
     build's cache, so the change lands with the deploy. What it cannot do is re-install

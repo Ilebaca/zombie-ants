@@ -9148,6 +9148,13 @@ body,
   height: var(--installed-height);
   contain: layout;
 }
+/* Chrome can inset its window below the status bar while withdrawing the cutout
+   inset (52px → 0px on the reported phone). Move the fixed surface by that delta
+   so its pixels keep their screen coordinates. Its dimensions and padding stay
+   unchanged; the system bars may cover the edges, as with an overlay. */
+.android-fullscreen #app {
+  top: min(0px, calc(env(safe-area-inset-top, 0px) - var(--safe-top)));
+}
 
 /* Typography roles: display face for headings and game figures; body face for
    reading and form controls. Display has one real weight, so never synthesize bold. */

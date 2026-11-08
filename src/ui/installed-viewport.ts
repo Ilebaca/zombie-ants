@@ -14,6 +14,11 @@ export function stabilizeInstalledViewport(): () => void {
   // Fullscreen API over it: the two modes have separate lifecycle/inset handling.
   const hostFullscreen = window.matchMedia("(display-mode: fullscreen)").matches;
   const root = document.documentElement;
+  const android = /Android/i.test(navigator.userAgent);
+  const alignFullscreenWindow = (): void => {
+    root.classList.toggle("android-fullscreen", android
+      && (hostFullscreen || document.fullscreenElement === root));
+  };
   const probe = document.createElement("div");
   probe.style.cssText = "position:fixed;visibility:hidden;pointer-events:none;"
     + "padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)";
@@ -43,6 +48,7 @@ export function stabilizeInstalledViewport(): () => void {
 
   const resize = (): void => { measure(); };
   const fullscreen = (): void => {
+    alignFullscreenWindow();
     if (document.fullscreenElement === root) {
       measure(true);
       lockPortrait();
@@ -58,7 +64,7 @@ export function stabilizeInstalledViewport(): () => void {
   const immerse = (event: Event): void => {
     if (hostFullscreen || window.matchMedia("(display-mode: fullscreen)").matches
       || attempted || document.hidden || document.fullscreenElement
-      || !document.fullscreenEnabled || !/Android/i.test(navigator.userAgent)) return;
+      || !document.fullscreenEnabled || !android) return;
     if (navigator.userActivation?.isActive === false) return;
     const target = event.target;
     if (target instanceof Element && target.closest("input, textarea, select, [contenteditable]")) return;
@@ -78,6 +84,7 @@ export function stabilizeInstalledViewport(): () => void {
   };
 
   measure();
+  alignFullscreenWindow();
   root.classList.add("installed-frame");
   const stopReport = watchDisplay(probe);
   window.addEventListener("resize", resize);
@@ -93,7 +100,7 @@ export function stabilizeInstalledViewport(): () => void {
     document.removeEventListener("visibilitychange", awake);
     document.removeEventListener("click", immerse, true);
     probe.remove();
-    root.classList.remove("installed-frame");
+    root.classList.remove("installed-frame", "android-fullscreen");
     for (const name of ["--installed-height", "--game-vh", "--safe-top", "--safe-bottom"]) {
       root.style.removeProperty(name);
     }

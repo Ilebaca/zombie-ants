@@ -73,6 +73,28 @@ describe("installed game viewport", () => {
     }
   });
 
+  it("keeps the screen calibration while Chrome withdraws the cutout inset", () => {
+    hostFullscreen = true;
+    const safe = { paddingTop: "52px", paddingBottom: "0px" } as CSSStyleDeclaration;
+    vi.spyOn(window, "getComputedStyle").mockReturnValue(safe);
+    viewport(411, 914);
+    stop = stabilizeInstalledViewport();
+    expect(document.documentElement.classList.contains("android-fullscreen")).toBe(true);
+    for (let i = 0; i < 4; i++) {
+      safe.paddingTop = "0px";
+      viewport(411, 838);
+      expect(value("--safe-top")).toBe("52px");
+      expect(value("--installed-height")).toBe("914px");
+      safe.paddingTop = "52px";
+      viewport(411, 914);
+      expect(value("--safe-top")).toBe("52px");
+      expect(value("--installed-height")).toBe("914px");
+    }
+    stop();
+    stop = undefined;
+    expect(document.documentElement.classList.contains("android-fullscreen")).toBe(false);
+  });
+
   it("accepts more available space and a real width change", () => {
     stop = stabilizeInstalledViewport();
     viewport(390, 844);
@@ -112,6 +134,7 @@ describe("installed game viewport", () => {
     expect(document.documentElement.classList.contains("installed-frame")).toBe(false);
     expect(document.body.children).toHaveLength(0);
     expect(request).not.toHaveBeenCalled();
+    expect(document.documentElement.classList.contains("android-fullscreen")).toBe(false);
   });
 });
 
@@ -140,12 +163,14 @@ describe("Android immersive fullscreen", () => {
     expect(request).toHaveBeenCalledWith({ navigationUI: "hide" });
     full = document.documentElement;
     document.dispatchEvent(new Event("fullscreenchange"));
+    expect(document.documentElement.classList.contains("android-fullscreen")).toBe(true);
     expect(value("--installed-height")).toBe("800px");
     viewport(390, 844);
     document.dispatchEvent(new Event("fullscreenchange"));
     expect(value("--installed-height")).toBe("844px");
     full = null;
     document.dispatchEvent(new Event("fullscreenchange"));
+    expect(document.documentElement.classList.contains("android-fullscreen")).toBe(false);
     viewport(390, 760);
     tap();
     expect(request).toHaveBeenCalledTimes(1);
@@ -182,9 +207,11 @@ describe("Android immersive fullscreen", () => {
   });
 
   it("does not invoke Android fullscreen behavior on other platforms", () => {
+    hostFullscreen = true;
     vi.spyOn(navigator, "userAgent", "get").mockReturnValue("iPhone");
     stop = stabilizeInstalledViewport();
     tap();
     expect(request).not.toHaveBeenCalled();
+    expect(document.documentElement.classList.contains("android-fullscreen")).toBe(false);
   });
 });
