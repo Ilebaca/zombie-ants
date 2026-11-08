@@ -83,7 +83,7 @@ export function buildColonyRoad(
 
     const player = el("div", "rd-player");
     player.title = `${compact(profile.colony)} troops`;
-    player.append(hudMark("swords", 16), el("b", "roadt", compact(profile.colony)));
+    player.appendChild(el("b", "roadt", compact(profile.colony)));
     road.appendChild(player);
 
     // Chapter one is at the foot. A player climbs past each divider into its five rewards.

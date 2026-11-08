@@ -6178,7 +6178,7 @@ button:not(.playbtn):active,
   font-weight: 400;
   --rd-u: var(--u);
   --rd-row: calc(212 * var(--rd-u));
-  --rd-gate: calc(104 * var(--rd-u));
+  --rd-gate: calc(70 * var(--rd-u));
   --rd-spine: calc(56 * var(--rd-u));
   --rd-pad: calc(12 * var(--rd-u));
   --rd-endpad: calc(24 * var(--rd-u) + var(--safe-bottom));
@@ -6266,7 +6266,7 @@ button:not(.playbtn):active,
   grid-row: 1;
   display: grid;
   justify-items: center;
-  gap: calc(6 * var(--rd-u));
+  gap: 0;
 }
 .rd-level {
   display: grid;
@@ -6283,6 +6283,8 @@ button:not(.playbtn):active,
   text-shadow: 0 2px 0 #0a0823 !important;
 }
 .rd-at {
+  position: absolute;
+  top: calc(100% + 6 * var(--rd-u));
   padding: calc(2 * var(--rd-u)) calc(3 * var(--rd-u));
   color: #c3b8ef;
   font-size: calc(10 * var(--rd-u));
@@ -6450,9 +6452,9 @@ button:not(.playbtn):active,
   column-gap: 0;
   height: var(--rd-gate);
   padding: 0 var(--rd-pad) calc(12 * var(--rd-u));
-  border-block: calc(2 * var(--rd-u)) solid #a064e6;
-  background-image: linear-gradient(168deg, #c670ef 0%, #7626c7 14%, #381577 70%, #a348cf 100%);
-  clip-path: polygon(0 10%, 100% 0, 100% 90%, 0 100%);
+  border: none;
+  background-image: linear-gradient(176deg, transparent 20%, #edb6ff 21% 23%,
+    #ac45e4 24% 30%, #501d97 66%, #bf61e5 74%, transparent 75%);
 }
 .rd-gatek {
   grid-column: 1;
@@ -6472,7 +6474,7 @@ button:not(.playbtn):active,
 }
 .rd-tracknames {
   position: absolute;
-  bottom: calc(13 * var(--rd-u));
+  bottom: calc(7 * var(--rd-u));
   inset-inline: var(--rd-pad);
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--rd-spine) minmax(0, 1fr);
@@ -6498,9 +6500,9 @@ button:not(.playbtn):active,
   align-items: center;
   justify-content: center;
   gap: calc(4 * var(--rd-u));
-  min-width: calc(64 * var(--rd-u));
-  height: calc(34 * var(--rd-u));
-  padding: 0 calc(9 * var(--rd-u));
+  min-width: calc(52 * var(--rd-u));
+  height: calc(32 * var(--rd-u));
+  padding: 0 calc(6 * var(--rd-u));
   border: calc(2 * var(--rd-u)) solid #fff194;
   border-radius: calc(10 * var(--rd-u));
   background: #ffd238;
@@ -6518,8 +6520,7 @@ button:not(.playbtn):active,
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
   background: #fff194;
 }
-.rd-player .hudmark { width: calc(16 * var(--rd-u)); height: calc(16 * var(--rd-u)); }
-.rd-player .roadt { color: inherit; font-size: calc(18 * var(--rd-u)); font-weight: 400; white-space: nowrap; }
+.rd-player .roadt { color: inherit; font-size: calc(17 * var(--rd-u)); font-weight: 400; white-space: nowrap; }
 
 /* ------------------------------------------------------- WHAT IT PAID
    Confirms the currency and amount actually banked. `#achievements.popped` is what lifts
