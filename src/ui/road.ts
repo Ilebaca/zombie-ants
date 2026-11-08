@@ -11,6 +11,7 @@ import { avatarFace, el, hudMark, redraw, screenEl } from "./chrome";
 import { icon } from "./icons";
 import { shelfArt } from "./shelf";
 import { roadPalette } from "./road-theme";
+import { TIERS } from "../engine";
 
 interface Payout { mark: string; amount: number; name: string }
 
@@ -24,7 +25,7 @@ const payouts = (reward: RoadReward): Payout[] => [
 
 const spoken = (reward: RoadReward): string =>
   reward.avatar ? avatarName(reward.avatar)
-    : reward.trait ? "A random trait"
+    : reward.trait ? `A random ${TRAIT_TIER[reward.trait].name} trait`
       : payouts(reward).map((p) => `+${p.amount} ${p.name}`).join(" and ");
 
 /**
@@ -49,8 +50,11 @@ export function buildColonyRoad(
 ): HTMLElement {
   const root = screenEl("achievements");
   root.setAttribute("aria-label", "Colony Road");
-  root.style.setProperty("--rd-foot", roadPalette(1)[1]);
-  root.style.setProperty("--rd-summit", roadPalette(regionOf(ROAD_CHAPTERS))[1]);
+  for (const [end, region] of [["foot", 1], ["summit", regionOf(ROAD_CHAPTERS)]] as const) {
+    const palette = roadPalette(region);
+    root.style.setProperty(`--rd-${end}-normal`, palette.normal);
+    root.style.setProperty(`--rd-${end}-pass`, palette.pass);
+  }
   const stops = roadStops();
   let scrollTop: number | null = null;
   let took: RoadReward | null = null;
@@ -64,6 +68,12 @@ export function buildColonyRoad(
     const nextStop = stops.find((stop) => profile.colony < stop.colony)?.index ?? -1;
     const road = el("div", "rd-road");
     road.style.setProperty("--rd-current", progressPosition(profile.colony, stops));
+    for (const end of ["summit", "foot"]) {
+      const cap = el("span", `rd-end rd-${end}`);
+      cap.setAttribute("aria-hidden", "true");
+      cap.appendChild(el("span", "rd-endpass"));
+      road.appendChild(cap);
+    }
 
     const progress = el("div", "rd-progress");
     progress.setAttribute("role", "progressbar");
@@ -113,12 +123,22 @@ export function buildColonyRoad(
     const region = regionOf(chapter);
     const palette = roadPalette(region);
     section.dataset.region = String(region);
-    section.style.setProperty("--rd-area", palette[0]);
-    section.style.setProperty("--rd-depth", palette[1]);
-    section.style.setProperty("--rd-glow", palette[2]);
-    section.style.backgroundColor = palette[1];
+    section.style.setProperty("--rd-normal", palette.normal);
+    section.style.setProperty("--rd-pass", palette.pass);
     const premium = el("span", "rd-premiumwash");
     premium.setAttribute("aria-hidden", "true");
+    // Static light particles: decoration only, with no color wash or animation.
+    for (const [x, y, size] of [
+      [12, 5, 2], [72, 12, 3], [32, 20, 2], [86, 27, 2], [18, 34, 3],
+      [63, 41, 2], [40, 48, 3], [89, 55, 2], [14, 62, 2], [69, 69, 3],
+      [35, 76, 2], [80, 83, 2], [23, 90, 3], [58, 97, 2],
+    ] as const) {
+      const spark = el("span", "rd-speck");
+      spark.style.left = `${x}%`;
+      spark.style.top = `${y}%`;
+      spark.style.setProperty("--rd-speck", String(size));
+      premium.appendChild(spark);
+    }
     section.appendChild(premium);
     const closes = stops[chapter * ROAD_CHAPTER_STOPS - 1]?.colony ?? Infinity;
     section.classList.toggle("complete", store.get().colony >= closes);
@@ -135,9 +155,9 @@ export function buildColonyRoad(
     const reached = store.get().colony >= previous;
     const divider = el("div", "rd-gate rd-chapname" + (reached ? " reached" : ""));
     divider.dataset.chapter = String(chapter);
-    const ribbon = el("span", "rd-breaker");
-    ribbon.setAttribute("aria-hidden", "true");
-    divider.appendChild(ribbon);
+    const block = el("span", "rd-breaker");
+    block.setAttribute("aria-hidden", "true");
+    divider.appendChild(block);
     divider.append(
       el("b", "rd-gatek", `Chapter ${chapter}`),
       el("span", "rd-gaten", regionName(regionOf(chapter))),
@@ -181,6 +201,11 @@ export function buildColonyRoad(
     button.dataset.stop = String(stop.index);
     button.dataset.track = track;
     button.dataset.key = key;
+    if (reward.trait) {
+      button.classList.add("trprize");
+      button.dataset.tier = reward.trait;
+      button.style.setProperty("--rd-trait-fill", TIERS[reward.trait].fill);
+    }
     button.title = `${track === "pass" ? "Colony Pass: " : ""}${spoken(reward)}`;
     button.setAttribute("aria-label", spoken(reward));
     button.setAttribute("aria-describedby", `road-${track}-${stop.chapter}`);
@@ -195,8 +220,12 @@ export function buildColonyRoad(
     const art = el("span", "rd-mark");
     art.setAttribute("aria-hidden", "true");
     if (reward.avatar) art.appendChild(avatarFace(reward.avatar, 100, "rd-face"));
-    else if (reward.trait) art.appendChild(el("span", "rd-mystery", "?"));
-    else for (const payout of payouts(reward)) {
+    else if (reward.trait) {
+      const mystery = el("span", "rd-mystery");
+      mystery.appendChild(el("span", "rd-question", "?"));
+      art.appendChild(mystery);
+      button.appendChild(el("span", "rd-rarity", TRAIT_TIER[reward.trait].name));
+    } else for (const payout of payouts(reward)) {
       const source = shelfArt(payout.mark === "mycel" ? "mycel.1500" : "pher.900");
       if (source) {
         const image = el("img", "hudmark rd-resource") as HTMLImageElement;

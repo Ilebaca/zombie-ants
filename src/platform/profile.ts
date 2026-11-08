@@ -1641,12 +1641,12 @@ export class ProfileStore {
     if (!this.canClaimRoad(key)) return false;
     const reward = rewardFor(key);
     if (!reward) return false;
-    const drop = reward.trait ? rollDrop(random, [null, ...this.profile.unlocked]) : null;
-    if (reward.trait && !drop) return false;
+    const trait = reward.trait ? rollTrait(random, [null, ...this.profile.unlocked]) : null;
+    if (reward.trait && !trait) return false;
     this.update((p) => {
       // Mint the trait and record its claim together. No hatch conversions or larva cost.
-      if (drop) {
-        const item: TraitItem = { uid: `t${p.traitSeq++}`, def: drop.def, tier: drop.tier };
+      if (trait && reward.trait) {
+        const item: TraitItem = { uid: `t${p.traitSeq++}`, def: trait.id, tier: reward.trait };
         p.bag = [item, ...p.bag];
       }
       p.mycel += reward.mycel ?? 0;

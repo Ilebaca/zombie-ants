@@ -294,7 +294,7 @@ describe("colony road layout", () => {
         else if (r.trait) { traits++; expect(coin).toBe(0); }
         else expect(coin).toBeGreaterThan(0);
       }
-      if (stop.free?.avatar) expect(stop.pass).toEqual({ trait: true });
+      if (stop.free?.avatar) expect(stop.pass?.trait).toBeTypeOf("string");
       expect(stop.pass?.avatar).toBeUndefined();
     }
     expect(faces).toBe(ROAD_CHAPTERS);
@@ -305,6 +305,17 @@ describe("colony road layout", () => {
    * A rung is named by its INDEX, not its size. On a geometric ladder the size is a
    * rounded number that a retune would move, and a claim key has to outlive that.
    */
+  it("advances guaranteed trait rarities in ten-chapter stages", () => {
+    const tiers = ["common", "uncommon", "rare", "exceptional", "mythic"];
+    for (let chapter = 1; chapter <= ROAD_CHAPTERS; chapter++) {
+      const index = (chapter - 1) * ROAD_CHAPTER_STOPS + 3;
+      const expected = tiers[Math.floor((chapter - 1) / 10)];
+      expect(passReward(index)?.trait).toBe(expected);
+      expect(rewardFor(roadKey("pass", index))?.trait).toBe(expected);
+      expect(freeReward(index)?.avatar).toBeTruthy();
+    }
+  });
+
   it("resolves a claim key back to the same reward the road showed", () => {
     for (const stop of roadStops()) {
       expect(rewardFor(roadKey("pass", stop.index))).toEqual(passReward(stop.index));
@@ -354,7 +365,7 @@ describe("claiming colony road rewards", () => {
     const avatars = [...s.get().avatars];
     expect(s.claimRoad("p3", () => .99)).toBe(true);
     const item = s.get().bag[0]!;
-    expect(item.tier).toBe("mythic");
+    expect(item.tier).toBe("common");
     const def = traitDef(item.def)!;
     expect(def.species === null || before.unlocked.includes(def.species)).toBe(true);
     expect(s.get().avatars).toEqual(avatars);
@@ -367,6 +378,31 @@ describe("claiming colony road rewards", () => {
     expect(loaded.get().bag).toEqual(s.get().bag);
     expect(loaded.claimRoad("p3", () => 0)).toBe(false);
     expect(loaded.get().bag).toEqual(s.get().bag);
+  });
+
+  it("randomizes the trait without rerolling the promised rarity", () => {
+    for (const [chapter, tier] of [[1, "common"], [11, "uncommon"], [21, "rare"],
+      [31, "exceptional"], [41, "mythic"]] as const) {
+      const index = (chapter - 1) * ROAD_CHAPTER_STOPS + 3;
+      const found: string[] = [];
+      for (const roll of [0, .999]) {
+        const kv = new MemoryStore();
+        const s = new ProfileStore(kv);
+        s.update((p) => { p.colony = stopColony(index); p.pass = true; });
+        const key = roadKey("pass", index);
+        expect(s.claimRoad(key, () => roll)).toBe(true);
+        const item = s.get().bag[0]!;
+        expect(item.tier).toBe(tier);
+        const def = traitDef(item.def)!;
+        expect(def.species === null || s.get().unlocked.includes(def.species)).toBe(true);
+        found.push(item.def);
+        const loaded = new ProfileStore(kv);
+        expect(loaded.get().bag).toEqual(s.get().bag);
+        expect(loaded.claimRoad(key, () => 1 - roll)).toBe(false);
+        expect(loaded.get().bag).toHaveLength(1);
+      }
+      expect(new Set(found).size).toBe(2);
+    }
   });
 
   it("leaves a full-bag trait reward unclaimed until there is space", () => {

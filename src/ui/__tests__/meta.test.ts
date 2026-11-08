@@ -8,7 +8,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import {
   CHAMBER_MAX, DEF, HIVE_COOLDOWN, HIVE_GROW_EVERY, KEEP_NORMAL, MAPS, PROD, RESEARCH_MAX,
-  SPECIES, TRAVEL_RANGE, chamberCost, researchCost,
+  SPECIES, TIERS as RARITY, TRAVEL_RANGE, chamberCost, researchCost,
 } from "../../engine";
 import type { SpeciesId } from "../../engine";
 import {
@@ -974,7 +974,10 @@ describe("colony road screen", () => {
         expect(card.querySelector(".rd-mystery")?.textContent).toBe("?");
         expect(card.querySelector(".rd-caption")?.textContent).toBe("Trait");
         expect(card.querySelector(".rd-amount")).toBeNull();
-        expect(card.getAttribute("aria-label")).toBe("A random trait");
+        expect(card.getAttribute("aria-label")).toBe(`A random ${RARITY[reward.trait].name} trait`);
+        expect(card.dataset.tier).toBe(reward.trait);
+        expect(card.style.getPropertyValue("--rd-trait-fill")).toBe(RARITY[reward.trait].fill);
+        expect(card.querySelector(".rd-rarity")?.textContent).toBe(RARITY[reward.trait].name);
       } else {
         const source = shelfArt(reward.mycel ? "mycel.1500" : "pher.900");
         expect(card.querySelector("img.rd-resource")?.getAttribute("src")).toBe(source);
@@ -1043,8 +1046,8 @@ describe("colony road screen", () => {
     const colors = new Map<number, string>();
     for (const [i, panel] of Array.from(root.querySelectorAll<HTMLElement>(".rd-chap")).entries()) {
       const region = regionOf(ROAD_CHAPTERS - i);
-      const palette = ["--rd-area", "--rd-depth", "--rd-glow"].map((key) => panel.style.getPropertyValue(key)).join();
-      expect(palette).not.toBe(",,");
+      const palette = ["--rd-normal", "--rd-pass"].map((key) => panel.style.getPropertyValue(key)).join();
+      expect(palette).not.toBe(",");
       expect(panel.querySelector(".rd-breaker")).toBeTruthy();
       expect(panel.querySelector(".rd-dividerart")).toBeNull();
       expect(panel.querySelector(".rd-premiumwash")).toBeTruthy();

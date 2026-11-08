@@ -21,6 +21,8 @@
  */
 import { roadAvatar } from "./avatars";
 import { COLONY_START } from "./colony";
+import { TRAIT_TIERS } from "./traits";
+import type { TraitTier } from "./traits";
 
 /**
  * A chapter is FIVE checkpoints wide, and the fifth is the one that closes it.
@@ -67,8 +69,8 @@ export interface RoadReward {
   pheromone?: number;
   /** An avatar id (`platform/avatars.ts`). One checkpoint a chapter pays one of these. */
   avatar?: string;
-  /** One random trait, resolved once when claimed from the player’s available pools. */
-  trait?: true;
+  /** Guaranteed rarity; the trait definition is randomly chosen once at claim time. */
+  trait?: TraitTier;
 }
 
 export interface RoadStop {
@@ -246,11 +248,17 @@ function originalFreeReward(index: number): RoadReward | null {
   return splitPurse(freePurse(chapter), rung, FREE_PAYING);
 }
 
-/** The premium middle checkpoint pays a random trait instead of duplicating the free avatar. */
+/** Rarity advances through five equal stages of the road, without a rarity roll. */
+function roadTraitTier(chapter: number): TraitTier {
+  const stage = Math.floor((chapter - 1) * TRAIT_TIERS.length / ROAD_CHAPTERS);
+  return TRAIT_TIERS[stage] ?? "common";
+}
+
+/** The premium middle checkpoint pays a random trait of the chapter's guaranteed tier. */
 function originalPassReward(index: number): RoadReward | null {
   if (index < 1 || index > ROAD_STOPS) return null;
   const rung = rungOfChapter(index);
-  if (rung === AVATAR_RUNG) return { trait: true };
+  if (rung === AVATAR_RUNG) return { trait: roadTraitTier(chapterAt(index)) };
   return splitPurse(passPurse(chapterAt(index)), rung, FREE_PAYING);
 }
 
@@ -346,6 +354,6 @@ export function rewardText(r: RoadReward): string {
     r.mycel ? `+${r.mycel} mycelium` : "",
     r.pheromone ? `+${r.pheromone} pheromone crystal${r.pheromone === 1 ? "" : "s"}` : "",
     r.avatar ? "A new avatar" : "",
-    r.trait ? "A random trait" : "",
+    r.trait ? `A random ${r.trait} trait` : "",
   ].filter(Boolean).join("  ");
 }

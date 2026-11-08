@@ -1041,28 +1041,33 @@ Ten numbered sections now, with a picture beside the rules that need one.
   positions to the original immutable reward ids, and rewardFor keeps paying the same
   amount for each saved id. Total rewards and saved claim keys remain unchanged.
 - Free middle rungs grant their existing avatar; premium middle rungs grant one random
-  trait instead of a duplicate avatar. The card shows '?' above 'Trait'. claimRoad rolls
-  from universal and owned-species pools with the existing trait rarity odds, mints a uid,
-  and saves the item plus key in one write. It costs no larva and does not convert to a
+  trait instead of a duplicate avatar. Rarity is guaranteed by chapter: Common 1–10,
+  Uncommon 11–20, Rare 21–30, Exceptional 31–40, Mythic 41–50. The trait definition
+  is still random, drawn from universal and owned-species pools by rollTrait; road claims
+  never use hatch rarity odds. claimRoad mints a uid and saves item plus key in one write.
+  Trait cards use the canonical engine rarity fill and print its name above a faceted
+  gold question badge, with 'Trait' beneath. It costs no larva and does not convert to a
   skin/avatar. A full bag leaves the reward unclaimed and shows BAG FULL. Previously paid
   premium keys stay claimed; no retroactive re-roll.
 - Each card claims its own existing free/pass key. An unowned premium card opens the shop;
   future normal cards cannot be claimed. Existing combined claims remain claimed on both
   tracks. Buying a pass later does not repay normal rewards.
-- Area-themed gradients follow the ten regions in five-chapter groups: forest greens,
-  desert ochre, volcanic charcoal, rainforest emerald, mangrove teal, savanna olive,
-  cave indigo, tundra ice blue, amber gold and fungal plum. No repeating ring pattern.
-- The premium half has only a sparse, static sprinkle of tiny gold light specks and a
-  soft glow. No branching texture. Keep graphics bold, simple and consistent with the
-  game's cartoon icons.
-  Road end padding, chapter, premium wash and card classes bypass the flat-background blanket.
+- Area colors follow the ten regions in five-chapter groups: forest greens, desert ochre,
+  volcanic charcoal, rainforest emerald, mangrove teal, savanna olive, cave indigo, tundra
+  ice blue, amber gold and fungal plum. All road backgrounds are solid, with no gradients.
+  The pass side is exactly the left 50% and uses a slightly lighter solid color. Both
+  road end caps carry the same two-color split.
+- The pass side has brighter static gold light particles, each with a small emitted glow.
+  No large color wash, rings, branching texture or animation. Resource card artwork stays
+  unchanged. Only reward-card surfaces bypass the app's flat-background blanket.
 - One continuous central rail is dark ahead and gold behind the current colony. Circular
   checkpoint badges show rung numbers with compact troop thresholds underneath. The gold
   current-colony marker shares exactly the fill endpoint.
 - Progress is calculated in responsive row and divider units, including the extra distance
   between chapters. CSS owns their pixel sizes so the marker does not drift on phone widths.
-- Every chapter starts at the same plain charcoal block with a light top edge and a
-  sharp dark ledge, centered on the exact background seam. The reserved divider gap
+- Every chapter starts at the same square charcoal block with broad angled reflection
+  shapes and a sharp dark bottom ledge, centered on the exact background seam. No rounded
+  corners or white top/inner highlight. The reserved divider gap
   belongs half to each adjacent chapter. Prominent COLONY PASS / FREE REWARDS plaques
   sit above it; chapter and area names are plain white. Themed divider images were
   removed at Milan's request; backgrounds still follow area palettes in ui/road-theme.ts.

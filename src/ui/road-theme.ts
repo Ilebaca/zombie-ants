@@ -1,18 +1,19 @@
-/** Road background colors, one palette for each five-chapter area. */
-const PALETTES = [
-  ["#24593d", "#102d24", "#488751"],
-  ["#846044", "#352d30", "#bb9657"],
-  ["#493337", "#211f2d", "#8b493c"],
-  ["#13634d", "#0b302c", "#2d9c65"],
-  ["#225a5d", "#112f38", "#438477"],
-  ["#5e6238", "#2b3528", "#9d9650"],
-  ["#393557", "#181c31", "#655b91"],
-  ["#285570", "#172d48", "#679dab"],
-  ["#79502f", "#372a2b", "#b9853c"],
-  ["#63366e", "#281e43", "#995195"],
-] as const;
+/** Solid backgrounds for each five-chapter area; pass is exactly the left half. */
+interface RoadPalette { normal: string; pass: string }
 
-/** Base, depth and highlight. Invalid region ids use the first area. */
-export function roadPalette(region: number): readonly [string, string, string] {
+const PALETTES: readonly [RoadPalette, ...RoadPalette[]] = [
+  { normal: "#153b2b", pass: "#214d38" },
+  { normal: "#453b32", pass: "#584b3f" },
+  { normal: "#292830", pass: "#3b363f" },
+  { normal: "#123e32", pass: "#1d5141" },
+  { normal: "#1b3d45", pass: "#2b5159" },
+  { normal: "#343d29", pass: "#495339" },
+  { normal: "#24263f", pass: "#353851" },
+  { normal: "#213d55", pass: "#30516d" },
+  { normal: "#443326", pass: "#594432" },
+  { normal: "#35253f", pass: "#4a3457" },
+];
+
+export function roadPalette(region: number): RoadPalette {
   return PALETTES[region - 1] ?? PALETTES[0];
 }

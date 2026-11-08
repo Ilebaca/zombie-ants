@@ -144,7 +144,7 @@
 
    Colony Road uses flat area colors; its panels need no artwork exemption.
    ====================================================================== */
-*:not(#home):not(#luckyhatch):not(#splash):not(.rd-road):not(.rd-chap):not(.rd-premiumwash):not(.rd-card):not(.rd-cardface), *::before, *::after { background-image: none !important; }
+*:not(#home):not(#luckyhatch):not(#splash):not(.rd-card):not(.rd-cardface), *::before, *::after { background-image: none !important; }
 
 /* Surfaces the legacy sheet fills with a gradient and this file does not
    otherwise dress. */
@@ -6224,8 +6224,22 @@ button:not(.playbtn):active,
   isolation: isolate;
   padding-top: calc(72 * var(--rd-u) - var(--rd-gate) / 2 + var(--safe-top));
   padding-bottom: var(--rd-endpad);
-  background-image: linear-gradient(var(--rd-summit) 0 50%, var(--rd-foot) 50% 100%);
+  background: var(--rd-foot-normal);
 }
+.rd-end {
+  position: absolute;
+  inset-inline: 0;
+  pointer-events: none;
+}
+.rd-endpass { position: absolute; inset-block: 0; left: 0; width: 50%; }
+.rd-summit {
+  top: 0;
+  height: calc(72 * var(--rd-u) - var(--rd-gate) / 2 + var(--safe-top));
+  background: var(--rd-summit-normal);
+}
+.rd-summit .rd-endpass { background: var(--rd-summit-pass); }
+.rd-foot { bottom: 0; height: var(--rd-endpad); background: var(--rd-foot-normal); }
+.rd-foot .rd-endpass { background: var(--rd-foot-pass); }
 .rd-road::before {
   content: "";
   position: absolute;
@@ -6252,29 +6266,25 @@ button:not(.playbtn):active,
 .rd-chap {
   position: relative;
   padding-block: calc(var(--rd-gate) / 2);
-  background-color: var(--rd-depth);
-  background-image:
-    radial-gradient(ellipse at 0% 15%, var(--rd-glow), transparent 64%),
-    linear-gradient(150deg, var(--rd-area), var(--rd-depth) 86%);
-  background-size: 100% 100%, 100% 100%;
+  background: var(--rd-normal);
 }
 .rd-premiumwash {
   position: absolute;
   inset-block: 0;
   left: 0;
   width: 50%;
+  background: var(--rd-pass);
   pointer-events: none;
-  background-image:
-    radial-gradient(circle at 18% 9%, #fff5b8b3 0 1px, #ffda5d38 2px, transparent 5px),
-    radial-gradient(circle at 72% 23%, #ffef9bb3 0 1px, transparent 4px),
-    radial-gradient(circle at 31% 42%, #fff6c299 0 1px, #ffd25d33 2px, transparent 5px),
-    radial-gradient(circle at 82% 61%, #fff4b6a6 0 1px, transparent 4px),
-    radial-gradient(circle at 22% 79%, #fff4b6a6 0 1px, transparent 4px),
-    radial-gradient(circle at 66% 94%, #fff4b6a6 0 1px, transparent 4px),
-    radial-gradient(ellipse at 5% 48%, #ffd76926, transparent 75%),
-    linear-gradient(90deg, #e7bf5b14, transparent);
-  background-repeat: no-repeat;
-  opacity: .8;
+}
+.rd-speck {
+  position: absolute;
+  width: calc(var(--rd-speck) * var(--rd-u));
+  height: calc(var(--rd-speck) * var(--rd-u));
+  border-radius: 50%;
+  background: #fff1b2;
+  opacity: .85;
+  /* Emitted light, confined to the pass half; never a shadow on text. */
+  box-shadow: 0 0 calc(5 * var(--rd-u)) calc(2 * var(--rd-u)) #ffdf7666 !important;
 }
 .rd-path { position: relative; max-width: 680px; margin-inline: auto; }
 .rd-stop {
@@ -6488,12 +6498,26 @@ button:not(.playbtn):active,
   top: 50%;
   height: calc(70 * var(--rd-u));
   transform: translateY(-50%);
-  border-top: calc(2 * var(--rd-u)) solid #656873;
   border-bottom: calc(5 * var(--rd-u)) solid #0c1016;
-  border-radius: calc(8 * var(--rd-u));
-  background: #272a33;
+  border-radius: 0;
+  overflow: hidden;
+  background: #2c3342;
   box-shadow: 0 calc(3 * var(--rd-u)) 0 #080b10 !important;
   pointer-events: none;
+}
+.rd-breaker::before, .rd-breaker::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.rd-breaker::before {
+  background: #ffffff0d;
+  clip-path: polygon(14% 0, 48% 0, 30% 100%, 0 100%);
+}
+.rd-breaker::after {
+  background: #ffffff08;
+  clip-path: polygon(79% 0, 86% 0, 68% 100%, 61% 100%);
 }
 .rd-gatek, .rd-gaten {
   position: relative;
@@ -6545,13 +6569,60 @@ button:not(.playbtn):active,
   color: #ffe28a;
   border-bottom: calc(2 * var(--rd-u)) solid #cba354;
 }
+.rd-prize.pass.trprize .rd-card {
+  background-image: none;
+  background: color-mix(in srgb, var(--rd-trait-fill) 76%, #161622);
+}
+.rd-prize.pass.trprize .rd-cardface {
+  background-image: none;
+  background: var(--rd-trait-fill);
+}
+.rd-rarity {
+  position: absolute;
+  top: calc(9 * var(--rd-u));
+  left: calc(32 * var(--rd-u));
+  right: calc(7 * var(--rd-u));
+  color: #fff;
+  font-size: calc(10 * var(--rd-u));
+  line-height: 1.1;
+  text-align: center;
+  text-transform: uppercase;
+  pointer-events: none;
+  text-shadow: 0 calc(2 * var(--rd-u)) 0 #172036 !important;
+}
 .rd-mystery {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: calc(82 * var(--rd-u));
+  height: calc(86 * var(--rd-u));
+  background: #a06116;
+  clip-path: polygon(18% 0, 82% 0, 100% 18%, 100% 82%, 82% 100%, 18% 100%, 0 82%, 0 18%);
+}
+.rd-mystery::before, .rd-mystery::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+.rd-mystery::before {
+  inset: 0 0 calc(5 * var(--rd-u));
+  background: #ffcf39;
+  clip-path: polygon(18% 0, 82% 0, 100% 18%, 100% 82%, 82% 100%, 18% 100%, 0 82%, 0 18%);
+}
+.rd-mystery::after {
+  inset: 0;
+  background: #fff2a6;
+  clip-path: polygon(18% 3%, 67% 3%, 32% 18%, 5% 43%, 5% 19%);
+}
+.rd-question {
+  position: relative;
+  z-index: 1;
+  margin-top: calc(-5 * var(--rd-u));
+  color: #29314c;
   font-family: var(--font-display);
-  font-size: calc(90 * var(--rd-u));
+  font-size: calc(69 * var(--rd-u));
   line-height: 1;
-  color: #fff4c2;
-
-  text-shadow: 0 calc(5 * var(--rd-u)) 0 #34205b !important;
+  text-shadow: 0 calc(2 * var(--rd-u)) 0 #fff0a3 !important;
 }
 
 .rd-player {
