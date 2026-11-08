@@ -1,0 +1,35 @@
+name: Evaluate Impossible AI
+
+on:
+  workflow_dispatch:
+    inputs:
+      divisor:
+        description: "Budget divisor (1 uses full shipping budgets)"
+        type: choice
+        options: ["32", "8", "1"]
+        default: "32"
+      pairs:
+        description: "Species pairings, each tested from both sides"
+        type: choice
+        options: ["8", "2"]
+        default: "8"
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Measure both configured difficulty and equal-upgrade play
+        env:
+          BUDGET_DIVISOR: ${{ inputs.divisor }}
+          SPECIES_PAIRS: ${{ inputs.pairs }}
+        run: npx tsx tools/impossible-bench.ts "$BUDGET_DIVISOR" "$SPECIES_PAIRS"

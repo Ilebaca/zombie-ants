@@ -55,8 +55,8 @@ export function evaluateImpossible(state: GameState, me: Player, context: Action
   const scoreFor = (player: Player): number => evaluate(state, player, context.mods, IMPOSSIBLE_WEIGHTS);
   let score = (scoreFor(me) - scoreFor(enemy)) / 2;
   if (state.over || Math.abs(score) > WIN / 2) return score;
-  score += 12 * (incomeOf(state, me, context.mods[me]) + context.mods[me].brood
-    - incomeOf(state, enemy, context.mods[enemy]) - context.mods[enemy].brood);
+  score += 12 * (incomeOf(state, me, context.mods[me])
+    - incomeOf(state, enemy, context.mods[enemy]));
   const tiles = allTiles(state);
   for (const owner of [me, enemy]) {
     const nest = nestTile(state, owner);

@@ -5366,3 +5366,9 @@ This is bounded selective search, not a proof of perfect or unbeatable play.
 `tools/impossible-bench.ts` runs accelerated paired screening against Hard, including an
 equal-upgrade control. Draws at the measurement horizon are reported as draws; they are
 never relabelled wins. The shipping turn budget is larger than the screening budget.
+
+- AI match calibration lives in the separate manual `ai-evaluation.yml` workflow.
+  Do not add the long tournament to every UI deploy. Ordinary CI retains the tactical,
+  legality, upgrade-cap, persistence and replay tests.
+- `incomeOf` includes Brood Nursery's extra nest production, matching `runProduction`.
+  The Impossible evaluator must not add the nursery a second time.

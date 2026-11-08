@@ -9,8 +9,10 @@ import type { Player, SpeciesId } from "../src/engine";
 import { aiTurn, PROFILES } from "../src/ai/search";
 import { planImpossibleTurn } from "../src/ai/impossible";
 
-const divisor = Math.max(1, Number(process.argv[2] ?? 32));
-const pairs = Math.max(1, Math.min(8, Number(process.argv[3] ?? 8)));
+const divisor = Number(process.argv[2] ?? 32);
+const pairs = Number(process.argv[3] ?? 8);
+if (!Number.isInteger(divisor) || divisor < 1 || !Number.isInteger(pairs) || pairs < 1 || pairs > 8)
+  throw new Error("Use a positive integer budget divisor and 1–8 species pairings.");
 const species = Object.keys(SPECIES) as SpeciesId[];
 const sampleContext = defaultContext();
 sampleContext.mods.ai = opponentModifiers("impossible");

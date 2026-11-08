@@ -57,3 +57,13 @@ describe("production", () => {
     expect(tile(s, 1, 1).soldiers).toBe(10 + 2 + 3);   // base output + brood
   });
 });
+
+it("includes Brood Nursery in displayed income without applying the species multiplier twice", () => {
+  const state = blankGame("small", { you: "ghost", ai: "fire" });
+  put(state, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
+  recomputeConnectivity(state);
+  expect(incomeOf(state, "you", { ...mods, brood: 5 })).toBe(7);
+  const events = runProduction(state, "you", { ...mods, brood: 5 });
+  const gained = events.find((event) => event.type === "production");
+  expect(gained?.type === "production" ? gained.gained : 0).toBe(7);
+});

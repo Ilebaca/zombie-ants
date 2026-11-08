@@ -188,11 +188,11 @@ it("values advancing a real assault force more than leaving it idle behind a sma
   const back = blankGame();
   put(back, 0, 0, { owner: "you", struct: "nest", soldiers: 5 });
   put(back, 1, 0, { owner: "you", struct: "stable", soldiers: 100, tunnel: true });
-  put(back, 6, 8, { owner: "you", struct: "stable", soldiers: 3, tunnel: true });
+  put(back, 6, 8, { owner: "you", struct: "stable", soldiers: 6, tunnel: true });
   put(back, 8, 8, { owner: "ai", struct: "nest", soldiers: 25 });
   finish(back);
   const forward = structuredClone(back);
-  tile(forward, 1, 0).soldiers = 3;
+  tile(forward, 1, 0).soldiers = 6;
   tile(forward, 6, 8).soldiers = 100;
   expect(evaluateImpossible(forward, "you", context)).toBeGreaterThan(evaluateImpossible(back, "you", context));
 });

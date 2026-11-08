@@ -29,7 +29,7 @@ export function incomeOf(state: GameState, p: Player, mods: PlayerMods): number 
   }
   if (state.hive.phase === "buff" && state.hive.owner === p) income *= hiveBuffMultiplier(state);
   income *= speciesOf(state.species[p]).prod;
-  return Math.round(income);
+  return Math.round(income) + (nestTile(state, p) ? mods.brood : 0);
 }
 
 /**
