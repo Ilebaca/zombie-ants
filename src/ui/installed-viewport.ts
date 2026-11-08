@@ -29,7 +29,7 @@ export function stabilizeInstalledViewport(): () => void {
     // the installed browser has reserved for its bars, clipping the whole tab bar.
     if (!resized && !enteredFullscreen && nextHeight <= height) return;
     width = nextWidth;
-    height = resized || enteredFullscreen ? nextHeight : Math.max(height, nextHeight);
+    height = resized ? nextHeight : Math.max(height, nextHeight);
     const safe = getComputedStyle(probe);
     root.style.setProperty("--installed-height", `${height}px`);
     root.style.setProperty("--game-vh", `${height / 100}px`);

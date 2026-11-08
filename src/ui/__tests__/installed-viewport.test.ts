@@ -121,6 +121,8 @@ describe("Android immersive fullscreen", () => {
     expect(request).toHaveBeenCalledTimes(1);
     expect(request).toHaveBeenCalledWith({ navigationUI: "hide" });
     full = document.documentElement;
+    document.dispatchEvent(new Event("fullscreenchange"));
+    expect(value("--installed-height")).toBe("800px");
     viewport(390, 844);
     document.dispatchEvent(new Event("fullscreenchange"));
     expect(value("--installed-height")).toBe("844px");
