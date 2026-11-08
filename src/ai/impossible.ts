@@ -204,12 +204,18 @@ function rankedTurns(state: GameState, player: Player, search: Search, root: boo
   const choices: RankedTurn[] = [];
   const seen = new Set<string>();
   const positions = new Set<string>();
-  const consider = (plan: PlannedTurn): void => {
+  const consider = (plan: PlannedTurn, heuristic = 0): void => {
     if (exhausted(search)) return;
     const key = JSON.stringify(plan);
     if (seen.has(key)) return;
     seen.add(key);
     search.nodes++;
+    // Root plans get a complete static safety check. Inside the tree, cheap ordering
+    // lets alpha-beta cut off replies without evaluating every sibling first.
+    if (!root) {
+      choices.push({ plan, score: heuristic });
+      return;
+    }
     const score = simulate(state, player, plan, search.context, (events) => {
       if (plan.before && !events.some((event) => event.type === "abilityCast")) return -Infinity;
       const position = positionKey(state);
@@ -219,13 +225,13 @@ function rankedTurns(state: GameState, player: Player, search: Search, root: boo
     });
     if (Number.isFinite(score)) choices.push({ plan, score });
   };
-  const actions = (): Action[] => generate(state, player, search.context, {
+  const actions = () => generate(state, player, search.context, {
     limit: root ? 32 : 14, complete: true,
     travel: true, rally: true, reinforce: true, veinGuard: root,
-  }).map((candidate) => candidate.action);
+  });
   const plain = actions();
   // Winning attacks and urgent reinforcements are ordered first by the generator.
-  for (const action of plain) consider({ action });
+  for (const candidate of plain) consider({ action: candidate.action }, candidate.score);
   consider({}); // Waiting for production can be better than a losing attack.
   const available = actionsOnly ? [] : abilities(state, player, root);
   for (const before of available) {
@@ -236,10 +242,11 @@ function rankedTurns(state: GameState, player: Player, search: Search, root: boo
       const cast = activateAbility(state, player, search.context.mods[player], before);
       if (!cast.length) continue;
       const consumes = abilitySpendsTurn(abilityOf(state, player).kind);
+      const ended = state.over;
       const afterCast = !state.over && !consumes ? actions() : [];
       restore(state, saved);
-      consider({ before });
-      for (const action of afterCast) consider({ before, action });
+      consider({ before }, ended ? WIN : consumes ? 70 : 5);
+      for (const candidate of afterCast) consider({ before, action: candidate.action }, candidate.score + 0.25);
     } finally {
       restore(state, saved);
     }
