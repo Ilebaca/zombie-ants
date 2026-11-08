@@ -41,8 +41,8 @@ afterEach(() => {
   stop = undefined;
   document.body.replaceChildren();
   delete (document.documentElement as Partial<HTMLElement>).requestFullscreen;
-  delete (document as Partial<Document>).fullscreenElement;
-  delete (document as Partial<Document>).fullscreenEnabled;
+  Reflect.deleteProperty(document, "fullscreenElement");
+  Reflect.deleteProperty(document, "fullscreenEnabled");
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
