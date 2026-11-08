@@ -3010,42 +3010,20 @@ nagging the one player who had already done what it asked.**
     black-translucent` — which this page already sets — is the closest there is: the
     artwork runs BEHIND the clock rather than under a bar, and the clock stays. Only a
     native build can hide it there.
-  - **AND IT BROKE BOTH ENDS OF THE FRAME, because every edge in `skin.css` was written
-    for a window with system bars at its ends.** Reported the next build: "too much
-    space on top and missing some on the bottom under the main menu buttons, just a
-    bit." Every one of those rules says `ours + env(safe-area-inset-*)` — the frame's
-    own 12px margin BELOW whatever the system had taken (§ ONE INSET FOR THE FRAME'S
-    TOP AND SIDES) — and in fullscreen there is nothing in that band to sit under. The
-    window grew UP into the status bar, so the top bar sat the whole of the inset plus
-    12 down; the gesture pill went, so the inset reads 0 and the tray lost the only
-    thing lifting it off the glass. One fault, two ends.
-    - **So in fullscreen the two DO NOT STACK: the larger wins** (`max`, never `+`,
-      at `#home`, `.screen`, `.menuwrap`, the match header, the tray's lift, the
-      deck's reservation, the eight screens the bar does not stand on, and the match
-      footer). Where the inset is a real display CUTOUT it is cleared and nothing is
-      added; where it is zero the frame's own inset is kept. It can only ever take
-      space off a top edge and put space back under a bottom one, which is the
-      direction that was asked for.
-    - **AND `display-mode: fullscreen` IS THE GATE THAT KEEPS IT OFF iOS.** Safari
-      grants no display mode above `standalone`, so this block cannot reach the one
-      platform where a floor under the tray is wrong — iOS keeps the home-indicator
-      strip OUTSIDE the web view and reports 0 inside it, so a floor there stacks our
-      12 on the system's 34 and draws a 46px band of flat colour, which was measured
-      and reverted once already. The same gate keeps it off `standalone` on Android,
-      where the bars are still drawn and the sum is still the right answer.
-    - **The tray's lift and the room reserved for it are STILL one number**, because
-      a tray lifted 12 over a reservation that is not clips the last row's ledge. A
-      test asserts the two spell the same floor.
-    - **AND NOTHING COULD MEASURE THE GATE, so the rule is READ.** jsdom has no
-      display mode and headless Chromium would not grant a fullscreen document, so
-      `css-sanity` reads the block: the gate is fullscreen alone, no declaration in
-      it ADDS to an inset, and every inset sits inside a `max()`. What a browser CAN
-      answer is whether the expressions resolve at all — a nested `max()` inside a
-      `calc()` is exactly the kind of value CSS drops silently — so the block's body
-      was applied unconditionally at 390 wide and measured: the tray went from flush
-      to 13px off the edge with the reservation following it by the same 13, and the
-      drawer's 192.8px was unchanged, which is the inset reading 0 and the floor
-      holding.
+  - **HOME AND THE TRAY EACH HAVE ONE SPACING OWNER**, shared by browser, standalone
+    and fullscreen. Installed apps can retain an older manifest's display mode, so a
+    fullscreen-only spacing patch is not a reliable fix.
+    - Home's top is `--home-top: max(--hudgut, safe-area-inset-top)`. Its currency
+      row has no vertical padding. Previously the row added another scaled 8px after
+      home had already cleared the camera: a 48px inset became about 56px at 384 wide.
+    - The tray's offset is only the device's safe bottom. Its internal bottom padding
+      includes one scaled 8px visible gap and the black ledge. No extra gutter lifts
+      the entire navigation block.
+    - `--nav-tile`, `--nav-pad` and `--nav-pad-bottom` derive `--navh`.
+      `--nav-space` adds the safe-bottom offset once and every deck page reserves it.
+      The legacy unscaled 52px tile minimum is overridden by the normal tap minimum.
+    - The remaining fullscreen rules cover only non-deck screens and match controls;
+      they must not put another home/drawer/tray override back at the end of the sheet.
   - **The manifest is precached, and a new build re-fetches it**: the worker's `install`
     adds the whole precache list from the network and `activate` deletes every other
     build's cache, so the change lands with the deploy. What it cannot do is re-install
@@ -3657,11 +3635,9 @@ and lands on the design's figure exactly.
     var(--tap)` — at the bottom of the scale 48 design px is 42 real ones. Everything
     else here is either over 44 at every scale or carries its target on an invisible
     `::after` (the avatar, the currency steppers).
-  - **`--navh` IS NOW LITERALLY ONE NUMBER.** The bar is on every deck screen and the
-    padding that keeps the last row out from under it is a separate rule; a scaled bar
-    over an unscaled reservation clips the last row's ledge on every phone but one. Both
-    name `var(--navh)`, and the test that used to compare two integers compares the two
-    tokens.
+  - **THE TRAY HAS ONE MEASURED FOOTPRINT.** `--navh` derives from the scaled tile
+    height and its padding; `--nav-space` adds the device's bottom inset once.
+    Home and every scrolling deck screen reserve that same footprint.
   - **A TEST MAY NOT ASSERT THE BARE NUMBER.** `dp(prop, n)` in `css-sanity` builds the
     `calc(N * var(--u))` pattern, because asserting `height: 24px` passes just as well
     against a rule that has quietly fallen off the scale — which is the regression worth
@@ -3674,20 +3650,14 @@ and lands on the design's figure exactly.
   width.
   - **TWELVE FIRST, THEN EIGHT, both asked for directly.** Uniform at 12 (10.7 at 320,
     14.3 at 430) read as too much air at the top of the screen. Eight is the design's own
-    smallest vertical step — the top bar's own padding — and measures **7.1 at 320, 8 at
+    smallest vertical step between the HUD rows, and measures **7.1 at 320, 8 at
     360 and 9.6 at 430**.
   - **IT IS A TOKEN, not the number written in four places.** "Uniform" is the rule, and
     four copies of `8 * var(--u)` would satisfy an assertion about the NUMBER while being
     four chances for the rule to stop being true. The test names the token.
-  - **AND THE BAR MAY NOT PAD ITS OWN BOTTOM.** One gap on the token was still wrong on
-    screen, reported as "maybe there is another margin adding extra space", and it was:
-    `#home .topnav` had `padding: 8u var(--gutter)`, and the bar carries NO BACKGROUND
-    here — so that bottom padding is invisible air ADDING to the banner's `--vgap`
-    margin. Measured at **16 from the chips to the banner** where every other gap on the
-    block was 8. The TOP padding stays, because that one is the air under the notch and
-    has nothing above it to double with. The lesson generalises: on a transparent box a
-    token-driven gap is only the gap if nothing either side of it pads as well, and the
-    test holds the padding's THIRD value for exactly that reason.
+  - **THE CURRENCY ROW HAS NO VERTICAL PADDING.** Home owns the top edge through
+    `--home-top`; a second 8px pad on the transparent row was the persistent top gap.
+    Its horizontal padding still follows `--homeside`.
   - **The banner carries a TOP margin only.** What sits under it is the granary row, whose
     own top padding is that gap; a bottom margin here would be one number spelled twice
     and the two would add.
@@ -3695,36 +3665,17 @@ and lands on the design's figure exactly.
     HIGHER than the burger (107 against 115), because the pill's column has no vertical
     padding and each button's own box carries `py-8`. They share one top edge here — a
     deviation, flagged and kept.
-- **ONE INSET FOR THE FRAME'S TOP AND SIDES** (`--hudgut`), asked for directly from a
-  small iPhone: "the bottom screen margin should be the same as the side margins... top
-  screen margin should also be the same as the side margins". The sides already were —
-  home's own 12 — and the top was ZERO: the bar sat flush on the glass while everything
-  beside it stood 12 off it, so the one edge with no margin was the first thing read on a
-  short screen. It is a TOKEN on `:root` rather than home's `--gutter`, because the PLAY
-  gap and the drawer both measure against it from outside `#home`, where that variable
-  lives.
-  - **AND THE BOTTOM IS THE DEVICE'S, NOT OURS. This was shipped the other way for one
-    build and came straight back.** The tray was lifted by the same 12, and on an
-    installed iPhone that showed up as a **46px band of flat dark** under it — measured
-    off the screenshot at 45, which is the phone's 34pt home-indicator strip plus our 12.
-    The strip is not something CSS can paint: **iOS keeps it OUTSIDE the web view** and
-    fills it with the page's background colour, which is why it came out `#0c160e` rather
-    than the artwork, and why `env(safe-area-inset-bottom)` reads 0 in there. The device
-    had already left a margin and we added a second one to the end of it.
-    - The TOP is the opposite and that is the asymmetry to keep in mind: in a standalone
-      web app the status bar is INSIDE the view (the artwork runs behind the clock) and
-      `env(safe-area-inset-top)` is the real number, so 12 plus the notch is right there
-      and 12 plus nothing is right at the bottom.
-    - So the bar's lift is `env(safe-area-inset-bottom)` and nothing else: zero where the
-      system has taken its strip, the real inset on a browser that hands it over. A test
-      holds that `--hudgut` never gets back into that rule.
-  - **AND THE NOTCH IS CARRIED ONCE, BY THE LIFT.** The bar's height and its own bottom
-    padding both used to add `safe-area-inset-bottom` as well; with the lift carrying it
-    the tray would otherwise float a thumb's width up. Held by a test, because the two
-    cancel out to something that merely looks slightly wrong.
-  - **AND THE DRAWER MOVES DOWN WITH THE BUTTON IT HANGS OFF.** `.menuwrap`'s padding is
-    measured from the TOP OF THE FRAME, so the inset has to be added there too or the
-    panel climbs back up over the menu button.
+- **ONE TOP CLEARANCE AND ONE TRAY FOOTPRINT.** `--hudgut` is the scaled 12px side
+  margin. `--home-top` chooses that margin or the camera inset, without adding them.
+  The currency row adds no top padding.
+  - The tray sits at `--nav-bottom` (only the device inset). `--nav-gap` supplies a
+    scaled 8px visible gap inside the tray, after allowing for the black ledge.
+    A second fullscreen lift was what made the menu float above a large empty band.
+  - The tray height comes from its actual tile height and both padding values.
+    `--nav-space` reserves exactly that height plus the safe-bottom offset on each
+    deck page. Tiles use the shared tap minimum, overriding the legacy 52px floor that
+    overflowed the scaled tray on narrow phones.
+  - The drawer shares `--home-top` so it moves with the home controls.
 - **THE AIR UNDER PLAY IS THREE OF THAT INSET**, asked for directly in the same breath —
   "the gap between the play button and bottom menu is too big, it should be roughly side
   margin times 3". Written as three gutters rather than as the 36 that comes out, because
@@ -3741,13 +3692,9 @@ and lands on the design's figure exactly.
     not 800 tall is most of a quarter of it between the button and the menu, which is
     exactly what came back. An INSET is the honest thing to measure air by; a share of
     the viewport is not.
-- **THE TOP BLOCK STARTS AT THE FRAME'S OWN INSET, and that took undoing TWO insets to
-  get to.** `.screen` pads every page by `--sp4` plus the notch, which is right for a page
-  with a header and wrong here; and the legacy `.tophead` then pulls itself UP by both, to
-  sit flush on a screen that pads for both. Zero the padding alone and the bar hangs 16px
-  off the top with the chips cut in half. What is left is the gutter and the notch — the
-  notch is room under a camera and the gutter is the margin, and a screen with a notch
-  wants both.
+- **HOME CLEARS THE CAMERA ONCE.** Its top padding is `--home-top`, and the top
+  block's legacy negative margin is reset. Neither the currency row nor a fullscreen
+  override adds a second top margin.
 
 **THE DRAWER IS DRAWN TO A DESIGN TOO** (Figma `05-menu-drawer 3`, node `245:1249`; the
 block at the foot of `skin.css`). It is the same screen with the burger open, so it is
@@ -3755,11 +3702,9 @@ the same three things — and the one that is missing is the point.
 - **NO GLOSS ON THE PANEL.** Face and ledge, and nothing along the top edge: the drawer
   is a hole cut in the screen rather than a tile standing on it. The ROWS carry a 5% white
   of their own instead, which is the only fill in the app that is not one of the three.
-- **IT HANGS OFF THE BUTTON at a measured 166px**, three pixels under the menu button's
-  own bottom edge. Written as the design's number plus the notch, because everything
-  above it moves by the notch and nothing else, and set as PADDING on `.menuwrap` —
-  which is how the legacy sheet places that panel, so there is one mechanism rather than
-  two fighting.
+- **ITS POSITION SHARES HOME'S CLEARANCE.** The drawer's scaled top-block offset is
+  158px after removing the currency row's old 8px padding, plus `--home-top`.
+  It has no separate notch addition or fullscreen override.
 - **A ROW IS 24px TALL AND ITS MARK IS 30.** That is the design's own arithmetic: the
   icon stands a little proud of the plate at both ends, and the 16px gap is what leaves
   room for it. Neither number moves without the other.

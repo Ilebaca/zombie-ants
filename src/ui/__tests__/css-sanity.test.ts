@@ -126,8 +126,7 @@ describe("the design scales", () => {
    */
   it("puts everything on home on one gutter", () => {
     const css = code(read("skin.css"));
-    // AND IT IS THE ROOT TOKEN, because the TAB BAR is lifted by the same number and
-    // the bar is on every deck screen — outside `#home`, where this variable lives.
+    // Home and the tray share the design scale; the tray owns its own small bottom gap.
     expect(rulesFor(css, ":root"), "the frame's inset is not the design's 12")
       .toMatch(/--hudgut:\s*calc\(12 \* var\(--u\)\)/);
     expect(rulesFor(css, "#home"), "home has a gutter of its own")
@@ -163,7 +162,7 @@ describe("the design scales", () => {
     const css = code(read("skin.css"));
     const home = rulesFor(css, "#home");
     expect(home, "the top edge is not on the frame's inset")
-      .toMatch(/padding-top:\s*calc\(var\(--gutter\) \+ env\(safe-area-inset-top\)\)/);
+      .toMatch(/padding-top:\s*var\(--home-top\)/);
     expect(home, "the sides are not on the frame's inset")
       .toMatch(/padding-inline:\s*var\(--gutter\)/);
     // `rulesFor`, because `#home .homeplay` is written twice — the column cap in the
@@ -222,7 +221,7 @@ describe("the design scales", () => {
     // `--navmax`, which is what the shorthand threw away.
     const tray = rulesFor(css, "#mainNav.homenav");
     expect(tray, "the tray lost its cap to a padding shorthand")
-      .toMatch(/padding:\s*calc\(8 \* var\(--u\)\) max\(calc\(8 \* var\(--u\)\), calc\(\(100% - var\(--navmax\)\) \/ 2\)\)/);
+      .toMatch(/padding:\s*var\(--nav-pad\) max\(var\(--nav-pad\), calc\(\(100% - var\(--navmax\)\) \/ 2\)\)/);
   });
 
   /**
@@ -519,18 +518,15 @@ describe("the drawer is drawn to the design", () => {
   const css = code(read("skin.css"));
 
   it("hangs off the menu button", () => {
-    // 166 is measured from the TOP OF THE FRAME, so the screen's own inset has to be
-    // added here as well or the panel climbs back up over the button it hangs off.
+    // The drawer uses home's top clearance, with no independent safe-area addition.
     expect(rulesFor(css, ".menuwrap"))
-      .toMatch(/padding:\s*calc\(166 \* var\(--u\) \+ var\(--hudgut\) \+ env\(safe-area-inset-top\)\)/);
+      .toMatch(/padding:\s*calc\(158 \* var\(--u\) \+ var\(--home-top\)\)/);
   });
 
-  /** The block above it is what 166 is measured from, so the screen's own top inset has
-   *  to be the frame's own gutter and the NOTCH and nothing else — `.screen` pads by
-   *  `--sp4` on top of both, which pushed the whole block down by another 16. */
+  /** Home owns the top clearance; the legacy top block must not pull it up again. */
   it("starts the top block at the frame's own inset", () => {
     expect(rulesFor(css, "#home"))
-      .toMatch(/padding-top:\s*calc\(var\(--gutter\) \+ env\(safe-area-inset-top\)\)/);
+      .toMatch(/padding-top:\s*var\(--home-top\)/);
     expect(rulesFor(css, "#home .tophead"), "the bar's own escape would hang it off the top")
       .toMatch(/margin-top:\s*0/);
   });
@@ -750,7 +746,7 @@ describe("the home screen's ledge survives the blanket", () => {
     // The ledge and the gloss are MEASUREMENTS off the mock-up like everything else on
     // this screen, so they ride the design scale too: a 3px ledge under a HUD scaled up
     // a fifth is a thinner edge than the one that was drawn.
-    expect(root).toMatch(/--hud-ledge:\s*calc\(3 \* var\(--u\)\) calc\(4 \* var\(--u\)\) 0 #000/i);
+    expect(root).toMatch(/--hud-ledge:\s*calc\(3 \* var\(--u\)\) var\(--hud-ledge-y\) 0 #000/i);
     expect(root)
       .toMatch(/--hud-gloss:\s*inset 0 calc\(2 \* var\(--u\)\) 0 rgba\(255, 255, 255, \.4\)/i);
   });
@@ -833,7 +829,7 @@ describe("the home screen's ledge survives the blanket", () => {
      * value: `padding: Xu Ygutter 0`.
      */
     expect(rulesFor(css, "#home .topnav"), "the bar pads its own bottom, doubling the gap")
-      .toMatch(/padding:\s*calc\(8 \* var\(--u\)\) var\(--homeside\) 0\s*;/);
+      .toMatch(/padding:\s*0 var\(--homeside\)\s*;/);
   });
 
   /**
@@ -873,39 +869,19 @@ describe("the home screen's ledge survives the blanket", () => {
   });
 
   /**
-   * THE BAR AND THE ROOM RESERVED FOR IT ARE ONE NUMBER. The tab bar grew from 64 to 70,
-   * and the padding every scrolling screen keeps at its foot is what stops the last row
-   * sitting under it. Two places spelling out one rule (§7), so they are read together.
+   * The tray's height and safe-bottom offset are reserved once by every deck page.
    */
   it("reserves exactly the room the tab bar stands in", () => {
-    // It is ONE token now rather than two numbers that have to agree, which is what the
-    // design scale forced: a bar measured in design pixels over a reservation measured
-    // in real ones clips the last row's ledge on every phone that is not 360 wide.
     const nav = ruleFor(css, "#mainNav.homenav");
-    const bar = /height:\s*([^;]+);/.exec(nav)?.[1];
-    const roomIn = (sel: string): string | undefined =>
-      /padding-bottom:\s*calc\(([^;]+) \+ env\(safe-area-inset-bottom\)\)/
-        .exec(rulesFor(css, sel))?.[1];
-    expect(bar, "the tab bar has a height of its own").toBe("var(--navh)");
-    // Home takes it as its own padding, because nothing on it scrolls.
-    expect(roomIn("#home"), "home reserves the wrong room for the bar").toBe(bar);
-    // And the four that SCROLL take it on the screen itself, which IS the scroller.
-    expect(roomIn("#shop, #anthill, #antarium, #challenges"),
-      "a deck screen reserves the wrong room for the bar").toBe(bar);
-    expect(rulesFor(css, ":root"), "the bar's height is not the design's 70")
-      .toMatch(/--navh:\s*calc\(70 \* var\(--u\)\)/);
-    // THE NOTCH IS CARRIED ONCE, by the lift that stands the bar off the bottom edge —
-    // in the height or the padding as well it would be counted twice and the tray would
-    // float a thumb's width off the glass.
-    expect(nav, "the bar does not stand on the safe area")
-      .toMatch(/bottom:\s*env\(safe-area-inset-bottom\)/);
-    expect(nav, "the bar's own box carries the notch as well as the lift")
-      .not.toMatch(/(height|padding):[^;]*safe-area-inset-bottom/);
-    // AND NOTHING OF OURS IS ADDED TO IT. iOS keeps the home-indicator strip outside
-    // the web view and fills it with the page colour, so a lift of our own on top of
-    // that strip is a band of flat dark under the tray that no element can paint.
-    expect(nav, "the bar adds the frame's inset to the device's own bottom strip")
-      .not.toMatch(/bottom:[^;]*--hudgut/);
+    expect(nav).toMatch(/height:\s*var\(--navh\)/);
+    expect(nav).toMatch(/bottom:\s*var\(--nav-bottom\)/);
+    expect(nav).not.toMatch(/(height|padding):[^;]*safe-area-inset-bottom/);
+    for (const selector of ["#home", "#shop, #anthill, #antarium, #challenges"]) {
+      expect(rulesFor(css, selector)).toMatch(/padding-bottom:\s*var\(--nav-space\)/);
+    }
+    const root = rulesFor(css, ":root");
+    expect(root).toMatch(/--nav-space:\s*calc\(var\(--navh\) \+ var\(--nav-bottom\)\)/);
+    expect(root).toMatch(/--nav-bottom:\s*env\(safe-area-inset-bottom\)/);
   });
 
   /**
@@ -2215,73 +2191,41 @@ describe("the pop-ups are in the design", () => {
   });
 });
 
-/**
- * FULL SCREEN: THE INSET AND THE SAFE AREA MAY NOT ADD.
- *
- * Nothing a jsdom test can see would notice any of this — there is no layout, no system
- * bars and no display mode — and nothing a BROWSER here can see either, because the one
- * platform it is wrong on is iOS and the gate is what keeps it off iOS. So the rule is
- * held by reading it: the gate is `display-mode: fullscreen` and nowhere inside it does
- * a length get added to a safe-area inset.
- */
-describe("fullscreen does not stack the frame's inset on the safe area", () => {
-  const whole = read("skin.css");
-  const block = designBlock(whole, "FULL SCREEN: THE FRAME'S INSET AND THE SAFE AREA DO NOT ADD");
+/** The home frame must have one spacing owner in every installed/browser mode. */
+describe("home and navigation spacing has one owner", () => {
+  const css = code(read("skin.css"));
+  const root = rulesFor(css, ":root");
 
-  it("still has a fullscreen block to check", () => {
-    expect(block.length, "the fullscreen block is gone").toBeGreaterThan(200);
+  it("clears the camera once and gives the currency row no second inset", () => {
+    const home = rulesFor(css, "#home");
+    expect(home.match(/padding-top\s*:/g)).toHaveLength(1);
+    expect(home).toMatch(/padding-top:\s*var\(--home-top\)/);
+    expect(root).toMatch(/--home-top:\s*max\(var\(--hudgut\), env\(safe-area-inset-top\)\)/);
+    expect(rulesFor(css, "#home .topnav")).toMatch(/padding:\s*0 var\(--homeside\)/);
   });
 
-  /**
-   * THE GATE IS THE WHOLE SAFETY. Safari grants no display mode above `standalone`, so
-   * `fullscreen` is what cannot reach the platform where a floor under the tray draws a
-   * 46px band — and `standalone` on Android still has its bars, so the sum is still
-   * right there.
-   */
-  it("is gated on fullscreen alone", () => {
-    expect(block).toMatch(/@media \(display-mode: fullscreen\) \{/);
-    expect(block, "this must not reach standalone, where the bars are still drawn")
-      .not.toMatch(/display-mode:\s*(standalone|minimal-ui|browser)/);
+  it("does not lift the tray by another design gutter", () => {
+    const tray = rulesFor(css, "#mainNav.homenav");
+    expect(tray.match(/(?:^|[;{])\s*bottom\s*:/g)).toHaveLength(1);
+    expect(tray).toMatch(/bottom:\s*var\(--nav-bottom\)/);
+    expect(root).toMatch(/--nav-bottom:\s*env\(safe-area-inset-bottom\)/);
+    expect(tray).toMatch(/padding-bottom:\s*var\(--nav-pad-bottom\)/);
+    expect(root).toMatch(/--nav-pad-bottom:\s*calc\(var\(--nav-gap\) \+ var\(--hud-ledge-y\)\)/);
+    expect(root).toMatch(/--nav-gap:\s*calc\(8 \* var\(--u\)\)/);
   });
 
-  it("adds nothing to a safe-area inset", () => {
-    const sums = [...block.matchAll(/\+\s*env\(safe-area-inset-[a-z]+\)/g)].map((m) => m[0]);
-    expect(sums, "fullscreen has no bar to sit under, so these would be empty margin")
-      .toEqual([]);
+  it("fits scaled tiles inside the tray instead of inheriting the legacy 52px minimum", () => {
+    expect(ruleFor(css, "#mainNav .navitem")).toMatch(/min-height:\s*var\(--tap\)/);
+    expect(root).toMatch(/--nav-tile:\s*max\(var\(--tap\), calc\(54 \* var\(--u\)\)\)/);
+    expect(root).toMatch(/--navh:\s*calc\(var\(--nav-tile\) \+ var\(--nav-pad\) \+ var\(--nav-pad-bottom\)\)/);
+    expect(root).toMatch(/--hud-ledge-y:\s*calc\(4 \* var\(--u\)\)/);
   });
 
-  /** Every inset in here is one half of a `max()`, never a term of its own. */
-  it("reads every inset through max()", () => {
-    const bad: string[] = [];
-    for (const m of block.matchAll(/(^|[;{])\s*([a-z-]+)\s*:([^;}]*)/g)) {
-      const value = m[3] ?? "";
-      const inset = value.indexOf("env(safe-area-inset-");
-      if (inset === -1) continue;
-      // A `max(` BEFORE the inset: the token in front of it may be a `var()` of its own,
-      // so a paren-free window between the two cannot be what is matched on.
-      const guard = value.indexOf("max(");
-      if (guard === -1 || guard > inset) bad.push(`${m[2]}:${value.trim()}`);
-    }
-    expect(bad, "an inset outside a max() is the same stacking in another shape").toEqual([]);
-  });
-
-  /**
-   * THE TRAY'S LIFT AND THE ROOM RESERVED FOR IT ARE ONE NUMBER (§ THE BAR AND THE ROOM
-   * RESERVED FOR IT), so the floor has to be spelled the same in both — a tray lifted 12
-   * over a reservation that is not clips the last row's ledge.
-   */
-  it("lifts the tray and reserves for it by the same floor", () => {
-    const floor = "max(var(--hudgut), env(safe-area-inset-bottom))";
-    expect(block, "the tray's lift has no floor").toContain(`bottom: ${floor}`);
-    expect(block, "the deck's reservation does not match the lift")
-      .toContain(`calc(var(--navh) + ${floor})`);
-  });
-
-  /** The four top edges and the two bottom ones the bars used to hold up. */
-  it("covers every edge the system bars were holding", () => {
-    for (const sel of ["#home", ".menuwrap", ".match header", ".match footer", "#mainNav.homenav"]) {
-      expect(block, `${sel} is not in the fullscreen block`).toContain(sel);
-    }
-    expect(block, "every other screen pays the notch through `.screen`").toMatch(/\.screen \{/);
+  it("has no fullscreen override that can put a second inset back on home or the tray", () => {
+    const block = designBlock(read("skin.css"), "FULL SCREEN: NON-DECK SAFE AREAS");
+    expect(block).toMatch(/@media \(display-mode: fullscreen\)/);
+    expect(block).not.toMatch(/#home\b|#mainNav\b|\.menuwrap\b/);
+    expect(block).toMatch(/\.screen \{/);
+    expect(block).toMatch(/\.match footer \{/);
   });
 });

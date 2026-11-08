@@ -6564,18 +6564,18 @@ button:not(.playbtn):active,
      paint and not the layout, so the screen would be the wrong size inside
      a box that is not. */
   --u: clamp(.875px, calc(100vw / 360), 1.2px);
-  /* THE BAR AND THE ROOM RESERVED FOR IT ARE ONE NUMBER, and now it is
-     literally one. The bar is on every deck screen and the padding that
-     keeps the last row out from under it is a separate rule, so a scaled
-     bar over an unscaled reservation clips the last row's ledge. */
-  --navh: calc(70 * var(--u));
-  /* ONE INSET FOR THE WHOLE FRAME, AND IT IS THE SAME NUMBER ON ALL FOUR SIDES,
-     asked for directly: "the bottom screen margin should be the same as the side
-     margins... top screen margin should also be the same as the side margins".
-     It is home's own gutter — so it is a token rather than the number written
-     twice, because the TAB BAR is lifted by it and the bar is on every deck
-     screen, which puts it outside `#home` where that variable lives. */
+  /* One owner per edge. Home clears the camera OR the design margin, never both.
+     The tray sits on the safe bottom edge; its own padding supplies the visible gap. */
   --hudgut: calc(12 * var(--u));
+  --home-top: max(var(--hudgut), env(safe-area-inset-top));
+  --hud-ledge-y: calc(4 * var(--u));
+  --nav-tile: max(var(--tap), calc(54 * var(--u)));
+  --nav-pad: calc(8 * var(--u));
+  --nav-gap: calc(8 * var(--u));
+  --nav-pad-bottom: calc(var(--nav-gap) + var(--hud-ledge-y));
+  --navh: calc(var(--nav-tile) + var(--nav-pad) + var(--nav-pad-bottom));
+  --nav-bottom: env(safe-area-inset-bottom);
+  --nav-space: calc(var(--navh) + var(--nav-bottom));
   /* HOW WIDE HOME'S FURNITURE IS ALLOWED TO GET.
      Wider than the reading column (`--page`) on purpose: clamping home to a 360px
      measure inside a 390px phone puts a second gutter inside the first, so the cap only
@@ -6607,7 +6607,7 @@ button:not(.playbtn):active,
      is the rule and four copies of a number are four chances for it to stop being
      true. */
   --vgap: calc(8 * var(--u));
-  --hud-ledge: calc(3 * var(--u)) calc(4 * var(--u)) 0 #000;
+  --hud-ledge: calc(3 * var(--u)) var(--hud-ledge-y) 0 #000;
   --hud-gloss: inset 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .4);
   /* THE INK IS A WARM CREAM, NOT WHITE. The first frame of this design set every figure
      in white; the drawer frame that followed sets all of them in `#fcf7e6`, which is the
@@ -6696,23 +6696,8 @@ button:not(.playbtn):active,
     url("./backdrops/home.webp");
 }
 
-/* THE TOP BAR STARTS AT THE TOP. `.screen` pads every page by `--sp4` plus the notch,
-   which is right for a page with a header on it and wrong here: the design's bar sits on
-   the very edge of the frame with its own 8px inside it, and the 16 above it pushed the
-   whole block — bar, banner, granary, buttons — down by that much. What is LEFT is the
-   notch, which is the honest half of that padding and the only reason it was ever two
-   numbers. It is what puts the drawer under the menu button, too (see THE DRAWER). */
-/* AND THE FRAME'S OWN INSET IS ON TOP OF THAT, asked for directly: the top bar sat
-   flush on the glass while everything beside it stood 12 off it, so the one edge of
-   the screen with no margin was the first one read. It is the gutter plus the notch —
-   the notch is room under a camera and the gutter is the margin, and a screen with a
-   notch wants both. */
-#home { padding-top: calc(var(--gutter) + env(safe-area-inset-top)); }
-/* AND THE BAR'S OWN ESCAPE GOES WITH IT. The legacy `.tophead` pulls itself up by
-   `--sp4` AND the notch, to sit flush on a screen that pads for both; with the padding
-   gone that margin is a block hanging 16px off the top of the viewport, with the
-   currency chips cut in half. The side escape stays — that one is still putting back a
-   gutter that is still there. */
+/* Home owns the top clearance; the currency row must not add another pad. */
+#home { padding-top: var(--home-top); }
 #home .tophead { margin-top: 0; }
 
 /* ------------------------------------------------------------- THE TOP BAR */
@@ -6726,13 +6711,7 @@ button:not(.playbtn):active,
   display: flex;
   align-items: center;
   gap: calc(5 * var(--u));
-  /* NO BOTTOM PADDING, AND THAT IS WHAT MAKES THE GAP UNDER IT 8 LIKE THE REST.
-     The bar carries no background on this screen, so its own padding is invisible
-     air that ADDS to the banner's `--vgap` margin — measured at 16 from the chips
-     to the banner where every other gap on the block was 8, and reported exactly
-     that way. The TOP padding stays: that one is the air under the notch, and there
-     is nothing above it to double up with. */
-  padding: calc(8 * var(--u)) var(--homeside) 0;
+  padding: 0 var(--homeside);
   background: none;
   border: none;
   box-shadow: none !important;
@@ -7200,36 +7179,15 @@ button:not(.playbtn):active,
    Five tiles, no words. The label moved off the glass and onto the button's
    own name, which is what a screen reader reads anyway — five words across
    a phone is what made these tall and the type tiny. */
+/* No extra lift: the safe bottom is counted once. Padding includes the black ledge,
+   leaving --nav-gap of actual space beneath the painted tiles. */
 #mainNav.homenav {
-  /* NO POSITION HERE, and that is load-bearing. The legacy sheet pins the bar to the
-     bottom of the screen on `#mainNav` alone — ONE id, which `#mainNav.homenav` beats,
-     so a relative position written here for the shelf below put the whole bar back in
-     the flow at the TOP of the screen, lying over the colony banner. Being fixed, it is
-     already a containing block for the plate. */
   display: flex;
   gap: calc(5 * var(--u));
-  /* IT SITS ON THE BOTTOM OF THE WEB VIEW, AND THE FRAME'S INSET IS NOT ADDED HERE.
-     It was lifted by `--hudgut` for one build — the same margin the top and the sides
-     carry — and on an installed iPhone that came back as a 46px BAND of flat colour
-     under the tray. The reason is the one thing CSS cannot reach: iOS keeps the
-     home-indicator strip OUTSIDE the web view and fills it with the page's background
-     colour, so no element paints there and `env(safe-area-inset-bottom)` reads 0 inside
-     it. The device is already leaving a margin; ours stacked on top of it.
-     So the lift is the safe area and nothing else — 0 where the system has already
-     taken its strip, the real inset on a browser that hands it to us. `bottom` is still
-     the property: the legacy sheet pins the bar with `#mainNav { bottom: 0 }`, ONE id,
-     which this id-and-class rule beats. A `position` here would NOT be safe (§ THE
-     DRAWER's neighbour above) — being fixed already, the bar needs none.
-     AND THE NOTCH IS CARRIED ONCE, by the lift: the bar's own height and bottom padding
-     no longer add it, or the tray would float a thumb's width up. */
-  bottom: env(safe-area-inset-bottom);
+  bottom: var(--nav-bottom);
   height: var(--navh);
-  /* AND THE SIDES CARRY `--navmax`, which this shorthand used to throw away. The
-     responsive block caps the tray at 640 so five tabs do not spread across a tablet;
-     `padding: calc(8 * var(--u))` here is ONE declaration and it sets all four sides, so
-     the cap was silently gone and the tiles measured 196px each on a 1024 screen. The
-     tray's own 8 is the FLOOR of the inset rather than the whole of it. */
-  padding: calc(8 * var(--u)) max(calc(8 * var(--u)), calc((100% - var(--navmax)) / 2));
+  padding: var(--nav-pad) max(var(--nav-pad), calc((100% - var(--navmax)) / 2));
+  padding-bottom: var(--nav-pad-bottom);
   border: none;
   background: none;
 }
@@ -7258,6 +7216,7 @@ button:not(.playbtn):active,
 #mainNav .navitem {
   flex: 1 1 0;
   min-width: 0;
+  min-height: var(--tap);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -7290,15 +7249,8 @@ button:not(.playbtn):active,
   box-shadow: calc(1 * var(--u)) calc(2 * var(--u)) 0 #000 !important;
 }
 
-/* THE TAB BAR GREW, so the room reserved for it has to. The legacy sheet
-   reserves `64px + safe-area`; the bar is 70 now, and the ledge under the
-   last row of tiles needs the extra 4 or it is clipped by the edge of the
-   screen. HOME is the one screen that takes it as its own padding, because
-   nothing on it scrolls: it is a fixed composition and PLAY's gap is
-   measured against this same number. */
-#home {
-  padding-bottom: calc(var(--navh) + env(safe-area-inset-bottom));
-}
+/* The screen reserves exactly the tray's full footprint. */
+#home { padding-bottom: var(--nav-space); }
 
 /* THE WHOLE DECK SCREEN SCROLLS, HEADER AND ALL, AND THE BAR'S ROOM IS ITS
    OWN PADDING.
@@ -7319,7 +7271,7 @@ button:not(.playbtn):active,
 #shop, #anthill, #antarium, #challenges {
   overflow-y: auto;
   overscroll-behavior-y: contain;
-  padding-bottom: calc(var(--navh) + env(safe-area-inset-bottom));
+  padding-bottom: var(--nav-space);
 }
 /* AND NOTHING INSIDE MAY SCROLL ON ITS OWN. An inner scroller takes the
    gesture and holds the page still — the header stops moving again and the
@@ -7356,13 +7308,10 @@ button:not(.playbtn):active,
    inside carry their own 5% white instead.
    ========================================================================== */
 
-/* IT HANGS OFF THE BUTTON, at a measured 166px from the top of the frame — three
-   pixels under the menu button's own bottom edge, which is where the design puts
-   it. Written as the design's number plus the notch, because everything above it
-   moves by the notch and nothing else. The legacy sheet pads this wrapper to place
-   the panel, so that is the property to set. */
+/* The drawer follows the same top clearance as home. The scaled top-block offset
+   excludes the currency row's removed 8px padding. */
 .menuwrap {
-  padding: calc(166 * var(--u) + var(--hudgut) + env(safe-area-inset-top)) var(--homeside) calc(12 * var(--u));
+  padding: calc(158 * var(--u) + var(--home-top)) var(--homeside) calc(12 * var(--u));
   background: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -9146,61 +9095,16 @@ body,
 }
 
 /* ==========================================================================
-   FULL SCREEN: THE FRAME'S INSET AND THE SAFE AREA DO NOT ADD
-
-   The manifest asks for `fullscreen` first (§ THE GAME IS FULL SCREEN), and
-   where Android grants it the system bars are GONE — no clock, no battery, no
-   gesture pill. Every edge in this file was written for a window with those
-   bars at its ends, and all of them say `ours + env(safe-area-inset-*)`: the
-   frame's own 12px margin BELOW whatever the system had taken. With nothing
-   drawn in that band any more, the sum is a margin under a bar that is not
-   there — which is exactly what came back from the phone, "too much space on
-   top and missing some on the bottom under the main menu buttons".
-
-   Both halves are the same arithmetic seen at two ends:
-     TOP    the window grew upward into the status bar, so the inset is now
-            empty picture and the top bar sat the whole of it plus 12 down.
-     BOTTOM the pill is gone, so the inset reads 0 and the tray lost the only
-            thing lifting it off the glass.
-
-   So in fullscreen the two do not stack: the LARGER wins. Where the inset is
-   a real display cutout we clear it and add nothing; where it is zero we keep
-   the frame's own inset. It can only ever take space off a top edge and put
-   space back under a bottom one, which is the direction that was asked for.
-
-   AND IT IS GATED ON `display-mode: fullscreen`, WHICH IS WHAT KEEPS IT OFF
-   iOS. Safari grants no display mode above `standalone`, so this block cannot
-   reach the one platform where a floor under the tray is wrong: iOS keeps the
-   home-indicator strip OUTSIDE the web view and reports 0 inside it, so a
-   floor there stacks our 12 on the system's 34 and draws a 46px band of flat
-   colour (§ THE TAB TRAY, where that was measured and reverted). The same
-   gate keeps it off `standalone` on Android, where the bars are still drawn
-   and the sum is still the right answer.
+   FULL SCREEN: NON-DECK SAFE AREAS
+   Home, its drawer and the deck tray use the shared layout tokens above in every
+   display mode. These standalone screens and match controls retain their own clearance.
    ========================================================================== */
 @media (display-mode: fullscreen) {
-  /* Every screen with a header: the legacy `.screen` pays `--sp4` + the notch. */
   .screen { padding-top: max(var(--sp4), env(safe-area-inset-top)); }
-  #home { padding-top: max(var(--gutter), env(safe-area-inset-top)); }
-  /* The drawer hangs off the menu button and has to move with it, or the
-     panel detaches from the control it belongs to. */
-  .menuwrap {
-    padding-top: calc(166 * var(--u) + max(var(--hudgut), env(safe-area-inset-top)));
-  }
-  /* The match screen is not a `.screen` and asks for the notch itself. */
   .match header {
     padding-block: max(clamp(4px, 1.1vh, 8px), env(safe-area-inset-top))
                    clamp(4px, 1.1vh, 8px);
   }
-
-  /* THE TRAY'S LIFT, and the room reserved for it is the SAME number (§ THE
-     BAR AND THE ROOM RESERVED FOR IT ARE ONE NUMBER) — a tray lifted 12 over
-     a reservation that is not clips the last row's ledge. */
-  #mainNav.homenav { bottom: max(var(--hudgut), env(safe-area-inset-bottom)); }
-  #home, #shop, #anthill, #antarium, #challenges {
-    padding-bottom: calc(var(--navh) + max(var(--hudgut), env(safe-area-inset-bottom)));
-  }
-  /* The eight screens the bar does not stand on, and the match's action row:
-     each ended flush on the glass with the pill gone. */
   #profile, #rules, #achievements, #settings, #news, #friends,
   #support, #luckyhatch {
     padding-bottom: max(var(--hudgut), env(safe-area-inset-bottom));
