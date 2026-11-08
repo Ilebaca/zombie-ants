@@ -3,8 +3,8 @@
  * Reward definitions and persisted claim keys stay in the platform layer.
  */
 import {
-  COLONY_START, REGION_CHAPTERS, TRAIT_TIER, effectText, traitDef, ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, avatarName, compact,
-  isChapterEnd, regionName, regionOf, roadKey, roadStops,
+  COLONY_START, REGION_CHAPTERS, ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, TRAIT_TIER,
+  avatarName, compact, effectText, isChapterEnd, regionName, regionOf, roadKey, roadStops, traitDef,
 } from "../platform";
 import type { ProfileStore, RoadReward, RoadStop, RoadTrack, TraitItem } from "../platform";
 import { avatarFace, el, hudMark, redraw, screenEl } from "./chrome";

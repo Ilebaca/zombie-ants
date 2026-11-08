@@ -16,7 +16,7 @@ interface RoadTheme {
   colors: readonly [string, string, string];
 }
 
-const THEMES: readonly RoadTheme[] = [
+const THEMES: readonly [RoadTheme, ...RoadTheme[]] = [
   { divider: forest, colors: ["#24593d", "#102d24", "#488751"] },
   { divider: desert, colors: ["#846044", "#352d30", "#bb9657"] },
   { divider: volcano, colors: ["#493337", "#211f2d", "#8b493c"] },
@@ -31,5 +31,5 @@ const THEMES: readonly RoadTheme[] = [
 
 /** Region ids come from platform/road; invalid ids use the first area. */
 export function roadTheme(region: number): RoadTheme {
-  return THEMES[region - 1] ?? THEMES[0]!;
+  return THEMES[region - 1] ?? THEMES[0];
 }
