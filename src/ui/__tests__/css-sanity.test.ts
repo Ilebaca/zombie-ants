@@ -881,7 +881,7 @@ describe("the home screen's ledge survives the blanket", () => {
     }
     const root = rulesFor(css, ":root");
     expect(root).toMatch(/--nav-space:\s*calc\(var\(--navh\) \+ var\(--nav-bottom\)\)/);
-    expect(root).toMatch(/--nav-bottom:\s*env\(safe-area-inset-bottom\)/);
+    expect(root).toMatch(/--nav-bottom:\s*var\(--safe-bottom\)/);
   });
 
   /**
@@ -939,7 +939,7 @@ describe("the home screen's ledge survives the blanket", () => {
     const rule = rulesFor(css,
       "#profile, #rules, #achievements, #settings, #news, #friends,\n#support, #luckyhatch");
     expect(rule, "the non-deck screens still reserve room for a bar that is not there")
-      .toMatch(/padding-bottom:\s*env\(safe-area-inset-bottom\)/);
+      .toMatch(/padding-bottom:\s*var\(--safe-bottom\)/);
     expect(rule).not.toMatch(/--navh/);
   });
 });
@@ -1430,9 +1430,9 @@ describe("the match chrome gives the board room on a short screen", () => {
   it("pads the header for the notch and still tops out at the old 8", () => {
     const rule = rulesFor(match, ".match header");
     expect(rule, "the header does not make room for the status bar")
-      .toMatch(/padding-block:\s*calc\(clamp\([^)]*\) \+ env\(safe-area-inset-top\)\)/);
+      .toMatch(/padding-block:\s*calc\(clamp\(4px, calc\(1\.1 \* var\(--game-vh\)\), 8px\) \+ var\(--safe-top\)\)/);
     expect(rule, "the header's own padding no longer tops out at 8px")
-      .toMatch(/clamp\(4px, 1\.1vh, 8px\);/);
+      .toMatch(/clamp\(4px, calc\(1\.1 \* var\(--game-vh\)\), 8px\);/);
   });
 
   /**
@@ -2196,11 +2196,17 @@ describe("home and navigation spacing has one owner", () => {
   const css = code(read("skin.css"));
   const root = rulesFor(css, ":root");
 
+  it("defaults shared sizing tokens to live browser height and device safe areas", () => {
+    expect(root).toMatch(/--game-vh:\s*1vh/);
+    expect(root).toMatch(/--safe-top:\s*env\(safe-area-inset-top\)/);
+    expect(root).toMatch(/--safe-bottom:\s*env\(safe-area-inset-bottom\)/);
+  });
+
   it("clears the camera once and gives the currency row no second inset", () => {
     const home = rulesFor(css, "#home");
     expect(home.match(/padding-top\s*:/g)).toHaveLength(1);
     expect(home).toMatch(/padding-top:\s*var\(--home-top\)/);
-    expect(root).toMatch(/--home-top:\s*max\(var\(--hudgut\), env\(safe-area-inset-top\)\)/);
+    expect(root).toMatch(/--home-top:\s*max\(var\(--hudgut\), var\(--safe-top\)\)/);
     expect(rulesFor(css, "#home .topnav")).toMatch(/padding:\s*0 var\(--homeside\)/);
   });
 
@@ -2208,7 +2214,7 @@ describe("home and navigation spacing has one owner", () => {
     const tray = rulesFor(css, "#mainNav.homenav");
     expect(tray.match(/(?:^|[;{])\s*bottom\s*:/g)).toHaveLength(1);
     expect(tray).toMatch(/bottom:\s*var\(--nav-bottom\)/);
-    expect(root).toMatch(/--nav-bottom:\s*env\(safe-area-inset-bottom\)/);
+    expect(root).toMatch(/--nav-bottom:\s*var\(--safe-bottom\)/);
     expect(tray).toMatch(/padding-bottom:\s*var\(--nav-pad-bottom\)/);
     expect(root).toMatch(/--nav-pad-bottom:\s*calc\(var\(--nav-gap\) \+ var\(--hud-ledge-y\)\)/);
     expect(root).toMatch(/--nav-gap:\s*calc\(8 \* var\(--u\)\)/);
