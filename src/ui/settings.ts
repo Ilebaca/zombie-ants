@@ -86,11 +86,6 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
     valueRow({
       mark: "attack",
       title: "Enemy AI",
-      // Said plainly, because it is surprising: a matchmade opponent stands in for a
-      // person and always plays hard, so this is the challenge difficulty.
-      desc: opts.difficulty === "Impossible"
-        ? "Maxed chambers and research. Applies to challenges and matched opponents."
-        : "Challenge difficulty. Matched opponents use Hard unless you select Impossible.",
       value: opts.difficulty,
       id: "setDiff",
       onPick: opts.onCycleDifficulty,
@@ -177,7 +172,7 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
 interface RowParts {
   mark: string;
   title: string;
-  desc: string;
+  desc?: string;
   id: string;
 }
 
@@ -188,7 +183,8 @@ function shell(parts: RowParts, tag: "div" | "button"): HTMLElement {
   const slot = el("span", "setrow-i");
   slot.appendChild(icon(parts.mark, 18));
   const mid = el("span", "setrow-mid");
-  mid.append(el("span", "setrow-t", parts.title), el("span", "setrow-d", parts.desc));
+  mid.appendChild(el("span", "setrow-t", parts.title));
+  if (parts.desc) mid.appendChild(el("span", "setrow-d", parts.desc));
   row.append(slot, mid);
   return row;
 }
