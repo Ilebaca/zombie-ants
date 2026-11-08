@@ -2979,8 +2979,8 @@ button:not(.playbtn):active,
   flex-direction: column;
   /* The artwork clips at the viewport edges; controls carry their own gutter. */
   padding-inline: 0;
-  /* Match the page frame above and below. */
-  padding-bottom: var(--screen-bottom);
+  /* Setup actions share Home's vertical position, including the reserved tray space. */
+  padding-bottom: var(--primary-action-bottom);
   /* THE PICTURE AND ITS NAME SIT IN THE MIDDLE; THE BUTTON HOLDS THE BOTTOM.
      Two flexible gaps, one above the board and one under the name, split what is left
      over equally — so the board rides near the middle of the screen and the button stays
@@ -3083,7 +3083,7 @@ button:not(.playbtn):active,
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  width: min(calc(100% - var(--sp8)), var(--page));
+  width: 100%;
   margin-inline: auto;
   /* The 20px Milan asked for, measured from the bottom edge of the picture. `.screen`
      owns the bottom inset and the safe area. */
@@ -3134,7 +3134,15 @@ button:not(.playbtn):active,
 .picktext { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* THE BUTTON IS SEPARATE FROM THE PICKER, not the last row of it. It stays inside the
    footer so the tour's one hole can hold both controls live. */
-.setupfoot .cta { width: 100%; margin: auto 0 0; }
+.setupfoot .pickrow { width: min(calc(100% - var(--sp8)), var(--page)); }
+.setupfoot .cta {
+  width: var(--primary-action-width);
+  height: var(--primary-action-height);
+  min-height: var(--primary-action-height);
+  flex-shrink: 0;
+  padding-block: 0;
+  margin: auto 0 0;
+}
 
 /* The invitation bar sits above all of it, so the screen's own furniture starts
    below the bar rather than under it. The bar is absolutely positioned, so the
@@ -6590,6 +6598,9 @@ button:not(.playbtn):active,
      one and not the other. It is on `:root` rather than on `#home` because the TRAY and
      the DRAWER both measure against it from outside that element. */
   --homemax: 640px;
+  --primary-action-width: calc(min(100vw - 2 * var(--hudgut), var(--homemax)) - 2 * (50 * var(--u) - var(--hudgut)));
+  --primary-action-height: max(52px, calc(54 * var(--u)));
+  --primary-action-bottom: calc(var(--nav-space) + 3 * var(--hudgut));
   --navmax: var(--homemax);
   /* THE EDGE EVERYTHING ON HOME LINES UP ON, at every width.
      On a phone it is the frame's own inset; past `--homemax` it is whatever is left
@@ -7162,8 +7173,8 @@ button:not(.playbtn):active,
   margin-bottom: calc(3 * var(--gutter) - 8 * var(--u));
 }
 #home .playbtn {
-  width: auto;
-  height: calc(54 * var(--u));
+  width: var(--primary-action-width);
+  height: var(--primary-action-height);
   padding: 0;
   border: none;
   border-radius: calc(5 * var(--u));
