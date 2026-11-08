@@ -4,6 +4,7 @@ import {
   takeNewerBuild,
 } from "./platform";
 import { App } from "./ui/app";
+import { stabilizeInstalledViewport } from "./ui/installed-viewport";
 
 const host: HTMLElement | null = document.getElementById("app");
 if (!host) throw new Error("#app host element is missing");
@@ -26,6 +27,7 @@ async function boot(): Promise<void> {
   // no longer answers a tap or a blank page, with no way out but knowing to kill the app —
   // and on a phone there is no console to find out why (platform/crash.ts).
   catchCrashes();
+  stabilizeInstalledViewport();
   const store = (await loadNative()) ?? defaultStore();
   // The ACCOUNTS are handed over, never a profile. A profile passed here is the caller
   // saying "this is the colony" and skips the sign-in screen entirely (see `App.given`),

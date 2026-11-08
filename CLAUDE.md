@@ -5326,3 +5326,5 @@ what keeps AI search from writing stats or currencies (§5).
   chambers + that species' research, and **always hands the AI the neutral set** (§4.8).
   Pass the same mods object to the match's `ActionContext`, or research shows up in the
   income readout while doing nothing in a fight.
+
+- Installed viewport: `ui/installed-viewport.ts` measures the large viewport once per width. Same-width system-bar/keyboard resizes do not shrink the app; width changes remeasure. Layout containment on the installed app keeps fixed controls attached to that frame. Browser tabs retain ordinary responsive sizing.

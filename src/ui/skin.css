@@ -9121,3 +9121,11 @@ body,
     padding-bottom: calc(var(--actpad) + max(var(--hudgut), env(safe-area-inset-bottom)));
   }
 }
+
+/* Fixed descendants belong to the installed frame, not the transient viewport.
+   Its height is measured once per width/orientation by installed-viewport.ts. */
+.installed-frame #app {
+  bottom: auto;
+  height: var(--installed-height);
+  contain: layout;
+}
