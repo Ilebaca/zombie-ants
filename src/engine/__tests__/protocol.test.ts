@@ -220,7 +220,7 @@ describe("refusing a move a client should not have sent", () => {
 
 it("uses the supplied research and traits for combat without a separate context", () => {
   const state = blankGame();
-  put(state, 0, 0, { owner: "you", struct: "nest", soldiers: 10 });
+  put(state, 0, 0, { owner: "you", struct: "nest", soldiers: 12 });
   put(state, 1, 0, { owner: "ai", struct: "nest", soldiers: 12 });
   recomputeConnectivity(state);
   const expected = structuredClone(state);
