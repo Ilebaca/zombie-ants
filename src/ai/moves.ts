@@ -366,6 +366,13 @@ function rallyCandidates(
   for (const dst of rallyTargets(state, p)) {
     const pooled = dst.soldiers + spare - Math.max(0, dst.soldiers - keepOn(dst));
     let best = 0;
+    if (complete && pooled > dst.soldiers + 3) {
+      const foe = nestTile(state, opp);
+      const forward = foe ? Math.max(0, 12 - distance(dst, foe)) : 0;
+      const front = neighbours(state, dst).some((tile) => tile.owner === opp);
+      best = 14 + Math.min(spare, 80) * 0.4 + forward * 2
+        + (front ? 30 : 0) + (dst.terrain === "resource" ? 12 : 0);
+    }
 
     // The finisher: the pooled fist takes the queen, and there is no next turn to punish.
     for (const n of neighbours(state, dst)) {

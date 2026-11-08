@@ -5359,6 +5359,8 @@ Production, status effects and cooldowns advance in simulated turns. Iterative d
 keeps only completed search iterations, with node/time limits, exact state deduplication
 and a bounded transposition table. Income remains valuable after the expected match length.
 Nest threats, resources, surge and attacking progress guide move ordering/evaluation.
+Assault scoring compares actual attack power with projected nest defence and rewards
+advancing a viable force; complete rally generation includes staging such an attack.
 
 This is bounded selective search, not a proof of perfect or unbeatable play.
 `tools/impossible-bench.ts` runs accelerated paired screening against Hard, including an

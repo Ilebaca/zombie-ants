@@ -9,7 +9,7 @@ import {
   abilityOf, abilityReady, abilitySpendsTurn, activateAbility, allTiles,
   attackMultiplier, blockedByEnemyLeaf, defenceMultiplier, distance, endTurn,
   flatDefence, incomeOf, isConnected, keepOn, nestTile, otherPlayer, restore,
-  snapshot, tunnelTargets,
+  PROD, speciesOf, hiveBuffMultiplier, snapshot, tunnelTargets,
 } from "../engine";
 import type { ActionContext, Coord, EngineEvent, GameState, Move, Player } from "../engine";
 import { FULL, WIN, evaluate } from "./evaluate";
@@ -75,6 +75,31 @@ export function evaluateImpossible(state: GameState, me: Player, context: Action
     }
     score += (owner === me ? -1 : 1) * danger * 18;
   }
+  // Value a force that can reach and break the queen, not merely the nearest small stack.
+  const assault = (attacker: Player): number => {
+    const defender = otherPlayer(attacker);
+    const nest = nestTile(state, defender);
+    if (!nest) return 0;
+    const attack = attackMultiplier(state, attacker, context.mods[attacker]);
+    const defence = defenceMultiplier(state, defender, context.mods[defender]);
+    const flat = flatDefence(state, nest, context.mods[defender]);
+    const surge = state.hive.phase === "buff" && state.hive.owner === defender ? hiveBuffMultiplier(state) : 1;
+    const growth = (PROD.nest * speciesOf(state.species[defender]).prod * surge
+      + context.mods[defender].brood) * defence;
+    let first = 0, second = 0;
+    for (const tile of tiles) {
+      if (tile.owner !== attacker || !isConnected(state, tile)) continue;
+      const spare = Math.max(0, tile.soldiers - keepOn(tile));
+      if (spare < 1) continue;
+      const steps = Math.max(1, distance(tile, nest) - 1);
+      const demand = nest.soldiers * defence + flat + growth * steps;
+      const value = 180 * Math.min(1.5, spare * attack / Math.max(1, demand)) / steps;
+      if (value > first) { second = first; first = value; }
+      else second = Math.max(second, value);
+    }
+    return first + second * 0.25;
+  };
+  score += assault(me) - assault(enemy);
   // Race for all seams, rather than treating only currently owned resources as valuable.
   for (const resource of tiles) {
     if (resource.terrain !== "resource" || resource.owner) continue;

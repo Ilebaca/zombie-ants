@@ -11,7 +11,9 @@ original difficulty and combat values.
 The planner compares complete turns, including whether to cast an ability before its action or hold the cooldown,
 and models the opponent doing the same. It considers travel, rallying, reinforcement,
 resource acquisition, queen defence, attacks, waiting for growth and tunnel targets.
-Resource production remains important throughout the match. Search reuses identical
+Resource production remains important throughout the match. Assault evaluation estimates
+whether an advancing army can break the enemy nest after its projected growth; rallying
+can assemble a force at a staging tile rather than waiting for an adjacent killing blow. Search reuses identical
 positions and retains its last fully completed depth when its time/node budget expires.
 
 The search is selective and bounded. “Impossible” names the challenge level; it does not
