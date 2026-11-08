@@ -8,7 +8,7 @@ production and ability rules are the player's normal rules. It has no additional
 Its upgrades are part of the recorded match setup, so suspended matches retain their
 original difficulty and combat values.
 
-The planner compares complete turns, including ability timing before or after an action,
+The planner compares complete turns, including whether to cast an ability before its action or hold the cooldown,
 and models the opponent doing the same. It considers travel, rallying, reinforcement,
 resource acquisition, queen defence, attacks, waiting for growth and tunnel targets.
 Resource production remains important throughout the match. Search reuses identical

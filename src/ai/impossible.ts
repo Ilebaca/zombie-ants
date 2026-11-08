@@ -1,7 +1,7 @@
 /**
  * Bounded whole-turn planning for Impossible.
  *
- * A branch is a legal turn: optional ability, one action, optional ability, then
+ * A branch is a legal turn: optional ability, one action, then
  * production/effects/cooldowns. Tunnelling consumes the action. Both players get
  * the same move repertoire in the tree; the live game is changed only on execution.
  */
@@ -20,7 +20,6 @@ interface AbilityChoice { target?: Coord }
 export interface PlannedTurn {
   before?: AbilityChoice;
   action?: Action;
-  after?: AbilityChoice;
 }
 export interface PlannerBudget {
   depth: number;
@@ -158,7 +157,6 @@ export function executePlannedTurn(
     events.push(...result);
     into?.push(asMove(plan.action));
   }
-  if (!state.over && plan.after) cast(plan.after);
   return events;
 }
 
@@ -188,7 +186,7 @@ function rankedTurns(state: GameState, player: Player, search: Search, root: boo
     seen.add(key);
     search.nodes++;
     const score = simulate(state, player, plan, search.context, (events) => {
-      if ((plan.before || plan.after) && !events.some((event) => event.type === "abilityCast")) return -Infinity;
+      if (plan.before && !events.some((event) => event.type === "abilityCast")) return -Infinity;
       const position = positionKey(state);
       if (positions.has(position)) return -Infinity;
       positions.add(position);
@@ -219,13 +217,6 @@ function rankedTurns(state: GameState, player: Player, search: Search, root: boo
       for (const action of afterCast) consider({ before, action });
     } finally {
       restore(state, saved);
-    }
-  }
-  if (!actionsOnly && abilityReady(state, player) && !abilitySpendsTurn(abilityOf(state, player).kind)) {
-    for (const action of plain.slice(0, root ? 16 : 5)) {
-      if (exhausted(search)) break;
-      // Non-targeted free abilities are legal either before or after the action.
-      consider({ action, after: {} });
     }
   }
   choices.sort((a, b) => b.score - a.score);
@@ -277,7 +268,7 @@ export function planImpossibleTurn(
   try {
     state.current = player;
     let options = rankedTurns(state, player, search, true, actionsOnly);
-    if (actionsOnly) options = options.filter((option) => !option.plan.before && !option.plan.after);
+    if (actionsOnly) options = options.filter((option) => !option.plan.before);
     let best = options[0] ?? { plan: {}, score: evaluateImpossible(state, player, context) };
     let reached = 1;
     for (let depth = 2; depth <= budget.depth && !exhausted(search); depth++) {

@@ -5354,7 +5354,7 @@ tutorials remain Easy. Modifiers and difficulty are stored in match setup for ac
 resumption and replay.
 
 `ai/impossible.ts` searches complete legal turns for both players: travel, rally,
-reinforcement, captures, waiting, abilities before/after movement, and targeted tunnelling.
+reinforcement, captures, waiting, abilities before movement or saving the cooldown, and targeted tunnelling.
 Production, status effects and cooldowns advance in simulated turns. Iterative deepening
 keeps only completed search iterations, with node/time limits, exact state deduplication
 and a bounded transposition table. Income remains valuable after the expected match length.

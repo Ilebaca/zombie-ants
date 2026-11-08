@@ -76,7 +76,7 @@ describe("Impossible planning", () => {
     expect(decision.nodes).toBeLessThanOrEqual(400);
   });
 
-  it("executes a post-move ability in legal order and reproduces it through the protocol", () => {
+  it("executes an ability and move in the player’s legal order and reproduces it through the protocol", () => {
     const state = blankGame("small", { you: "carpenter", ai: "fire" });
     put(state, 0, 0, { owner: "you", struct: "nest", soldiers: 20 });
     put(state, 8, 8, { owner: "ai", struct: "nest", soldiers: 20 });
@@ -85,10 +85,10 @@ describe("Impossible planning", () => {
     const copy = structuredClone(state);
     const moves: Move[] = [];
     const events = executePlannedTurn(state, "you", {
-      action: { kind: "move", from: { c: 0, r: 0 }, to: { c: 1, r: 0 } }, after: {},
+      before: {}, action: { kind: "move", from: { c: 0, r: 0 }, to: { c: 1, r: 0 } },
     }, context, moves);
     expect(events.some((event) => event.type === "fortified")).toBe(true);
-    expect(moves.map((move) => move.do)).toEqual(["move", "ability"]);
+    expect(moves.map((move) => move.do)).toEqual(["ability", "move"]);
     for (const move of moves) expect(applyMove(copy, "you", move, context.mods).ok).toBe(true);
     expect(snapshot(copy)).toEqual(snapshot(state));
   });
