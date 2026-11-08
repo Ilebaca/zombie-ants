@@ -9,6 +9,7 @@ import {
 import type { ProfileStore, RoadReward, RoadStop, RoadTrack } from "../platform";
 import { avatarFace, el, hudMark, redraw, screenEl } from "./chrome";
 import { icon } from "./icons";
+import { shelfArt } from "./shelf";
 
 const AREA_PALETTES = [
   ["#5220b3", "#250f62", "#9c4ff2"],
@@ -49,7 +50,8 @@ function progressPosition(colony: number, stops: readonly RoadStop[]): string {
       / (next.colony - (previous?.colony ?? COLONY_START)),
   )) : 0;
   const rows = previous ? previous.index - .5 + ratio : ratio * .5;
-  const gates = previous ? previous.chapter + ratio * ((next?.chapter ?? previous.chapter) - previous.chapter) : 1;
+  const gates = previous ? previous.chapter - .5
+    + ratio * ((next?.chapter ?? previous.chapter) - previous.chapter) : ratio * .5;
   return `calc(var(--rd-endpad) + var(--rd-row) * ${rows.toFixed(6)} + var(--rd-gate) * ${gates.toFixed(6)})`;
 }
 
@@ -138,6 +140,9 @@ export function buildColonyRoad(
     const reached = store.get().colony >= previous;
     const divider = el("div", "rd-gate rd-chapname" + (reached ? " reached" : ""));
     divider.dataset.chapter = String(chapter);
+    const ribbon = el("span", "rd-breaker");
+    ribbon.setAttribute("aria-hidden", "true");
+    divider.appendChild(ribbon);
     divider.append(
       el("b", "rd-gatek", `Chapter ${chapter}`),
       el("span", "rd-gaten", regionName(regionOf(chapter))),
@@ -195,7 +200,17 @@ export function buildColonyRoad(
     const art = el("span", "rd-mark");
     art.setAttribute("aria-hidden", "true");
     if (reward.avatar) art.appendChild(avatarFace(reward.avatar, 100, "rd-face"));
-    else for (const payout of payouts(reward)) art.appendChild(hudMark(payout.mark, 100));
+    else for (const payout of payouts(reward)) {
+      const source = shelfArt(payout.mark === "mycel" ? "mycel.1500" : "pher.900");
+      if (source) {
+        const image = el("img", "hudmark rd-resource") as HTMLImageElement;
+        image.src = source;
+        image.alt = "";
+        image.width = 100;
+        image.height = 100;
+        art.appendChild(image);
+      } else art.appendChild(hudMark(payout.mark, 100));
+    }
     for (const image of Array.from(art.querySelectorAll("img"))) {
       image.loading = "lazy";
       image.decoding = "async";

@@ -1028,21 +1028,28 @@ Ten numbered sections now, with a picture beside the rules that need one.
 **THE COLONY ROAD IS A VERTICAL TWO-TRACK REWARD ROAD** (`src/ui/road.ts`).
 - Fifty chapters, five checkpoints each. The existing free/pass reward table and claim
   keys stay unchanged: 5,625 mycelium / 1,000 crystals free, plus 7,750 / 1,400 on the pass.
-- The premium cards are on the left: tall, chamfered cyan frames with blue gradient faces
+- The premium cards are on the left: tall, straight cyan frames with blue gradient faces
   and a white lock. Smaller purple normal cards sit on the right. Both show the existing
   resource art or named avatar, with the quantity beneath. Claimed cards carry green checks.
+- Resource rewards are mixed on both tracks in every chapter. Existing currency rewards
+  move between neighboring chapter pairs; avatars stay in place. roadKey maps display
+  positions to the original immutable reward ids, and rewardFor keeps paying the same
+  amount for each saved id. Total rewards and saved claim keys remain unchanged.
 - Each card claims its own existing free/pass key. An unowned premium card opens the shop;
   future normal cards cannot be claimed. Existing combined claims remain claimed on both
   tracks. Buying a pass later does not repay normal rewards.
-- Cool gradients and a subtle repeating pattern distinguish the ten regions. Only the road
-  chapter, divider and card classes bypass the app's flat-background blanket.
+- Smooth cool gradients distinguish the ten regions; there are no repeating circles.
+  Only chapter, ribbon and card classes bypass the app's flat-background blanket.
 - One continuous central rail is dark ahead and gold behind the current colony. Circular
   checkpoint badges show rung numbers with compact troop thresholds underneath. The gold
   current-colony marker shares exactly the fill endpoint.
 - Progress is calculated in responsive row and divider units, including the extra distance
   between chapters. CSS owns their pixel sizes so the marker does not drift on phone widths.
-- Every chapter has a slanted gradient breaker with its number, region and track labels.
-  The opening chapter divider sits below its first checkpoint: the player climbs upward.
+- Every chapter has a slanted gradient ribbon centered on the exact background seam.
+  Half the divider space belongs to each adjacent chapter, so the ribbon can overlap
+  both backgrounds without covering reward cards. Card frames themselves are upright.
+  Resource cards reuse the shop's largest-pack paintings (mycel.1500 / pher.900);
+  their small quantity labels retain the ordinary currency mark.
 - There is no screen title, toolbar, fixed troop footer, season UI or purchase banner.
   A single floating back button sits above the full-viewport scroller.
 - Claim popups confirm the amount actually banked. Claims and closing the popup preserve

@@ -144,7 +144,7 @@
 
    Colony Road uses flat area colors; its panels need no artwork exemption.
    ====================================================================== */
-*:not(#home):not(#luckyhatch):not(#splash):not(.rd-chap):not(.rd-gate):not(.rd-card):not(.rd-cardface), *::before, *::after { background-image: none !important; }
+*:not(#home):not(#luckyhatch):not(#splash):not(.rd-chap):not(.rd-breaker):not(.rd-card):not(.rd-cardface), *::before, *::after { background-image: none !important; }
 
 /* Surfaces the legacy sheet fills with a gradient and this file does not
    otherwise dress. */
@@ -6181,7 +6181,7 @@ button:not(.playbtn):active,
   --rd-gate: calc(70 * var(--rd-u));
   --rd-spine: calc(56 * var(--rd-u));
   --rd-pad: calc(12 * var(--rd-u));
-  --rd-endpad: calc(24 * var(--rd-u) + var(--safe-bottom));
+  --rd-endpad: calc(var(--rd-gate) / 2 + 24 * var(--rd-u) + var(--safe-bottom));
 }
 #achievements > .screenbody.achbody {
   position: absolute;
@@ -6214,7 +6214,7 @@ button:not(.playbtn):active,
 .rd-road {
   position: relative;
   isolation: isolate;
-  padding-top: calc(72 * var(--rd-u) + var(--safe-top));
+  padding-top: calc(72 * var(--rd-u) - var(--rd-gate) / 2 + var(--safe-top));
   padding-bottom: var(--rd-endpad);
 }
 .rd-road::before {
@@ -6242,12 +6242,12 @@ button:not(.playbtn):active,
 }
 .rd-chap {
   position: relative;
+  padding-block: calc(var(--rd-gate) / 2);
   background-color: var(--rd-depth);
   background-image:
-    radial-gradient(circle at 22px 22px, transparent 8px, #d9c6ff09 9px 12px, transparent 13px),
     radial-gradient(ellipse at 0% 15%, var(--rd-glow), transparent 64%),
     linear-gradient(150deg, var(--rd-area), var(--rd-depth) 86%);
-  background-size: 76px 76px, 100% 100%, 100% 100%;
+  background-size: 100% 100%, 100% 100%;
 }
 .rd-path { position: relative; max-width: 680px; margin-inline: auto; }
 .rd-stop {
@@ -6328,7 +6328,7 @@ button:not(.playbtn):active,
 .rd-cardshadow, .rd-card, .rd-cardface {
   position: absolute;
   display: block;
-  clip-path: polygon(6% 0, 100% 0, 94% 100%, 0 100%);
+  border-radius: calc(2 * var(--rd-u));
   pointer-events: none;
 }
 .rd-cardshadow {
@@ -6431,7 +6431,7 @@ button:not(.playbtn):active,
   padding: calc(4 * var(--rd-u)) calc(9 * var(--rd-u));
   background: #ffda36;
   color: #1b1734;
-  clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
+  border-radius: calc(2 * var(--rd-u));
   font-size: calc(11 * var(--rd-u));
   text-shadow: none !important;
 }
@@ -6443,7 +6443,10 @@ button:not(.playbtn):active,
 .rd-stop.big .rd-card { filter: brightness(1.14); }
 .rd-stop.grand .rd-card { filter: brightness(1.3); }
 .rd-gate {
-  position: relative;
+  position: absolute;
+  top: 100%;
+  inset-inline: 0;
+  transform: translateY(-50%);
   z-index: 3;
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--rd-spine) minmax(0, 1fr);
@@ -6451,12 +6454,18 @@ button:not(.playbtn):active,
   align-items: center;
   column-gap: 0;
   height: var(--rd-gate);
-  padding: 0 var(--rd-pad) calc(12 * var(--rd-u));
+  padding: 0 var(--rd-pad);
   border: none;
-  background-image: linear-gradient(176deg, transparent 20%, #edb6ff 21% 23%,
-    #ac45e4 24% 30%, #501d97 66%, #bf61e5 74%, transparent 75%);
+}
+.rd-breaker {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 36%, 100% 16%, 100% 64%, 0 84%);
+  background-image: linear-gradient(180deg, #edb6ff 20%, #ac45e4 34%, #501d97 66%, #bf61e5 80%);
+  pointer-events: none;
 }
 .rd-gatek {
+  position: relative;
   grid-column: 1;
   text-align: right;
   color: #fff;
@@ -6466,6 +6475,7 @@ button:not(.playbtn):active,
   text-shadow: 0 2px 0 #29104c !important;
 }
 .rd-gaten {
+  position: relative;
   grid-column: 3;
   color: #efe0ff;
   font-size: calc(14 * var(--rd-u));

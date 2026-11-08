@@ -195,15 +195,21 @@ describe("colony road layout", () => {
     expect(stopReached(1e15), "a colony past the end is not on the last rung").toBe(ROAD_STOPS);
   });
 
-  it("pays one resource type including the pass bonus at every checkpoint", () => {
-    expect(ROAD_CHAPTER_STOPS).toBe(5);
-    for (const stop of roadStops()) {
-      expect(!!stop.free, `rung ${stop.index} paid nothing on the free track`).toBe(true);
-      expect(!!stop.pass, `rung ${stop.index} paid nothing on the pass track`).toBe(true);
-      const freeKinds = Object.keys(stop.free!).filter(k => stop.free![k as keyof RoadReward]);
-      const passKinds = Object.keys(stop.pass!).filter(k => stop.pass![k as keyof RoadReward]);
-      expect(freeKinds.length).toBe(1);
-      expect(passKinds).toEqual(freeKinds);
+  it("mixes both resources in every chapter on each track, with one type per card", () => {
+    const stops = roadStops();
+    for (let chapter = 1; chapter <= ROAD_CHAPTERS; chapter++) {
+      const rows = stops.filter((stop) => stop.chapter === chapter);
+      for (const track of ["free", "pass"] as const) {
+        const kinds = new Set<string>();
+        for (const stop of rows) {
+          const reward = stop[track];
+          expect(reward).toBeTruthy();
+          const fields = Object.keys(reward!).filter((key) => reward![key as keyof RoadReward]);
+          expect(fields).toHaveLength(1);
+          if (!reward?.avatar) kinds.add(fields[0] as string);
+        }
+        expect([...kinds].sort()).toEqual(["mycel", "pheromone"]);
+      }
     }
   });
 
@@ -246,6 +252,27 @@ describe("colony road layout", () => {
     expect(total(passReward)).toEqual({ mycel: 7750, pheromone: 1400 });
   });
 
+  it("keeps every old claim id tied to the original currency amount", () => {
+    for (let index = 1; index <= ROAD_STOPS; index++) {
+      const chapter = Math.ceil(index / ROAD_CHAPTER_STOPS);
+      const rung = rungOfChapter(index);
+      if (rung === 3) continue; // Avatars retain their chapter and ids.
+      for (const track of ["free", "pass"] as const) {
+        const amount = chapter % 2 === 0
+          ? (track === "free" ? 40 : 56)
+          : (track === "free" ? 100 + chapter * 5 : 310);
+        const small = Math.round(amount / 8);
+        const paid = rung === 5 ? amount - small * 3 : small;
+        const original = chapter % 2 === 0 ? { pheromone: paid } : { mycel: paid };
+        expect(rewardFor(`${track === "free" ? "f" : "p"}${index}`)).toEqual(original);
+      }
+    }
+    for (const track of ["free", "pass"] as const) {
+      const keys = roadStops().map((stop) => roadKey(track, stop.index));
+      expect(new Set(keys).size).toBe(ROAD_STOPS);
+    }
+  });
+
   /** What a reward is worth at all, for the comparisons above. */
   const worth = (r: RoadReward | null): number => (r?.mycel ?? 0) + (r?.pheromone ?? 0);
 
@@ -279,10 +306,11 @@ describe("colony road layout", () => {
    * rounded number that a retune would move, and a claim key has to outlive that.
    */
   it("resolves a claim key back to the same reward the road showed", () => {
-    for (const stop of roadStops().slice(0, 20)) {
+    for (const stop of roadStops()) {
       expect(rewardFor(roadKey("pass", stop.index))).toEqual(passReward(stop.index));
       expect(rewardFor(roadKey("free", stop.index))).toEqual(freeReward(stop.index));
       expect(roadColony(roadKey("free", stop.index))).toBe(stopColony(stop.index));
+      expect(roadColony(roadKey("pass", stop.index))).toBe(stopColony(stop.index));
     }
     for (const junk of ["", "x100", "f", "fNaN", "f-250", "f0", "f999"]) {
       expect(rewardFor(junk), `"${junk}" paid something`).toBeNull();
@@ -291,6 +319,23 @@ describe("colony road layout", () => {
 });
 
 describe("claiming colony road rewards", () => {
+  it("does not repay a saved reward after its card moves to a different checkpoint", () => {
+    const kv = new MemoryStore();
+    const saved = new ProfileStore(kv);
+    saved.update((p) => {
+      p.colony = ROAD_LAST;
+      p.pass = true;
+      p.roadClaimed = ["f2", "p1"];
+      p.mycel = 13 + 39;
+    });
+    const reloaded = new ProfileStore(kv);
+    expect(roadKey("free", 7)).toBe("f2");
+    expect(roadKey("pass", 6)).toBe("p1");
+    expect(reloaded.claimRoad("f2")).toBe(false);
+    expect(reloaded.claimRoad("p1")).toBe(false);
+    expect(reloaded.get().mycel).toBe(52);
+  });
+
   const withColony = (n: number, pass = false): ProfileStore => {
     const s = store();
     s.update((p) => { p.colony = n; p.pass = pass; });

@@ -27,6 +27,7 @@ import { scoreQuestEvents } from "../../platform";
 import { AVATAR_IDS, FREE_AVATARS } from "../../platform";
 import { buildQuests } from "../quests";
 import { buildColonyRoad } from "../road";
+import { shelfArt } from "../shelf";
 import { buildRules } from "../rules";
 
 /**
@@ -970,6 +971,8 @@ describe("colony road screen", () => {
         expect(card.querySelector(".rd-amount")).toBeNull();
         expect(ROAD_AVATARS.map((id) => avatarName(id))).toContain(card.getAttribute("aria-label"));
       } else {
+        const source = shelfArt(reward.mycel ? "mycel.1500" : "pher.900");
+        expect(card.querySelector("img.rd-resource")?.getAttribute("src")).toBe(source);
         expect(card.querySelector(".rd-amount")?.textContent)
           .toBe(String((reward.mycel ?? 0) + (reward.pheromone ?? 0)));
       }

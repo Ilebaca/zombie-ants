@@ -7,9 +7,9 @@
  * (colony.ts), so the road has to compound with it: every stop is a fixed MULTIPLE of the
  * one before, and a hundred of them carry it from a few dozen troops to past a trillion.
  *
- * That is also why a stop is identified by its INDEX rather than by its size. The old table
- * asked "is this number a multiple of five hundred?", which only works on a ladder with
- * even rungs; on a geometric one the rung number is the only stable name a reward has.
+ * A reward keeps its original index as a stable id rather than using a rounded colony
+ * size. Its displayed checkpoint can move: roadKey maps the new position to that id,
+ * while rewardFor always resolves the original payout. Paid claims survive reordering.
  *
  * Pure functions — no storage, no DOM. The screen renders whatever `roadStops()` returns,
  * and `ProfileStore.claimRoad` is the only thing that pays out, so the table can be retuned
@@ -70,7 +70,7 @@ export interface RoadReward {
 }
 
 export interface RoadStop {
-  /** Which rung this is, counting from one. The reward's stable name. */
+  /** Displayed checkpoint, counting from one. Reward ids are supplied by roadKey. */
   index: number;
   /** Troops needed to reach it. */
   colony: number;
@@ -103,9 +103,23 @@ function roundish(n: number): number {
   return Math.round(n / mag) * mag;
 }
 
-/** Stable id for a reward, used as the claim key stored on the profile. */
+/** Stable original reward id at a displayed stop, used for persisted claims. */
 export const roadKey = (track: RoadTrack, index: number): string =>
-  `${track === "pass" ? "p" : "f"}${index}`;
+  `${track === "pass" ? "p" : "f"}${rewardIndex(track, index)}`;
+
+/**
+ * Reorder existing rewards within neighboring chapter pairs. This swap is its own
+ * inverse: it maps a displayed stop to its original reward id and that id back to
+ * its new stop. Saved keys continue to identify exactly the reward already paid.
+ */
+function rewardIndex(track: RoadTrack, index: number): number {
+  if (index < 1 || index > ROAD_STOPS) return index;
+  const rung = rungOfChapter(index);
+  const swap = track === "free" ? rung === 2 || rung === 4 : rung === 1 || rung === 5;
+  if (!swap) return index;
+  const paired = index + (chapterAt(index) % 2 === 1 ? ROAD_CHAPTER_STOPS : -ROAD_CHAPTER_STOPS);
+  return paired <= ROAD_STOPS ? paired : index;
+}
 
 /**
  * Reward tables, ported from the legacy build's roadFree/roadPass — but PRICED, not copied.
@@ -137,9 +151,9 @@ export const isChapterEnd = (index: number): boolean =>
 /**
  * WHAT A WHOLE CHAPTER PAYS, per track. The checkpoints inside it divide this up.
  *
- * Both parts use the same currency at a checkpoint, so the owned pass bonus can be
- * included in one resource reward. Chapters alternate mycelium and pheromone crystals.
- * Aligning the pass phase leaves the fifty-chapter totals unchanged.
+ * These original purses remain the source of truth for saved reward ids. The display
+ * order mixes their resource rewards across neighboring chapters without changing any
+ * original payout or the road's total currency supply.
  *
  * Both are the totals the two-rung road paid, carried over exactly: the free track's
  * per-chapter reward is the number it always was, and the pass track's is its old
@@ -214,7 +228,7 @@ const FREE_PAYING = ROAD_CHAPTER_STOPS - 1;
  * Free track: a share of the chapter's purse at four of its five checkpoints, and the
  * chapter's avatar at the middle checkpoint.
  */
-export function freeReward(index: number): RoadReward | null {
+function originalFreeReward(index: number): RoadReward | null {
   if (index < 1 || index > ROAD_STOPS) return null;
   const chapter = chapterAt(index);
   const rung = rungOfChapter(index);
@@ -237,7 +251,7 @@ export function freeReward(index: number): RoadReward | null {
  * is shared across the other four stops. The two tracks now have separate cards; their
  * established quantities and saved claim keys are preserved until rewards are retuned.
  */
-export function passReward(index: number): RoadReward | null {
+function originalPassReward(index: number): RoadReward | null {
   if (index < 1 || index > ROAD_STOPS) return null;
   const chapter = chapterAt(index);
   const rung = rungOfChapter(index);
@@ -246,6 +260,15 @@ export function passReward(index: number): RoadReward | null {
     return id ? { avatar: id } : splitPurse(passPurse(chapter), 1, FREE_PAYING);
   }
   return splitPurse(passPurse(chapter), rung, FREE_PAYING);
+}
+
+/** Rewards at a displayed stop; their original ids and amounts are preserved. */
+export function freeReward(index: number): RoadReward | null {
+  return originalFreeReward(rewardIndex("free", index));
+}
+
+export function passReward(index: number): RoadReward | null {
+  return originalPassReward(rewardIndex("pass", index));
 }
 
 export function roadStops(): RoadStop[] {
@@ -268,13 +291,14 @@ export function rewardFor(key: string): RoadReward | null {
   const track = key[0];
   const index = Number(key.slice(1));
   if (!Number.isSafeInteger(index) || index <= 0) return null;
-  if (track === "f") return freeReward(index);
-  if (track === "p") return passReward(index);
+  if (track === "f") return originalFreeReward(index);
+  if (track === "p") return originalPassReward(index);
   return null;
 }
 
 /** The colony size a claim key asks for, so the store can refuse one not yet reached. */
-export const roadColony = (key: string): number => stopColony(Number(key.slice(1)));
+export const roadColony = (key: string): number =>
+  stopColony(rewardIndex(key[0] === "p" ? "pass" : "free", Number(key.slice(1))));
 export const isPassKey = (key: string): boolean => key[0] === "p";
 
 /** The rung the colony is standing on, 0 before the first one. */
