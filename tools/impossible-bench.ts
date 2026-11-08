@@ -26,8 +26,8 @@ console.log(JSON.stringify({ fullBudgetProbe: true, depth: probe.depth, nodes: p
 const profiles = [...Object.values(PROFILES), ABILITY_PROBE];
 const originals = profiles.map((profile) => ({ ...profile }));
 for (const profile of profiles) {
-  profile.nodeBudget = Math.max(200, Math.floor(profile.nodeBudget / divisor));
-  profile.timeBudgetMs = Math.max(20, profile.timeBudgetMs / divisor);
+  profile.nodeBudget = Math.max(16, Math.floor(profile.nodeBudget / divisor));
+  profile.timeBudgetMs = Math.max(1, profile.timeBudgetMs / divisor);
 }
 
 interface Result { winner: Player | null; turns: number; elapsed: number }
