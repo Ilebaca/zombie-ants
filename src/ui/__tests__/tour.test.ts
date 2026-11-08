@@ -93,6 +93,34 @@ describe("the guided tour", () => {
     expect(text(h)).toBe("done");
   });
 
+  it("aligns highlights on an offset game surface while testing taps in viewport coordinates", async () => {
+    vi.useFakeTimers();
+    const h = host();
+    const button = document.createElement("button");
+    h.appendChild(button);
+    measure(button, { x: 100, y: 148, w: 60, h: 24 });
+    const tour = new Tour(h);
+    tour.start([
+      { id: "press", text: "press it", find: () => button, advance: "tap", pad: 0, bubble: "bottom" },
+      { id: "next", text: "pressed" },
+    ]);
+    const wrap = h.querySelector<HTMLElement>(".tourwrap");
+    if (!wrap) throw new Error("Missing tour surface");
+    vi.spyOn(wrap, "getBoundingClientRect").mockReturnValue({
+      left: 0, top: -52, width: 411, height: 914,
+      right: 411, bottom: 862, x: 0, y: -52,
+    } as DOMRect);
+    Object.defineProperty(wrap, "clientWidth", { value: 411 });
+    Object.defineProperty(wrap, "clientHeight", { value: 914 });
+    await vi.advanceTimersByTimeAsync(120);
+    expect(h.querySelector<HTMLElement>(".tourring")?.style.top).toBe("200px");
+    expect(h.querySelector<HTMLElement>(".tourbubble")?.style.top).toBe("782px");
+    tap(130, 160);
+    await vi.advanceTimersByTimeAsync(10);
+    expect(text(h)).toBe("pressed");
+    tour.stop();
+  });
+
   it("advances on a tap in the lit hole, and on nothing else", async () => {
     vi.useFakeTimers();
     const h = host();

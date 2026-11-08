@@ -382,8 +382,16 @@ export class Tour {
     const step = this.step;
     if (!step || !this.wrap) return;
 
-    const spot = this.spotOf(step);
-    this.hole = spot;
+    const viewportSpot = this.spotOf(step);
+    this.hole = viewportSpot; // Pointer events use viewport coordinates.
+    const origin = this.wrap.getBoundingClientRect();
+    // The installed surface can move behind transient Android bars. Draw inside
+    // that surface, while keeping hit testing in the event's viewport coordinates.
+    const spot = viewportSpot ? {
+      ...viewportSpot,
+      left: viewportSpot.left - origin.left,
+      top: viewportSpot.top - origin.top,
+    } : null;
 
     const lift = step.lift?.() ?? null;
     if (lift !== this.lifted) {
@@ -392,7 +400,8 @@ export class Tour {
     }
     if (spot) this.lit = true;
 
-    const w = window.innerWidth, h = window.innerHeight;
+    const w = this.wrap.clientWidth || window.innerWidth;
+    const h = this.wrap.clientHeight || window.innerHeight;
     const [top, bottom, left, right] = this.shades as [
       HTMLElement, HTMLElement, HTMLElement, HTMLElement,
     ];

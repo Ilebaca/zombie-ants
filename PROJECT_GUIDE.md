@@ -3048,6 +3048,8 @@ nagging the one player who had already done what it asked.**
     Regression verification uses real Chromium safe-area overrides and an inset
     host window, checks unchanged screen coordinates for HUD, Play and tray, and
     clicks a tray button while framed. It must not just mock innerHeight.
+    Tutorial geometry converts viewport rectangles into its overlay surface's
+    coordinates; pointer hit testing keeps the original viewport rectangle.
   - **The manifest is precached, and a new build re-fetches it**: the worker's `install`
     adds the whole precache list from the network and `activate` deletes every other
     build's cache, so the change lands with the deploy. What it cannot do is re-install
