@@ -3026,6 +3026,9 @@ button:not(.playbtn):active,
    somewhere in it. `max-width: none` because the canvas carries its own exact
    pixel size (render/snapshot.ts). */
 .setupstage canvas {
+  /* Reserve the additional action offset on short screens without stretching the preview. */
+  max-height: max(120px, calc(var(--installed-height, 100vh) - 330px - max(0px, var(--primary-action-bottom) - var(--screen-bottom))));
+  object-fit: contain;
   max-width: none;
   border-radius: var(--r-lg);
 }
