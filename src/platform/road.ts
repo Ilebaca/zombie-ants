@@ -186,8 +186,8 @@ const AVATAR_RUNG = 3;
  * that is supposed to be about pictures.
  *
  * So `paying` is how many checkpoints of this track's chapter take a share, and it is
- * FOUR on both: the road draws ONE disc per checkpoint carrying the two tracks pooled,
- * so neither may pay currency at the rung the other pays a face at. Each ordinary stop
+ * FOUR on both: the middle rung of each track pays its avatar instead of currency.
+ * The separate track cards retain this existing distribution. Each ordinary stop
  * takes an eighth and the CLOSER takes WHAT IS LEFT rather than a fraction of its own —
  * so the sum is the purse to the troop. Computed as its own eighth the closer would
  * drift by a troop or two per chapter, which over fifty of them is the road quietly
@@ -212,7 +212,7 @@ const FREE_PAYING = ROAD_CHAPTER_STOPS - 1;
 
 /**
  * Free track: a share of the chapter's purse at four of its five checkpoints, and the
- * chapter's AVATAR at the fifth of them.
+ * chapter's avatar at the middle checkpoint.
  */
 export function freeReward(index: number): RoadReward | null {
   if (index < 1 || index > ROAD_STOPS) return null;
@@ -233,15 +233,9 @@ export function freeReward(index: number): RoadReward | null {
 /**
  * Pass track: the same, out of the pass purse, and only to a player holding the pass.
  *
- * IT SITS OUT THE AVATAR RUNG, and that is a consequence of the SCREEN rather than of
- * the reward. The road draws one disc per checkpoint carrying BOTH tracks pooled, so a
- * rung paying a face on one track and currency on the other would be one disc trying to
- * show two different kinds of thing — and the face would win, silently swallowing the
- * pass's share of that chapter. The pass purse is split across the other four instead,
- * so a pass holder is paid exactly what they always were: concentrated, never lost.
- *
- * The avatar itself is the FREE track's, so the set is still walked to rather than
- * bought — the pass simply does not pay EXTRA at the stop where a face is handed over.
+ * The avatar rung pays the same existing avatar as the free track. Its currency purse
+ * is shared across the other four stops. The two tracks now have separate cards; their
+ * established quantities and saved claim keys are preserved until rewards are retuned.
  */
 export function passReward(index: number): RoadReward | null {
   if (index < 1 || index > ROAD_STOPS) return null;

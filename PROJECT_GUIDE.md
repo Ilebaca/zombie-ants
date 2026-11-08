@@ -1025,38 +1025,29 @@ Ten numbered sections now, with a picture beside the rules that need one.
 - **The hive terrain is cleared from every figure that is not about it.** It sits in the
   middle of the board, which is inside most of these windows.
 
-**THE COLONY ROAD IS A PATH THROUGH TEN PLACES** (`src/ui/road.ts`, the table in
-`platform/road.ts`).
-- Fifty chapters, five checkpoints each; the fifth pays more and has a larger icon.
-  Checkpoints split a chapter purse (four eighths, then the remainder).
-- Each region has a distinct dark flat fill. The road is full viewport width, with no
-  artwork, scrims, side gutters, rounded panels, or gaps between chapters.
-- A 30px green rail spans each entire chapter and area gate, using the game's grass colors.
-  Completed chapters and gates are bright green; future stretches use the darker grass edge.
-  Chapter names, area names and colony thresholds sit beside the rail so it stays continuous.
-- Each checkpoint pays **one resource type**, including an owned pass bonus of the same
-  currency. Odd chapters pay mycelium; even chapters pay pheromone crystals. The road's
-  totals remain 5,625 mycelium / 1,000 crystals free, plus 7,750 / 1,400 on the pass.
-  The pass phase was aligned with the free reward to avoid mixed-resource nodes.
-- There is one claim button, no separate pass column or pass promotion. Free/pass claim
-  keys stay separate, so granting the pass after a free claim pays only the unclaimed bonus.
-  Existing saved claim keys remain honored.
-- The road always scrolls vertically. Every reward uses a **single resource coin**, including
-  chapter and area milestones; no stacked-coin artwork and no resource icon in the quantity display.
-  Single icons are 80px normally, 100px at chapter ends, and 112px at area ends.
-- Each coin floats 16px above a filled 56px circular base. A number-only rectangle above
-  the coin and the circular base share the road's green state color. The amount display has
-  a 2px yellow frame (`--gold`); the coin and circular base have no outlines.
-  Reward spacing is 208px normally, 232px at chapter ends, and 248px at area ends.
-  Claimed art uses a color filter rather than transparency, so the path cannot show through it.
-  A claimed reward carries a check.
-- A popup confirms the amount actually banked. It is inside the screen and the
-  `#achievements.popped` stacking context clears both the nav and sticky troop footer.
-- It opens at the next checkpoint, centered using bounding rects rather than
-  `offsetTop` (the latter is relative to the chapter, not the whole scroller). Claiming
-  preserves scroll position. Nothing pulses.
-- Legacy ladder classes remain removed. The sticky `roadhead` footer remains last and
-  reports the player's colony and chapter.
+**THE COLONY ROAD IS A VERTICAL TWO-TRACK REWARD ROAD** (`src/ui/road.ts`).
+- Fifty chapters, five checkpoints each. The existing free/pass reward table and claim
+  keys stay unchanged: 5,625 mycelium / 1,000 crystals free, plus 7,750 / 1,400 on the pass.
+- The premium cards are on the left: tall, chamfered cyan frames with blue gradient faces
+  and a white lock. Smaller purple normal cards sit on the right. Both show the existing
+  resource art or named avatar, with the quantity beneath. Claimed cards carry green checks.
+- Each card claims its own existing free/pass key. An unowned premium card opens the shop;
+  future normal cards cannot be claimed. Existing combined claims remain claimed on both
+  tracks. Buying a pass later does not repay normal rewards.
+- Cool gradients and a subtle repeating pattern distinguish the ten regions. Only the road
+  chapter, divider and card classes bypass the app's flat-background blanket.
+- One continuous central rail is dark ahead and gold behind the current colony. Circular
+  checkpoint badges show rung numbers with compact troop thresholds underneath. The gold
+  current-colony marker shares exactly the fill endpoint.
+- Progress is calculated in responsive row and divider units, including the extra distance
+  between chapters. CSS owns their pixel sizes so the marker does not drift on phone widths.
+- Every chapter has a slanted gradient breaker with its number, region and track labels.
+  The opening chapter divider sits below its first checkpoint: the player climbs upward.
+- There is no screen title, toolbar, fixed troop footer, season UI or purchase banner.
+  A single floating back button sits above the full-viewport scroller.
+- Claim popups confirm the amount actually banked. Claims and closing the popup preserve
+  scroll position. The road opens around the next checkpoint. The game font is used
+  throughout. Nothing pulses.
 
 **CHALLENGES ARE A LADDER, AND BEATING ONE IS REMEMBERED** (`src/ui/challenges.ts`). Five
 identical cards — a title, a run-on grey sentence, a green Play button — and nothing
@@ -2049,14 +2040,11 @@ belongs to the save rather than to a species, and it is never worn by an opponen
   pay currency, so the whole road still pays exactly what it paid before — to the troop,
   which `economy.test.ts` would otherwise have caught. The closer takes what is LEFT
   rather than an eighth of its own, so a chapter pays its purse however the shares round.
-- **AND BOTH TRACKS SIT OUT THAT RUNG, which is the SCREEN'S rule rather than the
-  reward's.** The road draws ONE disc per checkpoint carrying the free and pass rewards
-  pooled, so a rung paying a face on one track and currency on the other is one disc
-  trying to show two kinds of thing — and the face wins, silently swallowing the pass's
-  share of that chapter. So `passReward` names the same avatar there and its purse splits
-  across the other four: a pass holder is paid exactly what they always were, concentrated
-  rather than lost, and the face is still the FREE track's so the set is walked to rather
-  than bought. `splitPurse` takes how many stops are PAYING for that reason.
+- **BOTH TRACKS RESERVE THAT RUNG FOR THE SAME AVATAR.** Their currency purses
+  remain split across the other four stops. The road now draws the tracks separately;
+  this existing payout table is preserved until rewards are deliberately retuned.
+  Claiming both keys does not duplicate an avatar in the collection.
+
 - **THE SAVE HOLDS A NULLABLE CHOICE AND THE ACCESSOR IS NEVER NULL**, which is the
   `lookFor` shape: `profile.avatar` is null for "has not chosen" and `store.face` answers
   `DEFAULT_AVATAR` — a real painting, the plainest of the free ten. The drawn worker is

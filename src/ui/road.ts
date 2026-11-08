@@ -1,99 +1,111 @@
 /**
- * THE COLONY ROAD — one reward per checkpoint on a path through ten dark area colors.
- *
- * Free rewards and owned pass bonuses share one claim button. Existing claim keys remain
- * separate so buying the pass later never pays an already claimed reward twice.
+ * Colony Road: a vertical progression rail with separate normal and Colony Pass cards.
+ * Reward definitions and persisted claim keys stay in the platform layer.
  */
 import {
-  REGION_CHAPTERS, ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, avatarName, chapterOf, compact, isChapterEnd,
-  regionName, regionOf, roadKey, roadStops,
+  COLONY_START, REGION_CHAPTERS, ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, avatarName, compact,
+  isChapterEnd, regionName, regionOf, roadKey, roadStops,
 } from "../platform";
-import type { ProfileStore, RoadReward, RoadStop } from "../platform";
-import { avatarFace, el, hudMark, redraw, screenEl, screenHeader } from "./chrome";
+import type { ProfileStore, RoadReward, RoadStop, RoadTrack } from "../platform";
+import { avatarFace, el, hudMark, redraw, screenEl } from "./chrome";
 import { icon } from "./icons";
 
-const AREA_COLORS = [
-  "#11271e", "#2b2114", "#2c1918", "#10252a", "#172d28",
-  "#292719", "#1e192b", "#172833", "#30231b", "#271d2d",
+const AREA_PALETTES = [
+  ["#5220b3", "#250f62", "#9c4ff2"],
+  ["#2654a7", "#14275d", "#469ee8"],
+  ["#5136a9", "#251450", "#9a69df"],
+  ["#17618a", "#12354c", "#37c1ca"],
+  ["#304a9e", "#182850", "#618de5"],
+  ["#733296", "#35164f", "#b563d4"],
+  ["#3b238f", "#170c40", "#7654d5"],
+  ["#256ca3", "#163759", "#71d4e9"],
+  ["#6543a7", "#2c1a52", "#b78be7"],
+  ["#5133bd", "#21114f", "#aa68ec"],
 ] as const;
 
-const areaColor = (chapter: number): string =>
-  AREA_COLORS[regionOf(chapter) - 1] ?? AREA_COLORS[0];
-
-interface ClaimPart { key: string; reward: RoadReward }
-
-const totalReward = (rewards: readonly RoadReward[]): RoadReward => ({
-  mycel: rewards.reduce((sum, reward) => sum + (reward.mycel ?? 0), 0),
-  pheromone: rewards.reduce((sum, reward) => sum + (reward.pheromone ?? 0), 0),
-  // A face is not a currency, so it does not SUM — a checkpoint pays one or none, and
-  // dropping the field here is how an avatar checkpoint pays nothing at all.
-  avatar: rewards.find((reward) => reward.avatar)?.avatar,
-});
-
-/** What a reward pays, as the popup reads it out: a mark, a figure and a word. */
 interface Payout { mark: string; amount: number; name: string }
 
-const payouts = (r: RoadReward): Payout[] => [
-  ...(r.mycel ? [{ mark: "mycel", amount: r.mycel, name: "mycelium" }] : []),
-  ...(r.pheromone ? [{ mark: "pheromone", amount: r.pheromone, name: r.pheromone === 1 ? "pheromone crystal" : "pheromone crystals" }] : []),
+const payouts = (reward: RoadReward): Payout[] => [
+  ...(reward.mycel ? [{ mark: "mycel", amount: reward.mycel, name: "mycelium" }] : []),
+  ...(reward.pheromone ? [{
+    mark: "pheromone", amount: reward.pheromone,
+    name: reward.pheromone === 1 ? "pheromone crystal" : "pheromone crystals",
+  }] : []),
 ];
 
-/** The label a button carries, so a disc showing only an icon still says what it is. */
-const spoken = (r: RoadReward): string =>
-  r.avatar ? avatarName(r.avatar) : payouts(r).map((p) => `+${p.amount} ${p.name}`).join(" and ");
+const spoken = (reward: RoadReward): string =>
+  reward.avatar ? avatarName(reward.avatar)
+    : payouts(reward).map((p) => `+${p.amount} ${p.name}`).join(" and ");
 
-export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop: () => void): HTMLElement {
+/**
+ * Position along the rail in row and chapter-divider units. CSS owns their actual size,
+ * so the progress endpoint and player marker stay together at every phone width.
+ */
+function progressPosition(colony: number, stops: readonly RoadStop[]): string {
+  const next = stops.find((stop) => colony < stop.colony);
+  const previous = next ? stops[next.index - 2] : stops[stops.length - 1];
+  const ratio = next ? Math.max(0, Math.min(1,
+    (colony - (previous?.colony ?? COLONY_START))
+      / (next.colony - (previous?.colony ?? COLONY_START)),
+  )) : 0;
+  const rows = previous ? previous.index - .5 + ratio : ratio * .5;
+  const gates = previous ? previous.chapter + ratio * ((next?.chapter ?? previous.chapter) - previous.chapter) : 1;
+  return `calc(var(--rd-endpad) + var(--rd-row) * ${rows.toFixed(6)} + var(--rd-gate) * ${gates.toFixed(6)})`;
+}
+
+export function buildColonyRoad(
+  store: ProfileStore, onBack: () => void, onShop: () => void,
+): HTMLElement {
   const root = screenEl("achievements");
-  /** Kept across renders so claiming a reward does not throw the player back to the top. */
+  root.setAttribute("aria-label", "Colony Road");
+  const stops = roadStops();
   let scrollTop: number | null = null;
-  /** What was just claimed, if anything, for the confirmation popup. */
   let took: RoadReward | null = null;
 
   const render = (): void => {
     const profile = store.get();
     redraw(root);
-    screenHeader(root, { title: "Colony Road", onBack });
-
     const body = el("div", "screenbody achbody");
     body.id = "achBody";
-
-    // The first checkpoint out of reach is where the player is headed. Marking exactly one
-    // is the difference between a road you can read your position off and a wall of discs.
-    const stops = roadStops();
-    const nextStop = stops.find((x) => profile.colony < x.colony)?.index ?? -1;
-
+    const nextStop = stops.find((stop) => profile.colony < stop.colony)?.index ?? -1;
     const road = el("div", "rd-road");
-    // DESCENDING, so chapter one sits at the FOOT of the scroller and the player climbs.
+    road.style.setProperty("--rd-current", progressPosition(profile.colony, stops));
+
+    const progress = el("div", "rd-progress");
+    progress.setAttribute("role", "progressbar");
+    progress.setAttribute("aria-label", "Colony progress");
+    progress.setAttribute("aria-valuemin", "0");
+    const maximum = stops[stops.length - 1]?.colony ?? 0;
+    progress.setAttribute("aria-valuemax", String(maximum));
+    progress.setAttribute("aria-valuenow", String(Math.max(0, Math.min(maximum, profile.colony))));
+    progress.setAttribute("aria-valuetext", `${compact(profile.colony)} troops`);
+    road.appendChild(progress);
+
+    const player = el("div", "rd-player");
+    player.title = `${compact(profile.colony)} troops`;
+    player.append(hudMark("swords", 16), el("b", "roadt", compact(profile.colony)));
+    road.appendChild(player);
+
+    // Chapter one is at the foot. A player climbs past each divider into its five rewards.
     for (let chapter = ROAD_CHAPTERS; chapter >= 1; chapter--) {
-      road.appendChild(panel(chapter, stops, nextStop));
-      // The gate goes above the chapter that OPENS an area, announcing that area — which
-      // in a descending list means directly after its panel.
-      if (chapter > 1 && chapter % REGION_CHAPTERS === 1) road.appendChild(gate(chapter, stops));
+      road.appendChild(panel(chapter, nextStop));
     }
     body.appendChild(road);
-    body.appendChild(head());
     root.appendChild(body);
+
+    const back = el("button", "backbtn rd-back");
+    back.type = "button";
+    back.setAttribute("aria-label", "Back");
+    back.appendChild(icon("back", 28));
+    back.onclick = onBack;
+    root.appendChild(back);
 
     root.classList.toggle("popped", Boolean(took));
     if (took) root.appendChild(popup(took));
-
-    requestAnimationFrame(() => {
-      // Opens on where the player stands rather than at either end: the foot of a
-      // two-hundred-and-fifty-checkpoint road is chapter one, which a colony in chapter
-      // twelve has finished with.
-      body.scrollTop = scrollTop ?? restTop(body);
-    });
+    requestAnimationFrame(() => { body.scrollTop = scrollTop ?? restTop(body); });
     body.addEventListener("scroll", () => { scrollTop = body.scrollTop; }, { passive: true });
   };
 
-  /**
-   * Where the scroller opens: the checkpoint being worked towards, centred.
-   *
-   * MEASURED OFF THE RECTS, never `offsetTop`. A checkpoint's offset parent is its own
-   * `.rd-path` (both are positioned), so `offsetTop` answers where it sits inside its
-   * CHAPTER — a couple of hundred pixels into a thirty-six-thousand-pixel scroller, which
-   * clamped to zero and opened every colony at chapter fifty.
-   */
   const restTop = (body: HTMLElement): number => {
     const target = body.querySelector<HTMLElement>(".rd-stop.next");
     if (!target) return body.scrollHeight;
@@ -102,137 +114,124 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop
     return Math.max(0, body.scrollTop + center - Math.round(body.clientHeight / 2));
   };
 
-  /** One chapter: its area color, name, and five checkpoints climbing. */
-  const panel = (chapter: number, stops: RoadStop[], nextStop: number): HTMLElement => {
-    const box = el("section", "rd-chap");
-    box.dataset.region = String(regionOf(chapter));
-    box.style.backgroundColor = areaColor(chapter);
+  const panel = (chapter: number, nextStop: number): HTMLElement => {
+    const section = el("section", "rd-chap");
+    const region = regionOf(chapter);
+    const palette = AREA_PALETTES[region - 1] ?? AREA_PALETTES[0];
+    section.dataset.region = String(region);
+    section.style.setProperty("--rd-area", palette[0]);
+    section.style.setProperty("--rd-depth", palette[1]);
+    section.style.setProperty("--rd-glow", palette[2]);
+    section.style.backgroundColor = palette[1];
     const closes = stops[chapter * ROAD_CHAPTER_STOPS - 1]?.colony ?? Infinity;
-    box.classList.toggle("complete", store.get().colony >= closes);
-
-    const opens = stops[(chapter - 1) * ROAD_CHAPTER_STOPS]?.colony ?? Infinity;
-    const reached = store.get().colony >= opens;
-    const label = el("div", "rd-chapname" + (reached ? " reached" : ""));
-    label.append(
-      el("b", undefined, `Chapter ${chapter}`),
-      el("span", undefined, regionName(regionOf(chapter))),
-    );
-    box.appendChild(label);
-
+    section.classList.toggle("complete", store.get().colony >= closes);
     const path = el("div", "rd-path");
-    for (const stop of stops.filter((s) => s.chapter === chapter).reverse()) {
+    for (const stop of stops.filter((stop) => stop.chapter === chapter).reverse()) {
       path.appendChild(checkpoint(stop, nextStop));
     }
-    box.appendChild(path);
-    return box;
+    section.append(path, gate(chapter));
+    return section;
   };
 
-  /** The breaker between two areas: a doorway with the name of the one being entered. */
-  const gate = (chapter: number, stops: RoadStop[]): HTMLElement => {
-    const box = el("div", "rd-gate");
-    box.style.backgroundColor = areaColor(chapter);
-    const opens = stops[(chapter - 1) * ROAD_CHAPTER_STOPS]?.colony ?? Infinity;
-    box.classList.toggle("reached", store.get().colony >= opens);
-    box.append(
-      el("div", "rd-gatek", "Entering"),
-      el("div", "rd-gaten", regionName(regionOf(chapter))),
+  const gate = (chapter: number): HTMLElement => {
+    const previous = stops[(chapter - 1) * ROAD_CHAPTER_STOPS - 1]?.colony ?? COLONY_START;
+    const reached = store.get().colony >= previous;
+    const divider = el("div", "rd-gate rd-chapname" + (reached ? " reached" : ""));
+    divider.dataset.chapter = String(chapter);
+    divider.append(
+      el("b", "rd-gatek", `Chapter ${chapter}`),
+      el("span", "rd-gaten", regionName(regionOf(chapter))),
     );
-    return box;
+    const tracks = el("div", "rd-tracknames");
+    const premium = el("span", "rd-trackname premium");
+    premium.id = `road-pass-${chapter}`;
+    premium.append(icon("crown", 13), el("span", undefined, "COLONY PASS"));
+    const normal = el("span", "rd-trackname", "FREE");
+    normal.id = `road-free-${chapter}`;
+    tracks.append(premium, normal);
+    divider.appendChild(tracks);
+    return divider;
   };
 
-  /** Only the rewards this player owns; claim keys retain their original track. */
-  const partsFor = (stop: RoadStop): ClaimPart[] => {
-    const parts: ClaimPart[] = [];
-    if (stop.free) parts.push({ key: roadKey("free", stop.index), reward: stop.free });
-    if (store.get().pass && stop.pass) {
-      parts.push({ key: roadKey("pass", stop.index), reward: stop.pass });
-    }
-    return parts;
-  };
-
-  /** One combined reward sits on the center line at each checkpoint. */
   const checkpoint = (stop: RoadStop, nextStop: number): HTMLElement => {
-    const reached = store.get().colony >= stop.colony;
-    const classes = ["rd-stop"];
-    if (isChapterEnd(stop.index)) classes.push("big");
-    if (isChapterEnd(stop.index) && stop.chapter % REGION_CHAPTERS === 0) classes.push("grand");
-    if (reached) classes.push("reached");
-    if (stop.index === nextStop) classes.push("next");
-    const box = el("div", classes.join(" "));
-    const mid = el("div", "rd-mid");
-    const parts = partsFor(stop);
-    if (parts.length) mid.appendChild(prize(stop, parts));
-    const at = el("div", "rd-at", compact(stop.colony));
-    mid.appendChild(at);
-    box.appendChild(mid);
-    return box;
+    const row = el("div", "rd-stop");
+    row.dataset.stop = String(stop.index);
+    row.classList.toggle("reached", store.get().colony >= stop.colony);
+    row.classList.toggle("next", stop.index === nextStop);
+    row.classList.toggle("big", isChapterEnd(stop.index));
+    row.classList.toggle("grand", isChapterEnd(stop.index) && stop.chapter % REGION_CHAPTERS === 0);
+    if (stop.pass) row.appendChild(prize(stop, "pass", stop.pass));
+    const center = el("div", "rd-mid");
+    center.append(el("span", "rd-level", String(stop.index)),
+      el("span", "rd-at", compact(stop.colony)));
+    row.appendChild(center);
+    if (stop.free) row.appendChild(prize(stop, "free", stop.free));
+    return row;
   };
 
-  /** One action banks every unclaimed part the player owns at this checkpoint. */
-  const prize = (stop: RoadStop, parts: ClaimPart[]): HTMLElement => {
+  const prize = (stop: RoadStop, track: RoadTrack, reward: RoadReward): HTMLElement => {
     const profile = store.get();
-    const pending = parts.filter((part) => !profile.roadClaimed.includes(part.key));
-    const claimed = pending.length === 0;
-    const claimable = pending.some((part) => store.canClaimRoad(part.key));
+    const key = roadKey(track, stop.index);
+    const claimed = profile.roadClaimed.includes(key);
+    const claimable = store.canClaimRoad(key);
+    const needsPass = track === "pass" && !profile.pass;
     const state = claimed ? "got" : claimable ? "ready" : "locked";
-    const reward = totalReward((pending.length ? pending : parts).map((part) => part.reward));
-    const disc = el("button", `rd-prize main ${state}${reward.avatar ? " avprize" : ""}`);
-    disc.type = "button";
-    disc.dataset.stop = String(stop.index);
-    const marks = payouts(reward);
+    const button = el("button", `rd-prize ${track === "free" ? "main free" : "pass"} ${state}`);
+    button.type = "button";
+    button.dataset.stop = String(stop.index);
+    button.dataset.track = track;
+    button.dataset.key = key;
+    button.title = `${track === "pass" ? "Colony Pass: " : ""}${spoken(reward)}`;
+    button.setAttribute("aria-label", spoken(reward));
+    button.setAttribute("aria-describedby", `road-${track}-${stop.chapter}`);
+
+    const shadow = el("span", "rd-cardshadow");
+    const card = el("span", "rd-card");
+    card.appendChild(el("span", "rd-cardface"));
+    shadow.setAttribute("aria-hidden", "true");
+    card.setAttribute("aria-hidden", "true");
+    button.append(shadow, card);
+
     const art = el("span", "rd-mark");
-    const big = isChapterEnd(stop.index);
-    const grand = big && stop.chapter % REGION_CHAPTERS === 0;
-    const size = grand ? 112 : big ? 100 : 80;
-    // AN AVATAR CHECKPOINT WEARS THE FACE IT PAYS, rather than a mark standing for it.
-    // Every other disc carries the MARK of the resource behind it because a resource has
-    // no picture; an avatar is nothing BUT a picture, so a badge here would be the one
-    // checkpoint on the road that refuses to show what it is giving.
-    if (reward.avatar) art.appendChild(avatarFace(reward.avatar, size, "rd-face"));
-    else for (const p of marks) art.appendChild(hudMark(p.mark, size));
-    const amount = el("span", "rd-amount");
-    amount.setAttribute("aria-hidden", "true");
-    for (const p of marks) amount.appendChild(el("b", undefined, String(p.amount)));
-    const base = el("span", "rd-base");
-    base.setAttribute("aria-hidden", "true");
-    // THE FIGURE IS NOT DRAWN AT ALL ON AN AVATAR RUNG, rather than drawn empty. It is a
-    // bordered plate in this design, so an avatar checkpoint left one hanging over the
-    // face — a frame with nothing in it, which reads as a label that failed to fill
-    // rather than as a reward that has no number. A face has no amount.
-    if (reward.avatar) disc.append(base, art);
-    else disc.append(base, amount, art);
-    disc.title = spoken(reward);
-    disc.setAttribute("aria-label", spoken(reward));
-
-    if (claimed) {
-      const tag = el("span", "rd-done");
-      tag.appendChild(icon("check", 11));
-      disc.appendChild(tag);
+    art.setAttribute("aria-hidden", "true");
+    if (reward.avatar) art.appendChild(avatarFace(reward.avatar, 100, "rd-face"));
+    else for (const payout of payouts(reward)) art.appendChild(hudMark(payout.mark, 100));
+    for (const image of Array.from(art.querySelectorAll("img"))) {
+      image.loading = "lazy";
+      image.decoding = "async";
     }
-
+    button.appendChild(art);
+    if (reward.avatar) button.appendChild(el("span", "rd-caption", "Avatar"));
+    else {
+      const amount = el("span", "rd-amount");
+      amount.setAttribute("aria-hidden", "true");
+      for (const payout of payouts(reward)) {
+        amount.append(hudMark(payout.mark, 18), el("b", undefined, String(payout.amount)));
+      }
+      button.appendChild(amount);
+    }
+    if (claimed) {
+      const check = el("span", "rd-done");
+      check.appendChild(icon("check", 30));
+      button.appendChild(check);
+    } else if (track === "pass" && !claimable) {
+      const lock = el("span", "rd-lock");
+      lock.setAttribute("aria-hidden", "true");
+      lock.appendChild(icon("lock", 23));
+      button.appendChild(lock);
+    }
     if (claimable) {
-      disc.onclick = () => {
-        const paid: RoadReward[] = [];
-        for (const part of pending) {
-          if (store.claimRoad(part.key)) paid.push(part.reward);
-        }
-        if (!paid.length) return;
-        took = totalReward(paid);
+      button.appendChild(el("span", "rd-action", "CLAIM"));
+      button.onclick = () => {
+        if (!store.claimRoad(key)) return;
+        took = reward;
         render();
       };
-    } else disc.disabled = true;
-    return disc;
+    } else if (needsPass) button.onclick = onShop;
+    else button.disabled = true;
+    return button;
   };
 
-  /**
-   * Confirms the amount actually banked, including any owned pass bonus.
-   *
-   * It is raised INSIDE the screen rather than on the body, so leaving the road takes it
-   * with it; and the SCREEN is what is lifted (`#achievements.popped`), because `.screen`
-   * is z-index 20 in the legacy sheet and `#mainNav` is 60 in the same stacking context —
-   * a card inside the screen cannot out-stack the tab bar at any z-index of its own. Same
-   * trap the hatch's prize card walked into.
-   */
   const popup = (reward: RoadReward): HTMLElement => {
     const pop = el("div", "rd-pop");
     pop.id = "roadPop";
@@ -268,20 +267,6 @@ export function buildColonyRoad(store: ProfileStore, onBack: () => void, _onShop
     return pop;
   };
 
-  /** Where the player stands. Last child, as in the legacy build. */
-  const head = (): HTMLElement => {
-    const profile = store.get();
-    const box = el("div", "roadhead");
-    const left = el("div", "roadhl");
-    left.append(
-      el("div", "roadt", `${compact(profile.colony)} troops`),
-      el("div", "roadsub",
-        `Chapter ${chapterOf(profile.colony)}`
-        + " · five checkpoints a chapter, the last one bigger"),
-    );
-    box.appendChild(left);
-    return box;
-  };
 
   render();
   return root;

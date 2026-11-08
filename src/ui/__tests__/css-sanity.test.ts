@@ -634,35 +634,26 @@ describe("the hatch button while it is hatching", () => {
   });
 });
 
-/** Road areas use uninterrupted flat fills from edge to edge. */
-describe("the road's area fills", () => {
-  it("clears background images from the chapter panels", () => {
-    const blanket = read("skin.css").split("\n")
-      .find((l) => l.includes("background-image: none !important"));
-    expect(blanket).toBeTruthy();
-    expect(blanket).not.toContain(":not(.rd-chap)");
+/** The road owns its gradients; the other screens keep the shared flat surfaces. */
+describe("the road reward tracks", () => {
+  it("allows chapter, divider and card gradients through the shared blanket", () => {
+    const css = read("skin.css");
+    const blanket = css.split("\n").find((line) => line.includes("background-image: none !important"));
+    for (const name of ["rd-chap", "rd-gate", "rd-card", "rd-cardface"]) {
+      expect(blanket).toContain(`:not(.${name})`);
+      expect(rulesFor(css, `.${name}`)).toMatch(/background-image:[^;]*(?:radial|linear)-gradient/);
+    }
     expect(blanket).toContain("*::before");
-    expect(rulesFor(read("skin.css"), ".rd-chap")).toMatch(/background-image:\s*none/);
   });
 
-  it("keeps the fills unobstructed and edge to edge", () => {
+  it("fills the screen and leaves the back button floating over the road", () => {
     const css = code(read("skin.css"));
-    expect(css, "area fills have a full-panel overlay").not.toMatch(/^\.rd-chap::after\s*\{/m);
-
-    const panel = rulesFor(css, ".rd-chap");
-    expect(panel, "the panels are rounded again").not.toMatch(/border-radius/);
-    expect(panel, "there is a gap between the chapters again").not.toMatch(/margin/);
-    expect(rulesFor(css, ".rd-gate"), "there is a gap under the breaker again")
-      .not.toMatch(/margin/);
-
-    // The road is the one screen body in the app that is edge to edge: it escapes
-    // `.screen`'s gutter by the same number, rather than that padding being removed.
     const body = rulesFor(css, "#achievements > .screenbody.achbody");
-    expect(body, "the road is back inside the reading column").not.toMatch(/var\(--page\)/);
-    expect(body, "the road has side margins again")
-      .toMatch(/margin-inline:\s*calc\(-1 \* var\(--sp4\)\)/);
-    // ...but NOT the bottom one, which is the room the tab bar stands in.
-    expect(body, "the road runs underneath the tab bar").not.toMatch(/margin-bottom/);
+    expect(body).toMatch(/position:\s*absolute/);
+    expect(body).toMatch(/inset:\s*0/);
+    expect(body).toMatch(/margin:\s*0/);
+    expect(body).toMatch(/max-width:\s*none/);
+    expect(rulesFor(css, "#achievements > .rd-back")).toMatch(/position:\s*absolute/);
   });
 });
 

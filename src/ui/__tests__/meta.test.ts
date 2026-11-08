@@ -867,239 +867,184 @@ describe("the colony banner", () => {
 });
 
 describe("colony road screen", () => {
-  /*
-   * Rungs are named by INDEX and sized geometrically, so every case here asks the road what
-   * a rung is worth rather than hard-coding a number a retune would move. Five checkpoints
-   * to a chapter, every one of them paying on both tracks.
-   */
   const RUNG = 2;
-  const atRung = (n: number, mycel = 0): ProfileStore => store(mycel, 0, stopColony(n));
+  const atRung = (n: number): ProfileStore => store(0, 0, stopColony(n));
 
-  it("claims a reached free reward once and banks the currency", () => {
+  it("claims a normal reward once and banks only that track", () => {
     const s = atRung(RUNG);
     const root = buildColonyRoad(s, () => {}, () => {});
-    const ready = root.querySelectorAll<HTMLButtonElement>(".rd-prize.main.ready");
-    expect(ready.length).toBe(RUNG);
-    click(ready[0]);
-    expect(s.get().mycel + s.get().pheromone).toBeGreaterThan(0);
-    expect(s.get().roadClaimed).toContain(roadKey("free", RUNG));
-    expect(root.querySelectorAll(".rd-prize.main.got").length).toBe(1);
+    const paid = freeReward(RUNG)!;
+    click(root.querySelector(`.rd-prize.free[data-stop="${RUNG}"]`));
+    expect(s.get().mycel).toBe(paid.mycel ?? 0);
+    expect(s.get().pheromone).toBe(paid.pheromone ?? 0);
+    expect(s.get().roadClaimed).toEqual([roadKey("free", RUNG)]);
+    const before = s.get().mycel;
+    click(root.querySelector(`.rd-prize.free[data-stop="${RUNG}"]`));
+    expect(s.get().mycel).toBe(before);
+    expect(root.querySelector(".rd-prize.free.got .rd-done")).toBeTruthy();
   });
 
-  /** Claim confirmation repeats the amount shown above the reward icon. */
-  it("names what the claim paid, with the resource's mark, and closes on a tap", () => {
+  it("confirms the actual reward paid and closes the popup", () => {
     const s = atRung(RUNG);
     const root = buildColonyRoad(s, () => {}, () => {});
-    click(root.querySelector<HTMLButtonElement>(".rd-prize.main.ready"));
-
+    click(root.querySelector(".rd-prize.free.ready"));
     const pop = root.querySelector("#roadPop");
-    expect(pop, "nothing said what the reward was").toBeTruthy();
-    expect(root.classList.contains("popped"), "the card cannot out-stack the tab bar").toBe(true);
+    expect(root.classList.contains("popped")).toBe(true);
     const paid = freeReward(RUNG)!;
-    expect(pop?.querySelector(".rd-popn")?.textContent)
-      .toBe(`+${paid.mycel ?? paid.pheromone}`);
-    expect(pop?.querySelector(".rd-popic img.hudmark"), "the resource has no mark").toBeTruthy();
-
-    click(pop as HTMLElement);
+    expect(pop?.querySelector(".rd-popn")?.textContent).toBe(`+${paid.mycel ?? paid.pheromone}`);
+    expect(pop?.querySelector(".rd-popic img.hudmark")).toBeTruthy();
+    click(pop);
     expect(root.querySelector("#roadPop")).toBeNull();
     expect(root.classList.contains("popped")).toBe(false);
   });
 
-  it("keeps pass bonuses out of rewards until the pass is owned", () => {
+  it("shows both tracks and opens the shop instead of paying an unowned pass reward", () => {
     const s = atRung(RUNG);
-    const root = buildColonyRoad(s, () => {}, () => {});
-    click(root.querySelector(".rd-prize.main.ready"));
-    const paid = freeReward(RUNG)!;
-    expect(s.get().mycel).toBe(paid.mycel ?? 0);
-    expect(s.get().pheromone).toBe(paid.pheromone ?? 0);
-    expect(s.get().roadClaimed).toEqual([roadKey("free", RUNG)]);
-    expect(root.querySelector(".rd-prize.pass, .passbuy, .passon")).toBeNull();
+    let shops = 0;
+    const root = buildColonyRoad(s, () => {}, () => { shops++; });
+    expect(root.querySelectorAll(".rd-prize.free")).toHaveLength(ROAD_STOPS);
+    expect(root.querySelectorAll(".rd-prize.pass")).toHaveLength(ROAD_STOPS);
+    const locked = root.querySelector(`.rd-prize.pass[data-stop="${RUNG}"]`);
+    expect(locked?.querySelector(".rd-lock")).toBeTruthy();
+    click(locked);
+    expect(shops).toBe(1);
+    expect(s.get().mycel).toBe(0);
+    expect(s.get().pheromone).toBe(0);
+    expect(s.get().roadClaimed).toEqual([]);
   });
 
-  it("shows one resource and its full payable amount at every checkpoint", () => {
+  it("claims normal and premium rewards independently without changing their combined payout", () => {
     const s = atRung(RUNG);
     s.grantPass();
     const root = buildColonyRoad(s, () => {}, () => {});
-    for (const disc of Array.from(root.querySelectorAll<HTMLButtonElement>(".rd-prize"))) {
-      const index = Number(disc.dataset.stop);
-      const free = freeReward(index)!;
-      const bonus = passReward(index)!;
-      // ONE PICTURE EITHER WAY: a resource mark, or the FACE an avatar rung pays. What
-      // differs is the figure under it — an avatar has no amount, and printing a 0 there
-      // would be the one checkpoint on the road announcing that it pays nothing.
-      expect(disc.querySelectorAll(".rd-mark img").length).toBe(1);
-      if (free.avatar) {
-        expect(disc.querySelector(".rd-face"), "an avatar rung shows no face").toBeTruthy();
-        expect(disc.querySelector(".rd-amount"), "an empty figure plate over the face")
-          .toBeNull();
-        // NAMED, now that every face has one — the road says exactly what it pays at
-        // every other checkpoint and this was the one that would not. Which face goes
-        // on which chapter is held in `avatars.test.ts`; what this loop is about is
-        // that the rung carries a real name rather than "A new avatar".
-        expect(ROAD_AVATARS.map((av) => avatarName(av)))
-          .toContain(disc.getAttribute("aria-label"));
-        continue;
-      }
-      const amount = (free.mycel ?? 0) + (bonus.mycel ?? 0)
-        + (free.pheromone ?? 0) + (bonus.pheromone ?? 0);
-      expect(disc.querySelector(".rd-amount")?.textContent).toBe(String(amount));
-      expect(disc.getAttribute("aria-label")).not.toContain(" and ");
+    expect(root.querySelectorAll(".rd-prize.free.ready")).toHaveLength(RUNG);
+    expect(root.querySelectorAll(".rd-prize.pass.ready")).toHaveLength(RUNG);
+    const free = freeReward(RUNG)!, pass = passReward(RUNG)!;
+    click(root.querySelector(`.rd-prize.pass[data-stop="${RUNG}"]`));
+    expect(s.get().roadClaimed).toEqual([roadKey("pass", RUNG)]);
+    expect(s.get().mycel).toBe(pass.mycel ?? 0);
+    click(root.querySelector("#roadPop"));
+    click(root.querySelector(`.rd-prize.free[data-stop="${RUNG}"]`));
+    expect(s.get().mycel).toBe((free.mycel ?? 0) + (pass.mycel ?? 0));
+    expect(s.get().pheromone).toBe((free.pheromone ?? 0) + (pass.pheromone ?? 0));
+    expect(s.get().roadClaimed).toEqual([roadKey("pass", RUNG), roadKey("free", RUNG)]);
+  });
+
+  it("keeps earlier combined claims paid when the cards are separated", () => {
+    const s = atRung(RUNG);
+    s.grantPass();
+    s.claimRoad(roadKey("free", RUNG));
+    s.claimRoad(roadKey("pass", RUNG));
+    const before = s.get().mycel;
+    const root = buildColonyRoad(s, () => {}, () => {});
+    for (const track of ["free", "pass"]) {
+      const card = root.querySelector(`.rd-prize.${track}[data-stop="${RUNG}"]`);
+      expect(card?.classList.contains("got")).toBe(true);
+      click(card);
     }
+    expect(s.get().mycel).toBe(before);
   });
 
-  it("claims the free reward and owned pass bonus together exactly once", () => {
-    const s = atRung(RUNG);
-    s.grantPass();
-    const root = buildColonyRoad(s, () => {}, () => {});
-    expect(root.querySelectorAll(".rd-prize.main.ready").length).toBe(RUNG);
-    expect(root.querySelectorAll(".rd-prize").length).toBe(ROAD_STOPS);
-    const free = freeReward(RUNG)!;
-    const bonus = passReward(RUNG)!;
-    click(root.querySelector(".rd-prize.main.ready"));
-    expect(s.get().mycel).toBe((free.mycel ?? 0) + (bonus.mycel ?? 0));
-    expect(s.get().pheromone).toBe((free.pheromone ?? 0) + (bonus.pheromone ?? 0));
-    expect(s.get().roadClaimed).toEqual([roadKey("free", RUNG), roadKey("pass", RUNG)]);
-    expect(root.querySelector("#roadPop")?.textContent).toContain(
-      `+${(free.mycel ?? 0) + (bonus.mycel ?? 0)}`,
-    );
-    const before = { ...s.get(), roadClaimed: [...s.get().roadClaimed] };
-    click(root.querySelector(`.rd-prize.main[data-stop="${RUNG}"]`));
-    expect(s.get()).toEqual(before);
-  });
-
-  it("pays only the new pass bonus when the free reward was already claimed", () => {
+  it("makes only the new premium reward available after a later pass purchase", () => {
     const s = atRung(RUNG);
     s.claimRoad(roadKey("free", RUNG));
     s.grantPass();
     const root = buildColonyRoad(s, () => {}, () => {});
-    const bonus = passReward(RUNG)!;
-    const free = freeReward(RUNG)!;
-    const disc = root.querySelector(`.rd-prize.main[data-stop="${RUNG}"]`)!;
-    expect(disc.classList.contains("ready")).toBe(true);
-    expect(disc.getAttribute("aria-label")).toBe(`+${bonus.mycel} mycelium`);
-    expect(disc.querySelector(".rd-amount")?.textContent).toBe(String(bonus.mycel));
-    click(disc);
-    expect(s.get().mycel).toBe((free.mycel ?? 0) + (bonus.mycel ?? 0));
-    expect(s.get().pheromone).toBe((free.pheromone ?? 0) + (bonus.pheromone ?? 0));
+    expect(root.querySelector(`.rd-prize.free[data-stop="${RUNG}"]`)?.classList.contains("got")).toBe(true);
+    const pass = root.querySelector(`.rd-prize.pass[data-stop="${RUNG}"]`);
+    expect(pass?.classList.contains("ready")).toBe(true);
+    expect(pass?.querySelector(".rd-amount")?.textContent).toBe(String(passReward(RUNG)!.mycel));
+    click(pass);
     expect(s.get().roadClaimed).toEqual([roadKey("free", RUNG), roadKey("pass", RUNG)]);
-    expect(root.querySelector(".rd-popn")?.textContent).toBe(`+${bonus.mycel}`);
+    expect(s.get().mycel).toBe((freeReward(RUNG)!.mycel ?? 0) + (passReward(RUNG)!.mycel ?? 0));
   });
 
-  it("offers nothing to a colony that has not reached the first checkpoint", () => {
+  it("shows the established quantity or named avatar on every card of each track", () => {
+    const root = buildColonyRoad(atRung(RUNG), () => {}, () => {});
+    for (const card of Array.from(root.querySelectorAll<HTMLElement>(".rd-prize"))) {
+      const index = Number(card.dataset.stop);
+      const reward = card.dataset.track === "pass" ? passReward(index)! : freeReward(index)!;
+      expect(card.querySelectorAll(".rd-mark img")).toHaveLength(1);
+      if (reward.avatar) {
+        expect(card.querySelector(".rd-face")).toBeTruthy();
+        expect(card.querySelector(".rd-amount")).toBeNull();
+        expect(ROAD_AVATARS.map((id) => avatarName(id))).toContain(card.getAttribute("aria-label"));
+      } else {
+        expect(card.querySelector(".rd-amount")?.textContent)
+          .toBe(String((reward.mycel ?? 0) + (reward.pheromone ?? 0)));
+      }
+    }
+  });
+
+  it("does not offer a claim before the first threshold", () => {
     const root = buildColonyRoad(store(), () => {}, () => {});
-    expect(root.querySelectorAll(".rd-prize.ready").length).toBe(0);
-    expect(root.querySelectorAll(".rd-stop.reached").length).toBe(0);
+    expect(root.querySelectorAll(".rd-prize.ready")).toHaveLength(0);
+    expect(root.querySelectorAll(".rd-stop.reached")).toHaveLength(0);
+    expect(root.querySelector<HTMLButtonElement>(".rd-prize.free")?.disabled).toBe(true);
   });
 
-  it("colours the path as far as the colony has walked it", () => {
+  it("shows colony progress, reached thresholds and exactly one next checkpoint", () => {
     const root = buildColonyRoad(atRung(4), () => {}, () => {});
-    expect(root.querySelectorAll(".rd-stop.reached").length).toBe(4);
-    // Thresholds stay visible beside reached checkpoints as well as future ones.
-    const done = root.querySelector(".rd-stop.reached .rd-at");
-    expect(done?.textContent).toBe(compact(stopColony(4)));
-    // And the chapter it is in reads as reached, which is the only thing saying so from
-    // the top of a panel the player has not scrolled into yet.
-    expect(root.querySelectorAll(".rd-chapname.reached").length).toBe(1);
+    expect(root.querySelectorAll(".rd-stop.reached")).toHaveLength(4);
+    expect(root.querySelector(".rd-stop.reached .rd-at")?.textContent).toBe(compact(stopColony(4)));
+    expect(root.querySelectorAll(".rd-stop.next")).toHaveLength(1);
+    expect(root.querySelector(".rd-stop.next")?.textContent).toContain(compact(stopColony(5)));
+    const progress = root.querySelector('[role="progressbar"]');
+    expect(progress?.getAttribute("aria-valuenow")).toBe(String(stopColony(4)));
+    expect(root.querySelector(".rd-player .roadt")?.textContent).toBe(compact(stopColony(4)));
   });
 
-  /** An amount sits above each resource, with a check after it has been claimed. */
-  it("says which resource is waiting, and marks the ones already taken", () => {
-    const s = atRung(RUNG);
-    const root = buildColonyRoad(s, () => {}, () => {});
-    const disc = root.querySelector<HTMLButtonElement>(".rd-prize.main.ready")!;
-    expect(disc.querySelector(".rd-amount")?.textContent).toBe(String(freeReward(RUNG)!.mycel));
-    expect(disc.querySelector(".rd-mark img.hudmark"), "no resource mark on the checkpoint").toBeTruthy();
-    // Unlabelled marks, so the figure survives as the name a screen reader reads out.
-    expect(disc.getAttribute("aria-label")).toBe(`+${freeReward(RUNG)!.mycel} mycelium`);
-
-    click(disc);
-    click(root.querySelector("#roadPop") as HTMLElement);
-    expect(root.querySelector(".rd-prize.main.got .rd-done svg"),
-      "a claimed checkpoint is not marked").toBeTruthy();
-    expect(root.querySelector(".rd-prize.pass")).toBeNull();
+  it("has only a floating back control above the road, without a title or footer", () => {
+    let backed = false;
+    const root = buildColonyRoad(store(), () => { backed = true; }, () => {});
+    expect(root.querySelector(".screentop, .screenh, .roadhead")).toBeNull();
+    click(root.querySelector(".rd-back"));
+    expect(backed).toBe(true);
   });
 
-  /** The figure on an unreached rung is the compact one — a road of 1,047,382 is unreadable. */
-  it("writes the checkpoints the way the rest of the game writes the colony", () => {
+  it("keeps all fifty chapters and their five rewards in climbing order", () => {
     const root = buildColonyRoad(store(), () => {}, () => {});
-    const at = Array.from(root.querySelectorAll(".rd-stop:not(.reached) .rd-at"));
-    expect(at.length).toBeGreaterThan(0);
-    expect(at.some((n) => n.textContent === compact(stopColony(1)))).toBe(true);
-    // The road has to still be there at the sizes a compounding colony reaches.
-    expect(at.some((n) => /[MB]$/.test(n.textContent ?? ""))).toBe(true);
-  });
-
-  /**
-   * Every stop rendered identically, so the ladder gave the player no way to read their
-   * own position off it. Exactly one checkpoint — the first out of reach — is the target.
-   */
-  it("marks the checkpoint the player is working towards, and only that one", () => {
-    const fresh = buildColonyRoad(store(), () => {}, () => {});
-    const next = fresh.querySelectorAll(".rd-stop.next");
-    expect(next.length).toBe(1);
-    expect(next[0]?.textContent).toContain(compact(stopColony(1)));
-
-    // The marker moves along with the player rather than staying on the first stop.
-    const later = buildColonyRoad(atRung(3), () => {}, () => {});
-    const moved = later.querySelectorAll(".rd-stop.next");
-    expect(moved.length).toBe(1);
-    expect(moved[0]?.textContent).toContain(compact(stopColony(4)));
-  });
-
-  /**
-   * FIVE CHECKPOINTS A CHAPTER AND THE FIFTH IS BIGGER, which is the shape of the SCREEN
-   * rather than only of the table: a reward worth four times the others and drawn the same
-   * size is the road keeping it to itself.
-   */
-  it("draws every chapter's last checkpoint as the big one", () => {
-    const root = buildColonyRoad(store(), () => {}, () => {});
-    expect(root.querySelectorAll(".rd-stop").length).toBe(ROAD_STOPS);
-    expect(root.querySelectorAll(".rd-stop.big").length).toBe(ROAD_CHAPTERS);
-    const first = Array.from(root.querySelectorAll(".rd-chap"))
-      .at(-1)?.querySelectorAll(".rd-stop") ?? [];
-    expect(first.length).toBe(ROAD_CHAPTER_STOPS);
-    // Chapter one is at the FOOT of the scroller and its checkpoints climb, so the one
-    // that closes it is the FIRST of the five in document order.
-    expect(first[0]?.classList.contains("big"), "the chapter ends at the wrong end").toBe(true);
-  });
-
-  /**
-   * A BREAKER BETWEEN THE AREAS. Ten regions, five chapters each, so nine boundaries — and
-   * the gate announces the one being ENTERED, which in a list that descends means the
-   * region of the chapter directly above it.
-   */
-  it("puts a gate at every area boundary, naming the area it opens", () => {
-    const root = buildColonyRoad(store(), () => {}, () => {});
+    expect(root.querySelectorAll(".rd-chap")).toHaveLength(ROAD_CHAPTERS);
+    expect(root.querySelectorAll(".rd-stop")).toHaveLength(ROAD_STOPS);
+    expect(root.querySelectorAll(".rd-stop.big")).toHaveLength(ROAD_CHAPTERS);
+    const first = Array.from(root.querySelectorAll(".rd-chap")).at(-1);
+    expect(first?.querySelectorAll(".rd-stop")).toHaveLength(ROAD_CHAPTER_STOPS);
+    expect(first?.querySelector(".rd-stop")?.classList.contains("big")).toBe(true);
     const gates = Array.from(root.querySelectorAll(".rd-gate"));
-    expect(gates.length).toBe(REGIONS.length - 1);
-    expect(gates.at(-1)?.querySelector(".rd-gaten")?.textContent).toBe(regionName(2));
+    expect(gates).toHaveLength(ROAD_CHAPTERS);
+    expect(gates[0]?.querySelector(".rd-gatek")?.textContent).toBe("Chapter 50");
+    expect(gates.at(-1)?.querySelector(".rd-gatek")?.textContent).toBe("Chapter 1");
     expect(gates[0]?.querySelector(".rd-gaten")?.textContent).toBe(regionName(REGIONS.length));
+    expect(gates.at(-1)?.querySelector(".rd-gaten")?.textContent).toBe(regionName(1));
   });
 
-  it("uses a distinct dark flat fill for each area", () => {
+  it("gives all ten areas their own cool palette", () => {
     const root = buildColonyRoad(store(), () => {}, () => {});
-    const panels = Array.from(root.querySelectorAll<HTMLElement>(".rd-chap"));
-    expect(panels.length).toBe(ROAD_CHAPTERS);
     const colors = new Map<number, string>();
-    for (const [i, panel] of panels.entries()) {
+    for (const [i, panel] of Array.from(root.querySelectorAll<HTMLElement>(".rd-chap")).entries()) {
       const region = regionOf(ROAD_CHAPTERS - i);
-      expect(panel.style.backgroundImage).toBe("");
-      expect(panel.style.backgroundColor).not.toBe("");
-      if (colors.has(region)) expect(panel.style.backgroundColor).toBe(colors.get(region));
-      else colors.set(region, panel.style.backgroundColor);
+      const palette = ["--rd-area", "--rd-depth", "--rd-glow"].map((key) => panel.style.getPropertyValue(key)).join();
+      expect(palette).not.toBe(",,");
+      if (colors.has(region)) expect(palette).toBe(colors.get(region));
+      else colors.set(region, palette);
     }
     expect(new Set(colors.values()).size).toBe(REGIONS.length);
   });
 
-  it("shows the player their own colony in troops", () => {
-    const root = buildColonyRoad(store(0, 0, 23_000), () => {}, () => {});
-    expect(root.querySelector(".roadt")?.textContent).toBe("23K troops");
+  it("keeps claimed checks after the colony falls below a checkpoint", () => {
+    const s = atRung(RUNG);
+    s.claimRoad(roadKey("free", RUNG));
+    s.update((profile) => { profile.colony = COLONY_START; });
+    const root = buildColonyRoad(s, () => {}, () => {});
+    expect(root.querySelector(`.rd-prize.free[data-stop="${RUNG}"]`)?.classList.contains("got")).toBe(true);
+    expect(root.querySelector(`.rd-prize.free[data-stop="${RUNG}"] .rd-done`)).toBeTruthy();
   });
 
-  it("shows no separate pass rewards or pass promotion", () => {
-    const root = buildColonyRoad(store(), () => {}, () => {});
-    expect(root.querySelector(".rd-prize.pass, .passbuy, .passon, .rd-tag")).toBeNull();
-    expect(root.querySelectorAll(".rd-prize").length).toBe(ROAD_STOPS);
+  it("keeps the progress value within the road at its maximum", () => {
+    const root = buildColonyRoad(store(0, 0, stopColony(ROAD_STOPS) * 2), () => {}, () => {});
+    expect(root.querySelector(".rd-stop.next")).toBeNull();
+    expect(root.querySelector('[role="progressbar"]')?.getAttribute("aria-valuenow"))
+      .toBe(String(stopColony(ROAD_STOPS)));
   });
 });
 

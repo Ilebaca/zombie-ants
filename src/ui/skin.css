@@ -144,7 +144,7 @@
 
    Colony Road uses flat area colors; its panels need no artwork exemption.
    ====================================================================== */
-*:not(#home):not(#luckyhatch):not(#splash), *::before, *::after { background-image: none !important; }
+*:not(#home):not(#luckyhatch):not(#splash):not(.rd-chap):not(.rd-gate):not(.rd-card):not(.rd-cardface), *::before, *::after { background-image: none !important; }
 
 /* Surfaces the legacy sheet fills with a gradient and this file does not
    otherwise dress. */
@@ -1838,27 +1838,6 @@ button:not(.playbtn):active,
   background: transparent;
   border: 0;
   box-shadow: none;
-}
-
-/* ------------------------------------------------------- THE ROAD'S FOOTER
-   The card carrying the trophy count and the pass sat at the END of the
-   ladder, fifty chapters down — so the one line telling the player where
-   they stand was the one thing they had to go looking for. It sticks to
-   the bottom of the view instead. It is still the last child of the
-   scroller, so nothing hides behind it at the end of the list. */
-.achbody > .roadhead {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  /* FLUSH, because the road has no margins (above). A card floating 10px off the
-     end of an edge-to-edge painting is a gap in the one place the eye is already
-     at the bottom of the screen, and a radius on it leaves two slivers of artwork
-     showing through its corners. It is a strip above the tab bar now, not a card. */
-  margin: 0;
-  border-inline: none;
-  border-bottom: none;
-  border-radius: 0;
-  background: var(--panel);
 }
 
 /* ---------------------------------------------------------- WHAT IS PICKED
@@ -4550,27 +4529,6 @@ button:not(.playbtn):active,
   margin-inline: auto;
 }
 
-/* ...EXCEPT THE ROAD, WHICH IS A PICTURE AND NOT A COLUMN OF CARDS. Asked for
-   directly: no margins at the sides, the top or the foot. A painted strip inset
-   16px either side reads as a photograph of a road rather than the road, and on
-   a tablet the column would put the artwork in a frame of nothing. It is the one
-   screen body in the app that is edge to edge, because it is the one whose
-   content IS the background.
-
-   IT ESCAPES BY THE SAME NUMBERS `.screen` PUTS IT IN BY, rather than that
-   padding being removed — the header above it is still a header and still wants
-   the app's gutter under the notch, so taking the gutter off the screen would put
-   the back button 4px from the glass. The pattern is home's own `.tophead`. The
-   SIDES ONLY. The screen's BOTTOM padding is `64px + safe-area` — the room the
-   tab bar stands in — so escaping that would run the road, and the sticky strip
-   on the end of it, underneath five lit tabs. The road's bottom edge is the tab
-   bar; the strip sits flush on it. */
-#achievements > .screenbody.achbody {
-  width: auto;
-  margin-inline: calc(-1 * var(--sp4));
-  padding: 0;
-}
-
 /* ----------------------------------------------------------------------
    EVERY CONTROL IS A THUMB WIDE
 
@@ -6211,235 +6169,357 @@ button:not(.playbtn):active,
 .kssteps::marker, .kssteps li::marker { color: var(--grass-glow); font-weight: 900; }
 .kscard .setpanel { margin-top: 10px; padding: 0; background: none; border: none; }
 
-/* The Colony Road: large single-resource rewards on an unbroken area-colored path. */
-.rd-road { display: block; }
-
-/* The rail spans the whole panel, including chapter labels and area boundaries. */
+/* Colony Road: two reward tracks arranged around a continuous vertical rail. */
+#achievements {
+  padding: 0;
+  background: #221051;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 400;
+  --rd-u: var(--u);
+  --rd-row: calc(212 * var(--rd-u));
+  --rd-gate: calc(104 * var(--rd-u));
+  --rd-spine: calc(56 * var(--rd-u));
+  --rd-pad: calc(12 * var(--rd-u));
+  --rd-endpad: calc(24 * var(--rd-u) + var(--safe-bottom));
+}
+#achievements > .screenbody.achbody {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none;
+}
+#achievements > .achbody::-webkit-scrollbar { display: none; }
+#achievements > .rd-back {
+  position: absolute;
+  top: max(calc(14 * var(--rd-u)), var(--safe-top));
+  left: calc(12 * var(--rd-u));
+  z-index: 30;
+  width: calc(48 * var(--rd-u));
+  height: calc(46 * var(--rd-u));
+  min-height: var(--tap);
+  border: none;
+  border-radius: calc(5 * var(--rd-u));
+  background: #333a57;
+  color: #fff;
+  transform: none;
+  box-shadow: 0 calc(4 * var(--rd-u)) 0 #0c0c21 !important;
+}
+#achievements > .rd-back:active { transform: translateY(2px); }
+.rd-road {
+  position: relative;
+  isolation: isolate;
+  padding-top: calc(72 * var(--rd-u) + var(--safe-top));
+  padding-bottom: var(--rd-endpad);
+}
+.rd-road::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset-block: 0;
+  left: 50%;
+  width: calc(14 * var(--rd-u));
+  transform: translateX(-50%);
+  border-inline: calc(3 * var(--rd-u)) solid #140b36;
+  background: #352564;
+}
+.rd-progress {
+  position: absolute;
+  z-index: 1;
+  bottom: 0;
+  left: 50%;
+  width: calc(14 * var(--rd-u));
+  height: var(--rd-current);
+  transform: translateX(-50%);
+  border-left: calc(3 * var(--rd-u)) solid #ffeb7b;
+  border-right: calc(2 * var(--rd-u)) solid #dc8b14;
+  background: #ffc834;
+}
 .rd-chap {
   position: relative;
-  overflow: hidden;
-  background-color: var(--bg2);
-  background-image: none;
+  background-color: var(--rd-depth);
+  background-image:
+    radial-gradient(circle at 22px 22px, transparent 8px, #d9c6ff09 9px 12px, transparent 13px),
+    radial-gradient(ellipse at 0% 15%, var(--rd-glow), transparent 64%),
+    linear-gradient(150deg, var(--rd-area), var(--rd-depth) 86%);
+  background-size: 76px 76px, 100% 100%, 100% 100%;
 }
-.rd-chap::before,
-.rd-gate::before {
-  content: "";
-  position: absolute;
-  inset-block: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 30px;
-  background: var(--grass-edge);
-}
-.rd-chap.complete::before,
-.rd-gate.reached::before { background: var(--grass); }
-
-/* Names sit beside the rail so neither a plate nor a label cuts across it. */
-.rd-chapname {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  width: fit-content;
-  max-width: calc(50% - 64px);
-  margin: 16px calc(50% + 48px) 2px auto;
-  padding: 6px 0;
-  text-align: right;
-}
-.rd-chapname b {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 400;
-  text-transform: uppercase;
-  color: var(--hud-ink);
-}
-.rd-chapname span { font-size: 12px; font-weight: 800; color: #b5c8ae; }
-.rd-chapname.reached b { color: var(--grass-glow); }
-
-.rd-path { position: relative; display: block; }
+.rd-path { position: relative; max-width: 680px; margin-inline: auto; }
 .rd-stop {
   position: relative;
+  z-index: 2;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) var(--rd-spine) minmax(0, 1fr);
   align-items: center;
-  min-height: 208px;
-  --rd-node: var(--grass-edge);
-  --rd-ink: var(--hud-ink);
-}
-.rd-stop.reached { --rd-node: var(--grass); --rd-ink: #0f2417; }
-/* Only reached segments cover the neutral rail; its backing never stops. */
-.rd-stop.reached::before {
-  content: "";
-  position: absolute;
-  inset-block: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 30px;
-  background: var(--grass);
+  height: var(--rd-row);
+  padding-inline: var(--rd-pad);
 }
 .rd-mid {
-  grid-column: 2;
   position: relative;
-  z-index: 1;
+  z-index: 3;
+  grid-column: 2;
+  grid-row: 1;
   display: grid;
   justify-items: center;
+  gap: calc(6 * var(--rd-u));
 }
-
-/* Colony thresholds remain readable beside the reward without hiding the line. */
-.rd-at {
-  position: absolute;
-  left: calc(100% + 12px);
-  top: calc(100% - 9px);
-  transform: translateY(-50%);
-  font-family: var(--font-display);
-  font-size: 14px;
+.rd-level {
+  display: grid;
+  place-items: center;
+  width: calc(34 * var(--rd-u));
+  height: calc(34 * var(--rd-u));
+  border: calc(3 * var(--rd-u)) solid #0d092b;
+  border-radius: 50%;
+  background: #1c1737;
+  color: #fff;
+  font-size: calc(18 * var(--rd-u));
   font-weight: 400;
-  white-space: nowrap;
-  color: #b5c8ae;
+  line-height: 1;
+  text-shadow: 0 2px 0 #0a0823 !important;
 }
-.rd-stop.reached .rd-at,
-.rd-stop.next .rd-at { color: var(--grass-glow); }
-
-/* The painted resource is the reward node; no extra circle or outline surrounds it. */
+.rd-at {
+  padding: calc(2 * var(--rd-u)) calc(3 * var(--rd-u));
+  color: #c3b8ef;
+  font-size: calc(10 * var(--rd-u));
+  line-height: 1;
+  white-space: nowrap;
+}
+.rd-stop.reached .rd-level {
+  border-color: #ffdf58;
+  background: #ffca32;
+  color: #241339;
+  text-shadow: none !important;
+}
+.rd-stop.reached .rd-at, .rd-stop.next .rd-at { color: #ffe174; }
+.rd-stop.next .rd-level { border-color: #d4c5ff; }
 .rd-prize {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 104px;
-  height: 112px;
+  grid-row: 1;
+  display: block;
   padding: 0;
   border: none;
   border-radius: 0;
   background: none;
-  color: var(--hud-ink);
+  color: #fff;
+  font: inherit;
+  line-height: 1;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.rd-prize.pass {
+  grid-column: 1;
+  justify-self: end;
+  width: calc(132 * var(--rd-u));
+  height: calc(170 * var(--rd-u));
+}
+.rd-prize.free {
+  grid-column: 3;
+  justify-self: start;
+  width: calc(120 * var(--rd-u));
+  height: calc(128 * var(--rd-u));
+}
+.rd-cardshadow, .rd-card, .rd-cardface {
+  position: absolute;
+  display: block;
+  clip-path: polygon(6% 0, 100% 0, 94% 100%, 0 100%);
+  pointer-events: none;
+}
+.rd-cardshadow {
+  inset: 0;
+  transform: translate(calc(3 * var(--rd-u)), calc(4 * var(--rd-u)));
+  background: #110c30;
+}
+.rd-card {
+  inset: 0;
+  background-image: linear-gradient(134deg,
+    #dcffff 0% 6%, #26cffb 6% 12%, #a8f3ff 12% 15%,
+    #2a76df 15% 76%, #e5ffff 76% 81%, #26c9f5 81% 92%, #bcefff 92% 100%);
+}
+.rd-cardface {
+  inset: calc(5 * var(--rd-u));
+  background-image: radial-gradient(ellipse at 45% 10%, #52c0ff, #1785f0 65%, #0756c4);
+}
+.rd-prize.free .rd-card {
+  background-image: linear-gradient(135deg, #a08aff, #5042a4 40%, #17153c 90%);
+}
+.rd-prize.free .rd-cardface {
+  inset: calc(2 * var(--rd-u));
+  background-image: linear-gradient(150deg, #5f40bdc9, #292371de 90%);
 }
 .rd-mark {
   position: absolute;
+  z-index: 1;
+  top: calc(24 * var(--rd-u));
   left: 50%;
-  top: calc(50% - 18px);
-  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: calc(94 * var(--rd-u));
+  height: calc(94 * var(--rd-u));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.rd-prize.free .rd-mark {
+  top: calc(12 * var(--rd-u));
+  width: calc(76 * var(--rd-u));
+  height: calc(76 * var(--rd-u));
+}
+.rd-mark > img, .rd-mark > svg, .rd-mark > canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.rd-mark .rd-face { border-radius: calc(9 * var(--rd-u)); object-fit: cover; }
+.rd-amount, .rd-caption {
+  position: absolute;
+  z-index: 2;
+  bottom: calc(18 * var(--rd-u));
+  left: 0;
   display: flex;
   align-items: center;
-  pointer-events: none;
-}
-.rd-mark img, .rd-mark svg { display: block; flex: none; }
-
-/* AN AVATAR CHECKPOINT IS THE FACE IT PAYS, not a mark standing for it. It rides in
-   `.rd-mark` like every other disc's picture and takes the same size, so it floats over
-   the base exactly as a coin does — and it is ROUND, because the art is an opaque square
-   and a square face on a road of circles reads as a picture that failed to load.
-
-   BOTH TAGS ARE SIZED. `avatarFace` answers an `<img>` where there is a painting and a
-   `<canvas>` where there is not (§ A COLLECTION CARD), so a rule naming only one of them
-   sizes half the cases and lets the rest render at the file's own 250px. */
-.rd-mark .rd-face,
-.rd-mark img.rd-face,
-.rd-mark canvas.rd-face {
-  display: block;
-  flex: none;
-  border-radius: 50%;
-  object-fit: cover;
-}
-/* It is a PICTURE, so it does not take the state colours the marks do — a face tinted
-   gold on the claimable rung would be a different avatar from the one being paid. What
-   says the state is the disc around it, which every checkpoint already has. */
-.rd-prize.locked .rd-face { filter: grayscale(1) brightness(.55); }
-.rd-popic .rd-face,
-.rd-popic img.rd-face,
-.rd-popic canvas.rd-face {
-  width: 48px;
-  height: 48px;
-  display: block;
-  border-radius: 50%;
-  object-fit: cover;
-}
-/* Each resource floats above a filled circular base. */
-.rd-base {
-  position: absolute;
-  left: 50%;
-  top: calc(100% - 18px);
-  transform: translateX(-50%);
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--rd-node);
-  pointer-events: none;
-}
-.rd-amount {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  z-index: 2;
-  transform: translateX(-50%);
-  display: inline-flex;
-  align-items: center;
   justify-content: center;
-  min-width: 58px;
-  height: 30px;
-  padding: 4px 10px;
-  border: 2px solid var(--gold);
-  border-radius: 0;
-  background: var(--rd-node);
-  color: var(--rd-ink);
-  font-family: var(--font-display);
-  font-size: 18px;
+  gap: calc(4 * var(--rd-u));
+  width: 100%;
+  height: calc(28 * var(--rd-u));
+  color: #fff;
+  font-size: calc(25 * var(--rd-u));
   font-weight: 400;
-  line-height: 1;
   white-space: nowrap;
+  text-shadow: 0 calc(2 * var(--rd-u)) 0 #101037 !important;
+  -webkit-text-stroke: .5px #111238;
+  paint-order: stroke fill;
   pointer-events: none;
 }
-.rd-amount b { font: inherit; color: inherit; }
-.rd-prize:disabled { cursor: default; }
-/* Filters keep claimed paintings solid, so the path never shows through the coin. */
-.rd-prize.locked .rd-mark { opacity: 1; }
-.rd-prize.got .rd-mark { opacity: 1; filter: saturate(.55) brightness(.7); }
-.rd-prize:focus-visible { outline: none; }
-.rd-prize:focus-visible .rd-amount { background: var(--grass-glow); color: #0f2417; }
-
-.rd-stop.big { min-height: 232px; }
-.rd-stop.big .rd-prize.main { width: 124px; height: 132px; }
-.rd-stop.big .rd-at { font-size: 15px; }
-.rd-stop.grand { min-height: 248px; }
-.rd-stop.grand .rd-prize.main { width: 136px; height: 144px; }
-
-.rd-done {
-  position: absolute;
-  right: -6px;
-  bottom: -6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--panel-edge);
-  color: var(--grass-glow);
+.rd-amount b { font: inherit; }
+.rd-amount .hudmark { width: calc(18 * var(--rd-u)); height: calc(18 * var(--rd-u)); }
+.rd-prize.free .rd-amount, .rd-prize.free .rd-caption {
+  bottom: calc(10 * var(--rd-u));
+  height: calc(26 * var(--rd-u));
+  font-size: calc(23 * var(--rd-u));
 }
-
-/* Area names also sit beside the same continuous rail. */
+.rd-caption, .rd-prize.free .rd-caption { font-size: calc(17 * var(--rd-u)); text-transform: uppercase; }
+.rd-lock, .rd-done {
+  position: absolute;
+  z-index: 5;
+  top: calc(-6 * var(--rd-u));
+  left: calc(6 * var(--rd-u));
+  display: grid;
+  place-items: center;
+  width: calc(28 * var(--rd-u));
+  height: calc(32 * var(--rd-u));
+  color: #fff;
+  filter: drop-shadow(0 2px 0 #093854);
+  pointer-events: none;
+}
+.rd-lock svg { width: calc(23 * var(--rd-u)); height: calc(26 * var(--rd-u)); }
+.rd-done { top: calc(-9 * var(--rd-u)); left: calc(3 * var(--rd-u)); color: #6cf528; filter: drop-shadow(0 2px 0 #142a24); }
+.rd-done svg { width: calc(32 * var(--rd-u)); height: calc(32 * var(--rd-u)); }
+.rd-action {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: calc(-9 * var(--rd-u));
+  transform: translateX(-50%);
+  min-width: calc(74 * var(--rd-u));
+  padding: calc(4 * var(--rd-u)) calc(9 * var(--rd-u));
+  background: #ffda36;
+  color: #1b1734;
+  clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
+  font-size: calc(11 * var(--rd-u));
+  text-shadow: none !important;
+}
+.rd-prize.ready .rd-mark { filter: drop-shadow(0 0 9px #a8f4ff70); }
+.rd-prize.got .rd-mark { filter: saturate(.82); }
+.rd-prize:disabled { cursor: default; opacity: 1; }
+.rd-prize:focus-visible { outline: 3px solid #fff39a; outline-offset: 5px; }
+.rd-prize:active:not(:disabled) { transform: translateY(2px); }
+.rd-stop.big .rd-card { filter: brightness(1.14); }
+.rd-stop.grand .rd-card { filter: brightness(1.3); }
 .rd-gate {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
-  padding: 24px calc(50% + 48px) 30px 16px;
-  text-align: right;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--rd-spine) minmax(0, 1fr);
+  align-content: center;
+  align-items: center;
+  column-gap: 0;
+  height: var(--rd-gate);
+  padding: 0 var(--rd-pad) calc(12 * var(--rd-u));
+  border-block: calc(2 * var(--rd-u)) solid #a064e6;
+  background-image: linear-gradient(168deg, #c670ef 0%, #7626c7 14%, #381577 70%, #a348cf 100%);
+  clip-path: polygon(0 10%, 100% 0, 100% 90%, 0 100%);
 }
-.rd-gatek,
-.rd-gaten { position: relative; z-index: 1; }
 .rd-gatek {
-  font-size: 10.5px;
-  font-weight: 900;
-  letter-spacing: 1.6px;
+  grid-column: 1;
+  text-align: right;
+  color: #fff;
+  font-size: calc(17 * var(--rd-u));
+  font-weight: 400;
   text-transform: uppercase;
-  color: var(--muted);
+  text-shadow: 0 2px 0 #29104c !important;
 }
-.rd-gaten { font-family: var(--font-display); font-size: 19px; font-weight: 400; color: var(--grass-glow); }
+.rd-gaten {
+  grid-column: 3;
+  color: #efe0ff;
+  font-size: calc(14 * var(--rd-u));
+  line-height: 1.15;
+  text-align: left;
+}
+.rd-tracknames {
+  position: absolute;
+  bottom: calc(13 * var(--rd-u));
+  inset-inline: var(--rd-pad);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--rd-spine) minmax(0, 1fr);
+}
+.rd-trackname {
+  grid-column: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: calc(9 * var(--rd-u));
+  letter-spacing: .4px;
+  color: #e9deff;
+}
+.rd-trackname.premium { grid-column: 1; color: #ffde60; }
+.rd-player {
+  position: absolute;
+  z-index: 5;
+  bottom: var(--rd-current);
+  left: 50%;
+  transform: translate(-50%, 50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(4 * var(--rd-u));
+  min-width: calc(64 * var(--rd-u));
+  height: calc(34 * var(--rd-u));
+  padding: 0 calc(9 * var(--rd-u));
+  border: calc(2 * var(--rd-u)) solid #fff194;
+  border-radius: calc(10 * var(--rd-u));
+  background: #ffd238;
+  color: #241637;
+  box-shadow: 0 calc(3 * var(--rd-u)) 0 #a2660f !important;
+}
+.rd-player::before {
+  content: "";
+  position: absolute;
+  top: calc(-9 * var(--rd-u));
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(18 * var(--rd-u));
+  height: calc(10 * var(--rd-u));
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  background: #fff194;
+}
+.rd-player .hudmark { width: calc(16 * var(--rd-u)); height: calc(16 * var(--rd-u)); }
+.rd-player .roadt { color: inherit; font-size: calc(18 * var(--rd-u)); font-weight: 400; white-space: nowrap; }
 
 /* ------------------------------------------------------- WHAT IT PAID
    Confirms the currency and amount actually banked. `#achievements.popped` is what lifts
@@ -6452,7 +6532,7 @@ button:not(.playbtn):active,
   inset: 0;
   /* Over the FOOTER as well as the board: `.achbody > .roadhead` is sticky at z-index 2,
      so a card at 1 came up with the troop count still sitting on top of it. */
-  z-index: 10;
+  z-index: 100;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -6503,7 +6583,7 @@ button:not(.playbtn):active,
   background: color-mix(in srgb, var(--gold) 14%, var(--panel));
   color: var(--gold-glow);
 }
-.rd-popn { font-size: 26px; font-weight: 900; color: var(--gold-glow); }
+.rd-popn { font-family: var(--font-display); font-size: 26px; font-weight: 400; color: var(--gold-glow); }
 .rd-popu { font-size: 13px; font-weight: 800; color: var(--ink-soft); }
 
 /* ==========================================================================
@@ -8433,9 +8513,8 @@ button:not(.playbtn):active,
    screen's body copy to a token without a mock-up to check it against is how
    a readable list becomes a small one.
 
-   THE COLONY ROAD IS NOT IN THE LIST. It is drawn to a design of Milan's
-   own, made directly on `main`, and it is the one screen here nobody asked
-   to have changed.
+   THE COLONY ROAD IS NOT IN THE LIST. Its reward tracks use their own
+   blue card frames, chapter gradients and progression rail.
 
    THE MATCH IS NOT EITHER. Its chrome is glass over a painted region (§ THE
    GROUND IS THE WHOLE SCREEN) and its own block above settles it.
