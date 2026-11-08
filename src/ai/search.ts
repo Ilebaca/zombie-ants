@@ -30,7 +30,7 @@ export type { Action, Candidate } from "./moves";
 
 import type { Difficulty } from "../engine";
 export type { Difficulty } from "../engine";
-import { executePlannedTurn, planImpossibleTurn } from "./impossible";
+import { IMPOSSIBLE_WEIGHTS, executePlannedTurn, planImpossibleTurn } from "./impossible";
 
 export interface Profile {
   /** Plies of full-width search. One ply = one action by one side. */
@@ -52,9 +52,9 @@ export interface Profile {
 
 export const PROFILES: Record<Difficulty, Profile> = {
   impossible: {
-    depth: 8, branching: 6, quiescence: true,
+    depth: 8, branching: 6, quiescence: false,
     gen: { travel: true, rally: true, reinforce: true, veinGuard: true },
-    weights: FULL, searchAbility: true, nodeBudget: 48000, timeBudgetMs: 1200,
+    weights: IMPOSSIBLE_WEIGHTS, searchAbility: true, nodeBudget: 48000, timeBudgetMs: 1200,
   },
   /**
    * A beginner. One ply, no idea what is hanging, and it never masses an army — it cannot

@@ -5,7 +5,7 @@
  * match — a match is created from the choices, handed to MatchScreen, and reported back
  * through `onExit`.
  */
-import { MAPS, START_SHAPES, arrangeTutorial, createGame, startsFirst } from "../engine";
+import { DIFFICULTIES, MAPS, START_SHAPES, arrangeTutorial, createGame, startsFirst } from "../engine";
 import type { MatchSetup, Player, SpeciesId } from "../engine";
 import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
@@ -982,7 +982,7 @@ export class App {
         onBack: () => this.show("home"),
         difficulty: DIFFICULTY_LABEL[this.difficulty],
         onCycleDifficulty: () => {
-          const order: Difficulty[] = ["easy", "normal", "hard", "impossible"];
+          const order = DIFFICULTIES;
           this.difficulty = order[(order.indexOf(this.difficulty) + 1) % order.length] as Difficulty;
           this.profile.update((p) => { p.difficulty = this.difficulty; });
           this.show("settings");
@@ -1671,9 +1671,8 @@ export class App {
        * it ends the real opponent takes over, and the first one a new player meets should
        * not be the one that beats `normal` 96% of the time.
        *
-       * A MATCHMADE OPPONENT PLAYS HARD. The bot is standing in for a person, and a person
-       * who folds is worse than no opponent at all — the search would be seating someone
-       * the player can see is not real. Settings' difficulty still drives a challenge.
+       * Matched opponents use Hard by default. The explicit Impossible choice applies
+       * to matched opponents as well as challenges; tutorials always stay Easy.
        */
       difficulty,
       map,

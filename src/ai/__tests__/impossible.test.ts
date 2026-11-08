@@ -138,3 +138,38 @@ it("caps every Impossible chamber/research level without changing the other diff
   for (const difficulty of ["easy", "normal", "hard"] as const)
     expect(opponentModifiers(difficulty)).toEqual(NEUTRAL_MODS);
 });
+
+it("uses Swarm before an otherwise losing resource attack", () => {
+  const state = position("army");
+  put(state, 0, 0, { owner: "you", struct: "nest", soldiers: 1, terrain: "ground" });
+  put(state, 1, 0, { owner: "you", struct: "stable", soldiers: 9, terrain: "ground" });
+  put(state, 2, 0, { owner: "ai", struct: "stable", soldiers: 12, terrain: "resource" });
+  put(state, 8, 8, { owner: "ai", struct: "nest", soldiers: 4, terrain: "ground" });
+  state.cooldown.you = 0;
+  finish(state);
+  const decision = planImpossibleTurn(state, "you", context, budget);
+  const moves: Move[] = [];
+  executePlannedTurn(state, "you", decision.plan, context, moves);
+  expect(moves[0]?.do).toBe("ability");
+  expect(tile(state, 2, 0).owner).toBe("you");
+});
+
+it("plans for every species without inventing extra actions", () => {
+  Object.assign(PROFILES.impossible, { ...budget, nodeBudget: 300 });
+  for (const species of ["fire", "leafcutter", "army", "carpenter", "bullet", "ghost", "pharaoh", "demon"] as const) {
+    const state = blankGame("small", { you: species, ai: "fire" });
+    put(state, 0, 0, { owner: "you", struct: "nest", soldiers: 50 });
+    put(state, 8, 8, { owner: "ai", struct: "nest", soldiers: 20 });
+    state.cooldown.you = 0;
+    finish(state);
+    const before = structuredClone(state);
+    const moves: Move[] = [];
+    aiTurn(state, "you", "impossible", context, moves);
+    expect(moves.filter((move) => move.do !== "ability").length).toBeLessThanOrEqual(1);
+    expect(moves.filter((move) => move.do === "ability").length).toBeLessThanOrEqual(1);
+    if (species === "ghost" && moves.some((move) => move.do === "ability"))
+      expect(moves).toHaveLength(1);
+    for (const move of moves) expect(applyMove(before, "you", move, context.mods).ok).toBe(true);
+    expect(snapshot(before)).toEqual(snapshot(state));
+  }
+});

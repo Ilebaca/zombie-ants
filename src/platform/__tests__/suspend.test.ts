@@ -161,7 +161,7 @@ describe("picking it back up", () => {
   it("falls back to a sane difficulty rather than one the game has no player for", () => {
     const { store, sus } = fresh();
     store.set(suspendKey(PROFILE_KEY), JSON.stringify({
-      ...held([]), difficulty: "impossible",
+      ...held([]), difficulty: "unknown-mode",
     }));
     expect(sus.peek()?.difficulty).toBe("normal");
   });
@@ -199,4 +199,10 @@ describe("the difficulty list", () => {
     const b: SuspendDifficulty[] = real;
     expect(a).toEqual(b);
   });
+});
+
+it("keeps Impossible on a suspended match", () => {
+  const { sus } = fresh();
+  sus.save({ ...held([]), difficulty: "impossible" });
+  expect(sus.resume()?.difficulty).toBe("impossible");
 });

@@ -44,14 +44,14 @@ interface Search {
   table: Map<string, { depth: number; value: number; bound: "exact" | "lower" | "upper" }>;
 }
 
-const WEIGHTS = {
+export const IMPOSSIBLE_WEIGHTS = {
   ...FULL, incomeFloor: 1.5, resource: 24, hanging: 1.2,
   nestThreat: 8, nestPressure: 5, advance: 3, surge: 24,
 };
 
 /** Real upgraded income and nest safety remain valuable for the entire match. */
 export function evaluateImpossible(state: GameState, me: Player, context: ActionContext): number {
-  let score = evaluate(state, me, context.mods, WEIGHTS);
+  let score = evaluate(state, me, context.mods, IMPOSSIBLE_WEIGHTS);
   if (state.over || Math.abs(score) > WIN / 2) return score;
   const enemy = otherPlayer(me);
   score += 12 * (incomeOf(state, me, context.mods[me]) + context.mods[me].brood
