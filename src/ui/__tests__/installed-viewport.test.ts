@@ -3,6 +3,7 @@ import { stabilizeInstalledViewport } from "../installed-viewport";
 
 let stop: (() => void) | undefined;
 let installed = true;
+let hostFullscreen = false;
 let hidden = false;
 let full: Element | null = null;
 let enabled = true;
@@ -17,11 +18,14 @@ const tap = (): void => { document.body.click(); };
 
 beforeEach(() => {
   installed = true;
+  hostFullscreen = false;
   hidden = false;
   full = null;
   enabled = true;
   request.mockReset().mockResolvedValue(undefined);
-  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: installed })));
+  vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
+    matches: installed && (query === "(display-mode: fullscreen)" ? hostFullscreen : true),
+  })));
   vi.spyOn(navigator, "userAgent", "get").mockReturnValue("Android");
   vi.spyOn(document, "hidden", "get").mockImplementation(() => hidden);
   Object.defineProperty(document, "fullscreenElement", {
@@ -112,6 +116,20 @@ describe("installed game viewport", () => {
 });
 
 describe("Android immersive fullscreen", () => {
+  it("leaves manifest fullscreen to the host across gestures and foreground changes", () => {
+    hostFullscreen = true;
+    stop = stabilizeInstalledViewport();
+    tap();
+    viewport(390, 740);
+    hidden = true;
+    document.dispatchEvent(new Event("visibilitychange"));
+    hidden = false;
+    document.dispatchEvent(new Event("visibilitychange"));
+    hostFullscreen = false;
+    tap();
+    expect(request).not.toHaveBeenCalled();
+  });
+
   it("requests hidden navigation UI on a game tap, never during bar resizes", () => {
     stop = stabilizeInstalledViewport();
     viewport(390, 760);

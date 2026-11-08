@@ -26,7 +26,6 @@ interface Manifest {
   name: string;
   short_name: string;
   display: string;
-  display_override?: string[];
   orientation: string;
   background_color: string;
   theme_color: string;
@@ -48,38 +47,18 @@ describe("the web app manifest", () => {
     expect(m.short_name.length).toBeLessThanOrEqual(12);
   });
 
-  /**
-   * THE ONE FIELD THE APP'S OWN LOGIC DEPENDS ON. Without an installed display mode an
-   * app opens in browser chrome, `navigator.standalone` stays false, and `isInstalled()`
-   * can never return true — so the save-at-risk prompt would nag for ever.
-   */
-  it("declares standalone, which is what makes isInstalled() answerable", () => {
-    expect(manifest().display).toBe("standalone");
+  it("requests fullscreen directly, including browsers that ignore display_override", () => {
+    expect(manifest().display).toBe("fullscreen");
   });
 
-  /**
-   * AND IT ASKS FOR FULLSCREEN FIRST, which is what hides the system's own status bar
-   * on an installed Android app — reported as the battery and the clock sitting on top
-   * of the game. `display_override` is the only way to ask: `display` itself has to stay
-   * `standalone` as the fallback for a browser that does not read the override, and a
-   * browser that refuses fullscreen falls back along this list in order.
-   */
-  it("asks for fullscreen first and keeps standalone behind it", () => {
-    const over = manifest().display_override;
-    expect(over, "nothing asks for fullscreen").toEqual(["fullscreen", "standalone"]);
-    // The fallback is the LAST word in the list and the `display` field both, or a
-    // browser that reads one and not the other lands somewhere nobody chose.
-    expect(over?.[over.length - 1]).toBe(manifest().display);
+  it("uses the standard display fallback chain without a competing override", () => {
+    // Browsers automatically fall back fullscreen → standalone → minimal-ui → browser.
+    // Keeping display: standalone made browsers without display_override miss fullscreen.
+    expect(manifest()).not.toHaveProperty("display_override");
   });
 
-  /**
-   * AND EVERY MODE IN THAT LIST HAS TO READ AS INSTALLED. The manifest asking for
-   * fullscreen and `isInstalled()` only matching standalone is the app being installed
-   * and told it is not — the save-at-risk prompt nagging the player who did as it asked,
-   * which is the exact bug this file was written for, back the other way round.
-   */
-  it("is an installed mode whatever the browser grants", () => {
-    for (const mode of manifest().display_override ?? []) {
+  it("recognizes the requested mode and each installed fallback as installed", () => {
+    for (const mode of [manifest().display, "standalone", "minimal-ui"]) {
       vi.stubGlobal("navigator", { userAgent: "x" });
       vi.stubGlobal("window", {
         matchMedia: (q: string) => ({ matches: q.includes(mode) }),

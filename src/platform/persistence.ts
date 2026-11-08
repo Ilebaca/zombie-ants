@@ -35,7 +35,7 @@ export type SaveRisk =
 /**
  * Every display mode that means "installed", in the order a browser picks one.
  *
- * `fullscreen` is what the manifest ASKS for through `display_override` and what an
+ * `fullscreen` is what the manifest asks for through `display` and what an
  * installed Android app actually runs in, so a check for `standalone` alone answers
  * FALSE on the one platform that grants the request — the app would be installed and
  * told it was not. `minimal-ui` is the third thing a browser may hand back; it is still

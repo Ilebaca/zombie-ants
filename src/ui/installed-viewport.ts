@@ -1,4 +1,5 @@
 import { lockPortrait } from "../platform/orientation";
+import { recordDisplay, watchDisplay } from "./display-report";
 
 /**
  * An installed game has one layout surface. Transient system bars and keyboards
@@ -6,9 +7,12 @@ import { lockPortrait } from "../platform/orientation";
  */
 export function stabilizeInstalledViewport(): () => void {
   if (!window.matchMedia("(display-mode: fullscreen), (display-mode: standalone)").matches) {
-    return () => {};
+    return watchDisplay();
   }
 
+  // Manifest fullscreen is owned by the Android host. Do not layer the DOM
+  // Fullscreen API over it: the two modes have separate lifecycle/inset handling.
+  const hostFullscreen = window.matchMedia("(display-mode: fullscreen)").matches;
   const root = document.documentElement;
   const probe = document.createElement("div");
   probe.style.cssText = "position:fixed;visibility:hidden;pointer-events:none;"
@@ -39,9 +43,10 @@ export function stabilizeInstalledViewport(): () => void {
 
   const resize = (): void => { measure(); };
   const fullscreen = (): void => {
-    if (document.fullscreenElement !== root) return;
-    measure(true);
-    lockPortrait();
+    if (document.fullscreenElement === root) {
+      measure(true);
+      lockPortrait();
+    }
   };
   const awake = (): void => {
     if (document.hidden) return;
@@ -51,24 +56,30 @@ export function stabilizeInstalledViewport(): () => void {
     measure();
   };
   const immerse = (event: Event): void => {
-    if (attempted || document.hidden || document.fullscreenElement
+    if (hostFullscreen || window.matchMedia("(display-mode: fullscreen)").matches
+      || attempted || document.hidden || document.fullscreenElement
       || !document.fullscreenEnabled || !/Android/i.test(navigator.userAgent)) return;
+    if (navigator.userActivation?.isActive === false) return;
     const target = event.target;
     if (target instanceof Element && target.closest("input, textarea, select, [contenteditable]")) return;
     attempted = true;
     try {
       // Ask explicitly for the full screen with navigation UI hidden. This is
       // separate from the manifest launch mode, and requires a game gesture.
+      recordDisplay("fullscreen-request", probe);
       void root.requestFullscreen({ navigationUI: "hide" }).catch(() => {
+        recordDisplay("fullscreen-refused", probe);
         // Unsupported or refused: keep the installed layout, without repeated asks.
       });
     } catch {
+      recordDisplay("fullscreen-unavailable", probe);
       // Older embedded browsers may expose an unusable implementation.
     }
   };
 
   measure();
   root.classList.add("installed-frame");
+  const stopReport = watchDisplay(probe);
   window.addEventListener("resize", resize);
   document.addEventListener("fullscreenchange", fullscreen);
   document.addEventListener("visibilitychange", awake);
@@ -77,6 +88,7 @@ export function stabilizeInstalledViewport(): () => void {
   return () => {
     disposed = true;
     window.removeEventListener("resize", resize);
+    stopReport();
     document.removeEventListener("fullscreenchange", fullscreen);
     document.removeEventListener("visibilitychange", awake);
     document.removeEventListener("click", immerse, true);

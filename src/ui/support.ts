@@ -16,6 +16,7 @@ import { BUILD, FAQ, SUPPORT_EMAIL, TICKET_KINDS, TICKET_MAX, mailLink } from ".
 import type { ProfileStore, SupportGateway, TicketKind } from "../platform";
 import { el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
+import { displayReport } from "./display-report";
 
 export function buildSupport(
   store: ProfileStore, gateway: SupportGateway, onBack: () => void,
@@ -166,6 +167,30 @@ export function buildSupport(
     );
     contact.appendChild(terms);
     wrap.appendChild(contact);
+
+    wrap.appendChild(el("div", "secthead", "Troubleshooting"));
+    const diagnostics = el("div", "spbox");
+    const copyDisplay = el("button", "setval setwide", "Copy display report");
+    copyDisplay.id = "copyDisplayReport";
+    const reportField = el("textarea", "setcode") as HTMLTextAreaElement;
+    reportField.readOnly = true;
+    reportField.hidden = true;
+    reportField.setAttribute("aria-label", "Display report");
+    copyDisplay.onclick = async () => {
+      const report = displayReport();
+      try {
+        if (!navigator.clipboard) throw new Error("Clipboard unavailable");
+        await navigator.clipboard.writeText(report);
+        toast(root, "Display report copied", "hive");
+      } catch {
+        reportField.value = report;
+        reportField.hidden = false;
+        reportField.select();
+        toast(root, "Report selected — copy it", "hive");
+      }
+    };
+    diagnostics.append(copyDisplay, reportField);
+    wrap.appendChild(diagnostics);
 
     body.appendChild(wrap);
     root.appendChild(body);

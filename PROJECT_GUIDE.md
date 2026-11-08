@@ -2962,8 +2962,8 @@ players through Add to Home Screen, which is the only thing that stops Safari de
 their colony. Following those instructions gave a blurry screenshot that opened in browser
 chrome, and because it was not standalone `isInstalled()` stayed false: **the warning kept
 nagging the one player who had already done what it asked.**
-- **`display: standalone` is the field the app's own logic depends on**, not decoration.
-  Without it there is no way to detect an installed app on iOS at all.
+- **An installed display mode is what the app's own detection depends on**.
+  iOS also uses the Apple standalone meta tag and navigator.standalone.
 - **BOTH the manifest and `apple-mobile-web-app-capable`**, because older iOS does not read
   the manifest — and `apple-touch-icon` must be a PNG, since iOS ignores an SVG there.
 - **Every path is RELATIVE.** The build sets `base: "./"` so one bundle runs under the
@@ -2994,29 +2994,21 @@ nagging the one player who had already done what it asked.**
     segment of each antenna, because they reach to within a few percent of the sides. It
     is recorded rather than fixed, because fixing it here means insetting the picture
     again, which is the one thing that was asked against. The margin belongs in the file.
-- **AND IT ASKS TO BE FULL SCREEN** (`display_override` in `public/manifest.webmanifest`).
-  Reported from a phone: "it doesn't seem that the game is full screen completely — I
-  still have my system things like the very top info bar with battery, time, etc.
-  overlayed on top of the game."
-  - **`display: standalone` HIDES THE BROWSER'S CHROME, NEVER THE SYSTEM'S.** It is what
-    stops the address bar being there; the status bar is the operating system's, and on
-    Android 15 — which draws every app edge to edge — it sits straight on the artwork.
-    `fullscreen` is the display mode that takes it away, and `display_override` is the
-    only way to ask for one: `display` itself stays `standalone`, because a browser that
-    does not read the override has to land somewhere, and the LAST entry of the override
-    list is that same fallback so the two cannot disagree.
-  - **AND `isInstalled()` HAD TO WIDEN WITH IT** (`INSTALLED_MODES`). It matched
-    `display-mode: standalone` alone, so the moment the manifest got what it asked for
-    the check answered FALSE on the one platform that granted it — the app installed and
-    told it was not, which is the save-at-risk prompt nagging the player who did as it
-    asked. That is the exact bug `installable.test.ts` was written for, arrived at from
-    the other side, and the test now walks every mode in the override list and asserts
-    each one reads as installed.
-  - **iOS CANNOT DO IT AT ALL, and that is worth writing down rather than re-attempting.**
-    Safari ignores `display` beyond standalone, and `apple-mobile-web-app-status-bar-style:
-    black-translucent` — which this page already sets — is the closest there is: the
-    artwork runs BEHIND the clock rather than under a bar, and the clock stays. Only a
-    native build can hide it there.
+- **FULLSCREEN IS AN INSTALLED WINDOW MODE** (`public/manifest.webmanifest`).
+  - The manifest sets `display: fullscreen` directly. Browsers have a standard fallback
+    chain: fullscreen → standalone → minimal-ui → browser. The old claim that display
+    had to stay standalone was incorrect and prevented fullscreen on browsers that
+    ignored display_override. iOS retains the Apple standalone meta tag.
+  - Manifest fullscreen and the DOM Fullscreen API are different. In a fullscreen
+    installed window, document.fullscreenElement can be null and fullscreenEnabled
+    can be false. Never infer the launch mode from those DOM properties.
+  - An installed window already launched fullscreen must not also request DOM
+    fullscreen on game taps. Android owns that window's immersive lifecycle.
+    Older standalone installs can still request DOM fullscreen from a game gesture.
+  - isInstalled() recognizes fullscreen, standalone and minimal-ui.
+  - The native transient-bar policy belongs to the host, not CSS. A locked-height
+    surface can still be clipped if the host actually shrinks its content window.
+    Browser tests that only override innerHeight do NOT test that failure.
   - **HOME AND THE TRAY EACH HAVE ONE SPACING OWNER**, shared by browser, standalone
     and fullscreen. Installed apps can retain an older manifest's display mode, so a
     fullscreen-only spacing patch is not a reliable fix.
@@ -3037,9 +3029,12 @@ nagging the one player who had already done what it asked.**
     safe-area tokens together while transient bars or the keyboard cover the game.
     A wider/taller available window can still be accepted; hidden app-switcher
     measurements are ignored. Ordinary browser tabs retain their responsive layout.
-    Installed Android asks for `requestFullscreen({navigationUI: "hide"})` on a
+    Standalone Android asks for `requestFullscreen({navigationUI: "hide"})` on a
     game tap, once per foreground session. Never re-enter from resize or visibility
-    events; refusal and unsupported APIs are normal. Android owns Recents and system
+    events; refusal and unsupported APIs are normal. Host fullscreen never gets a second
+    DOM fullscreen request. Support → Copy display report captures bounded local window,
+    visual viewport, fullscreen, inset and menu geometry events for on-device diagnosis.
+    It contains no save data and sends nothing. Android owns Recents and system
     window animations; a web page cannot force native window inset policy.
   - **The manifest is precached, and a new build re-fetches it**: the worker's `install`
     adds the whole precache list from the network and `activate` deletes every other
