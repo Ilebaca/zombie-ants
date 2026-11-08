@@ -269,12 +269,12 @@ export function buildAvatarPicker(
     /**
      * WHERE THE REST ARE, once, under the grid rather than on every locked tile.
      *
-     * The hatch is gated on the same chapter traits are, so a player who cannot open one
+     * The hatch keeps its chapter gate even when a pass opens traits early. A player who cannot open one
      * yet is told the chapter rather than pointed at a screen that will turn them away.
      */
     const left = HATCH_AVATARS.filter((id) => !store.hasAvatar(id)).length;
     const note = left > 0
-      ? `${ROAD_AVATARS.length} are paid by the Colony Road, one a chapter. The other ${HATCH_AVATARS.length} hatch from larva${store.traitsOpen() ? "" : ` — the lucky hatch opens at chapter ${TRAITS_CHAPTER}`}.`
+      ? `${ROAD_AVATARS.length} are paid by the Colony Road, one a chapter. The other ${HATCH_AVATARS.length} hatch from larva${store.hatchOpen() ? "" : ` — the lucky hatch opens at chapter ${TRAITS_CHAPTER}`}.`
       : `${ROAD_AVATARS.length} are paid by the Colony Road, one a chapter. Every hatchable one has been found.`;
     wrap.appendChild(el("div", "av-note", note));
 
