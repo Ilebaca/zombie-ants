@@ -564,7 +564,7 @@ footer { background: var(--bg1); }
    ----------------------------------------------------------------------
    The skin above changed how things look. This section changes how they
    sit — density, hierarchy and reach. Everything here is CSS only: the
-   screens still emit the legacy DOM (CLAUDE.md §10), so the shape the
+   screens still emit the legacy DOM (PROJECT_GUIDE.md §10), so the shape the
    parity work established is untouched.
    ====================================================================== */
 
@@ -9128,4 +9128,12 @@ body,
   bottom: auto;
   height: var(--installed-height);
   contain: layout;
+}
+
+/* Typography roles: display face for headings and game figures; body face for
+   reading and form controls. Display has one real weight, so never synthesize bold. */
+:where(button, input, select, textarea) { font-family: inherit; }
+.card h1, .card h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
 }

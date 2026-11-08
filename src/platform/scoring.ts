@@ -4,7 +4,7 @@
  * It reads engine EVENTS and writes the profile, which makes it progression rather than
  * interface — it lived on the app shell only because that is where the events arrive. The
  * engine still knows nothing about quests, and opening the quest screen can never award
- * anything by itself (CLAUDE.md §12).
+ * anything by itself (PROJECT_GUIDE.md §12).
  */
 import type { EngineEvent } from "../engine";
 import type { ProfileStore } from "./profile";

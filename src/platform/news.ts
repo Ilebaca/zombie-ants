@@ -7,7 +7,7 @@
  * there is a server this file's `NEWS` becomes its response and the screen does not move.
  *
  * EVERY POST CARRIES A PICTURE AND IT IS DRAWN, NEVER A FILE. The same rule the manual and
- * the pickers follow (CLAUDE.md — the pickers show the game): a screenshot goes stale the
+ * the pickers follow (PROJECT_GUIDE.md — the pickers show the game): a screenshot goes stale the
  * moment the thing it shows is changed, and this project has no image pipeline. A post
  * about the board draws a real `GameState` with the board's own code; a post about a
  * screen draws its mark on a plate of that screen's colour.

@@ -7,7 +7,7 @@
  * make: promises that nobody waits for, a `case` that falls into the next one, an equality
  * test that coerces, and — the one that matters most in this codebase — the ARCHITECTURE.
  *
- * The layering in CLAUDE.md §3 is the reason the AI can search thousands of futures safely
+ * The layering in PROJECT_GUIDE.md §3 is the reason the AI can search thousands of futures safely
  * and the reason animation work cannot break a game rule. It was held by review alone; it
  * is held by `no-restricted-imports` now, so a wrong import fails rather than being noticed.
  */
@@ -72,7 +72,7 @@ export default ts.config(
 
   /*
    * The engine may not roll dice of its own: scatter draws from the seeded generator on
-   * GameState, or the same seed stops replaying the same game (CLAUDE.md §4.1).
+   * GameState, or the same seed stops replaying the same game (PROJECT_GUIDE.md §4.1).
    */
   {
     files: ["src/engine/**/*.ts"],

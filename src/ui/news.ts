@@ -5,7 +5,7 @@
  * that has no way to tell a player what it just did has to explain every change twice, in
  * a store listing nobody reads and in a screen that says nothing.
  *
- * THE PICTURES ARE DRAWN, NEVER FILES. Same rule as the manual and the pickers (CLAUDE.md
+ * THE PICTURES ARE DRAWN, NEVER FILES. Same rule as the manual and the pickers (PROJECT_GUIDE.md
  * — the pickers show the game): a post about the board draws a real `GameState` with the
  * board's own code, so a change to how a vein or a nest is drawn reaches the news on the
  * same commit; a post about a screen draws that screen's mark on a plate of its colour.

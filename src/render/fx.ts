@@ -83,7 +83,7 @@ export class FxLayer {
    * A tile being destroyed: it holds for a moment, whites out, then shatters.
    *
    * Drawn over ground the engine has already cleared, which is what gives the tile its stay
-   * of execution without any of that living on the tile itself (CLAUDE.md §5).
+   * of execution without any of that living on the tile itself (PROJECT_GUIDE.md §5).
    */
   crumble(at: Coord, owner: Player | null, vein = false, delay = 0): void {
     this.items.push({

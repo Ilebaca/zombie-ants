@@ -110,7 +110,7 @@ describe("the AI's turn", () => {
      * not move. So on a slow machine the search eats the pause: `thinkFor` rolls near its
      * 1000 ms floor, a couple of hundred milliseconds of real searching comes off it, and
      * the move lands inside the 900 ms this test advances. The test was measuring the
-     * runner as much as the code — the same trap the AI's own budgets have (CLAUDE.md §4a).
+     * runner as much as the code — the same trap the AI's own budgets have (PROJECT_GUIDE.md §4a).
      *
      * Pinning the roll to the top of the range takes the machine out of it: four seconds
      * of think time survives any search this board can produce.

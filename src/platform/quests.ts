@@ -4,7 +4,7 @@
  * The pool, the goals, the XP and the rewards are that build's QUEST_POOL verbatim, and the
  * level curve is its xpForLevel. What differs deliberately is *how the day's three are
  * chosen*: the legacy build rolls with Math.random and stores the result, this one derives
- * them from the day number (CLAUDE.md §11). The player sees the same three all day either
+ * them from the day number (PROJECT_GUIDE.md §11). The player sees the same three all day either
  * way; deriving them means a reload cannot reroll, and a test can ask for any day it likes.
  *
  * Progress is recorded by the app shell from what a match reports. Nothing here watches the
@@ -121,7 +121,7 @@ export function msUntilRollover(now: number = Date.now()): number {
 /**
  * A day's quests: one from each bucket, derived from the day number.
  *
- * Derived, never rolled and stored (CLAUDE.md §11) — a reload cannot reroll, and a test can
+ * Derived, never rolled and stored (PROJECT_GUIDE.md §11) — a reload cannot reroll, and a test can
  * ask for any day it likes. One per bucket rather than three from the pile, because three
  * independent draws regularly produced "Play 3 matches" and "Play 5 matches" on the same
  * card, which is one quest asked twice.

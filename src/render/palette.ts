@@ -6,6 +6,7 @@
  * a species swap recolour the whole UI — HUD chips, buttons and canvas — in one write.
  */
 import type { Look, Player, SpeciesId } from "../engine";
+import { loadTypography } from "./typography";
 
 /** [ base, vivid (buttons/highlights/glow), dark ] */
 export const SPECIES_COL: Record<SpeciesId, readonly [string, string, string]> = {
@@ -89,11 +90,10 @@ export type ColourName = (typeof VAR_NAMES)[number];
 
 export const COL: Record<string, string> = {};
 
-const readVar = (name: string): string =>
-  getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-
 export function loadColors(): void {
-  for (const n of VAR_NAMES) COL[n] = readVar("--" + n);
+  const style = getComputedStyle(document.documentElement);
+  for (const n of VAR_NAMES) COL[n] = style.getPropertyValue("--" + n).trim();
+  loadTypography(style);
 }
 
 /**

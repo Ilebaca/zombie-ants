@@ -270,9 +270,10 @@ export function roadStops(): RoadStop[] {
 
 /** Look a reward back up from its claim key. Returns null for a key that pays nothing. */
 export function rewardFor(key: string): RoadReward | null {
+  if (!/^[fp][1-9]\d*$/.test(key)) return null;
   const track = key[0];
   const index = Number(key.slice(1));
-  if (!Number.isFinite(index) || index <= 0) return null;
+  if (!Number.isSafeInteger(index) || index <= 0) return null;
   if (track === "f") return freeReward(index);
   if (track === "p") return passReward(index);
   return null;

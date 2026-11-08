@@ -350,7 +350,7 @@ export function buildInventory(store: ProfileStore, opts: InventoryOptions): HTM
     row.append(trade, el("div", "fb-sp", `${spare} spare held`));
 
     // The same gold button every other purchase in the app uses, so a price is a price
-    // wherever it is read (CLAUDE.md §7: one function owns a rule).
+    // wherever it is read (PROJECT_GUIDE.md §7: one function owns a rule).
     const go = buyButton({
       icon: "pheromone",
       cost: deal.pheromone,

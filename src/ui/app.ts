@@ -931,7 +931,7 @@ export class App {
         () => this.show("home"), () => this.show("challenges"),
       );
     }
-    // The one menu entry that really is unbuilt (CLAUDE.md §9: the lucky hatch needs the
+    // The one menu entry that really is unbuilt (PROJECT_GUIDE.md §9: the lucky hatch needs the
     if (id === "luckyhatch") {
       return buildHatch(this.profile, {
         feedback: this.feedback,

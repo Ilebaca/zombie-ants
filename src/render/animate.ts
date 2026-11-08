@@ -5,7 +5,7 @@
  * `fxPop()` from inside the rules, which meant AI search animated thousands of imagined
  * futures — patched over with a global `G.searching` flag that suppressed effects. Here the
  * rules emit a description and this module decides how to dramatise it, so search is silent
- * for free and animation work can never reach the rules (CLAUDE.md §3).
+ * for free and animation work can never reach the rules (PROJECT_GUIDE.md §3).
  */
 import { key } from "../engine";
 import type { Coord, Direction, EngineEvent, Player } from "../engine";

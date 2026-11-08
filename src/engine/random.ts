@@ -9,7 +9,7 @@
  * So the generator lives *in* GameState and is snapshot/restored with everything else.
  * Same seed plus same moves always replays identically.
  *
- * COMBAT NEVER TOUCHES THIS. `fight()` is and stays pure arithmetic (CLAUDE.md §4.1) —
+ * COMBAT NEVER TOUCHES THIS. `fight()` is and stays pure arithmetic (PROJECT_GUIDE.md §4.1) —
  * this is only ever consulted for where an ability scatters, never for who wins a fight.
  */
 

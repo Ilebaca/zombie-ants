@@ -145,7 +145,7 @@ describe("difficulty", () => {
       // is handed over. Setting `current` by hand instead means endTurn never increments
       // the turn counter, so effects and production never tick between turns.
       //
-      // A match now ends only when a queen falls, and two AIs rarely crack one (CLAUDE.md
+      // A match now ends only when a queen falls, and two AIs rarely crack one (PROJECT_GUIDE.md
       // §4a), so this plays well past the map's expected length and asserts the game is
       // still coherent rather than asserting somebody won.
       while (!s.over && guard++ < 2 * s.limits.turnLimit) {

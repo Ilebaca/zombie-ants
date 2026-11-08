@@ -1,7 +1,7 @@
 /*
  * The game's stylesheet, lifted VERBATIM from legacy/zombie-ants-pro.html.
  *
- * The legacy single-file build is the design source of truth (CLAUDE.md §1). Hand-porting
+ * The legacy single-file build is the design source of truth (PROJECT_GUIDE.md §1). Hand-porting
  * it drifted badly — 442 of its rules were missing here and 156 more differed — so this
  * file is a straight copy instead, and the screens emit the legacy DOM (same ids, same
  * class names) so every rule below applies exactly as it does there.

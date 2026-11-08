@@ -1,7 +1,7 @@
 /**
  * WHO MOVES FIRST.
  *
- * Moving first is worth roughly two to one (CLAUDE.md §8) and the player had it in every
+ * Moving first is worth roughly two to one (PROJECT_GUIDE.md §8) and the player had it in every
  * match this game had ever played. Against a bot that is a habit; between two people it is
  * the match decided before either of them touches the board.
  */

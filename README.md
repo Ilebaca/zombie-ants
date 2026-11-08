@@ -4,7 +4,7 @@ Turn-based territory strategy. Two ant colonies fight for a grid; at the centre 
 queen infected with *Ophiocordyceps*. Capture her for a growth surge — lose your own queen
 and the match ends immediately.
 
-**Read `CLAUDE.md` before changing anything.** It holds the game's hard rules and the bugs
+**Read `PROJECT_GUIDE.md` before changing anything.** It holds the game's hard rules and the bugs
 already paid for once.
 
 ## The one rule
@@ -36,7 +36,7 @@ npm run check      # typecheck + lint + tests — what CI gates the deploy on
 
 | Path | Purpose |
 |---|---|
-| `src/engine/` | Pure game rules. No DOM, no canvas, no randomness. |
+| `src/engine/` | Pure game rules. No DOM or canvas; randomness uses the game’s seeded generator. |
 | `src/ai/` | Lookahead search + evaluation. Consumes the engine only. |
 | `src/render/` | Canvas board. Consumes engine EVENTS and draws them. |
 | `src/ui/` | Screens: the shell, the match, and every meta screen. |
@@ -51,8 +51,10 @@ The engine returns `EngineEvent[]` describing what happened. It never animates. 
 what lets the AI simulate thousands of futures safely, and lets animation work proceed
 without any risk to game rules.
 
-## Status
+## Validation
 
-- Engine ported with 51 passing tests
-- AI lookahead ported (easy 1-ply / normal 2-ply / hard 3-ply)
-- Renderer, meta UI, Capacitor wrap and IAP still to come
+Run `npm run check` for strict type checking, architecture lint rules and the full test suite.
+Run `npm run build` for the production bundle. Deployment is gated by those checks.
+
+The game includes the renderer, progression screens, local accounts, offline support and an
+Android shell. Web purchases and social opponents currently use local demo services.

@@ -4,7 +4,7 @@
  * This was a hundred and twenty lines inside `App.startMatch`'s `onExit` handler — the
  * career, the match record, four kinds of quest progress and the challenge reward, all
  * written out in the middle of the router. `app.ts` is meant to be the shell and the
- * router and nothing else (CLAUDE.md §3), and this is the one subject that had grown
+ * router and nothing else (PROJECT_GUIDE.md §3), and this is the one subject that had grown
  * inside it: "what a match PAYS" is a thing in its own right, and it is also the least
  * tested path in the game despite being the one that moves every number a player has.
  *
@@ -27,7 +27,7 @@ export interface Settlement {
   state: GameState;
   winner: Player | null;
   reason: GameOverReason | null;
-  /** The SCREEN's clock, never the engine's (CLAUDE.md §8a). */
+  /** The SCREEN's clock, never the engine's (PROJECT_GUIDE.md §8a). */
   playedMs: number;
   /** Hive queens taken, counted as they happened rather than read off the end. */
   queens: number;

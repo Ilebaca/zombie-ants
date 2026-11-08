@@ -7,7 +7,7 @@
  * "looks" fine one ply before the punishment lands.
  *
  * This one also counts what a player is ABOUT TO LOSE. Combat is fully deterministic
- * (CLAUDE.md §4.1), so "can that tile be taken next move?" is not a guess — it is
+ * (PROJECT_GUIDE.md §4.1), so "can that tile be taken next move?" is not a guess — it is
  * arithmetic, and cheap arithmetic at that. Knowing it at every leaf is what lets a
  * shallow search play sensibly and a deep one stop blundering.
  */
@@ -87,7 +87,7 @@ export const NAIVE: EvalWeights = {
 };
 
 /**
- * Veins are infrastructure, not territory (CLAUDE.md §4.5): they produce nothing, hold
+ * Veins are infrastructure, not territory (PROJECT_GUIDE.md §4.5): they produce nothing, hold
  * nothing, and prune the moment they lose an anchor. Counting one as a whole tile taught
  * the AI to prefer a four-tile travel — four veins — over an adjacent resource, which is
  * four times the "territory" and none of the value.
@@ -102,7 +102,7 @@ function tileValue(t: Tile, w: EvalWeights): number {
     v += (t.terrain === "resource" ? PROD.resourceStable : PROD.stable) * w.income;
   }
   if (t.terrain === "resource") v += w.resource;
-  // Losing the nest loses the match outright (CLAUDE.md §4.6), so a queen the opponent can
+  // Losing the nest loses the match outright (PROJECT_GUIDE.md §4.6), so a queen the opponent can
   // take NEXT MOVE is not "a bad position", it is a lost one. Priced anywhere near ordinary
   // territory, the search trades her for a good land grab and finds out one ply past its
   // own horizon. This is what makes the AI defend with everything it has.

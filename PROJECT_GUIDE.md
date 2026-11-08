@@ -5328,3 +5328,16 @@ what keeps AI search from writing stats or currencies (§5).
   income readout while doing nothing in a fight.
 
 - Installed viewport: `ui/installed-viewport.ts` measures the large viewport once per width. Same-width system-bar/keyboard resizes do not shrink the app; width changes remeasure. Layout containment on the installed app keeps fixed controls attached to that frame. Browser tabs retain ordinary responsive sizing.
+
+## Maintenance review — November 2026
+
+- Typography roles: Nunito for reading and forms; Poetsen at its native 400 weight for screen
+  headings, prominent game figures and canvas labels. Canvas font strings are resolved by
+  `render/typography.ts`; do not pass CSS `var()` syntax to canvas.
+- `applyMove` derives combat context from the supplied modifiers when a caller does not
+  provide an explicit context. Replays and live play must apply the same research and traits.
+- Road checkpoint keys use canonical `f<number>` and `p<number>` spellings. Reject aliases
+  before paying or normalising claims.
+- Native storage writes are queued in call order; reads remain synchronous from memory.
+- Renderer resets replace options as well as board state, including identities and ground.
+- Account sign-in normalises account IDs and player codes consistently.

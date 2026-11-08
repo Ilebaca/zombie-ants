@@ -123,7 +123,7 @@ export const researchCost = (level: number): number => 40 + level * 40;
    A number a player counts their attack out with cannot live in two places. They live here,
    because `config.ts` imports nothing: the rules read them, and the description strings are
    BUILT from them, so a balance change cannot leave the game lying about itself. It is the
-   same rule the manual already follows (CLAUDE.md: "The numbers are read from
+   same rule the manual already follows (PROJECT_GUIDE.md: "The numbers are read from
    engine/config.ts, never typed out"), applied to the one screen that had escaped it. */
 
 /** Troops a venomed tile loses per turn — flat, not a share. */

@@ -3,7 +3,7 @@ import { key } from "./types";
 import type { EngineEvent, GameState, Player, Tile } from "./types";
 
 /**
- * SUPPLY LINES (CLAUDE.md §4.2)
+ * SUPPLY LINES (PROJECT_GUIDE.md §4.2)
  *
  * A tile is active only if a chain of same-owner tiles — captured tiles OR veins — links it
  * back to that player's nest. A part detached from the queen goes inactive: no production,
@@ -57,7 +57,7 @@ export function isConnected(state: GameState, t: Tile): boolean {
 }
 
 /**
- * DANGLING VEINS COLLAPSE (CLAUDE.md §4.5)
+ * DANGLING VEINS COLLAPSE (PROJECT_GUIDE.md §4.5)
  *
  * Two rules, and it took a real match to learn that one of them was not enough.
  *

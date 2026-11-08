@@ -204,7 +204,7 @@ describe("animate: events to animation", () => {
   });
 
   /**
-   * The whole reason events exist (CLAUDE.md §3): the view may not write to the engine.
+   * The whole reason events exist (PROJECT_GUIDE.md §3): the view may not write to the engine.
    * The legacy build stored reveal progress on the tile, which the AI's snapshot copied.
    */
   it("never mutates game state", () => {
@@ -300,7 +300,7 @@ describe("drawTile", () => {
   });
 
   /**
-   * Veins are infrastructure, not territory (CLAUDE.md §4.5). They must render as a thin
+   * Veins are infrastructure, not territory (PROJECT_GUIDE.md §4.5). They must render as a thin
    * trail of bars, never as a filled cell — a filled vein reads as captured ground.
    */
   it("draws a vein as connecting bars, not a filled cell", () => {

@@ -153,7 +153,7 @@ export interface TraitDef {
   /** `null` means universal: it goes in the anthill, not in a colony. */
   species: SpeciesId | null;
   /**
-   * The mark the tile is drawn with, named rather than carried (CLAUDE.md §10 — no emoji,
+   * The mark the tile is drawn with, named rather than carried (PROJECT_GUIDE.md §10 — no emoji,
    * and `Product.icon` / `Chamber.icon` name a mark the same way).
    *
    * It only has to be distinct WITHIN A BENCH, and a bench is either the eight universal
@@ -461,7 +461,7 @@ export const HATCH_COST = 1;
  * the same thing faster rather than the only way in.
  *
  * One, not more, and only on a win. At two or three matches a day winning about half
- * (CLAUDE.md §8c) that is roughly a hatch a day: a mythic at one in a hundred is about
+ * (PROJECT_GUIDE.md §8c) that is roughly a hatch a day: a mythic at one in a hundred is about
  * three months of play, and every tier below it arrives while that runs.
  */
 export const WIN_LARVA = 1;

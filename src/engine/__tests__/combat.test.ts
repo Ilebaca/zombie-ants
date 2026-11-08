@@ -62,7 +62,7 @@ describe("capture rules", () => {
 
 describe("nest capture ends the match", () => {
   // Regression: a refactor relabelled a captured nest "stable" BEFORE the win check,
-  // so capturing the enemy queen silently stopped ending the game. (CLAUDE.md §5)
+  // so capturing the enemy queen silently stopped ending the game. (PROJECT_GUIDE.md §5)
   it("ends the game immediately when the enemy nest falls, even if they hold other tiles", () => {
     const s = blankGame();
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });

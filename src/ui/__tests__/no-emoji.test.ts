@@ -4,7 +4,7 @@
  * The single loudest "unconsidered" signal an interface can carry: a cart, a plant pot, a
  * dartboard and a house in one row, each from a different illustrator, at a different
  * weight, rendered differently on every platform. `src/ui/icons.ts` is one family of solid
- * marks on a 24 grid and the app uses those (CLAUDE.md §10).
+ * marks on a 24 grid and the app uses those (PROJECT_GUIDE.md §10).
  *
  * Every screen was cleaned by hand and NOTHING GUARDED IT, which is exactly why the match
  * screen's action bar — the one a player spends the whole game looking at — still carried

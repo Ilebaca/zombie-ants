@@ -3,7 +3,7 @@
  *
  * The board had no players on it: the header counted two armies and called them "You" and
  * "Enemy", which is a scoreboard rather than an opponent — and the colony, the number the
- * whole game is played for (CLAUDE.md §8a), was on the menus only and never once in front
+ * whole game is played for (PROJECT_GUIDE.md §8a), was on the menus only and never once in front
  * of the player while they were playing for it.
  *
  * It is drawn on the GROUND rather than laid out in a strip of chrome. A band above the
@@ -30,6 +30,7 @@
  */
 import type { GameState, Player } from "../engine";
 import type { Layout } from "./layout";
+import { canvasFont } from "./typography";
 import { COL, MAP } from "./palette";
 
 /** One side's identity. Settled when the match starts and never written again. */
@@ -76,7 +77,7 @@ export function rowsOf(
   const rows: PlateRow[] = [];
 
   ctx.save();
-  ctx.font = `900 ${font}px var(--font),sans-serif`;
+  ctx.font = canvasFont(font);
   for (const who of ["ai", "you"] as const) {
     const plate = plates[who];
     if (!plate) continue;
@@ -114,7 +115,7 @@ export function drawPlates(
 
   for (const row of rowsOf(ctx, layout, plates, size)) {
     const mid = row.y + row.h / 2;
-    ctx.font = `900 ${row.font}px var(--font),sans-serif`;
+    ctx.font = canvasFont(row.font);
     // THE NAME AND THE FIGURE ARE ONE LINE, so they are one colour — the page's own ink.
     // The figure used to be drawn in that side's colony colour, which made it read as a
     // second thing rather than as part of the name, and put a dark orange or blue number

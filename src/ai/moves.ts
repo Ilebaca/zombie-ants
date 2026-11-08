@@ -4,7 +4,7 @@
  * The old generator only produced adjacent attacks onto tiles the AI did not own. That
  * quietly removed three quarters of the game from it:
  *
- *  - it could never REINFORCE, so with a floor of one soldier per tile (CLAUDE.md §4.7)
+ *  - it could never REINFORCE, so with a floor of one soldier per tile (PROJECT_GUIDE.md §4.7)
  *    and one action per turn, its army was permanently scattered into single soldiers
  *    while a human massed a fist and walked through it;
  *  - it could never TRAVEL, so every long send down its own veins was invisible;
@@ -141,7 +141,7 @@ function dedupe(list: readonly Candidate[]): Candidate[] {
 /**
  * Bring troops home when the queen is in danger.
  *
- * Losing the nest loses the match outright (CLAUDE.md §4.6), so this is the one thing
+ * Losing the nest loses the match outright (PROJECT_GUIDE.md §4.6), so this is the one thing
  * worth spending any turn on. It used to be a reflex that ran ahead of the search and
  * marched exactly ONE neighbour in; as a candidate the search can weigh it, and it can
  * answer with a rally instead — which brings the whole colony home rather than a single
@@ -190,7 +190,7 @@ function nestDefenceCandidates(
 /**
  * Garrison a vein whose loss would cut the colony in half.
  *
- * Veins have no defence at all (CLAUDE.md §4.3), so an enemy takes one for free and
+ * Veins have no defence at all (PROJECT_GUIDE.md §4.3), so an enemy takes one for free and
  * everything downstream of it goes dark. Putting soldiers on it does not defend it — it
  * PROMOTES it to a stable (§4.5), which does.
  *
@@ -261,7 +261,7 @@ function rateStep(
   }
 
   if (apparent === opp && n.struct === "vein") {
-    // Enemy trails have no defence at all (CLAUDE.md §4.3) — they are taken for free.
+    // Enemy trails have no defence at all (PROJECT_GUIDE.md §4.3) — they are taken for free.
     // What makes one worth taking is what hangs off the far side of it: connectivity is
     // nest-anchored, so cutting the right vein sends everything past it dark in one move.
     // Rated by how many tiles that is, which is the difference between a tidy capture and

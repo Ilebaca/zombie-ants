@@ -69,7 +69,7 @@ export class LocalResults implements ResultsService {
  *
  * THIS IS THE SERVER'S JOB, written here because it is pure and belongs to the game rather
  * than to a backend. Given the setup and the moves it rebuilds the board — the engine is
- * seeded, so it lands exactly where both players landed (CLAUDE.md §4.1) — and compares
+ * seeded, so it lands exactly where both players landed (PROJECT_GUIDE.md §4.1) — and compares
  * the winner it finds with the winner being claimed.
  */
 export function verify(outcome: MatchOutcome): RecordedResult {

@@ -9,7 +9,7 @@
  * worth. So the panel had to become a thing rather than a closure.
  *
  * It is derived, never restated: `tierOdds()` reads the same weights the roll uses, so a
- * printed chance cannot drift from the real one. That was already the rule (CLAUDE.md — the
+ * printed chance cannot drift from the real one. That was already the rule (PROJECT_GUIDE.md — the
  * odds are printed on the screen); this only gives it a second home.
  *
  * Five ROWS rather than a sentence, because the order is the message: the colours run from

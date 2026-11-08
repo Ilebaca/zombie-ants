@@ -281,7 +281,7 @@ export function buildDaily(
 
 /* -------------------------------------------------------------------- THE PIECES */
 
-/** Difficulty as marks from the icon family, not as ★ and ☆ glyphs (CLAUDE.md §10). */
+/** Difficulty as marks from the icon family, not as ★ and ☆ glyphs (PROJECT_GUIDE.md §10). */
 function starRow(n: number): HTMLElement {
   const row = el("span", "chalstars");
   row.setAttribute("aria-label", `Difficulty ${n} of 5`);

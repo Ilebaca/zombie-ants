@@ -80,7 +80,7 @@ export interface ResearchDef {
 /**
  * Per-species research. Reservoir is deliberately not a flat percentage: the cooldown only
  * drops at MAX (engine/abilities.ts), and Leafcutter's permanent-leaf cap is a running
- * total, not a per-cast bonus (CLAUDE.md §5).
+ * total, not a per-cast bonus (PROJECT_GUIDE.md §5).
  */
 export const RESEARCH_TRACKS: readonly ResearchDef[] = [
   {

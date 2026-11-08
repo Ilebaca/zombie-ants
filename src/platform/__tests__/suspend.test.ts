@@ -13,7 +13,7 @@ import { MemoryStore } from "../storage";
 import { PROFILE_KEY } from "../profile";
 import type { Difficulty } from "../../ai/search";
 import { START_SHAPES, applyMove, createGame, defaultContext } from "../../engine";
-// Tests may reach across a layer; nothing else in `platform/` may (CLAUDE.md §3).
+// Tests may reach across a layer; nothing else in `platform/` may (PROJECT_GUIDE.md §3).
 import { aiTurn } from "../../ai/search";
 import type { MatchSetup, Move } from "../../engine";
 
@@ -147,7 +147,7 @@ describe("picking it back up", () => {
   }, 30_000);
 
   /**
-   * A SAVE OUTLIVES THE CODE THAT WROTE IT (CLAUDE.md §12), and this one is reachable by
+   * A SAVE OUTLIVES THE CODE THAT WROTE IT (PROJECT_GUIDE.md §12), and this one is reachable by
    * hand. Anything malformed gives nothing back rather than a half-built match.
    */
   it("refuses rubbish rather than trusting it", () => {
@@ -185,7 +185,7 @@ describe("putting it down", () => {
 });
 
 /**
- * `platform/` may not import `ai/` (CLAUDE.md §3), so the three difficulties are spelled
+ * `platform/` may not import `ai/` (PROJECT_GUIDE.md §3), so the three difficulties are spelled
  * out in `suspend.ts` rather than imported. This is what stops the two drifting: a fourth
  * level added to the AI and not to the record would silently resume every match against
  * the wrong opponent.

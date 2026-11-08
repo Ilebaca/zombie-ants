@@ -18,7 +18,7 @@
  *
  * TOOL, NOT BUILD STEP: excluded from the typecheck and the lint like the other two
  * browser-driving tools, because it imports Playwright, which is deliberately not a
- * dependency of this project (CLAUDE.md §11).
+ * dependency of this project (PROJECT_GUIDE.md §11).
  */
 import { chromium } from "playwright-core";
 import { pathToFileURL } from "node:url";

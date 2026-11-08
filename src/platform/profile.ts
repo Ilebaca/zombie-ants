@@ -2,11 +2,11 @@
  * The player's persistent colony record.
  *
  * This is the ONLY source of PlayerMods for the human side. The AI is always handed
- * NEUTRAL_MODS — it competes on decision quality, never on progression (CLAUDE.md §4.8),
+ * NEUTRAL_MODS — it competes on decision quality, never on progression (PROJECT_GUIDE.md §4.8),
  * so no code path here may ever feed the "ai" player.
  *
  * The engine does not import this module. Search runs on engine state alone, which is what
- * keeps simulation from writing stats or currencies (CLAUDE.md §5).
+ * keeps simulation from writing stats or currencies (PROJECT_GUIDE.md §5).
  */
 import {
   CHAMBER_MAX, MAPS, NEUTRAL_MODS, RESEARCH_MAX, SPECIES, basicLook, chamberCost, lookById,
@@ -1194,7 +1194,7 @@ export class ProfileStore {
       // Only the bag. `normalise` runs on every write and empties any slot pointing at
       // something the bag no longer holds, so clearing the benches here as well was a
       // second copy of that rule — and a rule written twice is a rule that can disagree
-      // with itself (CLAUDE.md §7: one function owns a rule).
+      // with itself (PROJECT_GUIDE.md §7: one function owns a rule).
       p.bag = p.bag.filter((b) => b.uid !== uid);
     });
     return true;
@@ -1202,7 +1202,7 @@ export class ProfileStore {
 
   /**
    * Modifiers for a match. `you` is derived from the profile; `ai` is ALWAYS neutral —
-   * the AI gets no anthill and no research (CLAUDE.md §4.8).
+   * the AI gets no anthill and no research (PROJECT_GUIDE.md §4.8).
    */
   modsFor(species: SpeciesId): Record<Player, PlayerMods> {
     return { you: modsFrom(this.profile, species), ai: neutralMods() };
@@ -1580,7 +1580,7 @@ export class ProfileStore {
    * screen — bought NOTHING AT ALL. A currency with no sink is a number going up.
    *
    * Everything else in the game already said otherwise: the tour tells the player to
-   * "spend pheromone on research", CLAUDE.md §12 gives the two currencies exactly this
+   * "spend pheromone on research", PROJECT_GUIDE.md §12 gives the two currencies exactly this
    * split, and the economy model (platform/__tests__/economy.test.ts) has always measured
    * the research tree as the pheromone sink and held the supply to 0.7–1.3× of it. So the
    * pacing this build ships was tuned for the rule this line now finally applies.
@@ -1966,7 +1966,7 @@ export const DAILY_GIFT = { mycel: 60, pheromone: 100 } as const;
 /**
  * What the AI gets, always. No chambers, no research and NO TRAITS: it competes on
  * decision quality alone, so nothing a player collects is ever needed to keep up with it
- * (CLAUDE.md §4.10). Spread from the engine's own constant rather than written out, or a
+ * (PROJECT_GUIDE.md §4.10). Spread from the engine's own constant rather than written out, or a
  * field added there is silently zero here and reads as a deliberate neutral value.
  */
 function neutralMods(): PlayerMods {

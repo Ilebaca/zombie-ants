@@ -7,7 +7,7 @@
  * the chambers and the shop — at a size somebody can actually use in a store listing or a
  * press kit.
  *
- * Almost nothing in this game is a file (CLAUDE.md: the home artwork, the region grounds
+ * Almost nothing in this game is a file (PROJECT_GUIDE.md: the home artwork, the region grounds
  * and the launcher icon are the only pictures that are), so there is no folder of assets
  * to hand over — which is exactly why this exists. Every mark below is drawn by the code
  * that owns it: `ui/icons.ts` for the chrome, `render/art.ts` for the ants and the nests,
@@ -443,7 +443,7 @@ sheet("sheet-11-wordmark", () => {
     root.replaceChildren();
     // Both factions are painted before anything is drawn: the palette is global, so a
     // sheet that drew a board before this would show whatever colour ran last
-    // (CLAUDE.md — `setFactionColor` has exactly that trap).
+    // (PROJECT_GUIDE.md — `setFactionColor` has exactly that trap).
     setFactionColor("you" as any, "leafcutter" as any);
     setFactionColor("ai" as any, "fire" as any);
     // AND THEN READ BACK. The palette is cached off the stylesheet's custom properties, so

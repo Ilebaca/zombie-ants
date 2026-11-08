@@ -127,7 +127,7 @@ export class LocalAccounts implements AccountService {
   signIn(codeOrId: string): Account | null {
     const want = codeOrId.trim().toUpperCase();
     if (!want) return null;
-    const found = this.list().find((a) => a.code.toUpperCase() === want || a.id === want);
+    const found = this.list().find((a) => a.code.toUpperCase() === want || a.id.toUpperCase() === want);
     if (!found) return null;
     // Stamped on the way in, so the picker leads with the colony this device actually
     // plays — and stamped strictly PAST every other account rather than with the bare

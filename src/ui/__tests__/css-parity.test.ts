@@ -2,7 +2,7 @@
  * game.css must stay a verbatim copy of the legacy build's <style> block.
  *
  * The screens are styled entirely by that stylesheet, so any edit made to one file and not
- * the other silently reintroduces the drift this copy was made to end (CLAUDE.md §1).
+ * the other silently reintroduces the drift this copy was made to end (PROJECT_GUIDE.md §1).
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";

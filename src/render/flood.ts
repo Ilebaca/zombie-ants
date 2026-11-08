@@ -9,7 +9,7 @@
  *
  * It is a VIEW, not a move. The engine is untouched — the result card still reports the
  * armies and the ground as they actually stood when the queen fell, which is what the
- * player was playing for. Drawing over the board cannot change it (CLAUDE.md §3), so this
+ * player was playing for. Drawing over the board cannot change it (PROJECT_GUIDE.md §3), so this
  * is the only place the finale can live.
  *
  * EVERYTHING goes under it, rocks included. A wash that stopped at the boulders left four

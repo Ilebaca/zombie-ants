@@ -655,7 +655,7 @@ export function setupSteps(current: number, total = 2): HTMLElement {
  *
  * One function, because every screen that names a colony wants the same picture — the
  * profile, the Antarium, a friend row, the ladder, the opponent search, the result card —
- * and a copy per screen is a copy to fix when the drawing changes (CLAUDE.md §7).
+ * and a copy per screen is a copy to fix when the drawing changes (PROJECT_GUIDE.md §7).
  *
  * THE PAINTING IS ONLY EVER THE BASIC LOOK, and that is the rule worth keeping. A skin
  * recolours the whole colony and may carry an overlay (`engine/skins.ts`); the drawn head

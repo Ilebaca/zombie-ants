@@ -3,7 +3,7 @@
  *
  * jsdom gives no canvas, so portraits come back null — that is deliberate: it proves the
  * screens survive a context they cannot draw into, which is the same failure mode as a
- * hidden tab (CLAUDE.md §10). Everything asserted here is structure and state, never looks.
+ * hidden tab (PROJECT_GUIDE.md §10). Everything asserted here is structure and state, never looks.
  */
 import { describe, expect, it, beforeEach } from "vitest";
 import {
@@ -1234,7 +1234,7 @@ describe("legacy markup parity", () => {
       .flatMap((e) => Array.from(e.classList));
 
   /**
-   * The Anthill is a DELIBERATE deviation (CLAUDE.md §10): it is a cross-section of the
+   * The Anthill is a DELIBERATE deviation (PROJECT_GUIDE.md §10): it is a cross-section of the
    * nest rather than the legacy build's list, so its insides are ours and dressed by
    * `skin.css`. `.hillwrap` stays, because that one IS the legacy scroller.
    */
@@ -1298,7 +1298,7 @@ describe("legacy markup parity", () => {
   });
 
   /**
-   * The species page is a DELIBERATE deviation from the legacy skeleton (CLAUDE.md §10):
+   * The species page is a DELIBERATE deviation from the legacy skeleton (PROJECT_GUIDE.md §10):
    * the legacy shape was four identical grey cards, and it was the last screen in the app
    * still wearing it. What is held here is the shape it was rebuilt into — and the ids the
    * router and the tour reach it by, which are not styling and must not drift.

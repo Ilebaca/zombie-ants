@@ -12,7 +12,7 @@ export { VENOM_BITE, FIRE_BITE } from "./config";
 export const glandCut = (mods: PlayerMods): number => Math.max(0.25, 1 - mods.gland * 0.05);
 
 /**
- * A VEIN TAKES NO ARMOUR (CLAUDE.md §4.4, §4.6).
+ * A VEIN TAKES NO ARMOUR (PROJECT_GUIDE.md §4.4, §4.6).
  *
  * Attacking an enemy vein captures it instantly — the combat path returns before `fight()`
  * is ever reached — so a defence bonus on one can never change a single outcome. What it
@@ -73,7 +73,7 @@ export interface Hit {
  *
  *  - A VEIN dies outright. It holds no garrison at all, so a percentage of it is a
  *    percentage of nothing and the hit fell straight through the one thing on the board
- *    that cannot defend itself (CLAUDE.md §4.4).
+ *    that cannot defend itself (PROJECT_GUIDE.md §4.4).
  *  - A tile somebody HOLDS loses soldiers, and is given up when they run out. The
  *    one-soldier floor is about what you may spend (§4.9), not about what can be killed.
  *  - A WILD GARRISON loses guards the same way, and the tile goes back to bare ground.
@@ -120,7 +120,7 @@ export const garrisonOf = (t: Tile): number => (t.owner ? t.soldiers : t.guard >
  * Resolve damage and age effects at the start of `p`'s turn.
  *
  * Connectivity is rebuilt at the end: an effect that destroys a connector must deactivate
- * everything behind it immediately, not next turn (CLAUDE.md §4.2).
+ * everything behind it immediately, not next turn (PROJECT_GUIDE.md §4.2).
  */
 export function tickEffects(
   state: GameState, p: Player, mods: PlayerMods, events: EngineEvent[] = [],

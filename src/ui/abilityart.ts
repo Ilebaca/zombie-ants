@@ -2,7 +2,7 @@
  * AN ABILITY'S PAINTING — the picture on the card that describes it.
  *
  * Each colony's ability is written on its own page in the Antarium, where the player is
- * deciding whether to spend on that colony (CLAUDE.md: the manual deliberately does NOT
+ * deciding whether to spend on that colony (PROJECT_GUIDE.md: the manual deliberately does NOT
  * describe the abilities, so this card is the one place each is explained). It was a row
  * of chips and a sentence; a painting of the thing is what tells eight of them apart at a
  * glance.

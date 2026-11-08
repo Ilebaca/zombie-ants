@@ -137,7 +137,7 @@ export function buildSupport(
     const policy = el("a", "spfact spfact-link") as HTMLAnchorElement;
     policy.id = "privacyLink";
     // Relative, like every other path in the build: the same bundle runs under the Pages
-    // project path and inside the Capacitor shell (CLAUDE.md, installable).
+    // project path and inside the Capacitor shell (PROJECT_GUIDE.md, installable).
     policy.href = "./privacy.html";
     policy.target = "_blank";
     policy.rel = "noopener";

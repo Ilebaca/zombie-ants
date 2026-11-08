@@ -6,7 +6,7 @@
  * to somebody, and it was doing it silently: nothing anywhere kept a match that had not
  * finished.
  *
- * IT IS NEARLY FREE, AND ONLY BECAUSE THE ENGINE IS PURE AND SEEDED (CLAUDE.md §4.1). A
+ * IT IS NEARLY FREE, AND ONLY BECAUSE THE ENGINE IS PURE AND SEEDED (PROJECT_GUIDE.md §4.1). A
  * match in progress is the same twenty bytes a finished one is remembered as: the SETUP
  * and the MOVES so far (engine/protocol.ts). `resume()` hands them to `replayMatch` and
  * gets the exact board back — no board is ever stored, so nothing here can go stale
@@ -31,7 +31,7 @@ import type { KeyValueStore } from "./storage";
 
 /**
  * Mirrors `Difficulty` in `ai/search.ts`, spelled out rather than imported: `platform/`
- * may not reach into `ai/` (CLAUDE.md §3), and a suspended match has to remember which of
+ * may not reach into `ai/` (PROJECT_GUIDE.md §3), and a suspended match has to remember which of
  * the three opponents it was being played against. `suspend.test.ts` holds the two lists
  * together, so a fourth level cannot be added to one and not the other.
  */
@@ -160,7 +160,7 @@ export class SuspendStore {
       };
     } catch {
       // A save outlives the code that wrote it, so a record from a build that spelled this
-      // differently is refused rather than trusted (CLAUDE.md §12).
+      // differently is refused rather than trusted (PROJECT_GUIDE.md §12).
       return null;
     }
   }

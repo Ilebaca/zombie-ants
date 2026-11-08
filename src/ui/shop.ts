@@ -297,7 +297,7 @@ export function buildShop(
  *
  * Named, not glyphed. The two currencies were a mushroom and a test tube typed into the
  * string — and a toast is one line of text with no room to teach what a glyph means
- * (CLAUDE.md §10: currency in words, not glyphs).
+ * (PROJECT_GUIDE.md §10: currency in words, not glyphs).
  */
 function describe(product: Product): string {
   const parts = [

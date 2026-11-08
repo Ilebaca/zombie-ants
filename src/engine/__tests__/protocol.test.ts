@@ -19,6 +19,8 @@ import {
   applyMove, createGame, endTurn, openingBoard, replayMatch, snapshot,
 } from "../index";
 import type { MatchSetup, Move } from "../index";
+import { defaultContext, moveOrAttack, recomputeConnectivity } from "../index";
+import { blankGame, put } from "./helpers";
 import { NEUTRAL_MODS } from "../index";
 
 const setup = (): MatchSetup => ({
@@ -58,7 +60,7 @@ describe("rebuilding a match from its moves", () => {
   /**
    * THE WHOLE POINT. If this ever stops being true, nothing else about server-side
    * verification or replays works — and the way it would stop is somebody reaching for
-   * `Math.random` inside the engine (CLAUDE.md §4.1).
+   * `Math.random` inside the engine (PROJECT_GUIDE.md §4.1).
    */
   it("lands on the same board the moves were played on", () => {
     const played = openingBoard(setup());
@@ -185,7 +187,7 @@ describe("refusing a move a client should not have sent", () => {
 
   /**
    * An action that produced nothing did NOT happen. The engine says no with an empty event
-   * list (CLAUDE.md §5), and reporting that as a success would let a client spend its
+   * list (PROJECT_GUIDE.md §5), and reporting that as a success would let a client spend its
    * opponent's clock on moves that change nothing.
    */
   it("refuses an action that changed nothing", () => {
@@ -214,4 +216,21 @@ describe("refusing a move a client should not have sent", () => {
     expect(endTurn).toBeTypeOf("function");
     expect(state.turn).toBe(before);
   });
+});
+
+it("uses the supplied research and traits for combat without a separate context", () => {
+  const state = blankGame();
+  put(state, 0, 0, { owner: "you", struct: "nest", soldiers: 10 });
+  put(state, 1, 0, { owner: "ai", struct: "nest", soldiers: 12 });
+  recomputeConnectivity(state);
+  const expected = structuredClone(state);
+  const context = defaultContext();
+  context.mods.you.mandible = 15;
+  context.mods.you.atkPct = 10;
+  const from = { c: 0, r: 0 }, to = { c: 1, r: 0 };
+  const events = moveOrAttack(expected, from, to, context);
+  expect(applyMove(state, "you", { do: "move", from, to }, context.mods))
+    .toEqual({ ok: true, events });
+  expect(snapshot(state)).toEqual(snapshot(expected));
+  expect(state.winner).toBe("you");
 });

@@ -130,3 +130,29 @@ describe("what the shell means for the save-at-risk warning", () => {
     expect(saveRisk(new MemoryStore(), false)).toBe("unwritable");
   });
 });
+
+it("orders bridge writes and removals even when an earlier write is slow or fails", async () => {
+  const calls: string[] = [];
+  let finish: () => void = () => {};
+  const api = {
+    ...prefs().api,
+    set: ({ value }: { key: string; value: string }): Promise<void> => {
+      calls.push(value);
+      if (value === "old") return new Promise<void>((resolve) => { finish = resolve; });
+      if (value === "bad") return Promise.reject(new Error("bridge"));
+      return Promise.resolve();
+    },
+    remove: (): Promise<void> => { calls.push("remove"); return Promise.resolve(); },
+  };
+  const store = new CapacitorStore(api, new Map());
+  store.set("save", "old");
+  store.set("save", "bad");
+  store.set("save", "new");
+  store.remove("save");
+  expect(store.get("save")).toBeNull();
+  await Promise.resolve();
+  expect(calls).toEqual(["old"]);
+  finish();
+  for (let i = 0; i < 20; i++) await Promise.resolve();
+  expect(calls).toEqual(["old", "bad", "new", "remove"]);
+});

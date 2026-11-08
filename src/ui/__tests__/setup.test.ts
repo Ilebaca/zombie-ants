@@ -67,7 +67,7 @@ describe("AI species roll", () => {
 
 describe("formation choices", () => {
   // A colony that starts with more than five tiles is a legacy bonus leaking back in
-  // (CLAUDE.md §5). The picker must only ever offer exactly-five shapes.
+  // (PROJECT_GUIDE.md §5). The picker must only ever offer exactly-five shapes.
   it("offers only five-tile formations", () => {
     for (const [id, cells] of Object.entries(START_SHAPES)) {
       expect(cells.length, `${id} must be 5 tiles`).toBe(5);

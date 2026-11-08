@@ -32,7 +32,7 @@ export function fight(
 
 /**
  * Flat defence bonus for a tile.
- * Veins get ZERO — they are infrastructure and always lose (see CLAUDE.md §4.3).
+ * Veins get ZERO — they are infrastructure and always lose (see PROJECT_GUIDE.md §4.3).
  * Hive tiles get zero too: they defend purely with their garrison.
  */
 export function flatDefence(state: GameState, t: Tile, mods: PlayerMods): number {
@@ -76,7 +76,7 @@ export function surgeMultiplier(state: GameState, p: Player): number {
 /**
  * TRAITS ARE A PERCENTAGE ON TOP, AND THEY ARE STILL NOT RANDOM.
  *
- * `fight()` is and stays pure arithmetic (CLAUDE.md §4.1): a trait changes the numbers
+ * `fight()` is and stays pure arithmetic (PROJECT_GUIDE.md §4.1): a trait changes the numbers
  * that go into it, never how it resolves. Same attack against same defence gives the same
  * answer, and the player can still count it out — they just count it out with a bigger
  * number, exactly as they do with research.

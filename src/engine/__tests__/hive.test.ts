@@ -27,7 +27,7 @@ describe("hive", () => {
 
   it("gives the capturer all five tiles as selectable STABLES", () => {
     // Regression: these were made veins once, and the pruner then deleted them,
-    // making a won fight look like a loss. (CLAUDE.md §5)
+    // making a won fight look like a loss. (PROJECT_GUIDE.md §5)
     const s = blankGame();
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     captureQueen(s, "you");

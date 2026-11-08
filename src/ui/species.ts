@@ -23,7 +23,7 @@
  *    unchanged number looks like when it is printed with an arrow.
  *
  * The dead "Customize" tab is gone with them. It sold skins from the lucky hatch, which is
- * not built (CLAUDE.md §9), so it was a tab that could only ever raise a toast — the same
+ * not built (PROJECT_GUIDE.md §9), so it was a tab that could only ever raise a toast — the same
  * thing Settings' Sound switch was.
  */
 import {

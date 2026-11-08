@@ -22,7 +22,7 @@ describe("starting position", () => {
 
   it("adds Royal Chamber soldiers to the nest but NOT extra tiles", () => {
     // Regression: a removed 'Tunnel Network' upgrade kept pre-digging bonus tiles from
-    // stale save data, so starts were ~10 tiles instead of 5. (CLAUDE.md §5)
+    // stale save data, so starts were ~10 tiles instead of 5. (PROJECT_GUIDE.md §5)
     const mods = { you: { ...NEUTRAL_MODS, royal: 5 }, ai: { ...NEUTRAL_MODS } };
     const s = createGame({ map: "small", species: { you: "fire", ai: "fire" }, mods });
     expect(ownedCount(s, "you")).toBe(5);

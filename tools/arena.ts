@@ -38,7 +38,7 @@ export function playGame(
   /*
    * ADJUDICATION IS THE TOOL'S JOB, NOT THE GAME'S.
    *
-   * The engine has no turn limit: a match ends when a queen falls (CLAUDE.md §4.8). Two
+   * The engine has no turn limit: a match ends when a queen falls (PROJECT_GUIDE.md §4.8). Two
    * AIs that neither crack a nest would therefore play forever, and a run of them would
    * measure nothing. So the harness stops at the map's expected length and awards the
    * result on tile count — exactly the rule the engine used to apply itself, which keeps

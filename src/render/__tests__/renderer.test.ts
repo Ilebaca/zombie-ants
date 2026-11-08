@@ -9,7 +9,7 @@
  * What is asserted is the CONTRACT, not the picture: that it never writes to the game
  * state, that a zero-sized container cannot pin the board at nothing, that stopping really
  * stops, and that the finale washes from the winner's own nest. Every one of those is a bug
- * this project has already paid for once (CLAUDE.md §5).
+ * this project has already paid for once (PROJECT_GUIDE.md §5).
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { blankGame, put } from "../../engine/__tests__/helpers";
@@ -284,4 +284,18 @@ describe("hit testing", () => {
     expect(r.hit(mid, r.layout.oy + r.layout.ts * 0.5)).toEqual({ c: 1, r: 0 });
     expect(r.hit(-50, -50), "a press outside the grid found a cell").toBeNull();
   });
+});
+
+it("uses the new identities and palette after resetting the renderer", () => {
+  const { r, rec } = make();
+  const next = createGame({ map: "small", species: { you: "army", ai: "bullet" }, seed: 8 });
+  r.reset(next, {
+    species: { ...next.species },
+    plates: { you: { name: "New colony", colony: 4321 } },
+    colonySize: (n) => `troops:${n}`,
+  });
+  drawOneFrame(r);
+  expect(rec.texts()).toContain("New colony");
+  expect(rec.texts()).toContain("troops:4321");
+  expect(document.documentElement.style.getPropertyValue("--you")).toBe("#7d5733");
 });

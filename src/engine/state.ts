@@ -38,7 +38,7 @@ export interface NewGameOptions {
 /**
  * WHO MOVES FIRST, DRAWN FROM THE SEED.
  *
- * Moving first is worth roughly two to one (CLAUDE.md §8), and for the whole life of this
+ * Moving first is worth roughly two to one (PROJECT_GUIDE.md §8), and for the whole life of this
  * game the player has had it in every single match. Against a bot that is merely a habit;
  * between two people it is the match decided before either of them touches the board, so
  * it has to be a coin.
@@ -57,7 +57,7 @@ export function startsFirst(seed: number): Player {
   return seeded(seed ^ 0x5f356495)() < 0.5 ? "you" : "ai";
 }
 
-/** The 12 starting formations. Every one is exactly five tiles (CLAUDE.md §5). */
+/** The 12 starting formations. Every one is exactly five tiles (PROJECT_GUIDE.md §5). */
 export const START_SHAPES = {
   wedge:  [[0, 0], [1, 0], [0, 1], [1, 1], [2, 0]],
   line:   [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]],
@@ -124,7 +124,7 @@ export function createGame(opts: NewGameOptions): GameState {
  * board's creation, from the seeded generator. Rolling it per cast would make the same
  * ability return at a different speed each time, which reads as a bug rather than as
  * luck — and rolling it outside the engine would put a real random number into a game
- * that has to replay identically from its seed (CLAUDE.md §4.1).
+ * that has to replay identically from its seed (PROJECT_GUIDE.md §4.1).
  *
  * The stream is ALWAYS advanced, whether or not there is a chance to roll: a colony with
  * no cooldown traits must not shift every later scatter draw by having skipped a number.
@@ -136,7 +136,7 @@ function rollBoon(state: GameState, chance: number): number {
 
 /**
  * Cells both colonies will start on. Terrain generation must leave these alone, or a
- * rock can swallow a starting tile and a colony begins a tile short (CLAUDE.md §5).
+ * rock can swallow a starting tile and a colony begins a tile short (PROJECT_GUIDE.md §5).
  */
 function reservedCells(
   size: number,
@@ -215,7 +215,7 @@ function buildMap(state: GameState, reserved: Set<string>): void {
 
 /**
  * Place a colony's five starting tiles: a nest plus four stables.
- * ALWAYS exactly five — no upgrade may add more (CLAUDE.md §5), so the cells are forced to
+ * ALWAYS exactly five — no upgrade may add more (PROJECT_GUIDE.md §5), so the cells are forced to
  * open ground rather than skipped when terrain got there first.
  */
 function placeStart(
@@ -257,7 +257,7 @@ export function startTurn(state: GameState, mods: Record<Player, PlayerMods>): E
   // Effects break structure — venom eats a trail, fire wipes a tile — so the colony has to
   // be re-examined before anything else in the turn reads it. Trails that lost an anchor
   // prune, then supply lines are rebuilt, so a colony severed by the barrage goes inactive
-  // in the same tick it was cut rather than on the next action (CLAUDE.md §4.2).
+  // in the same tick it was cut rather than on the next action (PROJECT_GUIDE.md §4.2).
   pruneAllVeins(state, events);
   recomputeConnectivity(state);
   if (state.cooldown[p] > 0) state.cooldown[p]--;
@@ -287,7 +287,7 @@ export function endTurn(state: GameState, mods: Record<Player, PlayerMods>): Eng
   if (state.current === "you") state.turn++;
 
   /*
-   * NO TURN LIMIT (CLAUDE.md §4.8).
+   * NO TURN LIMIT (PROJECT_GUIDE.md §4.8).
    *
    * The clock used to run out and hand the match to whoever held more ground. That decided
    * games nobody had won — a player ahead on territory could simply stop playing, and one

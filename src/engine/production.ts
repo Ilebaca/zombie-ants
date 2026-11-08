@@ -19,7 +19,7 @@ function tileOutput(t: Tile, mods: PlayerMods): number {
 
 /**
  * Income shown in the HUD. Detached tiles contribute nothing — being cut off from the
- * queen is the real cost of overextending (CLAUDE.md §4.2).
+ * queen is the real cost of overextending (PROJECT_GUIDE.md §4.2).
  */
 export function incomeOf(state: GameState, p: Player, mods: PlayerMods): number {
   let income = 0;

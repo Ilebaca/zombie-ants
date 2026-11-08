@@ -2,7 +2,7 @@
  * THE WIRE FORMAT: what one player did, and how a whole match is rebuilt from a list of it.
  *
  * This file exists because of one property the engine already has and must keep: it is
- * PURE and SEEDED (CLAUDE.md §4.1). The same opening plus the same moves always produces
+ * PURE and SEEDED (PROJECT_GUIDE.md §4.1). The same opening plus the same moves always produces
  * the same board, on any machine. That is what makes async multiplayer cheap here —
  * nothing has to send a board. Only MOVES cross the wire, and either end can rebuild the
  * position from them.
@@ -22,7 +22,7 @@
  */
 import { activateAbility } from "./abilities";
 import {
-  actionTargets, canActFrom, defaultContext, moveOrAttack, rally, rallyTargets, travel,
+  actionTargets, canActFrom, moveOrAttack, rally, rallyTargets, travel,
   travelTargets,
 } from "./actions";
 import type { ActionContext } from "./actions";
@@ -114,7 +114,7 @@ export function applyMove(
   player: Player,
   move: Move,
   mods: Record<Player, PlayerMods> = { you: NEUTRAL_MODS, ai: NEUTRAL_MODS },
-  ctx: ActionContext = defaultContext(),
+  ctx: ActionContext = { mods },
 ): MoveResult {
   if (state.over) return { ok: false, why: "match-over" };
   if (state.current !== player) return { ok: false, why: "not-your-turn" };
@@ -129,7 +129,7 @@ export function applyMove(
 
   if (move.do === "ability") {
     // An ability that had no legal target returns no events and must NOT spend the
-    // cooldown (CLAUDE.md §5), so "nothing happened" is the honest answer rather than a
+    // cooldown (PROJECT_GUIDE.md §5), so "nothing happened" is the honest answer rather than a
     // success with an empty list.
     const events = activateAbility(state, player, mods[player], move.at ? { target: move.at } : {});
     return done(events);

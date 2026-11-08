@@ -345,7 +345,7 @@ describe("the hive handing its tiles back", () => {
  *
  * `invariants.test.ts` has played whole games and checked these same rules for months and
  * never once caught a vein fault — because it plays `easy`, and easy generates NO TRAVEL
- * (CLAUDE.md §4a). Travel is the only thing in this game that lays a vein, so the audit
+ * (PROJECT_GUIDE.md §4a). Travel is the only thing in this game that lays a vein, so the audit
  * with the most vein rules in it was running on boards that had almost none. `normal` is
  * the cheapest difficulty that travels.
  *

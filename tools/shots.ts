@@ -19,7 +19,7 @@
  *
  * TOOL, NOT BUILD STEP: excluded from the typecheck and the lint for the same reason
  * `tools/icons.ts` and `tools/mapshot.ts` are — it imports Playwright, which is
- * deliberately not a dependency of this project (CLAUDE.md §11).
+ * deliberately not a dependency of this project (PROJECT_GUIDE.md §11).
  */
 import { chromium } from "playwright-core";
 import type { Browser, Page } from "playwright-core";

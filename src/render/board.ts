@@ -8,6 +8,7 @@
 import { allTiles, hiveCells, isConnected, tile } from "../engine";
 import type { Coord, GameState, Player, Tile } from "../engine";
 import type { Layout } from "./layout";
+import { canvasFont } from "./typography";
 import type { RevealTracker, RevealEdge } from "./reveal";
 import type { Look } from "./art";
 import { nestArt } from "./art";
@@ -248,7 +249,7 @@ function countBadge(scene: Scene, o: BadgeOptions): void {
   const scale = o.scale ?? 1;
   const ph = ts * 0.42 * scale;
 
-  ctx.font = `900 ${Math.max(13, ts * 0.34 * scale)}px var(--font),sans-serif`;
+  ctx.font = canvasFont(Math.max(13, ts * 0.34 * scale));
   const mark = o.shield ? ph * 0.62 : 0;
   const gap = mark ? ts * 0.05 * scale : 0;
   const pw = Math.max(ph, ctx.measureText(o.text).width + mark + gap + ts * 0.24 * scale);
@@ -653,7 +654,7 @@ export function drawHiveTile(scene: Scene, t: Tile): void {
   // The finale takes every number off the board at once, the Hive's garrison included.
   if (t.owner === null && !scene.hideCounts) {
     const size = Math.max(10, ts * 0.22);
-    ctx.font = `900 ${size}px var(--font),sans-serif`;
+    ctx.font = canvasFont(size);
     ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     const label = String(t.soldiers);
     const w = ctx.measureText(label).width;

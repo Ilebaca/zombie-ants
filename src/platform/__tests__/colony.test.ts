@@ -52,7 +52,7 @@ describe("colony growth", () => {
   /**
    * THE PUBLISHED FIGURES ARE HELD HERE, because nothing held them and they went stale.
    *
-   * CLAUDE.md §8 and the GDD both print this curve, and §8a printed a DIFFERENT one — 13 /
+   * PROJECT_GUIDE.md §8 and the GDD both print this curve, and §8a printed a DIFFERENT one — 13 /
    * 9 / 5 / 3 against a real 20 / 7 / 2.5 / 1 — for as long as the taper has existed. The
    * shape test above passes either way: it only asks that the share falls. A reader has no
    * way to tell a number that was measured from one that was guessed, so the day the taper

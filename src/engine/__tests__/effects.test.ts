@@ -10,7 +10,7 @@ const mods = { ...NEUTRAL_MODS };
 describe("effects", () => {
   it("venom that severs a colony deactivates the far side immediately", () => {
     // Regression: connectivity was not recomputed after effects, so cut-off units
-    // stayed active for a turn. (CLAUDE.md §4.2)
+    // stayed active for a turn. (PROJECT_GUIDE.md §4.2)
     const s = blankGame();
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     put(s, 2, 1, { owner: "you", struct: "stable", soldiers: 4 });   // connector, will die
@@ -202,7 +202,7 @@ describe("wildfire and the hive", () => {
  *
  * A barrage that only ever hurt the enemy colony was a barrage the wild guards and the
  * sleeping queen sat out — and a rounding rule that could never take the last soldier left
- * them at 1 forever, which is not a floor anyone designed (CLAUDE.md §4.9 is about what you
+ * them at 1 forever, which is not a floor anyone designed (PROJECT_GUIDE.md §4.9 is about what you
  * may SPEND, not about what can be killed).
  */
 describe("venom lands on whatever it was scattered over", () => {

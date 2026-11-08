@@ -25,7 +25,7 @@ const setup: MatchSetup = {
  *
  * Random legal play rather than good play: what is being tested is that a record
  * reproduces whatever happened, not that anybody played well. Passing would never do —
- * there is no turn limit in this game (CLAUDE.md §4.8), so two players handing the turn
+ * there is no turn limit in this game (PROJECT_GUIDE.md §4.8), so two players handing the turn
  * back and forth go on for ever and the match never ends.
  */
 function playedOut(): { moves: Move[]; winner: "you" | "ai" } {

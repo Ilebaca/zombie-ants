@@ -2,7 +2,7 @@
  * The rules as the design document states them (docs/GDD.html).
  *
  * Combat, the defender-bonus table and the special resolutions are what a player counts out
- * before committing (CLAUDE.md §4.1), so each row of those tables gets an assertion. Where
+ * before committing (PROJECT_GUIDE.md §4.1), so each row of those tables gets an assertion. Where
  * the GDD summarises and the legacy build is more specific, the legacy build wins — it is
  * the behavioural source of truth, and the wild-garrison bonus is exactly such a case.
  */
@@ -138,7 +138,7 @@ describe("long sends", () => {
 });
 
 /**
- * THE MATCH ENDS WHEN A QUEEN FALLS, AND ONLY THEN (CLAUDE.md §4.8).
+ * THE MATCH ENDS WHEN A QUEEN FALLS, AND ONLY THEN (PROJECT_GUIDE.md §4.8).
  *
  * The clock used to run out and award the match to whoever held more ground. That decided
  * games nobody had won: a player ahead on territory could simply stop playing, and one

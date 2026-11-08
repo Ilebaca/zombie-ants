@@ -198,7 +198,7 @@ export class MatchScreen {
    * match is decided, latched there so a card that sits on screen does not keep counting.
    *
    * It lives here rather than in the engine, and it has to: the engine is pure and seeded,
-   * so the same moves must replay identically (CLAUDE.md §4.1) — and a real clock is the
+   * so the same moves must replay identically (PROJECT_GUIDE.md §4.1) — and a real clock is the
    * one input that never does. Nothing about the game reads it; it is a fact ABOUT the
    * match, reported when it is over.
    *
@@ -278,7 +278,7 @@ export class MatchScreen {
      * They were emoji — a crossed sword, a flag, a sparkle, a skip glyph and a white flag,
      * five pictures from five illustrators rendered differently on every platform. This is
      * the screen a player spends the whole game on, and it was the loudest remaining
-     * "unconsidered" signal in the app (CLAUDE.md §10). The markup names a mark and the
+     * "unconsidered" signal in the app (PROJECT_GUIDE.md §10). The markup names a mark and the
      * shell fills it in, because the shell is one HTML string and an SVG cannot be one.
      */
     for (const slot of Array.from(this.root.querySelectorAll<HTMLElement>(".ic[data-ic]"))) {

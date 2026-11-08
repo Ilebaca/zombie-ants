@@ -7,7 +7,7 @@
  * thing in the game, landing right as the player's move finished filling in.
  *
  * Nothing about the search had to change to move it here. The engine is pure and seeded
- * (CLAUDE.md §3/§4.1), so a copy of the state searched in a worker reaches exactly the same
+ * (PROJECT_GUIDE.md §3/§4.1), so a copy of the state searched in a worker reaches exactly the same
  * answer as the original would have, and the mutated copy comes back to be adopted whole.
  */
 /// <reference lib="webworker" />

@@ -9,7 +9,7 @@
  *
  * The picture is DOM, not canvas, for two reasons. Each chamber is a real button, so it
  * takes a tap and a focus ring without any hit-testing of our own; and the whole screen can
- * be driven and asserted on in a jsdom test (CLAUDE.md §11), which a canvas cannot.
+ * be driven and asserted on in a jsdom test (PROJECT_GUIDE.md §11), which a canvas cannot.
  *
  * Chambers are the account-wide half of progression — they apply to whatever species is
  * fielded. The screen only ever *asks* ProfileStore to spend; it never touches the numbers

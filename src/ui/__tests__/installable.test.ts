@@ -89,7 +89,7 @@ describe("the web app manifest", () => {
     }
   });
 
-  /** The game is portrait-only (CLAUDE.md), so an installed one must open that way. */
+  /** The game is portrait-only (PROJECT_GUIDE.md), so an installed one must open that way. */
   it("locks to portrait, like the shade in index.html does", () => {
     expect(manifest().orientation).toBe("portrait");
   });

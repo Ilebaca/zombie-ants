@@ -333,7 +333,7 @@ export function rollShape(rng: () => number = Math.random): ShapeId {
 /**
  * The AI fields a species different from yours, weighted toward combat power so it stays a
  * consistent threat — but every non-premium species can still turn up. Setup-time only:
- * the engine itself stays free of randomness (CLAUDE.md §4.1).
+ * the engine itself stays free of randomness (PROJECT_GUIDE.md §4.1).
  */
 export function rollAISpecies(yours: SpeciesId, rng: () => number = Math.random): SpeciesId {
   const pool = (Object.keys(SPECIES) as SpeciesId[])

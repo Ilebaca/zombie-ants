@@ -5,7 +5,7 @@
  * nothing and were removed. This is what goes behind them.
  *
  * THE SOUND IS SYNTHESISED, NOT SHIPPED. There is no asset pipeline in this project and no
- * image file either — every picture is drawn by the code that owns it (CLAUDE.md: the
+ * image file either — every picture is drawn by the code that owns it (PROJECT_GUIDE.md: the
  * pickers show the game, the manual's figures, the news heroes). A sound file has the same
  * problems and two more: it is a download before the first tap, and it is a decode on a
  * phone. Each cue here is a few oscillators and an envelope, which is a couple of hundred
@@ -40,7 +40,7 @@ export type Cue =
   | "claim"      // a reward collected: quest, road, granary, gift
   | "deny"       // a tap the game refused
   // THE HATCH IS THREE CUES, NOT ONE, and that is the point of it. The whole feature is a
-  // moment (CLAUDE.md — the lucky hatch): the egg gives way, and then the TIER arrives
+  // moment (PROJECT_GUIDE.md — the lucky hatch): the egg gives way, and then the TIER arrives
   // before the trait is named. The colour says it and so should the sound — a mythic that
   // sounds like a common is the feature failing at the one moment it exists for.
   | "hatch"      // the shell giving way, under the rocking
@@ -386,7 +386,7 @@ const TICK_MS = 60;
 /**
  * A small seeded generator.
  *
- * Seeded rather than `Math.random` for the same reason the scenery is (CLAUDE.md §5): a
+ * Seeded rather than `Math.random` for the same reason the scenery is (PROJECT_GUIDE.md §5): a
  * test can pin it, and a bed that is reproducible can be debugged. Reseeded per bed, so two
  * sessions do not open on the same phrase.
  */

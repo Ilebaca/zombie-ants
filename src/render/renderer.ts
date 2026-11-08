@@ -3,7 +3,7 @@
  *
  * It reads GameState to draw and consumes EngineEvent[] to animate. It never calls into
  * the engine's action functions and never mutates game state — the one-way dependency in
- * CLAUDE.md §3 is enforced by this file having no writes to `state`.
+ * PROJECT_GUIDE.md §3 is enforced by this file having no writes to `state`.
  */
 import { allTiles, nestTile } from "../engine";
 import type { Coord, EngineEvent, GameState, Player, SpeciesId, Tile } from "../engine";
@@ -104,6 +104,7 @@ export class BoardRenderer {
   /** Point the renderer at a new match without rebuilding the canvas. */
   reset(state: GameState, opts: RendererOptions): void {
     this.state = state;
+    this.opts = opts;
     this.layout.size = state.size;
     this.looks = looksOf(opts);
     this.paint();

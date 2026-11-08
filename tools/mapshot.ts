@@ -16,7 +16,7 @@
  *
  * It is a TOOL, not a build step, and it is EXCLUDED from the typecheck and the lint for
  * the same reason `tools/icons.ts` is: it imports Playwright, which is deliberately not a
- * dependency of this project (CLAUDE.md §11).
+ * dependency of this project (PROJECT_GUIDE.md §11).
  *
  * It drives a real Vite dev server and a real browser rather than reimplementing any of
  * the drawing, so the export cannot drift from the board: `tools/mapshot/main.ts` imports

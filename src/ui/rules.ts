@@ -391,7 +391,7 @@ function spans(into: HTMLElement, parts: Span[]): HTMLElement {
  * One picture, drawn by the board's own code from a real position.
  *
  * jsdom has no 2D context, so `drawSnapshot` returns false and the figure keeps only its
- * caption — the screen has to survive a canvas it cannot draw into (CLAUDE.md §6).
+ * caption — the screen has to survive a canvas it cannot draw into (PROJECT_GUIDE.md §6).
  */
 function figure(f: Figure): HTMLElement {
   const box = el("figure", "ru-fig");

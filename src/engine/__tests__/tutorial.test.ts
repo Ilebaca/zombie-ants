@@ -4,7 +4,7 @@
  * The walkthrough asks for five specific things — a move, a long send, a rally, an attack
  * and the queen — each on its own turn with the enemy replying in between. A step that asks
  * for something the board cannot deliver leaves the tutorial stuck with nothing but Skip.
- * Combat is deterministic (CLAUDE.md §4.1), so this is not a matter of odds: either the
+ * Combat is deterministic (PROJECT_GUIDE.md §4.1), so this is not a matter of odds: either the
  * arrangement makes every lesson available for every colony, or it does not.
  *
  * This plays the whole thing in the order the tour plays it, taking the same tiles the

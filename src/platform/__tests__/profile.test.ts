@@ -53,7 +53,7 @@ describe("profile persistence", () => {
 });
 
 describe("mods", () => {
-  /** CLAUDE.md §4.8: the AI gets no anthill and no research, ever. */
+  /** PROJECT_GUIDE.md §4.8: the AI gets no anthill and no research, ever. */
   it("never gives the AI modifiers", () => {
     const s = store();
     s.update((p) => {
@@ -234,7 +234,7 @@ describe("a brand-new profile", () => {
 /**
  * A SAVE FROM THE BUILD THAT HAD THE WEAVER ANT.
  *
- * A colony was removed from the game (CLAUDE.md, EIGHT COLONIES) and no migration was
+ * A colony was removed from the game (PROJECT_GUIDE.md, EIGHT COLONIES) and no migration was
  * written for it, on the argument that `normalise` is the trust boundary and already
  * drops anything it cannot name. That is a claim about somebody's save, so it is held
  * here rather than asserted in a comment: a player who had bought the Weaver, was

@@ -90,7 +90,7 @@ describe("buying chambers and research", () => {
    * It charged mycelium for months, so mycelium bought the chambers, the colonies, the
    * granary and all twenty-seven research tracks while pheromone bought nothing whatever:
    * a currency in the top bar of every screen that was a number going up. The tour says
-   * "spend pheromone on research", CLAUDE.md §12 gives the two currencies this split, and
+   * "spend pheromone on research", PROJECT_GUIDE.md §12 gives the two currencies this split, and
    * the economy model has always measured the research tree as the PHEROMONE sink.
    */
   it("pays for research in pheromone, which is the only thing pheromone buys", () => {
@@ -120,7 +120,7 @@ describe("buying chambers and research", () => {
     for (let l = 0; l < RESEARCH_MAX; l++) expect(s.buyResearch("fire", "mandible")).toBe(true);
     expect(s.buyResearch("fire", "mandible")).toBe(false);
     expect(s.modsFor("fire").you.mandible).toBe(RESEARCH_MAX);
-    // The AI never sees a point of it (CLAUDE.md §4.8).
+    // The AI never sees a point of it (PROJECT_GUIDE.md §4.8).
     expect(s.modsFor("fire").ai.mandible).toBe(0);
   });
 });
@@ -349,4 +349,16 @@ describe("claiming colony road rewards", () => {
     first.claimRoad(roadKey("free", RUNG));
     expect(new ProfileStore(kv).get().roadClaimed).toContain(roadKey("free", RUNG));
   });
+});
+
+it("rejects alternate spellings of road checkpoints so they cannot pay twice", () => {
+  const profile = rich();
+  profile.update((p) => { p.colony = ROAD_LAST; p.pass = true; });
+  expect(profile.claimRoad("f1")).toBe(true);
+  const balance = profile.get().mycel;
+  for (const key of ["f01", "f1.0", "f1e0", "f+1", "f 1", "f1.5", "p01", "p1.5"]) {
+    expect(rewardFor(key)).toBeNull();
+    expect(profile.claimRoad(key)).toBe(false);
+  }
+  expect(profile.get().mycel).toBe(balance);
 });

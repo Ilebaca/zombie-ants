@@ -9,7 +9,7 @@
  *
  * IT USED TO RENDER THE GAME'S OWN `antHead` through this same browser, so the icon could
  * not drift from the drawing on the board. It is a PAINTING now, like the regions and the
- * home artwork (CLAUDE.md), and the argument reverses: a mark somebody painted cannot be
+ * home artwork (PROJECT_GUIDE.md), and the argument reverses: a mark somebody painted cannot be
  * derived from anything, so the SOURCE is committed beside the output and this tool only
  * cuts it to size. There is still exactly one icon, in one place, and no second drawing.
  *
@@ -19,7 +19,7 @@
  *     npx tsx tools/icons.ts
  *
  * It is EXCLUDED from the typecheck and the lint, because it imports Playwright — which is
- * deliberately not a dependency of this project (CLAUDE.md §11: install it in a scratch
+ * deliberately not a dependency of this project (PROJECT_GUIDE.md §11: install it in a scratch
  * directory and point it at the preinstalled Chromium rather than adding tooling Milan
  * would have to run). Every browser drive in this repo works the same way.
  */

@@ -15,7 +15,7 @@
  *     safe — but "we don't use innerHTML" is a habit, and a habit is exactly the thing that
  *     lapses. This holds the outcome instead of the habit.
  *  2. A SAVE IS A STRING THE PLAYER CAN REWRITE, and `normalise` is the trust boundary
- *     (CLAUDE.md §12). It cannot stop somebody giving themselves currency in their own
+ *     (PROJECT_GUIDE.md §12). It cannot stop somebody giving themselves currency in their own
  *     single-player game and does not try to; what it must do is stop a hand-edited save
  *     producing a `NaN` chamber level that silently distorts combat maths, or a shape that
  *     crashes a screen. The clamps are the point, not the ceiling.

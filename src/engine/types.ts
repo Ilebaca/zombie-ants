@@ -97,7 +97,7 @@ export interface GameState {
   conn: Record<Player, Set<string>>;
   limits: MapLimits;
   /**
-   * Seeded PRNG state. Only ability scatter reads it — never combat (CLAUDE.md §4.1).
+   * Seeded PRNG state. Only ability scatter reads it — never combat (PROJECT_GUIDE.md §4.1).
    * Snapshot/restored with the board so AI search cannot advance the real stream.
    */
   rng: number;
@@ -178,7 +178,7 @@ export interface PlayerMods {
    * The CHANCE, as a percentage, that this colony's ability comes back a turn sooner —
    * rolled once at the start of a match, for the whole match. Rolled in the engine off
    * the seeded generator rather than handed in already decided, so the same seed replays
-   * to the same match and a server can verify a result it never watched (CLAUDE.md §4.1).
+   * to the same match and a server can verify a result it never watched (PROJECT_GUIDE.md §4.1).
    */
   boonPct: number;
 }
@@ -219,7 +219,7 @@ export type EngineEvent =
       /**
        * Did the garrison land on ground it did not already hold? Two fleers can be pushed
        * onto the same tile, and one can be pushed onto a tile its colony already holds —
-       * re-filling those makes the colony look rebuilt from scratch (CLAUDE.md §5, travel).
+       * re-filling those makes the colony look rebuilt from scratch (PROJECT_GUIDE.md §5, travel).
        */
       claimed: boolean;
     }
@@ -246,7 +246,7 @@ export type EngineEvent =
  * what the objective was, only that the match is over.
  */
 /**
- * A match ends when a queen falls, and only then (CLAUDE.md §4.8). There is no turn
+ * A match ends when a queen falls, and only then (PROJECT_GUIDE.md §4.8). There is no turn
  * limit: running the clock out used to hand the win to whoever held more ground, which
  * decided matches nobody had won.
  */

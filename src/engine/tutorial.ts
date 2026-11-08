@@ -15,7 +15,7 @@
  * THE ENEMY TILE IS ON A HIVE GUARD ON PURPOSE. The queen's only neighbours are her four
  * guards, so there is no square she can be attacked from directly; a walkthrough that asks
  * for "attack the enemy, then take the queen" needs the enemy standing exactly there. A
- * captured hive tile becomes an ordinary stable (CLAUDE.md §5), so this is a board the game
+ * captured hive tile becomes an ordinary stable (PROJECT_GUIDE.md §5), so this is a board the game
  * produces by itself — it is simply set up already.
  */
 import { allTiles, isHiveTerrain, nestTile, neighbours, tileAt } from "./board";

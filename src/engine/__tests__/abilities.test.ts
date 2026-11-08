@@ -81,7 +81,7 @@ describe("a leaf wall stops a tunnel too", () => {
 
 describe("leaf (Leafcutter)", () => {
   /**
-   * CLAUDE.md §5: the cap is the TOTAL a player may ever hold, and each cast promotes at
+   * PROJECT_GUIDE.md §5: the cap is the TOTAL a player may ever hold, and each cast promotes at
    * most one new leaf. A per-cast reading let the board fill with permanent walls.
    */
   it("promotes at most one leaf per cast, up to a running total", () => {
@@ -136,7 +136,7 @@ describe("leaf (Leafcutter)", () => {
 
 describe("swarm (Army Ant)", () => {
   /**
-   * CLAUDE.md §5: targets are snapshotted at cast time. Resolving while mutating let a tile
+   * PROJECT_GUIDE.md §5: targets are snapshotted at cast time. Resolving while mutating let a tile
    * captured by the bite seed new targets, cascading across the whole map.
    */
   it("does not cascade through tiles it captures", () => {
@@ -259,7 +259,7 @@ describe("flee (Demon)", () => {
   });
 
   /**
-   * CLAUDE.md §5: flee relocates garrisons only, and must not break structure on its way
+   * PROJECT_GUIDE.md §5: flee relocates garrisons only, and must not break structure on its way
    * through. A trail anchored at both ends, far from the panic, is untouched by it.
    */
   it("leaves the enemy's trail structure intact", () => {
@@ -392,7 +392,7 @@ describe("flee (Demon)", () => {
     }
   });
 
-  /** A leaf wall stops everything (CLAUDE.md §4.3), and being pushed is no exception. */
+  /** A leaf wall stops everything (PROJECT_GUIDE.md §4.3), and being pushed is no exception. */
   it("will not be pushed through a leaf wall", () => {
     const s = withSpecies("demon");
     put(s, 1, 2, { owner: "you", struct: "nest", soldiers: 10 });
@@ -516,7 +516,7 @@ describe("cooldown and cost", () => {
     const army = withSpecies("army");
     // Feeding Swarm devours a garrison INTO a bordering tile of ours that is not a nest,
     // so a colony that is nothing but its nest has nowhere to put anything it eats and
-    // the cast finds no target at all. A mistimed tap must not burn six turns (CLAUDE.md §5).
+    // the cast finds no target at all. A mistimed tap must not burn six turns (PROJECT_GUIDE.md §5).
     put(army, 1, 3, { owner: "you", struct: "nest", soldiers: 10 });
     recomputeConnectivity(army);
     expect(activateAbility(army, "you", mods())).toHaveLength(0);
@@ -563,7 +563,7 @@ describe("determinism", () => {
     expect(run(1)).not.toBe(run(999));
   });
 
-  /** Simulation must not advance the real match's stream (CLAUDE.md §5). */
+  /** Simulation must not advance the real match's stream (PROJECT_GUIDE.md §5). */
   it("restores the generator with the board", () => {
     const s = blankGame("small", { you: "bullet", ai: "fire" });
     s.rng = 4242;

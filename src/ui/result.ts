@@ -20,7 +20,7 @@ import type { Challenge } from "./challenges";
 /** Everything the card reports. Assembled by the shell from what the match actually did. */
 export interface Recap {
   turns: number;
-  /** The match clock, in milliseconds — the SCREEN's, never the engine's (CLAUDE.md §8a). */
+  /** The match clock, in milliseconds — the SCREEN's, never the engine's (PROJECT_GUIDE.md §8a). */
   played: number;
   youArmy: number;
   species: SpeciesId;

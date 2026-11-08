@@ -21,7 +21,7 @@ export type { Action, Candidate } from "./moves";
  *
  * Because combat is fully deterministic, simulating the future is exact — the AI can play
  * a move, see the opponent's best reply, and undo it perfectly. The engine returns events
- * and never animates, so search needs no "am I simulating?" flag (CLAUDE.md §3).
+ * and never animates, so search needs no "am I simulating?" flag (PROJECT_GUIDE.md §3).
  *
  * The three difficulties are three DIFFERENT PLAYERS, not one player at three depths:
  * they see different amounts of the board, know different actions, and search to different
@@ -383,13 +383,13 @@ export function aiTurn(
 
   // An ability is a free extra action, so fire it first and still take a move afterwards —
   // unless it is one that spends the turn, and then the cast IS the move.
-  // The AI runs on NEUTRAL_MODS — it never gets research scaling (CLAUDE.md §4.8).
+  // The AI runs on NEUTRAL_MODS — it never gets research scaling (PROJECT_GUIDE.md §4.8).
   if (abilityReady(state, me) && shouldCast(state, me, ctx, profile)) {
     state.current = me;
     const cast = activateAbility(state, me, ctx.mods[me]);
     events.push(...cast);
     // Recorded only when it really fired: an ability that returned nothing did not happen
-    // (CLAUDE.md §5), and a replay of a cast that never occurred would diverge.
+    // (PROJECT_GUIDE.md §5), and a replay of a cast that never occurred would diverge.
     if (cast.length) into?.push({ do: "ability" });
     if (state.over) return events;
     if (cast.length && abilitySpendsTurn(abilityOf(state, me).kind)) return events;
@@ -427,7 +427,7 @@ function shouldCast(
   state.current = me;
   const cast = activateAbility(state, me, ctx.mods[me]);
   // An ability that returned no events did not fire and must not spend its cooldown
-  // (CLAUDE.md §5) — restoring puts the cooldown back too.
+  // (PROJECT_GUIDE.md §5) — restoring puts the cooldown back too.
   const after = cast.length && !state.over ? probe(state, me, ctx) : (state.over ? WIN : -Infinity);
   state.current = prev;
   restore(state, snap);

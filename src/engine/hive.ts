@@ -113,7 +113,7 @@ export function hiveTick(
 /**
  * The capturer holds all five hive tiles as STABLES for the surge.
  * They must be stables, not veins — as veins the pruner deleted them and they could not
- * be selected (CLAUDE.md §5).
+ * be selected (PROJECT_GUIDE.md §5).
  */
 export function captureQueen(state: GameState, p: Player, events: EngineEvent[] = []): EngineEvent[] {
   state.hive.phase = "buff";

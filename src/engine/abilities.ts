@@ -2,7 +2,7 @@
  * The eight species abilities.
  *
  * An ability is a free extra action: it does NOT consume the turn — except Tunnelling, which
- * does (`abilitySpendsTurn`, CLAUDE.md §4.10) — and it goes on cooldown only if it fired.
+ * does (`abilitySpendsTurn`, PROJECT_GUIDE.md §4.10) — and it goes on cooldown only if it fired.
  * Every one returns EngineEvent[] like any other action — the engine still never animates.
  *
  * Scatter effects use the seeded generator on GameState, never `Math.random()`, so search
@@ -53,7 +53,7 @@ const power = (mods: PlayerMods): number => 1 + 0.06 * abilityLevel(mods);
 const bonus = (mods: PlayerMods): number => Math.floor(abilityLevel(mods) / 3);
 
 /**
- * TOTAL permanent leaf walls this player may ever hold — not per cast (CLAUDE.md §5).
+ * TOTAL permanent leaf walls this player may ever hold — not per cast (PROJECT_GUIDE.md §5).
  * Leafcutter only, and only from Reservoir level 2 upward: 1/2/3.
  */
 function permanentLeafCap(state: GameState, p: Player, mods: PlayerMods): number {
@@ -223,7 +223,7 @@ function castBud(state: GameState, p: Player, mods: PlayerMods, events: EngineEv
  * Leafcutter — walls the border with leaves and armours the tiles behind them.
  *
  * At most ONE fresh leaf per cast becomes permanent, and only while the player's running
- * total is under their cap (CLAUDE.md §5). Permanent leaves may pair but never cluster 3+.
+ * total is under their cap (PROJECT_GUIDE.md §5). Permanent leaves may pair but never cluster 3+.
  */
 function castLeaf(state: GameState, p: Player, mods: PlayerMods, events: EngineEvent[]): boolean {
   const cap = permanentLeafCap(state, p, mods);
@@ -299,10 +299,10 @@ function castFire(state: GameState, p: Player, mods: PlayerMods, events: EngineE
  * It eats whatever is standing next to it, not only the enemy: a wild guard and the neutral
  * hive are meat as well, and an enemy VEIN is destroyed outright — it holds no garrison, so
  * a percentage of it is a percentage of nothing and the bite fell straight through the one
- * thing on the board that cannot defend itself (CLAUDE.md §4.4).
+ * thing on the board that cannot defend itself (PROJECT_GUIDE.md §4.4).
  *
  * Targets are snapshotted at cast time. Resolving while mutating let a tile captured by
- * the bite seed new targets, and the swarm cascaded across the whole map (CLAUDE.md §5).
+ * the bite seed new targets, and the swarm cascaded across the whole map (PROJECT_GUIDE.md §5).
  */
 function castSwarm(state: GameState, p: Player, mods: PlayerMods, events: EngineEvent[]): boolean {
   const enemy = otherPlayer(p);
@@ -319,7 +319,7 @@ function castSwarm(state: GameState, p: Player, mods: PlayerMods, events: Engine
 
   for (const { from, into } of targets) {
     const previous = from.owner;
-    // "Is this a hive tile?" nearly always means "is this the NEUTRAL hive?" (CLAUDE.md §5a).
+    // "Is this a hive tile?" nearly always means "is this the NEUTRAL hive?" (PROJECT_GUIDE.md §5a).
     const wildHive = !from.owner && isHiveTerrain(from);
     const had = garrisonOf(from);
     const bite = Math.max(1, Math.round(had * Math.min(0.50, SWARM_BITE * power(mods))));
@@ -332,7 +332,7 @@ function castSwarm(state: GameState, p: Player, mods: PlayerMods, events: Engine
     if (!hit.lost) continue;
 
     into.soldiers += hit.lost;                                       // devoured, not just killed
-    // TROOPS LANDING ON A VEIN PROMOTE IT (CLAUDE.md §4.6), and a swarm devouring INTO one
+    // TROOPS LANDING ON A VEIN PROMOTE IT (PROJECT_GUIDE.md §4.6), and a swarm devouring INTO one
     // is troops landing on it. Without this the colony grew a vein carrying a garrison —
     // a number on a tile the rules say holds none, which then ate the next bite as well
     // and climbed every cast. `promote` is the one function that owns the rule (§7).
@@ -360,7 +360,7 @@ function castSwarm(state: GameState, p: Player, mods: PlayerMods, events: Engine
 function castFortify(state: GameState, p: Player, mods: PlayerMods, events: EngineEvent[]): boolean {
   state.shield[p] = FORTIFY_TURNS + bonus(mods);
   for (const t of frontline(state, p)) {
-    if (t.struct !== "stable" && t.struct !== "nest") continue;    // never a vein (CLAUDE.md §4.5)
+    if (t.struct !== "stable" && t.struct !== "nest") continue;    // never a vein (PROJECT_GUIDE.md §4.5)
     const gained = Math.max(2, Math.round(t.soldiers * FORTIFY_GAIN * power(mods)));
     t.soldiers += gained;
     events.push({ type: "fortified", at: { c: t.c, r: t.r }, owner: p, gained });
@@ -398,7 +398,7 @@ function castVenom(state: GameState, p: Player, mods: PlayerMods, events: Engine
  * teleport rather than a rout.
  *
  * Flee relocates garrisons ONLY. It must never prune veins or break structure: doing so
- * destroyed trails and detached units (CLAUDE.md §5). Veins, tunnels, resources, nests and
+ * destroyed trails and detached units (PROJECT_GUIDE.md §5). Veins, tunnels, resources, nests and
  * hive tiles cannot be pushed.
  *
  * A CUT-OFF TILE CASTS NO FEAR. `mine` was every tile this colony owned, connected or not,
@@ -427,7 +427,7 @@ function castFlee(state: GameState, p: Player, mods: PlayerMods, events: EngineE
     // A wild garrison holds its ground: running onto one left the tile owned by the fleeing
     // colony with a neutral garrison still sitting on it, which is not a state that exists.
     if (t.guard > 0) return false;
-    // A leaf wall stops everything (CLAUDE.md §4.3), and being pushed is no exception.
+    // A leaf wall stops everything (PROJECT_GUIDE.md §4.3), and being pushed is no exception.
     if (blockedByEnemyLeaf(state, t, enemy)) return false;
     return true;
   };

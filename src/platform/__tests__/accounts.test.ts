@@ -180,3 +180,12 @@ describe("a save from before accounts existed", () => {
     expect(accounts.current()).toBe(null);
   });
 });
+
+it("signs in with the account id in either case", () => {
+  const accounts = new LocalAccounts(fresh());
+  const made = accounts.create("Ridgeback");
+  for (const id of [made.id, made.id.toUpperCase()]) {
+    accounts.signOut();
+    expect(accounts.signIn(` ${id} `)?.id).toBe(made.id);
+  }
+});

@@ -655,7 +655,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     busy = true;
     // The shell first, under the hold. Not the prize: nothing has been revealed yet, and
     // a sound that gave the answer away here would undo the only thing the hold is for
-    // (CLAUDE.md — the moment is the feature).
+    // (PROJECT_GUIDE.md — the moment is the feature).
     opts.feedback?.play("hatch");
     render();
     window.setTimeout(() => {

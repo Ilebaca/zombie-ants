@@ -7,7 +7,7 @@
  * against two rules, after every single action:
  *
  *  1. EVERY TILE THAT CHANGED HANDS WAS NAMED BY AN EVENT. The renderer draws from events
- *     and nothing else (CLAUDE.md §3), so a tile that changes owner with no event naming it
+ *     and nothing else (PROJECT_GUIDE.md §3), so a tile that changes owner with no event naming it
  *     changes on screen with no animation — which is what "it just happened" looks like.
  *  2. AN ACTION ONLY REACHES WHERE ITS KIND CAN. A move touches two ADJACENT tiles. A
  *     travel's path is orthogonal steps, no longer than the range, over ground that is

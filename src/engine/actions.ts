@@ -18,7 +18,7 @@ import { NEUTRAL_MODS } from "./types";
  * All player/AI actions. These are the ONLY functions that mutate the board.
  *
  * They return an EngineEvent[] describing what happened. The engine never calls into
- * rendering — that separation is what lets the AI simulate futures safely (CLAUDE.md §3).
+ * rendering — that separation is what lets the AI simulate futures safely (PROJECT_GUIDE.md §3).
  */
 
 export interface ActionContext {
@@ -29,7 +29,7 @@ export const defaultContext = (): ActionContext => ({
   mods: { you: { ...NEUTRAL_MODS }, ai: { ...NEUTRAL_MODS } },
 });
 
-/** Soldiers that must stay behind. A tile can never be emptied (CLAUDE.md §4.7). */
+/** Soldiers that must stay behind. A tile can never be emptied (PROJECT_GUIDE.md §4.7). */
 export const keepOn = (t: Tile): number => (t.tunnel ? KEEP_TUNNEL : KEEP_NORMAL);
 
 /** A tile can act if it is yours, connected, and has more than its floor. */
@@ -78,7 +78,7 @@ export function moveOrAttack(
 
   const dir = directionFromTo(src, dst);
 
-  // Reinforce our own tile. Troops landing on a vein promote it (CLAUDE.md §4.5).
+  // Reinforce our own tile. Troops landing on a vein promote it (PROJECT_GUIDE.md §4.5).
   if (dst.owner === attacker) {
     src.soldiers = keep;
     dst.soldiers += commit;
@@ -87,7 +87,7 @@ export function moveOrAttack(
     return finish(state, events);
   }
 
-  // Enemy vein: NO defence, captured instantly with no losses (CLAUDE.md §4.3).
+  // Enemy vein: NO defence, captured instantly with no losses (PROJECT_GUIDE.md §4.3).
   if (dst.owner && dst.owner !== attacker && dst.struct === "vein") {
     const previous = dst.owner;
     src.soldiers = keep;
@@ -153,7 +153,7 @@ export function moveOrAttack(
   }
 
   // Attacker won. Capture the "was this a nest?" flag BEFORE mutating — a past bug
-  // relabelled the tile first, so the win check never fired (CLAUDE.md §5).
+  // relabelled the tile first, so the win check never fired (PROJECT_GUIDE.md §5).
   const wasNest = dst.struct === "nest";
   const previous = dst.owner;
 
@@ -165,7 +165,7 @@ export function moveOrAttack(
     dst.owner = attacker;
     dst.soldiers = res.survivors;
     // Captured hive guards become held stables — making them veins let the pruner
-    // delete them, which turned a won fight into an apparent loss (CLAUDE.md §5).
+    // delete them, which turned a won fight into an apparent loss (PROJECT_GUIDE.md §5).
     dst.struct = wasNest ? "nest" : "stable";
     events.push({ type: "capture", at: to, owner: attacker, from: dir, previous });
   }
@@ -208,7 +208,7 @@ export function actionTargets(state: GameState, src: Tile): Coord[] {
 
 /**
  * Pull every spare soldier in the colony onto one tile.
- * Only captured tiles are valid targets — never a bare vein (CLAUDE.md §4.5).
+ * Only captured tiles are valid targets — never a bare vein (PROJECT_GUIDE.md §4.5).
  */
 export function rallyTargets(state: GameState, p: Player): Tile[] {
   return allTiles(state).filter(

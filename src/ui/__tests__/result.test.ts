@@ -61,7 +61,7 @@ describe("what happened", () => {
 });
 
 describe("what it paid", () => {
-  /** The colony leads: it is the number the whole match was played for (CLAUDE.md §8a). */
+  /** The colony leads: it is the number the whole match was played for (PROJECT_GUIDE.md §8a). */
   it("leads with the colony, and says what it is now", () => {
     const cells = Array.from(card(true).querySelectorAll("#overRewards .payout"));
     expect(cells[0]?.textContent).toContain(`+${compact(305)}`);

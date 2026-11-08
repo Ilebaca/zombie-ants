@@ -16,7 +16,7 @@
  * being printed in the top bar of every screen. See `ProfileStore.buyResearch`.)
  *
  * THE FIX CANNOT BE "MORE THINGS THAT CHANGE A MATCH". Every match-affecting number in
- * this game is capped on purpose (CLAUDE.md §8), because player progression must never
+ * this game is capped on purpose (PROJECT_GUIDE.md §8), because player progression must never
  * become mandatory and the AI gets none of it. Uncapping a chamber or a research track to
  * make a sink would buy an endless economy with the one rule the game is built on.
  *

@@ -106,7 +106,7 @@ export interface SnapshotOptions {
  * Draw `state` into `canvas`, sizing the canvas to fit the board exactly.
  *
  * Returns false when there is no 2D context — jsdom has none, and a screen must survive
- * that rather than throw (CLAUDE.md §6).
+ * that rather than throw (PROJECT_GUIDE.md §6).
  */
 export function drawSnapshot(
   canvas: HTMLCanvasElement, state: GameState, opts: SnapshotOptions = {},

@@ -3,7 +3,7 @@
  *
  * `invariants.test.ts` already plays games and checks the board after every action, and it
  * had never caught a vein fault — because it plays `easy`, and easy generates NO TRAVEL
- * (CLAUDE.md §4a). Travel is the only thing in the game that lays a vein, so the audit
+ * (PROJECT_GUIDE.md §4a). Travel is the only thing in the game that lays a vein, so the audit
  * with the most vein rules in it was running on boards that had almost none.
  *
  * This plays HARD, which plays the whole action set, and checks the three vein rules

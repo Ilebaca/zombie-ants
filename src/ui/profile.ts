@@ -16,7 +16,7 @@
  *     collecting later — cosmetics, trophies, a lucky hatch — is another row here.
  *
  * EVERY CLASS IS PREFIXED, and that is not tidiness. The legacy stylesheet is this app's,
- * verbatim (CLAUDE.md §10), and it already owns `.pname` — the name INPUT, a bordered text
+ * verbatim (PROJECT_GUIDE.md §10), and it already owns `.pname` — the name INPUT, a bordered text
  * field — so borrowing it drew a box round the player's name. `.qbar` has a height only
  * inside `.qhero`, so the XP bar came out as a track with none. Both were silent.
  *

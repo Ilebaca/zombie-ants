@@ -54,7 +54,14 @@ export class CapacitorStore implements KeyValueStore {
    *  the save-at-risk prompt: it never appears in the native build (persistence.ts). */
   readonly evictable = false;
 
+  private writes: Promise<void> = Promise.resolve();
+
   constructor(private prefs: Preferences, private data: Map<string, string>) {}
+
+  /** Preserve call order across the asynchronous native bridge, including failed writes. */
+  private enqueue(write: () => Promise<void>): void {
+    this.writes = this.writes.then(write).catch(() => {});
+  }
 
   get(key: string): string | null {
     return this.data.get(key) ?? null;
@@ -62,12 +69,12 @@ export class CapacitorStore implements KeyValueStore {
 
   set(key: string, value: string): void {
     this.data.set(key, value);
-    void this.prefs.set({ key, value }).catch(() => {});
+    this.enqueue(() => this.prefs.set({ key, value }));
   }
 
   remove(key: string): void {
     this.data.delete(key);
-    void this.prefs.remove({ key }).catch(() => {});
+    this.enqueue(() => this.prefs.remove({ key }));
   }
 }
 
