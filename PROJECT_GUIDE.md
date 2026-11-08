@@ -41,6 +41,11 @@ and should never have to ask for it or scroll back to find it. Say which build w
 visual; you are his hands for anything technical. So: run tests before claiming something
 works, and when a change is visual, say plainly that he needs to check it.
 
+**Typography and shadows:** Fonts never use outline strokes. The shared skin disables
+text stroke across the UI. Text shadows, when used, have zero blur and a sharp edge.
+CSS drop shadows use the same sharp edge; the road's subtle background glow is a
+separate decorative effect. Do not bring back soft text shadows or outlined lettering.
+
 ## 3. Architecture — the one rule that matters
 
 ```
@@ -1049,19 +1054,19 @@ Ten numbered sections now, with a picture beside the rules that need one.
   cave indigo, tundra ice blue, amber gold and fungal plum. No repeating ring pattern.
 - The premium half has only a sparse, static sprinkle of tiny gold light specks and a
   soft glow. No branching texture. Keep graphics bold, simple and consistent with the
-  game's cartoon icons; detailed painted dividers were rejected.
-  Road end padding, chapter, premium wash, divider and card classes bypass the flat-background blanket.
+  game's cartoon icons.
+  Road end padding, chapter, premium wash and card classes bypass the flat-background blanket.
 - One continuous central rail is dark ahead and gold behind the current colony. Circular
   checkpoint badges show rung numbers with compact troop thresholds underneath. The gold
   current-colony marker shares exactly the fill endpoint.
 - Progress is calculated in responsive row and divider units, including the extra distance
   between chapters. CSS owns their pixel sizes so the marker does not drift on phone widths.
-- Every chapter starts at an organic generated divider from ui/road-art, selected by
-  roadTheme(regionOf(chapter)). Each of ten transparent WebP strips uses simple chunky
-  shapes and outlines. Dark centers carry contrasting white chapter/area text.
-  Its center covers the exact background seam, with half the reserved divider gap in
-  each adjacent chapter. Prominent COLONY PASS / FREE REWARDS plaques sit above it.
-  Card frames themselves remain upright.
+- Every chapter starts at the same plain charcoal block with a light top edge and a
+  sharp dark ledge, centered on the exact background seam. The reserved divider gap
+  belongs half to each adjacent chapter. Prominent COLONY PASS / FREE REWARDS plaques
+  sit above it; chapter and area names are plain white. Themed divider images were
+  removed at Milan's request; backgrounds still follow area palettes in ui/road-theme.ts.
+  Card frames remain upright.
   Resource cards reuse the shop's largest-pack paintings (mycel.1500 / pher.900);
   their small quantity labels retain the ordinary currency mark.
 - There is no screen title, toolbar, fixed troop footer, season UI or purchase banner.

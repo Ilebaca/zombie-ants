@@ -1038,15 +1038,15 @@ describe("colony road screen", () => {
     expect(gates.at(-1)?.querySelector(".rd-gaten")?.textContent).toBe(regionName(1));
   });
 
-  it("gives all ten areas their own themed palette and generated divider", () => {
+  it("keeps area palettes behind the same plain chapter block", () => {
     const root = buildColonyRoad(store(), () => {}, () => {});
     const colors = new Map<number, string>();
     for (const [i, panel] of Array.from(root.querySelectorAll<HTMLElement>(".rd-chap")).entries()) {
       const region = regionOf(ROAD_CHAPTERS - i);
       const palette = ["--rd-area", "--rd-depth", "--rd-glow"].map((key) => panel.style.getPropertyValue(key)).join();
       expect(palette).not.toBe(",,");
-      const image = panel.querySelector<HTMLImageElement>(".rd-dividerart");
-      expect(image?.getAttribute("src")).toMatch(new RegExp(`area-${String(region).padStart(2, "0")}-`));
+      expect(panel.querySelector(".rd-breaker")).toBeTruthy();
+      expect(panel.querySelector(".rd-dividerart")).toBeNull();
       expect(panel.querySelector(".rd-premiumwash")).toBeTruthy();
       expect(panel.querySelector(".rd-trackname:not(.premium)")?.textContent).toBe("FREE REWARDS");
       if (colors.has(region)) expect(palette).toBe(colors.get(region));

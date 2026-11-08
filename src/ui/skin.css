@@ -144,7 +144,7 @@
 
    Colony Road uses flat area colors; its panels need no artwork exemption.
    ====================================================================== */
-*:not(#home):not(#luckyhatch):not(#splash):not(.rd-road):not(.rd-chap):not(.rd-premiumwash):not(.rd-breaker):not(.rd-card):not(.rd-cardface), *::before, *::after { background-image: none !important; }
+*:not(#home):not(#luckyhatch):not(#splash):not(.rd-road):not(.rd-chap):not(.rd-premiumwash):not(.rd-card):not(.rd-cardface), *::before, *::after { background-image: none !important; }
 
 /* Surfaces the legacy sheet fills with a gradient and this file does not
    otherwise dress. */
@@ -751,7 +751,7 @@ footer { background: var(--bg1); }
 .tb-you span { color: var(--you-glow); }
 .tb-ai span { color: var(--ai-glow); }
 .pubtag, .ac-chip.got { color: var(--hive-glow); }
-.card h1 .z, .hometitle .z { color: var(--hive-glow); text-shadow: 0 0 22px var(--hive); }
+.card h1 .z, .hometitle .z { color: var(--hive-glow); text-shadow: none; }
 .toast.warn { color: var(--gold-glow); }
 .mycelchip b, .curchip b, .tn-coin b, .lootchip b { color: var(--gold); }
 /* "What this buys you" — a light mint, which is what a dark ground wants. */
@@ -1047,7 +1047,7 @@ body,
   font-weight: 900;
   letter-spacing: 3.4px;
   color: var(--ink-soft);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, .8);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, .8);
 }
 /* One family, one size. `syncFabs` copies the daily button's measured box onto the menu
    button, so only the daily one is sized here. */
@@ -1778,7 +1778,15 @@ button:not(.playbtn):active,
 /* `!important` earns its place exactly twice in this file, and this is
    once: the legacy sheet and a handful of inline styles both set shadows,
    and "none, anywhere" cannot be said any other way. */
-*, *::before, *::after { text-shadow: none !important; }
+/* Text has no outline. Any local shadow override must have zero blur. */
+*, *::before, *::after {
+  text-shadow: none !important;
+  -webkit-text-stroke-width: 0 !important;
+}
+/* The structural sheet's legacy drop shadows also use a sharp edge. */
+.homelogo { filter: drop-shadow(0 4px 0 rgba(0, 0, 0, .65)); }
+.antport canvas { filter: drop-shadow(0 6px 0 rgba(0, 0, 0, .45)); }
+.hr-icon { filter: drop-shadow(0 4px 0 rgba(0, 0, 0, .5)); }
 *:not(.playbtn) { box-shadow: none !important; }
 
 .playbtn { box-shadow: 0 5px 0 var(--grass-edge) !important; }
@@ -6412,8 +6420,7 @@ button:not(.playbtn):active,
   font-weight: 400;
   white-space: nowrap;
   text-shadow: 0 calc(2 * var(--rd-u)) 0 #101037 !important;
-  -webkit-text-stroke: .5px #111238;
-  paint-order: stroke fill;
+
   pointer-events: none;
 }
 .rd-amount b { font: inherit; }
@@ -6454,7 +6461,6 @@ button:not(.playbtn):active,
   font-size: calc(11 * var(--rd-u));
   text-shadow: none !important;
 }
-.rd-prize.ready .rd-mark { filter: drop-shadow(0 0 9px #a8f4ff70); }
 .rd-prize.got .rd-mark { filter: saturate(.82); }
 .rd-prize:disabled { cursor: default; opacity: 1; }
 .rd-prize:focus-visible { outline: 3px solid #fff39a; outline-offset: 5px; }
@@ -6480,18 +6486,14 @@ button:not(.playbtn):active,
   position: absolute;
   inset-inline: 0;
   top: 50%;
-  height: calc(86 * var(--rd-u));
+  height: calc(70 * var(--rd-u));
   transform: translateY(-50%);
-  /* Opaque seam cover beneath transparent organic edges. */
-  background-image: linear-gradient(180deg, transparent 44%, var(--rd-depth) 44% 56%, transparent 56%);
+  border-top: calc(2 * var(--rd-u)) solid #656873;
+  border-bottom: calc(5 * var(--rd-u)) solid #0c1016;
+  border-radius: calc(8 * var(--rd-u));
+  background: #272a33;
+  box-shadow: 0 calc(3 * var(--rd-u)) 0 #080b10 !important;
   pointer-events: none;
-}
-.rd-dividerart {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
-  filter: drop-shadow(0 calc(3 * var(--rd-u)) calc(2 * var(--rd-u)) #0007);
 }
 .rd-gatek, .rd-gaten {
   position: relative;
@@ -6499,9 +6501,8 @@ button:not(.playbtn):active,
   color: #fff;
   font-weight: 400;
   line-height: 1.1;
-  text-shadow: 0 2px 2px #000, 0 0 5px #000 !important;
-  -webkit-text-stroke: .5px #161813;
-  paint-order: stroke fill;
+  text-shadow: none !important;
+
 }
 .rd-gatek {
   grid-column: 1;
@@ -6549,8 +6550,7 @@ button:not(.playbtn):active,
   font-size: calc(90 * var(--rd-u));
   line-height: 1;
   color: #fff4c2;
-  -webkit-text-stroke: calc(2 * var(--rd-u)) #5b2e83;
-  paint-order: stroke fill;
+
   text-shadow: 0 calc(5 * var(--rd-u)) 0 #34205b !important;
 }
 

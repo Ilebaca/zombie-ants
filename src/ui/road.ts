@@ -10,7 +10,7 @@ import type { ProfileStore, RoadReward, RoadStop, RoadTrack, TraitItem } from ".
 import { avatarFace, el, hudMark, redraw, screenEl } from "./chrome";
 import { icon } from "./icons";
 import { shelfArt } from "./shelf";
-import { roadTheme } from "./road-art";
+import { roadPalette } from "./road-theme";
 
 interface Payout { mark: string; amount: number; name: string }
 
@@ -49,8 +49,8 @@ export function buildColonyRoad(
 ): HTMLElement {
   const root = screenEl("achievements");
   root.setAttribute("aria-label", "Colony Road");
-  root.style.setProperty("--rd-foot", roadTheme(1).colors[1]);
-  root.style.setProperty("--rd-summit", roadTheme(regionOf(ROAD_CHAPTERS)).colors[1]);
+  root.style.setProperty("--rd-foot", roadPalette(1)[1]);
+  root.style.setProperty("--rd-summit", roadPalette(regionOf(ROAD_CHAPTERS))[1]);
   const stops = roadStops();
   let scrollTop: number | null = null;
   let took: RoadReward | null = null;
@@ -111,8 +111,7 @@ export function buildColonyRoad(
   const panel = (chapter: number, nextStop: number): HTMLElement => {
     const section = el("section", "rd-chap");
     const region = regionOf(chapter);
-    const theme = roadTheme(region);
-    const palette = theme.colors;
+    const palette = roadPalette(region);
     section.dataset.region = String(region);
     section.style.setProperty("--rd-area", palette[0]);
     section.style.setProperty("--rd-depth", palette[1]);
@@ -138,15 +137,6 @@ export function buildColonyRoad(
     divider.dataset.chapter = String(chapter);
     const ribbon = el("span", "rd-breaker");
     ribbon.setAttribute("aria-hidden", "true");
-    const theme = roadTheme(regionOf(chapter));
-    const art = el("img", "rd-dividerart") as HTMLImageElement;
-    art.src = theme.divider;
-    art.alt = "";
-    art.width = 1024;
-    art.height = 160;
-    art.loading = "lazy";
-    art.decoding = "async";
-    ribbon.appendChild(art);
     divider.appendChild(ribbon);
     divider.append(
       el("b", "rd-gatek", `Chapter ${chapter}`),

@@ -636,10 +636,10 @@ describe("the hatch button while it is hatching", () => {
 
 /** The road owns its gradients; the other screens keep the shared flat surfaces. */
 describe("the road reward tracks", () => {
-  it("allows chapter, divider and card gradients through the shared blanket", () => {
+  it("allows road and card gradients through the shared blanket", () => {
     const css = read("skin.css");
     const blanket = css.split("\n").find((line) => line.includes("background-image: none !important"));
-    for (const name of ["rd-road", "rd-chap", "rd-premiumwash", "rd-breaker", "rd-card", "rd-cardface"]) {
+    for (const name of ["rd-road", "rd-chap", "rd-premiumwash", "rd-card", "rd-cardface"]) {
       expect(blanket).toContain(`:not(.${name})`);
       expect(rulesFor(css, `.${name}`)).toMatch(/background-image:[^;]*(?:radial|linear)-gradient/);
     }
