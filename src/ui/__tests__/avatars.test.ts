@@ -317,19 +317,16 @@ describe("the road pays one a chapter", () => {
     s.update((p) => { p.colony = 2_000_000; });
     const root = buildColonyRoad(s, () => {}, () => {});
     document.body.replaceChildren(root);
-    const faces = root.querySelectorAll(".rd-prize.avprize");
-    expect(faces.length, "one avatar checkpoint per chapter").toBe(ROAD_AVATARS.length);
-    for (const disc of Array.from(faces)) {
-      expect(disc.querySelector(".rd-face"), "an avatar checkpoint with no face on it")
-        .toBeTruthy();
+    for (const track of ["free", "pass"]) {
+      const faces = root.querySelectorAll(`.rd-prize.${track}.avprize`);
+      expect(faces.length, "one existing avatar reward per chapter on each track")
+        .toBe(ROAD_AVATARS.length);
+      for (const card of Array.from(faces)) {
+        expect(card.querySelector(".rd-face"), "an avatar card with no face").toBeTruthy();
+      }
+      expect(Array.from(faces).map((card) => card.getAttribute("aria-label")).sort())
+        .toEqual(ROAD_AVATARS.map((id) => avatarName(id)).sort());
     }
-    // AND EACH ONE IS NAMED, like every other checkpoint says what it pays. "A new
-    // avatar" was the road declining to say WHICH, on the one reward with a name of its
-    // own. Compared against the fifty names the road really pays rather than against
-    // the SHAPE of a name — a label that merely looked like one would pass that. Sorted,
-    // because the screen's own order is the road's and is not this list's business.
-    expect(Array.from(faces).map((d) => d.getAttribute("aria-label")).sort())
-      .toEqual(ROAD_AVATARS.map((id) => avatarName(id)).sort());
   });
 
   /** And claiming it is what puts it in the collection. */

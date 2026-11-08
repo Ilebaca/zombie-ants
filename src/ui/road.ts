@@ -176,7 +176,7 @@ export function buildColonyRoad(
     const claimable = store.canClaimRoad(key);
     const needsPass = track === "pass" && !profile.pass;
     const state = claimed ? "got" : claimable ? "ready" : "locked";
-    const button = el("button", `rd-prize ${track === "free" ? "main free" : "pass"} ${state}`);
+    const button = el("button", `rd-prize ${track === "free" ? "main free" : "pass"} ${state}${reward.avatar ? " avprize" : ""}`);
     button.type = "button";
     button.dataset.stop = String(stop.index);
     button.dataset.track = track;

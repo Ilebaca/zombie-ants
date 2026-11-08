@@ -1285,17 +1285,15 @@ describe("legacy markup parity", () => {
     const root = buildColonyRoad(store(), () => {}, () => {});
     expect(root.id).toBe("achievements");
     expect(root.querySelector(".screenbody")?.id).toBe("achBody");
-    // The footer strip is still the legacy build's, dressed by its own rules.
-    for (const cls of ["roadhead", "roadhl", "roadt", "roadsub"]) {
+    for (const cls of ["rd-road", "rd-progress", "rd-player", "rd-back"]) {
       expect(landmarks(root), `.${cls} missing`).toContain(cls);
     }
-    for (const cls of ["road2", "roadchap", "roadchapter", "roadrow", "rcolL", "rcolC",
-      "rcolR", "rnode", "roadcell", "rc-rew", "rc-btn"]) {
+    for (const cls of ["roadhead", "roadhl", "roadsub", "road2", "roadchap", "roadchapter",
+      "roadrow", "rcolL", "rcolC", "rcolR", "rnode", "roadcell", "rc-rew", "rc-btn"]) {
       expect(landmarks(root), `.${cls} is back`).not.toContain(cls);
     }
-    // The header strip is rendered last, which is what puts it at the foot of the ladder.
-    const body = root.querySelector(".screenbody");
-    expect(body?.lastElementChild?.className).toBe("roadhead");
+    expect(root.querySelector(".screenbody")?.lastElementChild?.className).toBe("rd-road");
+    expect(root.lastElementChild?.classList.contains("rd-back")).toBe(true);
   });
 });
 
