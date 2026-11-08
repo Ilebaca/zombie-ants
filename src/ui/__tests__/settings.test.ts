@@ -118,14 +118,17 @@ describe("the settings screen", () => {
     expect(root.textContent).not.toMatch(/board/i);
   });
 
-  // Every row says what it affects. That is the whole difference between a screen and a
-  // list of labels, and it is the reason the rebuild happened.
-  it("says what each setting is for, not only what it is called", () => {
+  // Enemy AI deliberately shows only its title and current difficulty.
+  it("explains the other settings and keeps Enemy AI title-only", () => {
     const { root } = build();
     const rows = Array.from(root.querySelectorAll<HTMLElement>(".setrow2"));
     expect(rows.length).toBeGreaterThanOrEqual(5);
     for (const row of rows) {
       expect(row.querySelector(".setrow-t")?.textContent, "a row with no name").toBeTruthy();
+      if (row.id === "setDiffRow") {
+        expect(row.querySelector(".setrow-d")).toBeNull();
+        continue;
+      }
       const desc = row.querySelector(".setrow-d")?.textContent ?? "";
       expect(desc.length, `"${row.querySelector(".setrow-t")?.textContent}" explains nothing`)
         .toBeGreaterThan(20);
