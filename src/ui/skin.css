@@ -6185,6 +6185,13 @@ button:not(.playbtn):active,
   font-family: var(--font-display);
   font-weight: 400;
   --rd-u: var(--u);
+  --rd-accent: var(--hud-go);
+  --rd-accent-light: color-mix(in srgb, var(--hud-go) 62%, white);
+  --rd-accent-pale: color-mix(in srgb, var(--hud-go) 28%, white);
+  --rd-accent-edge: color-mix(in srgb, var(--hud-go) 64%, #173208);
+  --rd-accent-ink: #102900;
+  --rd-accent-shadow: #183807;
+  --rd-accent-glow: color-mix(in srgb, var(--hud-go) 42%, transparent);
   --rd-row: calc(212 * var(--rd-u));
   --rd-gate: calc(130 * var(--rd-u));
   --rd-spine: calc(56 * var(--rd-u));
@@ -6259,9 +6266,9 @@ button:not(.playbtn):active,
   width: calc(14 * var(--rd-u));
   height: var(--rd-current);
   transform: translateX(-50%);
-  border-left: calc(3 * var(--rd-u)) solid #ffeb7b;
-  border-right: calc(2 * var(--rd-u)) solid #dc8b14;
-  background: #ffc834;
+  border-left: calc(3 * var(--rd-u)) solid var(--rd-accent-pale);
+  border-right: calc(2 * var(--rd-u)) solid var(--rd-accent-edge);
+  background: var(--rd-accent);
 }
 .rd-chap {
   position: relative;
@@ -6281,10 +6288,10 @@ button:not(.playbtn):active,
   width: calc(var(--rd-speck) * var(--rd-u));
   height: calc(var(--rd-speck) * var(--rd-u));
   border-radius: 50%;
-  background: #fff1b2;
+  background: var(--rd-accent-pale);
   opacity: .85;
   /* Emitted light, confined to the pass half; never a shadow on text. */
-  box-shadow: 0 0 calc(5 * var(--rd-u)) calc(2 * var(--rd-u)) #ffdf7666 !important;
+  box-shadow: 0 0 calc(5 * var(--rd-u)) calc(2 * var(--rd-u)) var(--rd-accent-glow) !important;
 }
 .rd-path { position: relative; max-width: 680px; margin-inline: auto; }
 .rd-stop {
@@ -6329,13 +6336,13 @@ button:not(.playbtn):active,
   white-space: nowrap;
 }
 .rd-stop.reached .rd-level {
-  border-color: #ffdf58;
-  background: #ffca32;
-  color: #241339;
+  border-color: var(--rd-accent-light);
+  background: var(--rd-accent);
+  color: var(--rd-accent-ink);
   text-shadow: none !important;
 }
-.rd-stop.reached .rd-at, .rd-stop.next .rd-at { color: #ffe174; }
-.rd-stop.next .rd-level { border-color: #d4c5ff; }
+.rd-stop.reached .rd-at, .rd-stop.next .rd-at { color: var(--rd-accent-light); }
+.rd-stop.next .rd-level { border-color: var(--rd-accent-pale); }
 .rd-prize {
   position: relative;
   grid-row: 1;
@@ -6465,15 +6472,15 @@ button:not(.playbtn):active,
   transform: translateX(-50%);
   min-width: calc(74 * var(--rd-u));
   padding: calc(4 * var(--rd-u)) calc(9 * var(--rd-u));
-  background: #ffda36;
-  color: #1b1734;
+  background: var(--rd-accent);
+  color: var(--rd-accent-ink);
   border-radius: calc(2 * var(--rd-u));
   font-size: calc(11 * var(--rd-u));
   text-shadow: none !important;
 }
 .rd-prize.got .rd-mark { filter: saturate(.82); }
 .rd-prize:disabled { cursor: default; opacity: 1; }
-.rd-prize:focus-visible { outline: 3px solid #fff39a; outline-offset: 5px; }
+.rd-prize:focus-visible { outline: 3px solid var(--rd-accent-pale); outline-offset: 5px; }
 .rd-prize:active:not(:disabled) { transform: translateY(2px); }
 .rd-stop.big .rd-card { filter: brightness(1.14); }
 .rd-stop.grand .rd-card { filter: brightness(1.3); }
@@ -6565,9 +6572,9 @@ button:not(.playbtn):active,
 }
 .rd-trackname.premium {
   grid-column: 1;
-  background: #41351bf0;
-  color: #ffe28a;
-  border-bottom: calc(2 * var(--rd-u)) solid #cba354;
+  background: #1c3823f0;
+  color: var(--rd-accent-pale);
+  border-bottom: calc(2 * var(--rd-u)) solid var(--rd-accent-edge);
 }
 .rd-prize.pass.trprize .rd-card {
   background-image: none;
@@ -6596,7 +6603,7 @@ button:not(.playbtn):active,
   place-items: center;
   width: calc(82 * var(--rd-u));
   height: calc(86 * var(--rd-u));
-  background: #a06116;
+  background: var(--rd-accent-edge);
   clip-path: polygon(18% 0, 82% 0, 100% 18%, 100% 82%, 82% 100%, 18% 100%, 0 82%, 0 18%);
 }
 .rd-mystery::before, .rd-mystery::after {
@@ -6606,23 +6613,23 @@ button:not(.playbtn):active,
 }
 .rd-mystery::before {
   inset: 0 0 calc(5 * var(--rd-u));
-  background: #ffcf39;
+  background: var(--rd-accent-light);
   clip-path: polygon(18% 0, 82% 0, 100% 18%, 100% 82%, 82% 100%, 18% 100%, 0 82%, 0 18%);
 }
 .rd-mystery::after {
   inset: 0;
-  background: #fff2a6;
+  background: var(--rd-accent-pale);
   clip-path: polygon(18% 3%, 67% 3%, 32% 18%, 5% 43%, 5% 19%);
 }
 .rd-question {
   position: relative;
   z-index: 1;
   margin-top: calc(-5 * var(--rd-u));
-  color: #29314c;
+  color: var(--rd-accent-ink);
   font-family: var(--font-display);
   font-size: calc(69 * var(--rd-u));
   line-height: 1;
-  text-shadow: 0 calc(2 * var(--rd-u)) 0 #fff0a3 !important;
+  text-shadow: 0 calc(2 * var(--rd-u)) 0 var(--rd-accent-pale) !important;
 }
 
 .rd-player {
@@ -6638,11 +6645,11 @@ button:not(.playbtn):active,
   min-width: calc(52 * var(--rd-u));
   height: calc(32 * var(--rd-u));
   padding: 0 calc(6 * var(--rd-u));
-  border: calc(2 * var(--rd-u)) solid #fff194;
+  border: calc(2 * var(--rd-u)) solid var(--rd-accent-pale);
   border-radius: calc(10 * var(--rd-u));
-  background: #ffd238;
-  color: #241637;
-  box-shadow: 0 calc(3 * var(--rd-u)) 0 #a2660f !important;
+  background: var(--rd-accent-light);
+  color: var(--rd-accent-ink);
+  box-shadow: 0 calc(3 * var(--rd-u)) 0 var(--rd-accent-shadow) !important;
 }
 .rd-player::before {
   content: "";
@@ -6653,7 +6660,7 @@ button:not(.playbtn):active,
   width: calc(18 * var(--rd-u));
   height: calc(10 * var(--rd-u));
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  background: #fff194;
+  background: var(--rd-accent-pale);
 }
 .rd-player .roadt { color: inherit; font-size: calc(17 * var(--rd-u)); font-weight: 400; white-space: nowrap; }
 
@@ -6715,11 +6722,11 @@ button:not(.playbtn):active,
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  border: 2px solid color-mix(in srgb, var(--gold) 45%, transparent);
-  background: color-mix(in srgb, var(--gold) 14%, var(--panel));
-  color: var(--gold-glow);
+  border: 2px solid color-mix(in srgb, var(--rd-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--rd-accent) 14%, var(--panel));
+  color: var(--rd-accent-light);
 }
-.rd-popn { font-family: var(--font-display); font-size: 26px; font-weight: 400; color: var(--gold-glow); }
+.rd-popn { font-family: var(--font-display); font-size: 26px; font-weight: 400; color: var(--rd-accent-light); }
 .rd-popu { font-size: 13px; font-weight: 800; color: var(--ink-soft); }
 
 /* ==========================================================================

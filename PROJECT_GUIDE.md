@@ -1046,7 +1046,7 @@ Ten numbered sections now, with a picture beside the rules that need one.
   is still random, drawn from universal and owned-species pools by rollTrait; road claims
   never use hatch rarity odds. claimRoad mints a uid and saves item plus key in one write.
   Trait cards use the canonical engine rarity fill and print its name above a faceted
-  gold question badge, with 'Trait' beneath. It costs no larva and does not convert to a
+  green question badge, with 'Trait' beneath. It costs no larva and does not convert to a
   skin/avatar. A full bag leaves the reward unclaimed and shows BAG FULL. Previously paid
   premium keys stay claimed; no retroactive re-roll.
 - Each card claims its own existing free/pass key. An unowned premium card opens the shop;
@@ -1057,12 +1057,16 @@ Ten numbered sections now, with a picture beside the rules that need one.
   ice blue, amber gold and fungal plum. All road backgrounds are solid, with no gradients.
   The pass side is exactly the left 50% and uses a slightly lighter solid color. Both
   road end caps carry the same two-color split.
-- The pass side has brighter static gold light particles, each with a small emitted glow.
+- The pass side has brighter static green light particles, each with a small emitted glow.
   No large color wash, rings, branching texture or animation. Resource card artwork stays
   unchanged. Only reward-card surfaces bypass the app's flat-background blanket.
-- One continuous central rail is dark ahead and gold behind the current colony. Circular
-  checkpoint badges show rung numbers with compact troop thresholds underneath. The gold
+- One continuous central rail is dark ahead and green behind the current colony. Circular
+  checkpoint badges show rung numbers with compact troop thresholds underneath. The green
   current-colony marker shares exactly the fill endpoint.
+- Progress accents share the home Play button's --hud-go green. Road-local light, pale,
+  edge and shadow shades cover the fill, reached stops, marker, claims, pass labels,
+  particles, question badges and payout highlights. Area backgrounds, resource artwork
+  and the canonical rarity card colors retain their own palettes.
 - Progress is calculated in responsive row and divider units, including the extra distance
   between chapters. CSS owns their pixel sizes so the marker does not drift on phone widths.
 - Every chapter starts at the same square charcoal block with broad angled reflection
