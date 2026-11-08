@@ -51,9 +51,11 @@ export const IMPOSSIBLE_WEIGHTS = {
 
 /** Real upgraded income and nest safety remain valuable for the entire match. */
 export function evaluateImpossible(state: GameState, me: Player, context: ActionContext): number {
-  let score = evaluate(state, me, context.mods, IMPOSSIBLE_WEIGHTS);
-  if (state.over || Math.abs(score) > WIN / 2) return score;
   const enemy = otherPlayer(me);
+  // Negamax requires opposite perspectives to have exactly opposite values.
+  const scoreFor = (player: Player): number => evaluate(state, player, context.mods, IMPOSSIBLE_WEIGHTS);
+  let score = (scoreFor(me) - scoreFor(enemy)) / 2;
+  if (state.over || Math.abs(score) > WIN / 2) return score;
   score += 12 * (incomeOf(state, me, context.mods[me]) + context.mods[me].brood
     - incomeOf(state, enemy, context.mods[enemy]) - context.mods[enemy].brood);
   const tiles = allTiles(state);

@@ -7,10 +7,20 @@ import {
 } from "../src/engine";
 import type { Player, SpeciesId } from "../src/engine";
 import { aiTurn, PROFILES } from "../src/ai/search";
+import { planImpossibleTurn } from "../src/ai/impossible";
 
 const divisor = Math.max(1, Number(process.argv[2] ?? 32));
 const pairs = Math.max(1, Math.min(8, Number(process.argv[3] ?? 8)));
 const species = Object.keys(SPECIES) as SpeciesId[];
+const sampleContext = defaultContext();
+sampleContext.mods.ai = opponentModifiers("impossible");
+const sample = createGame({
+  map: "small", species: { you: "fire", ai: "army" }, seed: 9123,
+  mods: sampleContext.mods, first: "ai",
+});
+const probeStart = Date.now();
+const probe = planImpossibleTurn(sample, "ai", sampleContext, PROFILES.impossible);
+console.log(JSON.stringify({ fullBudgetProbe: true, depth: probe.depth, nodes: probe.nodes, elapsed: Date.now() - probeStart }));
 const originals = Object.values(PROFILES).map((profile) => ({ ...profile }));
 for (const profile of Object.values(PROFILES)) {
   profile.nodeBudget = Math.max(200, Math.floor(profile.nodeBudget / divisor));

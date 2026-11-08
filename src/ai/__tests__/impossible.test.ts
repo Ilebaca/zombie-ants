@@ -173,3 +173,13 @@ it("plans for every species without inventing extra actions", () => {
     expect(snapshot(before)).toEqual(snapshot(state));
   }
 });
+
+it("scores the two perspectives symmetrically for negamax", () => {
+  const state = blankGame();
+  put(state, 0, 0, { owner: "you", struct: "nest", soldiers: 12 });
+  put(state, 0, 1, { owner: "you", struct: "stable", soldiers: 8, terrain: "resource" });
+  put(state, 8, 8, { owner: "ai", struct: "nest", soldiers: 20 });
+  finish(state);
+  expect(evaluateImpossible(state, "you", context))
+    .toBeCloseTo(-evaluateImpossible(state, "ai", context), 8);
+});
