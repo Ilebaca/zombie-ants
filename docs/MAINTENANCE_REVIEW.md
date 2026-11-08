@@ -20,6 +20,8 @@ Renaming persistent identifiers requires a separate migration.
 | Accounts | Input was uppercased but compared with a lowercase account ID. | Normalize both sides. |
 | Road claims | Alternate numeric spellings were separate claim keys for the same checkpoint. | Accept canonical positive integer keys only. |
 | Native saves | Independent bridge writes could complete in the wrong order. | Serialize writes and removals while retaining immediate memory reads. |
+| Account setup | Signing in retained the previous account's formation choices. | Restore saved setup choices with the profile. |
+| Lifecycle | Replaced decks retained a global resize handler. | Dispose deck listeners during replacement and app teardown. |
 | Typography | Canvas setters used unresolved CSS variables. | Share resolved font strings using the display face's real weight. |
 | Documentation | Setup described an early prototype and instructed a force push. | Replace it with current development and validation steps. |
 | Naming | The project guide and references used an assistant-specific filename. | Use `PROJECT_GUIDE.md` consistently. |

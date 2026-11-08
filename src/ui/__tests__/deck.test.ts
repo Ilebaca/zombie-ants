@@ -313,3 +313,16 @@ describe("a tap the deck stole", () => {
     expect(hits(), "the deck pressed a button during a scroll").toBe(0);
   });
 });
+
+it("releases resize and gesture handlers when destroyed", () => {
+  const { deck, arrived } = make();
+  const rail = deck.el.querySelector<HTMLElement>(".deckrail");
+  expect(rail).not.toBeNull();
+  deck.destroy();
+  if (!rail) return;
+  rail.style.width = "123px";
+  window.dispatchEvent(new Event("resize"));
+  expect(rail.style.width).toBe("123px");
+  drag(deck, -600);
+  expect(arrived).toEqual([]);
+});

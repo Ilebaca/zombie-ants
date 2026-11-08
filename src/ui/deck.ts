@@ -116,10 +116,22 @@ export class Deck<T extends string> {
     this.el.addEventListener("pointermove", this.onMove);
     this.el.addEventListener("pointerup", this.onUp);
     this.el.addEventListener("pointercancel", this.onCancel);
-    window.addEventListener("resize", () => { this.measure(); this.place(false); });
+    window.addEventListener("resize", this.onResize);
     this.measure();
     this.place(false);
   }
+
+  /** Release listeners when an account change replaces this deck. */
+  destroy(): void {
+    window.removeEventListener("resize", this.onResize);
+    this.el.removeEventListener("touchmove", this.onTouchMove);
+    this.el.removeEventListener("pointerdown", this.onDown);
+    this.el.removeEventListener("pointermove", this.onMove);
+    this.el.removeEventListener("pointerup", this.onUp);
+    this.el.removeEventListener("pointercancel", this.onCancel);
+  }
+
+  private onResize = (): void => { this.measure(); this.place(false); };
 
   get at(): T { return this.ids[this.index] as T; }
   get hidden(): boolean { return this.el.classList.contains("hidden"); }

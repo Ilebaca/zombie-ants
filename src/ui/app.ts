@@ -349,6 +349,8 @@ export class App {
    * Capacitor bridge and would otherwise go on calling into an App that is gone.
    */
   destroy(): void {
+    this.deck?.destroy();
+    this.tour.stop();
     this.dropBack();
     this.dropBack = () => {};
     this.dropAwake();
@@ -406,6 +408,7 @@ export class App {
     this.adoptProfile();
     this.applyFeedbackPrefs();
     this.host.replaceChildren();
+    this.deck?.destroy();
     this.deck = null;
     this.show("home");
     if (this.profile.get().tourSeen < TOUR_VERSION) this.startTour();
@@ -415,6 +418,7 @@ export class App {
   private signOut(): void {
     this.accounts.signOut();
     this.tour.stop();
+    this.deck?.destroy();
     this.deck = null;
     this.showSignIn();
   }
@@ -427,7 +431,13 @@ export class App {
    * by the old one until it is told.
    */
   private adoptProfile(): void {
-    this.difficulty = this.profile.get().difficulty;
+    const saved = this.profile.get();
+    this.difficulty = saved.difficulty;
+    this.choices = {
+      map: "small",
+      species: saved.lastSpecies,
+      shape: saved.lastShape in START_SHAPES ? saved.lastShape as ShapeId : "wedge",
+    };
   }
 
   /** Push the saved switches into the device. Called at boot and whenever one is flipped. */

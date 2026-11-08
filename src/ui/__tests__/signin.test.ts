@@ -10,6 +10,7 @@ import { describe, expect, it, beforeEach } from "vitest";
 import { LocalAccounts, MemoryStore, PROFILE_KEY, ProfileStore, compact } from "../../platform";
 import type { Account } from "../../platform";
 import { buildSignIn } from "../signin";
+import { App } from "../app";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
 
@@ -128,4 +129,19 @@ describe("upgrading from a build with no accounts", () => {
     const accounts = new LocalAccounts(store);
     expect(accounts.current()?.name, "the existing colony was not adopted").toBe("Ridgeback");
   });
+});
+
+it("loads the selected account's saved formation on entry", () => {
+  const accounts = new LocalAccounts(new MemoryStore());
+  const account = accounts.create("Returning");
+  accounts.storeFor(account).update((p) => { p.lastShape = "column"; p.tourSeen = 99; });
+  accounts.signOut();
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const app = new App(host, undefined, accounts);
+  app.start();
+  host.querySelector<HTMLButtonElement>(".sirow")?.click();
+  host.querySelector<HTMLButtonElement>("#home .playbtn")?.click();
+  expect(host.querySelector("#formation .picktext")?.textContent).toBe("Column");
+  app.destroy();
 });
