@@ -14,7 +14,7 @@ import type { SpeciesId } from "../../engine";
 import {
   COLONY_START, GRANARY_LEVELS, GRANARY_MAX, MemoryStore, ProfileStore, REGIONS,
   RESEARCH_TOTAL_MAX, ROAD_AVATARS, ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, ROAD_STOPS, SPECIES_UNLOCK, TIERS,
-  avatarName, chapterOf, compact, exact, freeReward, granaryFull, passReward, regionName, regionOf, roadKey, stopColony, tierOf,
+  traitDef, avatarName, chapterOf, compact, exact, freeReward, granaryFull, passReward, regionName, regionOf, roadKey, stopColony, tierOf,
 } from "../../platform";
 import { buildAnthill } from "../anthill";
 import { buildProfile } from "../profile";
@@ -965,11 +965,16 @@ describe("colony road screen", () => {
     for (const card of Array.from(root.querySelectorAll<HTMLElement>(".rd-prize"))) {
       const index = Number(card.dataset.stop);
       const reward = card.dataset.track === "pass" ? passReward(index)! : freeReward(index)!;
-      expect(card.querySelectorAll(".rd-mark img")).toHaveLength(1);
+      expect(card.querySelectorAll(".rd-mark img")).toHaveLength(reward.trait ? 0 : 1);
       if (reward.avatar) {
         expect(card.querySelector(".rd-face")).toBeTruthy();
         expect(card.querySelector(".rd-amount")).toBeNull();
         expect(ROAD_AVATARS.map((id) => avatarName(id))).toContain(card.getAttribute("aria-label"));
+      } else if (reward.trait) {
+        expect(card.querySelector(".rd-mystery")?.textContent).toBe("?");
+        expect(card.querySelector(".rd-caption")?.textContent).toBe("Trait");
+        expect(card.querySelector(".rd-amount")).toBeNull();
+        expect(card.getAttribute("aria-label")).toBe("A random trait");
       } else {
         const source = shelfArt(reward.mycel ? "mycel.1500" : "pher.900");
         expect(card.querySelector("img.rd-resource")?.getAttribute("src")).toBe(source);
@@ -977,6 +982,18 @@ describe("colony road screen", () => {
           .toBe(String((reward.mycel ?? 0) + (reward.pheromone ?? 0)));
       }
     }
+  });
+
+  it("reveals the actual premium trait that was saved", () => {
+    const s = atRung(3);
+    s.grantPass();
+    const root = buildColonyRoad(s, () => {}, () => {});
+    click(root.querySelector('.rd-prize.pass[data-stop="3"]'));
+    const item = s.get().bag[0]!;
+    expect(item).toBeTruthy();
+    expect(root.querySelector("#roadPop")?.textContent).toContain(traitDef(item.def)!.name);
+    expect(s.get().roadClaimed).toContain("p3");
+    expect(root.querySelector('.rd-prize.pass[data-stop="3"]')?.classList.contains("got")).toBe(true);
   });
 
   it("does not offer a claim before the first threshold", () => {
@@ -1021,13 +1038,17 @@ describe("colony road screen", () => {
     expect(gates.at(-1)?.querySelector(".rd-gaten")?.textContent).toBe(regionName(1));
   });
 
-  it("gives all ten areas their own cool palette", () => {
+  it("gives all ten areas their own themed palette and generated divider", () => {
     const root = buildColonyRoad(store(), () => {}, () => {});
     const colors = new Map<number, string>();
     for (const [i, panel] of Array.from(root.querySelectorAll<HTMLElement>(".rd-chap")).entries()) {
       const region = regionOf(ROAD_CHAPTERS - i);
       const palette = ["--rd-area", "--rd-depth", "--rd-glow"].map((key) => panel.style.getPropertyValue(key)).join();
       expect(palette).not.toBe(",,");
+      const image = panel.querySelector<HTMLImageElement>(".rd-dividerart");
+      expect(image?.getAttribute("src")).toMatch(new RegExp(`area-${String(region).padStart(2, "0")}-`));
+      expect(panel.querySelector(".rd-premiumwash")).toBeTruthy();
+      expect(panel.querySelector(".rd-trackname:not(.premium)")?.textContent).toBe("FREE REWARDS");
       if (colors.has(region)) expect(palette).toBe(colors.get(region));
       else colors.set(region, palette);
     }

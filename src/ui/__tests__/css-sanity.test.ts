@@ -639,7 +639,7 @@ describe("the road reward tracks", () => {
   it("allows chapter, divider and card gradients through the shared blanket", () => {
     const css = read("skin.css");
     const blanket = css.split("\n").find((line) => line.includes("background-image: none !important"));
-    for (const name of ["rd-chap", "rd-breaker", "rd-card", "rd-cardface"]) {
+    for (const name of ["rd-chap", "rd-premiumwash", "rd-breaker", "rd-card", "rd-cardface"]) {
       expect(blanket).toContain(`:not(.${name})`);
       expect(rulesFor(css, `.${name}`)).toMatch(/background-image:[^;]*(?:radial|linear)-gradient/);
     }

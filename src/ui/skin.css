@@ -144,7 +144,7 @@
 
    Colony Road uses flat area colors; its panels need no artwork exemption.
    ====================================================================== */
-*:not(#home):not(#luckyhatch):not(#splash):not(.rd-chap):not(.rd-breaker):not(.rd-card):not(.rd-cardface), *::before, *::after { background-image: none !important; }
+*:not(#home):not(#luckyhatch):not(#splash):not(.rd-chap):not(.rd-premiumwash):not(.rd-breaker):not(.rd-card):not(.rd-cardface), *::before, *::after { background-image: none !important; }
 
 /* Surfaces the legacy sheet fills with a gradient and this file does not
    otherwise dress. */
@@ -6178,7 +6178,7 @@ button:not(.playbtn):active,
   font-weight: 400;
   --rd-u: var(--u);
   --rd-row: calc(212 * var(--rd-u));
-  --rd-gate: calc(70 * var(--rd-u));
+  --rd-gate: calc(130 * var(--rd-u));
   --rd-spine: calc(56 * var(--rd-u));
   --rd-pad: calc(12 * var(--rd-u));
   --rd-endpad: calc(var(--rd-gate) / 2 + 24 * var(--rd-u) + var(--safe-bottom));
@@ -6248,6 +6248,24 @@ button:not(.playbtn):active,
     radial-gradient(ellipse at 0% 15%, var(--rd-glow), transparent 64%),
     linear-gradient(150deg, var(--rd-area), var(--rd-depth) 86%);
   background-size: 100% 100%, 100% 100%;
+}
+.rd-premiumwash {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 50%;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 18% 9%, #fff5b8b3 0 1px, #ffda5d38 2px, transparent 5px),
+    radial-gradient(circle at 72% 23%, #ffef9bb3 0 1px, transparent 4px),
+    radial-gradient(circle at 31% 42%, #fff6c299 0 1px, #ffd25d33 2px, transparent 5px),
+    radial-gradient(circle at 82% 61%, #fff4b6a6 0 1px, transparent 4px),
+    radial-gradient(circle at 22% 79%, #fff4b6a6 0 1px, transparent 4px),
+    radial-gradient(circle at 66% 94%, #fff4b6a6 0 1px, transparent 4px),
+    radial-gradient(ellipse at 5% 48%, #ffd76926, transparent 75%),
+    linear-gradient(90deg, #e7bf5b14, transparent);
+  background-repeat: no-repeat;
+  opacity: .8;
 }
 .rd-path { position: relative; max-width: 680px; margin-inline: auto; }
 .rd-stop {
@@ -6459,33 +6477,48 @@ button:not(.playbtn):active,
 }
 .rd-breaker {
   position: absolute;
-  inset: 0;
-  clip-path: polygon(0 36%, 100% 16%, 100% 64%, 0 84%);
-  background-image: linear-gradient(180deg, #edb6ff 20%, #ac45e4 34%, #501d97 66%, #bf61e5 80%);
+  inset-inline: 0;
+  top: 50%;
+  height: calc(86 * var(--rd-u));
+  transform: translateY(-50%);
+  /* Opaque seam cover beneath transparent organic edges. */
+  background-image: linear-gradient(180deg, transparent 44%, var(--rd-depth) 44% 56%, transparent 56%);
   pointer-events: none;
 }
-.rd-gatek {
+.rd-dividerart {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  filter: drop-shadow(0 calc(3 * var(--rd-u)) calc(2 * var(--rd-u)) #0007);
+}
+.rd-gatek, .rd-gaten {
   position: relative;
+  z-index: 1;
+  color: #fff;
+  font-weight: 400;
+  line-height: 1.1;
+  text-shadow: 0 2px 2px #000, 0 0 5px #000 !important;
+  -webkit-text-stroke: .5px #161813;
+  paint-order: stroke fill;
+}
+.rd-gatek {
   grid-column: 1;
   text-align: right;
-  color: #fff;
-  font-size: calc(17 * var(--rd-u));
-  font-weight: 400;
+  font-size: calc(18 * var(--rd-u));
   text-transform: uppercase;
-  text-shadow: 0 2px 0 #29104c !important;
 }
 .rd-gaten {
-  position: relative;
   grid-column: 3;
-  color: #efe0ff;
-  font-size: calc(14 * var(--rd-u));
-  line-height: 1.15;
+  font-size: calc(16 * var(--rd-u));
   text-align: left;
 }
 .rd-tracknames {
   position: absolute;
-  bottom: calc(7 * var(--rd-u));
-  inset-inline: var(--rd-pad);
+  top: calc(3 * var(--rd-u));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(calc(100% - 2 * var(--rd-pad)), calc(680px - 2 * var(--rd-pad)));
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--rd-spine) minmax(0, 1fr);
 }
@@ -6494,12 +6527,32 @@ button:not(.playbtn):active,
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  font-size: calc(9 * var(--rd-u));
-  letter-spacing: .4px;
-  color: #e9deff;
+  gap: calc(4 * var(--rd-u));
+  min-height: calc(26 * var(--rd-u));
+  padding: calc(3 * var(--rd-u)) calc(5 * var(--rd-u));
+  border-radius: calc(5 * var(--rd-u));
+  background: #0c1c20cc;
+  color: #fff;
+  font-size: calc(13 * var(--rd-u));
+  white-space: nowrap;
+  text-shadow: 0 2px 0 #000 !important;
 }
-.rd-trackname.premium { grid-column: 1; color: #ffde60; }
+.rd-trackname.premium {
+  grid-column: 1;
+  background: #41351bf0;
+  color: #ffe28a;
+  border-bottom: calc(2 * var(--rd-u)) solid #cba354;
+}
+.rd-mystery {
+  font-family: var(--font-display);
+  font-size: calc(90 * var(--rd-u));
+  line-height: 1;
+  color: #fff4c2;
+  -webkit-text-stroke: calc(2 * var(--rd-u)) #5b2e83;
+  paint-order: stroke fill;
+  text-shadow: 0 calc(5 * var(--rd-u)) 0 #34205b !important;
+}
+
 .rd-player {
   position: absolute;
   z-index: 5;

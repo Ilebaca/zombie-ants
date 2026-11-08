@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { RESEARCH_MAX, SPECIES, chamberCost, researchCost } from "../../engine";
 import type { SpeciesId } from "../../engine";
 import { MemoryStore } from "../storage";
-import { ProfileStore, normalise } from "../profile";
+import { BAG_MAX, ProfileStore, normalise } from "../profile";
+import { traitDef } from "../traits";
 import { CHAMBERS, RESEARCH_TRACKS, SPECIES_ORDER, SPECIES_UNLOCK } from "../catalogue";
 import {
   ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, ROAD_FIRST, ROAD_LAST, ROAD_STOPS, freeReward, isChapterEnd, passReward,
@@ -206,7 +207,7 @@ describe("colony road layout", () => {
           expect(reward).toBeTruthy();
           const fields = Object.keys(reward!).filter((key) => reward![key as keyof RoadReward]);
           expect(fields).toHaveLength(1);
-          if (!reward?.avatar) kinds.add(fields[0] as string);
+          if (reward?.mycel || reward?.pheromone) kinds.add(fields[0] as string);
         }
         expect([...kinds].sort()).toEqual(["mycel", "pheromone"]);
       }
@@ -284,21 +285,20 @@ describe("colony road layout", () => {
    * the test would pass against a purse that had quietly stopped splitting.
    */
   it("always pays something when it pays at all", () => {
-    let faces = 0;
+    let faces = 0, traits = 0;
     for (const stop of roadStops()) {
       for (const r of [stop.free, stop.pass]) {
         if (!r) continue;
         const coin = (r.mycel ?? 0) + (r.pheromone ?? 0);
-        if (r.avatar) { faces++; expect(coin, "an avatar rung paid currency too").toBe(0); }
+        if (r.avatar) { faces++; expect(coin).toBe(0); }
+        else if (r.trait) { traits++; expect(coin).toBe(0); }
         else expect(coin).toBeGreaterThan(0);
       }
+      if (stop.free?.avatar) expect(stop.pass).toEqual({ trait: true });
+      expect(stop.pass?.avatar).toBeUndefined();
     }
-    // BOTH TRACKS NAME THE SAME FACE at that rung, and it is the SCREEN that decides
-    // this: the road draws one disc per checkpoint with the two tracks pooled, so a rung
-    // paying a face on one and currency on the other would be one disc showing two kinds
-    // of thing — with the face winning and the pass's share silently swallowed. The pass
-    // purse is split across its other four instead, which `economy.test.ts` holds.
-    expect(faces, "one avatar a chapter, named by both tracks").toBe(ROAD_CHAPTERS * 2);
+    expect(faces).toBe(ROAD_CHAPTERS);
+    expect(traits).toBe(ROAD_CHAPTERS);
   });
 
   /**
@@ -344,6 +344,55 @@ describe("claiming colony road rewards", () => {
   /** Rung 4 is the first that pays on BOTH tracks, so one size serves every case here. */
   const RUNG = 4;
   const REACHED = stopColony(RUNG);
+
+  it("grants a premium trait atomically without a second avatar, currency or larva cost", () => {
+    const kv = new MemoryStore();
+    const s = new ProfileStore(kv);
+    s.update((p) => { p.colony = stopColony(3); p.pass = true; });
+    const before = structuredClone(s.get());
+    expect(s.claimRoad("f3")).toBe(true);
+    const avatars = [...s.get().avatars];
+    expect(s.claimRoad("p3", () => .99)).toBe(true);
+    const item = s.get().bag[0]!;
+    expect(item.tier).toBe("mythic");
+    const def = traitDef(item.def)!;
+    expect(def.species === null || before.unlocked.includes(def.species)).toBe(true);
+    expect(s.get().avatars).toEqual(avatars);
+    expect(s.get().bag).toHaveLength(before.bag.length + 1);
+    expect(s.get().traitSeq).toBe(before.traitSeq + 1);
+    expect(s.get().mycel).toBe(before.mycel);
+    expect(s.get().pheromone).toBe(before.pheromone);
+    expect(s.get().larva).toBe(before.larva);
+    const loaded = new ProfileStore(kv);
+    expect(loaded.get().bag).toEqual(s.get().bag);
+    expect(loaded.claimRoad("p3", () => 0)).toBe(false);
+    expect(loaded.get().bag).toEqual(s.get().bag);
+  });
+
+  it("leaves a full-bag trait reward unclaimed until there is space", () => {
+    const s = withColony(stopColony(3), true);
+    s.update((p) => {
+      p.bag = Array.from({ length: BAG_MAX }, (_, i) => ({ uid: `t${i}`, def: "u.raid", tier: "common" }));
+      p.traitSeq = BAG_MAX;
+    });
+    expect(s.canClaimRoad("p3")).toBe(false);
+    expect(s.claimRoad("p3")).toBe(false);
+    expect(s.get().roadClaimed).not.toContain("p3");
+    s.update((p) => { p.bag.pop(); });
+    expect(s.claimRoad("p3", () => 0)).toBe(true);
+    expect(s.get().bag).toHaveLength(BAG_MAX);
+    expect(s.get().bag[0]?.uid).toBe(`t${BAG_MAX}`);
+  });
+
+  it("preserves previously claimed premium avatar keys without paying a replacement twice", () => {
+    const kv = new MemoryStore();
+    const s = new ProfileStore(kv);
+    s.update((p) => { p.colony = ROAD_LAST; p.pass = true; p.roadClaimed = ["p3"]; });
+    const loaded = new ProfileStore(kv);
+    expect(loaded.get().roadClaimed).toContain("p3");
+    expect(loaded.claimRoad("p3")).toBe(false);
+    expect(loaded.get().bag).toHaveLength(0);
+  });
 
   it("pays a reached free reward exactly once", () => {
     const s = withColony(REACHED);

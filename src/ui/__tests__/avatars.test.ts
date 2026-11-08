@@ -317,16 +317,15 @@ describe("the road pays one a chapter", () => {
     s.update((p) => { p.colony = 2_000_000; });
     const root = buildColonyRoad(s, () => {}, () => {});
     document.body.replaceChildren(root);
-    for (const track of ["free", "pass"]) {
-      const faces = root.querySelectorAll(`.rd-prize.${track}.avprize`);
-      expect(faces.length, "one existing avatar reward per chapter on each track")
-        .toBe(ROAD_AVATARS.length);
-      for (const card of Array.from(faces)) {
-        expect(card.querySelector(".rd-face"), "an avatar card with no face").toBeTruthy();
-      }
-      expect(Array.from(faces).map((card) => card.getAttribute("aria-label")).sort())
-        .toEqual(ROAD_AVATARS.map((id) => avatarName(id)).sort());
-    }
+    const faces = root.querySelectorAll(".rd-prize.free.avprize");
+    expect(faces.length).toBe(ROAD_AVATARS.length);
+    for (const card of Array.from(faces)) expect(card.querySelector(".rd-face")).toBeTruthy();
+    expect(Array.from(faces).map((card) => card.getAttribute("aria-label")).sort())
+      .toEqual(ROAD_AVATARS.map((id) => avatarName(id)).sort());
+    expect(root.querySelectorAll(".rd-prize.pass.avprize")).toHaveLength(0);
+    const traits = root.querySelectorAll(".rd-prize.pass .rd-mystery");
+    expect(traits).toHaveLength(ROAD_AVATARS.length);
+    expect(Array.from(traits).every((mark) => mark.textContent === "?")).toBe(true);
   });
 
   /** And claiming it is what puts it in the collection. */

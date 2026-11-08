@@ -434,18 +434,7 @@ export function rollTier(random: () => number): TraitTier {
   return "common";
 }
 
-/**
- * WHAT THE LUCKY HATCH WILL PAY OUT.
- *
- * The hatch is the ONLY source of a trait, and that is a deliberate design decision
- * rather than a gap: it is what gives the hatch a reason to exist beyond handing out
- * currency the player could have earned by playing. A match pays mycelium and a colony;
- * the hatch pays the thing you cannot get any other way.
- *
- * So the roll lives here, finished and tested, and the hatch is one caller away. Until it
- * is built the bag stays empty and every bench reads as five empty slots — which is the
- * honest state of the feature rather than a bug.
- */
+/** A trait roll shared by lucky hatches and premium Colony Road rewards. */
 export interface Drop { def: string; tier: TraitTier }
 
 /** One larva. It buys exactly one hatch, which is the only thing larva buys. */

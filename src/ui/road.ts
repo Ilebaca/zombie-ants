@@ -3,26 +3,14 @@
  * Reward definitions and persisted claim keys stay in the platform layer.
  */
 import {
-  COLONY_START, REGION_CHAPTERS, ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, avatarName, compact,
+  COLONY_START, REGION_CHAPTERS, TRAIT_TIER, effectText, traitDef, ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, avatarName, compact,
   isChapterEnd, regionName, regionOf, roadKey, roadStops,
 } from "../platform";
-import type { ProfileStore, RoadReward, RoadStop, RoadTrack } from "../platform";
+import type { ProfileStore, RoadReward, RoadStop, RoadTrack, TraitItem } from "../platform";
 import { avatarFace, el, hudMark, redraw, screenEl } from "./chrome";
 import { icon } from "./icons";
 import { shelfArt } from "./shelf";
-
-const AREA_PALETTES = [
-  ["#5220b3", "#250f62", "#9c4ff2"],
-  ["#2654a7", "#14275d", "#469ee8"],
-  ["#5136a9", "#251450", "#9a69df"],
-  ["#17618a", "#12354c", "#37c1ca"],
-  ["#304a9e", "#182850", "#618de5"],
-  ["#733296", "#35164f", "#b563d4"],
-  ["#3b238f", "#170c40", "#7654d5"],
-  ["#256ca3", "#163759", "#71d4e9"],
-  ["#6543a7", "#2c1a52", "#b78be7"],
-  ["#5133bd", "#21114f", "#aa68ec"],
-] as const;
+import { roadTheme } from "./road-art";
 
 interface Payout { mark: string; amount: number; name: string }
 
@@ -36,7 +24,8 @@ const payouts = (reward: RoadReward): Payout[] => [
 
 const spoken = (reward: RoadReward): string =>
   reward.avatar ? avatarName(reward.avatar)
-    : payouts(reward).map((p) => `+${p.amount} ${p.name}`).join(" and ");
+    : reward.trait ? "A random trait"
+      : payouts(reward).map((p) => `+${p.amount} ${p.name}`).join(" and ");
 
 /**
  * Position along the rail in row and chapter-divider units. CSS owns their actual size,
@@ -63,6 +52,7 @@ export function buildColonyRoad(
   const stops = roadStops();
   let scrollTop: number | null = null;
   let took: RoadReward | null = null;
+  let tookTrait: TraitItem | null = null;
 
   const render = (): void => {
     const profile = store.get();
@@ -119,12 +109,16 @@ export function buildColonyRoad(
   const panel = (chapter: number, nextStop: number): HTMLElement => {
     const section = el("section", "rd-chap");
     const region = regionOf(chapter);
-    const palette = AREA_PALETTES[region - 1] ?? AREA_PALETTES[0];
+    const theme = roadTheme(region);
+    const palette = theme.colors;
     section.dataset.region = String(region);
     section.style.setProperty("--rd-area", palette[0]);
     section.style.setProperty("--rd-depth", palette[1]);
     section.style.setProperty("--rd-glow", palette[2]);
     section.style.backgroundColor = palette[1];
+    const premium = el("span", "rd-premiumwash");
+    premium.setAttribute("aria-hidden", "true");
+    section.appendChild(premium);
     const closes = stops[chapter * ROAD_CHAPTER_STOPS - 1]?.colony ?? Infinity;
     section.classList.toggle("complete", store.get().colony >= closes);
     const path = el("div", "rd-path");
@@ -142,6 +136,15 @@ export function buildColonyRoad(
     divider.dataset.chapter = String(chapter);
     const ribbon = el("span", "rd-breaker");
     ribbon.setAttribute("aria-hidden", "true");
+    const theme = roadTheme(regionOf(chapter));
+    const art = el("img", "rd-dividerart") as HTMLImageElement;
+    art.src = theme.divider;
+    art.alt = "";
+    art.width = 1024;
+    art.height = 160;
+    art.loading = "lazy";
+    art.decoding = "async";
+    ribbon.appendChild(art);
     divider.appendChild(ribbon);
     divider.append(
       el("b", "rd-gatek", `Chapter ${chapter}`),
@@ -150,8 +153,8 @@ export function buildColonyRoad(
     const tracks = el("div", "rd-tracknames");
     const premium = el("span", "rd-trackname premium");
     premium.id = `road-pass-${chapter}`;
-    premium.append(icon("crown", 13), el("span", undefined, "COLONY PASS"));
-    const normal = el("span", "rd-trackname", "FREE");
+    premium.append(icon("crown", 17), el("span", undefined, "COLONY PASS"));
+    const normal = el("span", "rd-trackname", "FREE REWARDS");
     normal.id = `road-free-${chapter}`;
     tracks.append(premium, normal);
     divider.appendChild(tracks);
@@ -200,6 +203,7 @@ export function buildColonyRoad(
     const art = el("span", "rd-mark");
     art.setAttribute("aria-hidden", "true");
     if (reward.avatar) art.appendChild(avatarFace(reward.avatar, 100, "rd-face"));
+    else if (reward.trait) art.appendChild(el("span", "rd-mystery", "?"));
     else for (const payout of payouts(reward)) {
       const source = shelfArt(payout.mark === "mycel" ? "mycel.1500" : "pher.900");
       if (source) {
@@ -216,7 +220,7 @@ export function buildColonyRoad(
       image.decoding = "async";
     }
     button.appendChild(art);
-    if (reward.avatar) button.appendChild(el("span", "rd-caption", "Avatar"));
+    if (reward.avatar || reward.trait) button.appendChild(el("span", "rd-caption", reward.trait ? "Trait" : "Avatar"));
     else {
       const amount = el("span", "rd-amount");
       amount.setAttribute("aria-hidden", "true");
@@ -240,10 +244,17 @@ export function buildColonyRoad(
       button.onclick = () => {
         if (!store.claimRoad(key)) return;
         took = reward;
+        tookTrait = reward.trait ? store.get().bag[0] ?? null : null;
         render();
       };
     } else if (needsPass) button.onclick = onShop;
-    else button.disabled = true;
+    else {
+      button.disabled = true;
+      if (reward.trait && !claimed && profile.pass && profile.colony >= stop.colony) {
+        button.appendChild(el("span", "rd-action", "BAG FULL"));
+        button.title += " — Make space in your trait bag to claim";
+      }
+    }
     return button;
   };
 
@@ -258,6 +269,18 @@ export function buildColonyRoad(
     x.appendChild(icon("cross", 16));
 
     card.append(x, el("div", "rd-popk", "Reward claimed"));
+    if (reward.trait && tookTrait) {
+      const def = traitDef(tookTrait.def);
+      if (def) {
+        const line = el("div", "rd-popline");
+        const mark = el("span", "rd-popic");
+        mark.style.color = TRAIT_TIER[tookTrait.tier].colour;
+        mark.appendChild(icon(def.icon, 30));
+        line.append(mark, el("span", "rd-popu", def.name));
+        card.append(line, el("span", "rd-popu",
+          `${TRAIT_TIER[tookTrait.tier].name} · ${effectText(def, tookTrait.tier)}`));
+      }
+    }
     if (reward.avatar) {
       const line = el("div", "rd-popline");
       const disc = el("span", "rd-popic");

@@ -67,6 +67,8 @@ export interface RoadReward {
   pheromone?: number;
   /** An avatar id (`platform/avatars.ts`). One checkpoint a chapter pays one of these. */
   avatar?: string;
+  /** One random trait, resolved once when claimed from the player’s available pools. */
+  trait?: true;
 }
 
 export interface RoadStop {
@@ -200,7 +202,7 @@ const AVATAR_RUNG = 3;
  * that is supposed to be about pictures.
  *
  * So `paying` is how many checkpoints of this track's chapter take a share, and it is
- * FOUR on both: the middle rung of each track pays its avatar instead of currency.
+ * FOUR on both: the middle rung pays a free avatar or a premium trait instead of currency.
  * The separate track cards retain this existing distribution. Each ordinary stop
  * takes an eighth and the CLOSER takes WHAT IS LEFT rather than a fraction of its own —
  * so the sum is the purse to the troop. Computed as its own eighth the closer would
@@ -244,22 +246,12 @@ function originalFreeReward(index: number): RoadReward | null {
   return splitPurse(freePurse(chapter), rung, FREE_PAYING);
 }
 
-/**
- * Pass track: the same, out of the pass purse, and only to a player holding the pass.
- *
- * The avatar rung pays the same existing avatar as the free track. Its currency purse
- * is shared across the other four stops. The two tracks now have separate cards; their
- * established quantities and saved claim keys are preserved until rewards are retuned.
- */
+/** The premium middle checkpoint pays a random trait instead of duplicating the free avatar. */
 function originalPassReward(index: number): RoadReward | null {
   if (index < 1 || index > ROAD_STOPS) return null;
-  const chapter = chapterAt(index);
   const rung = rungOfChapter(index);
-  if (rung === AVATAR_RUNG) {
-    const id = roadAvatar(chapter);
-    return id ? { avatar: id } : splitPurse(passPurse(chapter), 1, FREE_PAYING);
-  }
-  return splitPurse(passPurse(chapter), rung, FREE_PAYING);
+  if (rung === AVATAR_RUNG) return { trait: true };
+  return splitPurse(passPurse(chapterAt(index)), rung, FREE_PAYING);
 }
 
 /** Rewards at a displayed stop; their original ids and amounts are preserved. */
@@ -354,5 +346,6 @@ export function rewardText(r: RoadReward): string {
     r.mycel ? `+${r.mycel} mycelium` : "",
     r.pheromone ? `+${r.pheromone} pheromone crystal${r.pheromone === 1 ? "" : "s"}` : "",
     r.avatar ? "A new avatar" : "",
+    r.trait ? "A random trait" : "",
   ].filter(Boolean).join("  ");
 }

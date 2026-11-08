@@ -1029,25 +1029,39 @@ Ten numbered sections now, with a picture beside the rules that need one.
 - Fifty chapters, five checkpoints each. The existing free/pass reward table and claim
   keys stay unchanged: 5,625 mycelium / 1,000 crystals free, plus 7,750 / 1,400 on the pass.
 - The premium cards are on the left: tall, straight cyan frames with blue gradient faces
-  and a white lock. Smaller purple normal cards sit on the right. Both show the existing
-  resource art or named avatar, with the quantity beneath. Claimed cards carry green checks.
+  and a white lock. Smaller purple normal cards sit on the right. Both show
+  resource art, a named free avatar, or a premium '?' trait card, with its caption beneath. Claimed cards carry green checks.
 - Resource rewards are mixed on both tracks in every chapter. Existing currency rewards
   move between neighboring chapter pairs; avatars stay in place. roadKey maps display
   positions to the original immutable reward ids, and rewardFor keeps paying the same
   amount for each saved id. Total rewards and saved claim keys remain unchanged.
+- Free middle rungs grant their existing avatar; premium middle rungs grant one random
+  trait instead of a duplicate avatar. The card shows '?' above 'Trait'. claimRoad rolls
+  from universal and owned-species pools with the existing trait rarity odds, mints a uid,
+  and saves the item plus key in one write. It costs no larva and does not convert to a
+  skin/avatar. A full bag leaves the reward unclaimed and shows BAG FULL. Previously paid
+  premium keys stay claimed; no retroactive re-roll.
 - Each card claims its own existing free/pass key. An unowned premium card opens the shop;
   future normal cards cannot be claimed. Existing combined claims remain claimed on both
   tracks. Buying a pass later does not repay normal rewards.
-- Smooth cool gradients distinguish the ten regions; there are no repeating circles.
-  Only chapter, ribbon and card classes bypass the app's flat-background blanket.
+- Area-themed gradients follow the ten regions in five-chapter groups: forest greens,
+  desert ochre, volcanic charcoal, rainforest emerald, mangrove teal, savanna olive,
+  cave indigo, tundra ice blue, amber gold and fungal plum. No repeating ring pattern.
+- The premium half has only a sparse, static sprinkle of tiny gold light specks and a
+  soft glow. No branching texture. Keep graphics bold, simple and consistent with the
+  game's cartoon icons; detailed painted dividers were rejected.
+  Chapter, premium wash, divider and card classes bypass the flat-background blanket.
 - One continuous central rail is dark ahead and gold behind the current colony. Circular
   checkpoint badges show rung numbers with compact troop thresholds underneath. The gold
   current-colony marker shares exactly the fill endpoint.
 - Progress is calculated in responsive row and divider units, including the extra distance
   between chapters. CSS owns their pixel sizes so the marker does not drift on phone widths.
-- Every chapter has a slanted gradient ribbon centered on the exact background seam.
-  Half the divider space belongs to each adjacent chapter, so the ribbon can overlap
-  both backgrounds without covering reward cards. Card frames themselves are upright.
+- Every chapter starts at an organic generated divider from ui/road-art, selected by
+  roadTheme(regionOf(chapter)). Each of ten transparent WebP strips uses simple chunky
+  shapes and outlines. Dark centers carry contrasting white chapter/area text.
+  Its center covers the exact background seam, with half the reserved divider gap in
+  each adjacent chapter. Prominent COLONY PASS / FREE REWARDS plaques sit above it.
+  Card frames themselves remain upright.
   Resource cards reuse the shop's largest-pack paintings (mycel.1500 / pher.900);
   their small quantity labels retain the ordinary currency mark.
 - There is no screen title, toolbar, fixed troop footer, season UI or purchase banner.

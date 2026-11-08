@@ -1627,7 +1627,8 @@ export class ProfileStore {
   /** True when this reward is earned, unclaimed, and (for pass rewards) actually owned. */
   canClaimRoad(key: string): boolean {
     if (this.profile.roadClaimed.includes(key)) return false;
-    if (!rewardFor(key)) return false;
+    const reward = rewardFor(key);
+    if (!reward || (reward.trait && this.profile.bag.length >= BAG_MAX)) return false;
     if (isPassKey(key) && !this.profile.pass) return false;
     return this.profile.colony >= roadColony(key);
   }
@@ -1636,11 +1637,18 @@ export class ProfileStore {
    * Pay out one Colony Road reward. Claims are keyed and recorded, so troops lost to a
    * later defeat never claw back a reward the player already banked.
    */
-  claimRoad(key: string): boolean {
+  claimRoad(key: string, random: () => number = Math.random): boolean {
     if (!this.canClaimRoad(key)) return false;
     const reward = rewardFor(key);
     if (!reward) return false;
+    const drop = reward.trait ? rollDrop(random, [null, ...this.profile.unlocked]) : null;
+    if (reward.trait && !drop) return false;
     this.update((p) => {
+      // Mint the trait and record its claim together. No hatch conversions or larva cost.
+      if (drop) {
+        const item: TraitItem = { uid: `t${p.traitSeq++}`, def: drop.def, tier: drop.tier };
+        p.bag = [item, ...p.bag];
+      }
       p.mycel += reward.mycel ?? 0;
       p.pheromone += reward.pheromone ?? 0;
       // ONE WRITE, the currency and the face together. A claim that banked the mycelium
