@@ -2225,7 +2225,8 @@ describe("home and navigation spacing has one owner", () => {
     const block = designBlock(read("skin.css"), "FULL SCREEN: NON-DECK SAFE AREAS");
     expect(block).toMatch(/@media \(display-mode: fullscreen\)/);
     expect(block).not.toMatch(/#home\b|#mainNav\b|\.menuwrap\b/);
-    expect(block).toMatch(/\.screen \{/);
+    expect(block).toMatch(/:root \{/);
+    expect(rulesFor(css, ".screen")).toMatch(/padding-top:\s*var\(--screen-top\)/);
     expect(block).toMatch(/\.match footer \{/);
   });
 });

@@ -180,6 +180,7 @@ body {
 #mainNav.hidden { display: none !important; }
 
 .screen {
+  padding-top: var(--screen-top);
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%23a8e08a' fill-opacity='.035'%3E%3Crect x='10' y='14' width='16' height='16' rx='5'/%3E%3Crect x='42' y='60' width='11' height='11' rx='3.5'/%3E%3Crect x='86' y='26' width='14' height='14' rx='4.5'/%3E%3Crect x='66' y='96' width='9' height='9' rx='3'/%3E%3Crect x='16' y='84' width='12' height='12' rx='4'/%3E%3C/g%3E%3C/svg%3E"),
     #0b150f;
@@ -2978,6 +2979,8 @@ button:not(.playbtn):active,
   flex-direction: column;
   /* The artwork clips at the viewport edges; controls carry their own gutter. */
   padding-inline: 0;
+  /* Match the page frame above and below, including the button's painted ledge. */
+  padding-bottom: calc(var(--screen-bottom) + var(--hud-ledge-y));
   /* THE PICTURE AND ITS NAME SIT IN THE MIDDLE; THE BUTTON HOLDS THE BOTTOM.
      Two flexible gaps, one above the board and one under the name, split what is left
      over equally — so the board rides near the middle of the screen and the button stays
@@ -2994,7 +2997,7 @@ button:not(.playbtn):active,
   width: min(calc(100% - var(--sp8)), var(--page));
   margin-inline: auto;
   position: absolute;
-  top: 0;
+  top: var(--screen-top);
   left: 0;
   right: 0;
 }
@@ -6567,6 +6570,8 @@ button:not(.playbtn):active,
   /* One owner per edge. Home clears the camera OR the design margin, never both.
      The tray sits on the safe bottom edge; its own padding supplies the visible gap. */
   --hudgut: calc(12 * var(--u));
+  --screen-top: calc(var(--sp4) + env(safe-area-inset-top));
+  --screen-bottom: calc(var(--sp4) + env(safe-area-inset-bottom));
   --home-top: max(var(--hudgut), env(safe-area-inset-top));
   --hud-ledge-y: calc(4 * var(--u));
   --nav-tile: max(var(--tap), calc(54 * var(--u)));
@@ -9100,7 +9105,10 @@ body,
    display mode. These standalone screens and match controls retain their own clearance.
    ========================================================================== */
 @media (display-mode: fullscreen) {
-  .screen { padding-top: max(var(--sp4), env(safe-area-inset-top)); }
+  :root {
+    --screen-top: max(var(--sp4), env(safe-area-inset-top));
+    --screen-bottom: max(var(--sp4), env(safe-area-inset-bottom));
+  }
   .match header {
     padding-block: max(clamp(4px, 1.1vh, 8px), env(safe-area-inset-top))
                    clamp(4px, 1.1vh, 8px);

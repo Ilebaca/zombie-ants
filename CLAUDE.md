@@ -832,6 +832,12 @@ one that survived.
   boards is gone (a control that cycles a list of one is a screen lying about itself, the
   same fault as the dead Sound and Vibration switches), the board chip is off the challenge
   cards, and `profile.lastMap` is gone — a memory of a choice that no longer exists.
+- **Setup has the same page frame as Shop, on both steps.** `--screen-top` is
+  shared by ordinary screen headers and the absolutely positioned setup header.
+  `--screen-bottom` supplies the same 16px design margin below Next/Play; setup also
+  reserves the button's black ledge so the visible gap is not eaten by its shadow.
+  Fullscreen resolves these shared values against the real safe-area insets.
+
 - **The setup is now ONE screen with TWO steps** (`buildSetup`), and Next does not
   navigate: the same row starts naming colonies instead of formations, the tiles on the
   board recolour, and the button becomes Play. The picture never moves, so the player is
