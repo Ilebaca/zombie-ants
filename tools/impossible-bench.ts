@@ -6,7 +6,7 @@ import {
   SPECIES, allTiles, createGame, defaultContext, endTurn, opponentModifiers,
 } from "../src/engine";
 import type { Player, SpeciesId } from "../src/engine";
-import { aiTurn, PROFILES } from "../src/ai/search";
+import { ABILITY_PROBE, aiTurn, PROFILES } from "../src/ai/search";
 import { planImpossibleTurn } from "../src/ai/impossible";
 
 const divisor = Number(process.argv[2] ?? 32);
@@ -23,8 +23,9 @@ const sample = createGame({
 const probeStart = Date.now();
 const probe = planImpossibleTurn(sample, "ai", sampleContext, PROFILES.impossible);
 console.log(JSON.stringify({ fullBudgetProbe: true, depth: probe.depth, nodes: probe.nodes, elapsed: Date.now() - probeStart }));
-const originals = Object.values(PROFILES).map((profile) => ({ ...profile }));
-for (const profile of Object.values(PROFILES)) {
+const profiles = [...Object.values(PROFILES), ABILITY_PROBE];
+const originals = profiles.map((profile) => ({ ...profile }));
+for (const profile of profiles) {
   profile.nodeBudget = Math.max(200, Math.floor(profile.nodeBudget / divisor));
   profile.timeBudgetMs = Math.max(20, profile.timeBudgetMs / divisor);
 }
@@ -72,5 +73,5 @@ try {
     console.log(JSON.stringify({ summary: true, equalUpgrades: equal, divisor, pairs, wins, losses, draws }));
   }
 } finally {
-  Object.values(PROFILES).forEach((profile, index) => Object.assign(profile, originals[index]));
+  profiles.forEach((profile, index) => Object.assign(profile, originals[index]));
 }

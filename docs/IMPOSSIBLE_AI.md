@@ -29,15 +29,16 @@ npm run check
 npx tsx tools/impossible-bench.ts 32 8
 ```
 
-The first argument reduces both opponents' shipping budgets for fast screening.
+The first argument reduces both opponents' shipping budgets, including Hard's separate
+ability probes, for fast screening.
 Use divisor 1 for full-budget evaluation. A short screening run is not a player win-rate
 estimate; performance and choices also vary with the available device time.
 
-The separate **Evaluate Impossible AI** Actions workflow can rerun screening or full-budget
+The separate **Evaluate Impossible AI** Actions workflow runs on AI/rules changes and can rerun screening or full-budget
 tests without publishing the game. Ordinary deployments keep the tactical regression suite
 but do not repeat the longer match calibration.
 
-[Calibration run](https://github.com/Ilebaca/zombie-ants/actions/runs/42481424244)
-includes both the configured opponent and equal-upgrade controls, plus a full-budget
+[Calibration runs](https://github.com/Ilebaca/zombie-ants/actions/workflows/ai-evaluation.yml)
+include both the configured opponent and equal-upgrade controls, plus a full-budget
 search-depth/timing probe. Treat accelerated scores as calibration rather than a rating
 for full-budget play or a prediction of human win rates.

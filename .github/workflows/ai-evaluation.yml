@@ -1,6 +1,9 @@
 name: Evaluate Impossible AI
 
 on:
+  push:
+    branches: [main]
+    paths: ["src/ai/**", "src/engine/**", "tools/impossible-bench.ts", ".github/workflows/ai-evaluation.yml"]
   workflow_dispatch:
     inputs:
       divisor:
@@ -30,6 +33,6 @@ jobs:
       - run: npm ci
       - name: Measure both configured difficulty and equal-upgrade play
         env:
-          BUDGET_DIVISOR: ${{ inputs.divisor }}
-          SPECIES_PAIRS: ${{ inputs.pairs }}
+          BUDGET_DIVISOR: ${{ inputs.divisor || '32' }}
+          SPECIES_PAIRS: ${{ inputs.pairs || '8' }}
         run: npx tsx tools/impossible-bench.ts "$BUDGET_DIVISOR" "$SPECIES_PAIRS"

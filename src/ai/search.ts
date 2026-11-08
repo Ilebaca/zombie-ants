@@ -458,17 +458,17 @@ function shouldCast(
  * It runs on its own small budget rather than borrowing Normal's, because this happens
  * twice before Hard's real search and the three together have to fit inside one turn.
  */
-const PROBE: Profile = {
+export const ABILITY_PROBE: Profile = {
   ...PROFILES.normal, depth: 2, branching: 6, nodeBudget: 1200, timeBudgetMs: 45,
 };
 
 function probe(state: GameState, me: Player, ctx: ActionContext): number {
   const s: Ctx = {
-    ctx, me, profile: PROBE, nodes: 0, killers: [],
-    deadline: Date.now() + PROBE.timeBudgetMs, checkAt: 512, out: false,
+    ctx, me, profile: ABILITY_PROBE, nodes: 0, killers: [],
+    deadline: Date.now() + ABILITY_PROBE.timeBudgetMs, checkAt: 512, out: false,
   };
   const candidates = genRoot(state, me, s);
-  if (!candidates.length) return evaluateWith(state, me, ctx.mods, PROBE.weights);
+  if (!candidates.length) return evaluateWith(state, me, ctx.mods, ABILITY_PROBE.weights);
   const opp = otherPlayer(me);
   let best = -Infinity;
   let alpha = -Infinity;
@@ -476,8 +476,8 @@ function probe(state: GameState, me: Player, ctx: ActionContext): number {
     s.nodes++;
     const value = withAction(state, me, m.action, s, () =>
       state.over
-        ? evaluateWith(state, me, ctx.mods, PROBE.weights)
-        : -negamax(state, opp, PROBE.depth - 1, -Infinity, -alpha, s));
+        ? evaluateWith(state, me, ctx.mods, ABILITY_PROBE.weights)
+        : -negamax(state, opp, ABILITY_PROBE.depth - 1, -Infinity, -alpha, s));
     if (value > best) { best = value; alpha = value; }
     if (spent(s)) break;
   }
