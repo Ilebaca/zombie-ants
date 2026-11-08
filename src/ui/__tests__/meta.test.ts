@@ -1040,11 +1040,16 @@ describe("colony road screen", () => {
     expect(root.querySelector(`.rd-prize.free[data-stop="${RUNG}"] .rd-done`)).toBeTruthy();
   });
 
-  it("keeps the progress value within the road at its maximum", () => {
+  it("keeps maximum progress at the summit when the road is complete", async () => {
     const root = buildColonyRoad(store(0, 0, stopColony(ROAD_STOPS) * 2), () => {}, () => {});
     expect(root.querySelector(".rd-stop.next")).toBeNull();
     expect(root.querySelector('[role="progressbar"]')?.getAttribute("aria-valuenow"))
       .toBe(String(stopColony(ROAD_STOPS)));
+    const body = root.querySelector<HTMLElement>("#achBody");
+    if (!body) throw new Error("Missing road scroller");
+    Object.defineProperty(body, "scrollHeight", { value: 100_000 });
+    await new Promise<void>((resolve) => { requestAnimationFrame(() => { resolve(); }); });
+    expect(body.scrollTop).toBe(0);
   });
 });
 

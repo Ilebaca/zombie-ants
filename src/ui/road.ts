@@ -108,7 +108,7 @@ export function buildColonyRoad(
 
   const restTop = (body: HTMLElement): number => {
     const target = body.querySelector<HTMLElement>(".rd-stop.next");
-    if (!target) return body.scrollHeight;
+    if (!target) return 0; // A finished colony opens at the summit, not chapter one.
     const rect = target.getBoundingClientRect();
     const center = rect.top + rect.height / 2 - body.getBoundingClientRect().top;
     return Math.max(0, body.scrollTop + center - Math.round(body.clientHeight / 2));
