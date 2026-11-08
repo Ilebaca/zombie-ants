@@ -1526,7 +1526,7 @@ export class App {
     setFactionColor("you", mySpecies, this.profile.lookFor(mySpecies));
     setFactionColor("ai", aiSpecies);
 
-    // Anthill and research come from the profile; the AI always gets the neutral set. A
+    // Human upgrades come from the profile; Impossible has capped enemy upgrades. A
     // resumed match keeps the ones it was OPENED with: research bought between two sittings
     // must not change a board that is already half played, or the record stops replaying.
     const difficulty: SuspendDifficulty = resume?.difficulty

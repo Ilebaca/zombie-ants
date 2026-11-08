@@ -8,7 +8,7 @@
  * keeps simulation from writing stats or currencies (PROJECT_GUIDE.md §5).
  */
 import {
-  DIFFICULTIES, opponentModifiers, CHAMBER_MAX, MAPS, NEUTRAL_MODS, RESEARCH_MAX, SPECIES, basicLook, chamberCost, lookById,
+  DIFFICULTIES, opponentModifiers, CHAMBER_MAX, MAPS, RESEARCH_MAX, SPECIES, basicLook, chamberCost, lookById,
   looksFor, researchCost,
 } from "../engine";
 import { COLONY_START, grownColony } from "./colony";
@@ -1960,16 +1960,6 @@ export const matchXp = (won: boolean, turns: number): number =>
 
 /** The shop's once-a-day free handout. */
 export const DAILY_GIFT = { mycel: 60, pheromone: 100 } as const;
-
-/**
- * What the AI gets, always. No chambers, no research and NO TRAITS: it competes on
- * decision quality alone, so nothing a player collects is ever needed to keep up with it
- * (PROJECT_GUIDE.md §4.10). Spread from the engine's own constant rather than written out, or a
- * field added there is silently zero here and reads as a deliberate neutral value.
- */
-function neutralMods(): PlayerMods {
-  return { ...NEUTRAL_MODS };
-}
 
 /** Fold anthill chambers and per-species research into the engine's PlayerMods shape. */
 export function modsFrom(profile: Profile, species: SpeciesId): PlayerMods {

@@ -24,7 +24,7 @@ export interface EvalWeights {
   tile: number;
   income: number;
   /** Keep production relevant in games with no turn limit. Defaults to the legacy curve. */
-  incomeFloor?: number;
+  incomeFloor: number;
   resource: number;
   army: number;
   /** Largest single stack, capped. Same army spread thin loses to the same army in one fist. */
@@ -62,6 +62,7 @@ export interface EvalWeights {
 export const FULL: EvalWeights = {
   tile: 10,
   income: 7,
+  incomeFloor: 0,
   resource: 10,
   army: 1.2,
   concentration: 1.6,
@@ -212,7 +213,7 @@ export function evaluate(
    * game is actually meant to be played.
    */
   const left = Math.max(0, state.limits.turnLimit - state.turn);
-  const payout = Math.max(w.incomeFloor ?? 0, Math.min(2, left / (state.limits.turnLimit * 0.5)));
+  const payout = Math.max(w.incomeFloor, Math.min(2, left / (state.limits.turnLimit * 0.5)));
   // Tried and rejected: scaling this term up as the turn limit approaches, on the theory
   // that the limit is decided on tile count so late tiles are worth more. It cost hard
   // fifteen points against easy — the AI over-extends grabbing ground it cannot hold, and

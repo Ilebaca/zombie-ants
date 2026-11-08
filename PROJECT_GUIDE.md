@@ -209,9 +209,8 @@ These were each decided deliberately, several after bugs. Changing one silently 
 
 10. **Easy, Normal and Hard get no anthill upgrades, research or traits.** Impossible is
    an explicit exception: it uses the same capped chamber and research levels as the player.
-   It receives no extra actions, invented combat bonuses or free soldiers. `neutralMods()` spreads the
-   engine's own `NEUTRAL_MODS` rather than writing the fields out, or a field added there
-   is silently zero here and reads as a deliberate neutral value.
+   It receives no extra actions, invented combat bonuses or free soldiers. Enemy modifiers are
+   derived by `opponentModifiers()` from the engine caps and `NEUTRAL_MODS`.
 
 11. **WHO MOVES FIRST IS A COIN** (`startsFirst` in `engine/state.ts`). Moving first is worth
    roughly two to one (§8) and for the whole life of this game the player had it in every
