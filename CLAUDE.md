@@ -834,8 +834,7 @@ one that survived.
   cards, and `profile.lastMap` is gone — a memory of a choice that no longer exists.
 - **Setup has the same page frame as Shop, on both steps.** `--screen-top` is
   shared by ordinary screen headers and the absolutely positioned setup header.
-  `--screen-bottom` supplies the same 16px design margin below Next/Play; setup also
-  reserves the button's black ledge so the visible gap is not eaten by its shadow.
+  `--screen-bottom` supplies the same 16px design margin below the Next/Play button.
   Fullscreen resolves these shared values against the real safe-area insets.
 
 - **The setup is now ONE screen with TWO steps** (`buildSetup`), and Next does not

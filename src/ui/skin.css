@@ -2979,8 +2979,8 @@ button:not(.playbtn):active,
   flex-direction: column;
   /* The artwork clips at the viewport edges; controls carry their own gutter. */
   padding-inline: 0;
-  /* Match the page frame above and below, including the button's painted ledge. */
-  padding-bottom: calc(var(--screen-bottom) + var(--hud-ledge-y));
+  /* Match the page frame above and below. */
+  padding-bottom: var(--screen-bottom);
   /* THE PICTURE AND ITS NAME SIT IN THE MIDDLE; THE BUTTON HOLDS THE BOTTOM.
      Two flexible gaps, one above the board and one under the name, split what is left
      over equally — so the board rides near the middle of the screen and the button stays
