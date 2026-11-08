@@ -3031,6 +3031,16 @@ nagging the one player who had already done what it asked.**
       The legacy unscaled 52px tile minimum is overridden by the normal tap minimum.
     - The remaining fullscreen rules cover only non-deck screens and match controls;
       they must not put another home/drawer/tray override back at the end of the sheet.
+  - **Installed viewport ownership** (`ui/installed-viewport.ts`): start with the
+    actual available window height, never `100lvh` (which can extend underneath host
+    bars and clip the entire bottom tray). Keep height, height-based sizing and
+    safe-area tokens together while transient bars or the keyboard cover the game.
+    A wider/taller available window can still be accepted; hidden app-switcher
+    measurements are ignored. Ordinary browser tabs retain their responsive layout.
+    Installed Android asks for `requestFullscreen({navigationUI: "hide"})` on a
+    game tap, once per foreground session. Never re-enter from resize or visibility
+    events; refusal and unsupported APIs are normal. Android owns Recents and system
+    window animations; a web page cannot force native window inset policy.
   - **The manifest is precached, and a new build re-fetches it**: the worker's `install`
     adds the whole precache list from the network and `activate` deletes every other
     build's cache, so the change lands with the deploy. What it cannot do is re-install

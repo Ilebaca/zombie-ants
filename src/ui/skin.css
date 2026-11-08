@@ -3027,7 +3027,7 @@ button:not(.playbtn):active,
    pixel size (render/snapshot.ts). */
 .setupstage canvas {
   /* Reserve the additional action offset on short screens without stretching the preview. */
-  max-height: max(120px, calc(var(--installed-height, 100vh) - 330px - max(0px, var(--primary-action-bottom) - var(--screen-bottom))));
+  max-height: max(120px, calc(var(--installed-height, calc(100 * var(--game-vh))) - 330px - max(0px, var(--primary-action-bottom) - var(--screen-bottom))));
   object-fit: contain;
   max-width: none;
   border-radius: var(--r-lg);
@@ -4755,7 +4755,7 @@ button:not(.playbtn):active,
   gap: 10px;
   width: min(100%, var(--page));
   margin-inline: auto;
-  padding: 10px 12px calc(10px + env(safe-area-inset-top));
+  padding: 10px 12px calc(10px + var(--safe-top));
   background: var(--panel);
   border-bottom: 1px solid var(--line);
 }
@@ -5406,7 +5406,7 @@ button:not(.playbtn):active,
    A thumb-wide target, with the mark drawn smaller inside it. */
 .hatchpop-x {
   position: absolute;
-  top: max(10px, env(safe-area-inset-top));
+  top: max(10px, var(--safe-top));
   right: 10px;
   display: grid;
   place-items: center;
@@ -5819,7 +5819,7 @@ button:not(.playbtn):active,
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+  padding: 24px 16px calc(24px + var(--safe-bottom));
   overflow-y: auto;
 }
 .siwrap {
@@ -6577,20 +6577,23 @@ button:not(.playbtn):active,
      against an unscaled viewport. A transform is no better — it scales the
      paint and not the layout, so the screen would be the wrong size inside
      a box that is not. */
+  --game-vh: 1vh;
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
   --u: clamp(.875px, calc(100vw / 360), 1.2px);
   /* One owner per edge. Home clears the camera OR the design margin, never both.
      The tray sits on the safe bottom edge; its own padding supplies the visible gap. */
   --hudgut: calc(12 * var(--u));
-  --screen-top: calc(var(--sp4) + env(safe-area-inset-top));
-  --screen-bottom: calc(var(--sp4) + env(safe-area-inset-bottom));
-  --home-top: max(var(--hudgut), env(safe-area-inset-top));
+  --screen-top: calc(var(--sp4) + var(--safe-top));
+  --screen-bottom: calc(var(--sp4) + var(--safe-bottom));
+  --home-top: max(var(--hudgut), var(--safe-top));
   --hud-ledge-y: calc(4 * var(--u));
   --nav-tile: max(var(--tap), calc(54 * var(--u)));
   --nav-pad: calc(8 * var(--u));
   --nav-gap: calc(8 * var(--u));
   --nav-pad-bottom: calc(var(--nav-gap) + var(--hud-ledge-y));
   --navh: calc(var(--nav-tile) + var(--nav-pad) + var(--nav-pad-bottom));
-  --nav-bottom: env(safe-area-inset-bottom);
+  --nav-bottom: var(--safe-bottom);
   --nav-space: calc(var(--navh) + var(--nav-bottom));
   /* HOW WIDE HOME'S FURNITURE IS ALLOWED TO GET.
      Wider than the reading column (`--page`) on purpose: clamping home to a 360px
@@ -7315,7 +7318,7 @@ button:not(.playbtn):active,
    eight that padding is a 70px strip of nothing at the foot of the page. */
 #profile, #rules, #achievements, #settings, #news, #friends,
 #support, #luckyhatch {
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: var(--safe-bottom);
 }
 
 /* ==========================================================================
@@ -7995,23 +7998,23 @@ button:not(.playbtn):active,
    one, and it is what gives the board back the most room.
    ====================================================================== */
 .match footer {
-  --actpad: clamp(5px, 1.3vh, 10px);
-  gap: clamp(4px, 1vh, 8px);
-  padding: var(--actpad) 12px calc(var(--actpad) + env(safe-area-inset-bottom));
+  --actpad: clamp(5px, calc(1.3 * var(--game-vh)), 10px);
+  gap: clamp(4px, calc(1 * var(--game-vh)), 8px);
+  padding: var(--actpad) 12px calc(var(--actpad) + var(--safe-bottom));
 }
-.match .brow4 { gap: clamp(4px, .8vh, 6px); }
+.match .brow4 { gap: clamp(4px, calc(.8 * var(--game-vh)), 6px); }
 .match .brow4 .btn {
-  min-height: clamp(var(--tap), 7.6vh, 58px);
-  padding: clamp(4px, 1.2vh, 9px) 3px;
-  gap: clamp(1px, .4vh, 3px);
+  min-height: clamp(var(--tap), calc(7.6 * var(--game-vh)), 58px);
+  padding: clamp(4px, calc(1.2 * var(--game-vh)), 9px) 3px;
+  gap: clamp(1px, calc(.4 * var(--game-vh)), 3px);
 }
-.match .brow4 .btn .lb { font-size: clamp(8.5px, 1.25vh, 9.5px); }
+.match .brow4 .btn .lb { font-size: clamp(8.5px, calc(1.25 * var(--game-vh)), 9.5px); }
 /* The mark is an SVG with width/height ATTRIBUTES on it (the shell fills the
    slot with `icon(name, 20)`), and an attribute is what CSS overrides here —
    without this rule the label shrinks under a mark that never does. */
 .match .brow4 .btn .ic svg {
-  width: clamp(15px, 2.7vh, 20px);
-  height: clamp(15px, 2.7vh, 20px);
+  width: clamp(15px, calc(2.7 * var(--game-vh)), 20px);
+  height: clamp(15px, calc(2.7 * var(--game-vh)), 20px);
 }
 
 /* SURRENDER IS A MARK IN THE CORNER, NOT A ROW, asked for directly: "it
@@ -8034,7 +8037,7 @@ button:not(.playbtn):active,
   position: absolute;
   right: 12px;
   bottom: 100%;
-  margin-bottom: clamp(4px, 1vh, 8px);
+  margin-bottom: clamp(4px, calc(1 * var(--game-vh)), 8px);
 }
 .match .brow .btn.surr {
   flex: none;
@@ -8042,13 +8045,13 @@ button:not(.playbtn):active,
   gap: 6px;
   min-height: 0;
   border-radius: 999px;
-  padding: clamp(5px, 1vh, 8px) clamp(8px, 1.6vh, 11px);
+  padding: clamp(5px, calc(1 * var(--game-vh)), 8px) clamp(8px, calc(1.6 * var(--game-vh)), 11px);
 }
-.match .brow .btn.surr .lb { display: none; font-size: clamp(9.5px, 1.4vh, 11px); }
+.match .brow .btn.surr .lb { display: none; font-size: clamp(9.5px, calc(1.4 * var(--game-vh)), 11px); }
 .match .brow .btn.surr.armed .lb { display: block; }
 .match .brow .btn.surr .ic svg {
-  width: clamp(14px, 2.4vh, 18px);
-  height: clamp(14px, 2.4vh, 18px);
+  width: clamp(14px, calc(2.4 * var(--game-vh)), 18px);
+  height: clamp(14px, calc(2.4 * var(--game-vh)), 18px);
 }
 
 /* The two strips above the board give a little too, and the turn label is
@@ -8060,10 +8063,10 @@ button:not(.playbtn):active,
    child of `#app`, which pads for nothing. Nobody else has to ask for the
    notch, which is exactly why this screen never did. */
 .match header {
-  padding-block: calc(clamp(4px, 1.1vh, 8px) + env(safe-area-inset-top))
-                 clamp(4px, 1.1vh, 8px);
+  padding-block: calc(clamp(4px, calc(1.1 * var(--game-vh)), 8px) + var(--safe-top))
+                 clamp(4px, calc(1.1 * var(--game-vh)), 8px);
 }
-.match .timeband .timebar { height: clamp(6px, 1.3vh, 10px); }
+.match .timeband .timebar { height: clamp(6px, calc(1.3 * var(--game-vh)), 10px); }
 
 /* ---------------------------------------------------------------------
    THE GROUND IS THE WHOLE SCREEN, AND THE CHROME FLOATS ON IT, asked for
@@ -8110,7 +8113,7 @@ button:not(.playbtn):active,
    It wears the chips' own face, border and radius rather than a copy of
    the numbers: one more card on the row, a line lower. */
 .match .timeband {
-  margin: clamp(4px, 1vh, 6px) var(--sp3) 0;
+  margin: clamp(4px, calc(1 * var(--game-vh)), 6px) var(--sp3) 0;
   padding: var(--sp2) var(--sp3);
   border: 1px solid var(--hud-line);
   border-radius: var(--r-md);
@@ -9120,24 +9123,26 @@ body,
    ========================================================================== */
 @media (display-mode: fullscreen) {
   :root {
-    --screen-top: max(var(--sp4), env(safe-area-inset-top));
-    --screen-bottom: max(var(--sp4), env(safe-area-inset-bottom));
+    --screen-top: max(var(--sp4), var(--safe-top));
+    --screen-bottom: max(var(--sp4), var(--safe-bottom));
   }
   .match header {
-    padding-block: max(clamp(4px, 1.1vh, 8px), env(safe-area-inset-top))
-                   clamp(4px, 1.1vh, 8px);
+    padding-block: max(clamp(4px, calc(1.1 * var(--game-vh)), 8px), var(--safe-top))
+                   clamp(4px, calc(1.1 * var(--game-vh)), 8px);
   }
   #profile, #rules, #achievements, #settings, #news, #friends,
   #support, #luckyhatch {
-    padding-bottom: max(var(--hudgut), env(safe-area-inset-bottom));
+    padding-bottom: max(var(--hudgut), var(--safe-bottom));
   }
   .match footer {
-    padding-bottom: calc(var(--actpad) + max(var(--hudgut), env(safe-area-inset-bottom)));
+    padding-bottom: calc(var(--actpad) + max(var(--hudgut), var(--safe-bottom)));
   }
 }
 
-/* Fixed descendants belong to the installed frame, not the transient viewport.
-   Its height is measured once per width/orientation by installed-viewport.ts. */
+/* Transient Android UI covers one installed layout surface. Match sizing and
+   safe-area tokens use that same surface; browser tabs keep live viewport units. */
+.installed-frame,
+.installed-frame body { overscroll-behavior: none; }
 .installed-frame #app {
   bottom: auto;
   height: var(--installed-height);
