@@ -72,6 +72,16 @@ describe("what a win pays toward the lucky hatch", () => {
     expect(recap.larva).toBeNull();
   });
 
+  it("keeps larva receipts hidden for a pass owner before the hatch opens", () => {
+    const young = new ProfileStore(new MemoryStore());
+    young.grantPass();
+    expect(young.traitsOpen()).toBe(true);
+    expect(young.hatchOpen()).toBe(false);
+    const { recap } = settle({ store: young });
+    expect(young.get().larva).toBe(WIN_LARVA);
+    expect(recap.larva).toBeNull();
+  });
+
   it("puts it on the card once the hatch is open", () => {
     const grown = new ProfileStore(new MemoryStore());
     grown.update((p) => { p.colony = 2_000_000; });

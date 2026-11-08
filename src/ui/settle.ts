@@ -120,7 +120,7 @@ export function settleMatch(s: Settlement): Recap {
     colony: after.colony,
     colonyDelta: after.colony - beforeColony,
     mycel: after.mycel - beforeMycel,
-    larva: store.traitsOpen() ? after.larva - beforeLarva : null,
+    larva: store.hatchOpen() ? after.larva - beforeLarva : null,
     leveledTo: level > beforeLevel ? level : null,
     reason: s.reason,
   };

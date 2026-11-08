@@ -298,6 +298,11 @@ describe("the picker", () => {
   it("tells a young colony when the hatch opens", () => {
     expect(build(store()).querySelector(".av-note")?.textContent)
       .toContain("the lucky hatch opens at chapter");
+    const paid = store();
+    paid.grantPass();
+    expect(paid.traitsOpen()).toBe(true);
+    expect(build(paid).querySelector(".av-note")?.textContent)
+      .toContain("the lucky hatch opens at chapter");
     const grown = store();
     grown.update((p) => { p.colony = 2_000_000; });
     expect(build(grown).querySelector(".av-note")?.textContent)
