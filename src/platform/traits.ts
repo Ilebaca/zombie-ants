@@ -96,7 +96,7 @@ export const TRAIT_SLOTS = 5;
  * traits than room. Opened one at a time it is a decision every ten chapters instead: what
  * comes off to make room, and what the fifth one is finally for.
  *
- * The first opens where traits themselves do (chapter 10) and the last at chapter 50, the
+ * The first opens at chapter 10 (or early with the Colony Pass) and the last at chapter 50, the
  * end of the road — so the ladder lines up with the road exactly, and the bench is still
  * growing on the last chapter. `SLOT_CHAPTER` is derived from the step rather than typed
  * out: retuning the pace is one number, and two lists cannot disagree.
@@ -117,14 +117,16 @@ export const slotChapter = (i: number): number => TRAITS_CHAPTER + i * SLOT_STEP
  * Clamped at both ends: below the chapter traits open at there are none, and past the end
  * of the road there are five — never six, however far a colony runs past the last rung.
  */
-export function slotsOpen(chapter: number): number {
-  let n = 0;
+export function slotsOpen(chapter: number, pass = false): number {
+  // The pass opens the feature's first slot early; later slots keep their chapter gates.
+  let n = pass ? 1 : 0;
   while (n < TRAIT_SLOTS && chapter >= slotChapter(n)) n++;
   return n;
 }
 
 /** Whether one slot is open. The only question the screens actually ask. */
-export const slotOpen = (i: number, chapter: number): boolean => i < slotsOpen(chapter);
+export const slotOpen = (i: number, chapter: number, pass = false): boolean =>
+  i < slotsOpen(chapter, pass);
 
 /**
  * Ceilings on what a whole collection may add.
@@ -137,7 +139,7 @@ export const ATK_CAP = 30;
 export const DEF_CAP = 30;
 export const LUCK_CAP = 50;
 
-/** The chapter traits and the lucky hatch both open at. */
+/** The lucky hatch and free trait access open at this chapter; a pass opens traits early. */
 export const TRAITS_CHAPTER = 10;
 
 /* ------------------------------------------------------------------ TRAITS */

@@ -196,13 +196,9 @@ export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): H
     const box = el("div", "trempty");
     box.append(
       el("div", "trempty-h", "Nothing to fit here yet"),
-      // THE LUCKY HATCH IS THE ONLY SOURCE, and that is the design rather than a gap:
-      // a match pays mycelium and a colony, and the hatch pays the one thing there is no
-      // other way to get. Said here plainly, because an empty screen that does not say
-      // where the things come from reads as broken.
       el("div", "trempty-p", scope === "hill"
-        ? "Universal traits come from the lucky hatch. They work for every colony."
-        : `${SPECIES[scope].name} traits come from the lucky hatch.`),
+        ? "Universal traits come from the Colony Road and the lucky hatch. They work for every colony."
+        : `${SPECIES[scope].name} traits come from the Colony Road and the lucky hatch.`),
     );
     return box;
   };
@@ -247,8 +243,8 @@ export function buildInventory(store: ProfileStore, opts: InventoryOptions): HTM
     // Locked, and it says the chapter rather than showing a padlock — the same thing the
     // bench openers do, because it is the same gate.
     if (!store.traitsOpen()) {
-      wrap.appendChild(locked(`Traits open at chapter ${TRAITS_CHAPTER}.`,
-        "They are found in the lucky hatch, and worn five at a time by each colony."));
+      wrap.appendChild(locked(`Traits open at chapter ${TRAITS_CHAPTER} or with the Colony Pass.`,
+        "Find traits on the Colony Road or in the lucky hatch, then equip them on a colony or your anthill."));
       body.appendChild(wrap);
       root.appendChild(body);
       return;
@@ -257,7 +253,9 @@ export function buildInventory(store: ProfileStore, opts: InventoryOptions): HTM
     const bag = store.bag;
     if (bag.length === 0) {
       wrap.appendChild(locked("Nothing found yet",
-        "Traits come from the lucky hatch. Each colony wears five, and the anthill wears five more."));
+        store.hatchOpen()
+          ? "Traits come from the Colony Road and the lucky hatch. Equip them on a colony or your anthill."
+          : `Claim traits on the Colony Road. The lucky hatch opens at chapter ${TRAITS_CHAPTER}.`));
       body.appendChild(wrap);
       root.appendChild(body);
       return;

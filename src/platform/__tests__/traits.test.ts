@@ -405,6 +405,29 @@ describe("when each slot opens", () => {
     expect(s.equipTrait("fire", more.uid), "a colony bench had a different ladder").toBe(false);
   });
 
+  it("opens only the first slot early for pass owners on both benches", () => {
+    const s = at(1);
+    expect(s.slotsOpen()).toBe(0);
+    s.grantPass();
+    expect(s.traitsOpen()).toBe(true);
+    expect(s.hatchOpen()).toBe(false);
+    expect(s.slotsOpen()).toBe(1);
+    expect(slotOpen(0, 1, true)).toBe(true);
+    expect(slotOpen(1, 1, true)).toBe(false);
+    for (const scope of ["hill", "fire"] as const) {
+      const def = TRAITS.find((t) => scope === "hill" ? t.species === null : t.species === scope)!;
+      const one = s.findTrait(def.id, "rare")!;
+      expect(s.equipTrait(scope, one.uid)).toBe(true);
+      expect(s.benchTotals(scope).atkPct).toBeGreaterThan(0);
+    }
+    const totals = s.modsFor("fire").you.atkPct;
+    expect(totals).toBeGreaterThan(s.benchTotals("hill").atkPct);
+    s.update((p) => { p.colony = 0; });
+    expect(s.traitsOpen()).toBe(true);
+    expect(s.slotsOpen()).toBe(1);
+    expect(s.modsFor("fire").you.atkPct).toBe(totals);
+  });
+
   it("names the chapter of the next slot, and nothing once all five are open", () => {
     expect(at(10).nextSlotChapter()).toBe(20);
     expect(at(20).nextSlotChapter()).toBe(30);

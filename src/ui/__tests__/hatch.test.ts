@@ -204,6 +204,22 @@ describe("the hatch", () => {
     expect(root.querySelector("#hatchBuy"), "a shut hatch still sold larva").toBeNull();
   });
 
+  it("keeps the lucky hatch shut for an early pass owner", () => {
+    const early = new ProfileStore(new MemoryStore());
+    early.update((p) => { p.larva = 12; });
+    early.grantPass();
+    expect(early.traitsOpen()).toBe(true);
+    const before = JSON.stringify(early.get());
+    const random = vi.fn(() => .5);
+    expect(early.hatch(random)).toBeNull();
+    expect(early.hatchMany(10, random)).toEqual([]);
+    expect(random).not.toHaveBeenCalled();
+    expect(JSON.stringify(early.get())).toBe(before);
+    const { root } = build(early);
+    expect(root.querySelector("#hatchShut")).toBeTruthy();
+    expect(root.querySelector("#hatchGo, #hatchGo10, #hatchBuy, #hatchTrade")).toBeNull();
+  });
+
   it("takes the plus sign to the shop", () => {
     const { root, spy } = build(store());
     tap(root, "hatchBuy");

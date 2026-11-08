@@ -119,7 +119,7 @@ export const SHOP_PRODUCTS: readonly Product[] = [
   // ---- the things that are not currency ---------------------------------------------
   {
     id: "pass.trophy", kind: "pass", price: "€3.99", icon: "star",
-    title: "Colony Pass", sub: "The road's second track",
+    title: "Colony Pass", sub: "Road rewards, traits & inventory",
     grant: { pass: true },
   },
   {

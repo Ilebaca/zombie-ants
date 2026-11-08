@@ -12,6 +12,7 @@ import { MemoryStore } from "../storage";
 import { ProfileStore } from "../profile";
 import { DemoGateway, SHOP_PRODUCTS, productById } from "../purchases";
 import type { Product, PurchaseGateway, PurchaseResult } from "../purchases";
+import { ROAD_CHAPTER_STOPS, stopColony } from "../road";
 
 const store = (): ProfileStore => {
   const s = new ProfileStore(new MemoryStore());
@@ -83,6 +84,45 @@ describe("granting what was bought", () => {
     expect(s.get().mycel).toBe(hoard.grant.mycel);
     expect(s.get().pheromone).toBe(hoard.grant.pheromone);
     expect(s.get().pass).toBe(true);
+  });
+
+  it("opens usable traits with a pass purchase, while keeping the hatch chapter-locked", async () => {
+    for (const sku of ["pass.trophy", "bundle.hoard"]) {
+      const memory = new MemoryStore();
+      const s = new ProfileStore(memory);
+      s.update((p) => { p.colony = stopColony(3); p.larva = 12; });
+      expect(s.traitsOpen()).toBe(false);
+      expect(s.hatchOpen()).toBe(false);
+      const purchase = await new DemoGateway().buy(sku);
+      expect(purchase.ok).toBe(true);
+      s.applyGrant(purchase.grant!);
+      expect(s.traitsOpen()).toBe(true);
+      expect(s.slotsOpen()).toBe(1);
+      expect(s.nextSlotChapter()).toBe(20);
+      expect(s.hatchOpen()).toBe(false);
+      expect(s.claimRoad("p3", () => 0)).toBe(true);
+      const trait = s.get().bag[0]!;
+      expect(s.equipTrait("hill", trait.uid)).toBe(true);
+      expect(s.modsFor("fire").you.atkPct).toBeGreaterThan(0);
+      expect(s.benchTotals("hill").atkPct).toBeGreaterThan(0);
+      const extra = s.findTrait("u.raid", "common")!;
+      expect(s.equipTrait("hill", extra.uid, 1)).toBe(false);
+      const loaded = new ProfileStore(memory);
+      expect(loaded.traitsOpen()).toBe(true);
+      expect(loaded.hatchOpen()).toBe(false);
+      expect(loaded.slotsOpen()).toBe(1);
+      expect(loaded.modsFor("fire").you.atkPct).toBe(s.modsFor("fire").you.atkPct);
+      const before = JSON.stringify(loaded.get());
+      expect(loaded.hatch()).toBeNull();
+      expect(loaded.hatchMany(10)).toEqual([]);
+      expect(JSON.stringify(loaded.get())).toBe(before);
+      loaded.update((p) => { p.colony = stopColony(9 * ROAD_CHAPTER_STOPS); });
+      expect(loaded.hatchOpen()).toBe(true);
+      expect(loaded.slotsOpen()).toBe(1);
+      expect(loaded.hatch(() => .5)).not.toBeNull();
+      loaded.update((p) => { p.colony = stopColony(19 * ROAD_CHAPTER_STOPS); });
+      expect(loaded.slotsOpen()).toBe(2);
+    }
   });
 
   it("unlocks a premium colony without touching the currencies", async () => {

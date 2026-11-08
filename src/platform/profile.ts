@@ -951,15 +951,11 @@ export class ProfileStore {
 
   /* ------------------------------------------------------------------ TRAITS */
 
-  /**
-   * Are traits open yet? Chapter 10, which is the same gate the lucky hatch opens on.
-   *
-   * Late on purpose. A trait is a CHOICE between things you have found, and a player who
-   * is handed one in their first hour has no collection to choose from and no idea what
-   * +2% defence is worth — it would land as one more number on a screen they are still
-   * learning. By chapter 10 they have a colony, a favourite species and opinions.
-   */
-  traitsOpen(): boolean { return chapterOf(this.profile.colony) >= TRAITS_CHAPTER; }
+  /** The Colony Pass unlocks traits and inventory before their normal chapter gate. */
+  traitsOpen(): boolean { return this.profile.pass || this.hatchOpen(); }
+
+  /** The Lucky Hatch keeps its progression gate, including for pass owners. */
+  hatchOpen(): boolean { return chapterOf(this.profile.colony) >= TRAITS_CHAPTER; }
 
   /**
    * How many of the five slots the road has opened, on EITHER bench — they are the same
@@ -970,7 +966,7 @@ export class ProfileStore {
    * the totals. A call site that used the whole five would let a trait count from a slot
    * the player has not earned.
    */
-  slotsOpen(): number { return slotsOpen(chapterOf(this.profile.colony)); }
+  slotsOpen(): number { return slotsOpen(chapterOf(this.profile.colony), this.profile.pass); }
 
   /** The chapter the next locked slot opens at, or null when all five are open. */
   nextSlotChapter(): number | null {
@@ -1699,7 +1695,7 @@ export class ProfileStore {
    * the tier is that finding one is the best thing that happens in the feature.
    */
   hatch(random: () => number = Math.random): HatchPrize | null {
-    if (this.profile.larva < HATCH_COST) return null;
+    if (!this.hatchOpen() || this.profile.larva < HATCH_COST) return null;
 
     // ONE ROLL DECIDES BOTH. A skin is not a sixth rung and not a chance beside the
     // ladder — it IS the top of it (platform/skins.ts). The tier is rolled exactly as it
@@ -1763,7 +1759,7 @@ export class ProfileStore {
    */
   hatchMany(count: number, random: () => number = Math.random): HatchPrize[] {
     const n = Math.floor(count);
-    if (n < 1 || this.profile.larva < HATCH_COST * n) return [];
+    if (!this.hatchOpen() || n < 1 || this.profile.larva < HATCH_COST * n) return [];
     const out: HatchPrize[] = [];
     for (let i = 0; i < n; i++) {
       const prize = this.hatch(random);
@@ -2006,7 +2002,7 @@ export function wornTotals(profile: Profile, scope: TraitScope): TraitTotals {
  */
 export function wornItems(profile: Profile, scope: TraitScope): TraitItem[] {
   const slots = profile.wearing[scope] ?? [];
-  const open = slotsOpen(chapterOf(profile.colony));
+  const open = slotsOpen(chapterOf(profile.colony), profile.pass);
   const out: TraitItem[] = [];
   for (let i = 0; i < Math.min(slots.length, open); i++) {
     const uid = slots[i];

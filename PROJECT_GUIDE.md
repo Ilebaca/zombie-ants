@@ -1902,12 +1902,20 @@ rather than a purchase.
   progression layer already has: research is per-colony, chambers are account-wide. A
   species trait fits exactly one colony's bench and a universal one only the anthill, so
   "worn somewhere else" is impossible by construction.
+- **COLONY PASS OPENS TRAITS AND INVENTORY EARLY.** traitsOpen() includes pass ownership;
+  hatchOpen() stays chapter 10 regardless of pass. The pass opens exactly the first trait
+  slot on every bench before chapter 10. Later slots remain at chapters 20/30/40/50.
+  The shared slotsOpen(chapter, pass) is used by equipping and pure wornItems/modsFrom,
+  so the early slot actually contributes to matches and survives reloads or colony losses.
+  Both hatch() and hatchMany() refuse before hatchOpen(), without rolling or spending.
+  This is derived from the existing pass flag, including grants, purchases and restores;
+  existing owners need no migration or second purchase.
 - **THE SLOTS OPEN ONE EVERY TEN CHAPTERS** (`SLOT_STEP`, `slotsOpen`), on BOTH benches.
   Five handed over at once is a bench a player fills in an afternoon and never looks at
   again — the choice a trait is supposed to be only exists while there are more traits than
   room. Opened one at a time it is a decision every ten chapters instead: what comes off to
   make room, and what the fifth one is finally for. The first opens where traits do
-  (chapter 10) and the last at 50, the end of the road, so the bench is still growing on
+  (chapter 10, or earlier with the pass) and the last at 50, so the bench is still growing on
   the final rung. `slotChapter` is derived from the step, so retuning the pace is one
   number and two lists cannot disagree.
   - **The same ladder on both benches.** The anthill's five and a colony's five open at the

@@ -11,6 +11,7 @@ import { ProfileStore, TRAITS, TRAIT_SLOTS, TRAIT_TIER, effectFigure } from "../
 import { MemoryStore } from "../../platform";
 import { buildInventory, buildTraitBench, traitOpener } from "../traits";
 import { buildSpeciesPage } from "../species";
+import { buildAnthill } from "../anthill";
 import { TIERS, basicLook, looksFor } from "../../engine";
 import {
   FUSE_COST, FUSE_FUEL, ROAD_CHAPTER_STOPS, ROAD_LAST, SLOT_STEP, slotChapter, stopColony,
@@ -256,6 +257,26 @@ describe("the inventory", () => {
     const root = inventory(store());
     expect(root.querySelectorAll(".trtile").length).toBe(0);
     expect(root.querySelector(".trempty")?.textContent).toContain("lucky hatch");
+  });
+
+  it("opens inventory and trait controls immediately after buying the pass", () => {
+    const early = new ProfileStore(new MemoryStore());
+    const one = early.findTrait(UNIVERSAL[0]!.id, "rare")!;
+    expect(inventory(early).querySelectorAll(".invhead")).toHaveLength(0);
+    early.applyGrant({ pass: true });
+    const inv = inventory(early);
+    expect(inv.querySelectorAll(".invhead")).toHaveLength(1);
+    expect(inv.querySelector(".trtile")?.getAttribute("data-uid")).toBe(one.uid);
+    const hill = buildAnthill(early, { onTraits: () => {} });
+    expect(hill.querySelector("#hillTraits")?.classList.contains("locked")).toBe(false);
+    const species = buildSpeciesPage(early, { species: "fire", onBack: () => {}, onTraits: () => {} });
+    expect(species.querySelector("#spgTraits")?.classList.contains("locked")).toBe(false);
+    const root = bench(early);
+    expect(root.querySelectorAll("#trWorn .trtile.empty")).toHaveLength(1);
+    expect(root.querySelectorAll("#trWorn .trtile.shut")).toHaveLength(4);
+    rows(root)[0]?.click();
+    expect(early.bench("hill")[0]?.uid).toBe(one.uid);
+    expect(early.benchTotals("hill").atkPct).toBeGreaterThan(0);
   });
 
   it("names the chapter before traits are open", () => {

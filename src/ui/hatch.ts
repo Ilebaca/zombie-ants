@@ -127,11 +127,8 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     const wrap = el("div", "hatchwrap");
     wrap.id = "hatchBody";
 
-    // SHUT UNTIL TRAITS ARE, and that is not tidiness: larva buys traits and nothing
-    // else, so a hatch open before the benches are would sell a player something they
-    // cannot equip on any colony. A shop must never take money against a feature that
-    // does not exist yet, and for this player it does not.
-    if (!store.traitsOpen()) wrap.appendChild(shut());
+    // Pass ownership opens the benches early, while hatching still requires chapter 10.
+    if (!store.hatchOpen()) wrap.appendChild(shut());
     else wrap.append(purse(), trade(), stage(), foot(), odds());
 
     body.appendChild(wrap);
@@ -162,8 +159,8 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
       mark,
       el("div", "hatchshut-h", `Opens at chapter ${TRAITS_CHAPTER}`),
       el("div", "hatchshut-p",
-        "Larva hatch into traits, and traits are worn five at a time by each colony. "
-        + "Both open together."),
+        "Grow your colony to chapter 10 to open the lucky hatch. "
+        + "The Colony Pass unlocks traits and inventory early."),
     );
     return box;
   };
