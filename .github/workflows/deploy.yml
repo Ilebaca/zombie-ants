@@ -63,11 +63,11 @@ jobs:
   android:
     needs: build
     runs-on: ubuntu-latest
-    env:
-      # Explicit: AGP may otherwise use XDG_CONFIG_HOME instead of ~/.android.
-      ANDROID_USER_HOME: ${{ runner.temp }}/zombie-ants-android-user
     steps:
       - uses: actions/checkout@v4
+      # Explicit: AGP may otherwise use XDG_CONFIG_HOME instead of ~/.android.
+      - name: Set Android preferences directory
+        run: printf 'ANDROID_USER_HOME=%s/zombie-ants-android-user\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
