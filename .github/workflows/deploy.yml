@@ -3,6 +3,10 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+    # Broadcasts are read directly from GitHub; publishing mail is not a game release.
+    paths-ignore:
+      - 'public/live/**'
+      - 'docs/live-operations.md'
   workflow_dispatch:
 
 # Pages deployment needs these; GITHUB_TOKEN gets read-only defaults otherwise.

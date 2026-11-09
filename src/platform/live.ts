@@ -4,6 +4,8 @@ import { readJson, writeJson } from "./storage";
 import type { KeyValueStore } from "./storage";
 
 export const LIVE_SITE = "https://ilebaca.github.io/zombie-ants/";
+// Public broadcasts change independently of the bundled game and release metadata.
+const MAIL_SOURCE = "https://raw.githubusercontent.com/Ilebaca/zombie-ants/main/public/live/";
 const MAIL_CACHE = "zombie-ants.broadcast-mail";
 const MAX_RESPONSE = 262144;
 const BUILD_PATTERN = /^[a-f0-9]{7,40} · \d{4}-\d{2}-\d{2}$/;
@@ -134,8 +136,8 @@ export class LiveService {
     signal.addEventListener("abort", cancel, { once: true });
     const timer = setTimeout(() => controller.abort(), 5000);
     this.changed();
-    const read = async (path: string): Promise<unknown> => {
-      const res = await get(new URL(path, LIVE_SITE).href, {
+    const read = async (path: string, base = LIVE_SITE): Promise<unknown> => {
+      const res = await get(new URL(path, base).href, {
         cache: "no-store", credentials: "omit", signal,
       });
       if (!res.ok) throw new Error("Live content unavailable");
@@ -149,7 +151,7 @@ export class LiveService {
       await Promise.race([cancelled, Promise.allSettled([
         (async () => {
           try {
-            const raw = await read("live/mail.json");
+            const raw = await read("mail.json", MAIL_SOURCE);
             const data = object(raw);
             if (data?.schema !== 1 || !Array.isArray(data.messages)) throw new Error("Invalid mail feed");
             if (!active()) return;

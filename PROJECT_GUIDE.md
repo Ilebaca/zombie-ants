@@ -5450,6 +5450,8 @@ and resume, with bounded responses/timeouts and no player data in requests.
 make network requests. Home alone presents update prompts, outside matches/tours/other
 modals. Mail read state is per-colony; cached public messages remain readable offline.
 APK updates use monotonically increasing versionCode, never SHA/date comparison.
-`tools/package_apk.py` pins the published certificate after the first fingerprint manifest.
+`tools/package_apk.py` pins the first delivered certificate, then checks each published manifest.
+Broadcast mail is read from the public GitHub file, independent of Pages; mail-only edits
+are excluded from the game build trigger, so an announcement never forces an APK update.
 Do not bypass that guard or ask players to uninstall to apply an update.
 See `docs/live-operations.md` for publishing, current limitations and production setup.

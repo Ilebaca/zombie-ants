@@ -1,7 +1,9 @@
 # Publishing live announcements and updates
 
 ## Player inbox
-Edit `public/live/mail.json` on main and let the normal build/deploy complete.
+Edit `public/live/mail.json` on main. The inbox reads this public file directly from
+GitHub, independently of Pages and the APK. Mail-only changes do not trigger a game
+release or an installation prompt. GitHub's CDN may take a few minutes to refresh.
 Each message needs an immutable ID, title, plain-text body, and an ISO UTC sentAt.
 Use a new ID for a new announcement. Leave messages in the list while they should
 remain in players' inboxes. Optional expiresAt hides an expired announcement.
