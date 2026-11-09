@@ -50,12 +50,41 @@ jobs:
 
       - run: npm run build
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-web-build
+          path: dist/
+          retention-days: 7
+
+  android:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install Pillow==11.3.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-web-build
+          path: dist/
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
+          cache: gradle
+          cache-dependency-path: package-lock.json
 
       - uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-36 build-tools;36.0.0"
 
       # Reuse the development certificate so successive test APKs can update in place.
       - uses: actions/cache@v4
@@ -92,7 +121,7 @@ jobs:
           path: dist
 
   deploy:
-    needs: build
+    needs: android
     runs-on: ubuntu-latest
     environment:
       name: github-pages
