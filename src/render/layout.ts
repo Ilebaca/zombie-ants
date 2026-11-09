@@ -53,7 +53,7 @@ export class Layout {
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 
     // The rule: nine tiles across nine tenths of the viewport.
-    const vw = window.innerWidth || cssWidth;
+    const vw = canvas.closest<HTMLElement>("#app")?.clientWidth || window.innerWidth || cssWidth;
     const want = (vw * BOARD_VW) / this.size;
     // A canvas too SHORT (or too narrow) for a square that big falls back to fitting it,
     // because a clipped board is worse than a small one. No portrait phone reaches this —

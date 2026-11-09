@@ -1438,7 +1438,7 @@ body,
 
 .tourbubble {
   position: fixed;
-  width: min(330px, calc(100vw - 24px));
+  width: min(330px, calc(var(--frame-width) - 24px));
   pointer-events: auto;
   background: var(--panel);
   border: 1px solid var(--line);
@@ -6770,10 +6770,11 @@ button:not(.playbtn):active,
      against an unscaled viewport. A transform is no better — it scales the
      paint and not the layout, so the screen would be the wrong size inside
      a box that is not. */
+  --frame-width: 100vw;
   --game-vh: 1vh;
   --safe-top: env(safe-area-inset-top);
   --safe-bottom: env(safe-area-inset-bottom);
-  --u: clamp(.875px, calc(100vw / 360), 1.2px);
+  --u: clamp(.875px, calc(var(--frame-width) / 360), 1.2px);
   /* Controls clear the hardware inset, then leave a small design gap.
      The tray includes the home-indicator area in its padding exactly once. */
   --hudgut: calc(12 * var(--u));
@@ -6797,7 +6798,7 @@ button:not(.playbtn):active,
      one and not the other. It is on `:root` rather than on `#home` because the TRAY and
      the DRAWER both measure against it from outside that element. */
   --homemax: 640px;
-  --primary-action-width: calc(min(100vw - 2 * var(--hudgut), var(--homemax)) - 2 * (50 * var(--u) - var(--hudgut)));
+  --primary-action-width: calc(min(var(--frame-width) - 2 * var(--hudgut), var(--homemax)) - 2 * (50 * var(--u) - var(--hudgut)));
   --primary-action-height: max(52px, calc(54 * var(--u)));
   --primary-action-bottom: calc(var(--nav-space) + 3 * var(--hudgut));
   --navmax: var(--homemax);
@@ -9322,7 +9323,9 @@ body,
 .installed-frame,
 .installed-frame body { overscroll-behavior: none; }
 .installed-frame #app {
+  right: auto;
   bottom: auto;
+  width: var(--installed-width);
   height: var(--installed-height);
   contain: layout;
 }

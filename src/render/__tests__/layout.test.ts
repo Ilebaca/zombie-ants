@@ -30,9 +30,27 @@ const canvasWidth = (vw: number): number => vw - 32;
 /** Taller than any board 90vw can ask for, so the width rule is what is being measured. */
 const canvasHeight = (vw: number): number => Math.round(vw * 1.4);
 
-afterEach(() => { viewport(1024); });
+afterEach(() => { viewport(1024); document.body.replaceChildren(); });
 
 describe("Layout.measure", () => {
+  it("keeps the installed board geometry and hit targets when the OS changes the window", () => {
+    const app = document.createElement("div");
+    app.id = "app";
+    Object.defineProperty(app, "clientWidth", { value: 390 });
+    document.body.appendChild(app);
+    const board = canvas();
+    app.appendChild(board);
+    const layout = new Layout(9);
+    viewport(390);
+    layout.measure(board, 390, 844);
+    const before = [layout.ts, layout.ox, layout.oy];
+    const point = [layout.cx(4), layout.cy(4)];
+    viewport(280);
+    layout.measure(board, 390, 844);
+    expect([layout.ts, layout.ox, layout.oy]).toEqual(before);
+    expect(layout.hit(point[0]!, point[1]!)).toEqual({ c: 4, r: 4 });
+  });
+
   it("gives a tile a tenth of the viewport on every phone width", () => {
     for (const vw of PHONES) {
       viewport(vw);

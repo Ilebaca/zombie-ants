@@ -2,38 +2,40 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { stabilizeInstalledViewport } from "../installed-viewport";
 
 let stop: (() => void) | undefined;
-let installed = true;
-let hostFullscreen = false;
-let hidden = false;
-let full: Element | null = null;
-let enabled = true;
-const request = vi.fn<() => Promise<void>>();
+let installed = true, hostFullscreen = true, hidden = false, focused = true;
+let largeWidth = 0, largeHeight = 0;
+let safe: { paddingTop: string; paddingBottom: string };
+const request = vi.fn();
+const value = (name: string): string => document.documentElement.style.getPropertyValue(name);
 const viewport = (width: number, height: number): void => {
   Object.defineProperty(window, "innerWidth", { value: width, configurable: true });
   Object.defineProperty(window, "innerHeight", { value: height, configurable: true });
   window.dispatchEvent(new Event("resize"));
 };
-const value = (name: string): string => document.documentElement.style.getPropertyValue(name);
-const tap = (): void => { document.body.click(); };
+const snapshot = (): string[] => ["--installed-width", "--installed-height", "--game-vh",
+  "--frame-width", "--safe-top", "--safe-bottom"].map(value);
 
 beforeEach(() => {
-  installed = true;
-  hostFullscreen = false;
+  vi.useFakeTimers();
+  installed = hostFullscreen = focused = true;
   hidden = false;
-  full = null;
-  enabled = true;
-  request.mockReset().mockResolvedValue(undefined);
+  largeWidth = largeHeight = 0;
+  safe = { paddingTop: "52px", paddingBottom: "0px" };
+  request.mockReset();
+  vi.stubGlobal("screen", {
+    width: 390, height: 800, availWidth: 390, availHeight: 800,
+    orientation: Object.assign(new EventTarget(), { type: "portrait-primary" }),
+  });
   vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
     matches: installed && (query === "(display-mode: fullscreen)" ? hostFullscreen : true),
   })));
   vi.spyOn(navigator, "userAgent", "get").mockReturnValue("Android");
   vi.spyOn(document, "hidden", "get").mockImplementation(() => hidden);
-  Object.defineProperty(document, "fullscreenElement", {
-    get: () => full, configurable: true,
-  });
-  Object.defineProperty(document, "fullscreenEnabled", {
-    get: () => enabled, configurable: true,
-  });
+  vi.spyOn(document, "hasFocus").mockImplementation(() => focused);
+  vi.spyOn(window, "getComputedStyle").mockImplementation(() => safe as CSSStyleDeclaration);
+  vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(() => ({
+    width: largeWidth, height: largeHeight,
+  } as DOMRect));
   Object.defineProperty(document.documentElement, "requestFullscreen", {
     value: request, configurable: true,
   });
@@ -44,206 +46,133 @@ afterEach(() => {
   stop?.();
   stop = undefined;
   document.body.replaceChildren();
-  delete (document.documentElement as Partial<HTMLElement>).requestFullscreen;
-  Reflect.deleteProperty(document, "fullscreenElement");
-  Reflect.deleteProperty(document, "fullscreenEnabled");
+  Reflect.deleteProperty(document.documentElement, "requestFullscreen");
+  Reflect.deleteProperty(navigator, "standalone");
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
-describe("installed game viewport", () => {
-  it("starts inside the actual window, without measuring a larger hypothetical viewport", () => {
-    const rect = vi.spyOn(Element.prototype, "getBoundingClientRect")
-      .mockReturnValue({ height: 880 } as DOMRect);
+describe("installed mobile layout surface", () => {
+  it("never sizes the frame beyond the actual launch window", () => {
+    largeWidth = 390;
+    largeHeight = 844;
     stop = stabilizeInstalledViewport();
+    expect(value("--installed-width")).toBe("390px");
     expect(value("--installed-height")).toBe("800px");
     expect(value("--game-vh")).toBe("8px");
-    expect(rect).not.toHaveBeenCalled();
   });
 
-  it("does not reflow for bars, keyboard, or their repeated animation frames", () => {
+  it("falls back to the actual launch window on older engines", () => {
     stop = stabilizeInstalledViewport();
-    const safeTop = value("--safe-top"), safeBottom = value("--safe-bottom");
-    for (const height of [780, 760, 500, 750, 800, 760, 800]) {
-      viewport(390, height);
-      expect(value("--installed-height")).toBe("800px");
-      expect(value("--game-vh")).toBe("8px");
-      expect(value("--safe-top")).toBe(safeTop);
-      expect(value("--safe-bottom")).toBe(safeBottom);
-    }
+    expect(value("--installed-height")).toBe("800px");
+    expect(value("--frame-width")).toBe("390px");
   });
 
-  it("keeps the screen calibration while Chrome withdraws the cutout inset", () => {
-    hostFullscreen = true;
-    const safe = { paddingTop: "52px", paddingBottom: "0px" } as CSSStyleDeclaration;
-    vi.spyOn(window, "getComputedStyle").mockReturnValue(safe);
-    viewport(411, 914);
+  it("does not change for smaller OR larger same-screen resize events after launch", () => {
     stop = stabilizeInstalledViewport();
-    expect(document.documentElement.classList.contains("android-fullscreen")).toBe(true);
-    for (let i = 0; i < 4; i++) {
+    vi.advanceTimersByTime(1100);
+    const before = snapshot();
+    for (const [width, height] of [[390, 740], [300, 500], [430, 900], [390, 844], [390, 800]]) {
       safe.paddingTop = "0px";
-      viewport(411, 838);
-      expect(value("--safe-top")).toBe("52px");
-      expect(value("--installed-height")).toBe("914px");
-      safe.paddingTop = "52px";
-      viewport(411, 914);
-      expect(value("--safe-top")).toBe("52px");
-      expect(value("--installed-height")).toBe("914px");
+      viewport(width!, height!);
+      expect(snapshot()).toEqual(before);
     }
-    stop();
-    stop = undefined;
-    expect(document.documentElement.classList.contains("android-fullscreen")).toBe(false);
   });
 
-  it("leaves iPhone hardware insets live when WebKit reports them after launch", () => {
+  it("preserves the complete frame across blur, app switcher, resume, pageshow and taps", () => {
+    stop = stabilizeInstalledViewport();
+    const before = snapshot();
+    focused = false;
+    window.dispatchEvent(new Event("blur"));
+    hidden = true;
+    document.dispatchEvent(new Event("visibilitychange"));
+    viewport(280, 450);
+    hidden = false;
+    focused = true;
+    // A foreground notification can precede restoration of the real viewport.
+    document.dispatchEvent(new Event("visibilitychange"));
+    window.dispatchEvent(new Event("focus"));
+    window.dispatchEvent(new Event("pageshow"));
+    safe.paddingTop = "0px";
+    viewport(390, 838);
+    document.body.click();
+    document.dispatchEvent(new Event("fullscreenchange"));
+    vi.advanceTimersByTime(2000);
+    expect(snapshot()).toEqual(before);
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it("captures late iPhone hardware insets during launch, then freezes them on resume", () => {
     vi.spyOn(navigator, "userAgent", "get").mockReturnValue("iPhone");
-    const safe = { paddingTop: "0px", paddingBottom: "0px" } as CSSStyleDeclaration;
-    vi.spyOn(window, "getComputedStyle").mockReturnValue(safe);
+    safe.paddingTop = safe.paddingBottom = "0px";
     stop = stabilizeInstalledViewport();
     safe.paddingTop = "47px";
     safe.paddingBottom = "34px";
-    viewport(390, 800);
-    // No inline snapshot may override the CSS env() values as they become available.
-    expect(value("--safe-top")).toBe("");
-    expect(value("--safe-bottom")).toBe("");
-    expect(value("--installed-height")).toBe("800px");
+    vi.advanceTimersByTime(200);
+    expect(value("--safe-top")).toBe("47px");
+    expect(value("--safe-bottom")).toBe("34px");
+    vi.advanceTimersByTime(1000);
+    const before = snapshot();
+    safe.paddingTop = safe.paddingBottom = "0px";
     viewport(390, 740);
-    expect(value("--installed-height")).toBe("800px");
-    expect(request).not.toHaveBeenCalled();
+    window.dispatchEvent(new Event("pageshow"));
+    vi.advanceTimersByTime(1000);
+    expect(snapshot()).toEqual(before);
   });
 
-  it("recognizes older Home Screen launches through navigator.standalone", () => {
-    installed = false;
-    vi.spyOn(navigator, "userAgent", "get").mockReturnValue("iPhone");
-    Object.defineProperty(navigator, "standalone", { value: true, configurable: true });
-    try {
-      stop = stabilizeInstalledViewport();
-      expect(document.documentElement.classList.contains("installed-frame")).toBe(true);
-      expect(value("--safe-top")).toBe("");
-      expect(value("--safe-bottom")).toBe("");
-      expect(value("--installed-height")).toBe("800px");
-    } finally {
-      Reflect.deleteProperty(navigator, "standalone");
-    }
-  });
-
-  it("accepts more available space and a real width change", () => {
+  it("recalibrates only when physical display geometry changes", () => {
     stop = stabilizeInstalledViewport();
-    viewport(390, 844);
-    expect(value("--installed-height")).toBe("844px");
+    vi.advanceTimersByTime(1100);
+    Object.defineProperties(screen, {
+      width: { value: 360, configurable: true },
+      height: { value: 740, configurable: true },
+    });
     viewport(360, 740);
+    expect(value("--installed-width")).toBe("360px");
     expect(value("--installed-height")).toBe("740px");
   });
 
-  it("ignores app-switcher measurements while the document is hidden", () => {
+  it("recognizes older iPhone Home Screen launches", () => {
+    installed = false;
+    vi.spyOn(navigator, "userAgent", "get").mockReturnValue("iPhone");
+    Object.defineProperty(navigator, "standalone", { value: true, configurable: true });
     stop = stabilizeInstalledViewport();
-    hidden = true;
-    viewport(300, 500);
-    expect(value("--installed-height")).toBe("800px");
-    hidden = false;
-    viewport(390, 800);
-    document.dispatchEvent(new Event("visibilitychange"));
-    expect(value("--installed-height")).toBe("800px");
+    expect(document.documentElement.classList.contains("installed-frame")).toBe(true);
   });
 
-  it("leaves ordinary browser tabs responsive", () => {
-    installed = false;
+  it("never layers DOM fullscreen requests over installed host fullscreen", () => {
+    hostFullscreen = false;
     stop = stabilizeInstalledViewport();
-    viewport(390, 700);
-    tap();
-    expect(document.documentElement.classList.contains("installed-frame")).toBe(false);
-    expect(value("--installed-height")).toBe("");
+    document.body.click();
+    window.dispatchEvent(new Event("blur"));
+    window.dispatchEvent(new Event("focus"));
+    document.dispatchEvent(new Event("visibilitychange"));
+    document.body.click();
     expect(request).not.toHaveBeenCalled();
   });
 
-  it("removes listeners, the measurement probe, and layout overrides on disposal", () => {
+  it("leaves browser tabs and desktop windows responsive", () => {
+    installed = false;
+    stop = stabilizeInstalledViewport();
+    viewport(300, 500);
+    expect(value("--installed-height")).toBe("");
+    stop();
+    vi.spyOn(navigator, "userAgent", "get").mockReturnValue("Desktop Chrome");
+    installed = true;
+    stop = stabilizeInstalledViewport();
+    expect(value("--installed-width")).toBe("");
+  });
+
+  it("disposes timers, listeners, classes, probes and inline geometry", () => {
     stop = stabilizeInstalledViewport();
     stop();
     stop = undefined;
-    viewport(390, 900);
-    tap();
-    expect(value("--installed-height")).toBe("");
-    expect(document.documentElement.classList.contains("installed-frame")).toBe(false);
+    viewport(300, 500);
+    vi.advanceTimersByTime(2000);
+    expect(snapshot()).toEqual(["", "", "", "", "", ""]);
     expect(document.body.children).toHaveLength(0);
-    expect(request).not.toHaveBeenCalled();
-    expect(document.documentElement.classList.contains("android-fullscreen")).toBe(false);
-  });
-});
-
-describe("Android immersive fullscreen", () => {
-  it("leaves manifest fullscreen to the host across gestures and foreground changes", () => {
-    hostFullscreen = true;
-    stop = stabilizeInstalledViewport();
-    tap();
-    viewport(390, 740);
-    hidden = true;
-    document.dispatchEvent(new Event("visibilitychange"));
-    hidden = false;
-    document.dispatchEvent(new Event("visibilitychange"));
-    hostFullscreen = false;
-    tap();
-    expect(request).not.toHaveBeenCalled();
-  });
-
-  it("requests hidden navigation UI on a game tap, never during bar resizes", () => {
-    stop = stabilizeInstalledViewport();
-    viewport(390, 760);
-    document.dispatchEvent(new Event("visibilitychange"));
-    expect(request).not.toHaveBeenCalled();
-    tap();
-    expect(request).toHaveBeenCalledTimes(1);
-    expect(request).toHaveBeenCalledWith({ navigationUI: "hide" });
-    full = document.documentElement;
-    document.dispatchEvent(new Event("fullscreenchange"));
-    expect(document.documentElement.classList.contains("android-fullscreen")).toBe(true);
-    expect(value("--installed-height")).toBe("800px");
-    viewport(390, 844);
-    document.dispatchEvent(new Event("fullscreenchange"));
-    expect(value("--installed-height")).toBe("844px");
-    full = null;
-    document.dispatchEvent(new Event("fullscreenchange"));
-    expect(document.documentElement.classList.contains("android-fullscreen")).toBe(false);
-    viewport(390, 760);
-    tap();
-    expect(request).toHaveBeenCalledTimes(1);
-    expect(value("--installed-height")).toBe("844px");
-  });
-
-  it("swallows rejection and does not repeatedly ask in the same foreground session", async () => {
-    request.mockRejectedValue(new Error("Denied"));
-    stop = stabilizeInstalledViewport();
-    tap();
-    await Promise.resolve();
-    tap();
-    viewport(390, 760);
-    expect(request).toHaveBeenCalledTimes(1);
-    hidden = true;
-    document.dispatchEvent(new Event("visibilitychange"));
-    hidden = false;
-    document.dispatchEvent(new Event("visibilitychange"));
-    expect(request).toHaveBeenCalledTimes(1);
-    tap();
-    await Promise.resolve();
-    expect(request).toHaveBeenCalledTimes(2);
-  });
-
-  it("does not interrupt typing or request unsupported fullscreen", () => {
-    stop = stabilizeInstalledViewport();
-    const input = document.createElement("input");
-    document.body.appendChild(input);
-    input.click();
-    expect(request).not.toHaveBeenCalled();
-    enabled = false;
-    tap();
-    expect(request).not.toHaveBeenCalled();
-  });
-
-  it("does not invoke Android fullscreen behavior on other platforms", () => {
-    hostFullscreen = true;
-    vi.spyOn(navigator, "userAgent", "get").mockReturnValue("iPhone");
-    stop = stabilizeInstalledViewport();
-    tap();
-    expect(request).not.toHaveBeenCalled();
+    expect(document.documentElement.classList.contains("installed-frame")).toBe(false);
     expect(document.documentElement.classList.contains("android-fullscreen")).toBe(false);
   });
 });

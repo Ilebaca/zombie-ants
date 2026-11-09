@@ -3035,38 +3035,22 @@ nagging the one player who had already done what it asked.**
     can be false. Never infer the launch mode from those DOM properties.
   - An installed window already launched fullscreen must not also request DOM
     fullscreen on game taps. Android owns that window's immersive lifecycle.
-    Older standalone installs can still request DOM fullscreen from a game gesture.
+    Standalone fallback installs also leave the display mode to the host.
   - isInstalled() recognizes fullscreen, standalone and minimal-ui.
   - The native transient-bar policy belongs to the host, not CSS. A locked-height
     surface can still be clipped if the host actually shrinks its content window.
     Browser tests that only override innerHeight do NOT test that failure.
-  - **HOME AND THE TRAY EACH HAVE ONE SPACING OWNER**, shared by browser, standalone
-    and fullscreen. Installed apps can retain an older manifest's display mode, so a
-    fullscreen-only spacing patch is not a reliable fix.
-    - Home's top is `--home-top: max(--hudgut, safe-area-inset-top)`. Its currency
-      row has no vertical padding. Previously the row added another scaled 8px after
-      home had already cleared the camera: a 48px inset became about 56px at 384 wide.
-    - The tray's offset is only the device's safe bottom. Its internal bottom padding
-      includes one scaled 8px visible gap and the black ledge. No extra gutter lifts
-      the entire navigation block.
-    - `--nav-tile`, `--nav-pad` and `--nav-pad-bottom` derive `--navh`.
-      `--nav-space` adds the safe-bottom offset once and every deck page reserves it.
-      The legacy unscaled 52px tile minimum is overridden by the normal tap minimum.
-    - The remaining fullscreen rules cover only non-deck screens and match controls;
-      they must not put another home/drawer/tray override back at the end of the sheet.
-  - **Installed viewport ownership** (`ui/installed-viewport.ts`): start with the
-    actual available window height, never `100lvh` (which can extend underneath host
-    bars and clip the entire bottom tray). Keep height, height-based sizing and
-    safe-area tokens together while transient bars or the keyboard cover the game.
-    A wider/taller available window can still be accepted; hidden app-switcher
-    measurements are ignored. Ordinary browser tabs retain their responsive layout.
-    Standalone Android asks for `requestFullscreen({navigationUI: "hide"})` on a
-    game tap, once per foreground session. Never re-enter from resize or visibility
-    events; refusal and unsupported APIs are normal. Host fullscreen never gets a second
-    DOM fullscreen request. Support → Copy display report captures bounded local window,
-    visual viewport, fullscreen, inset and menu geometry events for on-device diagnosis.
-    It contains no save data and sends nothing. Android owns Recents and system
-    window animations; a web page cannot force native window inset policy.
+  - **One stable installed surface**: calibrate the actual launch window and hardware
+    insets under the splash for at most one second. Seal immediately on blur/background.
+    Do not accept temporary app-switcher widths or resume height growth. Focus, pageshow,
+    taps and fullscreen events cannot recalibrate or request a new display mode.
+    Only physical screen/orientation geometry changes allow recalibration.
+    Home clears safe-top plus its design gap. Tray padding includes safe-bottom once;
+    it has no additional safe-bottom offset. These rules are shared across display modes.
+    CSS width units and canvas hit geometry read the same installed frame.
+    Never substitute a hypothetical larger viewport or device screen pixels for the
+    actual available launch window: that can clip the navigation outside the host.
+    Support → Copy display report remains local and contains no save data or network calls.
   - **Android framed-window compensation** (`android-fullscreen #app`):
     the phone report on e95a5a0 showed a 914px full window with a 52px top cutout,
     changing to 838px with a 0px cutout while display-mode remained fullscreen.
@@ -5379,14 +5363,15 @@ what keeps AI search from writing stats or currencies (§5).
   Pass the same mods object to the match's `ActionContext`, or research shows up in the
   income readout while doing nothing in a fight.
 
-- Installed viewport: `ui/installed-viewport.ts` starts from the actual window and retains
-  the largest height at each width. Same-width system-bar/keyboard resizes do not shrink
-  the app; width changes remeasure. Android keeps calibrated hardware insets for its
-  transient-bar origin compensation. iOS leaves CSS `env(safe-area-inset-*)` live because
-  WebKit can publish the notch/home-indicator values after launch. Never pin iOS insets
-  to their first reading. Recognize older iOS launches through `navigator.standalone`.
-  Layout containment keeps fixed controls attached to the installed frame. Browser tabs
-  use `100dvh` where supported. All screen headers clear safe-top plus their design gap.
+- Installed mobile viewport: `ui/installed-viewport.ts` calibrates one surface under the
+  launch splash using the actual available window and hardware insets.
+  After the first second, or immediately on blur/backgrounding, width, height and insets
+  stay fixed. Same-screen resize, focus, pageshow and fullscreen events cannot recalibrate
+  the game. Only a physical screen/orientation geometry change starts a new calibration.
+  The installed host owns fullscreen; game taps never request DOM fullscreen.
+  CSS width sizing and board hit geometry use the same app frame. Android retains the
+  host-origin inset correction so transient bars overlay the same physical pixels.
+  Browser tabs and desktop windows remain normally responsive.
 - Setup uses an in-flow header, a constrained grid preview and a footer sized for its
   controls. Both canvas axes scale together inside the remaining stage; renderer pixel
   dimensions cannot push through the picker. Next/Play share Home's primary-action bounds,

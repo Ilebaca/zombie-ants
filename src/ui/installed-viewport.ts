@@ -1,115 +1,96 @@
-import { lockPortrait } from "../platform/orientation";
-import { recordDisplay, watchDisplay } from "./display-report";
+import { watchDisplay } from "./display-report";
 
 /**
- * An installed game has one layout surface. Transient system bars and keyboards
- * may cover it, but must not rearrange it. Ordinary browser tabs remain responsive.
+ * Installed mobile games use one launch-calibrated surface. The host owns fullscreen;
+ * system bars, keyboards and the app switcher cover that surface without resizing it.
+ * Browser tabs and desktop windows keep their normal responsive layout.
  */
 export function stabilizeInstalledViewport(): () => void {
-  const ios = /iPad|iPhone|iPod/i.test(navigator.userAgent)
-    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
-  if (!standalone && !window.matchMedia("(display-mode: fullscreen), (display-mode: standalone)").matches) {
-    return watchDisplay();
-  }
-
-  // Manifest fullscreen is owned by the Android host. Do not layer the DOM
-  // Fullscreen API over it: the two modes have separate lifecycle/inset handling.
-  const hostFullscreen = window.matchMedia("(display-mode: fullscreen)").matches;
   const root = document.documentElement;
-  const android = /Android/i.test(navigator.userAgent);
-  const alignFullscreenWindow = (): void => {
-    root.classList.toggle("android-fullscreen", android
-      && (hostFullscreen || document.fullscreenElement === root));
-  };
+  const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  const installed = standalone
+    || window.matchMedia("(display-mode: fullscreen), (display-mode: standalone)").matches;
+  const mobile = /Android|iPad|iPhone|iPod/i.test(navigator.userAgent)
+    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (!installed || !mobile) return watchDisplay();
+
   const probe = document.createElement("div");
   probe.style.cssText = "position:fixed;visibility:hidden;pointer-events:none;"
-    + "padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)";
+    + "padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);"
+    + "box-sizing:border-box";
   document.body.appendChild(probe);
-  let width = 0;
-  let height = 0;
-  let attempted = false;
-  let disposed = false;
+  const geometry = (): string => `${screen.width}:${screen.height}:${screen.orientation?.type ?? ""}`;
+  let screenKey = geometry();
+  let width = 0, height = 0, top = 0, bottom = 0;
+  let sealed = false, disposed = false;
+  let poll = 0, deadline = 0;
 
-  const measure = (enteredFullscreen = false): void => {
-    if (disposed || document.hidden) return;
-    const nextWidth = window.innerWidth;
-    const nextHeight = window.innerHeight;
-    if (nextWidth <= 0 || nextHeight <= 0) return;
-    const resized = nextWidth !== width;
-    // Start with the actual window, not 100lvh: a large viewport can include space
-    // the installed browser has reserved for its bars, clipping the whole tab bar.
-    if (!resized && !enteredFullscreen && nextHeight <= height) return;
-    width = nextWidth;
-    height = resized ? nextHeight : Math.max(height, nextHeight);
+  const calibrate = (): void => {
+    if (disposed || sealed || document.hidden || window.innerWidth > window.innerHeight) return;
     const safe = getComputedStyle(probe);
+    // The actual launch window bounds the surface: a hypothetical 100lvh can
+    // include permanently reserved host bars and hide the entire navigation tray.
+    width = Math.max(width, window.innerWidth);
+    height = Math.max(height, window.innerHeight);
+    top = Math.max(top, parseFloat(safe.paddingTop) || 0);
+    bottom = Math.max(bottom, parseFloat(safe.paddingBottom) || 0);
+    if (!(width > 0 && height > 0)) return;
+    root.style.setProperty("--installed-width", `${width}px`);
+    root.style.setProperty("--frame-width", `${width}px`);
     root.style.setProperty("--installed-height", `${height}px`);
     root.style.setProperty("--game-vh", `${height / 100}px`);
-    // WebKit may publish its notch/home-indicator insets after the first layout.
-    // Keep CSS env() live on iOS; Android retains its calibrated transient-bar policy.
-    if (!ios) {
-      root.style.setProperty("--safe-top", safe.paddingTop || "0px");
-      root.style.setProperty("--safe-bottom", safe.paddingBottom || "0px");
-    }
+    root.style.setProperty("--safe-top", `${top}px`);
+    root.style.setProperty("--safe-bottom", `${bottom}px`);
+    root.classList.add("installed-frame");
+    root.classList.toggle("android-fullscreen", /Android/i.test(navigator.userAgent)
+      && window.matchMedia("(display-mode: fullscreen)").matches);
   };
-
-  const resize = (): void => { measure(); };
-  const fullscreen = (): void => {
-    alignFullscreenWindow();
-    if (document.fullscreenElement === root) {
-      measure(true);
-      lockPortrait();
-    }
+  const seal = (): void => {
+    sealed = true;
+    window.clearInterval(poll);
+    window.clearTimeout(deadline);
   };
-  const awake = (): void => {
-    if (document.hidden) return;
-    // Returning from another app permits a fresh request on the next game tap.
-    // Never request fullscreen from a resize, a system gesture or visibility itself.
-    attempted = false;
-    measure();
+  const begin = (): void => {
+    sealed = false;
+    // WebKit can publish hardware insets after its first layout. This bounded
+    // calibration runs under the launch splash; returning from another app never
+    // restarts it or requests DOM fullscreen.
+    calibrate();
+    poll = window.setInterval(() => {
+      if (document.hasFocus()) calibrate();
+    }, 100);
+    deadline = window.setTimeout(seal, 1000);
   };
-  const immerse = (event: Event): void => {
-    if (hostFullscreen || window.matchMedia("(display-mode: fullscreen)").matches
-      || attempted || document.hidden || document.fullscreenElement
-      || !document.fullscreenEnabled || !android) return;
-    if (navigator.userActivation?.isActive === false) return;
-    const target = event.target;
-    if (target instanceof Element && target.closest("input, textarea, select, [contenteditable]")) return;
-    attempted = true;
-    try {
-      // Ask explicitly for the full screen with navigation UI hidden. This is
-      // separate from the manifest launch mode, and requires a game gesture.
-      recordDisplay("fullscreen-request", probe);
-      void root.requestFullscreen({ navigationUI: "hide" }).catch(() => {
-        recordDisplay("fullscreen-refused", probe);
-        // Unsupported or refused: keep the installed layout, without repeated asks.
-      });
-    } catch {
-      recordDisplay("fullscreen-unavailable", probe);
-      // Older embedded browsers may expose an unusable implementation.
-    }
+  const resize = (): void => {
+    if (document.hidden || !document.hasFocus()) return;
+    const nextKey = geometry();
+    if (nextKey !== screenKey) {
+      seal();
+      screenKey = nextKey;
+      width = height = top = bottom = 0;
+      begin();
+    } else if (!sealed) calibrate();
   };
-
-  measure();
-  alignFullscreenWindow();
-  root.classList.add("installed-frame");
+  const visibility = (): void => { if (document.hidden) seal(); };
+  begin();
   const stopReport = watchDisplay(probe);
   window.addEventListener("resize", resize);
-  document.addEventListener("fullscreenchange", fullscreen);
-  document.addEventListener("visibilitychange", awake);
-  document.addEventListener("click", immerse, true);
-
+  window.addEventListener("blur", seal);
+  window.addEventListener("pageshow", resize);
+  document.addEventListener("visibilitychange", visibility);
+  screen.orientation?.addEventListener?.("change", resize);
   return () => {
     disposed = true;
-    window.removeEventListener("resize", resize);
+    seal();
     stopReport();
-    document.removeEventListener("fullscreenchange", fullscreen);
-    document.removeEventListener("visibilitychange", awake);
-    document.removeEventListener("click", immerse, true);
+    window.removeEventListener("resize", resize);
+    window.removeEventListener("blur", seal);
+    window.removeEventListener("pageshow", resize);
+    document.removeEventListener("visibilitychange", visibility);
+    screen.orientation?.removeEventListener?.("change", resize);
     probe.remove();
     root.classList.remove("installed-frame", "android-fullscreen");
-    for (const name of ["--installed-height", "--game-vh", "--safe-top", "--safe-bottom"]) {
-      root.style.removeProperty(name);
-    }
+    for (const name of ["--installed-width", "--frame-width", "--installed-height",
+      "--game-vh", "--safe-top", "--safe-bottom"]) root.style.removeProperty(name);
   };
 }

@@ -758,7 +758,7 @@ describe("the home screen's ledge survives the blanket", () => {
     const [lo, mid, hi] = (u ?? "").split(",").map((x) => x.trim());
     // The middle term is what makes 360 neutral: at 360 the scale is exactly 1.
     expect(mid, "the scale is not measured against the design's own width")
-      .toBe("calc(100vw / 360)");
+      .toBe("calc(var(--frame-width) / 360)");
     const n = (v: string): number => Number(v.replace("px", ""));
     expect(n(lo ?? ""), "no floor, so a narrow phone shrinks the type away")
       .toBeGreaterThan(0.5);
