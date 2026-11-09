@@ -5753,13 +5753,14 @@ button:not(.playbtn):active,
 #signin {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 24px 16px calc(24px + var(--safe-bottom));
+  justify-content: flex-start;
+  padding: calc(24px + var(--safe-top)) 16px calc(24px + var(--safe-bottom));
   overflow-y: auto;
 }
 .siwrap {
   width: min(100%, var(--page));
-  margin-inline: auto;
+  margin: auto;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: var(--stack);
@@ -9230,7 +9231,10 @@ body,
 
 /* The scrim is the design's neutral dark, not the old language's green-black:
    over ten painted regions a green cast reads as a tint rather than as dark. */
-.overlay { background: rgba(10, 11, 14, .78); }
+.overlay {
+  padding: var(--screen-top) var(--sp4) var(--screen-bottom);
+  background: rgba(10, 11, 14, .78);
+}
 
 .overlay > .overModalWrap > .card,
 .rd-popcard {
