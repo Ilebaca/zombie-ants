@@ -9363,7 +9363,7 @@ body,
   display: block; width: 100%; padding: 16px; border: none;
   color: var(--ink); background: transparent; text-align: left;
 }
-.mail-head h2 { margin: 8px 0 0; font-size: 19px; line-height: 1.25; }
+.mail-head h2 { margin: 8px 0 0; font-size: 19px; line-height: 1.25; overflow-wrap: anywhere; }
 .mail-meta { display: flex; align-items: center; gap: 8px; color: var(--hud-mute); font-size: 12px; }
 .mail-body { padding: 0 16px 16px; }
 .mail-body p, .live-copy { color: var(--hud-dim); font-size: 14px; line-height: 1.5; }

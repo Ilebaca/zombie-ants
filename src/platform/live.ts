@@ -55,7 +55,7 @@ export function apkOffer(value: unknown, installed: number): UpdateOffer | null 
     || !text(item.sha256, 64) || !/^[a-f0-9]{64}$/.test(item.sha256)) return null;
   // Derive the destination ourselves; a feed cannot redirect players to another APK host.
   const url = new URL("downloads/zombie-ants.apk", LIVE_SITE);
-  url.searchParams.set("v", item.build.split(" ")[0]!);
+  url.searchParams.set("v", item.build.slice(0, item.build.indexOf(" ")));
   return { id: String(item.versionCode), build: item.build, kind: "apk", url: url.href };
 }
 
@@ -172,7 +172,7 @@ export class LiveService {
               if (active() && build === BUILD) this.update = null;
               else if (active() && text(build, 80) && BUILD_PATTERN.test(build)) {
                 const url = new URL(LIVE_SITE);
-                url.searchParams.set("v", build.split(" ")[0]!);
+                url.searchParams.set("v", build.slice(0, build.indexOf(" ")));
                 this.update = { id: build, build, url: url.href, kind: "web" };
               }
             }

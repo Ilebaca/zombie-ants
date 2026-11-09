@@ -37,12 +37,14 @@ if not match:
     raise RuntimeError("APK signing certificate missing")
 certificate = match.group(1).lower()
 # An APK signed with another key cannot update the installed app without losing its save.
-# Pin the development certificate after the first manifest carrying this field.
+# The first delivered APK predates fingerprint metadata; pin that known public
+# certificate during migration as well as checking every later published manifest.
 url = "https://ilebaca.github.io/zombie-ants/downloads/zombie-ants.json?previous=" + build.split(" ")[0]
 request = urllib.request.Request(url, headers={"Cache-Control": "no-cache"})
 with urllib.request.urlopen(request, timeout=30) as response:
     previous = json.load(response)
-old_certificate = previous.get("certificateSha256")
+old_certificate = previous.get("certificateSha256") or \
+    "ae4360e1752501295f71b2f8f940b68a3ee3ce721838199d940f30eff0164c41"
 if old_certificate and old_certificate != certificate:
     raise RuntimeError("Signing certificate changed: refusing to publish an incompatible APK update")
 
