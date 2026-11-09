@@ -5433,3 +5433,14 @@ never relabelled wins. The shipping turn budget is larger than the screening bud
   legality, upgrade-cap, persistence and replay tests.
 - `incomeOf` includes Brood Nursery's extra nest production, matching `runProduction`.
   The Impossible evaluator must not add the nursery a second time.
+
+## Deployment image optimisation
+
+Pages runs `tools/optimize_images.py` on the runner before tests and Vite hashing.
+Original source artwork stays untouched in GitHub. WebP uses quality 86 with exact
+alpha; PNG stays pixel-exact; JPEG uses progressive encoding. Dimensions and formats
+are preserved, animated files are retained, and larger/negligible candidates are rejected.
+The generated `image-optimization.json` reports actual source/deployment byte totals.
+Run on a fresh checkout with Pillow 11.3.0; do not repeatedly recompress delivered files.
+The service worker keeps complete offline precaching, with at most four requests at
+once and reuse of content-hashed assets from the previous cache.

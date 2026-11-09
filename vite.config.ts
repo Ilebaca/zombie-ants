@@ -59,7 +59,16 @@ self.addEventListener("install", (e) => {
   // and leaves the player with no offline game at all.
   e.waitUntil((async () => {
     const cache = await caches.open(CACHE);
-    await Promise.all(PRECACHE.map((url) => cache.add(url).catch(() => {})));
+    // Bound install traffic so artwork does not saturate a slow phone connection.
+    // Hashed art is immutable: reuse it across builds rather than downloading it again.
+    for (let i = 0; i < PRECACHE.length; i += 4) {
+      await Promise.all(PRECACHE.slice(i, i + 4).map(async (url) => {
+        const previous = url.startsWith("./assets/")
+          ? await caches.match(new URL(url, self.location.href).href) : null;
+        if (previous) await cache.put(url, previous);
+        else await cache.add(url).catch(() => {});
+      }));
+    }
     await self.skipWaiting();
   })());
 });

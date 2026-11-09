@@ -18,6 +18,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { runInNewContext } from "node:vm";
 import { goOffline, resetOffline } from "../offline";
 
 afterEach(() => { resetOffline(); vi.unstubAllGlobals(); });
@@ -137,5 +138,47 @@ describe("the generated worker", () => {
 
   it("leaves anything that is not a GET alone", () => {
     expect(code).toContain('req.method !== "GET"');
+  });
+});
+
+describe("offline artwork installation", () => {
+  it("limits parallel downloads and reuses immutable art from the previous build", async () => {
+    const config = readFileSync(resolve(__dirname, "../../../vite.config.ts"), "utf8");
+    const generator = config.slice(config.indexOf("function serviceWorker("),
+      config.indexOf("\nexport default defineConfig"))
+      .replace("function serviceWorker(precache: string[]): string", "function serviceWorker(precache)");
+    const urls = ["./assets/same-hash.webp", ...Array.from({ length: 9 }, (_, i) => `./assets/new-${i}.webp`)];
+    const source = runInNewContext(`(${generator})(urls)`, { STAMP: "test", urls }) as string;
+    const added: string[] = [], copied: string[] = [];
+    let active = 0, peak = 0;
+    const events: Record<string, (event: { waitUntil: (promise: Promise<void>) => void }) => void> = {};
+    runInNewContext(source, {
+      URL,
+      self: {
+        location: { href: "https://example.test/game/sw.js" },
+        addEventListener: (name: string, callback: typeof events[string]) => { events[name] = callback; },
+        skipWaiting: async () => {},
+      },
+      caches: {
+        match: async (url: string) => url.endsWith("/same-hash.webp") ? { cached: true } : undefined,
+        open: async () => ({
+          put: async (url: string) => { copied.push(url); },
+          add: async (url: string) => {
+            active++;
+            peak = Math.max(peak, active);
+            await Promise.resolve();
+            added.push(url);
+            active--;
+          },
+        }),
+      },
+    });
+    let installed: Promise<void> = Promise.resolve();
+    events.install?.({ waitUntil: (promise) => { installed = promise; } });
+    await installed;
+    expect(peak).toBeGreaterThan(1);
+    expect(peak).toBeLessThanOrEqual(4);
+    expect(copied).toEqual(["./assets/same-hash.webp"]);
+    expect(added.sort()).toEqual(urls.slice(1).sort());
   });
 });

@@ -30,6 +30,15 @@ jobs:
           node-version: 22
           cache: npm
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Optimise before tests and Vite hashing; originals stay untouched in GitHub.
+      - run: python -m pip install Pillow==11.3.0
+      - run: python -m unittest discover -s tools -p 'test_optimize_images.py'
+      - run: python tools/optimize_images.py
+
       - run: npm ci
 
       # All three gate the deploy: a red build must never reach the public URL. Lint is
