@@ -5468,3 +5468,11 @@ Primary actions use the home green; secondary and disabled actions use the dark
 face with gray text. Disabled controls stay opaque and do not animate a press.
 Selected navigation/modes and destructive confirmation keep their semantic cues.
 Control dimensions and game interaction rules stay with their existing components.
+
+## Panel frames
+`src/ui/panels.css` extends the shared button frame to filled cards, HUD blocks,
+collection tiles, popups and road rewards. Existing fill colors and artwork remain
+component-owned. The inward 2px outline avoids layout/padding changes; corners and
+sharp 4px bottom edges reuse the action tokens. Bare layout wrappers, titles, progress
+tracks and transparent artwork are not boxed. Selection and keyboard-focus cues stay
+visible. Road cards use the common frame around their existing face/rarity fills.

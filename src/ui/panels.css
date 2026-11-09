@@ -1,0 +1,59 @@
+/* Filled blocks use the same frame as action buttons. Their existing background
+   colors, artwork and text remain owned by the screen/component. */
+:root {
+  --r-card: var(--action-radius);
+  --hud-ledge: 0 var(--action-depth) 0 var(--action-frame);
+  --hud-gloss: none;
+}
+
+#app :is(.card, .metacard, .chcard, .dcard, .qcard,
+    .qhero, .challcard, .dailycard, .stile, .luckycard,
+    .rbanner, .dhero, .hillcut, .antcell, .lbbanner,
+    .lbrow, .setrow, .setrow2, .setpanel, .room,
+    .room-open, .chalcard, .chalmore, .chalsum, .newscard,
+    .frrow, .spbox, .spfact, .spq, .spgcard,
+    .spghero, .skincard, .spgtd, .trtile, .tropen,
+    .trtotals, .fb-row, .histrow, .kscard, .hatchprize,
+    .hp-one, .hatchshut, .setupbox, .pf-hero, .pf-row,
+    .pf-colony, .pf-stat, .menudraw, .tn-coin, .colhero,
+    .granpill, .mycelchip, .hatchpurse, .hatchtrade, .hatchodds,
+    .ho-row, .shopnote, .testnote, .demo-note, .passnote,
+    .stat, .hivechip, .timeband, .rd-popcard, .tourbubble,
+    .sirow, .saveguard .sg-body, .rd-card, .rd-breaker) {
+  border-radius: var(--action-radius) !important;
+  /* An inward frame preserves each block's dimensions and content padding. */
+  outline: 2px solid var(--action-frame) !important;
+  outline-offset: -2px !important;
+  box-shadow: 0 var(--action-depth) 0 var(--action-frame) !important;
+}
+
+/* Keep selection visible above portrait artwork and rarity-colored tiles. */
+#app #antarium .ccard.sel .an-tile {
+  outline-color: var(--hud-ink) !important;
+}
+#app #antarium .ccard.sel .an-tile::after {
+  border-radius: var(--action-radius);
+}
+#app :is(.skincard.on, .trtile.armed) {
+  outline-color: var(--hud-go) !important;
+}
+
+/* Collection art has its own colored tile, separate from the text beneath it. */
+#app #antarium .an-tile {
+  border-radius: var(--action-radius) !important;
+  outline: 2px solid var(--action-frame) !important;
+  outline-offset: -2px !important;
+  box-shadow: 0 var(--action-depth) 0 var(--action-frame) !important;
+}
+
+/* Road fills live in .rd-cardface; replace only their old decorative frame. */
+#app .rd-cardshadow { display: none; }
+#app .rd-card { background: var(--action-frame); }
+#app .rd-cardface { inset: 2px; border-radius: calc(var(--action-radius) - 2px); }
+#app .rd-breaker { border-bottom: none; }
+
+/* Keyboard focus on interactive content remains distinct from the normal frame. */
+#app :is(.room, .skincard, .trtile, .tropen, .histrow, .sirow):focus-visible {
+  outline-color: var(--hud-ink) !important;
+  outline-offset: 2px !important;
+}
