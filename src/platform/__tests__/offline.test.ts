@@ -104,7 +104,7 @@ describe("the generated worker", () => {
     expect(code).toContain('url.pathname.endsWith("/version.json")');
     // It must RETURN before responding — not fall through to the cache-first branch.
     const line = code.slice(code.indexOf('endsWith("/version.json")'));
-    expect(line.slice(0, 40)).toContain("return");
+    expect(line.slice(0, 100)).toContain("return");
   });
 
   /**
@@ -112,6 +112,12 @@ describe("the generated worker", () => {
    * would miss the cache on exactly that reload, so a post-deploy launch would need the
    * network — the one launch most likely not to have it.
    */
+  it("leaves explicit no-store live requests to the network", () => {
+    expect(code).toContain('req.cache === "no-store"');
+    const line = code.slice(code.indexOf('req.cache === "no-store"'));
+    expect(line.slice(0, 40)).toContain("return");
+  });
+
   it("ignores the query when matching, so the post-deploy reload works offline", () => {
     expect(code).toContain("ignoreSearch: true");
   });

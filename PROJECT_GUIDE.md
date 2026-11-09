@@ -5442,3 +5442,14 @@ The APK, checksum and build metadata are published under `downloads/` AFTER sync
 so the APK cannot bundle itself. This is a test build, not a Play Store release.
 The development certificate is cached by Actions; production signing remains separate.
 Browser/PWA saves and Android app saves are separate; transfer via a backup code.
+
+## Live release checks and broadcast inbox
+`platform/live.ts` checks public, first-party release metadata and team mail at launch
+and resume, with bounded responses/timeouts and no player data in requests.
+`App.enableLiveServices()` is called by the real bootstrap; ordinary screen tests never
+make network requests. Home alone presents update prompts, outside matches/tours/other
+modals. Mail read state is per-colony; cached public messages remain readable offline.
+APK updates use monotonically increasing versionCode, never SHA/date comparison.
+`tools/package_apk.py` pins the published certificate after the first fingerprint manifest.
+Do not bypass that guard or ask players to uninstall to apply an update.
+See `docs/live-operations.md` for publishing, current limitations and production setup.

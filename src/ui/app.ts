@@ -39,6 +39,8 @@ import { buildQuests } from "./quests";
 import { buildMenu } from "./screens-simple";
 import { buildHatch } from "./hatch";
 import { buildNews } from "./news";
+import { LiveService, Mailbox, watchLiveResume } from "../platform/live";
+import { buildInbox, buildUpdatePrompt } from "./live";
 import { buildWhatsNew } from "./whatsnew";
 import { buildFriends } from "./friends";
 import { buildSupport } from "./support";
@@ -79,7 +81,7 @@ type ScreenId =
   | "anthill" | "antarium" | "antup" | "achievements" | "quests" | "profile"
   | "challenges" | "daily" | "rules" | "settings" | "news" | "friends" | "support"
   | "luckyhatch" | "leaderboard" | "shop" | "traits" | "inventory" | "keepsafe"
-  | "avatars";
+  | "avatars" | "inbox";
 
 /**
  * Is this press on something that ACTS?
@@ -246,6 +248,74 @@ export class App {
   /** Unwires the hardware back button. Only the native shell has one. */
   private dropBack: () => void = () => {};
   private dropAwake: () => void = () => {};
+  private live: LiveService | null = null;
+  private dropLive: () => void = () => {};
+  private dropLiveResume: () => void = () => {};
+  private liveUnsubscribe: () => void = () => {};
+  private activeScreen: ScreenId = "home";
+  private inboxOpen: string | null = null;
+  private dismissedUpdate: string | null = null;
+  private get mailbox(): Mailbox {
+    const { store, key } = this.profile.slot;
+    return new Mailbox(store, key);
+  }
+
+  /** Enabled by the real bootstrap; screen tests never make background network calls. */
+  enableLiveServices(service?: LiveService): void {
+    this.liveUnsubscribe();
+    this.dropLiveResume();
+    this.live?.dispose();
+    this.live = service ?? new LiveService({ store: () => this.profile.slot.store });
+    this.liveUnsubscribe = this.live.subscribe(() => {
+      this.syncMailBadge();
+      if (this.activeScreen === "inbox") this.show("inbox");
+      this.presentUpdate();
+    });
+    this.dropLiveResume = watchLiveResume(() => { void this.live?.check(); });
+    this.dropLive = () => {
+      this.liveUnsubscribe();
+      this.dropLiveResume();
+      this.live?.dispose();
+      this.live = null;
+    };
+    void this.live.check();
+  }
+
+  private syncMailBadge(): void {
+    const button = this.host.querySelector(".settingsfab");
+    button?.querySelector(".live-mail-count")?.remove();
+    const unread = this.mailbox.unread(this.live?.messages ?? []);
+    if (button && unread > 0) {
+      const badge = el("span", "menudot live-mail-count", String(unread));
+      badge.setAttribute("aria-hidden", "true");
+      button.appendChild(badge);
+    }
+  }
+
+  private presentUpdate(): void {
+    const offer = this.live?.update;
+    if (!offer || offer.id === this.dismissedUpdate || document.hidden
+      || this.activeScreen !== "home" || !this.deckShowing || this.match || this.replay
+      || this.matchmaking || this.tour.running || this.profile.get().tourSeen < TOUR_VERSION || this.overlay
+      || (this.menu && !this.menu.classList.contains("hidden"))) return;
+    const later = (): void => { this.dismissedUpdate = offer.id; this.clearOverlay(); };
+    const prompt = buildUpdatePrompt(offer, () => {
+      later();
+      if (offer.kind === "web") {
+        location.replace(offer.url);
+      } else {
+        const link = document.createElement("a");
+        link.href = offer.url;
+        link.target = "_self";
+        link.rel = "noopener noreferrer";
+        this.host.appendChild(link);
+        link.click();
+        link.remove();
+      }
+    }, later);
+    this.host.appendChild(prompt);
+    this.overlay = prompt;
+  }
 
   constructor(
     private host: HTMLElement,
@@ -349,6 +419,7 @@ export class App {
    * Capacitor bridge and would otherwise go on calling into an App that is gone.
    */
   destroy(): void {
+    this.dropLive();
     this.deck?.destroy();
     this.tour.stop();
     this.dropBack();
@@ -393,6 +464,7 @@ export class App {
    * same function fixes it.
    */
   private showSignIn(): void {
+    this.activeScreen = "home";
     this.host.replaceChildren();
     this.host.appendChild(buildSignIn(this.accounts, {
       onEnter: (account: Account) => this.enter(account),
@@ -405,6 +477,7 @@ export class App {
     // roster would never learn which colony this device actually plays.
     const on = this.accounts.signIn(account.id) ?? account;
     this.profile = this.accounts.storeFor(on);
+    this.inboxOpen = null;
     this.adoptProfile();
     this.applyFeedbackPrefs();
     this.host.replaceChildren();
@@ -658,7 +731,12 @@ export class App {
     // The tour holds the interface until it gets the tap it asked for. Swallowed rather
     // than obeyed: closing the app is not the answer to a step somebody is reading.
     if (this.tour.running) return true;
-    if (this.overlay) { this.clearOverlay(); this.show("home"); return true; }
+    if (this.overlay) {
+      if (this.overlay.id === "updateAvailable") this.dismissedUpdate = this.live?.update?.id ?? null;
+      this.clearOverlay();
+      this.show("home");
+      return true;
+    }
     if (this.menu && !this.menu.classList.contains("hidden")) { this.closeMenu(); return true; }
     if (this.match || this.replay) { this.show("home"); return true; }
 
@@ -688,6 +766,8 @@ export class App {
   /* --------------------------------------------------------------------- ROUTER */
 
   private show(id: ScreenId): void {
+    this.activeScreen = id;
+    queueMicrotask(() => { this.syncMailBadge(); this.presentUpdate(); });
     // The tour's PLAY step ends when the setup flow actually opens, never on the press:
     // a press the app did not act on left the tutorial asking for a screen that was never
     // coming. The two steps INSIDE that screen report themselves (`onStep`).
@@ -754,6 +834,9 @@ export class App {
     const deck = new Deck<DeckId>(DECK, (id) => this.build(id), (id) => {
       // However the deck arrived — a tab, a swipe — the bar follows it.
       this.syncNav(id);
+      this.activeScreen = id;
+      this.syncMailBadge();
+      this.presentUpdate();
     });
     this.host.appendChild(deck.el);
     this.deck = deck;
@@ -821,6 +904,7 @@ export class App {
       () => this.closeMenu(),
       this.profile.unread(),
       this.profile.duels.length,
+      this.mailbox.unread(this.live?.messages ?? []),
     );
     this.host.appendChild(this.menu);
     this.menu.classList.remove("hidden");
@@ -828,6 +912,7 @@ export class App {
 
   private closeMenu(): void {
     this.menu?.classList.add("hidden");
+    queueMicrotask(() => this.presentUpdate());
   }
 
   /** Start a challenge: a preset match, plus the objective to judge it by. */
@@ -842,6 +927,7 @@ export class App {
   }
 
   private onNav(tab: NavId): void {
+    this.activeScreen = tab as ScreenId;
     // Tapping a tab is the same movement as swiping to it, so it animates.
     if (isDeck(tab)) {
       this.clearOverlay();
@@ -966,6 +1052,14 @@ export class App {
         onChanged: () => { this.rebuildHomeBar(); },
       });
     }
+    if (id === "inbox") return buildInbox({
+      messages: this.live?.messages ?? [],
+      mailbox: this.mailbox, openId: this.inboxOpen,
+      busy: this.live?.busy ?? false, offline: this.live?.offline ?? false,
+      onBack: () => this.show("home"),
+      onSelect: (message) => { this.inboxOpen = message; this.syncMailBadge(); },
+      onRefresh: () => { void this.live?.check(true); },
+    });
     if (id === "news") return buildNews(this.profile, () => this.show("home"));
     if (id === "friends") {
       return buildFriends(
@@ -1095,6 +1189,7 @@ export class App {
       const fresh = this.homeBar(root);
       bar.replaceWith(fresh);
       bar = fresh;
+      this.syncMailBadge();
     };
 
     // THE ARTWORK IS THE TITLE SCREEN, and it carries no title. The name and the tagline
@@ -1787,8 +1882,10 @@ export class App {
   }
 
   private clearOverlay(): void {
+    const closed = this.overlay !== null;
     this.overlay?.remove();
     this.overlay = null;
+    if (closed) queueMicrotask(() => this.presentUpdate());
   }
 
 }

@@ -9344,3 +9344,36 @@ body,
   font-family: var(--font-display);
   font-weight: 400;
 }
+
+/* Live announcements and update prompts share the existing screen/card language. */
+#inbox { background: var(--hud-face); padding-bottom: var(--screen-bottom); }
+#inbox .screentop { padding: 12px 0; border: none; background: none; box-shadow: none; }
+#inbox .screenh, #inbox h2 { font-family: var(--font-display); font-weight: 400; }
+#inbox .backbtn {
+  border: none; border-radius: var(--r-btn); background: var(--hud-card);
+  box-shadow: var(--hud-ledge) !important;
+}
+#inbox .screenbody { padding-top: 12px; }
+.mail-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.mail-toolbar .ghostbtn { margin-left: auto; min-height: var(--tap); }
+.mail-list { display: grid; gap: 12px; }
+.mail-card { padding: 0; overflow: hidden; }
+.mail-card.read .mail-head { opacity: .7; }
+.mail-head {
+  display: block; width: 100%; padding: 16px; border: none;
+  color: var(--ink); background: transparent; text-align: left;
+}
+.mail-head h2 { margin: 8px 0 0; font-size: 19px; line-height: 1.25; }
+.mail-meta { display: flex; align-items: center; gap: 8px; color: var(--hud-mute); font-size: 12px; }
+.mail-body { padding: 0 16px 16px; }
+.mail-body p, .live-copy { color: var(--hud-dim); font-size: 14px; line-height: 1.5; }
+.mail-body p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.live-update h1 { margin-bottom: 12px; }
+.live-update-actions { display: grid; gap: 12px; margin-top: 20px; }
+.live-update-actions .cta, .live-update-actions .ghostbtn { min-height: var(--tap); }
+#home .settingsfab { position: relative; }
+#home .live-mail-count { position: absolute; top: -4px; right: -4px; z-index: 1; }
+.menudraw {
+  max-height: calc(var(--installed-height, calc(100 * var(--game-vh))) - var(--home-top) - var(--safe-bottom) - 24px);
+  overflow-y: auto;
+}

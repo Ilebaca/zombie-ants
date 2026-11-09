@@ -90,7 +90,7 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(req.url);
 
   // NETWORK ONLY. See the note in vite.config.ts: caching this pins the app to a stale build.
-  if (url.pathname.endsWith("/version.json")) return;
+  if (url.pathname.endsWith("/version.json") || req.cache === "no-store") return;
 
   // A NAVIGATION: try the network, fall back to the page we have. \`ignoreSearch\` is what
   // makes the post-deploy reload onto "?v=<commit>" still match offline.

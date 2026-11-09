@@ -35,6 +35,7 @@ export const MENU_ENTRIES: readonly MenuEntry[] = [
   { id: "settings", icon: "gear", label: "Settings" },
   { id: "rules", icon: "book", label: "How to play" },
   { id: "news", icon: "news", label: "News" },
+  { id: "inbox", icon: "news", label: "Inbox" },
   { id: "friends", icon: "friends", label: "Friends" },
   { id: "support", icon: "support", label: "Support" },
   // The inventory sits next to the one thing that fills it. Everything found is here,
@@ -55,6 +56,7 @@ export function buildMenu(
    * only route to it. A badge nowhere is a feature nobody can tell has anything in it.
    */
   waitingDuels = 0,
+  unreadMail = 0,
 ): HTMLElement {
   const wrap = el("div", "menuwrap");
   wrap.id = "menuPop";
@@ -71,6 +73,9 @@ export function buildMenu(
     // app ever says a post has landed.
     if (entry.id === "news" && unreadNews > 0) {
       item.appendChild(el("span", "menudot", String(unreadNews)));
+    }
+    if (entry.id === "inbox" && unreadMail > 0) {
+      item.appendChild(el("span", "menudot", String(unreadMail)));
     }
     if (entry.id === "friends" && waitingDuels > 0) {
       item.appendChild(el("span", "menudot", String(waitingDuels)));
