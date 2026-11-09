@@ -121,6 +121,24 @@ describe("installed mobile layout surface", () => {
     expect(snapshot()).toEqual(before);
   });
 
+  it("initializes once if loading finishes while the app is already in the background", () => {
+    hidden = true;
+    focused = false;
+    stop = stabilizeInstalledViewport();
+    vi.advanceTimersByTime(2000);
+    expect(value("--installed-height")).toBe("");
+    hidden = false;
+    document.dispatchEvent(new Event("visibilitychange"));
+    focused = true;
+    window.dispatchEvent(new Event("focus"));
+    expect(value("--installed-height")).toBe("800px");
+    vi.advanceTimersByTime(1100);
+    const before = snapshot();
+    viewport(280, 500);
+    window.dispatchEvent(new Event("focus"));
+    expect(snapshot()).toEqual(before);
+  });
+
   it("recalibrates only when physical display geometry changes", () => {
     stop = stabilizeInstalledViewport();
     vi.advanceTimersByTime(1100);

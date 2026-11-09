@@ -64,18 +64,22 @@ export function stabilizeInstalledViewport(): () => void {
   const resize = (): void => {
     if (document.hidden || !document.hasFocus()) return;
     const nextKey = geometry();
-    if (nextKey !== screenKey) {
+    if (!width || nextKey !== screenKey) {
       seal();
       screenKey = nextKey;
       width = height = top = bottom = 0;
       begin();
     } else if (!sealed) calibrate();
   };
-  const visibility = (): void => { if (document.hidden) seal(); };
+  const visibility = (): void => {
+    if (document.hidden) seal();
+    else if (!width) resize();
+  };
   begin();
   const stopReport = watchDisplay(probe);
   window.addEventListener("resize", resize);
   window.addEventListener("blur", seal);
+  window.addEventListener("focus", resize);
   window.addEventListener("pageshow", resize);
   document.addEventListener("visibilitychange", visibility);
   screen.orientation?.addEventListener?.("change", resize);
@@ -85,6 +89,7 @@ export function stabilizeInstalledViewport(): () => void {
     stopReport();
     window.removeEventListener("resize", resize);
     window.removeEventListener("blur", seal);
+    window.removeEventListener("focus", resize);
     window.removeEventListener("pageshow", resize);
     document.removeEventListener("visibilitychange", visibility);
     screen.orientation?.removeEventListener?.("change", resize);
