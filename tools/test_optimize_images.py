@@ -31,6 +31,16 @@ class OptimiseImagesTest(unittest.TestCase):
         with Image.open(io.BytesIO(output)) as decoded:
             self.assertEqual(decoded.convert("RGBA").tobytes(), image.tobytes())
 
+    def test_colour_profile_survives_optimisation(self):
+        image = Image.new("RGB", (128, 128), (24, 128, 192))
+        stream = io.BytesIO()
+        profile = b"Colour profile marker" * 20
+        image.save(stream, "PNG", compress_level=0, icc_profile=profile)
+        output, _, _ = encode(stream.getvalue())
+        self.assertLess(len(output), len(stream.getvalue()))
+        with Image.open(io.BytesIO(output)) as decoded:
+            self.assertEqual(decoded.info["icc_profile"], profile)
+
     def test_animated_art_is_not_flattened(self):
         stream = io.BytesIO()
         Image.new("RGB", (32, 32), "red").save(

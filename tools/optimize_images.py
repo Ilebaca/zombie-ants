@@ -16,13 +16,14 @@ def encode(source):
         image.load()
         original = image.convert("RGBA")
         output = io.BytesIO()
+        metadata = {key: image.info[key] for key in ("icc_profile", "exif") if image.info.get(key)}
         if image.format == "WEBP":
-            original.save(output, "WEBP", quality=86, method=6, exact=True)
+            original.save(output, "WEBP", quality=86, method=6, exact=True, **metadata)
         elif image.format == "PNG":
-            image.save(output, "PNG", optimize=True, compress_level=9)
+            image.save(output, "PNG", optimize=True, compress_level=9, **metadata)
         elif image.format == "JPEG":
             image.convert("RGB").save(
-                output, "JPEG", quality=88, subsampling=0, optimize=True, progressive=True
+                output, "JPEG", quality=88, subsampling=0, optimize=True, progressive=True, **metadata
             )
         else:
             return source, image.size, "retained"
