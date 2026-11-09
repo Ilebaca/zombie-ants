@@ -5455,3 +5455,8 @@ Broadcast mail is read from the public GitHub file, independent of Pages; mail-o
 are excluded from the game build trigger, so an announcement never forces an APK update.
 Do not bypass that guard or ask players to uninstall to apply an update.
 See `docs/live-operations.md` for publishing, current limitations and production setup.
+
+The initial f050669 APK key cache was not saved (confirmed Actions path-validation warning).
+Native update rollout is blocked until permanent signing and a pre-release save migration.
+ANDROID_USER_HOME is now explicit; --retain-published preserves the prior checked APK during
+web deployment when signing is incompatible. It does not publish the rejected APK.

@@ -52,3 +52,21 @@ listing/update channel. Real email needs a verified sender domain/provider,
 consented private email records and unsubscribe handling on a backend.
 Background push needs FCM/APNs registration and a backend. None of those services
 is provisioned by this GitHub-only broadcast implementation.
+
+## Existing test APK signing incident
+The first APK (f050669) used certificate
+`ae4360e1752501295f71b2f8f940b68a3ee3ce721838199d940f30eff0164c41`.
+Its Actions job logged "Path Validation Error" for the keystore cache; no key was saved.
+Android/AGP can use XDG_CONFIG_HOME instead of ~/.android. The build now sets an
+explicit ANDROID_USER_HOME matching the cache path.
+
+The first APK cannot be updated in place without its original private key. The APK
+does not contain that key and none of the retained artifacts contains a key backup.
+The publisher refuses an incompatible replacement. During web releases, the explicit
+`--retain-published` option copies the existing APK only after verifying its SHA-256
+and preserves its exact metadata; it never advertises the rejected new APK.
+
+Before native rollout, establish permanent private signing storage, then agree a
+one-time pre-release migration with save backup/restore (or a separate package).
+Never ask players to uninstall without a verified backup. Do not describe this test
+channel as production-ready or disable the certificate guard.

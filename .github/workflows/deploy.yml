@@ -63,6 +63,9 @@ jobs:
   android:
     needs: build
     runs-on: ubuntu-latest
+    env:
+      # Explicit: AGP may otherwise use XDG_CONFIG_HOME instead of ~/.android.
+      ANDROID_USER_HOME: ${{ runner.temp }}/zombie-ants-android-user
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -93,7 +96,7 @@ jobs:
       # Reuse the development certificate so successive test APKs can update in place.
       - uses: actions/cache@v4
         with:
-          path: ~/.android/debug.keystore
+          path: ${{ runner.temp }}/zombie-ants-android-user/debug.keystore
           key: android-development-keystore-v1
 
       - run: npx cap add android
@@ -105,7 +108,7 @@ jobs:
         run: ./gradlew --no-daemon :app:assembleDebug :app:lintDebug
 
       # Copy only AFTER Capacitor sync, so the APK never contains a copy of itself.
-      - run: python tools/package_apk.py
+      - run: python tools/package_apk.py --retain-published
 
       - uses: actions/upload-artifact@v4
         with:
