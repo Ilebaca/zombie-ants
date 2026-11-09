@@ -121,8 +121,8 @@ describe("installed mobile layout surface", () => {
     expect(snapshot()).toEqual(before);
   });
 
-  it("initializes once if loading finishes while the app is already in the background", () => {
-    hidden = true;
+  it.each([true, false])("initializes after an unfocused launch (hidden: %s)", (startHidden) => {
+    hidden = startHidden;
     focused = false;
     stop = stabilizeInstalledViewport();
     vi.advanceTimersByTime(2000);

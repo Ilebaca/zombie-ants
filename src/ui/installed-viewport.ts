@@ -26,7 +26,8 @@ export function stabilizeInstalledViewport(): () => void {
   let poll = 0, deadline = 0;
 
   const calibrate = (): void => {
-    if (disposed || sealed || document.hidden || window.innerWidth > window.innerHeight) return;
+    if (disposed || sealed || document.hidden || !document.hasFocus()
+      || window.innerWidth > window.innerHeight) return;
     const safe = getComputedStyle(probe);
     // The actual launch window bounds the surface: a hypothetical 100lvh can
     // include permanently reserved host bars and hide the entire navigation tray.
