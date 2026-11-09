@@ -2220,8 +2220,9 @@ describe("home and navigation spacing has one owner", () => {
 
   it("uses the visible browser height and shared safe margins without display-mode overrides", () => {
     expect(css).toMatch(/@supports \(height: 100dvh\)/);
-    expect(root).toMatch(/--game-vh:\s*1dvh/);
-    expect(rulesFor(css, "#app")).toMatch(/height:\s*100dvh/);
+    const modern = /@supports \(height: 100dvh\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
+    expect(modern).toMatch(/:root\s*\{[^}]*--game-vh:\s*1dvh/);
+    expect(modern).toMatch(/#app\s*\{[^}]*height:\s*100dvh/);
     expect(css).not.toMatch(/@media \(display-mode: fullscreen\)/);
     expect(rulesFor(css, ".screen")).toMatch(/padding-top:\s*var\(--screen-top\)/);
   });
