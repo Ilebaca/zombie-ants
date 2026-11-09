@@ -1,0 +1,116 @@
+/* Action buttons: one frame, three states. Imported after the legacy skin.
+   Actions and icon navigation share the frame; reward cards and image tiles keep
+   their own component styling. Visual !important declarations replace the skin's
+   older scene-specific rules and shadow blanket, without changing control sizing. */
+:root {
+  --action-primary: var(--hud-go);
+  --action-neutral: var(--hud-face);
+  --action-frame: #3d454d;
+  --action-label: var(--hud-ink);
+  --action-muted: var(--hud-mute);
+  --action-radius: 12px;
+  --action-depth: 4px;
+}
+
+#app button:is(.action-button, .playbtn, .cta, .buybtn, .buybar,
+    .qbtn, .passbuy, .claimchip, .antcta, .hbuy,
+    .hp-go, .si-go, .si-alt, .ghostbtn, .restorebtn,
+    .sg-go, .sg-x, .hatchbtn, .ht-go, .frbtn,
+    .frgo, .setbtn, .setval, .replaybtn, .replayrate,
+    .btn, .tournext, .challplay, .chalplay, .chalagain,
+    .backbtn, .pickarrow, .hatchpop-x, .rd-popx,
+    .navitem, .settingsfab, .dailyfab) {
+  --action-fill: var(--action-primary);
+  --action-ink: var(--action-label);
+  --action-edge: var(--action-frame);
+  box-sizing: border-box;
+  appearance: none;
+  border: 2px solid var(--action-edge) !important;
+  border-radius: var(--action-radius) !important;
+  background: var(--action-fill) !important;
+  color: var(--action-ink) !important;
+  box-shadow: 0 var(--action-depth) 0 var(--action-edge) !important;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-shadow: none !important;
+  opacity: 1 !important;
+  filter: none !important;
+  transform: none !important;
+  translate: 0 0;
+  transition: translate 80ms linear, box-shadow 80ms linear;
+}
+
+/* Secondary actions share the reference's dark face and gray lettering. */
+#app button:is(.action-button.secondary, .ghostbtn, .restorebtn, .setbtn, .setval,
+    .si-alt, .sg-x, .frghost, .frmark, .replaybtn.ghost,
+    .replayrate, .chalagain, .hatchbtn.bulk, .hatchbtn.out, .btn:not(.end),
+    .backbtn, .pickarrow, .hatchpop-x, .rd-popx,
+    .navitem, .settingsfab, .dailyfab) {
+  --action-fill: var(--action-neutral);
+  --action-ink: var(--action-muted);
+}
+
+/* Selected navigation keeps the game's green active-tab cue. */
+#app button.navitem.active { --action-fill: var(--action-primary); }
+
+/* Preserve the information conveyed by selected modes and destructive confirmation. */
+#app button:is(.setswitch.on, .btn.on, .btn.ability.armed) {
+  --action-edge: var(--action-primary);
+}
+#app button:is(.setdanger.armed, .btn.surr.armed, .frdrop.armed) {
+  --action-edge: var(--danger);
+}
+
+/* Disabled actions stay solid and legible. Actual disabled/aria-disabled behavior
+   remains owned by the component; CSS never disables a clickable shop shortcut. */
+#app button:is(.action-button, .playbtn, .cta, .buybtn, .buybar,
+    .qbtn, .passbuy, .claimchip, .antcta, .hbuy,
+    .hp-go, .si-go, .si-alt, .ghostbtn, .restorebtn,
+    .sg-go, .sg-x, .hatchbtn, .ht-go, .frbtn,
+    .frgo, .setbtn, .setval, .replaybtn, .replayrate,
+    .btn, .tournext, .challplay, .chalplay, .chalagain,
+    .backbtn, .pickarrow, .hatchpop-x, .rd-popx,
+    .navitem, .settingsfab, .dailyfab):is(:disabled, [aria-disabled="true"], .off, .max, .claimed, .wip, .cool) {
+  --action-fill: var(--action-neutral) !important;
+  --action-ink: var(--action-muted) !important;
+  --action-edge: var(--action-frame) !important;
+  cursor: default;
+  translate: 0 0;
+}
+
+/* Press into the bottom edge, with no horizontal shift or scale change. */
+#app button:is(.action-button, .playbtn, .cta, .buybtn, .buybar,
+    .qbtn, .passbuy, .claimchip, .antcta, .hbuy,
+    .hp-go, .si-go, .si-alt, .ghostbtn, .restorebtn,
+    .sg-go, .sg-x, .hatchbtn, .ht-go, .frbtn,
+    .frgo, .setbtn, .setval, .replaybtn, .replayrate,
+    .btn, .tournext, .challplay, .chalplay, .chalagain,
+    .backbtn, .pickarrow, .hatchpop-x, .rd-popx,
+    .navitem, .settingsfab, .dailyfab):not(:is(:disabled, [aria-disabled="true"], .off, .max, .claimed, .wip, .cool)):active {
+  translate: 0 var(--action-depth);
+  box-shadow: 0 0 0 var(--action-edge) !important;
+}
+#app button:is(.action-button, .playbtn, .cta, .buybtn, .buybar,
+    .qbtn, .passbuy, .claimchip, .antcta, .hbuy,
+    .hp-go, .si-go, .si-alt, .ghostbtn, .restorebtn,
+    .sg-go, .sg-x, .hatchbtn, .ht-go, .frbtn,
+    .frgo, .setbtn, .setval, .replaybtn, .replayrate,
+    .btn, .tournext, .challplay, .chalplay, .chalagain,
+    .backbtn, .pickarrow, .hatchpop-x, .rd-popx,
+    .navitem, .settingsfab, .dailyfab):focus-visible {
+  outline: 2px solid var(--hud-ink);
+  outline-offset: 3px;
+}
+/* Match icons that use currentColor follow their button's label, including End turn. */
+#app .match .brow .btn .ic svg { color: inherit; }
+
+@media (prefers-reduced-motion: reduce) {
+  #app button:is(.action-button, .playbtn, .cta, .buybtn, .buybar,
+    .qbtn, .passbuy, .claimchip, .antcta, .hbuy,
+    .hp-go, .si-go, .si-alt, .ghostbtn, .restorebtn,
+    .sg-go, .sg-x, .hatchbtn, .ht-go, .frbtn,
+    .frgo, .setbtn, .setval, .replaybtn, .replayrate,
+    .btn, .tournext, .challplay, .chalplay, .chalagain,
+    .backbtn, .pickarrow, .hatchpop-x, .rd-popx,
+    .navitem, .settingsfab, .dailyfab) { transition: none; }
+}

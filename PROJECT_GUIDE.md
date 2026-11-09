@@ -5460,3 +5460,11 @@ The initial f050669 APK key cache was not saved (confirmed Actions path-validati
 Native update rollout is blocked until permanent signing and a pre-release save migration.
 ANDROID_USER_HOME is now explicit; --retain-published preserves the prior checked APK during
 web deployment when signing is incompatible. It does not publish the rejected APK.
+
+## Shared button design
+`src/ui/buttons.css`, imported after the legacy skin, owns action and icon-navigation
+button visuals: a 12px radius, 2px neutral frame and 4px sharp bottom edge.
+Primary actions use the home green; secondary and disabled actions use the dark
+face with gray text. Disabled controls stay opaque and do not animate a press.
+Selected navigation/modes and destructive confirmation keep their semantic cues.
+Control dimensions and game interaction rules stay with their existing components.
