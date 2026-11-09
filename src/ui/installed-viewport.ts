@@ -6,7 +6,10 @@ import { recordDisplay, watchDisplay } from "./display-report";
  * may cover it, but must not rearrange it. Ordinary browser tabs remain responsive.
  */
 export function stabilizeInstalledViewport(): () => void {
-  if (!window.matchMedia("(display-mode: fullscreen), (display-mode: standalone)").matches) {
+  const ios = /iPad|iPhone|iPod/i.test(navigator.userAgent)
+    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  if (!standalone && !window.matchMedia("(display-mode: fullscreen), (display-mode: standalone)").matches) {
     return watchDisplay();
   }
 
@@ -42,8 +45,12 @@ export function stabilizeInstalledViewport(): () => void {
     const safe = getComputedStyle(probe);
     root.style.setProperty("--installed-height", `${height}px`);
     root.style.setProperty("--game-vh", `${height / 100}px`);
-    root.style.setProperty("--safe-top", safe.paddingTop || "0px");
-    root.style.setProperty("--safe-bottom", safe.paddingBottom || "0px");
+    // WebKit may publish its notch/home-indicator insets after the first layout.
+    // Keep CSS env() live on iOS; Android retains its calibrated transient-bar policy.
+    if (!ios) {
+      root.style.setProperty("--safe-top", safe.paddingTop || "0px");
+      root.style.setProperty("--safe-bottom", safe.paddingBottom || "0px");
+    }
   };
 
   const resize = (): void => { measure(); };

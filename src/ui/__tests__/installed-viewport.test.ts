@@ -95,6 +95,38 @@ describe("installed game viewport", () => {
     expect(document.documentElement.classList.contains("android-fullscreen")).toBe(false);
   });
 
+  it("leaves iPhone hardware insets live when WebKit reports them after launch", () => {
+    vi.spyOn(navigator, "userAgent", "get").mockReturnValue("iPhone");
+    const safe = { paddingTop: "0px", paddingBottom: "0px" } as CSSStyleDeclaration;
+    vi.spyOn(window, "getComputedStyle").mockReturnValue(safe);
+    stop = stabilizeInstalledViewport();
+    safe.paddingTop = "47px";
+    safe.paddingBottom = "34px";
+    viewport(390, 800);
+    // No inline snapshot may override the CSS env() values as they become available.
+    expect(value("--safe-top")).toBe("");
+    expect(value("--safe-bottom")).toBe("");
+    expect(value("--installed-height")).toBe("800px");
+    viewport(390, 740);
+    expect(value("--installed-height")).toBe("800px");
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it("recognizes older Home Screen launches through navigator.standalone", () => {
+    installed = false;
+    vi.spyOn(navigator, "userAgent", "get").mockReturnValue("iPhone");
+    Object.defineProperty(navigator, "standalone", { value: true, configurable: true });
+    try {
+      stop = stabilizeInstalledViewport();
+      expect(document.documentElement.classList.contains("installed-frame")).toBe(true);
+      expect(value("--safe-top")).toBe("");
+      expect(value("--safe-bottom")).toBe("");
+      expect(value("--installed-height")).toBe("800px");
+    } finally {
+      Reflect.deleteProperty(navigator, "standalone");
+    }
+  });
+
   it("accepts more available space and a real width change", () => {
     stop = stabilizeInstalledViewport();
     viewport(390, 844);

@@ -872,7 +872,7 @@ describe("the home screen's ledge survives the blanket", () => {
     }
     const root = rulesFor(css, ":root");
     expect(root).toMatch(/--nav-space:\s*calc\(var\(--navh\) \+ var\(--nav-bottom\)\)/);
-    expect(root).toMatch(/--nav-bottom:\s*var\(--safe-bottom\)/);
+    expect(root).toMatch(/--nav-bottom:\s*0px/);
   });
 
   /**
@@ -1956,7 +1956,7 @@ describe("the setup screen's head is one block", () => {
     const bar = ruleFor(pad, "#formation .invbar");
     expect(bar).toMatch(/position:\s*static/);
     expect(bar).toMatch(/margin:\s*0 auto var\(--block\)/);
-    expect(ruleFor(pad, "#formation.hasinvite .setuptop")).toMatch(/padding-top:\s*0/);
+    expect(ruleFor(code(whole), ".setuptop")).not.toMatch(/position:\s*absolute|padding-top/);
   });
 });
 
@@ -2197,7 +2197,7 @@ describe("home and navigation spacing has one owner", () => {
     const home = rulesFor(css, "#home");
     expect(home.match(/padding-top\s*:/g)).toHaveLength(1);
     expect(home).toMatch(/padding-top:\s*var\(--home-top\)/);
-    expect(root).toMatch(/--home-top:\s*max\(var\(--hudgut\), var\(--safe-top\)\)/);
+    expect(root).toMatch(/--home-top:\s*calc\(var\(--safe-top\) \+ var\(--hudgut\)\)/);
     expect(rulesFor(css, "#home .topnav")).toMatch(/padding:\s*0 var\(--homeside\)/);
   });
 
@@ -2205,9 +2205,9 @@ describe("home and navigation spacing has one owner", () => {
     const tray = rulesFor(css, "#mainNav.homenav");
     expect(tray.match(/(?:^|[;{])\s*bottom\s*:/g)).toHaveLength(1);
     expect(tray).toMatch(/bottom:\s*var\(--nav-bottom\)/);
-    expect(root).toMatch(/--nav-bottom:\s*var\(--safe-bottom\)/);
+    expect(root).toMatch(/--nav-bottom:\s*0px/);
     expect(tray).toMatch(/padding-bottom:\s*var\(--nav-pad-bottom\)/);
-    expect(root).toMatch(/--nav-pad-bottom:\s*calc\(var\(--nav-gap\) \+ var\(--hud-ledge-y\)\)/);
+    expect(root).toMatch(/--nav-pad-bottom:\s*max\(calc\(var\(--nav-gap\) \+ var\(--hud-ledge-y\)\), var\(--safe-bottom\)\)/);
     expect(root).toMatch(/--nav-gap:\s*calc\(8 \* var\(--u\)\)/);
   });
 
@@ -2218,12 +2218,11 @@ describe("home and navigation spacing has one owner", () => {
     expect(root).toMatch(/--hud-ledge-y:\s*calc\(4 \* var\(--u\)\)/);
   });
 
-  it("has no fullscreen override that can put a second inset back on home or the tray", () => {
-    const block = designBlock(read("skin.css"), "FULL SCREEN: NON-DECK SAFE AREAS");
-    expect(block).toMatch(/@media \(display-mode: fullscreen\)/);
-    expect(block).not.toMatch(/#home\b|#mainNav\b|\.menuwrap\b/);
-    expect(block).toMatch(/:root \{/);
+  it("uses the visible browser height and shared safe margins without display-mode overrides", () => {
+    expect(css).toMatch(/@supports \(height: 100dvh\)/);
+    expect(root).toMatch(/--game-vh:\s*1dvh/);
+    expect(rulesFor(css, "#app")).toMatch(/height:\s*100dvh/);
+    expect(css).not.toMatch(/@media \(display-mode: fullscreen\)/);
     expect(rulesFor(css, ".screen")).toMatch(/padding-top:\s*var\(--screen-top\)/);
-    expect(block).toMatch(/\.match footer \{/);
   });
 });

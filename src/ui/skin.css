@@ -2968,55 +2968,35 @@ button:not(.playbtn):active,
   padding-inline: 0;
   /* Setup actions share Home's vertical position, including the reserved tray space. */
   padding-bottom: var(--primary-action-bottom);
-  /* THE PICTURE AND ITS NAME SIT IN THE MIDDLE; THE BUTTON HOLDS THE BOTTOM.
-     Two flexible gaps, one above the board and one under the name, split what is left
-     over equally — so the board rides near the middle of the screen and the button stays
-     where a primary action belongs, with air between it and the thing it acts on. The
-     header is lifted out of the flow so the middle is the SCREEN'S middle rather than the
-     middle of what is under the header, which sat the picture low. There is nothing
-     behind the header to cover: the ground above the board is empty. NOTE the screen is
-     NOT given `position: relative` for the header to hang off — `.screen` is already
-     `position: absolute; inset: 0` (the legacy rule), and overriding that takes it out of
-     its own full-height box, which collapses the whole screen to its content. */
+  /* The header stays in flow so short screens and invitation banners cannot
+     cover the preview. The stage takes only the space left above the controls. */
   min-height: 0;
 }
 .setuptop {
   width: min(calc(100% - var(--sp8)), var(--page));
   margin-inline: auto;
-  position: absolute;
-  top: var(--screen-top);
-  left: 0;
-  right: 0;
+  flex: 0 0 auto;
 }
 
-/* THE BOARD TAKES WHAT IS LEFT, and is centred in it. The picture is sized in
-   JS off the viewport, so this only has to give it the room and the middle. */
+/* The stage absorbs the available space; neither artwork nor renderer dimensions
+   can enlarge it and push the picker into the primary action. */
 .setupstage {
-  /* `1 1 auto`, never `flex: 1`: a basis of ZERO splits the whole screen by grow factor
-     rather than sharing out what is SPARE, which sizes the box without reference to the
-     board in it and runs the picture up under the header. */
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   justify-items: center;
-  /* The board sits on the BOTTOM of its box, because the name and the arrows belong
-     directly under the picture they are stepping through. */
   align-items: end;
   overflow: hidden;
-  /* NO SIDE INSET OF ITS OWN: `.screen` already carries the 16px gutter and the picture is
-     sized against that in JS. A second inset makes the board wider than its own column —
-     and a grid item wider than its track does not centre, it overflows the END and is
-     clipped there. */
 }
-/* The picture is the PLAYFIELD and a hair of soil, never a fill: ground carried
-   to the corners of the screen is a photograph of undergrowth with a board
-   somewhere in it. `max-width: none` because the canvas carries its own exact
-   pixel size (render/snapshot.ts). */
 .setupstage canvas {
-  /* Reserve the additional action offset on short screens without stretching the preview. */
-  max-height: max(120px, calc(var(--installed-height, calc(100 * var(--game-vh))) - 330px - max(0px, var(--primary-action-bottom) - var(--screen-bottom))));
-  object-fit: contain;
-  max-width: none;
+  /* drawSnapshot sets inline pixel dimensions for rendering. Let this layout
+     constrain both axes together, preserving a square on short phones. */
+  width: auto !important;
+  height: auto !important;
+  max-width: min(calc(100% - var(--sp8)), 520px);
+  max-height: 100%;
+  aspect-ratio: 1;
   border-radius: var(--r-lg);
 }
 
@@ -3028,6 +3008,7 @@ button:not(.playbtn):active,
 .coverslide {
   /* Each sliding image spans the viewport, with no inset mask or reading-width cap. */
   width: 100%;
+  max-height: 100%;
   aspect-ratio: 1567 / 900;
   overflow: hidden;
   /* NO PLATE. The rail shows the CUT-OUT (ui/covers.ts), so the ground under the
@@ -3058,26 +3039,22 @@ button:not(.playbtn):active,
    wiped three caps: a rule written early, correct, and silently overruled by a list
    further down the file. */
 .coverpane { flex: 0 0 100%; height: 100%; position: relative; }
-.coverimg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.coverimg { width: 100%; height: 100%; object-fit: contain; display: block; }
 /* A colony with no painting yet keeps its drawn head, in a pane of the same shape — a
    pane that vanished would put every colony after it one place out on the rail. */
 .coverpane.plain { display: grid; place-items: center; }
 .coverhead { width: 160px; height: 160px; opacity: .85; }
 
 .setupfoot {
-  /* It takes the same share of the spare room as the stage, and the button rides its
-     bottom — which is the bottom of the screen. */
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 clamp(120px, calc(20 * var(--game-vh)), 180px);
+  min-height: calc(var(--tap) + var(--primary-action-height) + 26px);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
   width: 100%;
   margin-inline: auto;
-  /* The 20px Milan asked for, measured from the bottom edge of the picture. `.screen`
-     owns the bottom inset and the safe area. */
-  padding: 20px 0 0;
+  padding: 16px 0 0;
 }
 /* ARROW, NAME, ARROW — a three-column grid rather than a flex row, so the name
    sits in the MIDDLE of the screen whatever its length: laid out by content, a
@@ -3134,14 +3111,6 @@ button:not(.playbtn):active,
   margin: auto 0 0;
 }
 
-/* The invitation bar sits above all of it, so the screen's own furniture starts
-   below the bar rather than under it. The bar is absolutely positioned, so the
-   room has to be made on the screen itself. */
-/* AN INVITATION IS SOMETHING THAT TAKES ROOM, so with one up the header goes back into the
-   flow and everything below shares what is LEFT under it. Lifted out, the bar and the
-   header together are a third of a short screen and the picture would ride up through
-   them. */
-#formation.hasinvite .setuptop { position: static; padding-top: 78px; }
 
 /* ============================================================================
    ==  THE GRANARY  ===========================================================
@@ -5372,7 +5341,7 @@ button:not(.playbtn):active,
    A thumb-wide target, with the mark drawn smaller inside it. */
 .hatchpop-x {
   position: absolute;
-  top: max(10px, var(--safe-top));
+  top: calc(var(--safe-top) + 10px);
   right: 10px;
   display: grid;
   place-items: center;
@@ -6212,7 +6181,7 @@ button:not(.playbtn):active,
 #achievements > .achbody::-webkit-scrollbar { display: none; }
 #achievements > .rd-back {
   position: absolute;
-  top: max(calc(14 * var(--rd-u)), var(--safe-top));
+  top: calc(var(--safe-top) + 14 * var(--rd-u));
   left: calc(12 * var(--rd-u));
   z-index: 30;
   width: calc(48 * var(--rd-u));
@@ -6804,19 +6773,19 @@ button:not(.playbtn):active,
   --safe-top: env(safe-area-inset-top);
   --safe-bottom: env(safe-area-inset-bottom);
   --u: clamp(.875px, calc(100vw / 360), 1.2px);
-  /* One owner per edge. Home clears the camera OR the design margin, never both.
-     The tray sits on the safe bottom edge; its own padding supplies the visible gap. */
+  /* Controls clear the hardware inset, then leave a small design gap.
+     The tray includes the home-indicator area in its padding exactly once. */
   --hudgut: calc(12 * var(--u));
   --screen-top: calc(var(--sp4) + var(--safe-top));
   --screen-bottom: calc(var(--sp4) + var(--safe-bottom));
-  --home-top: max(var(--hudgut), var(--safe-top));
+  --home-top: calc(var(--safe-top) + var(--hudgut));
   --hud-ledge-y: calc(4 * var(--u));
   --nav-tile: max(var(--tap), calc(54 * var(--u)));
   --nav-pad: calc(8 * var(--u));
   --nav-gap: calc(8 * var(--u));
-  --nav-pad-bottom: calc(var(--nav-gap) + var(--hud-ledge-y));
+  --nav-pad-bottom: max(calc(var(--nav-gap) + var(--hud-ledge-y)), var(--safe-bottom));
   --navh: calc(var(--nav-tile) + var(--nav-pad) + var(--nav-pad-bottom));
-  --nav-bottom: var(--safe-bottom);
+  --nav-bottom: 0px;
   --nav-space: calc(var(--navh) + var(--nav-bottom));
   /* HOW WIDE HOME'S FURNITURE IS ALLOWED TO GET.
      Wider than the reading column (`--page`) on purpose: clamping home to a 360px
@@ -7424,8 +7393,8 @@ button:not(.playbtn):active,
    Five tiles, no words. The label moved off the glass and onto the button's
    own name, which is what a screen reader reads anyway — five words across
    a phone is what made these tall and the type tiny. */
-/* No extra lift: the safe bottom is counted once. Padding includes the black ledge,
-   leaving --nav-gap of actual space beneath the painted tiles. */
+/* Bottom padding takes the larger of the indicator inset or the ordinary tile gap.
+   Do not offset the whole tray by that inset as well. */
 #mainNav.homenav {
   display: flex;
   gap: calc(5 * var(--u));
@@ -9104,7 +9073,6 @@ body,
   background: var(--hud-card);
   box-shadow: var(--hud-ledge) !important;
 }
-#formation.hasinvite .setuptop { padding-top: 0; }
 
 /* AND THE SAME STROKE WAS ON EVERYTHING ELSE THE FIRST LANGUAGE OUTLINES.
    The card and well lists above are the blocks; this is every other surface
@@ -9338,27 +9306,11 @@ body,
   .tourshade, .tourring, .tourbubble, .tourglass { transition: none; }
 }
 
-/* ==========================================================================
-   FULL SCREEN: NON-DECK SAFE AREAS
-   Home, its drawer and the deck tray use the shared layout tokens above in every
-   display mode. These standalone screens and match controls retain their own clearance.
-   ========================================================================== */
-@media (display-mode: fullscreen) {
-  :root {
-    --screen-top: max(var(--sp4), var(--safe-top));
-    --screen-bottom: max(var(--sp4), var(--safe-bottom));
-  }
-  .match header {
-    padding-block: max(clamp(4px, calc(1.1 * var(--game-vh)), 8px), var(--safe-top))
-                   clamp(4px, calc(1.1 * var(--game-vh)), 8px);
-  }
-  #profile, #rules, #achievements, #settings, #news, #friends,
-  #support, #luckyhatch {
-    padding-bottom: max(var(--hudgut), var(--safe-bottom));
-  }
-  .match footer {
-    padding-bottom: calc(var(--actpad) + max(var(--hudgut), var(--safe-bottom)));
-  }
+/* Live browser tabs follow the visible viewport as Safari's toolbar changes.
+   Installed Android keeps the explicit calibrated surface below. */
+@supports (height: 100dvh) {
+  :root { --game-vh: 1dvh; }
+  #app { bottom: auto; height: 100dvh; }
 }
 
 /* Transient Android UI covers one installed layout surface. Match sizing and

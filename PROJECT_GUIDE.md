@@ -3723,13 +3723,13 @@ and lands on the design's figure exactly.
     padding and each button's own box carries `py-8`. They share one top edge here — a
     deviation, flagged and kept.
 - **ONE TOP CLEARANCE AND ONE TRAY FOOTPRINT.** `--hudgut` is the scaled 12px side
-  margin. `--home-top` chooses that margin or the camera inset, without adding them.
-  The currency row adds no top padding.
-  - The tray sits at `--nav-bottom` (only the device inset). `--nav-gap` supplies a
-    scaled 8px visible gap inside the tray, after allowing for the black ledge.
-    A second fullscreen lift was what made the menu float above a large empty band.
+  margin. `--home-top` adds that design margin below the hardware safe-top inset.
+  The currency row adds no further top padding.
+  - The tray sits at the frame bottom (`--nav-bottom: 0px`). Its bottom padding is the
+    larger of the home-indicator inset and the scaled design gap plus black ledge.
+    The hardware inset is included once, never added below an already padded tray.
   - The tray height comes from its actual tile height and both padding values.
-    `--nav-space` reserves exactly that height plus the safe-bottom offset on each
+    `--nav-space` reserves exactly that height on each
     deck page. Tiles use the shared tap minimum, overriding the legacy 52px floor that
     overflowed the scaled tray on narrow phones.
   - The drawer shares `--home-top` so it moves with the home controls.
@@ -5379,7 +5379,18 @@ what keeps AI search from writing stats or currencies (§5).
   Pass the same mods object to the match's `ActionContext`, or research shows up in the
   income readout while doing nothing in a fight.
 
-- Installed viewport: `ui/installed-viewport.ts` measures the large viewport once per width. Same-width system-bar/keyboard resizes do not shrink the app; width changes remeasure. Layout containment on the installed app keeps fixed controls attached to that frame. Browser tabs retain ordinary responsive sizing.
+- Installed viewport: `ui/installed-viewport.ts` starts from the actual window and retains
+  the largest height at each width. Same-width system-bar/keyboard resizes do not shrink
+  the app; width changes remeasure. Android keeps calibrated hardware insets for its
+  transient-bar origin compensation. iOS leaves CSS `env(safe-area-inset-*)` live because
+  WebKit can publish the notch/home-indicator values after launch. Never pin iOS insets
+  to their first reading. Recognize older iOS launches through `navigator.standalone`.
+  Layout containment keeps fixed controls attached to the installed frame. Browser tabs
+  use `100dvh` where supported. All screen headers clear safe-top plus their design gap.
+- Setup uses an in-flow header, a constrained grid preview and a footer sized for its
+  controls. Both canvas axes scale together inside the remaining stage; renderer pixel
+  dimensions cannot push through the picker. Next/Play share Home's primary-action bounds,
+  including the tray reservation. An invitation takes real flow space above the header.
 
 ## Maintenance review — November 2026
 
