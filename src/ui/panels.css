@@ -48,7 +48,6 @@
 
 /* Road fills live in .rd-cardface; replace only their old decorative frame. */
 #app .rd-cardshadow { display: none; }
-#app .rd-card { background: var(--action-frame); }
 #app .rd-cardface { inset: 2px; border-radius: calc(var(--action-radius) - 2px); }
 #app .rd-breaker { border-bottom: none; }
 
