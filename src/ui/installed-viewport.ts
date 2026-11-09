@@ -1,4 +1,5 @@
 import { watchDisplay } from "./display-report";
+import { isNative } from "../platform/native";
 
 /**
  * Installed mobile games use one launch-calibrated surface. The host owns fullscreen;
@@ -6,6 +7,8 @@ import { watchDisplay } from "./display-report";
  * Browser tabs and desktop windows keep their normal responsive layout.
  */
 export function stabilizeInstalledViewport(): () => void {
+  // Android owns immersive mode and stable hardware insets inside the APK.
+  if (isNative()) return watchDisplay();
   const root = document.documentElement;
   const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
   const installed = standalone

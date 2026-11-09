@@ -54,6 +54,15 @@ afterEach(() => {
 });
 
 describe("installed mobile layout surface", () => {
+  it("leaves the native Android host in charge of its layout and hardware insets", () => {
+    vi.stubGlobal("Capacitor", { isNativePlatform: () => true });
+    stop = stabilizeInstalledViewport();
+    expect(value("--installed-height")).toBe("");
+    expect(value("--safe-top")).toBe("");
+    expect(document.documentElement.classList.contains("installed-frame")).toBe(false);
+    expect(request).not.toHaveBeenCalled();
+  });
+
   it("never sizes the frame beyond the actual launch window", () => {
     largeWidth = 390;
     largeHeight = 844;

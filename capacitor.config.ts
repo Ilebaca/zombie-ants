@@ -37,6 +37,8 @@ const config: CapacitorConfig = {
   },
 
   plugins: {
+    // The native activity owns stable hardware insets and transient overlay bars.
+    SystemBars: { hidden: true, style: "DARK", insetsHandling: "disable" },
     // The soil, so the splash and the status bar are the ground the game is played on
     // rather than a black band (index.html says the same for the web build).
     SplashScreen: {

@@ -5429,3 +5429,16 @@ The generated `image-optimization.json` reports actual source/deployment byte to
 Run on a fresh checkout with Pillow 11.3.0; do not repeatedly recompress delivered files.
 The service worker keeps complete offline precaching, with at most four requests at
 once and reuse of content-hashed assets from the previous cache.
+
+## Android test APK delivery
+
+The Pages workflow generates `android/` from the pinned Capacitor installation,
+applies `tools/configure_android.py`, then builds and lints a debug-signed APK.
+`tools/android/MainActivity.java` owns native immersive bars and stable hardware
+insets; transient bars overlay without changing the WebView dimensions. Portrait
+is enforced in the generated manifest. The app bundles optimised `dist/` assets
+and uses native Preferences; it never points at the live website.
+The APK, checksum and build metadata are published under `downloads/` AFTER sync
+so the APK cannot bundle itself. This is a test build, not a Play Store release.
+The development certificate is cached by Actions; production signing remains separate.
+Browser/PWA saves and Android app saves are separate; transfer via a backup code.

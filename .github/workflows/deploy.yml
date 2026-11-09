@@ -50,6 +50,36 @@ jobs:
 
       - run: npm run build
 
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: android-actions/setup-android@v3
+
+      # Reuse the development certificate so successive test APKs can update in place.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: android-development-keystore-v1
+
+      - run: npx cap add android
+      - run: python tools/configure_android.py
+      - run: npx cap sync android
+
+      - name: Build and lint installable Android APK
+        working-directory: android
+        run: ./gradlew --no-daemon :app:assembleDebug :app:lintDebug
+
+      # Copy only AFTER Capacitor sync, so the APK never contains a copy of itself.
+      - run: python tools/package_apk.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zombie-ants-android
+          path: dist/downloads/
+          retention-days: 30
+
       # The TypeScript build is the game now. The legacy single-file build ships beside it
       # at /legacy.html because it is still the behavioural reference for anything not
       # ported (PROJECT_GUIDE.md §1) — and it costs one file to keep it playable.
