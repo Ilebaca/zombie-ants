@@ -27,10 +27,9 @@ import { groupSections } from "./groups";
 import { CHAMBER_MAX, SPECIES } from "../engine";
 import {
   CHAMBERS, RESEARCH_TOTAL_MAX, SPECIES_ORDER, TRAIT_SLOTS, avatarProgress, exact,
-  levelReward,
 } from "../platform";
 import type { ProfileStore, TraitScope } from "../platform";
-import { antPortrait, avatarFace, clockOf, el, redraw, screenEl, screenHeader, toast } from "./chrome";
+import { antPortrait, avatarFace, clockOf, el, levelRewardChip, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 
 export interface ProfileOptions {
@@ -202,7 +201,7 @@ function who(
   if (unclaimed.length) {
     const row = el("div", "claimrow");
     for (const level of unclaimed) {
-      const chip = el("button", "claimchip", `Lvl ${level} · ${levelReward(level).label}`);
+      const chip = levelRewardChip(level);
       chip.onclick = () => {
         if (store.claimLevel(level)) {
           render();

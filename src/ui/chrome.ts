@@ -9,7 +9,7 @@
  * player-chosen name, and a template string would happily inject it as markup.
  */
 import {
-  ROAD_CHAPTER_STOPS, compact, freeReward, passReward, rungOfChapter, stopColony,
+  ROAD_CHAPTER_STOPS, compact, freeReward, levelReward, passReward, rungOfChapter, stopColony,
   stopReached, tierOf,
 } from "../platform";
 import { faceOf } from "../platform";
@@ -90,6 +90,25 @@ export const RESOURCE_MARKS = ["mycel", "pheromone", "brood"] as const;
  */
 export function resourceMark(name: string, size: number): HTMLElement | SVGElement {
   return hudMark(name, size);
+}
+
+
+/** A level claim names its level and counts the same resource marks as the HUD. */
+export function levelRewardChip(level: number): HTMLButtonElement {
+  const reward = levelReward(level);
+  const chip = el("button", "claimchip");
+  chip.type = "button";
+  chip.setAttribute("aria-label", `Claim level ${level} reward: ${reward.label}`);
+  chip.appendChild(el("span", undefined, `Lvl ${level} ·`));
+  for (const [mark, amount] of [
+    ["mycel", reward.mycel], ["pheromone", reward.pheromone],
+  ] as const) {
+    if (!amount) continue;
+    const payout = el("span", "claimchip-reward");
+    payout.append(resourceMark(mark, 20), el("span", undefined, String(amount)));
+    chip.appendChild(payout);
+  }
+  return chip;
 }
 
 /** Small element factory: `el("div", "cls", "text")`. */

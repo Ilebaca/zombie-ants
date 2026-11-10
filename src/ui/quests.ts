@@ -8,9 +8,9 @@
  * match actually did (app.ts), so opening this screen can never award anything by itself.
  */
 import { groupSections } from "./groups";
-import { isClaimable, isComplete, levelReward, questDef } from "../platform";
+import { isClaimable, isComplete, questDef } from "../platform";
 import type { ProfileStore, QuestState } from "../platform";
-import { el, redraw, screenEl, screenHeader, toast } from "./chrome";
+import { el, levelRewardChip, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 
 export function buildQuests(store: ProfileStore, onBack: () => void): HTMLElement {
@@ -65,7 +65,7 @@ export function buildQuests(store: ProfileStore, onBack: () => void): HTMLElemen
     if (unclaimed.length) {
       const row = el("div", "claimrow");
       for (const level of unclaimed) {
-        const chip = el("button", "claimchip", `Lvl ${level} · ${levelReward(level).label}`);
+        const chip = levelRewardChip(level);
         chip.onclick = () => {
           if (store.claimLevel(level)) {
             render();

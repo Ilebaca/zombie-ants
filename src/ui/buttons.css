@@ -115,3 +115,19 @@
     .backbtn, .pickarrow, .hatchpop-x, .rd-popx,
     .navitem, .settingsfab, .dailyfab) { transition: none; }
 }
+
+/* Keep level claims compact, with the official icon beside each amount. */
+.claimchip, .claimchip-reward {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.claimchip { flex-wrap: wrap; }
+.claimchip-reward { white-space: nowrap; }
+.claimchip-reward > :is(img, svg) {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
