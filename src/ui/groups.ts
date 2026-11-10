@@ -19,11 +19,11 @@ function elementChildren(node: Element): HTMLElement[] {
   return Array.from(node.children).filter((child): child is HTMLElement => child instanceof HTMLElement);
 }
 
-function isEntry(node: Element): node is HTMLElement {
+function isGroupEntry(node: Element): node is HTMLElement {
   if (!(node instanceof HTMLElement)) return false;
   if (node.matches(ROWS)) return true;
   const children = elementChildren(node);
-  return node.matches(LAYOUTS) && children.length > 0 && children.every(isEntry);
+  return node.matches(LAYOUTS) && children.length > 0 && children.every(isGroupEntry);
 }
 
 function markEntry(node: HTMLElement): void {
@@ -60,7 +60,7 @@ export function groupSections(root: HTMLElement): void {
     if (heading.closest(".panel-group")) continue;
     const items: HTMLElement[] = [];
     let next = heading.nextElementSibling;
-    while (next && isEntry(next)) {
+    while (next && isGroupEntry(next)) {
       items.push(next);
       next = next.nextElementSibling;
     }
@@ -73,7 +73,7 @@ export function groupSections(root: HTMLElement): void {
   for (const list of Array.from(root.querySelectorAll<HTMLElement>(LISTS))) {
     if (list.closest(".panel-group")) continue;
     const items = elementChildren(list);
-    if (items.length < 2 || !items.every(isEntry)) continue;
+    if (items.length < 2 || !items.every(isGroupEntry)) continue;
     list.appendChild(frame(items));
   }
 }
