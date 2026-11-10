@@ -5476,3 +5476,7 @@ component-owned. The inward 2px outline avoids layout/padding changes; corners a
 sharp 4px bottom edges reuse the action tokens. Bare layout wrappers, titles, progress
 tracks and transparent artwork are not boxed. Selection and keyboard-focus cues stay
 visible. Road cards use the common frame around their existing face/rarity fills.
+
+Home's menu, daily and hatch controls share a flex column. Their shared CSS uses
+position: relative with inset: auto so unread badges can anchor without reactivating
+legacy top/right offsets. Do not add a menu-only positioned override or offset.

@@ -7277,7 +7277,9 @@ button:not(.playbtn):active,
 }
 #home .settingsfab,
 #home .dailyfab {
-  position: static;
+  /* Badge anchoring must not revive offsets from the old absolute layout. */
+  position: relative;
+  inset: auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9380,7 +9382,6 @@ body,
 .live-update h1 { margin-bottom: 12px; }
 .live-update-actions { display: grid; gap: 12px; margin-top: 20px; }
 .live-update-actions .cta, .live-update-actions .ghostbtn { min-height: var(--tap); }
-#home .settingsfab { position: relative; }
 #home .live-mail-count { position: absolute; top: -4px; right: -4px; z-index: 1; }
 .menudraw {
   max-height: calc(var(--installed-height, calc(100 * var(--game-vh))) - var(--home-top) - var(--safe-bottom) - 24px);
