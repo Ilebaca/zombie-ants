@@ -7,7 +7,7 @@
  * nothing at all.
  */
 import { describe, expect, it, beforeEach } from "vitest";
-import { LocalAccounts, MemoryStore, PROFILE_KEY, ProfileStore, compact } from "../../platform";
+import { CHAMBERS, LocalAccounts, MemoryStore, PROFILE_KEY, ProfileStore, compact } from "../../platform";
 import type { Account } from "../../platform";
 import { buildSignIn } from "../signin";
 import { App } from "../app";
@@ -144,4 +144,102 @@ it("loads the selected account's saved formation on entry", () => {
   host.querySelector<HTMLButtonElement>("#home .playbtn")?.click();
   expect(host.querySelector("#formation .picktext")?.textContent).toBe("Column");
   app.destroy();
+});
+
+describe("returning through the colony picker", () => {
+  const launch = (): {
+    accounts: LocalAccounts; account: Account; host: HTMLElement; app: App;
+  } => {
+    const accounts = new LocalAccounts(new MemoryStore());
+    const account = accounts.create("Returning");
+    accounts.storeFor(account).update((p) => {
+      p.tourSeen = 99;
+      p.colony = 123;
+      p.mycel = 321;
+      p.hill[CHAMBERS[0]!.id] = 2;
+    });
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const app = new App(host, undefined, accounts);
+    app.start();
+    return { accounts, account, host, app };
+  };
+
+  const openSettings = (host: HTMLElement): void => {
+    host.querySelector<HTMLButtonElement>("#home .settingsfab")!.click();
+    host.querySelector<HTMLButtonElement>('[data-go="settings"]')!.click();
+    expect(host.querySelector("#settings:not(.hidden) #setName")).toBeTruthy();
+  };
+
+  const choose = (host: HTMLElement, account: Account): void => {
+    host.querySelector<HTMLButtonElement>(`.sirow[data-account="${account.id}"]`)!.click();
+    expect(host.querySelector("#home")).toBeTruthy();
+    expect(host.querySelector("#mainNav:not(.hidden)")).toBeTruthy();
+    expect(host.querySelectorAll("#mainNav")).toHaveLength(1);
+  };
+
+  it("reopens Settings and navigation after repeatedly returning to the same colony", () => {
+    const { accounts, account, host, app } = launch();
+    const before = accounts.storeFor(account).get();
+    try {
+      for (let pass = 0; pass < 3; pass++) {
+        openSettings(host);
+        tap(host, "setSignOut");
+        expect(host.querySelector("#signin")).toBeTruthy();
+        expect(host.querySelector("#settings")).toBeNull();
+        choose(host, account);
+        openSettings(host);
+        expect(host.querySelectorAll("#settings")).toHaveLength(1);
+        expect(host.querySelector<HTMLInputElement>("#setName")?.value).toBe("Returning");
+        tap(host, "setSound");
+        tap(host, "setSound");
+        tap(host, "setBackup");
+        expect(host.querySelector<HTMLElement>("#setBackupPanel")?.hidden).toBe(false);
+        host.querySelector<HTMLButtonElement>("#settings .backbtn")!.click();
+        host.querySelector<HTMLButtonElement>('[data-nav="anthill"]')!.click();
+        expect(host.querySelector("#anthill")).toBeTruthy();
+        host.querySelector<HTMLButtonElement>('[data-nav="home"]')!.click();
+      }
+      const after = accounts.storeFor(account).get();
+      expect(after.colony).toBe(before.colony);
+      expect(after.mycel).toBe(before.mycel);
+      expect(after.hill).toEqual(before.hill);
+      expect(after.playerId).toBe(before.playerId);
+    } finally { app.destroy(); }
+  });
+
+  it("rebuilds previously visited pages for the selected account without mixing saves", () => {
+    const { accounts, account, host, app } = launch();
+    const other = accounts.create("Second");
+    accounts.storeFor(other).update((p) => {
+      p.tourSeen = 99;
+      p.colony = 456;
+      p.mycel = 654;
+      p.difficulty = "impossible";
+    });
+    accounts.signIn(account.id);
+    try {
+      host.querySelector<HTMLButtonElement>("#home .tn-id")!.click();
+      expect(host.querySelector("#profile")).toBeTruthy();
+      host.querySelector<HTMLButtonElement>("#profile .backbtn")!.click();
+      openSettings(host);
+      tap(host, "setSignOut");
+      choose(host, other);
+      openSettings(host);
+      expect(host.querySelector<HTMLInputElement>("#setName")?.value).toBe("Second");
+      expect(host.querySelector("#setDiff")?.textContent).toBe("Impossible");
+      host.querySelector<HTMLButtonElement>("#settings .backbtn")!.click();
+      host.querySelector<HTMLButtonElement>("#home .tn-id")!.click();
+      expect(host.querySelector("#profile .pf-hero")?.textContent).toContain("Second");
+      expect(host.querySelector("#profile .pf-colony-n")?.textContent).toBe("456");
+      host.querySelector<HTMLButtonElement>("#profile .backbtn")!.click();
+      openSettings(host);
+      tap(host, "setSignOut");
+      choose(host, account);
+      openSettings(host);
+      expect(host.querySelector<HTMLInputElement>("#setName")?.value).toBe("Returning");
+      expect(accounts.storeFor(account).get().mycel).toBe(321);
+      expect(accounts.storeFor(other).get().mycel).toBe(654);
+    } finally { app.destroy(); }
+  });
 });

@@ -5501,3 +5501,11 @@ The complete left 50% of the road, including its end caps, uses `--pass-prism`.
 This supersedes the solid pass-side background rule. Area colors remain on the free
 half. A clipped, low-opacity grid repeats PASS in the app display font behind rewards.
 Lettering is decorative (`aria-hidden` on its field), static and pointer-transparent.
+
+## Account view lifecycle
+Replacing the host DOM for the colony picker or a selected account must run
+`App.clearAccountView`: dispose the deck and transient views, clear the screen cache,
+and reset nav/menu/home-bar references together. Detached screens cannot be replaced
+with `replaceWith`; retaining them caused blank Settings after returning to a colony.
+No profile keys or progress are removed by this view cleanup. Sign-in regression tests
+cover repeat returns, navigation recreation and separation between account saves.

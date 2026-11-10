@@ -468,7 +468,7 @@ export class App {
    */
   private showSignIn(): void {
     this.activeScreen = "home";
-    this.host.replaceChildren();
+    this.clearAccountView();
     this.host.appendChild(buildSignIn(this.accounts, {
       onEnter: (account: Account) => this.enter(account),
     }));
@@ -483,9 +483,7 @@ export class App {
     this.inboxOpen = null;
     this.adoptProfile();
     this.applyFeedbackPrefs();
-    this.host.replaceChildren();
-    this.deck?.destroy();
-    this.deck = null;
+    this.clearAccountView();
     this.show("home");
     if (this.profile.get().tourSeen < TOUR_VERSION) this.startTour();
   }
@@ -493,10 +491,23 @@ export class App {
   /** Leave the colony without destroying it, and go back to the picker. */
   private signOut(): void {
     this.accounts.signOut();
+    this.showSignIn();
+  }
+
+  /** Discard every view reference when the account's DOM is replaced. */
+  private clearAccountView(): void {
     this.tour.stop();
+    this.clearMatch();
+    this.clearReplay();
+    this.clearMatchmaking();
+    this.clearOverlay();
     this.deck?.destroy();
     this.deck = null;
-    this.showSignIn();
+    this.screens.clear();
+    this.nav = null;
+    this.menu = null;
+    this.rebuildHomeBar = () => {};
+    this.host.replaceChildren();
   }
 
   /**
