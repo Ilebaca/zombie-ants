@@ -5480,3 +5480,11 @@ visible. Road cards use the common frame around their existing face/rarity fills
 Home's menu, daily and hatch controls share a flex column. Their shared CSS uses
 position: relative with inset: auto so unread badges can anchor without reactivating
 legacy top/right offsets. Do not add a menu-only positioned override or offset.
+
+## Grouped information sections
+`ui/groups.ts` runs at the end of information/settings screen renders. Related rows
+under one heading share a single `panel-group` frame; existing IDs and controls are
+moved, never cloned. Profile's full-width colony and stats stay together. Repeated
+renders and expanded backup/restore panels retain the same grouping. Shared 2px
+`--action-stroke` controls both outer frames and internal grid/row dividers.
+Keep individual art/choice catalogues, bare screen titles and scroll containers intact.

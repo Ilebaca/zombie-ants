@@ -1,0 +1,56 @@
+/* One framed block per information section; all separators share its stroke. */
+#app .panel-group {
+  min-width: 0;
+  flex-shrink: 0;
+  padding: 0 !important;
+  overflow: hidden;
+  border-radius: var(--action-radius) !important;
+  outline: var(--action-stroke) solid var(--action-frame) !important;
+  outline-offset: calc(-1 * var(--action-stroke)) !important;
+  background: var(--hud-card);
+  box-shadow: 0 var(--action-depth) 0 var(--action-frame) !important;
+}
+
+/* Flatten only the information surfaces. Their inner action buttons stay buttons. */
+#app .panel-group [data-group-row] {
+  min-width: 0;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+#app .panel-group [data-group-layout] {
+  min-width: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Hidden backup/restore panels do not leave stray lines or empty gaps. */
+#app .panel-group > :not([hidden]) ~ :not([hidden]),
+#app .panel-group [data-group-layout]:not([data-group-grid]) > :not([hidden]) ~ :not([hidden]) {
+  border-block-start: var(--action-stroke) solid var(--action-frame) !important;
+}
+
+/* Two-dimensional statistics use the same single-width vertical/horizontal rules. */
+#app .panel-group [data-group-grid] {
+  gap: var(--action-stroke) !important;
+  background: var(--action-frame);
+}
+#app .panel-group [data-group-grid] > [data-group-row] {
+  background: var(--hud-card);
+}
+
+/* A full row that can be opened keeps an obvious keyboard focus indicator. */
+#app .panel-group [data-group-row]:is(button, a):focus-visible {
+  outline: var(--action-stroke) solid var(--hud-ink) !important;
+  outline-offset: calc(-1 * var(--action-stroke)) !important;
+}
+
+/* Author display rules must not reopen a collapsed panel. */
+#app .panel-group [hidden] { display: none !important; }

@@ -12,6 +12,7 @@
  * the screen opens a mail link carrying the same text, the build and the player's code.
  * The player is told that plainly. `SupportGateway` is the seam a real endpoint slots into.
  */
+import { groupSections } from "./groups";
 import { BUILD, FAQ, SUPPORT_EMAIL, TICKET_KINDS, TICKET_MAX, mailLink } from "../platform";
 import type { ProfileStore, SupportGateway, TicketKind } from "../platform";
 import { el, redraw, screenEl, screenHeader, toast } from "./chrome";
@@ -194,6 +195,7 @@ export function buildSupport(
 
     body.appendChild(wrap);
     root.appendChild(body);
+    groupSections(root);
   };
 
   render();

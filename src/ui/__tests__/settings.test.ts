@@ -50,6 +50,20 @@ const press = (root: HTMLElement, id: string): void => {
 };
 
 describe("the settings screen", () => {
+  it("combines settings sections and keeps backup controls inside the shared frame", () => {
+    const { root } = build();
+    expect(root.querySelectorAll(".panel-group")).toHaveLength(6);
+    const sound = root.querySelector("#setSound")!;
+    expect(sound.closest(".panel-group")).toBe(root.querySelector("#setMusic")!.closest(".panel-group"));
+    const panel = root.querySelector<HTMLElement>("#setBackupPanel")!;
+    expect(panel.hidden).toBe(true);
+    expect(panel.closest(".panel-group")).toBe(root.querySelector("#setRestore")?.closest(".panel-group"));
+    press(root, "setBackup");
+    expect(panel.hidden).toBe(false);
+    press(root, "setBackup");
+    expect(panel.hidden).toBe(true);
+  });
+
   /**
    * A switch over something that does not exist is worse than no switch. This build has
    * no audio and no haptics, and both rows were disabled buttons reading "On" — which is

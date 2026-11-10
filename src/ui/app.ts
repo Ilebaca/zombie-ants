@@ -5,6 +5,7 @@
  * match — a match is created from the choices, handed to MatchScreen, and reported back
  * through `onExit`.
  */
+import { groupSections } from "./groups";
 import { DIFFICULTIES, MAPS, START_SHAPES, arrangeTutorial, createGame, startsFirst } from "../engine";
 import type { MatchSetup, Player, SpeciesId } from "../engine";
 import type { Difficulty } from "../ai/search";
@@ -73,6 +74,7 @@ import "./game.css";
 import "./skin.css";   // the look, layered over the structure
 import "./buttons.css"; // shared action faces, frames and interaction states
 import "./panels.css";  // matching frames for filled panels; component fills stay intact
+import "./groups.css";  // one frame and shared dividers for related information rows
 
 /**
  * Route ids are the legacy build's screen ids. The stylesheet is that build's, and some of

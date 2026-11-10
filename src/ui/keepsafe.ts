@@ -16,6 +16,7 @@
  * lead and the code sits under them. Both are offered every time: a player who has already
  * installed still wants a code before a new phone.
  */
+import { groupSections } from "./groups";
 import { installSteps } from "../platform";
 import type { ProfileStore, SaveRisk } from "../platform";
 import { el, screenEl, screenHeader } from "./chrome";
@@ -46,6 +47,7 @@ export function buildKeepSafe(store: ProfileStore, opts: KeepSafeOptions): HTMLE
 
   body.appendChild(wrap);
   root.appendChild(body);
+  groupSections(root);
   return root;
 }
 

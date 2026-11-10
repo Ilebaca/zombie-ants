@@ -14,6 +14,7 @@
  * has to be able to see the ceiling before they hit it, or the fifth one silently doing
  * nothing reads as a bug in the game rather than as a rule of it.
  */
+import { groupSections } from "./groups";
 import { SPECIES } from "../engine";
 import {
   ATK_CAP, DEF_CAP, FUSE_DEALS, LUCK_CAP, SPECIES_ORDER, TRAITS_CHAPTER, TRAIT_SLOTS,
@@ -74,6 +75,7 @@ export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): H
 
     body.appendChild(wrap);
     root.appendChild(body);
+    groupSections(root);
   };
 
   const changed = (): void => { render(); opts.onChanged?.(); };
@@ -247,6 +249,7 @@ export function buildInventory(store: ProfileStore, opts: InventoryOptions): HTM
         "Find traits on the Colony Road or in the lucky hatch, then equip them on a colony or your anthill."));
       body.appendChild(wrap);
       root.appendChild(body);
+      groupSections(root);
       return;
     }
 
@@ -258,6 +261,7 @@ export function buildInventory(store: ProfileStore, opts: InventoryOptions): HTM
           : `Claim traits on the Colony Road. The lucky hatch opens at chapter ${TRAITS_CHAPTER}.`));
       body.appendChild(wrap);
       root.appendChild(body);
+      groupSections(root);
       return;
     }
 
@@ -294,6 +298,7 @@ export function buildInventory(store: ProfileStore, opts: InventoryOptions): HTM
 
     body.appendChild(wrap);
     root.appendChild(body);
+    groupSections(root);
   };
 
   /**

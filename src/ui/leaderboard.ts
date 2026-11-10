@@ -24,6 +24,7 @@
  * is the app telling a player something untrue (§ WHAT THE TWO STORES REQUIRE). What is NOT
  * invented is the player's own score, their place in the week, and the prize it pays.
  */
+import { groupSections } from "./groups";
 import {
   COLONY_START, LEAGUES, LEAGUE_SIZE, PAID_PLACES, compact, exact, globalTable,
   leagueChapters, msLeftInWeek, prizeFor, prizeText, seasonScore, table, weekProgress,
@@ -69,6 +70,8 @@ export function buildLeaderboard(store: ProfileStore, onBack: () => void): HTMLE
     else allTab(body, store);
 
     root.appendChild(body);
+
+    groupSections(root);
     requestAnimationFrame(() => {
       body.querySelector(".lblist .lbrow.you")?.scrollIntoView?.({ block: "center" });
     });

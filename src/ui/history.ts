@@ -10,6 +10,7 @@
  * marching ants and the crumble exactly as they happened, and a change to how any of that
  * is drawn reaches replays on the same commit. Nothing is stored but the moves.
  */
+import { groupSections } from "./groups";
 import { applyMove, openingBoard, restore, snapshot } from "../engine";
 import type { GameState, MatchRecord, Player } from "../engine";
 import { MAPS, SPECIES } from "../engine";
@@ -48,6 +49,8 @@ export function buildHistory(
   }
 
   root.appendChild(body);
+
+  groupSections(root);
   return root;
 }
 

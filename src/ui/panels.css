@@ -22,8 +22,8 @@
     .sirow, .saveguard .sg-body, .rd-card, .rd-breaker) {
   border-radius: var(--action-radius) !important;
   /* An inward frame preserves each block's dimensions and content padding. */
-  outline: 2px solid var(--action-frame) !important;
-  outline-offset: -2px !important;
+  outline: var(--action-stroke) solid var(--action-frame) !important;
+  outline-offset: calc(-1 * var(--action-stroke)) !important;
   box-shadow: 0 var(--action-depth) 0 var(--action-frame) !important;
 }
 
@@ -41,8 +41,8 @@
 /* Collection art has its own colored tile, separate from the text beneath it. */
 #app #antarium .an-tile {
   border-radius: var(--action-radius) !important;
-  outline: 2px solid var(--action-frame) !important;
-  outline-offset: -2px !important;
+  outline: var(--action-stroke) solid var(--action-frame) !important;
+  outline-offset: calc(-1 * var(--action-stroke)) !important;
   box-shadow: 0 var(--action-depth) 0 var(--action-frame) !important;
 }
 

@@ -15,6 +15,7 @@
  * fielded. The screen only ever *asks* ProfileStore to spend; it never touches the numbers
  * itself, so an unaffordable tap is a no-op rather than a half-finished purchase.
  */
+import { groupSections } from "./groups";
 import { chamberCost } from "../engine";
 import {
   CHAMBERS, GRANARY_MAX, TRAITS_CHAPTER, compact,
@@ -92,6 +93,7 @@ export function buildAnthill(store: ProfileStore, opts: AnthillOptions = {}): HT
 
     body.appendChild(wrap);
     root.appendChild(body);
+    groupSections(root);
   };
 
   render();

@@ -22,6 +22,7 @@
  * of the screen, which is where a version belongs — and it has to stay somewhere readable,
  * because a stale cached page and a real bug look identical on a phone without it.
  */
+import { groupSections } from "./groups";
 import { BUILD, importProfile } from "../platform";
 import type { ProfileStore } from "../platform";
 import { el, screenEl, screenHeader, toast } from "./chrome";
@@ -164,6 +165,7 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
   scroll.appendChild(buildFoot());
   body.appendChild(scroll);
   root.appendChild(body);
+  groupSections(root);
   return root;
 }
 

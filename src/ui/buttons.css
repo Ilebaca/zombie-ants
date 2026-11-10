@@ -10,6 +10,7 @@
   --action-muted: var(--hud-mute);
   --action-radius: 12px;
   --action-depth: 4px;
+  --action-stroke: 2px;
 }
 
 #app button:is(.action-button, .playbtn, .cta, .buybtn, .buybar,
@@ -25,7 +26,7 @@
   --action-edge: var(--action-frame);
   box-sizing: border-box;
   appearance: none;
-  border: 2px solid var(--action-edge) !important;
+  border: var(--action-stroke) solid var(--action-edge) !important;
   border-radius: var(--action-radius) !important;
   background: var(--action-fill) !important;
   color: var(--action-ink) !important;

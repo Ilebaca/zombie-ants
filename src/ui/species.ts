@@ -26,6 +26,7 @@
  * not built (PROJECT_GUIDE.md §9), so it was a tab that could only ever raise a toast — the same
  * thing Settings' Sound switch was.
  */
+import { groupSections } from "./groups";
 import {
   RESEARCH_MAX, SPECIES, TIERS, abilityCooldown, looksFor, researchCost, NEUTRAL_MODS,
 } from "../engine";
@@ -109,6 +110,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
 
     body.appendChild(page);
     root.appendChild(body);
+    groupSections(root);
   };
 
   /**

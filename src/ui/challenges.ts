@@ -21,6 +21,7 @@
  * every other card on the screen says too. The map, the colony and the difficulty are the
  * facts that tell one challenge from another, so they are what the card carries.
  */
+import { groupSections } from "./groups";
 import type { MapId, ShapeId, SpeciesId } from "../engine";
 import { SPECIES } from "../engine";
 import type { ProfileStore } from "../platform";
@@ -154,6 +155,7 @@ export function buildChallenges(store: ProfileStore, onPlay: (index: number) => 
 
   body.appendChild(wrap);
   root.appendChild(body);
+  groupSections(root);
   return root;
 }
 
@@ -276,6 +278,7 @@ export function buildDaily(
 
   body.appendChild(wrap);
   root.appendChild(body);
+  groupSections(root);
   return root;
 }
 

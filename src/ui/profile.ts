@@ -23,6 +23,7 @@
  * The screen reads and claims; it never advances progress. Career numbers come from what a
  * match did (app.ts → ProfileStore), so opening this can never move one.
  */
+import { groupSections } from "./groups";
 import { CHAMBER_MAX, SPECIES } from "../engine";
 import {
   CHAMBERS, RESEARCH_TOTAL_MAX, SPECIES_ORDER, TRAIT_SLOTS, avatarProgress, exact,
@@ -145,6 +146,7 @@ export function buildProfile(store: ProfileStore, opts: ProfileOptions): HTMLEle
 
     body.appendChild(scroll);
     root.appendChild(body);
+    groupSections(root);
   };
 
   render();

@@ -12,6 +12,7 @@
  * be accepted or turned down. When the server exists, `FriendService` gets a real
  * implementation and this file does not change.
  */
+import { groupSections } from "./groups";
 import { FRIEND_MAX, compact } from "../platform";
 import type { Friend, FriendService, Person, ProfileStore } from "../platform";
 import { antPortrait, el, redraw, screenEl, screenHeader, toast } from "./chrome";
@@ -79,6 +80,7 @@ export function buildFriends(
     else findPanel(panel);
     body.appendChild(panel);
     root.appendChild(body);
+    groupSections(root);
   };
 
   /** The search: a field, and whatever it last returned. */

@@ -7,6 +7,7 @@
  * The screen reads state and claims; it never advances progress. Progress comes from what a
  * match actually did (app.ts), so opening this screen can never award anything by itself.
  */
+import { groupSections } from "./groups";
 import { isClaimable, isComplete, levelReward, questDef } from "../platform";
 import type { ProfileStore, QuestState } from "../platform";
 import { el, redraw, screenEl, screenHeader, toast } from "./chrome";
@@ -32,6 +33,7 @@ export function buildQuests(store: ProfileStore, onBack: () => void): HTMLElemen
 
     body.appendChild(list);
     root.appendChild(body);
+    groupSections(root);
   };
 
   /** Level badge, name, and the XP bar toward the next level. */
