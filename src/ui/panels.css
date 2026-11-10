@@ -160,3 +160,17 @@
 #app .rd-passpattern > :nth-child(4n + 4) {
   translate: 50% 0;
 }
+
+/* Keep the shaft and its connector stubs behind every chamber surface.
+   Each level owns its layers so expanded rooms and focus rings stay local. */
+#anthill .nest-lvl {
+  isolation: isolate;
+}
+#anthill .nest-spine {
+  z-index: 0;
+  pointer-events: none;
+}
+#anthill .nest-lvl > :is(.room, .room-open) {
+  position: relative;
+  z-index: 1;
+}
