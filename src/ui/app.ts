@@ -5,7 +5,6 @@
  * match — a match is created from the choices, handed to MatchScreen, and reported back
  * through `onExit`.
  */
-import { groupSections } from "./groups";
 import { DIFFICULTIES, MAPS, START_SHAPES, arrangeTutorial, createGame, startsFirst } from "../engine";
 import type { MatchSetup, Player, SpeciesId } from "../engine";
 import type { Difficulty } from "../ai/search";
