@@ -19,7 +19,8 @@
     .granpill, .mycelchip, .hatchpurse, .hatchtrade, .hatchodds,
     .ho-row, .shopnote, .testnote, .demo-note, .passnote,
     .stat, .hivechip, .timeband, .rd-popcard, .tourbubble,
-    .sirow, .saveguard .sg-body, .rd-card, .rd-breaker) {
+    .sirow, .saveguard .sg-body, .rd-card, .rd-breaker),
+#app #setupBoard {
   border-radius: var(--action-radius) !important;
   /* An inward frame preserves each block's dimensions and content padding. */
   outline: var(--action-stroke) solid var(--action-frame) !important;
@@ -173,4 +174,11 @@
 #anthill .nest-lvl > :is(.room, .room-open) {
   position: relative;
   z-index: 1;
+}
+
+/* The formation map uses the shared block frame. Reserve its sharp lower edge
+   inside the clipped stage; the transparent colony artwork keeps its own layout. */
+#formation #setupBoard {
+  margin-bottom: var(--action-depth);
+  max-height: calc(100% - var(--action-depth));
 }
