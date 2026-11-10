@@ -12,7 +12,7 @@
 import { SPECIES } from "../engine";
 import type { GameOverReason, Player, SpeciesId } from "../engine";
 import { compact } from "../platform";
-import { clockOf, el, RESOURCE_MARKS, resourceMark } from "./chrome";
+import { clockOf, el, hudMark, RESOURCE_MARKS, resourceMark } from "./chrome";
 import { icon } from "./icons";
 import { GOAL_TEXT } from "./challenges";
 import type { Challenge } from "./challenges";
@@ -83,11 +83,11 @@ winner: Player | null, recap: Recap, act: ResultActions,
   const reward = (mark: string, value: string, note: string, kind: string): HTMLElement => {
     const cell = el("div", `payout pay-${kind}`);
     const head = el("div", "payv");
-    // A RESOURCE takes the painted mark, the same one the top bar carries; the colony and
-    // the XP are not resources and keep their drawn glyph, which is also what lets them be
-    // tinted (`.pay-colony svg`) — an `<img>` cannot take `currentColor`.
+    // Units use the same crossed swords as the home troop count. Resources keep their
+    // official currency marks; XP keeps its drawn star.
     head.append(
-      (RESOURCE_MARKS as readonly string[]).includes(mark) ? resourceMark(mark, 17) : icon(mark, 17),
+      mark === "swords" ? hudMark(mark, 17)
+        : (RESOURCE_MARKS as readonly string[]).includes(mark) ? resourceMark(mark, 17) : icon(mark, 17),
       el("b", undefined, value),
     );
     cell.append(head, el("small", undefined, note));
@@ -96,7 +96,7 @@ winner: Player | null, recap: Recap, act: ResultActions,
   rewards.append(
     // The colony leads the card, because it is what the match was played for. A loss is
     // marked as one: the figure carries the colony's own green only when it went UP.
-    reward("antarium", `${recap.colonyDelta >= 0 ? "+" : "−"}${compact(Math.abs(recap.colonyDelta))}`,
+    reward("swords", `${recap.colonyDelta >= 0 ? "+" : "−"}${compact(Math.abs(recap.colonyDelta))}`,
       `${compact(recap.colony)} troops`, recap.colonyDelta >= 0 ? "colony" : "colony down"),
     reward("mycel", signed(recap.mycel), "mycelium", "mycel"),
     reward("star", `+${recap.xpGained}`, "colony XP", "xp"),
