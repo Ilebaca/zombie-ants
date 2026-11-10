@@ -56,3 +56,68 @@
   outline-color: var(--hud-ink) !important;
   outline-offset: 2px !important;
 }
+
+/* Colony Pass material: a continuous pastel spectrum, confined to pass chrome.
+   Reward faces keep their resource/rarity fills; free rewards use the shared frame. */
+:root {
+  --pass-prism: linear-gradient(135deg,
+    #fff7ad 0%, #e8ffd5 20%, #baf8ef 40%, #ddd1ff 62%, #ffd0ed 82%, #fff1bc 100%);
+  --pass-edge: #82748f;
+}
+
+#app .rd-prize.pass .rd-card {
+  background-image: var(--pass-prism) !important;
+  outline: none !important;
+  box-shadow: 0 var(--action-depth) 0 var(--pass-edge) !important;
+  /* Chapter-end brightness must not wash the pastel frame to white. */
+  filter: none;
+}
+#app .rd-prize.pass .rd-cardface {
+  inset: max(3px, calc(4 * var(--rd-u)));
+  border-radius: max(0px, calc(var(--action-radius) - max(3px, 4 * var(--rd-u))));
+}
+
+/* The pass label uses the same material around a dark, readable face. */
+#app .rd-trackname.premium {
+  position: relative;
+  --pass-stroke: 2px;
+  border: none;
+  background: #24313b;
+  color: #fff5f9;
+  text-shadow: none !important;
+}
+
+/* Small static lights remain confined to the left half of the road. */
+#app .rd-speck {
+  background: #c9fff1;
+  box-shadow: 0 0 calc(5 * var(--rd-u)) calc(2 * var(--rd-u)) #baf8ef70 !important;
+}
+#app .rd-speck:nth-child(3n + 2) {
+  background: #e6d6ff;
+  box-shadow: 0 0 calc(5 * var(--rd-u)) calc(2 * var(--rd-u)) #ddd1ff70 !important;
+}
+#app .rd-speck:nth-child(3n) {
+  background: #ffdef0;
+  box-shadow: 0 0 calc(5 * var(--rd-u)) calc(2 * var(--rd-u)) #ffd0ed70 !important;
+}
+
+/* Overlay the shop frame so its product and purchase button do not move. */
+#app .pass-product {
+  position: relative;
+  outline: none !important;
+  box-shadow: 0 var(--action-depth) 0 var(--pass-edge) !important;
+}
+#app :is(.pass-product, .rd-trackname.premium)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: var(--pass-stroke, 3px);
+  border-radius: inherit;
+  background: var(--pass-prism) !important;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}

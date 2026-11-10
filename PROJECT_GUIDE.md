@@ -5488,3 +5488,10 @@ moved, never cloned. Profile's full-width colony and stats stay together. Repeat
 renders and expanded backup/restore panels retain the same grouping. Shared 2px
 `--action-stroke` controls both outer frames and internal grid/row dividers.
 Keep individual art/choice catalogues, bare screen titles and scroll containers intact.
+
+## Colony Pass material
+Pass reward frames, track labels and the pass shop tile use the shared pastel
+`--pass-prism` gradient in `ui/panels.css`. Resource faces and trait rarity fills
+remain inside the frame. Free rewards retain their existing styling. Area backgrounds
+stay solid; only the existing pass-side light particles adopt the pastel palette.
+Keep text unstroked and ledges sharp; no animated shine or additional image assets.
