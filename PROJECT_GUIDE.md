@@ -5495,3 +5495,9 @@ Pass reward frames, track labels and the pass shop tile use the shared pastel
 remain inside the frame. Free rewards retain their existing styling. Area backgrounds
 stay solid; only the existing pass-side light particles adopt the pastel palette.
 Keep text unstroked and ledges sharp; no animated shine or additional image assets.
+
+## Full premium road field
+The complete left 50% of the road, including its end caps, uses `--pass-prism`.
+This supersedes the solid pass-side background rule. Area colors remain on the free
+half. A clipped, low-opacity grid repeats PASS in the app display font behind rewards.
+Lettering is decorative (`aria-hidden` on its field), static and pointer-transparent.

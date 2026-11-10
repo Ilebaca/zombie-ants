@@ -121,3 +121,42 @@
   mask-composite: exclude;
   pointer-events: none;
 }
+
+/* The complete premium half shares the card frame's iridescent material.
+   A pseudo-element keeps this intentional gradient outside the flat-surface reset. */
+#app :is(.rd-premiumwash, .rd-endpass) {
+  overflow: hidden;
+}
+#app :is(.rd-premiumwash, .rd-endpass)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--pass-prism) !important;
+  pointer-events: none;
+}
+#app .rd-passpattern {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(14, minmax(0, 1fr));
+  align-items: center;
+  justify-items: center;
+  color: #493461;
+  opacity: .065;
+  pointer-events: none;
+  user-select: none;
+}
+#app .rd-passpattern > span {
+  font-family: var(--font-display);
+  font-size: calc(25 * var(--rd-u));
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: calc(2 * var(--rd-u));
+  transform: rotate(-18deg);
+  text-shadow: none !important;
+}
+#app .rd-passpattern > :nth-child(4n + 3),
+#app .rd-passpattern > :nth-child(4n + 4) {
+  translate: 50% 0;
+}

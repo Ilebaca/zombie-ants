@@ -127,7 +127,13 @@ export function buildColonyRoad(
     section.style.setProperty("--rd-pass", palette.pass);
     const premium = el("span", "rd-premiumwash");
     premium.setAttribute("aria-hidden", "true");
-    // Static light particles: decoration only, with no color wash or animation.
+    // Decorative lettering stays hidden from assistive technology with the pass field.
+    const pattern = el("span", "rd-passpattern");
+    for (let word = 0; word < 28; word++) {
+      pattern.appendChild(el("span", undefined, "PASS"));
+    }
+    premium.appendChild(pattern);
+    // Static light particles keep the iridescent field subtly lit.
     for (const [x, y, size] of [
       [12, 5, 2], [72, 12, 3], [32, 20, 2], [86, 27, 2], [18, 34, 3],
       [63, 41, 2], [40, 48, 3], [89, 55, 2], [14, 62, 2], [69, 69, 3],
