@@ -4,7 +4,7 @@
  * There are ninety-eight painted faces (`src/ui/avatars/`), and they are the first thing
  * in this app a player collects that is about THEM rather than about a colony. A skin
  * says what the Fire Ant looks like; an avatar is the picture beside your own name, so it
- * belongs to the save rather than to a species and it is never worn by an opponent.
+ * belongs to a player identity rather than to the species they choose for a match.
  *
  * THEY ARRIVE THREE WAYS, and the split is the whole of this file:
  *

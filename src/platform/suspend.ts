@@ -38,6 +38,8 @@ export interface SuspendFoe {
   species: SpeciesId;
   colony: number;
   human: boolean;
+  /** Identity portrait, retained independently from their fielded species. */
+  avatar?: string | null;
 }
 
 /** A match that was left unfinished, as data. */

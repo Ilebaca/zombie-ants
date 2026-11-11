@@ -629,7 +629,12 @@ function people<T extends Person>(raw: unknown, fallback: T[]): T[] {
     && typeof (p as Person).name === "string"
     && typeof (p as Person).colony === "number" && Number.isFinite((p as Person).colony)
     && typeof (p as Person).species === "string" && (p as Person).species in SPECIES)
-    .map((p) => ({ ...p, name: p.name.slice(0, 18), colony: Math.max(0, Math.round(p.colony)) }));
+    .map((p) => {
+      const person = { ...p, name: p.name.slice(0, 18), colony: Math.max(0, Math.round(p.colony)) };
+      if (person.avatar !== undefined
+        && (typeof person.avatar !== "string" || !isAvatar(person.avatar))) delete person.avatar;
+      return person;
+    });
 }
 
 /**

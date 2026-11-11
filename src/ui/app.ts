@@ -1535,7 +1535,7 @@ export class App {
       // about people the player knows, and the one it stops on is one of them.
       roster: me.friends
         .filter((f) => f.id !== seat.id)
-        .map((f) => ({ name: f.name, colony: f.colony, species: f.species, human: true })),
+        .map((f) => ({ name: f.name, colony: f.colony, species: f.species, avatar: f.avatar ?? null, human: true })),
       awaiting: seat.name,
       // Every way a challenge can end is an OUTCOME now, so anything but an accept is a
       // reason the screen can state rather than an exception it has to catch. The
@@ -1546,7 +1546,8 @@ export class App {
         // The SEED is the match: both players must open the same board, so it comes from
         // whoever set the challenge up rather than from each client separately.
         this.duelSeed = out.seed;
-        return { name: out.who.name, colony: out.who.colony, species: out.who.species, human: true };
+        return { name: out.who.name, colony: out.who.colony, species: out.who.species,
+          avatar: out.who.avatar ?? null, human: true };
       }),
       onFound: (foe) => { this.matchmaking = null; this.duel = null; this.startMatch(foe); },
     });
@@ -1736,6 +1737,7 @@ export class App {
         ...(seated ? { foe: {
           name: seated.name, species: seated.species,
           colony: seated.colony, human: seated.human,
+          ...(seated.avatar ? { avatar: seated.avatar } : {}),
         } } : {}),
         ...(this.challenge ? { challenge: { ...this.challenge } } : {}),
         at: Date.now(),

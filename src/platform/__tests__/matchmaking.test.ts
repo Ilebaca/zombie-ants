@@ -12,6 +12,8 @@ import {
 import { COLONY_START } from "../colony";
 import { ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, chapterOf, stopColony } from "../road";
 import { SPECIES_ORDER } from "../catalogue";
+import { AVATAR_IDS } from "../avatars";
+import { rivalAvatar } from "../rival";
 
 describe("the bot roster", () => {
   it("fields twenty per chapter, the same twenty every time", () => {
@@ -39,6 +41,8 @@ describe("the bot roster", () => {
         expect(bot.colony).toBeGreaterThanOrEqual(low);
         expect(bot.colony).toBeLessThanOrEqual(high);
         expect(SPECIES_ORDER).toContain(bot.species);
+        expect(AVATAR_IDS).toContain(bot.avatar);
+        expect(bot.avatar).toBe(rivalAvatar(bot.name));
         // A bot never claims to be a person. The PLAYER is not told; the code knows.
         expect(bot.human).toBe(false);
       }

@@ -8,13 +8,13 @@
  */
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { MatchmakingScreen } from "../matchmaking";
-import { botsForChapter } from "../../platform";
+import { DEFAULT_AVATAR, botsForChapter } from "../../platform";
 import { cutCoverFor } from "../covers";
 import { avatarArt } from "../avatars";
 import type { Opponent } from "../../platform";
 
 const ROSTER = botsForChapter(4);
-const FOE: Opponent = { name: "Chitin64", colony: 1_100_000, species: "fire", human: false };
+const FOE: Opponent = { name: "Chitin64", colony: 1_100_000, species: "fire", avatar: "av46", human: false };
 
 const mount = (): HTMLElement => {
   const host = document.createElement("div");
@@ -45,7 +45,7 @@ describe("searching for an opponent", () => {
     const { host, screen } = open();
     expect(host.querySelector(".mmk-you .mmk-name")?.textContent).toBe("Milan");
     expect(host.querySelector(".mmk-you .mmk-colony")?.textContent).toBe("1.2M troops");
-    // Nobody is named on the right yet — it is still looking.
+    // Nobody is seated below yet — it is still looking.
     expect(host.querySelector(".mmk-found")?.textContent).toBe("");
     expect(host.querySelector(".mmk-reel"), "the search is not reeling").toBeTruthy();
     screen.destroy();
@@ -116,6 +116,8 @@ describe("searching for an opponent", () => {
     expect(host.querySelector(".mmk")?.className).toContain("found");
     expect(host.querySelector(".mmk-bot")).toBeNull();
     expect(host.querySelector<HTMLImageElement>(".mmk-found .mmk-body")?.getAttribute("src")).toBe(cutCoverFor("fire"));
+    expect(host.querySelector<HTMLImageElement>(".mmk-found .mmk-head img")?.getAttribute("src"))
+      .toBe(avatarArt(FOE.avatar!));
     screen.destroy();
   });
 
@@ -126,10 +128,14 @@ describe("searching for an opponent", () => {
   it("parts the halves and starts the match under them", async () => {
     vi.useFakeTimers();
     const { host, found } = open();
-    await vi.advanceTimersByTimeAsync(5100);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(host.querySelector(".mmk-found .mmk-name")?.textContent).toBe(FOE.name);
     expect(found, "the match started before the opponent was shown").toEqual([]);
 
-    await vi.advanceTimersByTimeAsync(950);
+    await vi.advanceTimersByTimeAsync(1999);
+    expect(host.querySelector(".mmk")?.classList.contains("split")).toBe(false);
+    expect(found).toEqual([]);
+    await vi.advanceTimersByTimeAsync(1);
     expect(host.querySelector(".mmk")?.className, "the halves never parted").toContain("split");
     expect(found).toEqual([FOE]);
 
@@ -180,4 +186,31 @@ describe("searching for an opponent", () => {
     expect(asked).toBe(1);
     screen.destroy();
   });
+});
+it("uses player avatars throughout the search reel", () => {
+  vi.useFakeTimers();
+  const { host, screen } = open();
+  const images = Array.from(host.querySelectorAll<HTMLImageElement>(".mmk-strip .mmk-head img"));
+  expect(images.map((image) => image.getAttribute("src"))).toEqual(
+    [...ROSTER, ...ROSTER].map((foe) => avatarArt(foe.avatar!)));
+  screen.destroy();
+});
+
+it("uses the default player avatar when an older identity has no avatar", () => {
+  vi.useFakeTimers();
+  const { host, screen } = open();
+  expect(host.querySelector<HTMLImageElement>(".mmk-you .mmk-head img")?.getAttribute("src"))
+    .toBe(avatarArt(DEFAULT_AVATAR));
+  screen.destroy();
+});
+
+it("does not start a match when leaving during the two-second opponent hold", async () => {
+  vi.useFakeTimers();
+  const { host, screen, found } = open(() => Promise.resolve(FOE));
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(host.querySelector(".mmk.found")).toBeTruthy();
+  screen.destroy();
+  await vi.advanceTimersByTimeAsync(3000);
+  expect(found).toEqual([]);
+  expect(host.querySelector(".mmk")).toBeNull();
 });

@@ -2940,10 +2940,7 @@ button:not(.playbtn):active,
 /* Equal-height rows without a gap keep both copies of the roster aligned. */
 #app .mmk-reel {
   position: absolute;
-  inset-inline: 0;
-  top: calc(50% - (36px + var(--safe-bottom, 0px)) / 2);
-  height: var(--mmk-row-height);
-  transform: translateY(-50%);
+  inset: 0;
   overflow: hidden;
 }
 #app .mmk-strip {

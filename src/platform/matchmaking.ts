@@ -21,13 +21,15 @@ import { SPECIES_ORDER } from "./catalogue";
 import { seeded } from "../engine";
 import type { SpeciesId } from "../engine";
 import { ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, chapterOf, stopColony } from "./road";
-import { RIVAL_NAMES } from "./rival";
+import { RIVAL_NAMES, rivalAvatar } from "./rival";
 
 /** Who is across the board: what the plate says, and what the board is dressed in. */
 export interface Opponent {
   name: string;
   colony: number;
   species: SpeciesId;
+  /** Player identity, independent of the species being fielded. */
+  avatar?: string | null;
   /** False for a bot the search seated when nobody answered. */
   human: boolean;
 }
@@ -69,6 +71,7 @@ export function botsForChapter(chapter: number): Opponent[] {
       name: `${stem}${tag}`,
       colony: Math.round(low + (high - low) * rand()),
       species,
+      avatar: rivalAvatar(`${stem}${tag}`),
       human: false,
     });
   }

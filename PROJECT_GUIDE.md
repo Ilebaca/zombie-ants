@@ -5592,3 +5592,16 @@ The first trait slot opens in chapter 1; slots 2–5 retain chapters 20/30/40/50
 Keep larva costs, rolling odds, paid reward claims and later slot progression unchanged.
 The hatch and inventory render their ordinary controls/empty states directly, with no
 feature-lock panel or pass-unlock message.
+
+## Matchmaking search bounds and player identities
+The search reel fills the entire enemy half (`inset: 0` inside its content container).
+Do not constrain the reel viewport to one card's height; that clips the moving portraits
+and leaves a visible cutoff inside the panel. The duplicated strip still loops at -50%.
+
+Both versus portraits use player avatars, with the default player avatar for older
+identities. Species only selects the separate full-body ant illustration.
+Opponents and friends carry an optional avatar ID. Offline rivals derive a stable avatar
+from their name using an independent seed, preserving existing names, colonies and species.
+Friend duels carry that avatar through matchmaking and suspended-match metadata.
+After the search resolves, show the found opponent for 2,000ms before the curtains part
+and the match starts underneath. Destroying the screen cancels that hold and the search.

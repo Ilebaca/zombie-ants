@@ -17,7 +17,7 @@ describe("asking a friend for a match", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  const friend = { id: "p:vela", name: "Vela", colony: 900, species: "fire" as const, since: 0 };
+  const friend = { id: "p:vela", name: "Vela", colony: 900, species: "fire" as const, avatar: "av46", since: 0 };
 
   it("seats them after a moment, and agrees a seed", async () => {
     const duels = new LocalDuels(100);
@@ -26,7 +26,7 @@ describe("asking a friend for a match", () => {
     const out = await promise;
     expect(out.kind).toBe("accepted");
     if (out.kind !== "accepted") return;
-    expect(out.who).toMatchObject({ name: "Vela", colony: 900 });
+    expect(out.who).toMatchObject({ name: "Vela", colony: 900, avatar: "av46" });
     // THE SEED IS THE MATCH. Both players have to open the same board or nothing replays
     // and no server can verify it, so a challenge that was accepted carries one.
     expect(Number.isInteger(out.seed), "an accepted challenge agreed no seed").toBe(true);

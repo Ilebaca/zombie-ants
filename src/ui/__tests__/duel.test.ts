@@ -11,8 +11,10 @@
  * A flow that ends in the wrong place is the whole failure mode here, and only walking it
  * can see that.
  */
-import { describe, expect, it, beforeEach } from "vitest";
-import { MemoryStore, ProfileStore, TOUR_VERSION, inviteFrom } from "../../platform";
+import { describe, expect, it, beforeEach, vi } from "vitest";
+import { DUEL_WAIT_MS, MemoryStore, ProfileStore, TOUR_VERSION, inviteFrom } from "../../platform";
+import { avatarArt } from "../avatars";
+import { cutCoverFor } from "../covers";
 import { App } from "../app";
 import { waitingFor } from "../duel";
 
@@ -26,8 +28,8 @@ function ready(): ProfileStore {
   store.update((p) => {
     p.tourSeen = TOUR_VERSION;
     p.friends = [
-      { id: "p:vela", name: "Vela", colony: 900, species: "fire", since: 0 },
-      { id: "p:kestra", name: "Kestra", colony: 1400, species: "ghost", since: 0 },
+      { id: "p:vela", name: "Vela", colony: 900, species: "fire", avatar: "av46", since: 0 },
+      { id: "p:kestra", name: "Kestra", colony: 1400, species: "ghost", avatar: "av83", since: 0 },
     ];
   });
   return store;
@@ -279,4 +281,27 @@ describe("how long it has been waiting", () => {
     expect(waitingFor(now - 3 * 3_600_000, now)).toBe("3h ago");
     expect(waitingFor(now - 50 * 3_600_000, now)).toBe("2d ago");
   });
+});
+
+it("carries friend avatars through both the reel and the accepted opponent", async () => {
+  vi.useFakeTimers();
+  try {
+    const host = mount(ready());
+    openFriends(host);
+    rowFor(host, "Kestra")?.querySelector<HTMLButtonElement>(".frfight")?.click();
+    press(host, "#setupGo");
+    press(host, "#setupGo");
+    expect(host.querySelector<HTMLImageElement>(".mmk-strip .mmk-head img")?.getAttribute("src"))
+      .toBe(avatarArt("av46"));
+    await vi.advanceTimersByTimeAsync(DUEL_WAIT_MS);
+    expect(host.querySelector(".mmk-found .mmk-name")?.textContent).toBe("Kestra");
+    expect(host.querySelector<HTMLImageElement>(".mmk-found .mmk-head img")?.getAttribute("src"))
+      .toBe(avatarArt("av83"));
+    expect(host.querySelector<HTMLImageElement>(".mmk-found .mmk-body")?.getAttribute("src"))
+      .toBe(cutCoverFor("ghost"));
+    expect(host.querySelector(".match")).toBeNull();
+  } finally {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  }
 });

@@ -1,15 +1,14 @@
 /**
  * Two horizontal curtains reveal the board as the match starts.
  * Identity and full-body colony artwork stay separate; the top owns the versus badge.
- * Search timing, cancellation and the seamless roster loop stay unchanged.
+ * Search cancellation and the seamless roster loop are owned here.
  */
 import type { Opponent } from "../platform";
-import { compact, tierOf } from "../platform";
+import { compact, faceOf } from "../platform";
 import { SPECIES } from "../engine";
 import type { SpeciesId } from "../engine";
 import { SPECIES_COL } from "../render";
-import { antPortrait, avatarFace, el } from "./chrome";
-import { cardArt } from "./cards";
+import { avatarFace, el } from "./chrome";
 import { cutCoverFor } from "./covers";
 
 /** One side's card. The player's is fixed; the opponent's is what the reel lands on. */
@@ -42,7 +41,7 @@ export interface MatchmakingOptions {
 }
 
 /** How long the found opponent is held before the halves part. */
-const HOLD_MS = 900;
+const HOLD_MS = 2000;
 /** How long the split takes. Quick: it is a reveal, not a transition. */
 const SPLIT_MS = 520;
 /**
@@ -175,22 +174,8 @@ function seatCard(seat: Seat): HTMLElement {
   card.dataset.species = seat.species;
   const profile = el("div", "mmk-profile");
   const portrait = el("div", "mmk-head");
-  portrait.style.backgroundColor = tierOf(seat.species).fill;
   portrait.setAttribute("aria-hidden", "true");
-  if (seat.avatar) {
-    portrait.appendChild(avatarFace(seat.avatar, 112));
-  } else {
-    const art = cardArt(seat.species);
-    if (art) {
-      const image = document.createElement("img");
-      image.src = art;
-      image.alt = "";
-      image.draggable = false;
-      portrait.appendChild(image);
-    } else {
-      portrait.appendChild(antPortrait(seat.species, 112));
-    }
-  }
+  portrait.appendChild(avatarFace(faceOf(seat.avatar), 112));
   const troops = el("div", "mmk-colony", `${compact(seat.colony)} troops`);
   troops.style.color = (SPECIES_COL[seat.species] ?? SPECIES_COL.fire)[1] as string;
   profile.append(portrait, el("div", "mmk-name", seat.name), troops);

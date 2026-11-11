@@ -325,3 +325,13 @@ describe("support", () => {
     expect(decodeURIComponent(link)).toContain(t!.player);
   });
 });
+
+it("retains a friend's player avatar across saves and rejects invalid avatar IDs", () => {
+  const memory = new MemoryStore();
+  const s = new ProfileStore(memory);
+  const person = { ...somebody(), avatar: "av46" };
+  s.update((p) => { p.friends = [{ ...person, since: 0 }]; });
+  expect(new ProfileStore(memory).get().friends[0]?.avatar).toBe("av46");
+  s.update((p) => { p.friends[0]!.avatar = "not-an-avatar"; });
+  expect(new ProfileStore(memory).get().friends[0]?.avatar).toBeUndefined();
+});

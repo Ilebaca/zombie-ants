@@ -12,7 +12,7 @@
  */
 import type { SpeciesId } from "../engine";
 import { SPECIES, seeded } from "../engine";
-import { RIVAL_NAMES } from "./rival";
+import { RIVAL_NAMES, rivalAvatar } from "./rival";
 import { COLONY_START } from "./colony";
 
 /** A colony you know, or one you have found. The same record either way. */
@@ -22,6 +22,8 @@ export interface Person {
   name: string;
   colony: number;
   species: SpeciesId;
+  /** Their selected player avatar; older records may omit it. */
+  avatar?: string | null;
 }
 
 /** A person on your list, with the day you added them. */
@@ -68,6 +70,7 @@ export function directory(): Person[] {
       out.push({
         id: personId(name),
         name,
+        avatar: rivalAvatar(name),
         colony: Math.max(COLONY_START, Math.round(COLONY_START * scale)),
         species: DIRECTORY_SPECIES[(i + k) % DIRECTORY_SPECIES.length] as SpeciesId,
       });

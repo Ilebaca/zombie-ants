@@ -118,7 +118,8 @@ export class LocalDuels implements DuelService {
         signal.removeEventListener("abort", onAbort);
         resolve({
           kind: "accepted",
-          who: { id: friend.id, name: friend.name, colony: friend.colony, species: friend.species },
+          who: { id: friend.id, name: friend.name, colony: friend.colony, species: friend.species,
+            ...(friend.avatar ? { avatar: friend.avatar } : {}) },
           // Chosen HERE because offline there is nobody else to choose it. With a server
           // this is the server's number, and both players are handed the same one.
           seed: this.seed(),

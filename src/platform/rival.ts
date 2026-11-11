@@ -6,6 +6,15 @@
  * (matchmaking.ts), and the Leaderboard's table.
  */
 
+import { seeded, seedFrom } from "../engine";
+import { AVATAR_IDS } from "./avatars";
+
+/** Stable player avatar for an offline rival. A separate seed leaves their roster unchanged. */
+export function rivalAvatar(identity: string): string {
+  const random = seeded(seedFrom(identity) ^ 0x41c64e6d);
+  return AVATAR_IDS[Math.floor(random() * AVATAR_IDS.length)] as string;
+}
+
 /** One pool of names, shared by the nameplate and the ladder, so the world is consistent. */
 export const RIVAL_NAMES = [
   "Mandible", "Pheromone", "SixLegs", "Formica", "Stinger", "Myrmidon", "TunnelKing",
