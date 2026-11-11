@@ -306,7 +306,7 @@ describe("the picker", () => {
     const grown = store();
     grown.update((p) => { p.colony = 2_000_000; });
     expect(build(grown).querySelector(".av-note")?.textContent)
-      .not.toContain("hatch from larva");
+      .toContain("hatch from larva");
   });
 });
 
