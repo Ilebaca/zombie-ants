@@ -192,6 +192,7 @@ export class ReplayScreen {
     if (this.timer !== null) { this.pause(); return; }
     if (this.done) this.rewind();
     this.el.play.textContent = "Pause";
+    this.el.play.classList.add("on");
     this.timer = window.setInterval(() => this.advance(), SPEEDS[this.speed]);
   }
 
@@ -199,6 +200,7 @@ export class ReplayScreen {
     if (this.timer !== null) window.clearInterval(this.timer);
     this.timer = null;
     this.el.play.textContent = this.done ? "Again" : "Play";
+    this.el.play.classList.remove("on");
   }
 
   private cycleSpeed(): void {
@@ -239,7 +241,7 @@ export class ReplayScreen {
     this.el.turn.textContent = this.state.over
       ? `Turn ${this.state.turn} · over`
       : `Turn ${this.state.turn} · ${left} to go`;
-    if (this.done) this.el.play.textContent = "Again";
+    if (this.done) this.pause();
   }
 
   destroy(): void {

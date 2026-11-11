@@ -88,6 +88,39 @@ describe("the list", () => {
 });
 
 describe("watching one back", () => {
+
+  it("holds playback on only while running and releases it at the final move", () => {
+    vi.useFakeTimers();
+    const screen = new ReplayScreen(document.body, {
+      log: log({ record: { setup, moves: [{ do: "end" }, { do: "end" }, { do: "end" }] } }),
+      onBack: () => {},
+    });
+    const play = document.querySelector<HTMLButtonElement>(".replaybtn:not(.ghost)")!;
+    try {
+      expect(play.classList.contains("on")).toBe(false);
+      play.click();
+      expect(play.textContent).toBe("Pause");
+      expect(play.classList.contains("on")).toBe(true);
+      vi.advanceTimersByTime(450);
+      play.click();
+      expect(play.textContent).toBe("Play");
+      expect(play.classList.contains("on")).toBe(false);
+      play.click();
+      vi.advanceTimersByTime(900);
+      expect(screen.done).toBe(true);
+      expect(play.textContent).toBe("Again");
+      expect(play.classList.contains("on")).toBe(false);
+      // Again must start immediately rather than spending a press stopping an old timer.
+      play.click();
+      expect(screen.done).toBe(false);
+      expect(play.textContent).toBe("Pause");
+      expect(play.classList.contains("on")).toBe(true);
+    } finally {
+      screen.destroy();
+      vi.useRealTimers();
+    }
+  });
+
   /** Every move applied lands on the board, in order, exactly as it did the first time. */
   it("replays the moves onto the board", () => {
     const moves: Move[] = [{ do: "end" }, { do: "end" }, { do: "end" }];

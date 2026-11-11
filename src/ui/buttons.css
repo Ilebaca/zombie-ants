@@ -132,7 +132,9 @@
   object-fit: contain;
 }
 
-/* An ability stays pressed for its actual cooldown, then rises when .cool clears. */
+/* Latched controls stay pressed while on; cooling abilities use the same depth. */
+#app button:is([role="switch"][aria-checked="true"], [aria-pressed="true"],
+    .btn.on, .replaybtn.on),
 #app .match button.btn.ability.cool {
   translate: 0 var(--action-depth);
   box-shadow: 0 0 0 var(--action-edge) !important;
