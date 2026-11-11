@@ -203,6 +203,7 @@
   gap: var(--inrow);
 }
 #app #antup .spghero > .tropen {
+  border-radius: 0 0 var(--action-radius) var(--action-radius) !important;
   border-top: var(--action-stroke) solid var(--action-frame);
   outline: none !important;
   box-shadow: none !important;
