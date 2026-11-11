@@ -5536,3 +5536,13 @@ hops, with at least 75ms between visible count changes. Collection never pays tw
 Settings rows show only their names and controls; descriptive subtitles and backup-status
 paragraphs are removed. Keep section headings, build identification, input labels,
 validation feedback and the existing confirmation button states.
+
+## Horizontal versus screen
+Matchmaking uses top and bottom curtains, with the shared gray frame along both sides
+of their seam. VERSUS is a child of the top curtain and travels with it during the
+vertical board reveal. As requested, the top ant enters from the left and the bottom
+from the right; profile information sits opposite. Full-body images use transparent
+`cutCoverFor` artwork. Portraits share the Antarium frame tokens and use the chosen
+account avatar when supplied, with species card art otherwise. The computer-opponent
+badge is removed; neutral choosing/waiting status remains. Preserve aborts, hold timing
+and starting the match underneath the parting curtains.

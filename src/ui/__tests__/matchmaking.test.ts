@@ -9,6 +9,8 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { MatchmakingScreen } from "../matchmaking";
 import { botsForChapter } from "../../platform";
+import { cutCoverFor } from "../covers";
+import { avatarArt } from "../avatars";
 import type { Opponent } from "../../platform";
 
 const ROSTER = botsForChapter(4);
@@ -38,7 +40,7 @@ function open(search?: () => Promise<Opponent>): Built {
 }
 
 describe("searching for an opponent", () => {
-  it("puts you on one side and the search on the other", () => {
+  it("puts you above the opponent search", () => {
     vi.useFakeTimers();
     const { host, screen } = open();
     expect(host.querySelector(".mmk-you .mmk-name")?.textContent).toBe("Milan");
@@ -46,6 +48,35 @@ describe("searching for an opponent", () => {
     // Nobody is named on the right yet — it is still looking.
     expect(host.querySelector(".mmk-found")?.textContent).toBe("");
     expect(host.querySelector(".mmk-reel"), "the search is not reeling").toBeTruthy();
+    screen.destroy();
+  });
+
+  it("keeps the versus badge on the top curtain and separates identity from full-body art", () => {
+    vi.useFakeTimers();
+    const { host, screen } = open();
+    expect(host.querySelector(".mmk-you > .mmk-versus")?.textContent).toBe("VERSUS");
+    const card = host.querySelector(".mmk-you .mmk-card")!;
+    expect(card.querySelector(".mmk-profile .mmk-head")).toBeTruthy();
+    expect(card.querySelector(".mmk-profile .mmk-name")?.textContent).toBe("Milan");
+    expect(card.querySelector<HTMLImageElement>(".mmk-body")?.getAttribute("src")).toBe(cutCoverFor("leafcutter"));
+    expect(card.querySelector(".mmk-profile .mmk-body")).toBeNull();
+    screen.destroy();
+    expect(document.querySelector(".mmk-versus")).toBeNull();
+  });
+
+  it("uses the selected account avatar independently of the chosen colony", () => {
+    vi.useFakeTimers();
+    const host = mount();
+    const screen = new MatchmakingScreen(host, {
+      you: { name: "Milan", colony: 40, species: "fire", avatar: "av83" },
+      roster: ROSTER,
+      search: () => new Promise<Opponent>(() => {}),
+      onFound: () => {},
+    });
+    expect(host.querySelector<HTMLImageElement>(".mmk-you .mmk-head img")?.getAttribute("src"))
+      .toBe(avatarArt("av83"));
+    expect(host.querySelector<HTMLImageElement>(".mmk-you .mmk-body")?.getAttribute("src"))
+      .toBe(cutCoverFor("fire"));
     screen.destroy();
   });
 
@@ -83,6 +114,8 @@ describe("searching for an opponent", () => {
     expect(host.querySelector(".mmk-found .mmk-name")?.textContent).toBe("Chitin64");
     expect(host.querySelector(".mmk-found .mmk-colony")?.textContent).toBe("1.1M troops");
     expect(host.querySelector(".mmk")?.className).toContain("found");
+    expect(host.querySelector(".mmk-bot")).toBeNull();
+    expect(host.querySelector<HTMLImageElement>(".mmk-found .mmk-body")?.getAttribute("src")).toBe(cutCoverFor("fire"));
     screen.destroy();
   });
 

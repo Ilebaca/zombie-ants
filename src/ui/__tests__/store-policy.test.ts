@@ -154,7 +154,7 @@ describe("never claiming a simulation is other people", () => {
     screen.destroy();
   });
 
-  it("tags the seated opponent as the computer", async () => {
+  it("uses neutral opponent wording without a computer badge", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     const screen = new MatchmakingScreen(host, {
@@ -165,8 +165,8 @@ describe("never claiming a simulation is other people", () => {
     });
     screen.start();
     await vi.waitFor(() => expect(host.querySelector(".mmk-found .mmk-card")).not.toBeNull());
-    expect(host.querySelector(".mmk-bot")?.textContent, "the bot was seated unlabelled")
-      .toMatch(/computer/i);
+    expect(host.querySelector(".mmk-bot")).toBeNull();
+    expect(host.textContent).not.toMatch(/computer opponent/i);
     expect(host.querySelector(".mmk-status")?.textContent).not.toMatch(/opponent found/i);
     screen.destroy();
   });

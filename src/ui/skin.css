@@ -2801,149 +2801,190 @@ button:not(.playbtn):active,
 }
 
 /* ============================================================================
-   ==  FINDING AN OPPONENT  ===================================================
-   ============================================================================
-
-   A vertical split: you on the left, the seat across the board on the right.
-   While the search runs the right half REELS — profiles scrolling past under
-   motion blur, too fast to read — because the one thing a search screen has to
-   say is that it is looking at people and has not settled on one.
-
-   Then the halves PART and the board is already underneath with the camera
-   coming down onto it, so the reveal and the opening are one movement.
+   ==  VERSUS: HORIZONTAL CURTAINS  ============================================
    ============================================================================ */
-.mmk {
+#app .mmk {
+  --mmk-head-size: clamp(72px, 24vw, 112px);
+  --mmk-row-height: clamp(180px, 62vw, 320px);
+  --mmk-seam: var(--action-depth, 4px);
+  --mmk-versus-height: 56px;
   position: fixed;
   inset: 0;
   z-index: 60;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
   overflow: hidden;
-  /* No background of its own: the two halves ARE the screen, so parting them is
-     what reveals the board rather than fading a sheet away over it. */
   background: none;
   pointer-events: auto;
 }
-
-.mmk-half {
+#app .mmk-half {
   position: relative;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  border: 0;
+  overflow: visible;
+  transition: transform 520ms cubic-bezier(.6, 0, .35, 1);
+}
+#app .mmk-you {
+  z-index: 2;
+  background: #1b2735;
+  border-bottom: var(--mmk-seam) solid var(--action-frame);
+}
+#app .mmk-foe {
+  z-index: 1;
+  background: #30232b;
+  border-top: var(--mmk-seam) solid var(--action-frame);
+}
+#app .mmk-content {
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: var(--bg1);
-  transition: transform 520ms cubic-bezier(.6, 0, .35, 1);
 }
-/* THE SEAM, so the screen reads as two halves before they move. Half of it on
-   each side: one border on one half would belong to that half, and the join has
-   to belong to neither — it is where the screen is about to come apart. */
-.mmk-you { border-right: 1px solid var(--line); }
-.mmk-foe { border-left: 1px solid var(--line); }
-/* THE PART. Straight out to the sides, on one curve — a lid opening, not two
-   panels animating. */
-.mmk.split .mmk-you { transform: translateX(-101%); }
-.mmk.split .mmk-foe { transform: translateX(101%); }
-.mmk.split .mmk-status { opacity: 0; transition: opacity 160ms linear; }
-
-.mmk-card {
+#app .mmk-you .mmk-content { padding-top: var(--safe-top, 0px); }
+#app .mmk-foe .mmk-content { padding-bottom: calc(36px + var(--safe-bottom, 0px)); }
+#app .mmk-card {
+  position: relative;
+  width: 100%;
+  height: var(--mmk-row-height);
+  min-width: 0;
+}
+#app .mmk-profile {
+  position: absolute;
+  top: 50%;
+  width: 38%;
   display: grid;
   justify-items: center;
   gap: 8px;
-  padding: 0 12px;
   text-align: center;
-  max-width: 100%;
+  transform: translateY(-50%);
 }
-.mmk-head { display: block; width: 108px; height: 108px; }
-/* The name is the biggest thing on the card: it is who you are about to play. */
-.mmk-name {
-  font-size: 19px;
-  font-weight: 900;
-  letter-spacing: -.2px;
-  color: var(--ink);
+#app .mmk-you .mmk-profile { right: 4%; }
+#app .mmk-foe .mmk-profile { left: 4%; }
+#app .mmk-head {
+  display: grid;
+  place-items: center;
+  width: var(--mmk-head-size);
+  height: var(--mmk-head-size);
+  overflow: hidden;
+}
+#app .mmk-head > :is(img, canvas) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+#app .mmk-body {
+  position: absolute;
+  top: 0;
+  width: 80%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  background: none;
+  pointer-events: none;
+  user-select: none;
+}
+#app .mmk-you .mmk-body { left: -20%; transform: scaleX(-1); }
+#app .mmk-foe .mmk-body { right: -20%; }
+#app .mmk-name {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: clamp(20px, 5.5vw, 27px);
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--hud-ink);
 }
-.mmk-colony {
-  font-size: 12.5px;
-  font-weight: 900;
-  letter-spacing: .3px;
-  color: var(--muted);
+#app .mmk-colony {
+  font-family: var(--font-display);
+  font-size: clamp(13px, 3.5vw, 17px);
+  font-weight: 400;
+  line-height: 1.25;
   font-variant-numeric: tabular-nums;
 }
-
-/*
-   THE REEL. Motion blur is the whole point: a legible name scrolling past says
-   "here is a list", and a smear says "we are still looking".
-
-   It is ONE STRIP drifting continuously, not a card swapped on a timer. A swap
-   is a hard cut however short the interval, and no amount of blur hides a jump
-   — the motion has to be continuous for the blur to read as speed rather than
-   as a flicker. The roster is laid down twice and the strip travels exactly
-   half its own height, so the wrap is showing what it was already showing.
-*/
-/* A SHORT WINDOW in the middle of the half, not the whole column. Running the
-   full height shows four profiles at once travelling a screen's worth of
-   distance, which reads as a feed pouring past; a band the height of one card
-   reads as a reel turning in the place the found profile will land. */
-.mmk-reel {
+#app .mmk-versus {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 232px;
+  z-index: 3;
+  left: 50%;
+  bottom: calc(-1 * var(--mmk-versus-height) / 2 - var(--mmk-seam));
+  transform: translateX(-50%);
+  width: clamp(120px, 30vw, 148px);
+  height: var(--mmk-versus-height);
+  display: grid;
+  place-items: center;
+  border-radius: var(--action-radius);
+  outline: var(--action-stroke) solid var(--action-frame) !important;
+  outline-offset: calc(-1 * var(--action-stroke));
+  box-shadow: 0 var(--action-depth) 0 var(--action-frame) !important;
+  background: var(--hud-card);
+  color: var(--hud-ink);
+  font-family: var(--font-display);
+  font-size: clamp(20px, 5vw, 25px);
+  font-weight: 400;
+  line-height: 1;
+}
+
+/* Equal-height rows without a gap keep both copies of the roster aligned. */
+#app .mmk-reel {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(50% - (36px + var(--safe-bottom, 0px)) / 2);
+  height: var(--mmk-row-height);
   transform: translateY(-50%);
   overflow: hidden;
-  display: grid;
-  align-content: center;
-  filter: blur(5px);
-  opacity: .72;
-  /* The band's own ends fade, so a card is never cut off flat against an edge. */
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 26%, #000 74%, transparent);
-  mask-image: linear-gradient(180deg, transparent, #000 26%, #000 74%, transparent);
 }
-.mmk-strip {
+#app .mmk-strip {
   display: grid;
-  gap: 46px;
-  animation-name: mmk-reel;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
+  grid-auto-rows: var(--mmk-row-height);
+  animation: mmk-reel linear infinite;
 }
-/* Exactly half: the second copy is under the first, so the reset is invisible. */
+#app .mmk-reel .mmk-profile { filter: blur(2px); opacity: .7; }
+#app .mmk-reel .mmk-body { opacity: .65; }
+#app .mmk-reel .mmk-colony { color: var(--hud-mute) !important; }
 @keyframes mmk-reel {
   from { transform: translateY(0); }
   to { transform: translateY(-50%); }
 }
-/* A reeling card is a shape, not a profile: nine colonies' colours flickering past
-   at eleven a second is a strobe, so the reel is one tone under the blur. */
-.mmk-reel .mmk-colony { color: var(--muted) !important; }
-
-/* THE STOP is hard. A card that eases in reads as an animation finishing; one
-   that is simply THERE reads as the search having hit something. */
-.mmk-found {
-  position: relative;
-  opacity: 0;
-}
-.mmk-found.on { opacity: 1; }
-
-.mmk-status {
+#app .mmk-found { width: 100%; opacity: 0; }
+#app .mmk-found.on { opacity: 1; }
+#app .mmk-status {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 34px;
+  z-index: 3;
+  inset-inline: 20px;
+  bottom: calc(20px + var(--safe-bottom, 0px));
+  color: var(--hud-mute);
   text-align: center;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 1.6px;
-  text-transform: uppercase;
-  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: clamp(11px, 3vw, 14px);
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: .5px;
 }
-.mmk.found .mmk-status { color: var(--grass-glow); }
+#app .mmk.found .mmk-status { color: var(--hud-go); }
+#app .mmk.split .mmk-you { transform: translateY(calc(-100% - var(--mmk-versus-height) / 2 - var(--action-depth) - 2px)); }
+#app .mmk.split .mmk-foe { transform: translateY(102%); }
+#app .mmk.split .mmk-status { opacity: 0; transition: opacity 160ms linear; }
 
+@media (max-height: 600px) {
+  #app .mmk {
+    --mmk-head-size: 72px;
+    --mmk-row-height: 172px;
+    --mmk-versus-height: 48px;
+  }
+  #app .mmk-name { font-size: 19px; }
+  #app .mmk-colony { font-size: 12px; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .mmk-strip { animation: none; }
-  .mmk-reel { filter: blur(3.5px); }
-  .mmk-half { transition-duration: 1ms; }
+  #app .mmk-strip { animation: none; }
+  #app .mmk-reel .mmk-profile { filter: none; }
+  #app .mmk-half { transition-duration: 1ms; }
 }
 
 /* ============================================================================
@@ -5960,23 +6001,6 @@ button:not(.playbtn):active,
   color: var(--muted);
 }
 .frnote { margin: 0 0 var(--stack); }
-
-/* ---- "Computer opponent" ----
-   Under the seated colony, never over it: the head and the name are who is
-   across the board and this is a fact about them. Quiet enough not to be the
-   headline and plain enough that nobody can miss it, which is the whole
-   requirement — the app must not let a player believe a bot is a person. */
-.mmk-bot {
-  margin-top: 6px;
-  padding: 2px 9px;
-  border-radius: 99px;
-  border: 1px solid var(--line);
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: .4px;
-  text-transform: uppercase;
-  color: var(--muted);
-}
 
 /* ---- RESTORE PURCHASES ----
    Apple requires the mechanism ("make sure you have a restore mechanism for

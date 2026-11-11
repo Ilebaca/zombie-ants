@@ -11,7 +11,7 @@ import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
 import {
   DemoGateway, LocalDuels, LocalFriendService, LocalMatchmaker, LocalSupportGateway,
-  ProfileStore, TOUR_VERSION, botsForChapter, chapterOf, compact, makeFeedback,
+  ProfileStore, TOUR_VERSION, botsForChapter, chapterOf, compact, faceOf, makeFeedback,
   scoreQuestEvents,
 } from "../platform";
 import type {
@@ -1471,7 +1471,7 @@ export class App {
     for (const el of this.screens.values()) el.classList.add("hidden");
 
     const screen: MatchmakingScreen = new MatchmakingScreen(this.host, {
-      you: { name: me.name, colony: me.colony, species: this.choices.species },
+      you: { name: me.name, colony: me.colony, species: this.choices.species, avatar: faceOf(me.avatar) },
       // The reel shows the chapter the player is actually in, so the faces going past are
       // the ones they could plausibly be seated against.
       roster: botsForChapter(chapterOf(me.colony)),
@@ -1530,7 +1530,7 @@ export class App {
     for (const el of this.screens.values()) el.classList.add("hidden");
 
     const screen: MatchmakingScreen = new MatchmakingScreen(this.host, {
-      you: { name: me.name, colony: me.colony, species: this.choices.species },
+      you: { name: me.name, colony: me.colony, species: this.choices.species, avatar: faceOf(me.avatar) },
       // Their own friends go past rather than a chapter of strangers: this is a screen
       // about people the player knows, and the one it stops on is one of them.
       roster: me.friends

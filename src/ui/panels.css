@@ -40,7 +40,8 @@
 }
 
 /* Collection art has its own colored tile, separate from the text beneath it. */
-#app #antarium .an-tile {
+#app #antarium .an-tile,
+#app .mmk-head {
   border-radius: var(--action-radius) !important;
   outline: var(--action-stroke) solid var(--action-frame) !important;
   outline-offset: calc(-1 * var(--action-stroke)) !important;
