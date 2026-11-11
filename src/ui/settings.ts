@@ -1,26 +1,5 @@
-/**
- * SETTINGS, and it is a screen rather than a form.
- *
- * It was one card of six identical rows — a label on the left, a bordered button on the
- * right — and two of those rows were dead: "Sound  [On]" and "Vibration  [On]", both
- * disabled, both controlling nothing, because this build has no audio and no haptics. A
- * switch for something that does not exist is worse than no switch; they are gone until
- * there is something behind them.
- *
- * What is left is grouped by WHAT IT AFFECTS, with a line under each saying so, and it
- * uses the same row the profile screen does: a mark, a name, a sentence, and the value or
- * a chevron on the right. Three of the rows are new, and each is something the app could
- * already do and had nowhere to offer:
- *
- *   - the colony's NAME, which is printed on the board beside the player's nest
- *     (render/plates.ts) and on the profile, and until now could never be changed;
- *   - HOW TO PLAY, which was reachable only from the home screen;
- *   - and starting over, which `ProfileStore.reset` has always supported and nothing
- *     called. It asks twice, because it cannot be undone.
- *
- * The build stamp is not a setting and no longer pretends to be one. It sits at the foot
- * of the screen, which is where a version belongs — and it has to stay somewhere readable,
- * because a stale cached page and a real bug look identical on a phone without it.
+/** Settings use labeled rows and controls, grouped in shared panels.
+ * Confirmation labels and feedback stay with the controls that need them.
  */
 import { groupSections } from "./groups";
 import { BUILD, importProfile } from "../platform";
@@ -54,7 +33,7 @@ export interface SettingsOptions {
   onSignOut: () => void;
   /** Opens the screen about where the save lives and what can take it away. */
   onKeepSafe: () => void;
-  /** The player code this colony signs back in with — shown beside the sign-out row. */
+  /** The sign-in code supplied by existing account routes. */
   playerCode: string;
 }
 
@@ -68,14 +47,9 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
   scroll.append(
     el("div", "secthead", "Your colony"),
     nameRow(opts.profile, root),
-    // SIGNING OUT DESTROYS NOTHING, and the row says so — it sits two headings above the
-    // one that wipes the save, and a control that leaves your colony has to be plainly
-    // different from the one that ends it. The code is on the row rather than a screen
-    // away, because it is what signs this colony back in.
     goRow({
       mark: "friends",
       title: "Sign out",
-      desc: `Back to the colony picker. Nothing is deleted. Your code is ${opts.playerCode}.`,
       id: "setSignOut",
       onGo: opts.onSignOut,
     }),
@@ -96,7 +70,6 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
     switchRow({
       mark: "spark",
       title: "Sound",
-      desc: "The taps, the fights and the end of a match. Not the music.",
       id: "setSound",
       on: opts.profile.get().sound,
       onFlip: (on) => {
@@ -107,7 +80,6 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
     switchRow({
       mark: "music",
       title: "Music",
-      desc: "The bed under the menus, and the drums under a match.",
       id: "setMusic",
       on: opts.profile.get().music,
       onFlip: (on) => {
@@ -118,7 +90,6 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
     switchRow({
       mark: "attack",
       title: "Vibration",
-      desc: "A short buzz on the moments worth feeling.",
       id: "setHaptics",
       on: opts.profile.get().haptics,
       onFlip: (on) => {
@@ -131,14 +102,12 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
     goRow({
       mark: "book",
       title: "How to play",
-      desc: "The rules in full, with pictures.",
       id: "setRules",
       onGo: opts.onHowToPlay,
     }),
     goRow({
       mark: "flag",
       title: "Replay the tutorial",
-      desc: "Walk the guided tour again from the start.",
       id: "setTutorial",
       onGo: opts.onReplayTutorial,
     }),
@@ -150,7 +119,6 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
     goRow({
       mark: "granary",
       title: "Where your progress lives",
-      desc: "What keeps this colony safe, and what can take it away.",
       id: "setKeepSafe",
       onGo: opts.onKeepSafe,
     }),
@@ -174,11 +142,10 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
 interface RowParts {
   mark: string;
   title: string;
-  desc?: string;
   id: string;
 }
 
-/** The shell every row shares: a mark, a name and a sentence, then whatever acts. */
+/** The shell every row shares: a mark and a name, then whatever acts. */
 function shell(parts: RowParts, tag: "div" | "button"): HTMLElement {
   const row = el(tag, `setrow2 ${tag === "button" ? "setrow-go" : ""}`.trim());
   row.id = parts.id;
@@ -186,7 +153,6 @@ function shell(parts: RowParts, tag: "div" | "button"): HTMLElement {
   slot.appendChild(icon(parts.mark, 18));
   const mid = el("span", "setrow-mid");
   mid.appendChild(el("span", "setrow-t", parts.title));
-  if (parts.desc) mid.appendChild(el("span", "setrow-d", parts.desc));
   row.append(slot, mid);
   return row;
 }
@@ -249,13 +215,12 @@ function switchRow(
  * The one row that cannot be undone, so it asks twice.
  *
  * A confirm dialog would be a second overlay for one button; the row asks for the same
- * tap again instead, and says what it is about to destroy while it waits.
+ * tap again instead, with confirmation text on the button.
  */
 function resetRow(onReset: () => void): HTMLElement {
   const row = shell({
     mark: "trash",
     title: "Reset everything",
-    desc: "Erase the colony, chambers, research and road.",
     id: "setReset",
   }, "div");
 
@@ -269,8 +234,6 @@ function resetRow(onReset: () => void): HTMLElement {
       armed = true;
       btn.textContent = "Tap to confirm";
       btn.classList.add("armed");
-      const desc = row.querySelector(".setrow-d");
-      if (desc) desc.textContent = "This cannot be undone.";
       return;
     }
     onReset();
@@ -288,15 +251,12 @@ function resetRow(onReset: () => void): HTMLElement {
  * asks for in-app account deletion from any app that lets somebody create an account, and
  * Apple 5.1.1(v) says the same.
  *
- * Two destructive rows one after the other is a real risk of the wrong tap, which is why
- * each states what it leaves behind rather than only what it takes, and why this one asks
- * twice on its own button exactly as Reset does.
+ * Deletion asks twice on its own button, exactly as Reset does.
  */
 function deleteRow(onDelete: () => void): HTMLElement {
   const row = shell({
     mark: "trash",
     title: "Delete this colony",
-    desc: "Erases the save and removes it from the colony picker. Nothing is kept.",
     id: "setDelete",
   }, "div");
 
@@ -310,8 +270,6 @@ function deleteRow(onDelete: () => void): HTMLElement {
       armed = true;
       btn.textContent = "Tap to confirm";
       btn.classList.add("armed");
-      const desc = row.querySelector(".setrow-d");
-      if (desc) desc.textContent = "This cannot be undone. Take your save code first.";
       return;
     }
     onDelete();
@@ -332,7 +290,6 @@ function nameRow(store: ProfileStore, root: HTMLElement): HTMLElement {
   const row = shell({
     mark: "crown",
     title: "Name",
-    desc: "Written beside your nest for the whole match.",
     id: "setNameRow",
   }, "div");
 
@@ -378,20 +335,12 @@ function backupRow(store: ProfileStore, root: HTMLElement): HTMLElement {
   const row = shell({
     mark: "granary",
     title: "Backup code",
-    // IT SAYS WHETHER THIS COLONY HAS EVER BEEN WRITTEN DOWN. "Carries this colony to
-    // another phone" describes a feature; "Never taken" is about THIS player's save, and
-    // it is the difference between a row somebody reads past and one they act on — the
-    // whole point of the row is reaching the player who has not used it.
-    desc: backupState(store) + " Saved replays stay behind.",
     id: "setBackupRow",
   }, "div");
 
   const btn = el("button", "setval", "Show");
   btn.id = "setBackup";
-  const { panel, fill } = codePanel(store, root, () => {
-    const desc = row.querySelector(".setrow-d");
-    if (desc) desc.textContent = backupState(store) + " Saved replays stay behind.";
-  });
+  const { panel, fill } = codePanel(store, root);
   panel.id = "setBackupPanel";
   panel.hidden = true;
   const field = codeField(panel);
@@ -411,15 +360,6 @@ function backupRow(store: ProfileStore, root: HTMLElement): HTMLElement {
   return wrap;
 }
 
-/** "Never taken" or when it last was — a fact about this save, not about the feature. */
-function backupState(store: ProfileStore): string {
-  const at = store.get().backupAt;
-  if (!at) return "Never taken — this colony is only on this phone.";
-  const days = Math.floor((Date.now() - at) / 864e5);
-  if (days <= 0) return "Taken today.";
-  return `Taken ${days} day${days === 1 ? "" : "s"} ago.`;
-}
-
 /**
  * RESTORING, which is the destructive half.
  *
@@ -435,7 +375,6 @@ function restoreRow(store: ProfileStore, root: HTMLElement, onRestored: () => vo
   const row = shell({
     mark: "brood",
     title: "Restore a colony",
-    desc: "Paste a backup code from another device. It replaces this save.",
     id: "setRestoreRow",
   }, "div");
 

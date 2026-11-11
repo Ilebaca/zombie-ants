@@ -5532,3 +5532,7 @@ Collected troops use the same persisted Home receipt as match winnings, with opt
 their sword flights. Cancel the old presentation before collection so partly displayed
 wins are not replayed. Both modes share the continuous bar clock and quick 65ms text
 hops, with at least 75ms between visible count changes. Collection never pays twice.
+
+Settings rows show only their names and controls; descriptive subtitles and backup-status
+paragraphs are removed. Keep section headings, build identification, input labels,
+validation feedback and the existing confirmation button states.

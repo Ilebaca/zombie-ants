@@ -132,21 +132,14 @@ describe("the settings screen", () => {
     expect(root.textContent).not.toMatch(/board/i);
   });
 
-  // Enemy AI deliberately shows only its title and current difficulty.
-  it("explains the other settings and keeps Enemy AI title-only", () => {
+  it("shows labeled settings rows without description text", () => {
     const { root } = build();
     const rows = Array.from(root.querySelectorAll<HTMLElement>(".setrow2"));
     expect(rows.length).toBeGreaterThanOrEqual(5);
     for (const row of rows) {
       expect(row.querySelector(".setrow-t")?.textContent, "a row with no name").toBeTruthy();
-      if (row.id === "setDiffRow") {
-        expect(row.querySelector(".setrow-d")).toBeNull();
-        continue;
-      }
-      const desc = row.querySelector(".setrow-d")?.textContent ?? "";
-      expect(desc.length, `"${row.querySelector(".setrow-t")?.textContent}" explains nothing`)
-        .toBeGreaterThan(20);
     }
+    expect(root.querySelector(".setrow-d")).toBeNull();
   });
 
   /* ------------------------------------------------------------------- THE NAME */
