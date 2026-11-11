@@ -7,7 +7,7 @@
  */
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
-  HATCH_COST, LARVA_MYCEL, MemoryStore, ProfileStore, TRAITS, TRAITS_CHAPTER, TRAIT_TIER,
+  HATCH_COST, LARVA_MYCEL, MemoryStore, ProfileStore, TRAITS, TRAIT_TIER,
   TRAIT_TIERS, itemDef, tierOdds,
 } from "../../platform";
 import { HATCH_AVATARS, SKIN_TIERS } from "../../platform";
@@ -190,34 +190,27 @@ describe("the hatch", () => {
     vi.useRealTimers();
   });
 
-  /**
-   * SHUT UNTIL TRAITS ARE. Larva buys traits and nothing else, so a hatch open before the
-   * benches are would sell a player something they cannot equip on any colony — which is
-   * the one thing a shop must never do.
-   */
-  it("is shut before the chapter that opens traits", () => {
+  it("shows the usable hatch and larva controls from chapter one without a pass", () => {
     const early = new ProfileStore(new MemoryStore());
-    early.update((p) => { p.larva = 9; });
+    early.update((p) => { p.larva = HATCH_COST; });
     const { root } = build(early);
-    expect(root.querySelector("#hatchShut")?.textContent).toContain(`chapter ${TRAITS_CHAPTER}`);
-    expect(root.querySelector("#hatchGo"), "a shut hatch still offered a hatch").toBeNull();
-    expect(root.querySelector("#hatchBuy"), "a shut hatch still sold larva").toBeNull();
+    expect(early.get().pass).toBe(false);
+    expect(root.querySelector("#hatchShut")).toBeNull();
+    expect(root.querySelector<HTMLButtonElement>("#hatchGo")?.disabled).toBe(false);
+    expect(root.querySelector("#hatchBuy")).toBeTruthy();
+    expect(root.querySelector("#hatchTrade")).toBeTruthy();
   });
 
-  it("keeps the lucky hatch shut for an early pass owner", () => {
-    const early = new ProfileStore(new MemoryStore());
-    early.update((p) => { p.larva = 12; });
-    early.grantPass();
-    expect(early.traitsOpen()).toBe(true);
-    const before = JSON.stringify(early.get());
-    const random = vi.fn(() => .5);
-    expect(early.hatch(random)).toBeNull();
-    expect(early.hatchMany(10, random)).toEqual([]);
-    expect(random).not.toHaveBeenCalled();
-    expect(JSON.stringify(early.get())).toBe(before);
-    const { root } = build(early);
-    expect(root.querySelector("#hatchShut")).toBeTruthy();
-    expect(root.querySelector("#hatchGo, #hatchGo10, #hatchBuy, #hatchTrade")).toBeNull();
+  it("permits ordinary and bulk hatching in chapter one for free and pass players", () => {
+    for (const pass of [false, true]) {
+      const early = new ProfileStore(new MemoryStore());
+      early.update((p) => { p.larva = 11 * HATCH_COST; p.pass = pass; });
+      const random = vi.fn(() => .5);
+      expect(early.hatch(random)).not.toBeNull();
+      expect(early.hatchMany(10, random)).toHaveLength(10);
+      expect(early.get().larva).toBe(0);
+      expect(random).toHaveBeenCalled();
+    }
   });
 
   it("takes the plus sign to the shop", () => {

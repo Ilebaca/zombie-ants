@@ -970,10 +970,10 @@ export class ProfileStore {
 
   /* ------------------------------------------------------------------ TRAITS */
 
-  /** The Colony Pass unlocks traits and inventory before their normal chapter gate. */
-  traitsOpen(): boolean { return this.profile.pass || this.hatchOpen(); }
+  /** Traits and inventory are available from chapter 1, with or without the pass. */
+  traitsOpen(): boolean { return this.hatchOpen(); }
 
-  /** The Lucky Hatch keeps its progression gate, including for pass owners. */
+  /** The Lucky Hatch opens alongside traits in chapter 1. Larva costs still apply. */
   hatchOpen(): boolean { return chapterOf(this.profile.colony) >= TRAITS_CHAPTER; }
 
   /**

@@ -202,15 +202,17 @@ describe("the bag and the benches", () => {
   const store = (): ProfileStore => new ProfileStore(new MemoryStore());
   const rich = (): ProfileStore => {
     const s = store();
-    // Chapter 10 opens traits and the FIRST slot; the fifth opens at chapter 50, which is
+    // Chapter 1 opens traits and the FIRST slot; the fifth opens at chapter 50, which is
     // the end of the road (ROAD_LAST). These tests are about the bench mechanics rather
     // than the gate, so they run with all five open.
     s.update((p) => { p.colony = ROAD_LAST; });
     return s;
   };
 
-  it("keeps traits shut until the chapter that opens them", () => {
-    expect(store().traitsOpen()).toBe(false);
+  it("opens traits and the hatch immediately for a new colony", () => {
+    expect(store().traitsOpen()).toBe(true);
+    expect(store().hatchOpen()).toBe(true);
+    expect(store().slotsOpen()).toBe(1);
     expect(rich().traitsOpen()).toBe(true);
   });
 
@@ -367,7 +369,7 @@ describe("when each slot opens", () => {
 
   it("opens one every ten chapters, the first where traits open", () => {
     expect(SLOT_STEP).toBe(10);
-    expect([0, 1, 2, 3, 4].map(slotChapter)).toEqual([10, 20, 30, 40, 50]);
+    expect([0, 1, 2, 3, 4].map(slotChapter)).toEqual([1, 20, 30, 40, 50]);
     // The first opens with the feature itself, and the last on the road's last chapter —
     // so the bench is still growing on the final rung.
     expect(slotChapter(0)).toBe(TRAITS_CHAPTER);
@@ -375,8 +377,9 @@ describe("when each slot opens", () => {
   });
 
   it("counts none before traits open, and never more than five", () => {
-    expect(slotsOpen(1)).toBe(0);
-    expect(slotsOpen(9)).toBe(0);
+    expect(slotsOpen(0)).toBe(0);
+    expect(slotsOpen(1)).toBe(1);
+    expect(slotsOpen(9)).toBe(1);
     expect(slotsOpen(10)).toBe(1);
     expect(slotsOpen(19)).toBe(1);
     expect(slotsOpen(20)).toBe(2);
@@ -405,12 +408,12 @@ describe("when each slot opens", () => {
     expect(s.equipTrait("fire", more.uid), "a colony bench had a different ladder").toBe(false);
   });
 
-  it("opens only the first slot early for pass owners on both benches", () => {
+  it("keeps chapter-one access and the slot schedule the same after a pass purchase", () => {
     const s = at(1);
-    expect(s.slotsOpen()).toBe(0);
+    expect(s.slotsOpen()).toBe(1);
     s.grantPass();
     expect(s.traitsOpen()).toBe(true);
-    expect(s.hatchOpen()).toBe(false);
+    expect(s.hatchOpen()).toBe(true);
     expect(s.slotsOpen()).toBe(1);
     expect(slotOpen(0, 1, true)).toBe(true);
     expect(slotOpen(1, 1, true)).toBe(false);

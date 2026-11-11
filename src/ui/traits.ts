@@ -17,7 +17,7 @@
 import { groupSections } from "./groups";
 import { SPECIES } from "../engine";
 import {
-  ATK_CAP, DEF_CAP, FUSE_DEALS, LUCK_CAP, SPECIES_ORDER, TRAITS_CHAPTER, TRAIT_SLOTS,
+  ATK_CAP, DEF_CAP, FUSE_DEALS, LUCK_CAP, SPECIES_ORDER, TRAIT_SLOTS,
   TRAIT_TIER, effectFigure, effectText, fitsScope, itemDef, markOf, scopeName, slotChapter,
 } from "../platform";
 import type { ProfileStore, TraitItem, TraitScope } from "../platform";
@@ -242,23 +242,10 @@ export function buildInventory(store: ProfileStore, opts: InventoryOptions): HTM
     const wrap = el("div", "trwrap");
     wrap.id = "invBody";
 
-    // Locked, and it says the chapter rather than showing a padlock — the same thing the
-    // bench openers do, because it is the same gate.
-    if (!store.traitsOpen()) {
-      wrap.appendChild(locked(`Traits open at chapter ${TRAITS_CHAPTER} or with the Colony Pass.`,
-        "Find traits on the Colony Road or in the lucky hatch, then equip them on a colony or your anthill."));
-      body.appendChild(wrap);
-      root.appendChild(body);
-      groupSections(root);
-      return;
-    }
-
     const bag = store.bag;
     if (bag.length === 0) {
       wrap.appendChild(locked("Nothing found yet",
-        store.hatchOpen()
-          ? "Traits come from the Colony Road and the lucky hatch. Equip them on a colony or your anthill."
-          : `Claim traits on the Colony Road. The lucky hatch opens at chapter ${TRAITS_CHAPTER}.`));
+        "Traits come from the Colony Road and the lucky hatch. Equip them on a colony or your anthill."));
       body.appendChild(wrap);
       root.appendChild(body);
       groupSections(root);

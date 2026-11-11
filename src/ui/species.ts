@@ -6,7 +6,7 @@ import {
 } from "../engine";
 import type { Look, SpeciesId } from "../engine";
 import {
-  SPECIES_NOTES, TRAITS_CHAPTER, tierOf,
+  SPECIES_NOTES, tierOf,
 } from "../platform";
 import type { ProfileStore } from "../platform";
 import { SPECIES_COL } from "../render";
@@ -71,7 +71,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     }
     page.appendChild(hero(id, level, tier.name, tier.col, upgrade,
       traitOpener(store, id, () => opts.onTraits?.(),
-        store.traitsOpen() ? null : `Chapter ${TRAITS_CHAPTER}`)));
+        null)));
 
     // SKINS COME AFTER RESEARCH, and they are the whole of what this screen can CHANGE
     // for free. Research is the point of the page and leads it; a look costs nothing,

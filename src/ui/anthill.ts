@@ -18,7 +18,7 @@
 import { groupSections } from "./groups";
 import { chamberCost } from "../engine";
 import {
-  CHAMBERS, GRANARY_MAX, TRAITS_CHAPTER, compact,
+  CHAMBERS, GRANARY_MAX, compact,
 } from "../platform";
 import type { ChamberDef, GranaryState, ProfileStore } from "../platform";
 import { buyButton, effectRow, el, pips, redraw, screenEl, screenHeader, toast } from "./chrome";
@@ -89,7 +89,7 @@ export function buildAnthill(store: ProfileStore, opts: AnthillOptions = {}): HT
     // a room: nothing is dug for it.
     wrap.append(el("div", "secthead", "Traits"));
     wrap.appendChild(traitOpener(store, "hill", () => opts.onTraits?.(),
-      store.traitsOpen() ? null : `Chapter ${TRAITS_CHAPTER}`));
+      null));
 
     body.appendChild(wrap);
     root.appendChild(body);

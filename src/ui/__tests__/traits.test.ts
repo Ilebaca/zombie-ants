@@ -259,11 +259,10 @@ describe("the inventory", () => {
     expect(root.querySelector(".trempty")?.textContent).toContain("lucky hatch");
   });
 
-  it("opens inventory and trait controls immediately after buying the pass", () => {
+  it("opens inventory and usable trait controls in chapter one without a pass", () => {
     const early = new ProfileStore(new MemoryStore());
     const one = early.findTrait(UNIVERSAL[0]!.id, "rare")!;
-    expect(inventory(early).querySelectorAll(".invhead")).toHaveLength(0);
-    early.applyGrant({ pass: true });
+    expect(early.get().pass).toBe(false);
     const inv = inventory(early);
     expect(inv.querySelectorAll(".invhead")).toHaveLength(1);
     expect(inv.querySelector(".trtile")?.getAttribute("data-uid")).toBe(one.uid);
@@ -279,10 +278,11 @@ describe("the inventory", () => {
     expect(early.benchTotals("hill").atkPct).toBeGreaterThan(0);
   });
 
-  it("names the chapter before traits are open", () => {
+  it("shows where to find traits from the first chapter", () => {
     const early = new ProfileStore(new MemoryStore());
     const root = inventory(early);
-    expect(root.querySelector(".trempty")?.textContent).toContain("chapter 10");
+    expect(root.querySelector(".trempty")?.textContent).toContain("lucky hatch");
+    expect(root.textContent).not.toContain("open at chapter");
     expect(root.querySelectorAll(".invhead").length).toBe(0);
   });
 });

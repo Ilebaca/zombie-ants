@@ -96,10 +96,8 @@ export const TRAIT_SLOTS = 5;
  * traits than room. Opened one at a time it is a decision every ten chapters instead: what
  * comes off to make room, and what the fifth one is finally for.
  *
- * The first opens at chapter 10 (or early with the Colony Pass) and the last at chapter 50, the
- * end of the road — so the ladder lines up with the road exactly, and the bench is still
- * growing on the last chapter. `SLOT_CHAPTER` is derived from the step rather than typed
- * out: retuning the pace is one number, and two lists cannot disagree.
+ * The first slot is available from chapter 1. Later slots retain their chapter
+ * 20/30/40/50 milestones, so opening the feature earlier does not change later progression.
  *
  * IT IS THE SAME LADDER ON BOTH BENCHES. The anthill's five and a colony's five open at
  * the same chapters, because they are the same feature seen twice — a player who has four
@@ -109,7 +107,7 @@ export const TRAIT_SLOTS = 5;
 export const SLOT_STEP = 10;
 
 /** The chapter slot `i` (0-based) opens at. */
-export const slotChapter = (i: number): number => TRAITS_CHAPTER + i * SLOT_STEP;
+export const slotChapter = (i: number): number => i === 0 ? TRAITS_CHAPTER : (i + 1) * SLOT_STEP;
 
 /**
  * How many slots this chapter has opened, 0 through `TRAIT_SLOTS`.
@@ -118,7 +116,8 @@ export const slotChapter = (i: number): number => TRAITS_CHAPTER + i * SLOT_STEP
  * of the road there are five — never six, however far a colony runs past the last rung.
  */
 export function slotsOpen(chapter: number, pass = false): number {
-  // The pass opens the feature's first slot early; later slots keep their chapter gates.
+  // All players have the first slot from chapter 1. Retain pass compatibility for
+  // legacy callers; ownership never opens additional progression slots.
   let n = pass ? 1 : 0;
   while (n < TRAIT_SLOTS && chapter >= slotChapter(n)) n++;
   return n;
@@ -139,8 +138,8 @@ export const ATK_CAP = 30;
 export const DEF_CAP = 30;
 export const LUCK_CAP = 50;
 
-/** The lucky hatch and free trait access open at this chapter; a pass opens traits early. */
-export const TRAITS_CHAPTER = 10;
+/** Traits, inventory and the lucky hatch are available from the first chapter. */
+export const TRAITS_CHAPTER = 1;
 
 /* ------------------------------------------------------------------ TRAITS */
 

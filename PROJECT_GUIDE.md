@@ -5584,3 +5584,11 @@ resumption and replay. Existing trait boons remain a separate match-start rule.
 Both Antarium and species pages use `ui/research.ts` for the same ten squares.
 The species hero orders level, three stats, one upgrade price, then traits as an internal
 row with the shared divider stroke. The old independent research cards are removed.
+
+## Chapter-one trait and hatch access
+Traits, inventory and Lucky Hatch are available from chapter 1 for every player, without
+a Colony Pass. This supersedes the old chapter-10 hatch gate and early-pass-only access.
+The first trait slot opens in chapter 1; slots 2–5 retain chapters 20/30/40/50.
+Keep larva costs, rolling odds, paid reward claims and later slot progression unchanged.
+The hatch and inventory render their ordinary controls/empty states directly, with no
+feature-lock panel or pass-unlock message.

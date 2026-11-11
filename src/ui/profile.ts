@@ -259,7 +259,7 @@ function collection(store: ProfileStore, opts: ProfileOptions): HTMLElement {
    * finished is the fifty slots, so that is the number — and how many are in the bag
    * rides beside it as the thing there is more of.
    */
-  if (store.traitsOpen()) box.appendChild(traitRow(store, opts.onTraits));
+  box.appendChild(traitRow(store, opts.onTraits));
   /*
    * THE FACES ARE A DOOR LIKE THE REST, AND THEY ARE NEVER GATED.
    *

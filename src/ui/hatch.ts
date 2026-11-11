@@ -16,7 +16,7 @@
  * whole reason the tiers have colours at all.
  */
 import {
-  AVATAR_TIER, HATCH_COST, LARVA_MYCEL, TRAITS_CHAPTER, TRAIT_TIER, avatarName, effectText, itemDef,
+  AVATAR_TIER, HATCH_COST, LARVA_MYCEL, TRAIT_TIER, avatarName, effectText, itemDef,
   markOf,
 } from "../platform";
 import type { Cue, Feedback, HatchPrize, ProfileStore, TraitItem } from "../platform";
@@ -127,9 +127,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     const wrap = el("div", "hatchwrap");
     wrap.id = "hatchBody";
 
-    // Pass ownership opens the benches early, while hatching still requires chapter 10.
-    if (!store.hatchOpen()) wrap.appendChild(shut());
-    else wrap.append(purse(), trade(), stage(), foot(), odds());
+    wrap.append(purse(), trade(), stage(), foot(), odds());
 
     body.appendChild(wrap);
     root.appendChild(body);
@@ -147,22 +145,6 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     const up = !busy && (Boolean(found) || haul.length > 0);
     root.classList.toggle("popped", up);
     if (up) root.appendChild(popup());
-  };
-
-  /** The chapter, never a padlock: a number is something to play toward. */
-  const shut = (): HTMLElement => {
-    const box = el("div", "hatchshut");
-    box.id = "hatchShut";
-    const mark = el("div", "hatchlock");
-    mark.appendChild(icon("lock", 60));
-    box.append(
-      mark,
-      el("div", "hatchshut-h", `Opens at chapter ${TRAITS_CHAPTER}`),
-      el("div", "hatchshut-p",
-        "Grow your colony to chapter 10 to open the lucky hatch. "
-        + "The Colony Pass unlocks traits and inventory early."),
-    );
-    return box;
   };
 
   /* ------------------------------------------------------------------- THE LARVA */

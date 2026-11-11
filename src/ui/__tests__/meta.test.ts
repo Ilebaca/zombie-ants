@@ -335,7 +335,7 @@ describe("profile screen", () => {
     s.buyChamber("royal");
     const root = buildProfile(s, nowhere);
     const rows = Array.from(root.querySelectorAll<HTMLElement>(".pf-row-coll"));
-    expect(rows.length, "the collection block is not there").toBe(4);
+    expect(rows.length, "the collection block is not there").toBe(5);
     expect(rows[0]?.textContent).toContain("Colonies");
     expect(rows[0]?.textContent).toContain(`/ ${Object.keys(SPECIES).length}`);
     expect(rows[1]?.textContent).toContain("Nest chambers");
@@ -343,8 +343,9 @@ describe("profile screen", () => {
     expect(rows[2]?.textContent).toContain("Research levels");
     // The faces, which are the one row here that is NEVER gated: a colony that has
     // collected nothing already has the ten it starts with.
-    expect(rows[3]?.textContent).toContain("Avatars");
-    expect(rows[3]?.textContent).toContain(`${FREE_AVATARS.length} / ${AVATAR_IDS.length}`);
+    expect(rows[3]?.textContent).toContain("Traits equipped");
+    expect(rows[4]?.textContent).toContain("Avatars");
+    expect(rows[4]?.textContent).toContain(`${FREE_AVATARS.length} / ${AVATAR_IDS.length}`);
     // One head per colony, so the row says WHICH rather than only how many.
     expect(root.querySelectorAll(".pf-head").length).toBe(Object.keys(SPECIES).length);
   });
@@ -364,7 +365,7 @@ describe("profile screen", () => {
     for (const r of rows) r.click();
     // The avatars are the one collection row that is NEVER gated — a new colony already
     // has ten of them, so the door is open before anything has been earned.
-    expect(seen).toEqual(["history", "quests", "colonies", "chambers", "colonies", "avatars"]);
+    expect(seen).toEqual(["history", "quests", "colonies", "chambers", "colonies", "traits", "avatars"]);
   });
 
   /**
