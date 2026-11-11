@@ -166,7 +166,9 @@ describe("full-screen reward reveals", () => {
       restore: async () => ({ ok: false }),
     };
     const root = buildShop(store, gateway);
-    root.querySelector<HTMLButtonElement>(".stile .buybar")!.click();
+    const tile = Array.from(root.querySelectorAll(".stile"))
+      .find(tile => tile.querySelector(".sh-name")?.textContent === "650")!;
+    tile.querySelector<HTMLButtonElement>(".buybar")!.click();
     await vi.waitFor(() => expect(root.textContent).toContain("Declined"));
     expect(store.get().mycel).toBe(0);
     expect(root.querySelector(".reward-reveal")).toBeNull();
