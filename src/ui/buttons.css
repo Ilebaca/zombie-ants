@@ -131,3 +131,9 @@
   height: 20px;
   object-fit: contain;
 }
+
+/* An ability stays pressed for its actual cooldown, then rises when .cool clears. */
+#app .match button.btn.ability.cool {
+  translate: 0 var(--action-depth);
+  box-shadow: 0 0 0 var(--action-edge) !important;
+}
