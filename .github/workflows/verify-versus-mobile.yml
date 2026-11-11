@@ -1,0 +1,116 @@
+name: Verify versus mobile screen
+on:
+  push:
+    branches: [verify-versus-04adb9c]
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install temporary browser tooling
+        run: npm install --prefix "$RUNNER_TEMP/versus-tools" --no-package-lock --no-save playwright@1.56.1
+      - name: Check live mobile search, avatars and two-second hold
+        shell: bash
+        run: |
+          node <<'NODE'
+          const {chromium}=require(process.env.RUNNER_TEMP+"/versus-tools/node_modules/playwright");
+          const fs=require("node:fs"),assert=require("node:assert/strict");
+          const target="https://ilebaca.github.io/zombie-ants/";
+          const expected="04adb9c";
+          const output=process.env.RUNNER_TEMP+"/versus-check";
+          const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+          (async()=>{
+           fs.mkdirSync(output,{recursive:true});
+           let release;
+           for(let attempt=0;attempt<48;attempt++){
+            try{release=await fetch(target+"version.json?check="+Date.now(),{signal:AbortSignal.timeout(10000)}).then(r=>r.json());}catch{}
+            if(release?.build?.startsWith(expected))break;
+            if(attempt===47)throw new Error("Expected release not published: "+JSON.stringify(release));
+            await delay(10000);
+           }
+           console.log("Verified live build",release.build);
+           const browser=await chromium.launch({channel:"chrome",headless:true,args:["--no-sandbox"]});
+           const results=[];
+           try{
+            for(const [width,height,safeTop,safeBottom] of [[390,844,0,0],[320,568,0,0],[412,915,52,24]]){
+             const context=await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:true,serviceWorkers:"block"});
+             await context.addInitScript(()=>localStorage.setItem("zombie-ants.profile",JSON.stringify({
+              name:"Versus check",tourSeen:99,newsSeen:Date.now(),colony:70,mycel:75,pheromone:200,
+              avatar:"av46",unlocked:["leafcutter","fire","carpenter"],duelsIn:[]
+             })));
+             const page=await context.newPage(),errors=[];
+             page.on("pageerror",error=>errors.push(error.message));
+             await page.goto(target+"?versus-check="+Date.now(),{waitUntil:"networkidle",timeout:60000});
+             if(safeTop||safeBottom)await page.addStyleTag({content:":root{--safe-top:"+safeTop+"px;--safe-bottom:"+safeBottom+"px}"});
+             const yourAvatar=await page.locator("#home .tn-av img").getAttribute("src");
+             await page.locator("#goPlay").click();
+             await page.locator("#setupGo").click();
+             await page.locator("#setupGo").click();
+             await page.locator(".mmk-reel").waitFor();
+             const search=await page.evaluate(()=>{
+              const rect=element=>{const r=element.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,bottom:r.bottom};};
+              const half=document.querySelector(".mmk-foe"),reel=document.querySelector(".mmk-reel");
+              window.__versusTrace={};
+              const root=document.querySelector("#matchmaking");
+              new MutationObserver(()=>{
+               const trace=window.__versusTrace;
+               if(root.classList.contains("found")&&trace.foundAt===undefined)trace.foundAt=performance.now();
+               if(root.classList.contains("split")&&trace.splitAt===undefined)trace.splitAt=performance.now();
+              }).observe(root,{attributes:true,attributeFilter:["class"]});
+              const original=window.setTimeout.bind(window);
+              window.setTimeout=(callback,ms,...args)=>{
+               if(ms===2000&&root.classList.contains("found"))window.__versusTrace.holdMs=ms;
+               return original(callback,ms,...args);
+              };
+              return{
+               enemy:rect(half),reel:rect(reel),seam:parseFloat(getComputedStyle(half).borderTopWidth),
+               roster:[...document.querySelectorAll(".mmk-strip .mmk-card")].map(card=>({
+                name:card.querySelector(".mmk-name").textContent,avatar:card.querySelector(".mmk-head img").getAttribute("src")
+               }))
+              };
+             });
+             assert.ok(Math.abs(search.reel.y-search.enemy.y-search.seam)<0.75,JSON.stringify(search));
+             assert.ok(Math.abs(search.reel.bottom-search.enemy.bottom)<0.75,JSON.stringify(search));
+             assert.ok(search.roster.every(seat=>/\/av\d+-[^/]+\.webp/.test(seat.avatar)));
+             assert.ok(new Set(search.roster.map(seat=>seat.avatar)).size>1);
+             await page.screenshot({path:output+"/search-"+width+".png"});
+             await page.locator(".mmk.found").waitFor({timeout:15000});
+             const found=await page.evaluate(()=>{
+              const card=document.querySelector(".mmk-found .mmk-card");
+              const frame=getComputedStyle(card.querySelector(".mmk-head"));
+              return{name:card.querySelector(".mmk-name").textContent,
+               avatar:card.querySelector(".mmk-head img").getAttribute("src"),
+               species:card.dataset.species,body:card.querySelector(".mmk-body").getAttribute("src"),
+               radius:frame.borderRadius,outline:frame.outlineWidth,
+               yourAvatar:document.querySelector(".mmk-you .mmk-head img").getAttribute("src")};
+             });
+             assert.equal(found.avatar,search.roster.find(seat=>seat.name===found.name)?.avatar);
+             assert.equal(found.yourAvatar,yourAvatar);
+             assert.ok(found.body.includes("/"+found.species+"-"));
+             assert.equal(found.radius,"12px");assert.equal(found.outline,"2px");
+             await page.screenshot({path:output+"/found-"+width+".png"});
+             await page.locator("#matchmaking").waitFor({state:"detached",timeout:10000});
+             const trace=await page.evaluate(()=>window.__versusTrace);
+             assert.equal(trace.holdMs,2000);
+             assert.ok(trace.splitAt-trace.foundAt>=1950,JSON.stringify(trace));
+             assert.ok(await page.locator("#cv").count()>0);
+             assert.deepEqual(errors,[]);
+             results.push({width,height,searchBounds:{enemy:search.enemy,reel:search.reel,seam:search.seam},found,trace,errors});
+             console.log(JSON.stringify(results.at(-1)));
+             await context.close();
+            }
+           }finally{await browser.close();}
+           fs.writeFileSync(output+"/results.json",JSON.stringify({release,results},null,2));
+          })().catch(error=>{console.error(error);process.exitCode=1});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: versus-mobile-check
+          path: ${{ runner.temp }}/versus-check/
+          retention-days: 7
