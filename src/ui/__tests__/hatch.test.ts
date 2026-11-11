@@ -101,9 +101,9 @@ describe("the odds", () => {
   });
 
   /** Shut with the rest of it: there is nothing to state the chances OF. */
-  it("says nothing before the hatch opens", () => {
+  it("shows reward odds from the first chapter", () => {
     const young = new ProfileStore(new MemoryStore());
-    expect(build(young).root.querySelector("#hatchOdds")).toBeNull();
+    expect(build(young).root.querySelector("#hatchOdds")).not.toBeNull();
   });
 });
 
@@ -394,10 +394,16 @@ describe("mycelium into a larva", () => {
   });
 
   /** Shut with everything else on this screen until the benches it feeds are open. */
-  it("is not offered before the chapter gate", () => {
+  it("offers and fulfils the larva exchange from chapter one", () => {
     const s = withMycel(1e6);
     s.update((p) => { p.colony = 40; });
-    expect(build(s).root.querySelector("#hatchTrade")).toBe(null);
+    const before = s.get().mycel;
+    const larva = s.get().larva;
+    const root = build(s).root;
+    expect(root.querySelector<HTMLButtonElement>("#hatchTrade")?.disabled).toBe(false);
+    tap(root, "hatchTrade");
+    expect(s.get().mycel).toBe(before - LARVA_MYCEL);
+    expect(s.get().larva).toBe(larva + 1);
   });
 });
 

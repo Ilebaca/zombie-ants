@@ -59,27 +59,23 @@ describe("what a win pays toward the lucky hatch", () => {
     expect(loss.get().larva).toBe(0);
   });
 
-  /**
-   * BANKED AT EVERY CHAPTER, SHOWN ONLY ONCE THE DOOR IS OPEN. A player arriving at the
-   * chapter the hatch opens on should arrive with something to open; a card announcing a
-   * currency whose only use is still locked is a question the app cannot answer.
-   */
-  it("banks it before chapter 10 but keeps it off the card", () => {
+  /** Larva can be used immediately, so the first victory also shows its reward. */
+  it("banks and shows the larva reward from chapter one", () => {
     const young = new ProfileStore(new MemoryStore());
-    expect(young.traitsOpen()).toBe(false);
+    expect(young.traitsOpen()).toBe(true);
     const { recap } = settle({ store: young });
     expect(young.get().larva).toBe(WIN_LARVA);
-    expect(recap.larva).toBeNull();
+    expect(recap.larva).toBe(WIN_LARVA);
   });
 
-  it("keeps larva receipts hidden for a pass owner before the hatch opens", () => {
+  it("shows the same early larva receipt for a pass owner", () => {
     const young = new ProfileStore(new MemoryStore());
     young.grantPass();
     expect(young.traitsOpen()).toBe(true);
-    expect(young.hatchOpen()).toBe(false);
+    expect(young.hatchOpen()).toBe(true);
     const { recap } = settle({ store: young });
     expect(young.get().larva).toBe(WIN_LARVA);
-    expect(recap.larva).toBeNull();
+    expect(recap.larva).toBe(WIN_LARVA);
   });
 
   it("puts it on the card once the hatch is open", () => {

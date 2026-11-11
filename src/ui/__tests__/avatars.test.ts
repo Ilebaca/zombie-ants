@@ -295,18 +295,18 @@ describe("the picker", () => {
     expect(build(s).textContent).toContain(`${FREE_AVATARS.length + 1} of ${AVATAR_IDS.length}`);
   });
 
-  it("tells a young colony when the hatch opens", () => {
+  it("describes hatching avatars immediately for both free and pass players", () => {
     expect(build(store()).querySelector(".av-note")?.textContent)
-      .toContain("the lucky hatch opens at chapter");
+      .toContain("hatch from larva");
     const paid = store();
     paid.grantPass();
     expect(paid.traitsOpen()).toBe(true);
     expect(build(paid).querySelector(".av-note")?.textContent)
-      .toContain("the lucky hatch opens at chapter");
+      .toContain("hatch from larva");
     const grown = store();
     grown.update((p) => { p.colony = 2_000_000; });
     expect(build(grown).querySelector(".av-note")?.textContent)
-      .not.toContain("the lucky hatch opens at chapter");
+      .not.toContain("hatch from larva");
   });
 });
 
