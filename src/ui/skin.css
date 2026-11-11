@@ -8084,6 +8084,7 @@ button:not(.playbtn):active,
 /* ------------------------------------------------- THE CALL TO ACTION */
 #antarium .antcta {
   display: flex;
+  gap: 8px;
   align-items: center;
   justify-content: center;
   width: 100%;
@@ -8105,6 +8106,16 @@ button:not(.playbtn):active,
   background: #3a3c45;
   color: var(--hud-dim);
   opacity: 1;
+}
+#antarium .antcta > :is(img, svg) {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+#antarium .antcta:disabled > .hudmark {
+  filter: grayscale(1);
+  opacity: .65;
 }
 
 /* ------------------------------------------------- THE COLLECTION */

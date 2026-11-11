@@ -612,9 +612,15 @@ describe("antarium collection", () => {
     const s = store(SPECIES_UNLOCK.army);
     const root = buildAntarium(s, { onOpenSpecies: () => {} });
     click(cardFor(root, "Army Ant"));
-    click(root.querySelector("#antCTA"));
+    const price = root.querySelector<HTMLButtonElement>("#antCTA");
+    expect(price?.textContent?.trim()).toBe(String(SPECIES_UNLOCK.army));
+    expect(price?.querySelector("img.hudmark")).toBeTruthy();
+    expect(price?.disabled).toBe(false);
+    click(price);
     expect(s.isUnlocked("army")).toBe(true);
     expect(s.get().mycel).toBe(0);
+    expect(root.querySelector('.screentop [data-purse="mycel"] .mycelv')?.textContent).toBe("0");
+    expect(root.querySelector("#antCTA")?.textContent).toBe("Upgrade & research");
     expect(cardFor(root, "Army Ant")?.className).not.toContain("locked");
   });
 
@@ -628,11 +634,16 @@ describe("antarium collection", () => {
     expect(s.get().mycel).toBe(100000);
   });
 
-  it("says so rather than spending when the price is out of reach", () => {
+  it("shows only the disabled icon price and current balance when unaffordable", () => {
     const s = store(10);
     const root = buildAntarium(s, { onOpenSpecies: () => {} });
     click(cardFor(root, "Army Ant"));
-    expect(root.querySelector("#antCTA")?.textContent).toContain("Locked · needs");
+    const price = root.querySelector<HTMLButtonElement>("#antCTA");
+    expect(price?.textContent?.trim()).toBe(String(SPECIES_UNLOCK.army));
+    expect(price?.querySelector("img.hudmark")).toBeTruthy();
+    expect(price?.disabled).toBe(true);
+    expect(price?.getAttribute("aria-label")).toContain("mycelium");
+    expect(root.querySelector('.screentop [data-purse="mycel"] .mycelv')?.textContent).toBe("10");
     click(root.querySelector("#antCTA"));
     expect(s.get().mycel).toBe(10);
     expect(s.isUnlocked("army")).toBe(false);

@@ -41,11 +41,8 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
 
   const render = (): void => {
     redraw(root);
-    // No back arrow: this is a bottom-nav tab, and the nav is how the player leaves it.
-    // And no purse chip — the design's header is the title alone. What the player spends
-    // is named by the call to action the moment a locked colony is selected, which is the
-    // only place on this screen a price can actually be acted on.
-    screenHeader(root, { title: "Antarium" });
+    // This page spends mycelium; the shared header chip shows the current balance.
+    screenHeader(root, { title: "Antarium", mycel: store.get().mycel });
 
     const body = el("div", "screenbody sb-top");
     body.append(banner(), cta(), grid());
@@ -150,9 +147,13 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
 
     const btn = el("button", "cta antcta" + (owned ? "" : " locked") + (dead ? " off" : ""));
     btn.id = "antCTA";
-    btn.textContent = owned
-      ? "Upgrade & research"
-      : affordable ? `Unlock ${species.name} · ${price} mycelium` : `Locked · needs ${price} mycelium`;
+    btn.disabled = dead;
+    if (owned) {
+      btn.textContent = "Upgrade & research";
+    } else {
+      btn.append(hudMark("mycel", 22), el("span", "ant-price", String(price)));
+      btn.setAttribute("aria-label", `Unlock ${species.name} for ${price} mycelium`);
+    }
 
     btn.onclick = () => {
       if (owned) { opts.onOpenSpecies(id); return; }

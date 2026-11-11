@@ -5551,3 +5551,8 @@ Formation's header, preview and switching row share `--setup-width`. Its snapsho
 0.9 tiles of vertical scenery and uses the optional `padTilesX` override (0.55 tiles)
 to remove transparent horizontal gutters. Preserve the canvas's intrinsic proportions
 and its height limit; do not stretch the board or inset the full-width colony rail.
+
+Antarium shows its live mycelium balance in the shared top-right header chip.
+Unowned colonies have price-only purchase buttons: the painted mycelium icon plus the
+catalogue amount. Unavailable buttons are actually disabled, with gray text and icon.
+Owned colonies retain Upgrade & research; premium purchasing rules stay unchanged.
