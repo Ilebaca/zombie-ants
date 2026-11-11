@@ -5546,3 +5546,8 @@ from the right; profile information sits opposite. Full-body images use transpar
 account avatar when supplied, with species card art otherwise. The computer-opponent
 badge is removed; neutral choosing/waiting status remains. Preserve aborts, hold timing
 and starting the match underneath the parting curtains.
+
+Formation's header, preview and switching row share `--setup-width`. Its snapshot keeps
+0.9 tiles of vertical scenery and uses the optional `padTilesX` override (0.55 tiles)
+to remove transparent horizontal gutters. Preserve the canvas's intrinsic proportions
+and its height limit; do not stretch the board or inset the full-width colony rail.

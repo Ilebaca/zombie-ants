@@ -276,8 +276,8 @@ describe("the setup screen", () => {
     expect(w).toBeGreaterThan(0);
     expect(w).toBeLessThanOrEqual(window.innerWidth - 32);
     expect(h).toBeLessThan(window.innerHeight * 0.6);
-    // Square, because the board is: the padding is the same on every side.
-    expect(w).toBeCloseTo(h, 0);
+    // Less scenery at the sides makes the frame narrower without stretching tiles.
+    expect(w).toBeLessThan(h);
     expect(w / (MAPS.small.size + 2 * MAP_PAD_TILES)).toBeGreaterThan(12);
   });
 

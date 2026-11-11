@@ -3003,6 +3003,7 @@ button:not(.playbtn):active,
    is watching the thing they are deciding about.
    ============================================================================ */
 #formation {
+  --setup-width: min(calc(100% - var(--sp8)), var(--page), 520px);
   display: flex;
   flex-direction: column;
   /* The artwork clips at the viewport edges; controls carry their own gutter. */
@@ -3014,7 +3015,7 @@ button:not(.playbtn):active,
   min-height: 0;
 }
 .setuptop {
-  width: min(calc(100% - var(--sp8)), var(--page));
+  width: var(--setup-width);
   margin-inline: auto;
   flex: 0 0 auto;
 }
@@ -3031,13 +3032,13 @@ button:not(.playbtn):active,
   overflow: hidden;
 }
 .setupstage canvas {
-  /* drawSnapshot sets inline pixel dimensions for rendering. Let this layout
-     constrain both axes together, preserving a square on short phones. */
+  /* The backing image keeps its intrinsic proportions. The same reading column
+     bounds the header, preview and picker; height can shrink it on short phones. */
   width: auto !important;
   height: auto !important;
-  max-width: min(calc(100% - var(--sp8)), 520px);
+  max-width: var(--setup-width);
   max-height: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: auto;
   border-radius: var(--r-lg);
 }
 
@@ -3142,7 +3143,7 @@ button:not(.playbtn):active,
 .picktext { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* THE BUTTON IS SEPARATE FROM THE PICKER, not the last row of it. It stays inside the
    footer so the tour's one hole can hold both controls live. */
-.setupfoot .pickrow { width: min(calc(100% - var(--sp8)), var(--page)); }
+.setupfoot .pickrow { width: var(--setup-width); }
 .setupfoot .cta {
   width: var(--primary-action-width);
   height: var(--primary-action-height);

@@ -73,6 +73,18 @@ describe("a still of the board", () => {
     expect(wide.style.width).toBe(`${9 * 20 + PAD}px`);
   });
 
+  it("trims horizontal scenery without changing the board scale or vertical space", () => {
+    const full = canvasOf(makeRecorder());
+    drawSnapshot(full, board(), { tile: 20, padTiles: 0.9 });
+    const rec = makeRecorder();
+    const narrow = canvasOf(rec);
+    drawSnapshot(narrow, board(), { tile: 20, padTiles: 0.9, padTilesX: 0.55 });
+    expect(narrow.style.width).toBe("202px");
+    expect(narrow.style.height).toBe(full.style.height);
+    expect(narrow.style.height).toBe("216px");
+    expect(rec.of("fillText").map((call) => String(call.args[0]))).toContain("10");
+  });
+
   it("shows a tile as picked up when it is asked to", () => {
     const plain = makeRecorder();
     drawSnapshot(canvasOf(plain), board(), { tile: 20 });

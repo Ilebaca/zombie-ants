@@ -55,8 +55,10 @@ export type Step = "shape" | "species";
 
 const SHAPE_IDS = Object.keys(START_SHAPES) as ShapeId[];
 
-/** Soil left around the playfield, in tiles — enough for the clearing's feathered edge. */
+/** Soil above and below the playfield, in tiles. */
 export const MAP_PAD_TILES = 0.9;
+/** Painted regions reach the horizontal edges with this smaller side margin. */
+const MAP_PAD_INLINE_TILES = 0.55;
 
 /** `.screen`'s own inset, which the stage does not add to (skin.css). */
 const GUTTER_PX = 16;
@@ -274,10 +276,16 @@ function drawBoard(
   // above and below it. Sized off a fraction of the viewport instead, the board came out
   // wider than the box it is centred in — and a picture wider than its column does not
   // centre, it overflows to the right and is clipped there.
-  const across = state.size + 2 * MAP_PAD_TILES;
-  const room = Math.min(w - GUTTER_PX * 2, h - CHROME_PX, MAX_BOARD_PX);
-  const tile = Math.max(12, Math.floor(room / across));
-  drawSnapshot(canvas, state, { tile, terrain: true, art, padTiles: MAP_PAD_TILES });
+  const across = state.size + 2 * MAP_PAD_INLINE_TILES;
+  const down = state.size + 2 * MAP_PAD_TILES;
+  // CSS owns the final column width. Round the backing image up so it can fill that
+  // column, while the independent height limit preserves the board on short phones.
+  const tile = Math.max(12, Math.ceil(Math.min(
+    (w - GUTTER_PX * 2) / across, (h - CHROME_PX) / down, MAX_BOARD_PX / across,
+  )));
+  drawSnapshot(canvas, state, {
+    tile, terrain: true, art, padTiles: MAP_PAD_TILES, padTilesX: MAP_PAD_INLINE_TILES,
+  });
 }
 
 /**

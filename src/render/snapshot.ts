@@ -71,6 +71,8 @@ export interface SnapshotOptions {
    * horizontal line across the picture. Two tiles of margin is enough for it to finish.
    */
   padTiles?: number;
+  /** Horizontal padding override for previews whose painted ground is narrower. */
+  padTilesX?: number;
   /**
    * Leave the canvas's CSS size to the stylesheet.
    *
@@ -113,8 +115,9 @@ export function drawSnapshot(
 ): boolean {
   const ts = opts.tile ?? 34;
   const pad = opts.padTiles ? Math.round(ts * opts.padTiles) : Math.round(ts * 0.18);
+  const padX = opts.padTilesX === undefined ? pad : Math.round(ts * opts.padTilesX);
   const view = opts.view ?? { c: 0, r: 0, cols: state.size, rows: state.size };
-  const w = ts * view.cols + pad * 2;
+  const w = ts * view.cols + padX * 2;
   const h = ts * view.rows + pad * 2;
   if (opts.label) {
     canvas.setAttribute("role", "img");
@@ -147,7 +150,7 @@ export function drawSnapshot(
   // a soft picture on every phone.
   layout.dpr = dpr;
   layout.ts = ts;
-  layout.ox = pad - view.c * ts;
+  layout.ox = padX - view.c * ts;
   layout.oy = pad - view.r * ts;
   layout.width = w;
   layout.height = h;
