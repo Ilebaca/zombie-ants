@@ -50,21 +50,21 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
   };
 
   /**
-   * THE TILE IS THE COLONY: its rarity's colour, the level in the corner, and the picture
-   * on top once there is one.
+   * A tile carries the colony art and rarity color. Only collection tiles show a level
+   * badge; the large selected portrait leaves it off.
    *
    * `cardArt` supplies the collection portraits from `src/ui/cards/`; colonies without
    * artwork keep their rarity colour. Locked portraits are desaturated by the same
    * tile state that supplies their grey background.
    */
-  const tile = (id: SpeciesId): HTMLElement => {
+  const tile = (id: SpeciesId, showLevel: boolean): HTMLElement => {
     const owned = store.isUnlocked(id);
     const box = el("div", "an-tile" + (owned ? "" : " locked"));
     // A LOCKED TILE TAKES NO FILL AT ALL rather than being painted grey here: the
     // stylesheet's `.locked` rule is what greys it, so there is one place that decides
     // what "you do not own this" looks like.
     if (owned) box.style.setProperty("--fill", tierOf(id).fill);
-    box.appendChild(el("span", "an-lv", String(levelOf(store, id))));
+    if (showLevel) box.appendChild(el("span", "an-lv", String(levelOf(store, id))));
 
     const art = cardArt(id);
     if (art) {
@@ -88,7 +88,7 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
 
     const box = el("div", "rbanner");
     box.id = "antBanner";
-    box.appendChild(tile(id));
+    box.appendChild(tile(id, false));
 
     const info = el("div", "rb-info");
     // THE TWO NUMBERS LEAD, because they are what the colony IS. The rarity word that
@@ -207,7 +207,7 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
         id === selected ? "sel" : ""].filter(Boolean).join(" "));
     card.dataset.ant = id;
 
-    card.appendChild(tile(id));
+    card.appendChild(tile(id, true));
     // THE NAME AND NOTHING UNDER IT. The card used to carry the colony's attack and
     // defence as a bare pair — "0.86 · 0.87" — which is two numbers with no label, no
     // scale and nothing to compare them against, and reads as some kind of level rather

@@ -5560,3 +5560,6 @@ Owned colonies retain Upgrade & research; premium purchasing rules stay unchange
 Header currency amounts (`.mycelchip .mycelv`) use the display face and its native
 400 weight, matching Home's resource totals. Poetsen is already a heavy display font;
 do not request a synthetic bold weight or fall back to the body font here.
+
+Antarium level badges appear only on collection-list tiles, never on the large selected
+portrait. The badge inherits its tile's corner radius; the banner keeps its level rungs.

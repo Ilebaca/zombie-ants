@@ -7998,7 +7998,7 @@ button:not(.playbtn):active,
   height: 26px;
   padding: 0 5px;
   border: none;
-  border-radius: var(--r-btn);
+  border-radius: inherit;
   background: var(--hud-well);
   font-family: var(--font-display);
   font-weight: 400;

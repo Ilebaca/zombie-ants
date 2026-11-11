@@ -529,8 +529,9 @@ describe("antarium collection", () => {
     for (let i = 0; i < 3; i++) s.buyResearch(id, "mandible");
     const again = openAntarium(s);
     expect(lit(again), "the rungs did not follow the research").toBe(4);
-    expect(again.querySelector("#antBanner .an-lv")?.textContent,
-      "the badge and the rungs disagree").toBe(String(lit(again)));
+    expect(again.querySelector("#antBanner .an-lv")).toBeNull();
+    expect(again.querySelector(`.ccard[data-ant="${id}"] .an-lv`)?.textContent,
+      "the collection badge and the banner rungs disagree").toBe(String(lit(again)));
   });
 
   /** A colony you do not own lights none of them, which is the badge's 0 drawn long. */
@@ -538,7 +539,8 @@ describe("antarium collection", () => {
     const root = openAntarium(store());
     click(cardFor(root, "Bullet Ant"));
     expect(root.querySelectorAll("#antBanner .rb-pip.on").length).toBe(0);
-    expect(root.querySelector("#antBanner .an-lv")?.textContent).toBe("0");
+    expect(root.querySelector("#antBanner .an-lv")).toBeNull();
+    expect(root.querySelector('.ccard[data-ant="bullet"] .an-lv')?.textContent).toBe("0");
   });
 
   /**
@@ -588,10 +590,11 @@ describe("antarium collection", () => {
     click(cardFor(root, "Bullet Ant"));
     expect(root.querySelector(".rb-name")?.textContent).toBe("Bullet Ant");
     expect(root.querySelector("#antCTA")?.textContent).toContain(String(SPECIES_UNLOCK.bullet));
-    // The level is the badge on the tile now, so nothing on the name line says it.
+    // The level badge stays in the listing, while the large portrait stays clear.
     expect(root.querySelector(".rb-nl"), "the old level line came back").toBeNull();
-    expect(root.querySelector("#antBanner .an-lv")?.textContent).toBe("0");
-    // Two chips, not four: the level is in the tile's corner, and the cooldown — the one
+    expect(root.querySelector("#antBanner .an-lv")).toBeNull();
+    expect(root.querySelector('.ccard[data-ant="bullet"] .an-lv')?.textContent).toBe("0");
+    // Two chips, not four: the level is in the listing, and the cooldown — the one
     // fact this screen is not about — is stated on the colony's own page instead.
     expect(root.querySelectorAll(".rb-meta .statchip").length).toBe(2);
     expect(root.querySelector(".rb-meta .lv"), "the level rejoined the chips").toBeNull();
