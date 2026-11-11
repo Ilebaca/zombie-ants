@@ -5518,3 +5518,7 @@ from Play into the troop count, and updates that count and chapter fill in place
 Other routes preserve the receipt; leaving Home or suspending saves only the unseen part.
 Account changes dispose the effect before replacing views. Reduced motion shows the final
 balance without flights. Never delay settlement or credit resources from animation frames.
+
+Home's reward count and progress fill share the reward RAF. The count displays whole
+units while the fill uses the same fractional gain; both reach the final balance on
+the same frame. Do not add an independent width transition to the Home progress bar.

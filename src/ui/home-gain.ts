@@ -145,8 +145,9 @@ export class HomeGainAnimation {
         particle.style.transform = `translate3d(${x}px,${y}px,0) translate(-50%,-50%) rotate(${spread * (1 - t) * 0.3}deg) scale(${scale})`;
         particle.style.opacity = String(Math.min(1, Math.max(0, elapsed / 70)));
       }
-      f.shown = Math.max(f.shown, Math.min(amount, Math.round(shown)));
-      updateColonyBanner(banner, this.displayedColony(store));
+      f.shown = Math.max(f.shown, Math.min(amount, Math.floor(shown)));
+      const balance = this.displayedColony(store);
+      updateColonyBanner(banner, balance, balance - f.shown + shown);
       if (f.number !== number && f.number) f.number.style.transform = "";
       f.number = number;
       const pulse = Math.max(0, 1 - (now - lastImpact) / 160);

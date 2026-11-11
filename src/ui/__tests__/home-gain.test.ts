@@ -64,6 +64,44 @@ function fixture() {
 }
 
 describe("Home match reward presentation", () => {
+  it("fills smoothly on the count's clock and finishes on the same frame", () => {
+    const { store, animation, root, number } = fixture();
+    const banner = root.querySelector<HTMLElement>("#colonyHero")!;
+    const fill = (): number => parseFloat(banner.querySelector<HTMLElement>(".tr-fill")!.style.width);
+    const initial = fill();
+    const expected = topBar(store.get(), {
+      onProfile: () => {}, onShop: () => {}, onColonyRoad: () => {},
+    });
+    const final = parseFloat(expected.querySelector<HTMLElement>(".tr-fill")!.style.width);
+    animation.start(root, store, () => true);
+    step(0); step(200); step(900);
+    expect(number()).toBe(52);
+    expect(fill()).toBe(initial);
+    step(930);
+    const first = fill();
+    expect(first).toBeGreaterThan(initial);
+    expect(number()).toBe(52);
+    step(940);
+    expect(fill()).toBeGreaterThan(first);
+    expect(number()).toBe(52);
+    // Sample through every impact, including the final packet settling.
+    for (let now = 950; now <= 1600; now += 10) {
+      step(now);
+      if (number() < 60) {
+        expect(Number(banner.dataset.progressColony)).toBeLessThan(60);
+        expect(fill()).toBeLessThanOrEqual(final);
+      } else {
+        expect(fill()).toBe(final);
+        break;
+      }
+    }
+    expect(number()).toBe(60);
+    expect(fill()).toBe(final);
+    step(2200);
+    expect(store.get().pendingHomeGain).toBeNull();
+    expect(store.get().colony).toBe(60);
+  });
+
   it("flies multiple swords from Play and counts only as they arrive, without crediting twice", () => {
     const { store, animation, root, number } = fixture();
     const before = structuredClone(store.get());
@@ -74,7 +112,7 @@ describe("Home match reward presentation", () => {
     expect(root.querySelectorAll(".home-gain-unit .hudmark").length).toBeGreaterThan(1);
     step(900);
     expect(number()).toBe(52);
-    step(990);
+    step(1030);
     expect(number()).toBeGreaterThan(52);
     expect(number()).toBeLessThan(60);
     step(2200);

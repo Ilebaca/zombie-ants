@@ -21,3 +21,8 @@
   width: 100%;
   height: 100%;
 }
+
+/* The reward RAF already supplies the easing; a second transition would trail the count. */
+#home #colonyHero .tr-fill {
+  transition: none;
+}

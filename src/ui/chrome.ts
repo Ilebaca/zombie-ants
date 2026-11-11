@@ -304,6 +304,7 @@ export function colonyBanner(colony: number, onClick: () => void): HTMLElement {
   const box = el("button", "colhero");
   box.id = "colonyHero";
   box.dataset.colony = String(colony);
+  box.dataset.progressColony = String(colony);
   box.title = "Colony Road";
 
   // A MARK, THEN THE FIGURE. The mark came back: the banner is the loudest object on the
@@ -375,16 +376,23 @@ function colonyProgress(colony: number): { reached: number; pct: number } {
   return { reached, pct };
 }
 
-/** Update the number, chapter fill and next resource without rebuilding the Home bar. */
-export function updateColonyBanner(box: HTMLElement, colony: number): void {
+/** One animation clock drives the integer count and its continuous chapter fill. */
+export function updateColonyBanner(
+  box: HTMLElement, colony: number, progressColony = colony,
+): void {
   const value = Math.max(0, Math.round(colony));
-  if (box.dataset.colony === String(value)) return;
-  box.dataset.colony = String(value);
-  const number = box.querySelector<HTMLElement>(".col-n");
-  if (number) number.textContent = compact(value);
-  const { reached, pct } = colonyProgress(value);
+  const progress = Math.max(0, progressColony);
+  if (box.dataset.colony === String(value) && box.dataset.progressColony === String(progress)) return;
+  if (box.dataset.colony !== String(value)) {
+    box.dataset.colony = String(value);
+    const number = box.querySelector<HTMLElement>(".col-n");
+    if (number) number.textContent = compact(value);
+  }
+  box.dataset.progressColony = String(progress);
+  const { pct } = colonyProgress(progress);
+  const reached = stopReached(value);
   const fill = box.querySelector<HTMLElement>(".tr-fill");
-  if (fill) fill.style.width = `${(pct * 100).toFixed(2)}%`;
+  if (fill) fill.style.width = `${(pct * 100).toFixed(4)}%`;
   const reward = freeReward(reached + 1) ?? passReward(reached + 1);
   const mark = reward?.pheromone ? "pheromone" : "mycel";
   const pay = box.querySelector<HTMLElement>(".col-pay");
