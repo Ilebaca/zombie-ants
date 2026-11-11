@@ -5618,3 +5618,17 @@ the mixed-resource display order is not the original claim-id order.
 If a player loses troops and revisits an already-claimed checkpoint, both the Home reward
 icon and its road card are gray. Claims remain persisted; reaching that milestone again
 does not pay again. Pass reward cards already claimed are disabled even on older free saves.
+
+## Shared reward reveal
+Earned reward claims use `ui/reward-reveal.ts`: a full-frame, tap-anywhere-to-dismiss
+presentation after successful settlement. Currency names sit above the largest existing
+shop pile illustration and quantities below; item names sit above their actual avatar,
+skin or trait art without a quantity. Bundles show every payout together. Quest reveals
+include the actual sweep bonus and XP. Hatch results retain their hold and tier sound.
+No claim, currency write or random roll happens in the reveal or its dismissal callback.
+
+Deck claims portal the reveal to #app so slide transforms cannot clip it or expose tabs.
+Hardware Back closes the reveal first. Granary collection refreshes chapter artwork at
+once but starts its existing pending troop-count animation only after dismissal.
+Keep the display font, unstroked text, sharp frames and existing artwork; no copied
+reference motifs, extra navigation buttons or blocking changes to viewport sizing.

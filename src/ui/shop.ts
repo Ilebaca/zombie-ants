@@ -33,6 +33,7 @@ import { el, hudMark, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 import { buildOdds } from "./odds";
 import { shelfArt } from "./shelf";
+import { resourceRewards, showRewardReveal } from "./reward-reveal";
 
 /** The design's sizes, in its own numbers: a shelf's painting and the gift's. */
 const ART = 70;
@@ -272,7 +273,7 @@ export function buildShop(
       btn.onclick = () => {
         if (store.claimDailyGift()) {
           render();
-          toast(root, `Daily gift claimed: +${DAILY_GIFT.mycel} mycelium, +${DAILY_GIFT.pheromone} pheromone crystals`, "good");
+          showRewardReveal(root, resourceRewards(DAILY_GIFT));
         }
       };
     }

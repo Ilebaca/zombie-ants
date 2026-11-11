@@ -4,14 +4,15 @@
  */
 import {
   COLONY_START, REGION_CHAPTERS, ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, TRAIT_TIER,
-  avatarName, compact, effectText, isChapterEnd, regionName, regionOf, roadKey, roadStops, traitDef,
+  avatarName, compact, isChapterEnd, regionName, regionOf, roadKey, roadStops,
 } from "../platform";
-import type { ProfileStore, RoadReward, RoadStop, RoadTrack, TraitItem } from "../platform";
+import type { ProfileStore, RoadReward, RoadStop, RoadTrack } from "../platform";
 import { avatarFace, el, hudMark, redraw, screenEl } from "./chrome";
 import { icon } from "./icons";
 import { shelfArt } from "./shelf";
 import { roadPalette } from "./road-theme";
 import { TIERS } from "../engine";
+import { resourceRewards, showRewardReveal } from "./reward-reveal";
 
 interface Payout { mark: string; amount: number; name: string }
 
@@ -57,8 +58,6 @@ export function buildColonyRoad(
   }
   const stops = roadStops();
   let scrollTop: number | null = null;
-  let took: RoadReward | null = null;
-  let tookTrait: TraitItem | null = null;
 
   const render = (): void => {
     const profile = store.get();
@@ -104,8 +103,6 @@ export function buildColonyRoad(
     back.onclick = onBack;
     root.appendChild(back);
 
-    root.classList.toggle("popped", Boolean(took));
-    if (took) root.appendChild(popup(took));
     requestAnimationFrame(() => { body.scrollTop = scrollTop ?? restTop(body); });
     body.addEventListener("scroll", () => { scrollTop = body.scrollTop; }, { passive: true });
   };
@@ -270,9 +267,14 @@ export function buildColonyRoad(
       button.appendChild(el("span", "rd-action", "CLAIM"));
       button.onclick = () => {
         if (!store.claimRoad(key)) return;
-        took = reward;
-        tookTrait = reward.trait ? store.get().bag[0] ?? null : null;
+        const rewards = resourceRewards(reward);
+        if (reward.avatar) rewards.push({ kind: "avatar", id: reward.avatar });
+        const item = reward.trait ? store.get().bag[0] : null;
+        if (item) rewards.push({ kind: "trait", item });
         render();
+        root.classList.add("popped");
+        const reveal = showRewardReveal(root, rewards, () => root.classList.remove("popped"));
+        if (reveal) reveal.id = "roadPop";
       };
     } else if (needsPass && !claimed) button.onclick = onShop;
     else {
@@ -285,52 +287,6 @@ export function buildColonyRoad(
     return button;
   };
 
-  const popup = (reward: RoadReward): HTMLElement => {
-    const pop = el("div", "rd-pop");
-    pop.id = "roadPop";
-    const card = el("div", "rd-popcard");
-
-    const x = el("button", "rd-popx");
-    x.type = "button";
-    x.setAttribute("aria-label", "Close");
-    x.appendChild(icon("cross", 16));
-
-    card.append(x, el("div", "rd-popk", "Reward claimed"));
-    if (reward.trait && tookTrait) {
-      const def = traitDef(tookTrait.def);
-      if (def) {
-        const line = el("div", "rd-popline");
-        const mark = el("span", "rd-popic");
-        mark.style.color = TRAIT_TIER[tookTrait.tier].colour;
-        mark.appendChild(icon(def.icon, 30));
-        line.append(mark, el("span", "rd-popu", def.name));
-        card.append(line, el("span", "rd-popu",
-          `${TRAIT_TIER[tookTrait.tier].name} · ${effectText(def, tookTrait.tier)}`));
-      }
-    }
-    if (reward.avatar) {
-      const line = el("div", "rd-popline");
-      const disc = el("span", "rd-popic");
-      disc.appendChild(avatarFace(reward.avatar, 30, "rd-face"));
-      // NAMED, not "a new avatar". Every other checkpoint says exactly what it paid,
-      // and a face is the one reward on this road that has a name of its own.
-      line.append(disc, el("span", "rd-popu", avatarName(reward.avatar)));
-      card.appendChild(line);
-    }
-    for (const p of payouts(reward)) {
-      const line = el("div", "rd-popline");
-      const disc = el("span", "rd-popic");
-      disc.appendChild(hudMark(p.mark, 30));
-      line.append(disc, el("b", "rd-popn", `+${p.amount}`), el("span", "rd-popu", p.name));
-      card.appendChild(line);
-    }
-
-    pop.appendChild(card);
-    // A tap anywhere closes it. The X is for anybody who looks for one — a full-screen
-    // card with no visible way out reads as something gone wrong.
-    pop.onclick = () => { took = null; render(); };
-    return pop;
-  };
 
 
   render();

@@ -147,32 +147,25 @@ describe("the hatch", () => {
     expect(s.get().larva).toBe(0);
   });
 
-  it("reveals what came out, and says where it went", () => {
+  it("reveals the actual item after the hold, then dismisses without navigating", () => {
     vi.useFakeTimers();
     const s = store();
     const { root, spy } = build(s);
     tap(root, "hatchGo");
-    // IT HOLDS FIRST: the answer is not on screen the instant the button is pressed, and
-    // the larva is wriggling through the hold (`.working` is the one class that drives
-    // the animation, the button's label and the guard against a second press).
     expect(root.querySelector("#hatchPop")).toBeNull();
-    expect(root.querySelector("#hatchPrize")).toBeNull();
     expect(root.querySelector(".hatchstage.working")).toBeTruthy();
-    expect(root.querySelector("#hatchLarvaArt"),
-      "the larva vanished on the press, so there was nothing to wriggle").toBeTruthy();
-
+    expect(root.querySelector("#hatchLarvaArt")).toBeTruthy();
     vi.advanceTimersByTime(2000);
     const prize = root.querySelector("#hatchPop #hatchPrize");
-    expect(prize, "the prize did not come up over the screen").toBeTruthy();
-    const item = s.bag[0]!;
-    expect(prize?.textContent).toContain(itemDef(item)?.name);
+    expect(prize?.querySelector(".reward-name")?.textContent).toBe(itemDef(s.bag[0]!)?.name);
+    expect(prize?.querySelector(".reward-amount")).toBeNull();
     expect(spy.changed).toBe(1);
-
-    tap(root, "hatchToBag");
-    expect(spy.bag).toBe(1);
+    root.querySelector<HTMLElement>(".reward-art")?.click();
+    expect(root.querySelector("#hatchPop")).toBeNull();
+    expect(spy.bag).toBe(0);
+    expect(s.get().larva).toBe(4);
     vi.useRealTimers();
   });
-
   /** One press is one larva, however many times the button is hit mid-animation. */
   it("cannot be hatched twice into one animation", () => {
     vi.useFakeTimers();
@@ -280,42 +273,26 @@ describe("hatching a skin", () => {
     return () => values[i++] ?? 0.5;
   };
 
-  it("shows the colony wearing it, and points at that colony", () => {
+  it("reveals the skin itself with its name above and no extra action", () => {
     const s = store(3);
-    const spy = { colony: "" };
     const root = buildHatch(s, {
-      onBack: () => {}, onBuyLarva: () => {}, onInventory: () => {},
-      onColony: (id) => { spy.colony = id; },
-      random: skinRoll(),
+      onBack: () => {}, onBuyLarva: () => {}, onInventory: () => {}, random: skinRoll(),
     });
     document.body.replaceChildren(root);
     vi.useFakeTimers();
     tap(root, "hatchGo");
     vi.advanceTimersByTime(1200);
     vi.useRealTimers();
-
-    const prize = root.querySelector("#hatchPrize");
-    expect(prize?.className, "a skin was drawn as a trait").toContain("skin");
-    // It wears its own rarity, in the game's one colour for it — a skin is only ever
-    // Exceptional or Mythic, and the card has to say which.
+    const item = root.querySelector('.reward-item[data-kind="skin"]');
     const look = lookById(s.skins[0] as string);
-    expect(prize?.textContent).toContain(`${TIERS[look!.tier!].name} skin`);
-    expect((prize as HTMLElement).style.getPropertyValue("--tier"))
-      .toBe(TIERS[look!.tier!].colour);
-    // The picture IS the prize: the colony's own head, wearing it.
-    expect(prize?.querySelector("canvas"), "the skin was not drawn").toBeTruthy();
-
-    const found = s.skins[0];
-    expect(found, "nothing was unlocked").toBeTruthy();
-    expect(prize?.textContent).toContain(lookById(found as string)?.name ?? "");
-
-    // It went nowhere: a skin is an appearance, not an item.
+    expect(item?.querySelector(".reward-name")?.textContent).toBe(look?.name);
+    expect(item?.querySelector("canvas")).toBeTruthy();
+    expect(item?.querySelector(".reward-amount")).toBeNull();
+    expect(root.querySelector("#hatchToColony")).toBeNull();
     expect(s.bag.length).toBe(0);
-    expect(root.querySelector("#hatchToBag"), "a skin offered the inventory").toBeNull();
-    root.querySelector<HTMLButtonElement>("#hatchToColony")?.click();
-    expect(spy.colony).toBe(lookById(found as string)?.species);
+    root.querySelector<HTMLElement>(".reward-art")?.click();
+    expect(root.querySelector("#hatchPop")).toBeNull();
   });
-
   /**
    * Printed, like the tiers. A skin has no chance of its own — it IS the top of the row —
    * so the note NAMES the tiers rather than restating a number that could drift from them.
@@ -528,28 +505,23 @@ describe("a face in the larva", () => {
     expect(s.bag.length).toBe(1);
   });
 
-  it("shows the face, and points at the profile it is worn from", () => {
+  it("reveals the awarded player avatar and closes on its picture", () => {
     vi.useFakeTimers();
     try {
       const s = avatarStore(3);
       const { root, spy } = build(s);
       tap(root, "hatchGo");
       vi.advanceTimersByTime(2000);
-      const card = root.querySelector("#hatchPrize");
-      expect(card?.classList.contains("avprize"), "the avatar card is not the one shown")
-        .toBe(true);
-      expect(card?.querySelector(".hp-port"), "the card does not show the face").toBeTruthy();
-      expect(card?.textContent).toContain("avatar");
-      // It is not an item and not a colony's appearance, so neither of the other two
-      // ways out is right: a face is worn from the profile and nowhere else.
-      root.querySelector<HTMLButtonElement>("#hatchToProfile")?.click();
-      expect(spy.profile).toBe(1);
-      expect(spy.bag, "an avatar sent the player to the inventory").toBe(0);
-      expect(root.querySelector("#hatchPrize"), "the card stayed up behind the profile")
-        .toBeNull();
+      const item = root.querySelector('.reward-item[data-kind="avatar"]');
+      expect(item?.querySelector(".reward-avatar")).toBeTruthy();
+      expect(item?.querySelector(".reward-name")?.textContent).toBeTruthy();
+      expect(item?.querySelector(".reward-amount")).toBeNull();
+      root.querySelector<HTMLElement>(".reward-avatar")?.click();
+      expect(spy.profile).toBe(0);
+      expect(spy.bag).toBe(0);
+      expect(root.querySelector("#hatchPop")).toBeNull();
     } finally { vi.useRealTimers(); }
   });
-
   /**
    * A HANDFUL SAYS WHERE THEY WENT. At six rolls in ten this is the common case rather
    * than an edge, so the note under the table is the one that is actually read.
@@ -562,8 +534,8 @@ describe("a face in the larva", () => {
       tap(root, "hatchGo10");
       vi.advanceTimersByTime(2000);
       const card = root.querySelector("#hatchPrize");
-      expect(card?.querySelectorAll(".hp-one.avprize").length).toBe(10);
-      expect(card?.textContent).toContain("The avatars are worn on your profile.");
+      expect(card?.querySelectorAll('.reward-item[data-kind="avatar"]').length).toBe(10);
+      expect(card?.querySelectorAll(".reward-name")).toHaveLength(10);
       // ...and every one of the ten is a DIFFERENT face: the rolls are committed one at
       // a time precisely so a batch cannot hand back the same one twice.
       expect(new Set(s.avatars).size).toBe(10);
@@ -625,8 +597,8 @@ describe("the handful", () => {
     vi.useRealTimers();
 
     const card = root.querySelector("#hatchPop #hatchPrize");
-    expect(card?.className, "a handful drew the single prize card").toContain("many");
-    expect(root.querySelectorAll("#hatchHaul .hp-one").length,
+    expect(card?.className, "a handful drew the single prize card").toContain("haul");
+    expect(root.querySelectorAll("#hatchPrize .reward-item").length,
       "the card does not show every roll").toBe(BULK);
   });
 
@@ -670,9 +642,8 @@ describe("the handful", () => {
     // top of the range every roll pays one while any is still locked, which is the whole
     // point of the note: the inventory is the one place a skin will never be.
     expect(s.skins.length, "the top of the range paid no skin at all").toBeGreaterThan(0);
-    expect(root.querySelector(".hp-many-n")?.textContent,
-      "a handful carrying a skin did not say where it went").toMatch(/worn on/i);
-    expect(root.querySelectorAll("#hatchHaul .hp-one.skin").length,
+    expect(root.querySelector(".reward-amount")).toBeNull();
+    expect(root.querySelectorAll('.reward-item[data-kind="skin"]').length,
       "a skin was drawn as a trait").toBeGreaterThan(0);
   });
 
@@ -796,23 +767,22 @@ describe("the prize pop-up", () => {
     expect(root.querySelector("#hatchPop"), "a tap on the pop-up left it standing").toBeNull();
   });
 
-  it("is put down by the close mark", () => {
+  it("is put down by Escape without an extra close control", () => {
     const { root } = opened();
-    const x = root.querySelector<HTMLButtonElement>("#hatchPopClose");
-    expect(x, "there is no visible way out of a full-screen card").toBeTruthy();
-    x?.click();
+    expect(root.querySelector("#hatchPopClose")).toBeNull();
+    root.querySelector<HTMLElement>("#hatchPop")?.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+    );
     expect(root.querySelector("#hatchPop")).toBeNull();
   });
-
   /** The way to the thing that was just won — and it closes on the way, or the card
    *  would be standing here on the way back from the inventory. */
-  it("offers the inventory, and closes behind it", () => {
+  it("closes on the item name without navigating to another screen", () => {
     const { root, spy } = opened();
-    tap(root, "hatchToBag");
-    expect(spy.bag, "the way to the inventory did not go anywhere").toBe(1);
-    expect(root.querySelector("#hatchPop"), "it was left standing behind the inventory").toBeNull();
+    root.querySelector<HTMLElement>(".reward-name")?.click();
+    expect(spy.bag).toBe(0);
+    expect(root.querySelector("#hatchPop")).toBeNull();
   });
-
   /** Closed, the screen is the screen again — the next hatch is one press away. */
   it("leaves the hatch ready to go again", () => {
     const { root } = opened(store(5));

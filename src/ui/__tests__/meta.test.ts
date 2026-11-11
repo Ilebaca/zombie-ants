@@ -817,8 +817,8 @@ describe("colony road screen", () => {
     const pop = root.querySelector("#roadPop");
     expect(root.classList.contains("popped")).toBe(true);
     const paid = freeReward(RUNG)!;
-    expect(pop?.querySelector(".rd-popn")?.textContent).toBe(`+${paid.mycel ?? paid.pheromone}`);
-    expect(pop?.querySelector(".rd-popic img.hudmark")).toBeTruthy();
+    expect(pop?.querySelector(".reward-amount")?.textContent).toBe(`×${paid.mycel ?? paid.pheromone}`);
+    expect(pop?.querySelector(".reward-art img.reward-pile")).toBeTruthy();
     click(pop);
     expect(root.querySelector("#roadPop")).toBeNull();
     expect(root.classList.contains("popped")).toBe(false);

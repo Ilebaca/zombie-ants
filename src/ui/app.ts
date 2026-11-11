@@ -11,7 +11,7 @@ import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
 import {
   DemoGateway, LocalDuels, LocalFriendService, LocalMatchmaker, LocalSupportGateway,
-  ProfileStore, TOUR_VERSION, botsForChapter, chapterOf, compact, faceOf, makeFeedback,
+  ProfileStore, TOUR_VERSION, botsForChapter, chapterOf, faceOf, makeFeedback,
   scoreQuestEvents,
 } from "../platform";
 import type {
@@ -67,6 +67,8 @@ import type { Recap } from "./result";
 import { buildColonyRoad } from "./road";
 import { Deck } from "./deck";
 import { HomeGainAnimation } from "./home-gain";
+import { dismissRewardReveal, resourceRewards, showRewardReveal } from "./reward-reveal";
+import "./reward-reveal.css";
 import { Tour } from "./tour";
 import { lockPortrait } from "../platform/orientation";
 import type { SpotRect, TourStep } from "./tour";
@@ -291,7 +293,7 @@ export class App {
   private presentHomeGain(): void {
     const visible = (): boolean => !this.destroyed && this.activeScreen === "home" && this.deckShowing
       && this.deck?.at === "home" && !this.match && !this.replay && !this.matchmaking
-      && !this.overlay && !this.tour.running && !document.hidden
+      && !this.overlay && !this.host.querySelector(".reward-reveal") && !this.tour.running && !document.hidden
       && (!this.menu || this.menu.classList.contains("hidden"));
     const root = this.host.querySelector<HTMLElement>("#home");
     if (root && visible()) this.homeGain.start(root, this.profile, visible);
@@ -439,6 +441,7 @@ export class App {
    */
   destroy(): void {
     this.destroyed = true;
+    dismissRewardReveal(this.host);
     this.homeGain.cancel();
     this.dropLive();
     this.deck?.destroy();
@@ -516,6 +519,7 @@ export class App {
 
   /** Discard every view reference when the account's DOM is replaced. */
   private clearAccountView(): void {
+    dismissRewardReveal(this.host);
     this.homeGain.cancel();
     this.tour.stop();
     this.clearMatch();
@@ -764,6 +768,7 @@ export class App {
    * press or throw the game away.
    */
   goBack(): boolean {
+    if (dismissRewardReveal(this.host)) return true;
     // The tour holds the interface until it gets the tap it asked for. Swallowed rather
     // than obeyed: closing the app is not the answer to a step somebody is reading.
     if (this.tour.running) return true;
@@ -802,6 +807,7 @@ export class App {
   /* --------------------------------------------------------------------- ROUTER */
 
   private show(id: ScreenId): void {
+    dismissRewardReveal(this.host);
     if (id !== "home") this.homeGain.cancel();
     this.activeScreen = id;
     queueMicrotask(() => { this.syncMailBadge(); this.presentUpdate(); });
@@ -1380,9 +1386,8 @@ export class App {
     const row = el("div", "homerow");
     row.appendChild(granaryPill(this.profile, (got) => {
       this.rebuildHomeBar();
-      this.presentHomeGain();
       this.feedback.play("claim");
-      toast(root, `Granary → +${compact(got)} troops`, "hive");
+      showRewardReveal(root, resourceRewards({ troops: got }), () => this.presentHomeGain());
     }, () => this.homeGain.cancel()));
 
     // A column of three marks down the right edge: the drawer, the daily, the hatch.

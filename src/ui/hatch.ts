@@ -16,15 +16,14 @@
  * whole reason the tiers have colours at all.
  */
 import {
-  AVATAR_TIER, HATCH_COST, LARVA_MYCEL, TRAIT_TIER, avatarName, effectText, itemDef,
-  markOf,
+  AVATAR_TIER, HATCH_COST, LARVA_MYCEL,
 } from "../platform";
-import type { Cue, Feedback, HatchPrize, ProfileStore, TraitItem } from "../platform";
-import { SPECIES, TIER_IDS, TIERS } from "../engine";
-import type { Look } from "../engine";
-import { antPortrait, avatarFace, el, resourceMark, screenEl, screenHeader } from "./chrome";
+import type { Cue, Feedback, HatchPrize, ProfileStore } from "../platform";
+import { TIER_IDS } from "../engine";
+import { el, resourceMark, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 import { buildOdds } from "./odds";
+import { buildRewardReveal, hatchReward } from "./reward-reveal";
 import LARVA_ART from "./backdrops/larva.webp";
 
 /** How long the larva wriggles before it gives an answer. */
@@ -263,297 +262,21 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
 
   /* -------------------------------------------------------------------- THE PRIZE */
 
-  /**
-   * WHAT CAME OUT, OVER THE WHOLE SCREEN.
-   *
-   * The card used to land in the middle of the chamber, the same size as the larva it
-   * replaced — which made the best thing that happens in this feature the same size as
-   * the thing that was already there. It is a pop-up now: the roll finishes, the screen
-   * goes dark, and the tier's colour is the only thing on it.
-   *
-   * THREE WAYS OUT AND ALL OF THEM CLOSE IT. A tap anywhere dismisses it, because a
-   * full-screen card a player has read is in the way and hunting for its corner is a
-   * tax on every single hatch; the X is there for anyone who looks for one, since a
-   * pop-up with no visible way out reads as something that has gone wrong; and the
-   * button both goes where the prize went and closes on the way.
-   *
-   * That they ALL close is what makes it safe. A press wobbles — the browser fires the
-   * click on the nearest common ancestor of where it went down and where it came up
-   * (§ A PRESS THAT GOES DOWN ON ONE ELEMENT), so a thumb that starts on the button and
-   * lifts on the dark lands on the backdrop. With every target closing, the worst a
-   * wobble can do is close without navigating, which is what the backdrop does anyway.
-   */
-  const popup = (): HTMLElement => {
-    const pop = el("div", "hatchpop");
-    pop.id = "hatchPop";
-    // It is a dialog in the sense that matters here: it covers the screen and it is the
-    // only thing that can be acted on while it is up.
-    pop.setAttribute("role", "dialog");
-    pop.setAttribute("aria-modal", "true");
-    pop.onclick = close;
-
-    const x = el("button", "hatchpop-x") as HTMLButtonElement;
-    x.type = "button";
-    x.id = "hatchPopClose";
-    x.setAttribute("aria-label", "Close");
-    x.appendChild(icon("cross", 20));
-    x.onclick = (e) => { e.stopPropagation(); close(); };
-
-    // One card or the other, never a cast: `render` only raises this with something to
-    // show, and a `found` that is somehow neither leaves the pop-up empty rather than
-    // throwing inside a screen builder.
-    if (haul.length > 0) pop.append(x, hoard(haul));
-    else if (found?.kind === "skin") pop.append(x, skinPrize(found.look));
-    else if (found?.kind === "avatar") pop.append(x, avatarPrize(found.id));
-    else if (found) pop.append(x, prize(found.item));
-    else pop.appendChild(x);
-    return pop;
-  };
-
-  /* ------------------------------------------------------------------ A HANDFUL */
-
-  /**
-   * WHAT TEN LARVA CAME TO.
-   *
-   * One prize is the tier's COLOUR filling the screen; ten is a TABLE, and the two cannot
-   * be the same card. Ten of the big cards would be a scroller — the player would have to
-   * travel to see what they got — so each roll is one row: the mark in its tier's colour,
-   * what it is, and what it is worth. TWO COLUMNS, five rows, the whole batch on one
-   * screen at a glance, which is the only reading that makes a handful feel like a
-   * handful rather than like ten hatches that happened quickly.
-   *
-   * They are drawn IN THE ORDER THEY ROLLED, never sorted by tier. Sorting would put the
-   * best one at the top of every batch, which turns the one moment worth having — finding
-   * the good one in the list — into a header.
-   */
-  const hoard = (prizes: readonly HatchPrize[]): HTMLElement => {
-    const box = el("div", "hatchprize many");
-    box.id = "hatchPrize";
-
-    box.appendChild(el("div", "hp-many-h", `${prizes.length} hatched`));
-    const grid = el("div", "hp-grid");
-    grid.id = "hatchHaul";
-    for (const p of prizes) {
-      grid.appendChild(
-        p.kind === "skin" ? skinRow(p.look)
-          : p.kind === "avatar" ? avatarRow(p.id)
-            : traitRow(p.item),
-      );
-    }
-    box.appendChild(grid);
-
-    // A SKIN IN THE BATCH GOES SOMEWHERE ELSE, so the card has to say so. At five rolls
-    // in a hundred a handful of ten carries one about four times out of ten — the common
-    // case, not an edge — and the button under this points at the inventory, which is the
-    // one place a skin will never be (§ A SKIN IS NOT AN ITEM).
-    const skins = prizes.filter((p) => p.kind === "skin").length;
-    if (skins > 0) {
-      box.appendChild(el("div", "hp-many-n",
-        skins === 1
-          ? "The skin is worn on its colony's own page."
-          : "The skins are worn on their colonies' own pages."));
-    }
-
-    // AND SO DOES AN AVATAR, to a different place again. Commons are six rolls in ten, so
-    // a handful of ten carries one most of the time until the collection is finished —
-    // which makes this the note that is actually read, not an edge case.
-    const faces = prizes.filter((p) => p.kind === "avatar").length;
-    if (faces > 0) {
-      box.appendChild(el("div", "hp-many-n",
-        faces === 1
-          ? "The avatar is worn on your profile."
-          : "The avatars are worn on your profile."));
-    }
-
-    const traits = prizes.length - skins - faces;
-    if (traits > 0) {
-      const go = el("button", "hp-go") as HTMLButtonElement;
-      go.type = "button";
-      go.id = "hatchToBag";
-      go.append(
-        el("span", undefined, traits === 1 ? "See it in your inventory" : "See them in your inventory"),
-        icon("next", 13),
-      );
-      go.onclick = (e) => { e.stopPropagation(); close(); opts.onInventory(); };
-      box.appendChild(go);
-    }
-    return box;
-  };
-
-  /** One roll of the batch: the mark, the name, and what it is worth. */
-  const traitRow = (item: TraitItem): HTMLElement => {
-    const def = itemDef(item);
-    const tier = TRAIT_TIER[item.tier];
-    const row = el("div", "hp-one");
-    row.style.setProperty("--tier", tier.colour);
-
-    const mark = el("span", "hp-one-i");
-    mark.appendChild(icon(def?.icon ?? "star", 18));
-    const text = el("span", "hp-one-t");
-    text.append(
-      el("span", "hp-one-n", def?.name ?? "Trait"),
-      el("span", "hp-one-e", def ? effectText(def, item.tier) : tier.name),
-    );
-    row.append(mark, text);
-    row.title = def ? `${def.name} · ${tier.name}` : tier.name;
-    return row;
-  };
-
-  /** ...and a skin, which is the colony rather than a mark. */
-  const skinRow = (look: Look): HTMLElement => {
-    const tier = look.tier ? TIERS[look.tier] : null;
-    const row = el("div", "hp-one skin");
-    row.style.setProperty("--tier", tier?.colour ?? "#ffd257");
-
-    const mark = el("span", "hp-one-i");
-    mark.appendChild(antPortrait(look.species, 44, "hp-one-port", look));
-    const text = el("span", "hp-one-t");
-    text.append(
-      el("span", "hp-one-n", look.name),
-      el("span", "hp-one-e", `${SPECIES[look.species].name} skin`),
-    );
-    row.append(mark, text);
-    row.title = `${look.name} · ${tier?.name ?? ""} skin`;
-    return row;
-  };
-
-  /** ...and an avatar, which is the picture and nothing else. */
-  const avatarRow = (id: string): HTMLElement => {
-    const tier = TIERS[AVATAR_TIER];
-    const row = el("div", "hp-one avprize");
-    row.style.setProperty("--tier", tier.colour);
-
-    const mark = el("span", "hp-one-i");
-    mark.appendChild(avatarFace(id, 44, "hp-one-port"));
-    const text = el("span", "hp-one-t");
-    // IT IS NAMED, like every other prize in the batch. A row reading only "Avatar"
-    // beside a trait that says what it is and what it is worth is the one line in the
-    // table that makes the player go and look it up.
-    text.append(
-      el("span", "hp-one-n", avatarName(id)),
-      el("span", "hp-one-e", "Worn on your profile"),
-    );
-    row.append(mark, text);
-    row.title = `${avatarName(id)} · avatar · ${tier.name}`;
-    return row;
-  };
-
-  /** Put the card down. The fields it clears are also what say the pop-up is up. */
+  /** Settled hatch results use the same tap-to-dismiss reveal as other rewards. */
   const close = (): void => {
-    if (!found && haul.length === 0) return;
     found = null;
     haul = [];
     render();
   };
 
-  /** What came out. The TIER is the loudest thing on it — that is what a hatch is for. */
-  const prize = (item: TraitItem): HTMLElement => {
-    const def = itemDef(item);
-    const tier = TRAIT_TIER[item.tier];
-    const box = el("div", "hatchprize");
-    box.id = "hatchPrize";
-    box.style.setProperty("--tier", tier.colour);
-
-    const disc = el("div", "hp-disc");
-    disc.appendChild(icon(def?.icon ?? "star", 54));
-
-    const kind = el("div", "hp-eff");
-    kind.appendChild(icon(def ? markOf(def.kind) : "spark", 13));
-    kind.appendChild(el("span", undefined, def ? effectText(def, item.tier) : ""));
-
-    box.append(
-      disc,
-      el("div", "hp-tier", tier.name),
-      el("div", "hp-name", def?.name ?? "Trait"),
-      kind,
-    );
-    // The trait has gone to the inventory, so the card says where and offers the way.
-    // It CLOSES on the way out as well: the pop-up is over the hatch, so leaving it
-    // standing behind the inventory would be a card waiting on the way back.
-    const go = el("button", "hp-go") as HTMLButtonElement;
-    go.type = "button";
-    go.id = "hatchToBag";
-    go.append(el("span", undefined, "See it in your inventory"), icon("next", 13));
-    go.onclick = (e) => { e.stopPropagation(); close(); opts.onInventory(); };
-    box.appendChild(go);
-    return box;
-  };
-
-  /**
-   * A SKIN CAME OUT.
-   *
-   * It is shown as the thing itself — the colony's own head WEARING it, in the skin's own
-   * colours — because that is the whole of what a skin is, and a name over a generic mark
-   * would be the one prize in this game the screen refuses to show. It does not go to the
-   * inventory (a skin is not a thing you carry, it is an appearance), so the way out points
-   * at the colony it belongs to, which is the only place it can be worn from.
-   */
-  const skinPrize = (look: Look): HTMLElement => {
-    // A SKIN WEARS ITS OWN RARITY, in the game's one colour for it. It comes out of an
-    // Exceptional or a Mythic roll and nothing below, so the card says which — the colour
-    // is the answer here exactly as it is for a trait, and a skin that arrived in some
-    // colour of its own would be the one prize outside the ladder.
-    const tier = look.tier ? TIERS[look.tier] : null;
-    const box = el("div", "hatchprize skin");
-    box.id = "hatchPrize";
-    box.style.setProperty("--tier", tier?.colour ?? "#ffd257");
-
-    const disc = el("div", "hp-disc hp-face");
-    disc.appendChild(antPortrait(look.species, 108, "hp-port", look));
-
-    box.append(
-      disc,
-      el("div", "hp-tier", `${tier?.name ?? ""} skin`.trim()),
-      el("div", "hp-name", look.name),
-      el("div", "hp-eff", SPECIES[look.species].name),
-    );
-
-    const go = el("button", "hp-go") as HTMLButtonElement;
-    go.type = "button";
-    go.id = "hatchToColony";
-    go.append(el("span", undefined, `Wear it on the ${SPECIES[look.species].name}`), icon("next", 13));
-    go.onclick = (e) => { e.stopPropagation(); close(); opts.onColony?.(look.species); };
-    box.appendChild(go);
-    return box;
-  };
-
-  /**
-   * AN AVATAR CAME OUT.
-   *
-   * Shown as the thing itself, for the reason the skin card is: a face is a PICTURE, and
-   * a name over a generic mark would be the screen refusing to show the one thing that
-   * was found. It carries NO NAME, and that is not an omission — there are ninety-eight
-   * of them and inventing ninety-eight names would be a second table to keep in step with
-   * the folder, for a word nobody needs when the picture is right there.
-   *
-   * It does not go to the inventory either: an avatar belongs to the player rather than
-   * to a bench, so the way out points at the profile, which is the only place it is worn.
-   */
-  const avatarPrize = (id: string): HTMLElement => {
-    const tier = TIERS[AVATAR_TIER];
-    const box = el("div", "hatchprize avprize");
-    box.id = "hatchPrize";
-    box.style.setProperty("--tier", tier.colour);
-
-    const disc = el("div", "hp-disc hp-face");
-    disc.appendChild(avatarFace(id, 108, "hp-port"));
-
-    box.append(
-      disc,
-      el("div", "hp-tier", `${tier.name} avatar`),
-      // THE NAME IS THE LINE THAT GETS READ. A skin's card names the colony and a
-      // trait's names the trait; this one said only what the thing was, which on the
-      // best moment in the feature is the card declining to say what you found.
-      el("div", "hp-eff", avatarName(id)),
-    );
-
-    const go = el("button", "hp-go") as HTMLButtonElement;
-    go.type = "button";
-    go.id = "hatchToProfile";
-    go.append(el("span", undefined, "Wear it on your profile"), icon("next", 13));
-    go.onclick = (e) => { e.stopPropagation(); close(); opts.onProfile?.(); };
-    box.appendChild(go);
-    return box;
+  const popup = (): HTMLElement => {
+    const prizes = haul.length ? haul : found ? [found] : [];
+    const pop = buildRewardReveal(prizes.map(hatchReward), close);
+    pop.id = "hatchPop";
+    const content = pop.querySelector<HTMLElement>(".reward-content");
+    if (content) content.id = "hatchPrize";
+    queueMicrotask(() => { if (pop.isConnected) pop.focus({ preventScroll: true }); });
+    return pop;
   };
 
   /* -------------------------------------------------------------------- THE ODDS */
