@@ -376,3 +376,40 @@ describe("pending Home winnings", () => {
     expect(s.get().pendingHomeGain).toBeNull();
   });
 });
+
+describe("collected troop presentation", () => {
+  it("persists a count receipt atomically with the collected troops and preserves its source", () => {
+    const s = store();
+    s.update((p) => { p.colony = 1000; p.granaryAt = 1; });
+    const before = s.get().colony;
+    const got = s.collectGranary(8 * 3_600_000);
+    expect(got).toBeGreaterThan(0);
+    expect(s.get().colony).toBe(before + got);
+    const receipt = { from: before, amount: got, source: "granary" as const };
+    expect(s.get().pendingHomeGain).toEqual(receipt);
+    const restored = new ProfileStore(s.slot.store, s.slot.key);
+    expect(restored.get().pendingHomeGain).toEqual(receipt);
+    restored.acknowledgeHomeGain(receipt, 1);
+    expect(restored.get().pendingHomeGain).toEqual({ from: before + got - 1, amount: 1, source: "granary" });
+    expect(restored.get().colony).toBe(before + got);
+    expect(restored.collectGranary(8 * 3_600_000)).toBe(0);
+  });
+
+  it("keeps unshown match winnings when collection adds more troops", () => {
+    const s = store();
+    s.update((p) => { p.colony = 1000; p.granaryAt = 1; });
+    s.recordResult(true, "fire");
+    const before = s.get().pendingHomeGain!.from;
+    s.collectGranary(8 * 3_600_000);
+    expect(s.get().pendingHomeGain).toEqual({ from: before, amount: s.get().colony - before });
+  });
+
+  it("uses match flight mode if a win follows an unshown collection", () => {
+    const s = store();
+    s.update((p) => { p.colony = 1000; p.granaryAt = 1; });
+    s.collectGranary(8 * 3_600_000);
+    const before = s.get().pendingHomeGain!.from;
+    s.recordResult(true, "fire");
+    expect(s.get().pendingHomeGain).toEqual({ from: before, amount: s.get().colony - before });
+  });
+});

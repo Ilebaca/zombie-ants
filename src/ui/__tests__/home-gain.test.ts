@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryStore, ProfileStore, TOUR_VERSION } from "../../platform";
+import { MemoryStore, ProfileStore, ROAD_CHAPTER_STOPS, TOUR_VERSION, chapterOf, stopColony } from "../../platform";
+import { backdropFor } from "../backdrops";
 import { HomeGainAnimation } from "../home-gain";
 import { topBar } from "../chrome";
 import { App } from "../app";
@@ -64,6 +65,83 @@ function fixture() {
 }
 
 describe("Home match reward presentation", () => {
+  it("counts collected units with a quick hop on each number change and a synchronized fill", () => {
+    const { store, animation, root, number } = fixture();
+    store.update((p) => { p.pendingHomeGain = { from: 52, amount: 8, source: "granary" }; });
+    animation.start(root, store, () => true);
+    step(0);
+    expect(number()).toBe(52);
+    step(80);
+    expect(number()).toBe(53);
+    step(96);
+    expect(root.querySelector<HTMLElement>(".col-n")!.style.transform).toContain("translateY(-");
+    step(145);
+    expect(root.querySelector<HTMLElement>(".col-n")!.style.transform).toBe("");
+    step(160);
+    expect(number()).toBe(54);
+    step(176);
+    expect(root.querySelector<HTMLElement>(".col-n")!.style.transform).toContain("translateY(-");
+    step(600);
+    expect(number()).toBe(60);
+    expect(root.querySelector<HTMLElement>("#colonyHero")!.dataset.progressColony).toBe("60");
+    expect(root.querySelector(".home-gain")).toBeNull();
+    step(700);
+    expect(store.get().colony).toBe(60);
+    expect(store.get().pendingHomeGain).toBeNull();
+    expect(root.querySelector<HTMLElement>(".col-n")!.style.transform).toBe("");
+  });
+
+  it("changes chapter artwork immediately on collection without replacing Home", () => {
+    const store = new ProfileStore(new MemoryStore());
+    const edge = stopColony(10 * ROAD_CHAPTER_STOPS);
+    store.update((p) => {
+      p.colony = edge - 1;
+      p.tourSeen = TOUR_VERSION;
+      p.granaryAt = Date.now() - 7 * 3_600_000;
+    });
+    expect(store.granary().stored).toBeGreaterThan(0);
+    const host = document.createElement("div");
+    host.id = "app";
+    document.body.appendChild(host);
+    const app = new App(host, store);
+    apps.push(app);
+    app.start();
+    const root = host.querySelector<HTMLElement>("#home")!;
+    const before = store.get().colony;
+    const chapter = chapterOf(before);
+    expect(root.style.backgroundImage).toContain(backdropFor(chapter));
+    root.querySelector<HTMLButtonElement>("#granaryPill")!.click();
+    const nextChapter = chapterOf(store.get().colony);
+    expect(nextChapter).toBeGreaterThan(chapter);
+    expect(host.querySelector("#home")).toBe(root);
+    expect(root.dataset.chapter).toBe(String(nextChapter));
+    expect(root.style.backgroundImage).toContain(backdropFor(nextChapter));
+    expect(Number(root.querySelector<HTMLElement>("#colonyHero")!.dataset.colony)).toBe(before);
+    step(0); step(100);
+    const partial = Number(root.querySelector<HTMLElement>("#colonyHero")!.dataset.colony);
+    expect(partial).toBeGreaterThan(before);
+    expect(partial).toBeLessThan(store.get().colony);
+    step(2000);
+    expect(Number(root.querySelector<HTMLElement>("#colonyHero")!.dataset.colony)).toBe(store.get().colony);
+    expect(store.get().pendingHomeGain).toBeNull();
+  });
+
+  it("keeps an interrupted collection in count mode across a reload", () => {
+    const { store, animation, root, number } = fixture();
+    store.update((p) => { p.pendingHomeGain = { from: 52, amount: 8, source: "granary" }; });
+    animation.start(root, store, () => true);
+    step(0); step(160);
+    const partial = number();
+    animation.cancel();
+    const restored = new ProfileStore(store.slot.store, store.slot.key);
+    expect(restored.get().pendingHomeGain).toEqual({ from: partial, amount: 60 - partial, source: "granary" });
+    animation.start(root, restored, () => true);
+    step(800); step(2800);
+    expect(number()).toBe(60);
+    expect(root.querySelector(".home-gain")).toBeNull();
+    expect(restored.get().pendingHomeGain).toBeNull();
+  });
+
   it("fills smoothly on the count's clock and finishes on the same frame", () => {
     const { store, animation, root, number } = fixture();
     const banner = root.querySelector<HTMLElement>("#colonyHero")!;

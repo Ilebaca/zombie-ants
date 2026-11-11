@@ -113,8 +113,8 @@ export interface Profile {
    * a few dozen to billions and makes "biggest colony" worth competing over.
    */
   colony: number;
-  /** Already-credited match winnings whose Home presentation has not finished. */
-  pendingHomeGain: { from: number; amount: number } | null;
+  /** Already-credited troop gains whose Home presentation has not finished. */
+  pendingHomeGain: { from: number; amount: number; source?: "granary" } | null;
   /** Soft currency (mycelium) and research currency (pheromone). */
   mycel: number;
   pheromone: number;
@@ -447,12 +447,13 @@ function roadClaims(raw: unknown, colony: number): string[] {
 /** Presentation metadata is optional on old saves and never grants any troops. */
 function normaliseHomeGain(raw: unknown): Profile["pendingHomeGain"] {
   if (!raw || typeof raw !== "object") return null;
-  const gain = raw as { from?: unknown; amount?: unknown };
+  const gain = raw as { from?: unknown; amount?: unknown; source?: unknown };
   if (typeof gain.from !== "number" || !Number.isFinite(gain.from) || gain.from < COLONY_START
     || typeof gain.amount !== "number" || !Number.isFinite(gain.amount) || gain.amount < 1) return null;
   return {
     from: Math.min(1e15, Math.floor(gain.from)),
     amount: Math.min(1e15, Math.floor(gain.amount)),
+    ...(gain.source === "granary" ? { source: "granary" as const } : {}),
   };
 }
 
@@ -1271,12 +1272,12 @@ export class ProfileStore {
   /** Acknowledge only the displayed receipt; balances and career totals never change. */
   acknowledgeHomeGain(gain: NonNullable<Profile["pendingHomeGain"]>, remaining = 0): boolean {
     const held = this.profile.pendingHomeGain;
-    if (!held || held.from !== gain.from || held.amount !== gain.amount) return false;
+    if (!held || held.from !== gain.from || held.amount !== gain.amount || held.source !== gain.source) return false;
     const left = Math.max(0, Math.min(gain.amount, this.profile.colony - COLONY_START,
       Math.round(Number.isFinite(remaining) ? remaining : 0)));
     if (left === held.amount && this.profile.colony - left === held.from) return true;
     this.update((p) => {
-      p.pendingHomeGain = left > 0 ? { from: p.colony - left, amount: left } : null;
+      p.pendingHomeGain = left > 0 ? { ...held, from: p.colony - left, amount: left } : null;
     });
     return true;
   }
@@ -1555,7 +1556,17 @@ export class ProfileStore {
     const got = this.granary(now).stored;
     if (got < 1) return 0;
     this.update((p) => {
+      const before = p.colony;
       p.colony += got;
+      const gained = Math.min(1e15, p.colony) - before;
+      if (gained > 0) {
+        const held = p.pendingHomeGain;
+        p.pendingHomeGain = {
+          from: held?.from ?? before,
+          amount: (held?.amount ?? 0) + gained,
+          ...(!held || held.source === "granary" ? { source: "granary" as const } : {}),
+        };
+      }
       p.granaryAt = now;
     });
     return got;

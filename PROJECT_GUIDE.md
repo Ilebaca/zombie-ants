@@ -5522,3 +5522,13 @@ balance without flights. Never delay settlement or credit resources from animati
 Home's reward count and progress fill share the reward RAF. The count displays whole
 units while the fill uses the same fractional gain; both reach the final balance on
 the same frame. Do not add an independent width transition to the Home progress bar.
+
+## Immediate Home chapter changes and collected troop counts
+`ui/home-art.ts` updates the existing Home background from the credited balance after
+collection, independently of the displayed counter. It warms the next chapter and the
+chapter a full granary can reach, keeping no decoded image objects after loading.
+Collected troops use the same persisted Home receipt as match winnings, with optional
+`source: "granary"` for count-only presentation. Legacy/match receipts omit it and keep
+their sword flights. Cancel the old presentation before collection so partly displayed
+wins are not replayed. Both modes share the continuous bar clock and quick 65ms text
+hops, with at least 75ms between visible count changes. Collection never pays twice.

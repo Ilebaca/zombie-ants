@@ -1,5 +1,5 @@
 /**
- * Presents already-credited match winnings on Home. This never awards units.
+ * Presents already-credited troop gains on Home. This never awards units.
  * One receipt belongs to one ProfileStore; leaving Home saves only the unseen remainder.
  */
 import type { Profile, ProfileStore } from "../platform";
@@ -16,7 +16,7 @@ function available(store: ProfileStore): number {
 
 function matches(store: ProfileStore, gain: Gain): boolean {
   const held = store.get().pendingHomeGain;
-  return held?.from === gain.from && held.amount === gain.amount;
+  return held?.from === gain.from && held.amount === gain.amount && held.source === gain.source;
 }
 
 interface Flight {
@@ -65,10 +65,11 @@ export class HomeGainAnimation {
     let stableSince = -1;
     let previousLeft = Infinity;
     let launched = -1;
-    let lastImpact = -Infinity;
-    const count = Math.min(12, amount);
+    let lastChange = -Infinity;
+    const collection = receipt.source === "granary";
+    const collectionDuration = Math.min(1100, Math.max(240, amount * 75));
+    const count = collection ? 0 : Math.min(12, amount);
     const particles: HTMLElement[] = [];
-    const arrived = new Set<number>();
     const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
     const tick = (now: number): void => {
@@ -96,7 +97,7 @@ export class HomeGainAnimation {
         if (Math.abs(rect.left - previousLeft) > 0.5) stableSince = now;
         previousLeft = rect.left;
         if (stableSince < 0) stableSince = now;
-        if (now - stableSince < 180) { f.frame = requestAnimationFrame(tick); return; }
+        if (now - stableSince < (collection ? 0 : 180)) { f.frame = requestAnimationFrame(tick); return; }
         if (reduceMotion) {
           updateColonyBanner(banner, store.get().colony);
           store.acknowledgeHomeGain(f.gain);
@@ -104,24 +105,26 @@ export class HomeGainAnimation {
           return;
         }
         launched = now;
-        f.layer = document.createElement("div");
-        f.layer.className = "home-gain";
-        f.layer.setAttribute("aria-hidden", "true");
-        for (let i = 0; i < count; i++) {
-          const particle = document.createElement("span");
-          particle.className = "home-gain-unit";
-          particle.appendChild(hudMark("swords", 32));
-          f.layer.appendChild(particle);
-          particles.push(particle);
+        if (!collection) {
+          f.layer = document.createElement("div");
+          f.layer.className = "home-gain";
+          f.layer.setAttribute("aria-hidden", "true");
+          for (let i = 0; i < count; i++) {
+            const particle = document.createElement("span");
+            particle.className = "home-gain-unit";
+            particle.appendChild(hudMark("swords", 32));
+            f.layer.appendChild(particle);
+            particles.push(particle);
+          }
+          root.appendChild(f.layer);
         }
-        root.appendChild(f.layer);
       }
 
       const x0 = from.left + from.width / 2 - rect.left;
       const y0 = from.top + from.height / 2 - rect.top;
       const x1 = to.left + to.width / 2 - rect.left;
       const y1 = to.top + to.height / 2 - rect.top;
-      let shown = 0;
+      let shown = collection ? amount * Math.min(1, (now - launched) / collectionDuration) : 0;
       for (let i = 0; i < count; i++) {
         const delay = i * 65;
         const duration = 720 + (i % 3) * 35;
@@ -131,7 +134,6 @@ export class HomeGainAnimation {
         // Counting begins at impact, smoothing each packet without writing the save per frame.
         const progress = Math.max(0, Math.min(1, (elapsed - duration) / 120));
         shown += packet * (1 - (1 - progress) ** 3);
-        if (t >= 1 && !arrived.has(i)) { arrived.add(i); lastImpact = now; }
         const particle = particles[i];
         if (!particle) continue;
         particle.style.visibility = elapsed < 0 || t >= 1 ? "hidden" : "visible";
@@ -145,14 +147,21 @@ export class HomeGainAnimation {
         particle.style.transform = `translate3d(${x}px,${y}px,0) translate(-50%,-50%) rotate(${spread * (1 - t) * 0.3}deg) scale(${scale})`;
         particle.style.opacity = String(Math.min(1, Math.max(0, elapsed / 70)));
       }
-      f.shown = Math.max(f.shown, Math.min(amount, Math.floor(shown)));
+      const nextShown = Math.max(f.shown, Math.min(amount, Math.floor(shown)));
+      // Give each visible number change time for one quick hop, even for huge gains.
+      if (nextShown > f.shown && (now - lastChange >= 75 || nextShown === amount)) {
+        f.shown = nextShown;
+        lastChange = now;
+      }
       const balance = this.displayedColony(store);
       updateColonyBanner(banner, balance, balance - f.shown + shown);
       if (f.number !== number && f.number) f.number.style.transform = "";
       f.number = number;
-      const pulse = Math.max(0, 1 - (now - lastImpact) / 160);
-      number.style.transform = `scale(${1 + pulse * 0.12})`;
-      if (now - launched >= (count - 1) * 65 + 790 + 160) {
+      const hop = Math.sin(Math.PI * Math.min(1, Math.max(0, (now - lastChange) / 65)));
+      number.style.transform = hop > 0.001
+        ? `translateY(${-4 * hop}px) scale(${1 + 0.06 * hop})` : "";
+      const finish = collection ? collectionDuration + 75 : (count - 1) * 65 + 790 + 160;
+      if (now - launched >= finish) {
         updateColonyBanner(banner, store.get().colony);
         store.acknowledgeHomeGain(f.gain);
         f.layer?.remove();

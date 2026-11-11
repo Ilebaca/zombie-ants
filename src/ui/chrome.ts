@@ -418,7 +418,7 @@ export function updateColonyBanner(
  * up with it.
  */
 export function granaryPill(
-  store: ProfileStore, onCollected: (got: number) => void,
+  store: ProfileStore, onCollected: (got: number) => void, onCollecting?: () => void,
 ): HTMLElement {
   const pill = el("button", "granpill");
   pill.id = "granaryPill";
@@ -449,6 +449,7 @@ export function granaryPill(
   };
 
   pill.onclick = (): void => {
+    if (store.granary().stored >= 1) onCollecting?.();
     const got = store.collectGranary();
     draw();
     if (got > 0) onCollected(got);

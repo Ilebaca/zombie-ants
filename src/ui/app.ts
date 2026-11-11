@@ -18,7 +18,7 @@ import type {
   DuelInvite, DuelService, Feedback, Friend, FriendService, MatchLog, Matchmaker, Opponent,
   Person, PurchaseGateway, SupportGateway, TraitScope,
 } from "../platform";
-import { groundReady, setFactionColor } from "../render";
+import { setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
 import { buildAvatarPicker } from "./avatarpicker";
 import { buildInventory, buildTraitBench } from "./traits";
@@ -45,7 +45,7 @@ import { buildWhatsNew } from "./whatsnew";
 import { buildFriends } from "./friends";
 import { buildSupport } from "./support";
 import { buildSettings } from "./settings";
-import { backdropFor } from "./backdrops";
+import { updateHomeArtwork } from "./home-art";
 import { groundFor } from "./regions";
 import { buildRules } from "./rules";
 import { buildSetup, rollAISpecies, rollShape } from "./setup";
@@ -1190,42 +1190,18 @@ export class App {
   private buildHome(): HTMLElement {
     const root = screenEl("home");
 
-    // THE GROUND CHANGES WITH THE CHAPTER (`ui/backdrops.ts`). Home is one full-screen
-    // picture and it was the same picture for ever, so the screen a player opens every
-    // time said nothing about how far they had come. Written INLINE rather than through a
-    // class per chapter: fifty rules in the stylesheet for fifty files the stylesheet
-    // cannot see is a second table to keep in step, and `skin.css` still carries the
-    // default so the screen is never bare if this never runs.
-    const chapter = chapterOf(this.profile.get().colony);
-    // AND ONE WASH OVER ITS FOOT, in the SAME declaration. `background-image` stacks and
-    // the first layer is the front one, so the gradient rides over the picture — which is
-    // the only way to put one here at all: an inline style outranks the stylesheet, so a
-    // wash written only in `skin.css` would be replaced by this line rather than layered
-    // under it, and a wash on `#home::after` is silently cleared by the background
-    // blanket (§ THE HOME ARTWORK). It is the design's own gradient, and what it is for
-    // is the bottom of the screen: PLAY and the tab bar sit on whatever the chapter's
-    // painting happens to put there.
-    root.style.backgroundImage =
-      `linear-gradient(180deg, rgba(0,0,0,0) 74.5%, rgba(0,0,0,.4) 82.3%), ` +
-      `url("${backdropFor(chapter)}")`;
-    // AND THE BOARD'S GROUND IS FETCHED FROM HERE, a screen early. Home is where the
-    // player stands before PLAY, and the setup screen's board is a STILL that cannot be
-    // drawn until the region's picture has landed — so asking for it now is what makes
-    // that screen open on the finished picture rather than on a blank square. Fire and
-    // forget, and idempotent: the loader holds one element per url for the life of the
-    // page, so the rebuild home does on every deck slide costs nothing.
-    void groundReady(groundFor(chapter));
+    updateHomeArtwork(root, this.profile.get().colony, this.profile.granary().full);
 
     /*
      * The bar, and the granary emptied directly under the figure it pays into.
      *
-     * Collecting changes the colony, so the bar has to be redrawn — but only the bar.
-     * Rebuilding the screen would re-run the artwork and throw away the deck's slide for
-     * one number, so the bar is rebuilt in place and the pill keeps its own state.
+     * Collecting refreshes the chapter artwork and bar in place. The Home screen and
+     * deck stay mounted while the already-credited troops count into the new header.
      */
     let bar = this.homeBar(root);
     root.appendChild(bar);
     this.rebuildHomeBar = (): void => {
+      updateHomeArtwork(root, this.profile.get().colony, this.profile.granary().full);
       const fresh = this.homeBar(root);
       bar.replaceWith(fresh);
       bar = fresh;
@@ -1404,9 +1380,10 @@ export class App {
     const row = el("div", "homerow");
     row.appendChild(granaryPill(this.profile, (got) => {
       this.rebuildHomeBar();
+      this.presentHomeGain();
       this.feedback.play("claim");
       toast(root, `Granary → +${compact(got)} troops`, "hive");
-    }));
+    }, () => this.homeGain.cancel()));
 
     // A column of three marks down the right edge: the drawer, the daily, the hatch.
     // Each is NAMED and none is labelled on the glass — the same rule the tab bar below
