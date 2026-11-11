@@ -5562,4 +5562,4 @@ Header currency amounts (`.mycelchip .mycelv`) use the display face and its nati
 do not request a synthetic bold weight or fall back to the body font here.
 
 Antarium level badges appear only on collection-list tiles, never on the large selected
-portrait. The badge inherits its tile's corner radius; the banner keeps its level rungs.
+portrait. The badge uses its tile frame's shared corner-radius token; the banner keeps its level rungs.
