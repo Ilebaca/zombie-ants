@@ -1,44 +1,42 @@
 /** Shared, presentation-only reward reveal. The caller settles the claim first. */
 import { avatarName, itemDef } from "../platform";
 import type { HatchPrize, TraitItem } from "../platform";
-import { TIERS } from "../engine";
-import type { Look } from "../engine";
+import { SPECIES, TIERS } from "../engine";
+import type { SpeciesId } from "../engine";
 import { antPortrait, avatarFace, el, hudMark } from "./chrome";
 import { icon } from "./icons";
 import { shelfArt } from "./shelf";
+import { cutCoverFor } from "./covers";
 
 export type RevealedReward =
-  | { kind: "resource"; mark: string; name: string; amount: number }
+  | { kind: "resource"; mark: "mycel" | "pheromone"; name: string; amount: number }
   | { kind: "avatar"; id: string }
   | { kind: "trait"; item: TraitItem }
-  | { kind: "skin"; look: Look };
+  | { kind: "species"; species: SpeciesId };
 
 interface RewardAmounts {
-  mycel?: number; pheromone?: number; larva?: number; troops?: number; xp?: number;
+  mycel?: number; pheromone?: number;
 }
 
-/** Include actual positive payouts only, including a quest's sweep bonus. */
+/** Only the two collectible currencies belong in this reveal. */
 export function resourceRewards(amounts: RewardAmounts): RevealedReward[] {
   return ([
     ["mycel", "Mycelium", amounts.mycel],
     ["pheromone", "Pheromone crystals", amounts.pheromone],
-    ["brood", "Larva", amounts.larva],
-    ["swords", "Troops", amounts.troops],
-    ["star", "Colony XP", amounts.xp],
   ] as const).flatMap(([mark, name, amount]) =>
     amount && amount > 0 ? [{ kind: "resource" as const, mark, name, amount }] : []);
 }
 
-export function hatchReward(prize: HatchPrize): RevealedReward {
+export function hatchReward(prize: HatchPrize): RevealedReward | null {
   if (prize.kind === "trait") return { kind: "trait", item: prize.item };
-  if (prize.kind === "skin") return { kind: "skin", look: prize.look };
+  if (prize.kind === "skin") return null;
   return { kind: "avatar", id: prize.id };
 }
 
-/** A pile where one exists; a bounded cluster of existing marks otherwise. */
-function resourceArt(mark: string): HTMLElement {
+/** Use the existing large resource pile, with its currency mark as a fallback. */
+function resourceArt(mark: "mycel" | "pheromone"): HTMLElement {
   const art = el("div", "reward-art");
-  const products: Record<string, string> = { mycel: "mycel.1500", pheromone: "pher.900", brood: "larva.25" };
+  const products = { mycel: "mycel.1500", pheromone: "pher.900" };
   const product = products[mark];
   const source = product ? shelfArt(product) : null;
   if (source) {
@@ -48,15 +46,7 @@ function resourceArt(mark: string): HTMLElement {
     image.decoding = "async";
     art.appendChild(image);
   } else {
-    art.classList.add("reward-cluster");
-    for (let i = 0; i < 7; i++) {
-      const token = el("span", "reward-token");
-      token.style.left = `${8 + (i % 3) * 22}%`;
-      token.style.top = `${5 + Math.floor(i / 3) * 24}%`;
-      token.style.transform = `rotate(${(i - 3) * 9}deg)`;
-      token.appendChild(hudMark(mark, 88));
-      art.appendChild(token);
-    }
+    art.appendChild(hudMark(mark, 180));
   }
   return art;
 }
@@ -84,8 +74,14 @@ function rewardItem(reward: RevealedReward): HTMLElement {
       emblem.appendChild(icon(def?.icon ?? "spark", 140));
       art.appendChild(emblem);
     } else {
-      name = reward.look.name;
-      art.appendChild(antPortrait(reward.look.species, 240, "reward-portrait", reward.look));
+      name = SPECIES[reward.species].name;
+      const source = cutCoverFor(reward.species);
+      if (source) {
+        const image = el("img", "reward-species");
+        image.src = source;
+        image.alt = "";
+        art.appendChild(image);
+      } else art.appendChild(antPortrait(reward.species, 240, "reward-portrait"));
     }
   }
   art.setAttribute("aria-hidden", "true");

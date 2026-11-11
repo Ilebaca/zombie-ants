@@ -1,17 +1,25 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { DAILY_GIFT, MemoryStore, ProfileStore, QUEST_SWEEP_BONUS, questDef } from "../../platform";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { DAILY_GIFT, MemoryStore, ProfileStore, QUEST_SWEEP_BONUS, questDef, productById, SPECIES_UNLOCK } from "../../platform";
 import { avatarArt } from "../avatars";
 import { buildQuests } from "../quests";
 import { buildShop } from "../shop";
+import { buildProfile } from "../profile";
+import { buildAntarium } from "../antarium";
+import { cutCoverFor } from "../covers";
+import { SPECIES } from "../../engine";
+import type { PurchaseGateway } from "../../platform";
 import { DemoGateway } from "../../platform";
 import { shelfArt } from "../shelf";
 import { buildRewardReveal, dismissRewardReveal, resourceRewards, showRewardReveal } from "../reward-reveal";
 
+HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
+
 afterEach(() => document.body.replaceChildren());
 
 describe("full-screen reward reveals", () => {
-  it("shows every currency with its own name, largest pile and amount below the artwork", () => {
-    const reveal = buildRewardReveal(resourceRewards({ mycel: 13, pheromone: 5, xp: 0 }), () => {});
+  it("reveals only mycelium and crystals with their names, piles and amounts", () => {
+    const payout = { mycel: 13, pheromone: 5, xp: 120, troops: 8, larva: 2 };
+    const reveal = buildRewardReveal(resourceRewards(payout), () => {});
     const items = Array.from(reveal.querySelectorAll(".reward-item"));
     expect(items).toHaveLength(2);
     expect(items[0]?.querySelector(".reward-name")?.textContent).toBe("Mycelium");
@@ -57,7 +65,7 @@ describe("full-screen reward reveals", () => {
     expect(dismissRewardReveal(host)).toBe(false);
   });
 
-  it("reveals a quest's actual sweep bonus and XP without awarding it again on dismissal", () => {
+  it("claims quests and their sweep bonus without a full-screen reveal", () => {
     const store = new ProfileStore(new MemoryStore());
     const quests = store.dailyQuests();
     const id = quests[0]!.id;
@@ -69,14 +77,10 @@ describe("full-screen reward reveals", () => {
     });
     const root = buildQuests(store, () => {});
     root.querySelector<HTMLButtonElement>(".qbtn.ready")!.click();
-    const amounts = Array.from(root.querySelectorAll(".reward-amount")).map(node => node.textContent);
     const mycel = (def.reward.mycel ?? 0) + QUEST_SWEEP_BONUS.mycel;
-    expect(amounts).toContain(`×${mycel}`);
-    expect(amounts).toContain(`×${def.xp}`);
     expect(store.get().mycel).toBe(mycel);
-    const paid = store.get();
-    root.querySelector<HTMLElement>(".reward-reveal")!.click();
-    expect(store.get()).toEqual(paid);
+    expect(store.get().xp).toBe(def.xp);
+    expect(root.querySelector(".reward-reveal")).toBeNull();
     expect(store.claimQuest(id)).toBe(false);
   });
 
@@ -91,5 +95,80 @@ describe("full-screen reward reveals", () => {
     expect(root.querySelector(".reward-reveal")).toBeNull();
     expect(store.claimDailyGift()).toBe(false);
     expect(store.get().mycel).toBe(DAILY_GIFT.mycel);
+  });
+  it("claims level rewards on Profile and Quests without a full-screen reveal", () => {
+    for (const profile of [true, false]) {
+      const store = new ProfileStore(new MemoryStore());
+      store.update(p => { p.xp = 1000; });
+      const level = store.unclaimedLevels()[0]!;
+      const noop = (): void => {};
+      const root = profile ? buildProfile(store, {
+        onBack: noop, onColonies: noop, onChambers: noop, onQuests: noop,
+        onHistory: noop, onTraits: noop, onAvatars: noop,
+      }) : buildQuests(store, noop);
+      root.querySelector<HTMLButtonElement>(".claimchip")!.click();
+      expect(store.get().claimedLevels).toContain(level);
+      expect(root.querySelector(".reward-reveal")).toBeNull();
+    }
+  });
+
+  it("reveals only eligible currencies from the actual successful shop grant", async () => {
+    const store = new ProfileStore(new MemoryStore());
+    const gateway: PurchaseGateway = {
+      live: true, buy: async () => ({ ok: true, grant: { mycel: 123, larva: 2 } }),
+      restore: async () => ({ ok: false }),
+    };
+    const root = buildShop(store, gateway);
+    const tile = Array.from(root.querySelectorAll(".stile"))
+      .find(tile => tile.querySelector(".sh-name")?.textContent === "650")!;
+    tile.querySelector<HTMLButtonElement>(".buybar")!.click();
+    await vi.waitFor(() => expect(root.querySelector(".reward-reveal")).not.toBeNull());
+    expect(root.querySelectorAll(".reward-item")).toHaveLength(1);
+    expect(root.querySelector(".reward-amount")?.textContent).toBe("×123");
+    expect(store.get().mycel).toBe(123);
+    expect(store.get().larva).toBe(2);
+    root.querySelector<HTMLElement>(".reward-reveal")!.click();
+    expect(store.get().mycel).toBe(123);
+  });
+
+  it("reveals a species after an Antarium purchase without charging again on close", () => {
+    const store = new ProfileStore(new MemoryStore());
+    store.update(p => { p.mycel = SPECIES_UNLOCK.ghost; });
+    const root = buildAntarium(store, { onOpenSpecies: () => {} });
+    root.querySelector<HTMLElement>('.ccard[data-ant="ghost"]')!.click();
+    root.querySelector<HTMLButtonElement>("#antCTA")!.click();
+    expect(store.isUnlocked("ghost")).toBe(true);
+    expect(store.get().mycel).toBe(0);
+    expect(root.querySelector(".reward-name")?.textContent).toBe(SPECIES.ghost.name);
+    expect(root.querySelector(".reward-species")?.getAttribute("src")).toBe(cutCoverFor("ghost"));
+    expect(root.querySelector(".reward-amount")).toBeNull();
+    root.querySelector<HTMLElement>(".reward-art")!.click();
+    expect(root.querySelector(".reward-reveal")).toBeNull();
+    expect(store.get().mycel).toBe(0);
+  });
+
+  it("reveals a premium species only after its successful shop purchase", async () => {
+    const store = new ProfileStore(new MemoryStore());
+    const root = buildShop(store, new DemoGateway());
+    const tile = Array.from(root.querySelectorAll(".stile"))
+      .find(tile => tile.textContent?.includes(productById("species.demon")!.title!))!;
+    tile.querySelector<HTMLButtonElement>(".buybar")!.click();
+    await vi.waitFor(() => expect(store.isUnlocked("demon")).toBe(true));
+    expect(root.querySelector('.reward-item[data-kind="species"]')).not.toBeNull();
+    expect(root.querySelector(".reward-name")?.textContent).toBe(SPECIES.demon.name);
+    expect(root.querySelector(".reward-amount")).toBeNull();
+  });
+
+  it("does not reveal refused purchases even when a gateway returns a grant", async () => {
+    const store = new ProfileStore(new MemoryStore());
+    const gateway: PurchaseGateway = {
+      live: true, buy: async () => ({ ok: false, grant: { mycel: 123 }, note: "Declined" }),
+      restore: async () => ({ ok: false }),
+    };
+    const root = buildShop(store, gateway);
+    root.querySelector<HTMLButtonElement>(".stile .buybar")!.click();
+    await vi.waitFor(() => expect(root.textContent).toContain("Declined"));
+    expect(store.get().mycel).toBe(0);
+    expect(root.querySelector(".reward-reveal")).toBeNull();
   });
 });

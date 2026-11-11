@@ -67,7 +67,7 @@ import type { Recap } from "./result";
 import { buildColonyRoad } from "./road";
 import { Deck } from "./deck";
 import { HomeGainAnimation } from "./home-gain";
-import { dismissRewardReveal, resourceRewards, showRewardReveal } from "./reward-reveal";
+import { dismissRewardReveal } from "./reward-reveal";
 import "./reward-reveal.css";
 import { Tour } from "./tour";
 import { lockPortrait } from "../platform/orientation";
@@ -1204,11 +1204,11 @@ export class App {
      * Collecting refreshes the chapter artwork and bar in place. The Home screen and
      * deck stay mounted while the already-credited troops count into the new header.
      */
-    let bar = this.homeBar(root);
+    let bar = this.homeBar();
     root.appendChild(bar);
     this.rebuildHomeBar = (): void => {
       updateHomeArtwork(root, this.profile.get().colony, this.profile.granary().full);
-      const fresh = this.homeBar(root);
+      const fresh = this.homeBar();
       bar.replaceWith(fresh);
       bar = fresh;
       this.syncMailBadge();
@@ -1376,7 +1376,7 @@ export class App {
    * simply pushes what follows down, where before a sibling laid out after `.tophead`
    * landed UNDERNEATH the buttons and could not be pressed.
    */
-  private homeBar(root: HTMLElement): HTMLElement {
+  private homeBar(): HTMLElement {
     const bar = topBar({ ...this.profile.get(), colony: this.homeGain.displayedColony(this.profile) }, {
       onProfile: () => this.show("profile"),
       onColonyRoad: () => this.show("achievements"),
@@ -1384,10 +1384,10 @@ export class App {
     });
 
     const row = el("div", "homerow");
-    row.appendChild(granaryPill(this.profile, (got) => {
+    row.appendChild(granaryPill(this.profile, () => {
       this.rebuildHomeBar();
+      this.presentHomeGain();
       this.feedback.play("claim");
-      showRewardReveal(root, resourceRewards({ troops: got }), () => this.presentHomeGain());
     }, () => this.homeGain.cancel()));
 
     // A column of three marks down the right edge: the drawer, the daily, the hatch.

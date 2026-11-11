@@ -7,6 +7,7 @@ import {
 import type { ProfileStore } from "../platform";
 import { cardArt } from "./cards";
 import { researchPips } from "./research";
+import { showRewardReveal } from "./reward-reveal";
 import { el, hudMark, redraw, screenEl, screenHeader, toast } from "./chrome";
 
 export interface AntariumOptions {
@@ -124,7 +125,7 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
       if (!affordable) { toast(root, "Not enough mycel — win matches to earn more.", "warn"); return; }
       if (store.unlockSpecies(id)) {
         render();
-        toast(root, `${species.name} joined your colony`, "hive");
+        showRewardReveal(root, [{ kind: "species", species: id }]);
       }
     };
     return btn;

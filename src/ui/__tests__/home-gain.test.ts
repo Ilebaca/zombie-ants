@@ -117,10 +117,7 @@ describe("Home match reward presentation", () => {
     expect(root.dataset.chapter).toBe(String(nextChapter));
     expect(root.style.backgroundImage).toContain(backdropFor(nextChapter));
     expect(Number(root.querySelector<HTMLElement>("#colonyHero")!.dataset.colony)).toBe(before);
-    expect(host.querySelector(".reward-reveal")).not.toBeNull();
-    step(0); step(100);
-    expect(Number(root.querySelector<HTMLElement>("#colonyHero")!.dataset.colony)).toBe(before);
-    host.querySelector<HTMLElement>(".reward-reveal")!.click();
+    expect(host.querySelector(".reward-reveal")).toBeNull();
     step(0); step(100);
     const partial = Number(root.querySelector<HTMLElement>("#colonyHero")!.dataset.colony);
     expect(partial).toBeGreaterThan(before);

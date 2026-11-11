@@ -79,12 +79,6 @@
   box-shadow: 0 5px 0 #11151a !important;
 }
 .reward-emblem > :is(img, svg, canvas) { width: 70%; height: 70%; }
-.reward-token {
-  position: absolute;
-  width: 42%;
-  height: 42%;
-}
-.reward-token > :is(img, svg, canvas) { width: 100%; height: 100%; object-fit: contain; }
 .reward-content.multiple {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(16px, calc(4 * var(--game-vh, 1vh)), 32px) 16px;

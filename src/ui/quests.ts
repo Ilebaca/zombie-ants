@@ -8,11 +8,10 @@
  * match actually did (app.ts), so opening this screen can never award anything by itself.
  */
 import { groupSections } from "./groups";
-import { isClaimable, isComplete, levelReward, questDef } from "../platform";
+import { isClaimable, isComplete, questDef } from "../platform";
 import type { ProfileStore, QuestState } from "../platform";
-import { el, levelRewardChip, redraw, screenEl, screenHeader } from "./chrome";
+import { el, levelRewardChip, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
-import { resourceRewards, showRewardReveal } from "./reward-reveal";
 
 export function buildQuests(store: ProfileStore, onBack: () => void): HTMLElement {
   const root = screenEl("quests");
@@ -70,7 +69,7 @@ export function buildQuests(store: ProfileStore, onBack: () => void): HTMLElemen
         chip.onclick = () => {
           if (store.claimLevel(level)) {
             render();
-            showRewardReveal(root, resourceRewards(levelReward(level)));
+            toast(root, "Reward claimed!", "good");
           }
         };
         row.appendChild(chip);
@@ -114,17 +113,9 @@ export function buildQuests(store: ProfileStore, onBack: () => void): HTMLElemen
     } else if (isClaimable(state)) {
       const claim = el("button", "qbtn ready", "Claim");
       claim.onclick = () => {
-        const { mycel, pheromone, xp } = store.get();
-        const before = { mycel, pheromone, xp };
         if (store.claimQuest(state.id)) {
-          const after = store.get();
-          const rewards = resourceRewards({
-            mycel: after.mycel - before.mycel,
-            pheromone: after.pheromone - before.pheromone,
-            xp: after.xp - before.xp,
-          });
           render();
-          showRewardReveal(root, rewards);
+          toast(root, `Claimed: ${def.text}`, "good");
         }
       };
       act.appendChild(claim);

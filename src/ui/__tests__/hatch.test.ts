@@ -273,7 +273,7 @@ describe("hatching a skin", () => {
     return () => values[i++] ?? 0.5;
   };
 
-  it("reveals the skin itself with its name above and no extra action", () => {
+  it("keeps skin unlocks as a notice without a full-screen reveal", () => {
     const s = store(3);
     const root = buildHatch(s, {
       onBack: () => {}, onBuyLarva: () => {}, onInventory: () => {}, random: skinRoll(),
@@ -283,14 +283,9 @@ describe("hatching a skin", () => {
     tap(root, "hatchGo");
     vi.advanceTimersByTime(1200);
     vi.useRealTimers();
-    const item = root.querySelector('.reward-item[data-kind="skin"]');
     const look = lookById(s.skins[0] as string);
-    expect(item?.querySelector(".reward-name")?.textContent).toBe(look?.name);
-    expect(item?.querySelector("canvas")).toBeTruthy();
-    expect(item?.querySelector(".reward-amount")).toBeNull();
-    expect(root.querySelector("#hatchToColony")).toBeNull();
+    expect(root.textContent).toContain(`${look?.name} unlocked`);
     expect(s.bag.length).toBe(0);
-    root.querySelector<HTMLElement>(".reward-art")?.click();
     expect(root.querySelector("#hatchPop")).toBeNull();
   });
   /**
@@ -643,8 +638,9 @@ describe("the handful", () => {
     // point of the note: the inventory is the one place a skin will never be.
     expect(s.skins.length, "the top of the range paid no skin at all").toBeGreaterThan(0);
     expect(root.querySelector(".reward-amount")).toBeNull();
-    expect(root.querySelectorAll('.reward-item[data-kind="skin"]').length,
-      "a skin was drawn as a trait").toBeGreaterThan(0);
+    expect(root.querySelector('.reward-item[data-kind="skin"]')).toBeNull();
+    if (root.querySelector("#hatchPop")) root.querySelector<HTMLElement>("#hatchPop")!.click();
+    expect(root.textContent).toContain("unlocked");
   });
 
   /**

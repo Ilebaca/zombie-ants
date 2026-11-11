@@ -20,7 +20,7 @@ import {
 } from "../platform";
 import type { Cue, Feedback, HatchPrize, ProfileStore } from "../platform";
 import { TIER_IDS } from "../engine";
-import { el, resourceMark, screenEl, screenHeader } from "./chrome";
+import { el, resourceMark, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 import { buildOdds } from "./odds";
 import { buildRewardReveal, hatchReward } from "./reward-reveal";
@@ -141,7 +141,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     // INSIDE the screen cannot out-stack the bar however high its own z-index goes, and
     // it came up with five tabs still lit across the bottom of it. The class raises the
     // screen rather than the card, because the card is the thing that is trapped.
-    const up = !busy && (Boolean(found) || haul.length > 0);
+    const up = !busy && revealedPrizes().length > 0;
     root.classList.toggle("popped", up);
     if (up) root.appendChild(popup());
   };
@@ -262,16 +262,28 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
 
   /* -------------------------------------------------------------------- THE PRIZE */
 
-  /** Settled hatch results use the same tap-to-dismiss reveal as other rewards. */
+  /** Only traits and avatars use the full-screen reveal; skins retain an unlock notice. */
+  const revealedPrizes = () =>
+    (haul.length ? haul : found ? [found] : []).flatMap(prize => {
+      const reward = hatchReward(prize);
+      return reward ? [reward] : [];
+    });
+
+  const skinNotice = (prizes: readonly HatchPrize[] = haul.length ? haul : found ? [found] : []): void => {
+    const skins = prizes
+      .filter((prize) => prize.kind === "skin");
+    if (skins.length) toast(root, skins.map(prize => `${prize.look.name} unlocked`).join(" · "), "good");
+  };
   const close = (): void => {
+    const prizes = haul.length ? [...haul] : found ? [found] : [];
     found = null;
     haul = [];
     render();
+    skinNotice(prizes);
   };
 
   const popup = (): HTMLElement => {
-    const prizes = haul.length ? haul : found ? [found] : [];
-    const pop = buildRewardReveal(prizes.map(hatchReward), close);
+    const pop = buildRewardReveal(revealedPrizes(), close);
     pop.id = "hatchPop";
     const content = pop.querySelector<HTMLElement>(".reward-content");
     if (content) content.id = "hatchPrize";
@@ -367,6 +379,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
       if (!root.isConnected) return;
       busy = false;
       render();
+      if (revealedPrizes().length === 0) skinNotice();
       // THE TIER, THE MOMENT THE COLOUR ARRIVES. Same instant as the card, off the same
       // ladder — a mythic that sounds like a common is the feature failing at the one
       // moment it exists for.

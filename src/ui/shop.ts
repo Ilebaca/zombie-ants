@@ -185,8 +185,16 @@ export function buildShop(
         }
         if (result.grant) store.applyGrant(result.grant);
         render();
-        toast(root, describe(product), "hive");
-        if (result.note) toast(root, result.note, "warn");
+        const rewards = resourceRewards(result.grant ?? {});
+        if (result.grant?.species) rewards.push({ kind: "species", species: result.grant.species });
+        if (rewards.length) {
+          showRewardReveal(root, rewards, () => {
+            if (result.note) toast(root, result.note, "warn");
+          });
+        } else {
+          toast(root, describe(product), "hive");
+          if (result.note) toast(root, result.note, "warn");
+        }
       })
       .catch(() => toast(root, "The store could not be reached.", "bad"))
       .finally(() => { busy = false; });

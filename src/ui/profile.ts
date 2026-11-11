@@ -26,12 +26,11 @@
 import { groupSections } from "./groups";
 import { CHAMBER_MAX, SPECIES } from "../engine";
 import {
-  CHAMBERS, RESEARCH_TOTAL_MAX, SPECIES_ORDER, TRAIT_SLOTS, avatarProgress, exact, levelReward,
+  CHAMBERS, RESEARCH_TOTAL_MAX, SPECIES_ORDER, TRAIT_SLOTS, avatarProgress, exact,
 } from "../platform";
 import type { ProfileStore, TraitScope } from "../platform";
-import { antPortrait, avatarFace, clockOf, el, levelRewardChip, redraw, screenEl, screenHeader } from "./chrome";
+import { antPortrait, avatarFace, clockOf, el, levelRewardChip, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
-import { resourceRewards, showRewardReveal } from "./reward-reveal";
 
 export interface ProfileOptions {
   onBack: () => void;
@@ -206,7 +205,7 @@ function who(
       chip.onclick = () => {
         if (store.claimLevel(level)) {
           render();
-          showRewardReveal(root, resourceRewards(levelReward(level)));
+          toast(root, "Reward claimed!", "good");
         }
       };
       row.appendChild(chip);

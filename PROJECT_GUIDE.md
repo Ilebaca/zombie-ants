@@ -5620,15 +5620,18 @@ icon and its road card are gray. Claims remain persisted; reaching that mileston
 does not pay again. Pass reward cards already claimed are disabled even on older free saves.
 
 ## Shared reward reveal
-Earned reward claims use `ui/reward-reveal.ts`: a full-frame, tap-anywhere-to-dismiss
-presentation after successful settlement. Currency names sit above the largest existing
-shop pile illustration and quantities below; item names sit above their actual avatar,
-skin or trait art without a quantity. Bundles show every payout together. Quest reveals
-include the actual sweep bonus and XP. Hatch results retain their hold and tier sound.
-No claim, currency write or random roll happens in the reveal or its dismissal callback.
+Full-screen reveals are limited to mycelium, crystals, traits and avatars collected from
+Lucky Hatch, Colony Road and the shop, plus successfully purchased species in the shop
+or Antarium. Skin unlocks retain a simple notice; pass and larva purchases keep their
+regular confirmations. Quests, level rewards, XP, troop winnings and granary collection
+do not open a reveal. Granary troop counts animate immediately using the existing receipt.
 
-Deck claims portal the reveal to #app so slide transforms cannot clip it or expose tabs.
-Hardware Back closes the reveal first. Granary collection refreshes chapter artwork at
-once but starts its existing pending troop-count animation only after dismissal.
-Keep the display font, unstroked text, sharp frames and existing artwork; no copied
-reference motifs, extra navigation buttons or blocking changes to viewport sizing.
+Currency names sit above the largest existing shop pile illustration and quantities
+below; item names sit above their actual art without a quantity. Purchased species use
+their transparent full-body illustration. Hatch results retain their hold and tier sound.
+The caller settles first; revealing or dismissing never grants anything, spends resources
+or rolls another result. Shop reveals read the actual successful grant, never the SKU.
+
+Deck reveals portal to #app so transforms cannot clip them or expose navigation.
+Tap anywhere or press Hardware Back to dismiss. Preserve the display font, unstroked
+text and sharp frames; do not change viewport sizing to present a reveal.
