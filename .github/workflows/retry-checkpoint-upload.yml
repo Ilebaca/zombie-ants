@@ -24,12 +24,19 @@ jobs:
             with urllib.request.urlopen(request,timeout=30) as response:
               data=response.read()
               return json.loads(data) if data else None
+          run=api(f'/actions/runs/{run_id}')
+          if run['status']=='completed':
+            if run['conclusion'] in ('failure','cancelled'):
+              api(f'/actions/runs/{run_id}/rerun-failed-jobs','POST')
+              print('Requested retry of the failed upload and dependent jobs.')
+            else: print('Original run finished successfully; no retry needed.')
+            raise SystemExit(0)
           jobs=api(f'/actions/runs/{run_id}/jobs?filter=latest')['jobs']
           if any(job['name'] in ('android','deploy') for job in jobs):
             print('Packaging or deployment has already begun; no cancellation performed.')
             raise SystemExit(0)
           build=next((job for job in jobs if job['name']=='build'),None)
-          step=next((step for step in (build or {}).get('steps',[]) if step['name']=='Run actions/upload-artifact@v4' and step['status']=='in_progress'),None)
+          step=next((step for step in (build or {}).get('steps',[]) if step['name']=='Run actions/upload-artifact@v4' and (step['status']=='in_progress' or step['conclusion']=='failure')),None)
           if not build or build['status']!='in_progress' or not step:
             print('No stalled upload is active; no cancellation performed.')
             raise SystemExit(0)
