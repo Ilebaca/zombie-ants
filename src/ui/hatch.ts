@@ -274,6 +274,15 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
       .filter((prize) => prize.kind === "skin");
     if (skins.length) toast(root, skins.map(prize => `${prize.look.name} unlocked`).join(" · "), "good");
   };
+  const revealSettledPrizes = (): void => {
+    render();
+    if (revealedPrizes().length === 0) {
+      skinNotice();
+      found = null;
+      haul = [];
+    }
+  };
+
   const close = (): void => {
     const prizes = haul.length ? [...haul] : found ? [found] : [];
     found = null;
@@ -378,8 +387,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
       // player went — and the prize cue would arrive there with it.
       if (!root.isConnected) return;
       busy = false;
-      render();
-      if (revealedPrizes().length === 0) skinNotice();
+      revealSettledPrizes();
       // THE TIER, THE MOMENT THE COLOUR ARRIVES. Same instant as the card, off the same
       // ladder — a mythic that sounds like a common is the feature failing at the one
       // moment it exists for.
@@ -408,7 +416,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     window.setTimeout(() => {
       if (!root.isConnected) return;
       busy = false;
-      render();
+      revealSettledPrizes();
       opts.feedback?.play(batchCue(got));
       opts.onChanged?.();
     }, SHAKE_MS);
