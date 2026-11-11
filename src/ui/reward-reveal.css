@@ -89,6 +89,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(16px, calc(4 * var(--game-vh, 1vh)), 32px) 16px;
 }
+.reward-content.multiple:not(.haul) > .reward-item:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .multiple .reward-item { --reward-size: min(36vw, calc(24 * var(--game-vh, 1vh)), 200px); gap: 12px; }
 .multiple .reward-name { font-size: clamp(18px, 4.5vw, 26px); }
 .multiple .reward-amount { font-size: clamp(26px, 7vw, 38px); }
@@ -98,6 +99,7 @@
 @media (orientation: landscape) and (max-height: 600px) {
   .reward-item { --reward-size: min(42vw, calc(45 * var(--game-vh, 1vh)), 260px); gap: 12px; }
   .reward-content.multiple { grid-template-columns: repeat(var(--reward-columns, 2), minmax(0, 1fr)); }
+  .reward-content.multiple:not(.haul) > .reward-item:last-child:nth-child(odd) { grid-column: auto; }
   .multiple .reward-item { --reward-size: min(22vw, calc(32 * var(--game-vh, 1vh)), 180px); }
   .reward-content.haul { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .haul .reward-item { --reward-size: min(12vw, calc(22 * var(--game-vh, 1vh)), 86px); }
