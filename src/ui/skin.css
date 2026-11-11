@@ -1028,7 +1028,13 @@ body,
   box-shadow: var(--sheen);
   color: #ff8f6d;
 }
-.mycelchip b { color: var(--ink); font-size: 13px; }
+.mycelchip b {
+  color: var(--ink);
+  font-size: 13px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0;
+}
 .mycelchip small { color: var(--muted); font-size: 9.5px; letter-spacing: .8px; }
 
 /* ----------------------------------------------------------------- HOME

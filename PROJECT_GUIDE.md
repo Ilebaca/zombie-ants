@@ -5556,3 +5556,7 @@ Antarium shows its live mycelium balance in the shared top-right header chip.
 Unowned colonies have price-only purchase buttons: the painted mycelium icon plus the
 catalogue amount. Unavailable buttons are actually disabled, with gray text and icon.
 Owned colonies retain Upgrade & research; premium purchasing rules stay unchanged.
+
+Header currency amounts (`.mycelchip .mycelv`) use the display face and its native
+400 weight, matching Home's resource totals. Poetsen is already a heavy display font;
+do not request a synthetic bold weight or fall back to the body font here.
