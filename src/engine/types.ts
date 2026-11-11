@@ -156,7 +156,9 @@ export interface PlayerMods {
   soldierCaste: number;
   gland: number;
   cultivate: number;
-  /** Per-species research levels. */
+  /** Unified colony level. Omitted only by legacy records and neutral opponents. */
+  researchLevel?: number;
+  /** Legacy per-species tracks, retained so saved matches replay unchanged. */
   reservoir: number;
   mandible: number;
   cuticle: number;

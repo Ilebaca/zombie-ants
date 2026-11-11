@@ -1,30 +1,12 @@
-/**
- * The Antarium: the collection, and the way into per-species research.
- *
- * DRAWN TO A DESIGN (Figma `Zombie Ants` → node `134:305`), the third screen handed over
- * finished rather than described — after home and the shop — and built from the same
- * shared language they are (`:root` in `skin.css`). What that language could not already
- * supply is the one thing this screen is about: a colony is a TILE OF ITS RARITY'S
- * COLOUR, big enough to read across a grid, which is `TierDef.fill` (engine/tiers.ts).
- *
- * THE LEVEL IS A BADGE IN THE TILE'S CORNER, and it says whether the colony is YOURS
- * before it says anything else: 0 on a colony you do not own, 1 the moment you buy one,
- * and a rung per research level after that. A locked tile is grey, which is the same
- * sentence said in colour.
- *
- * Class names that come from the ported stylesheet (src/ui/game.css) are load-bearing;
- * the ones added here are dressed at the foot of `skin.css`.
- *
- * Nothing here computes a modifier. `ProfileStore.modsFor` stays the only source of
- * PlayerMods; this screen reads levels and prices, and asks the store to spend.
- */
-import { SPECIES } from "../engine";
+/** Collection portraits, shared levels and species purchases. */
+import { SPECIES, SPECIES_LEVEL_MAX, researchedStats } from "../engine";
 import type { SpeciesId } from "../engine";
 import {
-  RESEARCH_TOTAL_MAX, SPECIES_ORDER, SPECIES_UNLOCK, TIERS, tierOf,
+  SPECIES_ORDER, SPECIES_UNLOCK, TIERS, tierOf,
 } from "../platform";
-import type { ProfileStore, Research } from "../platform";
+import type { ProfileStore } from "../platform";
 import { cardArt } from "./cards";
+import { researchPips } from "./research";
 import { el, hudMark, redraw, screenEl, screenHeader, toast } from "./chrome";
 
 export interface AntariumOptions {
@@ -84,7 +66,7 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
   const banner = (): HTMLElement => {
     const id = selected;
     const species = SPECIES[id];
-    const research = researchOf(store, id);
+    const stats = researchedStats(id, levelOf(store, id));
 
     const box = el("div", "rbanner");
     box.id = "antBanner";
@@ -97,38 +79,17 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
     // same fact written three ways on one screen.
     const meta = el("div", "rb-meta");
     meta.append(
-      statChip("attack", (species.atk * (1 + research.mandible * 0.05)).toFixed(2)),
-      statChip("defence", (species.def * (1 + research.cuticle * 0.05)).toFixed(2)),
+      statChip("attack", stats.attack.toFixed(2)),
+      statChip("defence", stats.defence.toFixed(2)),
     );
     info.append(
       meta,
       el("div", "rb-name", species.name),
       el("div", "rb-tag", species.blurb),
-      segments(levelOf(store, id)),
+      researchPips(levelOf(store, id)),
     );
     box.appendChild(info);
     return box;
-  };
-
-  /**
-   * THE LEVEL AS RUNGS, one per level the colony can reach.
-   *
-   * It is the SAME number the badge carries, drawn long instead of short — so a colony
-   * on 16 has sixteen lit squares and one that was bought this minute has one. It was
-   * research-out-of-fifteen for a day, which meant the badge said 1 over a bar with
-   * nothing in it; two readings of one thing that did not agree.
-   *
-   * The count is `LEVEL_MAX`, never a number written down here — the design drew ten and
-   * the ladder is sixteen, and a bar that disagrees with the screen it opens is the app
-   * lying about how far there is to go. They share the row's width, so retuning the
-   * research tree moves the rungs rather than overflowing them.
-   */
-  const segments = (done: number): HTMLElement => {
-    const bar = el("div", "rb-seg");
-    for (let i = 0; i < LEVEL_MAX; i++) {
-      bar.appendChild(el("span", "rb-pip" + (i < done ? " on" : "")));
-    }
-    return bar;
   };
 
   /**
@@ -215,7 +176,7 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
     // and the colony's own page draws them as bars measured against every other colony.
     //
     // The PRICE went with the veil that used to carry it. A locked tile is grey and its
-    // level is 0, which is what says it is not yours; the price is a thing to act on, so
+    // ownership is shown by its gray art; the price is a thing to act on, so
     // it belongs on the one control that can act on it.
     card.appendChild(el("div", "cname", SPECIES[id].name));
 
@@ -229,30 +190,11 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
 
 /* -------------------------------------------------------------------- SHARED */
 
-const researchOf = (store: ProfileStore, id: SpeciesId): Research =>
-  store.get().research[id] ?? { reservoir: 0, mandible: 0, cuticle: 0 };
-
-const researchTotal = (r: Research): number => r.reservoir + r.mandible + r.cuticle;
-
-/**
- * THE NUMBER IN THE TILE'S CORNER.
- *
- * Zero means "not yours" and nothing else, which is why it is the one value a colony you
- * own can never show: buying one is itself the first level. Everything after that is a
- * research level, so the badge and the banner's rungs are two views of one number rather
- * than two numbers that can drift.
- */
+/** Ownership is shown by tile color; every colony starts at level zero. */
 export const levelOf = (store: ProfileStore, id: SpeciesId): number =>
-  store.isUnlocked(id) ? 1 + researchTotal(researchOf(store, id)) : 0;
+  store.isUnlocked(id) ? store.get().research[id]?.level ?? 0 : 0;
 
-/**
- * The top of that ladder: every research level, plus the one for owning the colony.
- *
- * DERIVED, never typed. It is what the banner draws a square for, so a retune of the
- * research tree moves the bar and the badge's ceiling together — written out, the bar
- * would quietly stop one short of a level the player can actually reach.
- */
-export const LEVEL_MAX = 1 + RESEARCH_TOTAL_MAX;
+export const LEVEL_MAX = SPECIES_LEVEL_MAX;
 
 /** One species stat: a mark and a number, in the pill the stylesheet draws. */
 function statChip(mark: string, value: string): HTMLElement {

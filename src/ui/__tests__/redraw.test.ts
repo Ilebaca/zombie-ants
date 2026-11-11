@@ -112,7 +112,7 @@ describe("the screens that rebuild themselves", () => {
     const wrap = (): HTMLElement | null => root.querySelector(".spgwrap");
     wrap()!.scrollTop = 260;
 
-    const buy = root.querySelector<HTMLButtonElement>(".spgtrack button");
+    const buy = root.querySelector<HTMLButtonElement>("#spgUpgrade");
     expect(buy, "no way to buy a research level").toBeTruthy();
     buy?.click();
     await settle();

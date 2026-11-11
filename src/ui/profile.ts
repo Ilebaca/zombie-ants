@@ -241,7 +241,7 @@ function collection(store: ProfileStore, opts: ProfileOptions): HTMLElement {
   const chamberMax = Object.values(CHAMBER_MAX).reduce((a, b) => a + b, 0);
   const research = SPECIES_ORDER.reduce((n, id) => {
     const r = profile.research[id];
-    return n + (r ? r.reservoir + r.mandible + r.cuticle : 0);
+    return n + (r?.level ?? 0);
   }, 0);
   const researchMax = SPECIES_ORDER.length * RESEARCH_TOTAL_MAX;
 

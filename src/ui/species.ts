@@ -1,42 +1,17 @@
-/**
- * A COLONY'S PAGE: what it is, and what you can do to it.
- *
- * It was four grey cards of the same shape stacked down a page — a hero box, a "combat
- * profile" of bars measured against nothing, the research list, and then the trait, the
- * field notes and the ability in three more boxes with the cooldown printed in all of
- * them. Every other screen in the app had been rebuilt around one row idiom and this one
- * still read as the legacy build.
- *
- * Three things the rebuild is actually for:
- *
- * 1. RESEARCH IS THE POINT OF THE SCREEN, so it comes first and states NOW against NEXT —
- *    the Anthill's idiom (ui/anthill.ts), because a price beside "+5% attack per level"
- *    never says which level you are on or what the next one buys. The reservoir does four
- *    different things and the old summary named one; `ResearchDef.at` spells out what a
- *    given level gives THIS colony (platform/catalogue.ts).
- * 2. THE BARS ARE MEASURED AGAINST THE OTHER COLONIES. They were drawn against a made-up
- *    ceiling of 1.7, so a species at 0.90 filled half a bar and meant nothing. The track
- *    is the real span of every species in the game now, read off `SPECIES` so it can never
- *    drift, and the mark says where this one sits in it.
- * 3. THE COOLDOWN IS STATED ONCE. It was in the stat block, in a note under it and in the
- *    ability card's header, and in one of those places it read "7t → 7t", which is what an
- *    unchanged number looks like when it is printed with an arrow.
- *
- * The dead "Customize" tab is gone with them. It sold skins from the lucky hatch, which is
- * not built (PROJECT_GUIDE.md §9), so it was a tab that could only ever raise a toast — the same
- * thing Settings' Sound switch was.
- */
+/** Species upgrades: ten shared levels, combat stats and a single trait row. */
 import { groupSections } from "./groups";
 import {
-  RESEARCH_MAX, SPECIES, TIERS, abilityCooldown, looksFor, researchCost, NEUTRAL_MODS,
+  SPECIES_LEVEL_MAX, RESEARCH_STAT_CAP, COOLDOWN_CHANCE_CAP, SPECIES, TIERS,
+  looksFor, researchCost, researchedStats,
 } from "../engine";
 import type { Look, SpeciesId } from "../engine";
 import {
-  RESEARCH_TOTAL_MAX, RESEARCH_TRACKS, SPECIES_NOTES, TRAITS_CHAPTER, tierOf,
+  SPECIES_NOTES, TRAITS_CHAPTER, tierOf,
 } from "../platform";
-import type { ProfileStore, Research, ResearchDef } from "../platform";
+import type { ProfileStore } from "../platform";
 import { SPECIES_COL } from "../render";
-import { antPortrait, buyButton, effectRow, el, pips, redraw, screenEl, screenHeader, toast } from "./chrome";
+import { antPortrait, buyButton, el, redraw, screenEl, screenHeader, toast } from "./chrome";
+import { researchPips } from "./research";
 import { abilityArtFor } from "./abilityart";
 import { coverFor } from "./covers";
 import { icon } from "./icons";
@@ -56,7 +31,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
 
   const render = (): void => {
     const profile = store.get();
-    const research = researchOf(store, id);
+    const level = profile.research[id]?.level ?? 0;
     const tier = tierOf(id);
     redraw(root);
 
@@ -77,24 +52,26 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     // it, which is the one thing a stat bar cannot do.
     page.appendChild(cover(id, store.lookFor(id)));
 
-    // THE TRAITS RIDE IN THE HERO, as its last row.
-    //
-    // They were a section of their own between the hero and the research list — a
-    // heading, a card, and a gap either side of it, for one row that is a summary of what
-    // this colony is WEARING. Everything else in that card is a summary of what the
-    // colony IS (its numbers, and how far its research has come), so the loadout belongs
-    // with them; a section is for a list, and this is not one. It stays a door: the pips
-    // say which five, and the row opens the bench.
-    page.appendChild(hero(id, research, tier.name, tier.col,
+    const maxed = level >= SPECIES_LEVEL_MAX;
+    const cost = researchCost(level);
+    const upgrade = buyButton({
+      icon: "pheromone", cost, maxed,
+      affordable: store.isUnlocked(id) && profile.pheromone >= cost,
+      onBuy: () => {
+        if (!store.buyResearch(id)) return;
+        render();
+        toast(root, `${species.name} → Lv ${level + 1}`, "hive");
+      },
+    });
+    upgrade.id = "spgUpgrade";
+    upgrade.classList.add("spgupgrade");
+    if (!maxed) {
+      upgrade.prepend(el("span", "spgupgrade-label", "Upgrade"));
+      upgrade.setAttribute("aria-label", `Upgrade ${species.name} to level ${level + 1} for ${cost} pheromone crystals`);
+    }
+    page.appendChild(hero(id, level, tier.name, tier.col, upgrade,
       traitOpener(store, id, () => opts.onTraits?.(),
         store.traitsOpen() ? null : `Chapter ${TRAITS_CHAPTER}`)));
-
-    page.appendChild(el("div", "secthead", "Research"));
-    const list = el("div", "spglist");
-    for (const track of RESEARCH_TRACKS) {
-      list.appendChild(trackRow(track, research[track.id], profile.pheromone));
-    }
-    page.appendChild(list);
 
     // SKINS COME AFTER RESEARCH, and they are the whole of what this screen can CHANGE
     // for free. Research is the point of the page and leads it; a look costs nothing,
@@ -103,7 +80,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     page.appendChild(skinRow());
 
     page.appendChild(el("div", "secthead", species.ability.name));
-    page.appendChild(abilityCard(id, research));
+    page.appendChild(abilityCard(id));
 
     page.appendChild(el("div", "secthead", "The colony"));
     page.appendChild(loreCard(id));
@@ -163,64 +140,12 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     return row;
   };
 
-  /** One research track: what it is, what you have, what the next level buys, the price. */
-  const trackRow = (track: ResearchDef, level: number, purse: number): HTMLElement => {
-    const maxed = level >= RESEARCH_MAX;
-    // "No bonus" is not an achievement, so an untouched track does not print its NOW row
-    // in the colour that means "you have this" — the same rule the Anthill's chambers follow.
-    const row = el("div", "spgtrack" + (maxed ? " maxed" : "") + (level ? "" : " fresh"));
-    row.dataset.track = track.id;
-
-    const head = el("div", "spgthead");
-    const mark = el("span", "spgti");
-    mark.appendChild(icon(track.icon, 18));
-    const title = el("div", "spgtt");
-    title.append(
-      el("b", "spgtn", track.name),
-      el("span", "spgtl", maxed ? "MAX" : `LV ${level}/${RESEARCH_MAX}`),
-    );
-    head.append(mark, title);
-    row.appendChild(head);
-    row.appendChild(el("p", "spgtd", track.desc));
-
-    // NOW against NEXT, on one left edge — the same comparison the Anthill's chambers make,
-    // and the reason it is worth repeating: the single phrase that changed is the whole
-    // reason to spend, and it is the hardest thing to find in a paragraph.
-    const eff = el("div", "cheff");
-    eff.appendChild(effectRow("now", "Now", track.at(level, opts.species)));
-    if (!maxed) eff.appendChild(effectRow("next", "Next", track.at(level + 1, opts.species)));
-    row.appendChild(eff);
-
-    const cost = researchCost(level);
-    const foot = el("div", "chfoot");
-    foot.append(pips(level, RESEARCH_MAX), buyButton({
-      icon: "pheromone",
-      cost,
-      maxed,
-      affordable: purse >= cost,
-      onBuy: () => {
-        if (!store.buyResearch(opts.species, track.id)) return;
-        render();
-        toast(root, `${track.name} → Lv ${level + 1}`, "hive");
-      },
-    }));
-    row.appendChild(foot);
-    return row;
-  };
-
   render();
   return root;
 }
 
 /* ------------------------------------------------------------------------ THE HERO */
 
-/**
- * The colony itself: its tier, and where it sits against every other colony.
- *
- * The stat bars run over the REAL span of the game's species rather than a made-up
- * ceiling, so "0.90" means something: it is read off `SPECIES`, and a balance change moves
- * the track on the same commit.
- */
 /**
  * THE PAINTING AT THE TOP, or the colony's own head while it is still to be painted.
  *
@@ -255,8 +180,8 @@ function cover(id: SpeciesId, look: Look): HTMLElement {
 }
 
 function hero(
-  id: SpeciesId, research: Research, tierName: string, tierCol: string,
-  traits: HTMLElement,
+  id: SpeciesId, level: number, tierName: string, tierCol: string,
+  upgrade: HTMLElement, traits: HTMLElement,
 ): HTMLElement {
   const species = SPECIES[id];
   const pal = SPECIES_COL[id];
@@ -270,59 +195,44 @@ function hero(
   who.append(name, el("div", "spgblurb", species.blurb));
   box.appendChild(who);
 
-  const stats = el("div", "spgstats");
-  stats.append(
-    statBar("Attack", species.atk, species.atk * (1 + research.mandible * 0.05), "atk", tierCol),
-    statBar("Defense", species.def, species.def * (1 + research.cuticle * 0.05), "def", tierCol),
-  );
-  box.appendChild(stats);
-
-  // How far along the whole colony is, which the page could only say as "LV 3 / 15".
-  const total = researchTotal(research);
   const done = el("div", "spgdone");
   done.append(
-    el("span", "spgdone-k", "Researched"),
-    el("span", "spgdone-v", `${total} of ${RESEARCH_TOTAL_MAX}`),
+    el("span", "spgdone-k", "Level"),
+    el("span", "spgdone-v", `${level} / ${SPECIES_LEVEL_MAX}`),
+    researchPips(level),
   );
-  const track = el("div", "hl-track");
-  const fill = el("span", "hl-fill");
-  fill.style.width = `${Math.round((total / RESEARCH_TOTAL_MAX) * 100)}%`;
-  track.appendChild(fill);
-  done.appendChild(track);
   box.appendChild(done);
 
-  // Last, and on the card's own surface rather than in a box of its own — it is the
-  // fourth thing this card says about the colony, not a fourth card.
-  box.appendChild(traits);
+  const now = researchedStats(id, level);
+  const stats = el("div", "spgstats");
+  stats.append(
+    statBar("Attack", species.atk, now.attack, statRange("atk"), tierCol),
+    statBar("Defense", species.def, now.defence, statRange("def"), tierCol),
+    statBar("Cooldown", 0, now.cooldown, { min: 0, max: COOLDOWN_CHANCE_CAP }, tierCol, true),
+  );
+  box.append(stats, el("p", "spgcooldown-note",
+    "Chance each turn to reduce ability cooldown by one extra turn."), upgrade, traits);
   return box;
 }
 
-/**
- * The span every colony's attack or defence falls in, read off the species table.
- *
- * Hardcoding it would go stale the first time a multiplier is retuned, and the bar would
- * quietly start lying about where a colony stands.
- */
-function span(kind: "atk" | "def"): { min: number; max: number } {
-  const all = Object.values(SPECIES).map((s) => (kind === "atk" ? s.atk : s.def));
-  return { min: Math.min(...all), max: Math.max(...all) };
+/** Every species shares the same attack/defence scale, including research headroom. */
+function statRange(kind: "atk" | "def"): { min: number; max: number } {
+  const values = Object.values(SPECIES).map((s) => s[kind]);
+  const min = Math.min(...values);
+  const max = Math.max(...values) * (1 + RESEARCH_STAT_CAP);
+  return { min: min - (max - min) * 0.25, max };
 }
 
-/** One stat: the base ghosted, the researched value filled, and the figure. */
+/** Base and upgraded value share a bounded scale. Cooldown shows its 0–10% range. */
 function statBar(
-  label: string, base: number, now: number, kind: "atk" | "def", colour: string,
+  label: string, base: number, now: number, range: { min: number; max: number },
+  colour: string, percent = false,
 ): HTMLElement {
-  const { min, max } = span(kind);
-  // A little headroom below the smallest and above the largest, so the weakest colony's
-  // bar is not empty and the strongest one's is not indistinguishable from full.
-  const lo = min - (max - min) * 0.25;
-  const at = (v: number): number => Math.max(4, Math.min(100, ((v - lo) / (max - lo)) * 100));
-
+  const at = (value: number): number =>
+    Math.max(0, Math.min(100, ((value - range.min) / (range.max - range.min)) * 100));
   const row = el("div", "spgstat");
+  row.dataset.stat = percent ? "cooldown" : label.toLowerCase();
   row.append(el("span", "spgstat-k", label));
-  // The RESEARCHED length goes down first and the base sits on top of it, so what shows
-  // past the end of the base is exactly what the player added. Drawn the other way round
-  // the base disappears under the fill and the bar says nothing about research at all.
   const bar = el("span", "spgstat-b");
   const grown = el("span", "spgstat-f grown");
   grown.style.width = `${at(now)}%`;
@@ -330,25 +240,17 @@ function statBar(
   own.style.width = `${at(base)}%`;
   own.style.background = colour;
   bar.append(grown, own);
-  row.appendChild(bar);
-  row.appendChild(el("span", "spgstat-v" + (now > base ? " up" : ""), now.toFixed(2)));
+  row.append(bar, el("span", "spgstat-v" + (now > base ? " up" : ""),
+    percent ? `${now}%` : now.toFixed(2)));
   return row;
 }
 
 /* --------------------------------------------------------------------- THE ABILITY */
 
-/**
- * The ability, in ONE place.
- *
- * Its cooldown used to be printed three times — in the stat block, in a note beneath it,
- * and in the header of the card that described it. In one of those it read "7t → 7t",
- * which is what an unchanged number looks like when it is written with an arrow: only a
- * MAXED reservoir shortens a cooldown (engine/abilities.ts), so for most of a career the
- * arrow pointed at the number it started from.
- */
-function abilityCard(id: SpeciesId, research: Research): HTMLElement {
+/** Base ability rules; the level-based recharge chance is shown with the stats. */
+function abilityCard(id: SpeciesId): HTMLElement {
   const species = SPECIES[id];
-  const cd = abilityCooldown(species.ability, { ...NEUTRAL_MODS, reservoir: research.reservoir });
+  const cd = species.ability.cooldown;
   const box = el("div", "spgcard");
 
   // The painting leads, because it is what tells eight cards apart before any of them is
@@ -367,10 +269,7 @@ function abilityCard(id: SpeciesId, research: Research): HTMLElement {
   }
 
   const chips = el("div", "spgchips");
-  chips.append(chip("clock", `${cd}-turn cooldown`, cd < species.ability.cooldown));
-  if (research.reservoir > 0) {
-    chips.append(chip("flask", `Potency x${(1 + 0.06 * research.reservoir).toFixed(2)}`, true));
-  }
+  chips.append(chip("clock", `${cd}-turn cooldown`, false));
   box.appendChild(chips);
   box.appendChild(el("p", "spgtext", species.ability.desc));
   return box;
@@ -397,9 +296,3 @@ function chip(mark: string, text: string, lit: boolean): HTMLElement {
   return box;
 }
 
-/** A labelled value on a shared left edge — the Anthill's comparison row. */
-
-const researchOf = (store: ProfileStore, id: SpeciesId): Research =>
-  store.get().research[id] ?? { reservoir: 0, mandible: 0, cuticle: 0 };
-
-const researchTotal = (r: Research): number => r.reservoir + r.mandible + r.cuticle;

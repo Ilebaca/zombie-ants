@@ -344,7 +344,7 @@ const SECTIONS: Section[] = [
       { p: [
         "An ability comes off cooldown on its own clock and costs nothing to cast. What each ",
         "colony's ability actually does is on its page in the ", { b: "Antarium" }, ", beside ",
-        "the research that shortens its cooldown — so it is written once, where you pick.",
+        "the research that can reduce its cooldown by an extra turn each turn.",
       ] },
     ],
   },

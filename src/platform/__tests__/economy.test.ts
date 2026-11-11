@@ -19,7 +19,7 @@
  * number a little should not fail. A change that breaks the SHAPE should.
  */
 import { describe, expect, it } from "vitest";
-import { CHAMBER_MAX, RESEARCH_MAX, chamberCost, researchCost } from "../../engine";
+import { CHAMBER_MAX, SPECIES_LEVEL_MAX, chamberCost, researchCost } from "../../engine";
 import { COLONY_START, losses, winnings } from "../colony";
 import { GRANARY_LEVELS, granaryFull, granaryRate, granaryStored } from "../granary";
 import {
@@ -53,8 +53,8 @@ function mycelSink(): number {
 
 /** Every research level on every colony. */
 function pheromoneSink(): number {
-  const perTrack = Array.from({ length: RESEARCH_MAX }, (_, l) => researchCost(l)).reduce((a, b) => a + b, 0);
-  return perTrack * 3 * Object.keys(SPECIES_UNLOCK).length;
+  const perTrack = Array.from({ length: SPECIES_LEVEL_MAX }, (_, l) => researchCost(l)).reduce((a, b) => a + b, 0);
+  return perTrack * Object.keys(SPECIES_UNLOCK).length;
 }
 
 /**
@@ -156,8 +156,8 @@ describe("the economy adds up", () => {
    * of dailies, which is the same as it being free.
    */
   it("makes maxing a colony's research weeks of play, not days", () => {
-    const perColony = Array.from({ length: RESEARCH_MAX }, (_, l) => researchCost(l))
-      .reduce((a, b) => a + b, 0) * 3;
+    const perColony = Array.from({ length: SPECIES_LEVEL_MAX }, (_, l) => researchCost(l))
+      .reduce((a, b) => a + b, 0);
     const daysOfPheromone = perColony / (run.pheromone / run.days);
     expect(daysOfPheromone, `${Math.round(daysOfPheromone)} days`).toBeGreaterThan(14);
     expect(daysOfPheromone, `${Math.round(daysOfPheromone)} days`).toBeLessThan(90);

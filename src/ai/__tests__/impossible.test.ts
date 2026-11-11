@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  CHAMBER_MAX, RESEARCH_MAX, NEUTRAL_MODS, allTiles, applyMove, defaultContext,
+  CHAMBER_MAX, SPECIES_LEVEL_MAX, NEUTRAL_MODS, allTiles, applyMove, defaultContext,
   endTurn, opponentModifiers, recomputeConnectivity, snapshot, tile,
 } from "../../engine";
 import type { GameState, Move, SpeciesId } from "../../engine";
@@ -134,7 +134,8 @@ it("caps every Impossible chamber/research level without changing the other diff
   const mods = opponentModifiers("impossible");
   for (const id of Object.keys(CHAMBER_MAX) as Array<keyof typeof CHAMBER_MAX>)
     expect(mods[id]).toBe(CHAMBER_MAX[id]);
-  for (const id of ["reservoir", "mandible", "cuticle"] as const) expect(mods[id]).toBe(RESEARCH_MAX);
+  expect(mods.researchLevel).toBe(SPECIES_LEVEL_MAX);
+  for (const id of ["reservoir", "mandible", "cuticle"] as const) expect(mods[id]).toBe(0);
   for (const difficulty of ["easy", "normal", "hard"] as const)
     expect(opponentModifiers(difficulty)).toEqual(NEUTRAL_MODS);
 });

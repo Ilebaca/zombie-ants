@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CHAMBER_MAX, RESEARCH_MAX, chamberCost } from "../../engine";
+import { CHAMBER_MAX, SPECIES_LEVEL_MAX, chamberCost } from "../../engine";
 import { MemoryStore } from "../storage";
 import { ProfileStore, defaultProfile, modsFrom, normalise } from "../profile";
 import { ROAD_CHAPTER_STOPS, ROAD_STOPS, stopColony } from "../road";
@@ -40,9 +40,7 @@ describe("profile persistence", () => {
     });
     expect(p.hill.royal).toBe(CHAMBER_MAX.royal);
     expect(p.hill.gland).toBe(0);
-    expect(p.research.fire?.reservoir).toBe(RESEARCH_MAX);
-    expect(p.research.fire?.mandible).toBe(0);
-    expect(p.research.fire?.cuticle).toBe(0);
+    expect(p.research.fire?.level).toBe(SPECIES_LEVEL_MAX);
   });
 
   it("never leaves the player with nothing to field", () => {
@@ -58,19 +56,19 @@ describe("mods", () => {
     const s = store();
     s.update((p) => {
       p.hill.royal = 5; p.hill.brood = 5;
-      p.research.fire = { reservoir: 5, mandible: 5, cuticle: 5 };
+      p.research.fire = { level: SPECIES_LEVEL_MAX };
     });
     const mods = s.modsFor("fire");
     expect(mods.you.royal).toBe(5);
-    expect(mods.you.mandible).toBe(5);
+    expect(mods.you.researchLevel).toBe(SPECIES_LEVEL_MAX);
     for (const v of Object.values(mods.ai)) expect(v).toBe(0);
   });
 
   it("reads research per species, not globally", () => {
     const p = defaultProfile();
-    p.research.fire = { reservoir: 3, mandible: 2, cuticle: 1 };
-    expect(modsFrom(p, "fire").reservoir).toBe(3);
-    expect(modsFrom(p, "ghost").reservoir).toBe(0);
+    p.research.fire = { level: 6 };
+    expect(modsFrom(p, "fire").researchLevel).toBe(6);
+    expect(modsFrom(p, "ghost").researchLevel).toBe(0);
   });
 });
 
@@ -287,7 +285,7 @@ describe("a save that names a colony the game no longer has", () => {
     expect(p.colony).toBe(12_000);
     expect(p.mycel).toBe(500);
     expect(p.pheromone).toBe(300);
-    expect(p.research.fire?.reservoir).toBe(1);
+    expect(p.research.fire?.level).toBe(2);
   });
 
   /** And a store built on it opens, which is the thing the player actually experiences. */
@@ -309,7 +307,7 @@ it("persists Impossible and grants upgrades only to that opponent", () => {
   const mods = loaded.modsFor("fire", "impossible");
   expect(mods.ai.royal).toBe(CHAMBER_MAX.royal);
   expect(mods.ai.cultivate).toBe(CHAMBER_MAX.cultivate);
-  expect(mods.ai.reservoir).toBe(RESEARCH_MAX);
+  expect(mods.ai.researchLevel).toBe(SPECIES_LEVEL_MAX);
   expect(loaded.modsFor("fire", "hard").ai.royal).toBe(0);
 });
 
@@ -411,5 +409,44 @@ describe("collected troop presentation", () => {
     const before = s.get().pendingHomeGain!.from;
     s.recordResult(true, "fire");
     expect(s.get().pendingHomeGain).toEqual({ from: before, amount: s.get().colony - before });
+  });
+});
+
+describe("unified research save migration", () => {
+  it("starts all colonies at zero and keeps ownership independent from level", () => {
+    const s = store();
+    for (const value of Object.values(s.get().research)) expect(value?.level).toBe(0);
+  });
+
+  it("keeps the strongest old track and makes migration idempotent", () => {
+    const p = normalise({ research: {
+      fire: { reservoir: 1, mandible: 3, cuticle: 2 },
+      carpenter: { reservoir: 5, mandible: 1, cuticle: 0 },
+    } });
+    expect(p.research.fire).toEqual({ level: 6 });
+    expect(p.research.carpenter).toEqual({ level: 10 });
+    expect(normalise(p).research).toEqual(p.research);
+  });
+
+  it("clamps new levels, rejects non-finite values and prefers the new field", () => {
+    const p = normalise({ research: {
+      fire: { level: 99 }, ghost: { level: NaN }, carpenter: { level: -4 },
+      army: { level: 2.8 }, leafcutter: { level: 0, mandible: 5 },
+    } });
+    expect(p.research.fire?.level).toBe(10);
+    expect(p.research.ghost?.level).toBe(0);
+    expect(p.research.carpenter?.level).toBe(0);
+    expect(p.research.army?.level).toBe(2);
+    expect(p.research.leafcutter?.level).toBe(0);
+  });
+
+  it("persists the unified level through another store load", () => {
+    const kv = new MemoryStore();
+    const s = new ProfileStore(kv);
+    s.update((p) => { p.pheromone = 1000; });
+    s.buyResearch("fire");
+    const loaded = new ProfileStore(kv);
+    expect(loaded.get().research.fire?.level).toBe(1);
+    expect(loaded.modsFor("fire").you.researchLevel).toBe(1);
   });
 });

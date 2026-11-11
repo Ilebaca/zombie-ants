@@ -183,3 +183,28 @@
   margin-bottom: var(--action-depth);
   max-height: calc(100% - var(--action-depth));
 }
+
+/* Species research shares the collection's level squares and one price button.
+   Traits are the last divided row inside this frame, like grouped settings. */
+#antup .spgdone { margin-top: var(--inrow); }
+#antup .spgstats { gap: var(--inrow); }
+#antup .spgstat { grid-template-columns: 64px minmax(0, 1fr) 40px; }
+#antup .spgcooldown-note {
+  margin: 0;
+  color: var(--hud-dim);
+  font-size: var(--fs-small);
+  line-height: 1.4;
+}
+#antup .spgupgrade {
+  width: 100%;
+  min-height: var(--tap);
+  margin-top: var(--inrow);
+  justify-content: center;
+  gap: var(--inrow);
+}
+#app #antup .spghero > .tropen {
+  border-top: var(--action-stroke) solid var(--action-frame);
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent;
+}

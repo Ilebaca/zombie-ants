@@ -5563,3 +5563,24 @@ do not request a synthetic bold weight or fall back to the body font here.
 
 Antarium level badges appear only on collection-list tiles, never on the large selected
 portrait. The badge uses its tile frame's shared corner-radius token; the banner keeps its level rungs.
+
+## Unified species levels
+Species start at level 0 and cap at 10, independent of ownership. The profile stores one
+`research[id].level`; one crystal purchase advances attack, defence and cooldown chance
+together. Attack/defence each grow linearly to +25% of that species' base; cooldown chance
+grows from 0% to 10%. Ten purchases still total 1,800 crystals per species.
+
+Legacy profiles convert the highest independent research track to twice its old level,
+so earned attack/defence never decrease. This is idempotent and does not change currencies.
+Old MatchSetup modifiers deliberately omit `researchLevel` and keep their original
+combat, potency and cast-cooldown rules. New player/Impossible modifiers carry the unified
+level; legacy fields stay zero. Do not add the old reservoir bonuses to new levels.
+
+`startTurn` performs at most one seeded roll for the current player's recharging ability,
+after its ordinary decrement. Success removes one extra turn. No roll occurs at level zero
+or when the ability is ready. Snapshot/restore already preserves this PRNG stream for search,
+resumption and replay. Existing trait boons remain a separate match-start rule.
+
+Both Antarium and species pages use `ui/research.ts` for the same ten squares.
+The species hero orders level, three stats, one upgrade price, then traits as an internal
+row with the shared divider stroke. The old independent research cards are removed.

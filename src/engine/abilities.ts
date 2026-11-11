@@ -30,8 +30,8 @@ export { SWARM_BITE } from "./config";
 
 /* ------------------------------------------------------- RESEARCH SCALING */
 
-/** Exocrine Reservoir level. Easy through Hard use level zero; Impossible uses the same research cap as the player. */
-const abilityLevel = (mods: PlayerMods): number => mods.reservoir;
+/** Legacy Reservoir effects apply only to records created before unified levels. */
+const abilityLevel = (mods: PlayerMods): number => mods.researchLevel === undefined ? mods.reservoir : 0;
 
 /**
  * Cooldown, shortened by exactly one turn at max research — and by one more if the

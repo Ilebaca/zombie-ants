@@ -8,12 +8,12 @@
  * keeps simulation from writing stats or currencies (PROJECT_GUIDE.md §5).
  */
 import {
-  DIFFICULTIES, opponentModifiers, CHAMBER_MAX, MAPS, RESEARCH_MAX, SPECIES, basicLook, chamberCost, lookById,
+  DIFFICULTIES, opponentModifiers, CHAMBER_MAX, MAPS, RESEARCH_MAX, SPECIES_LEVEL_MAX, SPECIES, speciesLevel, basicLook, chamberCost, lookById,
   looksFor, researchCost,
 } from "../engine";
 import { COLONY_START, grownColony } from "./colony";
 import type { Difficulty, Look, Player, PlayerMods, SpeciesId } from "../engine";
-import { SPECIES_UNLOCK, type ResearchTrack } from "./catalogue";
+import { SPECIES_UNLOCK } from "./catalogue";
 import {
   QUEST_SWEEP_BONUS, dayIndex, isClaimable, levelProgress, levelReward, questDef, rollQuests,
   unclaimedLevels, type QuestKind, type QuestState,
@@ -56,11 +56,9 @@ const VERSION = 1;
 /** Anthill chambers. Keys match PlayerMods so upgrades map straight through. */
 export type ChamberId = keyof typeof CHAMBER_MAX;
 
-/** Per-species research tracks: ability power, attack, defence. */
+/** One upgrade raises attack, defence and cooldown chance together. */
 export interface Research {
-  reservoir: number;
-  mandible: number;
-  cuticle: number;
+  level: number;
 }
 
 export interface Equipped {
@@ -580,12 +578,15 @@ export function normalise(raw: unknown): Profile {
   if (!out.unlocked.includes(out.lastSpecies)) out.lastSpecies = out.unlocked[0] as SpeciesId;
 
   for (const id of Object.keys(SPECIES) as SpeciesId[]) {
-    const r = p.research?.[id];
-    out.research[id] = {
-      reservoir: int(r?.reservoir, 0, RESEARCH_MAX, 0),
-      mandible: int(r?.mandible, 0, RESEARCH_MAX, 0),
-      cuticle: int(r?.cuticle, 0, RESEARCH_MAX, 0),
-    };
+    const r = p.research?.[id] as
+      { level?: unknown; reservoir?: unknown; mandible?: unknown; cuticle?: unknown } | undefined;
+    // Two new levels equal one old track level. Keep the most advanced track so
+    // neither attack nor defence loses an earned bonus; the other stats catch up.
+    out.research[id] = { level: r?.level !== undefined ? speciesLevel(r.level) : 2 * Math.max(
+      int(r?.reservoir, 0, RESEARCH_MAX, 0),
+      int(r?.mandible, 0, RESEARCH_MAX, 0),
+      int(r?.cuticle, 0, RESEARCH_MAX, 0),
+    ) };
     const e = p.equip?.[id];
     out.equip[id] = {
       look: typeof e?.look === "string" ? e.look : null,
@@ -1614,31 +1615,16 @@ export class ProfileStore {
     return true;
   }
 
-  /**
-   * Level up one research track of one species. Paid in PHEROMONE.
-   *
-   * It charged mycelium for months, which is the legacy build's rule and is why the two
-   * currencies had one job between them: mycelium bought the chambers, the colonies, the
-   * granary AND every research level on all eight of them, while pheromone — earned from
-   * quests, the level track and the Colony Road, and printed in the top bar on every
-   * screen — bought NOTHING AT ALL. A currency with no sink is a number going up.
-   *
-   * Everything else in the game already said otherwise: the tour tells the player to
-   * "spend pheromone on research", PROJECT_GUIDE.md §12 gives the two currencies exactly this
-   * split, and the economy model (platform/__tests__/economy.test.ts) has always measured
-   * the research tree as the pheromone sink and held the supply to 0.7–1.3× of it. So the
-   * pacing this build ships was tuned for the rule this line now finally applies.
-   */
-  buyResearch(species: SpeciesId, track: ResearchTrack): boolean {
-    const level = this.profile.research[species]?.[track] ?? 0;
-    if (level >= RESEARCH_MAX) return false;
+  /** Buy one unified species level with crystals. Ownership, cap and balance are checked before spending. */
+  buyResearch(species: SpeciesId): boolean {
+    if (!this.isUnlocked(species)) return false;
+    const level = speciesLevel(this.profile.research[species]?.level);
+    if (level >= SPECIES_LEVEL_MAX) return false;
     const cost = researchCost(level);
     if (this.profile.pheromone < cost) return false;
     this.update((p) => {
       p.pheromone -= cost;
-      const r = p.research[species] ?? { reservoir: 0, mandible: 0, cuticle: 0 };
-      r[track] = (r[track] ?? 0) + 1;
-      p.research[species] = r;
+      p.research[species] = { level: level + 1 };
     });
     return true;
   }
@@ -2017,7 +2003,7 @@ export const DAILY_GIFT = { mycel: 60, pheromone: 100 } as const;
 
 /** Fold anthill chambers and per-species research into the engine's PlayerMods shape. */
 export function modsFrom(profile: Profile, species: SpeciesId): PlayerMods {
-  const r = profile.research[species];
+  const level = speciesLevel(profile.research[species]?.level);
   // The anthill's five and this colony's five, added up here and handed over as three
   // finished percentages — the engine owns what a percentage does, never what a tier is
   // worth (platform/traits.ts).
@@ -2028,9 +2014,8 @@ export function modsFrom(profile: Profile, species: SpeciesId): PlayerMods {
     soldierCaste: profile.hill.soldierCaste ?? 0,
     gland: profile.hill.gland ?? 0,
     cultivate: profile.hill.cultivate ?? 0,
-    reservoir: r?.reservoir ?? 0,
-    mandible: r?.mandible ?? 0,
-    cuticle: r?.cuticle ?? 0,
+    researchLevel: level,
+    reservoir: 0, mandible: 0, cuticle: 0,
     atkPct: worn.atkPct,
     defPct: worn.defPct,
     boonPct: worn.luckPct,

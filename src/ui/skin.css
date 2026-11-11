@@ -4051,7 +4051,7 @@ button:not(.playbtn):active,
   color: var(--muted);
 }
 .spgdone-v { font-size: 11.5px; font-weight: 900; font-variant-numeric: tabular-nums; }
-.spgdone .hl-track { grid-column: 1 / -1; }
+.spgdone .rb-seg { grid-column: 1 / -1; }
 
 /* THE TRAIT ROW IS THE HERO'S LAST LINE, not a card sitting inside a card.
    It keeps the row idiom — mark, state, pips, chevron — and loses the panel
@@ -8073,19 +8073,20 @@ button:not(.playbtn):active,
 /* RESEARCH AS RUNGS. They SHARE the row rather than being sized, so the
    count can follow the tree (`RESEARCH_TOTAL_MAX`) without the bar having
    to be re-measured — the design drew ten of them and the tree is fifteen. */
-#antarium .rb-seg {
+:is(#antarium, #antup) .rb-seg {
   display: flex;
   gap: 2px;
   margin-top: auto;
 }
-#antarium .rb-pip {
+:is(#antarium, #antup) .rb-pip {
   flex: 1 1 0;
-  height: 12px;
+  min-width: 0;
+  aspect-ratio: 1;
   border: none;
   border-radius: 2px;
   background: var(--hud-well);
 }
-#antarium .rb-pip.on { background: var(--hud-go); }
+:is(#antarium, #antup) .rb-pip.on { background: var(--hud-go); }
 
 /* ------------------------------------------------- THE CALL TO ACTION */
 #antarium .antcta {

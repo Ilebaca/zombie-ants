@@ -25,3 +25,5 @@ export type {
 
 export * from "./difficulty";
 export * from "./opponent-mods";
+
+export * from "./research";

@@ -7,7 +7,7 @@
  */
 import { describe, expect, it, beforeEach } from "vitest";
 import {
-  CHAMBER_MAX, DEF, HIVE_COOLDOWN, HIVE_GROW_EVERY, KEEP_NORMAL, MAPS, PROD, RESEARCH_MAX,
+  CHAMBER_MAX, DEF, HIVE_COOLDOWN, HIVE_GROW_EVERY, KEEP_NORMAL, MAPS, PROD, SPECIES_LEVEL_MAX,
   SPECIES, TIERS as RARITY, TRAVEL_RANGE, chamberCost, researchCost,
 } from "../../engine";
 import type { SpeciesId } from "../../engine";
@@ -476,62 +476,31 @@ describe("antarium collection", () => {
     expect(heads[1]?.textContent).toContain(`0/${sizeOf(rungs[1]!)}`);
   });
 
-  /**
-   * THE LEVEL BADGE SAYS WHOSE THE COLONY IS BEFORE IT SAYS ANYTHING ELSE.
-   *
-   * Zero means "not yours" and is the one value an owned colony can never show, because
-   * buying one IS the first level — so the badge is a complete sentence on its own and
-   * the grey tile beside it is the same sentence said in colour.
-   */
-  it("reads 0 on a colony you do not own and 1 the moment you do", () => {
+  it("starts both owned and unowned colonies at zero, with ownership shown separately", () => {
     const s = store(10_000, 10_000);
     const root = openAntarium(s);
-    const army = cardFor(root, "Army Ant");
-    expect(army?.className).toContain("locked");
-    expect(army?.querySelector(".an-lv")?.textContent).toBe("0");
-
-    const fire = cardFor(root, "Fire Ant");
-    expect(fire?.className).not.toContain("locked");
-    expect(fire?.querySelector(".an-lv")?.textContent, "a colony you own reads as unowned")
-      .toBe("1");
-
-    // And buying one moves it off zero with no research bought at all.
-    expect(levelOf(s, "army")).toBe(0);
+    expect(cardFor(root, "Army Ant")?.className).toContain("locked");
+    expect(cardFor(root, "Army Ant")?.querySelector(".an-lv")?.textContent).toBe("0");
+    expect(cardFor(root, "Fire Ant")?.className).not.toContain("locked");
+    expect(cardFor(root, "Fire Ant")?.querySelector(".an-lv")?.textContent).toBe("0");
     s.unlockSpecies("army");
-    expect(levelOf(s, "army"), "buying a colony left it at level zero").toBe(1);
-    s.buyResearch("army", "mandible");
-    expect(levelOf(s, "army"), "a research level did not move the badge").toBe(2);
+    expect(levelOf(s, "army")).toBe(0);
+    s.buyResearch("army");
+    expect(levelOf(s, "army")).toBe(1);
   });
 
-  /**
-   * THE RUNGS ARE THE BADGE, DRAWN LONG.
-   *
-   * One square per level the colony can reach, lit as far as it has come — asked for
-   * directly, "there should be 16 of those green squares showing the level". It was
-   * research-out-of-fifteen for a day, which put a badge reading 1 over a bar with
-   * nothing in it: two readings of one number that did not agree.
-   *
-   * The COUNT is derived (`LEVEL_MAX`), never typed, or retuning the research tree
-   * leaves the bar quietly one square short of a level a player can actually reach.
-   */
-  it("draws one rung per level and lights them as far as the colony has come", () => {
+  it("draws the ten shared rungs and keeps the collection badge in agreement", () => {
     const s = store(100_000, 100_000);
     const root = openAntarium(s);
-    expect(root.querySelectorAll("#antBanner .rb-pip").length).toBe(LEVEL_MAX);
-    expect(LEVEL_MAX, "the ladder stopped following the research tree")
-      .toBe(1 + RESEARCH_TOTAL_MAX);
-
-    const lit = (r: HTMLElement): number => r.querySelectorAll("#antBanner .rb-pip.on").length;
-    // The colony the banner opens on is owned, so it is already on its first rung.
-    expect(lit(root)).toBe(1);
-
+    expect(root.querySelectorAll("#antBanner .rb-pip")).toHaveLength(10);
+    expect(LEVEL_MAX).toBe(RESEARCH_TOTAL_MAX);
+    expect(root.querySelectorAll("#antBanner .rb-pip.on")).toHaveLength(0);
     const id = s.get().lastSpecies;
-    for (let i = 0; i < 3; i++) s.buyResearch(id, "mandible");
+    for (let i = 0; i < 3; i++) s.buyResearch(id);
     const again = openAntarium(s);
-    expect(lit(again), "the rungs did not follow the research").toBe(4);
+    expect(again.querySelectorAll("#antBanner .rb-pip.on")).toHaveLength(3);
     expect(again.querySelector("#antBanner .an-lv")).toBeNull();
-    expect(again.querySelector(`.ccard[data-ant="${id}"] .an-lv`)?.textContent,
-      "the collection badge and the banner rungs disagree").toBe(String(lit(again)));
+    expect(again.querySelector(`.ccard[data-ant="${id}"] .an-lv`)?.textContent).toBe("3");
   });
 
   /** A colony you do not own lights none of them, which is the badge's 0 drawn long. */
@@ -665,132 +634,92 @@ describe("species page", () => {
   const openPage = (s: ProfileStore, species: SpeciesId = "fire"): HTMLElement =>
     buildSpeciesPage(s, { species, onBack: () => {} });
 
-  it("names the colony and lists its three research tracks", () => {
+  it("shows one shared level and three bounded stats instead of separate research tracks", () => {
     const root = openPage(store());
-    expect(root.querySelector("#aupTitle, .screenh")?.textContent).toBe("Fire Ant");
-    expect(root.querySelectorAll(".spgtrack").length).toBe(3);
-    expect(root.textContent).toContain("Wildfire");
-    expect(root.textContent).toContain(`0 of ${RESEARCH_TOTAL_MAX}`);
+    expect(root.querySelector("#aupTitle")?.textContent).toBe("Fire Ant");
+    expect(root.querySelectorAll(".spgtrack")).toHaveLength(0);
+    expect(root.querySelectorAll(".spgdone .rb-pip")).toHaveLength(10);
+    expect(root.querySelector(".spgdone-v")?.textContent).toBe("0 / 10");
+    expect(Array.from(root.querySelectorAll(".spgstat-v")).map((n) => n.textContent))
+      .toEqual(["0.86", "0.87", "0%"]);
   });
 
-  /**
-   * PHEROMONE. Research charged mycelium for months, which left pheromone — printed in the
-   * top bar of every screen — buying nothing at all; the header on this page shows the
-   * purse its own buttons draw on, so it shows pheromone too.
-   */
-  it("buys a research level with pheromone and shows the new one", () => {
+  it("buys all three gains together and rerenders the price, balance and squares", () => {
     const s = store(500, researchCost(0));
     const root = openPage(s);
-    click(buyIn(root, ".spgtrack", "Mandible muscle"));
-    expect(s.get().research.fire?.mandible).toBe(1);
+    click(root.querySelector("#spgUpgrade"));
+    expect(s.get().research.fire?.level).toBe(1);
     expect(s.get().pheromone).toBe(0);
-    expect(s.get().mycel, "research must not touch mycelium").toBe(500);
-    expect(root.querySelectorAll(".spgtrack .pip.on").length).toBe(1);
-    expect(root.textContent).toContain(`1 of ${RESEARCH_TOTAL_MAX}`);
+    expect(s.get().mycel).toBe(500);
+    expect(root.querySelectorAll(".spgdone .rb-pip.on")).toHaveLength(1);
+    expect(root.querySelector(".spgdone-v")?.textContent).toBe("1 / 10");
+    expect(Array.from(root.querySelectorAll(".spgstat-v")).map((n) => n.textContent))
+      .toEqual(["0.88", "0.89", "1%"]);
+    expect(root.querySelector<HTMLButtonElement>("#spgUpgrade")?.disabled).toBe(true);
+    expect(root.querySelector("#spgUpgrade")?.textContent).toContain(String(researchCost(1)));
   });
 
-  it("shows the pheromone purse in the header, not the mycelium one", () => {
-    const root = openPage(store(500, 77));
+  it("shows the crystal purse and uses a disabled price when unaffordable", () => {
+    const s = store(500, 0);
+    const root = openPage(s);
     const chip = root.querySelector<HTMLElement>(".screentop .mycelchip");
     expect(chip?.dataset.purse).toBe("pheromone");
-    expect(chip?.textContent).toContain("77");
+    expect(root.querySelector<HTMLButtonElement>("#spgUpgrade")?.disabled).toBe(true);
+    click(root.querySelector("#spgUpgrade"));
+    expect(s.get().research.fire?.level).toBe(0);
+    expect(s.get().mycel).toBe(500);
   });
 
-  it("will not sell a research level the player has no pheromone for", () => {
-    const s = store(100000, 0);
+  it("places the single upgrade below the stats and above the unboxed trait row", () => {
+    const root = openPage(store());
+    const hero = root.querySelector(".spghero")!;
+    const upgrade = hero.querySelector("#spgUpgrade")!;
+    const stats = hero.querySelector(".spgstats")!;
+    const traits = hero.querySelector("#spgTraits")!;
+    expect(stats.compareDocumentPosition(upgrade) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(upgrade.nextElementSibling).toBe(traits);
+    expect(traits.parentElement).toBe(hero);
+    expect(traits.closest(".panel-group")).toBeNull();
+  });
+
+  it("grows attack and defense beyond the unchanged base length", () => {
+    const s = store(0, 100000);
+    const widths = (): number[] => Array.from(openPage(s).querySelectorAll<HTMLElement>(
+      '[data-stat="attack"] .spgstat-f')).map((f) => parseFloat(f.style.width));
+    const [before, base] = widths();
+    expect(before).toBe(base);
+    s.buyResearch("fire");
+    const [after, baseAfter] = widths();
+    expect(after).toBeGreaterThan(baseAfter!);
+    expect(baseAfter).toBe(base);
+  });
+
+  it("caps all three stats at level ten and disables further purchases", () => {
+    const s = store(0, 100000);
+    for (let i = 0; i < SPECIES_LEVEL_MAX; i++) s.buyResearch("fire");
     const root = openPage(s);
-    click(buyIn(root, ".spgtrack", "Mandible muscle"));
-    expect(s.get().research.fire?.mandible ?? 0).toBe(0);
+    expect(root.querySelectorAll(".rb-pip.on")).toHaveLength(10);
+    expect(Array.from(root.querySelectorAll(".spgstat-v")).map((n) => n.textContent))
+      .toEqual([(SPECIES.fire.atk * 1.25).toFixed(2), (SPECIES.fire.def * 1.25).toFixed(2), "10%"]);
+    expect(root.querySelector("#spgUpgrade")?.textContent).toBe("MAX");
+    const balance = s.get().pheromone;
+    click(root.querySelector("#spgUpgrade"));
+    expect(s.get().pheromone).toBe(balance);
   });
 
-  /**
-   * NOW against NEXT, the Anthill's comparison. A price beside "+5% attack per level"
-   * never says which level you are on or what the next one buys.
-   */
-  it("states what a track gives now against what the next level buys", () => {
+  it("keeps the base ability cooldown and no longer sells potency or permanent leaves", () => {
     const s = store(0, 100000);
-    s.buyResearch("fire", "mandible");
-    const row = Array.from(openPage(s).querySelectorAll<HTMLElement>(".spgtrack"))
-      .find((r) => r.dataset.track === "mandible");
-    expect(row?.querySelector(".che-now .che-v")?.textContent).toBe("+5% attack");
-    expect(row?.querySelector(".che-next .che-v")?.textContent).toBe("+10% attack");
+    for (let i = 0; i < SPECIES_LEVEL_MAX; i++) s.buyResearch("fire");
+    const text = openPage(s).textContent!;
+    expect(text).toContain(`${SPECIES.fire.ability.cooldown}-turn cooldown`);
+    expect(text).not.toContain("Potency");
+    expect(text).not.toContain("Exocrine reservoir");
   });
 
-  // The reservoir does four different things and the old summary named one of them.
-  it("spells out everything a reservoir level actually gives", () => {
+  it("keeps research per species", () => {
     const s = store(0, 100000);
-    for (let i = 0; i < RESEARCH_MAX; i++) s.buyResearch("fire", "reservoir");
-    const row = Array.from(openPage(s).querySelectorAll<HTMLElement>(".spgtrack"))
-      .find((r) => r.dataset.track === "reservoir");
-    const now = row?.querySelector(".che-now .che-v")?.textContent ?? "";
-    expect(now).toContain("x1.30");
-    expect(now).toContain("+1 turn or tile");
-    expect(now).toContain("-1 turn cooldown");
-    // Leaf walls are Leafcutter's alone; naming them here put a sentence about leaves on
-    // every other colony's page. Matched loosely on purpose — "leaf" is not a substring of
-    // "leaves", so the obvious assertion passes against exactly the bug it is for.
-    expect(now).not.toMatch(/leaf|leaves|permanent/i);
-  });
-
-  it("names the permanent leaves on the colony that actually gets them", () => {
-    const s = store(0, 100000);
-    for (let i = 0; i < 3; i++) s.buyResearch("leafcutter", "reservoir");
-    const row = Array.from(openPage(s, "leafcutter").querySelectorAll<HTMLElement>(".spgtrack"))
-      .find((r) => r.dataset.track === "reservoir");
-    expect(row?.querySelector(".che-now .che-v")?.textContent).toContain("2 permanent leaves");
-  });
-
-  it("moves the attack figure only after the research is bought", () => {
-    const s = store(0, 100000);
-    expect(openPage(s).querySelector(".spgstat-v")?.textContent).toBe("0.86");
-    s.buyResearch("fire", "mandible");
-    expect(openPage(s).querySelector(".spgstat-v")?.textContent).toBe("0.90");
-    expect(openPage(s).querySelector(".spgstat-v")?.className).toContain("up");
-  });
-
-  /**
-   * The BAR, not only the figure. The researched length is drawn first and the colony's own
-   * strength sits on top of it, so what shows past the end of the base is exactly what the
-   * player added — and a bar that never grows looks identical to one that does until the
-   * two widths are actually compared.
-   */
-  it("grows the bar past the colony's own strength when research buys some", () => {
-    const s = store(0, 100000);
-    const widths = (): number[] =>
-      Array.from(
-        Array.from(openPage(s).querySelectorAll<HTMLElement>(".spgstat"))[0]!
-          .querySelectorAll<HTMLElement>(".spgstat-f"),
-      ).map((f) => parseFloat(f.style.width));
-    const [grownBefore, baseBefore] = widths() as [number, number];
-    expect(grownBefore).toBe(baseBefore);
-    s.buyResearch("fire", "mandible");
-    const [grownAfter, baseAfter] = widths() as [number, number];
-    expect(grownAfter).toBeGreaterThan(baseAfter);
-    expect(baseAfter).toBe(baseBefore);
-  });
-
-  /**
-   * ONCE. It used to be in the stat block, in a note beneath it and in the ability card's
-   * header — and in one of those it read "7t → 7t", because only a maxed reservoir
-   * shortens a cooldown.
-   */
-  it("states the ability cooldown exactly once, and shortens it only at max", () => {
-    const s = store(0, 100000);
-    const base = SPECIES.fire.ability.cooldown;
-    const chips = (): string[] => Array.from(openPage(s).querySelectorAll(".spgchip"))
-      .map((c) => c.textContent ?? "");
-    expect(chips().filter((t) => /cooldown/i.test(t)).length).toBe(1);
-    for (let i = 0; i < RESEARCH_MAX - 1; i++) s.buyResearch("fire", "reservoir");
-    expect(chips().join()).toContain(`${base}-turn cooldown`);
-    s.buyResearch("fire", "reservoir");
-    expect(chips().join()).toContain(`${base - 1}-turn cooldown`);
-    expect(openPage(s).textContent).not.toContain(`${base}t →`);
-  });
-
-  it("keeps research per species — levelling Fire leaves Ghost alone", () => {
-    const s = store(0, 100000);
-    s.buyResearch("fire", "cuticle");
-    expect(openPage(s, "ghost").textContent).toContain(`0 of ${RESEARCH_TOTAL_MAX}`);
+    s.buyResearch("fire");
+    expect(openPage(s, "ghost").querySelector(".spgdone-v")?.textContent).toBe("0 / 10");
   });
 
   // A tab that can only ever raise a toast is the same thing Settings' Sound switch was.
@@ -1271,16 +1200,15 @@ describe("legacy markup parity", () => {
    */
   it("grows no bar under a card once its colony has research", () => {
     const s = store(100_000, 100_000);
-    for (let i = 0; i < 3; i++) s.buyResearch("fire", "mandible");
-    expect(s.get().research.fire?.mandible).toBe(3);
+    for (let i = 0; i < 3; i++) s.buyResearch("fire");
+    expect(s.get().research.fire?.level).toBe(3);
 
     const root = buildAntarium(s, { onOpenSpecies: () => {} });
     const card = Array.from(root.querySelectorAll<HTMLElement>(".ccard"))
       .find((c) => c.dataset.ant === "fire");
-    // Three research levels on a colony that was already owned: 1 for owning it, 3 for
-    // the research. The badge is read off `levelOf`, so it cannot drift from the rungs.
+    // The listing badge carries only purchased upgrades.
     expect(card?.querySelector(".an-lv")?.textContent, "the level badge went with it")
-      .toBe("4");
+      .toBe("3");
     expect(card?.querySelectorAll(".rb-pip").length, "a card grew the banner's rungs").toBe(0);
     expect(card?.querySelector(".cbar"), "a research bar grew under the name").toBeNull();
     expect(root.querySelector(".cbar"), "a research bar grew under some card").toBeNull();
@@ -1294,11 +1222,11 @@ describe("legacy markup parity", () => {
    * still wearing it. What is held here is the shape it was rebuilt into — and the ids the
    * router and the tour reach it by, which are not styling and must not drift.
    */
-  it("keeps the species page's hero → research → ability skeleton", () => {
+  it("keeps the species page’s hero → shared upgrades → ability structure", () => {
     const root = buildSpeciesPage(store(), { species: "fire", onBack: () => {} });
     expect(root.id).toBe("antup");
-    for (const cls of ["spgwrap", "spghero", "spgstat", "spgtrack", "cheff", "che-row",
-      "chfoot", "pips", "spgcard", "spgchip", "secthead"]) {
+    for (const cls of ["spgwrap", "spghero", "spgstat", "spgdone", "rb-seg",
+      "rb-pip", "spgupgrade", "spgcard", "spgchip", "secthead"]) {
       expect(landmarks(root), `.${cls} missing`).toContain(cls);
     }
     expect(root.querySelector("#aupTitle")?.textContent).toBe("Fire Ant");

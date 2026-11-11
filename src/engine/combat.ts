@@ -1,6 +1,7 @@
 import { ARMOUR_DEF, DEF, FORTIFY_DEF, TRAIT_PCT_CAP } from "./config";
 import { isHiveTerrain } from "./board";
 import { speciesOf } from "./species";
+import { combatResearch } from "./research";
 import type { GameState, Player, PlayerMods, Tile } from "./types";
 
 /**
@@ -89,10 +90,10 @@ const traitBoost = (pct: number): number => 1 + Math.max(0, Math.min(TRAIT_PCT_C
 
 export function attackMultiplier(state: GameState, p: Player, mods: PlayerMods): number {
   return speciesOf(state.species[p]).atk * surgeMultiplier(state, p)
-    * (1 + mods.mandible * 0.05) * traitBoost(mods.atkPct);
+    * combatResearch(mods, "mandible") * traitBoost(mods.atkPct);
 }
 
 export function defenceMultiplier(state: GameState, p: Player, mods: PlayerMods): number {
   return speciesOf(state.species[p]).def * surgeMultiplier(state, p)
-    * (1 + mods.cuticle * 0.05) * traitBoost(mods.defPct);
+    * combatResearch(mods, "cuticle") * traitBoost(mods.defPct);
 }

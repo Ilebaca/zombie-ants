@@ -8,6 +8,7 @@ import { setHiveDefence, hiveTick } from "./hive";
 import { runProduction } from "./production";
 import { tickEffects } from "./effects";
 import { nextRandom, seeded } from "./random";
+import { cooldownChance } from "./research";
 import { speciesOf } from "./species";
 import { NEUTRAL_MODS } from "./types";
 import type {
@@ -260,7 +261,15 @@ export function startTurn(state: GameState, mods: Record<Player, PlayerMods>): E
   // in the same tick it was cut rather than on the next action (PROJECT_GUIDE.md §4.2).
   pruneAllVeins(state, events);
   recomputeConnectivity(state);
-  if (state.cooldown[p] > 0) state.cooldown[p]--;
+  if (state.cooldown[p] > 0) {
+    state.cooldown[p]--;
+    const chance = cooldownChance(mods[p].researchLevel ?? 0);
+    // Only recharge gets a roll, once on the owner's turn. No draw at level zero:
+    // legacy replay streams therefore retain their exact sequence.
+    if (state.cooldown[p] > 0 && chance > 0 && nextRandom(state) * 100 < chance) {
+      state.cooldown[p]--;
+    }
+  }
   if (state.shield[p] > 0) state.shield[p]--;
   if (state.cloak[p] > 0) state.cloak[p]--;
   hiveTick(state, p, events, mods);

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { RESEARCH_MAX, SPECIES, chamberCost, researchCost } from "../../engine";
+import { SPECIES_LEVEL_MAX, SPECIES, chamberCost, researchCost } from "../../engine";
 import type { SpeciesId } from "../../engine";
 import { MemoryStore } from "../storage";
 import { BAG_MAX, ProfileStore, normalise } from "../profile";
 import { traitDef } from "../traits";
-import { CHAMBERS, RESEARCH_TRACKS, SPECIES_ORDER, SPECIES_UNLOCK } from "../catalogue";
+import { CHAMBERS, RESEARCH_TOTAL_MAX, SPECIES_ORDER, SPECIES_UNLOCK } from "../catalogue";
 import {
   ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, ROAD_FIRST, ROAD_LAST, ROAD_STOPS, freeReward, isChapterEnd, passReward,
   rewardFor, roadColony, roadKey, roadStops, rungOfChapter, stopColony, stopReached,
@@ -44,7 +44,7 @@ describe("catalogue", () => {
   it("covers every chamber and research track the engine reads", () => {
     const chambers = CHAMBERS.map((c) => c.id).sort();
     expect(chambers).toEqual(["brood", "cultivate", "gland", "royal", "soldierCaste"]);
-    expect(RESEARCH_TRACKS.map((t) => t.id).sort()).toEqual(["cuticle", "mandible", "reservoir"]);
+    expect(RESEARCH_TOTAL_MAX).toBe(SPECIES_LEVEL_MAX);
   });
 
   it("describes every level of every chamber without gaps", () => {
@@ -69,8 +69,8 @@ describe("buying chambers and research", () => {
     expect(s.get().hill.royal ?? 0).toBe(0);
     expect(s.get().mycel).toBe(0);
 
-    expect(s.buyResearch("fire", "mandible")).toBe(false);
-    expect(s.get().research.fire?.mandible).toBe(0);
+    expect(s.buyResearch("fire")).toBe(false);
+    expect(s.get().research.fire?.level).toBe(0);
     expect(s.get().mycel).toBe(0);
   });
 
@@ -97,32 +97,32 @@ describe("buying chambers and research", () => {
   it("pays for research in pheromone, which is the only thing pheromone buys", () => {
     const s = rich();
     const mycel = s.get().mycel;
-    expect(s.buyResearch("fire", "cuticle")).toBe(true);
+    expect(s.buyResearch("fire")).toBe(true);
     expect(s.get().pheromone).toBe(100000 - researchCost(0));
     expect(s.get().mycel).toBe(mycel);
   });
 
   it("refuses a research level the player cannot pay for in pheromone", () => {
     const s = rich(100000, 0);
-    expect(s.buyResearch("fire", "cuticle")).toBe(false);
-    expect(s.get().research.fire?.cuticle ?? 0).toBe(0);
+    expect(s.buyResearch("fire")).toBe(false);
+    expect(s.get().research.fire?.level ?? 0).toBe(0);
     expect(s.get().mycel).toBe(100000);
   });
 
   it("keeps research per species — levelling Fire leaves Ghost untouched", () => {
     const s = rich();
-    s.buyResearch("fire", "mandible");
-    expect(s.get().research.fire?.mandible).toBe(1);
-    expect(s.get().research.ghost?.mandible).toBe(0);
+    s.buyResearch("fire");
+    expect(s.get().research.fire?.level).toBe(1);
+    expect(s.get().research.ghost?.level).toBe(0);
   });
 
   it("caps research and feeds the capped level through to mods", () => {
     const s = rich();
-    for (let l = 0; l < RESEARCH_MAX; l++) expect(s.buyResearch("fire", "mandible")).toBe(true);
-    expect(s.buyResearch("fire", "mandible")).toBe(false);
-    expect(s.modsFor("fire").you.mandible).toBe(RESEARCH_MAX);
+    for (let l = 0; l < SPECIES_LEVEL_MAX; l++) expect(s.buyResearch("fire")).toBe(true);
+    expect(s.buyResearch("fire")).toBe(false);
+    expect(s.modsFor("fire").you.researchLevel).toBe(SPECIES_LEVEL_MAX);
     // The AI never sees a point of it (PROJECT_GUIDE.md §4.8).
-    expect(s.modsFor("fire").ai.mandible).toBe(0);
+    expect(s.modsFor("fire").ai.researchLevel).toBeUndefined();
   });
 });
 
@@ -491,4 +491,12 @@ it("rejects alternate spellings of road checkpoints so they cannot pay twice", (
     expect(profile.claimRoad(key)).toBe(false);
   }
   expect(profile.get().mycel).toBe(balance);
+});
+
+it("cannot research a species that is not owned", () => {
+  const s = rich();
+  const before = s.get().pheromone;
+  expect(s.buyResearch("bullet")).toBe(false);
+  expect(s.get().pheromone).toBe(before);
+  expect(s.get().research.bullet?.level).toBe(0);
 });
