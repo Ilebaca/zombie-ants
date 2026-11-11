@@ -73,6 +73,13 @@ export class HomeGainAnimation {
 
     const tick = (now: number): void => {
       if (!root.isConnected || !visible() || !matches(store, f.gain)) { this.cancel(); return; }
+      // Reopening must not consume a saved reward underneath the launch cover.
+      if (launched < 0 && (document.getElementById("splash") || document.fonts?.status === "loading")) {
+        stableSince = -1;
+        previousLeft = Infinity;
+        f.frame = requestAnimationFrame(tick);
+        return;
+      }
       const play = root.querySelector<HTMLElement>("#goPlay");
       const banner = root.querySelector<HTMLElement>("#colonyHero");
       const number = banner?.querySelector<HTMLElement>(".col-n");
@@ -125,7 +132,8 @@ export class HomeGainAnimation {
         const progress = Math.max(0, Math.min(1, (elapsed - duration) / 120));
         shown += packet * (1 - (1 - progress) ** 3);
         if (t >= 1 && !arrived.has(i)) { arrived.add(i); lastImpact = now; }
-        const particle = particles[i]!;
+        const particle = particles[i];
+        if (!particle) continue;
         particle.style.visibility = elapsed < 0 || t >= 1 ? "hidden" : "visible";
         const spread = (i - (count - 1) / 2) * 15;
         const u = 1 - t;

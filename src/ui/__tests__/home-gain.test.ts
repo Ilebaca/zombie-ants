@@ -120,6 +120,22 @@ describe("Home match reward presentation", () => {
     expect(store.get().pendingHomeGain).toBeNull();
   });
 
+  it("does not consume winnings behind the launch cover", () => {
+    const { store, animation, root, number } = fixture();
+    const splash = document.createElement("div");
+    splash.id = "splash";
+    document.body.appendChild(splash);
+    animation.start(root, store, () => true);
+    step(0); step(3000);
+    expect(number()).toBe(52);
+    expect(root.querySelector(".home-gain")).toBeNull();
+    expect(store.get().pendingHomeGain?.amount).toBe(8);
+    splash.remove();
+    step(3100); step(3300); step(5500);
+    expect(number()).toBe(60);
+    expect(store.get().pendingHomeGain).toBeNull();
+  });
+
   it("bounds particle work for a large reward and includes other credited earnings", () => {
     const { store, animation, root, number } = fixture();
     store.update((p) => { p.colony = 1_000_000; p.pendingHomeGain = { from: 40, amount: 999_960 }; });
