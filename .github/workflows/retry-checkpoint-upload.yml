@@ -1,0 +1,53 @@
+name: Retry stalled checkpoint build upload
+on:
+  push:
+    branches: [retry-checkpoint-upload-981edc7]
+permissions:
+  contents: read
+  actions: write
+jobs:
+  retry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Retry only a stalled build before any deployment begins
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import datetime,json,os,time,urllib.request
+          base='https://api.github.com/repos/Ilebaca/zombie-ants'
+          run_id=43095027239
+          def api(path,method='GET'):
+            request=urllib.request.Request(base+path,data=b'{}' if method=='POST' else None,method=method,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'})
+            with urllib.request.urlopen(request,timeout=30) as response:
+              data=response.read()
+              return json.loads(data) if data else None
+          jobs=api(f'/actions/runs/{run_id}/jobs?filter=latest')['jobs']
+          if any(job['name'] in ('android','deploy') for job in jobs):
+            print('Packaging or deployment has already begun; no cancellation performed.')
+            raise SystemExit(0)
+          build=next((job for job in jobs if job['name']=='build'),None)
+          step=next((step for step in (build or {}).get('steps',[]) if step['name']=='Run actions/upload-artifact@v4' and step['status']=='in_progress'),None)
+          if not build or build['status']!='in_progress' or not step:
+            print('No stalled upload is active; no cancellation performed.')
+            raise SystemExit(0)
+          started=datetime.datetime.fromisoformat(step['started_at'].replace('Z','+00:00'))
+          age=(datetime.datetime.now(datetime.timezone.utc)-started).total_seconds()
+          if age<300:
+            print('Upload has been running less than five minutes; no cancellation performed.')
+            raise SystemExit(0)
+          print(f'Retrying build upload after {age:.0f} seconds. No deployment job exists.')
+          api(f'/actions/runs/{run_id}/cancel','POST')
+          for attempt in range(60):
+            run=api(f'/actions/runs/{run_id}')
+            if run['status']=='completed':break
+            time.sleep(2)
+          else:raise RuntimeError('Cancellation did not finish; refusing an overlapping run.')
+          if run['conclusion']!='cancelled':
+            print('The original run finished independently; no retry performed.')
+            raise SystemExit(0)
+          api(f'/actions/runs/{run_id}/rerun-failed-jobs','POST')
+          print('Requested retry of the cancelled build and dependent jobs.')
+          PY
