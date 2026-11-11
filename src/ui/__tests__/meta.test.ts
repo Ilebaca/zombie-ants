@@ -734,7 +734,7 @@ describe("species page", () => {
 /**
  * THE COLONY BANNER is the biggest thing under the top bar. It carries ONE number — the
  * colony — and everything beside it says where that number stands on the road: which
- * chapter, how far into it, and what filling the bar pays.
+ * checkpoint, how far into it, and what filling the bar pays.
  */
 describe("the colony banner", () => {
   const banner = (colony: number): HTMLElement => colonyBanner(colony, () => {});
@@ -771,44 +771,25 @@ describe("the colony banner", () => {
       "no reward mark on the bar").toBeTruthy();
   });
 
-  /*
-   * THE BAR MEASURES THE CHAPTER, NOT THE RUNG. It used to run 0 to 100% between every
-   * single checkpoint, so it swept the whole width five times a chapter and said nothing
-   * about where in the chapter the colony stood. Five checkpoints, filling one fifth at
-   * a time, and EMPTY again on the first rung of the next chapter.
-   */
-  it("fills the bar a fifth per checkpoint of the chapter", () => {
+  it("fills the whole bar toward each individual checkpoint", () => {
     const pct = (colony: number): number =>
       parseFloat((banner(colony).querySelector(".tr-fill") as HTMLElement).style.width);
-    const step = 100 / ROAD_CHAPTER_STOPS;
-
-    // The first rung of a chapter: nothing banked inside it yet.
-    expect(pct(stopColony(ROAD_CHAPTER_STOPS)), "a new chapter starts part-filled")
-      .toBeCloseTo(0, 5);
-    // One checkpoint in, and half way to the second.
-    const from = stopColony(ROAD_CHAPTER_STOPS + 1);
-    const to = stopColony(ROAD_CHAPTER_STOPS + 2);
-    expect(pct(from)).toBeCloseTo(step, 5);
-    expect(pct(Math.round((from + to) / 2))).toBeCloseTo(step * 1.5, 1);
-    // And the last checkpoint of a chapter is the last fifth.
-    expect(pct(stopColony(ROAD_CHAPTER_STOPS * 2 - 1)))
-      .toBeCloseTo(step * (ROAD_CHAPTER_STOPS - 1), 5);
+    expect(pct(80)).toBe(80);
+    expect(pct(100)).toBe(0);
+    expect(pct(102)).toBe(50);
+    expect(pct(104)).toBe(0);
+    expect(pct(106.5)).toBe(50);
+    for (const index of [2, 5, 6, 49, 249]) {
+      const from = stopColony(index - 1);
+      const to = stopColony(index);
+      expect(pct((from + to) / 2)).toBeCloseTo(50, 3);
+    }
   });
 
-  /*
-   * AND THE FIFTHS ARE CUT BY FOUR REAL ELEMENTS. A repeating gradient is the obvious
-   * way to rule a bar and is silently nothing here — the blanket clears every background
-   * image outside four whole screens, and a descendant of one is not exempt (§10). Four
-   * dividers for five pieces, evenly spaced, inside the track so they sit over the fill.
-   */
-  it("rules the bar into the chapter's five checkpoints", () => {
-    const track = banner(1_284_000).querySelector(".tr-bar") as HTMLElement;
-    const cuts = Array.from(track.querySelectorAll<HTMLElement>(".tr-cut"));
-    expect(cuts.length, "a divider per boundary between the five")
-      .toBe(ROAD_CHAPTER_STOPS - 1);
-    expect(cuts.map((c) => Math.round(parseFloat(c.style.left))))
-      .toEqual([20, 40, 60, 80]);
+  it("shows a continuous checkpoint track without chapter dividers", () => {
+    expect(banner(80).querySelector(".tr-bar .tr-cut")).toBeNull();
   });
+
 });
 
 describe("colony road screen", () => {

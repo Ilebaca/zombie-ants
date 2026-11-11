@@ -1053,25 +1053,6 @@ describe("the colony bar and the tab tray", () => {
   });
 
   /*
-   * AND THE DIVIDERS ARE A COLOUR, NEVER A GRADIENT. A repeating gradient is the obvious
-   * way to rule a bar into fifths and is silently nothing here: the blanket clears every
-   * background IMAGE with `!important` and exempts four whole SCREENS, none of which a
-   * `.tr-cut` is. A black hairline is a background COLOUR — black because it is the
-   * TRACK's own colour, so the empty part of the bar reads as one piece and the cuts
-   * show exactly where they matter, across the green.
-   */
-  it("cuts the fifths with a colour the blanket cannot clear", () => {
-    const rule = ruleFor(css, "#home .col-rail .tr-cut");
-    expect(rule, "the dividers are drawn with an image the blanket strips")
-      .not.toMatch(/gradient/);
-    expect(rule).toMatch(/background:\s*#000/);
-    expect(rule).toMatch(/width:\s*1px/);
-    expect(rule).toMatch(/position:\s*absolute/);
-    // It has to be positioned against the TRACK, or every divider lands on the screen.
-    expect(ruleFor(css, "#home .col-rail .tr-bar")).toMatch(/position:\s*relative/);
-  });
-
-  /*
    * THE TRAY IS HALF A PLATE. A full-height slab behind five tiles is a second rectangle
    * around them; half of one is a shelf they stand on. Same trap as the dividers — a
    * pseudo-element is blanketed for background IMAGES with no exemption whatever, so

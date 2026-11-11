@@ -9,11 +9,11 @@
  * player-chosen name, and a template string would happily inject it as markup.
  */
 import {
-  ROAD_CHAPTER_STOPS, compact, freeReward, levelReward, passReward, rungOfChapter, stopColony,
+  ROAD_STOPS, compact, freeReward, levelReward, roadKey, rewardText, stopColony,
   stopReached, tierOf,
 } from "../platform";
 import { faceOf } from "../platform";
-import type { Profile, ProfileStore } from "../platform";
+import type { Profile, ProfileStore, RoadReward } from "../platform";
 import type { Look, SpeciesId } from "../engine";
 import { antHead, basicLook, lookCol } from "../render";
 import { icon } from "./icons";
@@ -285,7 +285,7 @@ export function topBar(profile: Readonly<Profile>, opts: TopBarOptions): HTMLEle
   nav.appendChild(cur);
   head.appendChild(nav);
 
-  head.appendChild(colonyBanner(profile.colony, opts.onColonyRoad));
+  head.appendChild(colonyBanner(profile.colony, opts.onColonyRoad, profile.roadClaimed));
   return head;
 }
 
@@ -300,106 +300,75 @@ export function topBar(profile: Readonly<Profile>, opts: TopBarOptions): HTMLEle
  * The figure is compact (23K, 1.2M, 4.8B) because that is how a number this big is read,
  * and the road progress runs under it so the next rung is part of the same object.
  */
-export function colonyBanner(colony: number, onClick: () => void): HTMLElement {
+export function colonyBanner(
+  colony: number, onClick: () => void, roadClaimed: readonly string[] = [],
+): HTMLElement {
   const box = el("button", "colhero");
   box.id = "colonyHero";
-  box.dataset.colony = String(colony);
-  box.dataset.progressColony = String(colony);
   box.title = "Colony Road";
 
-  // A MARK, THEN THE FIGURE. The mark came back: the banner is the loudest object on the
-  // screen now and the thing it is loud ABOUT has to be said, or a bare number on a green
-  // slab is a number with no unit. The word "troops" that used to sit under the figure is
-  // gone with it — a mark and a label are the same fact twice, and the label was the one
-  // taking a second line.
   const size = el("div", "col-size");
-  size.append(iconSlot("col-mark", "swords", 21), el("b", "col-n", compact(colony)));
-
-  /*
-   * THE BAR MEASURES THE CHAPTER, NOT THE RUNG — five checkpoints, filling one at a
-   * time from the left, which is what the four dividers below cut it into. It used to
-   * run 0 to 100% between every single rung, so it swept the whole width five times a
-   * chapter and the bar said nothing about where in the chapter the player stood.
-   *
-   * `rungOfChapter` answers 1..5 for the rung being WORKED TOWARDS, so the rungs already
-   * banked inside this chapter is one less than that, and the fraction toward the next
-   * one is the fifth being filled right now.
-   */
-  const { reached, pct } = colonyProgress(colony);
+  size.append(iconSlot("col-mark", "swords", 21), el("b", "col-n"));
 
   const track = el("span", "tr-bar");
-  const fill = el("i", "tr-fill");
-  fill.style.width = `${(pct * 100).toFixed(2)}%`;
-  track.appendChild(fill);
-
-  /*
-   * AND THE FIVE ARE CUT BY FOUR REAL ELEMENTS, never a gradient. A repeating gradient
-   * is the obvious way to rule a bar into fifths and it is silently nothing here: the
-   * blanket in `skin.css` clears every background IMAGE in the app with `!important` and
-   * exempts four whole screens, none of which is a descendant of one (§10). A hairline
-   * drawn in the banner's own colour is a background COLOUR, which nothing blankets.
-   */
-  for (let i = 1; i < ROAD_CHAPTER_STOPS; i++) {
-    const cut = el("i", "tr-cut");
-    cut.style.left = `${(i * 100 / ROAD_CHAPTER_STOPS).toFixed(2)}%`;
-    track.appendChild(cut);
-  }
-
-  // NO CHAPTER LABEL. It said "Chapter 12" over the bar, which is the one fact on this
-  // banner the bar itself cannot show — and it is said in full on the screen the banner
-  // opens. Asked for directly; what is left is the figure, the bar and what the next
-  // rung pays.
+  track.appendChild(el("i", "tr-fill"));
   const mid = el("div", "col-mid");
-  mid.append(track);
-
-  // WHAT FILLING THE BAR PAYS, not how many troops it takes. The size the rung asks for
-  // was a second big number beside the one the banner already leads with, and the two read
-  // as a sum; the currency mark says what is waiting there in one glyph.
-  const reward = freeReward(reached + 1) ?? passReward(reached + 1);
+  mid.appendChild(track);
   const rail = el("div", "col-rail");
-  rail.append(mid, iconSlot("col-pay", reward?.pheromone ? "pheromone" : "mycel", 26));
-
+  rail.append(mid, el("span", "col-pay"));
   box.append(size, rail);
   box.onclick = onClick;
+  updateColonyBanner(box, colony, colony, roadClaimed);
   return box;
 }
 
-
-/** The same chapter progress for initial rendering and the reward count-up. */
-function colonyProgress(colony: number): { reached: number; pct: number } {
-  const reached = stopReached(colony);
-  const from = reached ? stopColony(reached) : 0;
-  const next = stopColony(reached + 1);
-  const into = next > from ? Math.max(0, Math.min(1, (colony - from) / (next - from))) : 1;
-  const done = rungOfChapter(reached + 1) - 1;
-  const pct = (done + into) / ROAD_CHAPTER_STOPS;
-  return { reached, pct };
+/** Current troop interval, independent of whether its reward was already paid. */
+function colonyProgress(colony: number): {
+  key: string; reward: RoadReward | null; pct: number;
+} {
+  const index = Math.min(ROAD_STOPS, stopReached(colony) + 1);
+  const from = index > 1 ? stopColony(index - 1) : 0;
+  const next = stopColony(index);
+  return {
+    key: roadKey("free", index),
+    reward: freeReward(index),
+    pct: Math.max(0, Math.min(1, (colony - from) / (next - from))),
+  };
 }
 
-/** One animation clock drives the integer count and its continuous chapter fill. */
+/** The troop counter and checkpoint fill share one animation clock. Claims never reset. */
 export function updateColonyBanner(
-  box: HTMLElement, colony: number, progressColony = colony,
+  box: HTMLElement, colony: number, progressColony = colony, roadClaimed: readonly string[] = [],
 ): void {
   const value = Math.max(0, Math.round(colony));
   const progress = Math.max(0, progressColony);
-  if (box.dataset.colony === String(value) && box.dataset.progressColony === String(progress)) return;
+  const { key, reward, pct } = colonyProgress(progress);
+  const claimed = roadClaimed.includes(key);
+  if (box.dataset.colony === String(value) && box.dataset.progressColony === String(progress)
+    && box.dataset.rewardKey === key && box.dataset.rewardClaimed === String(claimed)) return;
+
   if (box.dataset.colony !== String(value)) {
     box.dataset.colony = String(value);
     const number = box.querySelector<HTMLElement>(".col-n");
     if (number) number.textContent = compact(value);
   }
   box.dataset.progressColony = String(progress);
-  const { pct } = colonyProgress(progress);
-  const reached = stopReached(value);
+  box.dataset.rewardKey = key;
+  box.dataset.rewardClaimed = String(claimed);
   const fill = box.querySelector<HTMLElement>(".tr-fill");
   if (fill) fill.style.width = `${(pct * 100).toFixed(4)}%`;
-  const reward = freeReward(reached + 1) ?? passReward(reached + 1);
-  const mark = reward?.pheromone ? "pheromone" : "mycel";
+
+  const mark = reward?.avatar ? `avatar:${reward.avatar}`
+    : reward?.pheromone ? "pheromone" : reward?.mycel ? "mycel" : "check";
   const pay = box.querySelector<HTMLElement>(".col-pay");
-  if (pay && pay.dataset.gainMark !== mark) {
-    pay.replaceChildren(hudMark(mark, 26));
+  if (!pay) return;
+  if (pay.dataset.gainMark !== mark) {
+    pay.replaceChildren(reward?.avatar
+      ? avatarFace(reward.avatar, 26, "hudmark col-reward-avatar") : hudMark(mark, 26));
     pay.dataset.gainMark = mark;
   }
+  pay.classList.toggle("claimed", claimed);
+  pay.title = claimed ? "Already claimed" : reward ? rewardText(reward) : "Road complete";
 }
 
 /* ------------------------------------------------------------------ THE GRANARY */

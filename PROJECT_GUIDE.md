@@ -5605,3 +5605,16 @@ from their name using an independent seed, preserving existing names, colonies a
 Friend duels carry that avatar through matchmaking and suspended-match metadata.
 After the search resolves, show the found opponent for 2,000ms before the curtains part
 and the match starts underneath. Destroying the screen cancels that hold and the search.
+
+## Home progress follows individual Colony Road checkpoints
+Home fills 0–100% between consecutive troop thresholds, including checkpoints within a
+chapter. The initial interval is 0 to the first checkpoint; the final checkpoint stays full.
+Remove chapter fifths/dividers. Render and animate through the same banner update function
+so fractional count-up progress, the displayed troop number and reward transitions agree.
+
+Home previews the free reward at that checkpoint using its single currency icon or actual
+avatar, never a resource-pack illustration. Use roadKey to resolve the saved reward id:
+the mixed-resource display order is not the original claim-id order.
+If a player loses troops and revisits an already-claimed checkpoint, both the Home reward
+icon and its road card are gray. Claims remain persisted; reaching that milestone again
+does not pay again. Pass reward cards already claimed are disabled even on older free saves.

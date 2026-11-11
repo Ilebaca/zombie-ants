@@ -99,7 +99,7 @@ export class HomeGainAnimation {
         if (stableSince < 0) stableSince = now;
         if (now - stableSince < (collection ? 0 : 180)) { f.frame = requestAnimationFrame(tick); return; }
         if (reduceMotion) {
-          updateColonyBanner(banner, store.get().colony);
+          updateColonyBanner(banner, store.get().colony, store.get().colony, store.get().roadClaimed);
           store.acknowledgeHomeGain(f.gain);
           this.flight = null;
           return;
@@ -154,7 +154,7 @@ export class HomeGainAnimation {
         lastChange = now;
       }
       const balance = this.displayedColony(store);
-      updateColonyBanner(banner, balance, balance - f.shown + shown);
+      updateColonyBanner(banner, balance, balance - f.shown + shown, store.get().roadClaimed);
       if (f.number !== number && f.number) f.number.style.transform = "";
       f.number = number;
       const hop = Math.sin(Math.PI * Math.min(1, Math.max(0, (now - lastChange) / 65)));
@@ -162,7 +162,7 @@ export class HomeGainAnimation {
         ? `translateY(${-4 * hop}px) scale(${1 + 0.06 * hop})` : "";
       const finish = collection ? collectionDuration + 75 : (count - 1) * 65 + 790 + 160;
       if (now - launched >= finish) {
-        updateColonyBanner(banner, store.get().colony);
+        updateColonyBanner(banner, store.get().colony, store.get().colony, store.get().roadClaimed);
         store.acknowledgeHomeGain(f.gain);
         f.layer?.remove();
         number.style.transform = "";

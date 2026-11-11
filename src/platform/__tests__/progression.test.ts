@@ -456,15 +456,21 @@ describe("claiming colony road rewards", () => {
   });
 
   /** The colony shrinks on a loss. A banked reward must not be revoked or re-payable. */
-  it("keeps a claim after the colony that earned it is lost", () => {
-    const s = withColony(REACHED);
+  it("keeps a claim after losing troops, reloading and reaching the milestone again", () => {
+    const memory = new MemoryStore();
+    const s = new ProfileStore(memory);
+    s.update((p) => { p.colony = REACHED; });
     const key = roadKey("free", RUNG);
     s.claimRoad(key);
     const banked = s.get().mycel + s.get().pheromone;
     s.update((p) => { p.colony = 0; });
     expect(s.get().roadClaimed).toContain(key);
     expect(s.claimRoad(key)).toBe(false);
-    expect(s.get().mycel + s.get().pheromone).toBe(banked);
+    const loaded = new ProfileStore(memory);
+    loaded.update((p) => { p.colony = REACHED; });
+    expect(loaded.canClaimRoad(key)).toBe(false);
+    expect(loaded.claimRoad(key)).toBe(false);
+    expect(loaded.get().mycel + loaded.get().pheromone).toBe(banked);
   });
 
   it("survives a save carrying junk claim keys", () => {

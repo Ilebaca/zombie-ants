@@ -7172,8 +7172,7 @@ button:not(.playbtn):active,
 /* THE BAR IS THE HEIGHT OF THE DIGITS, asked for directly — the same `--colink` the
    crossed swords take, so the row is one height rather than three. It was a 6px rule
    with a chapter label stacked over it; the label is gone (`chrome.ts`). The corners
-   are 2 design px: barely rounded, which is what keeps five hard-edged fifths reading
-   as five rather than as one pill. */
+   are 2 design px, matching the fill inside the checkpoint track. */
 #home .col-rail .tr-bar {
   position: relative;
   flex: none;
@@ -7198,18 +7197,6 @@ button:not(.playbtn):active,
   border-radius: calc(2 * var(--u));
   background: var(--hud-go);
   box-shadow: inset 0 calc(var(--colink) / 3) 0 rgba(255, 255, 255, .22) !important;
-}
-/* THE FOUR DIVIDERS, 1px of BLACK through the bar, asked for directly. A chapter is five
-   checkpoints, so the bar is ruled into five and fills one at a time. Black is the
-   track's own colour, so the empty part of the bar reads as one piece and the cuts show
-   exactly where they matter — across the green. They sit OVER the fill. */
-#home .col-rail .tr-cut {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  margin-left: -.5px;
-  background: #000;
 }
 #home .col-pay {
   flex: 0 0 auto;

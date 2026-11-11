@@ -209,3 +209,17 @@
   box-shadow: none !important;
   background: transparent;
 }
+
+/* Home previews one reward for the current checkpoint. Paid rewards stay gray
+   when troop losses take the colony back below their milestones. */
+#home .col-pay.claimed {
+  filter: grayscale(1);
+  opacity: .5;
+}
+#home .col-pay .col-reward-avatar {
+  border-radius: calc(4 * var(--u));
+  object-fit: cover;
+}
+#app .rd-prize.got {
+  filter: grayscale(1);
+}

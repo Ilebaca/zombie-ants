@@ -274,7 +274,7 @@ export function buildColonyRoad(
         tookTrait = reward.trait ? store.get().bag[0] ?? null : null;
         render();
       };
-    } else if (needsPass) button.onclick = onShop;
+    } else if (needsPass && !claimed) button.onclick = onShop;
     else {
       button.disabled = true;
       if (reward.trait && !claimed && profile.pass && profile.colony >= stop.colony) {

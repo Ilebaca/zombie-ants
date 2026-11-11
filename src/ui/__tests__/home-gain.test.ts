@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryStore, ProfileStore, ROAD_CHAPTER_STOPS, TOUR_VERSION, chapterOf, stopColony } from "../../platform";
+import { MemoryStore, ProfileStore, ROAD_CHAPTER_STOPS, TOUR_VERSION, chapterOf, roadKey, stopColony } from "../../platform";
 import { backdropFor } from "../backdrops";
 import { HomeGainAnimation } from "../home-gain";
-import { topBar } from "../chrome";
+import { topBar, updateColonyBanner } from "../chrome";
 import { App } from "../app";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
@@ -298,4 +298,36 @@ describe("Home match reward presentation", () => {
     expect(host.querySelector("#colonyHero")?.getAttribute("data-colony")).toBe("60");
     expect(store.get().pendingHomeGain).toBeNull();
   });
+});
+
+it("crosses checkpoint boundaries on the count-up clock while retaining paid reward states", () => {
+  const { store, animation, root } = fixture();
+  const first = roadKey("free", 1), second = roadKey("free", 2);
+  store.update((p) => {
+    p.colony = 106;
+    p.pendingHomeGain = { from: 99, amount: 7 };
+    p.roadClaimed = [first, second];
+  });
+  const banner = root.querySelector<HTMLElement>("#colonyHero")!;
+  updateColonyBanner(banner, 99, 99, store.get().roadClaimed);
+  animation.start(root, store, () => true);
+  let sawSecond = false, sawThird = false;
+  for (let now = 0; now <= 2200; now += 10) {
+    step(now);
+    const pay = banner.querySelector<HTMLElement>(".col-pay")!;
+    if (banner.dataset.rewardKey === second) {
+      sawSecond = true;
+      expect(pay.classList.contains("claimed")).toBe(true);
+    }
+    if (banner.dataset.rewardKey === roadKey("free", 3)) {
+      sawThird = true;
+      expect(pay.classList.contains("claimed")).toBe(false);
+      expect(pay.querySelector(".col-reward-avatar")).not.toBeNull();
+    }
+  }
+  expect(sawSecond).toBe(true);
+  expect(sawThird).toBe(true);
+  expect(parseFloat(banner.querySelector<HTMLElement>(".tr-fill")!.style.width)).toBe(40);
+  expect(store.get().roadClaimed).toEqual([first, second]);
+  expect(store.get().pendingHomeGain).toBeNull();
 });
