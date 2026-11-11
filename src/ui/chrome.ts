@@ -303,6 +303,7 @@ export function topBar(profile: Readonly<Profile>, opts: TopBarOptions): HTMLEle
 export function colonyBanner(colony: number, onClick: () => void): HTMLElement {
   const box = el("button", "colhero");
   box.id = "colonyHero";
+  box.dataset.colony = String(colony);
   box.title = "Colony Road";
 
   // A MARK, THEN THE FIGURE. The mark came back: the banner is the loudest object on the
@@ -323,12 +324,7 @@ export function colonyBanner(colony: number, onClick: () => void): HTMLElement {
    * banked inside this chapter is one less than that, and the fraction toward the next
    * one is the fifth being filled right now.
    */
-  const reached = stopReached(colony);
-  const from = reached ? stopColony(reached) : 0;
-  const next = stopColony(reached + 1);
-  const into = next > from ? Math.max(0, Math.min(1, (colony - from) / (next - from))) : 1;
-  const done = rungOfChapter(reached + 1) - 1;
-  const pct = (done + into) / ROAD_CHAPTER_STOPS;
+  const { reached, pct } = colonyProgress(colony);
 
   const track = el("span", "tr-bar");
   const fill = el("i", "tr-fill");
@@ -365,6 +361,37 @@ export function colonyBanner(colony: number, onClick: () => void): HTMLElement {
   box.append(size, rail);
   box.onclick = onClick;
   return box;
+}
+
+
+/** The same chapter progress for initial rendering and the reward count-up. */
+function colonyProgress(colony: number): { reached: number; pct: number } {
+  const reached = stopReached(colony);
+  const from = reached ? stopColony(reached) : 0;
+  const next = stopColony(reached + 1);
+  const into = next > from ? Math.max(0, Math.min(1, (colony - from) / (next - from))) : 1;
+  const done = rungOfChapter(reached + 1) - 1;
+  const pct = (done + into) / ROAD_CHAPTER_STOPS;
+  return { reached, pct };
+}
+
+/** Update the number, chapter fill and next resource without rebuilding the Home bar. */
+export function updateColonyBanner(box: HTMLElement, colony: number): void {
+  const value = Math.max(0, Math.round(colony));
+  if (box.dataset.colony === String(value)) return;
+  box.dataset.colony = String(value);
+  const number = box.querySelector<HTMLElement>(".col-n");
+  if (number) number.textContent = compact(value);
+  const { reached, pct } = colonyProgress(value);
+  const fill = box.querySelector<HTMLElement>(".tr-fill");
+  if (fill) fill.style.width = `${(pct * 100).toFixed(2)}%`;
+  const reward = freeReward(reached + 1) ?? passReward(reached + 1);
+  const mark = reward?.pheromone ? "pheromone" : "mycel";
+  const pay = box.querySelector<HTMLElement>(".col-pay");
+  if (pay && pay.dataset.gainMark !== mark) {
+    pay.replaceChildren(hudMark(mark, 26));
+    pay.dataset.gainMark = mark;
+  }
 }
 
 /* ------------------------------------------------------------------ THE GRANARY */

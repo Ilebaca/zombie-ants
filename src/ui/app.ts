@@ -66,6 +66,7 @@ import { MatchmakingScreen } from "./matchmaking";
 import type { Recap } from "./result";
 import { buildColonyRoad } from "./road";
 import { Deck } from "./deck";
+import { HomeGainAnimation } from "./home-gain";
 import { Tour } from "./tour";
 import { lockPortrait } from "../platform/orientation";
 import type { SpotRect, TourStep } from "./tour";
@@ -121,6 +122,8 @@ const GUARD_AFTER_GAMES = 3;
 
 export class App {
   private screens = new Map<ScreenId, HTMLElement>();
+  private readonly homeGain = new HomeGainAnimation();
+  private destroyed = false;
   private match: MatchScreen | null = null;
   private overlay: HTMLElement | null = null;
   private nav: HTMLElement | null = null;
@@ -284,6 +287,16 @@ export class App {
     void this.live.check();
   }
 
+  /** Home alone presents winnings, even when the result was left via another screen. */
+  private presentHomeGain(): void {
+    const visible = (): boolean => !this.destroyed && this.activeScreen === "home" && this.deckShowing
+      && this.deck?.at === "home" && !this.match && !this.replay && !this.matchmaking
+      && !this.overlay && !this.tour.running && !document.hidden
+      && (!this.menu || this.menu.classList.contains("hidden"));
+    const root = this.host.querySelector<HTMLElement>("#home");
+    if (root && visible()) this.homeGain.start(root, this.profile, visible);
+  }
+
   private syncMailBadge(): void {
     const button = this.host.querySelector(".settingsfab");
     button?.querySelector(".live-mail-count")?.remove();
@@ -393,7 +406,10 @@ export class App {
     // but a forest bed playing out of an app nobody is looking at is the game talking
     // over whatever they actually opened. The device is SUSPENDED, so the round comes
     // back mid-bar rather than restarting (platform/awake.ts, platform/feedback.ts).
-    this.dropAwake = onAwake((awake) => { this.feedback.setAwake(awake); });
+    this.dropAwake = onAwake((awake) => {
+      this.feedback.setAwake(awake);
+      if (awake) this.presentHomeGain(); else this.homeGain.cancel();
+    });
     // ASK THE BROWSER TO KEEP THE STORAGE, and settle what it said. Chromium grants this
     // silently and a granted origin is never evicted; iOS refuses, which is the answer
     // that puts the prompt on home. It is fire-and-forget: the game must never wait on it.
@@ -422,6 +438,8 @@ export class App {
    * Capacitor bridge and would otherwise go on calling into an App that is gone.
    */
   destroy(): void {
+    this.destroyed = true;
+    this.homeGain.cancel();
     this.dropLive();
     this.deck?.destroy();
     this.tour.stop();
@@ -449,7 +467,9 @@ export class App {
     // by re-showing it: `show("home")` while home is already the slide on screen only
     // slides the rail, which does not rebuild anything. `refresh` is the one path a deck
     // screen is ever rebuilt by, which is what keeps this from becoming a second one.
+    this.homeGain.cancel();
     this.deck?.refresh("home");
+    this.presentHomeGain();
   }
 
   /** The save behind whoever is signed in, or a throwaway one until somebody is. */
@@ -496,6 +516,7 @@ export class App {
 
   /** Discard every view reference when the account's DOM is replaced. */
   private clearAccountView(): void {
+    this.homeGain.cancel();
     this.tour.stop();
     this.clearMatch();
     this.clearReplay();
@@ -560,6 +581,7 @@ export class App {
 
   private tutorialSeen(): void {
     this.profile.update((p) => { p.tourSeen = TOUR_VERSION; });
+    queueMicrotask(() => this.presentHomeGain());
   }
 
   private metaSteps(): TourStep[] {
@@ -780,6 +802,7 @@ export class App {
   /* --------------------------------------------------------------------- ROUTER */
 
   private show(id: ScreenId): void {
+    if (id !== "home") this.homeGain.cancel();
     this.activeScreen = id;
     queueMicrotask(() => { this.syncMailBadge(); this.presentUpdate(); });
     // The tour's PLAY step ends when the setup flow actually opens, never on the press:
@@ -851,6 +874,7 @@ export class App {
       this.activeScreen = id;
       this.syncMailBadge();
       this.presentUpdate();
+      if (id === "home") this.presentHomeGain(); else this.homeGain.cancel();
     });
     this.host.appendChild(deck.el);
     this.deck = deck;
@@ -910,6 +934,7 @@ export class App {
 
   /** The slide-in drawer behind the hamburger. One element, reused. */
   private openMenu(): void {
+    this.homeGain.cancel();
     // REBUILT every time, not reused: the News entry carries how many posts are unread,
     // and a drawer built once would still be advertising them after they had been read.
     this.menu?.remove();
@@ -926,7 +951,7 @@ export class App {
 
   private closeMenu(): void {
     this.menu?.classList.add("hidden");
-    queueMicrotask(() => this.presentUpdate());
+    queueMicrotask(() => { this.presentUpdate(); this.presentHomeGain(); });
   }
 
   /** Start a challenge: a preset match, plus the objective to judge it by. */
@@ -941,6 +966,7 @@ export class App {
   }
 
   private onNav(tab: NavId): void {
+    if (tab !== "home") this.homeGain.cancel();
     this.activeScreen = tab as ScreenId;
     // Tapping a tab is the same movement as swiping to it, so it animates.
     if (isDeck(tab)) {
@@ -1369,7 +1395,7 @@ export class App {
    * landed UNDERNEATH the buttons and could not be pressed.
    */
   private homeBar(root: HTMLElement): HTMLElement {
-    const bar = topBar(this.profile.get(), {
+    const bar = topBar({ ...this.profile.get(), colony: this.homeGain.displayedColony(this.profile) }, {
       onProfile: () => this.show("profile"),
       onColonyRoad: () => this.show("achievements"),
       onShop: () => this.show("shop"),
@@ -1899,7 +1925,7 @@ export class App {
     const closed = this.overlay !== null;
     this.overlay?.remove();
     this.overlay = null;
-    if (closed) queueMicrotask(() => this.presentUpdate());
+    if (closed) queueMicrotask(() => { this.presentUpdate(); this.presentHomeGain(); });
   }
 
 }

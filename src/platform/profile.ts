@@ -113,6 +113,8 @@ export interface Profile {
    * a few dozen to billions and makes "biggest colony" worth competing over.
    */
   colony: number;
+  /** Already-credited match winnings whose Home presentation has not finished. */
+  pendingHomeGain: { from: number; amount: number } | null;
   /** Soft currency (mycelium) and research currency (pheromone). */
   mycel: number;
   pheromone: number;
@@ -329,6 +331,7 @@ export function defaultProfile(): Profile {
     v: VERSION,
     name: "Commander",
     colony: COLONY_START,
+    pendingHomeGain: null,
     // A new colony starts with nothing. The legacy build handed out 120 mycelium so the
     // Anthill had something to do on the first visit; earning the first chamber from a
     // match instead is what gives that visit a point.
@@ -440,6 +443,19 @@ function roadClaims(raw: unknown, colony: number): string[] {
   return out;
 }
 
+
+/** Presentation metadata is optional on old saves and never grants any troops. */
+function normaliseHomeGain(raw: unknown): Profile["pendingHomeGain"] {
+  if (!raw || typeof raw !== "object") return null;
+  const gain = raw as { from?: unknown; amount?: unknown };
+  if (typeof gain.from !== "number" || !Number.isFinite(gain.from) || gain.from < COLONY_START
+    || typeof gain.amount !== "number" || !Number.isFinite(gain.amount) || gain.amount < 1) return null;
+  return {
+    from: Math.min(1e15, Math.floor(gain.from)),
+    amount: Math.min(1e15, Math.floor(gain.amount)),
+  };
+}
+
 export function normalise(raw: unknown): Profile {
   const base = defaultProfile();
   // Junk falls through as an empty object rather than returning early, so EVERY profile
@@ -463,6 +479,7 @@ export function normalise(raw: unknown): Profile {
     // colony's starting size rather than being thrown away — the player earned it, and the
     // two ladders start at roughly the same place (`roadClaims` handles the road).
     colony: colonyOf(p, base.colony),
+    pendingHomeGain: normaliseHomeGain(p.pendingHomeGain),
     mycel: int(p.mycel, 0, 1e9, base.mycel),
     pheromone: int(p.pheromone, 0, 1e9, base.pheromone),
     larva: int(p.larva, 0, 1e9, base.larva),
@@ -1234,12 +1251,34 @@ export class ProfileStore {
       } else {
         p.stats.winStreak = 0;
       }
-      p.colony = grownColony(p.colony, won);
+      const beforeColony = p.colony;
+      p.colony = grownColony(beforeColony, won);
+      const gained = Math.min(1e15, p.colony) - beforeColony;
+      if (won && gained > 0) {
+        p.pendingHomeGain = {
+          from: p.pendingHomeGain?.from ?? beforeColony,
+          amount: (p.pendingHomeGain?.amount ?? 0) + gained,
+        };
+      }
       p.mycel += won ? MATCH_MYCEL.win : MATCH_MYCEL.loss;
       p.fav[species] = (p.fav[species] ?? 0) + 1;
       p.xp += matchXp(won, turns);
       p.lastSpecies = species;
     });
+  }
+
+
+  /** Acknowledge only the displayed receipt; balances and career totals never change. */
+  acknowledgeHomeGain(gain: NonNullable<Profile["pendingHomeGain"]>, remaining = 0): boolean {
+    const held = this.profile.pendingHomeGain;
+    if (!held || held.from !== gain.from || held.amount !== gain.amount) return false;
+    const left = Math.max(0, Math.min(gain.amount, this.profile.colony - COLONY_START,
+      Math.round(Number.isFinite(remaining) ? remaining : 0)));
+    if (left === held.amount && this.profile.colony - left === held.from) return true;
+    this.update((p) => {
+      p.pendingHomeGain = left > 0 ? { from: p.colony - left, amount: left } : null;
+    });
+    return true;
   }
 
   /* -------------------------------------------------------------- HISTORY */

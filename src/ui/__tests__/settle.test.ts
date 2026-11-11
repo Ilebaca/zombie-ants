@@ -224,3 +224,14 @@ describe("settling a match", () => {
     expect(recap.turns).toBe(1);
   });
 });
+
+describe("Home presentation after settlement", () => {
+  it("queues the exact troop gain on the result card without delaying the payout", () => {
+    const s = new ProfileStore(new MemoryStore());
+    const before = s.get().colony;
+    const { recap } = settle({ store: s });
+    expect(s.get().pendingHomeGain).toEqual({ from: before, amount: s.get().colony - before });
+    expect(s.get().pendingHomeGain!.amount).toBe(recap.colonyDelta);
+    expect(recap.colony).toBe(s.get().colony);
+  });
+});

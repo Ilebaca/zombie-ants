@@ -312,3 +312,67 @@ it("persists Impossible and grants upgrades only to that opponent", () => {
   expect(mods.ai.reservoir).toBe(RESEARCH_MAX);
   expect(loaded.modsFor("fire", "hard").ai.royal).toBe(0);
 });
+
+describe("pending Home winnings", () => {
+  it("persists already-credited wins until Home acknowledges them", () => {
+    const kv = new MemoryStore();
+    const s = new ProfileStore(kv);
+    const before = s.get().colony;
+    s.recordResult(true, "fire");
+    const gain = s.get().colony - before;
+    expect(gain).toBeGreaterThan(0);
+    expect(s.get().pendingHomeGain).toEqual({ from: before, amount: gain });
+    const restored = new ProfileStore(kv);
+    expect(restored.get().pendingHomeGain).toEqual(s.get().pendingHomeGain);
+    const paid = structuredClone(restored.get());
+    expect(restored.acknowledgeHomeGain(paid.pendingHomeGain!)).toBe(true);
+    expect(restored.get()).toEqual({ ...paid, pendingHomeGain: null });
+    expect(new ProfileStore(kv).get().pendingHomeGain).toBeNull();
+  });
+
+  it("combines wins before Home, ignores losses and rejects a stale acknowledgement", () => {
+    const s = store();
+    const before = s.get().colony;
+    s.recordResult(true, "fire");
+    const first = { ...s.get().pendingHomeGain! };
+    s.recordResult(true, "fire");
+    expect(s.get().pendingHomeGain).toEqual({ from: before, amount: s.get().colony - before });
+    const pending = { ...s.get().pendingHomeGain! };
+    expect(s.acknowledgeHomeGain(first)).toBe(false);
+    s.recordResult(false, "fire");
+    expect(s.get().pendingHomeGain).toEqual(pending);
+    const loss = store();
+    loss.recordResult(false, "fire");
+    expect(loss.get().pendingHomeGain).toBeNull();
+  });
+
+  it("stores an interrupted presentation without changing the credited balance", () => {
+    const s = store();
+    s.recordResult(true, "fire");
+    const paid = s.get().colony;
+    const receipt = { ...s.get().pendingHomeGain! };
+    expect(s.acknowledgeHomeGain(receipt, 2)).toBe(true);
+    expect(s.get().colony).toBe(paid);
+    expect(s.get().pendingHomeGain).toEqual({ from: paid - 2, amount: 2 });
+    s.reset();
+    expect(s.get().pendingHomeGain).toBeNull();
+  });
+
+  it("accepts older saves and discards malformed presentation data", () => {
+    expect(normalise({ colony: 100 }).pendingHomeGain).toBeNull();
+    for (const pendingHomeGain of [42, {}, { from: 40, amount: -1 },
+      { from: NaN, amount: 2 }, { from: 40, amount: Infinity }]) {
+      expect(normalise({ pendingHomeGain }).pendingHomeGain).toBeNull();
+    }
+    expect(normalise({ pendingHomeGain: { from: 60.8, amount: 5.9 } }).pendingHomeGain)
+      .toEqual({ from: 60, amount: 5 });
+  });
+
+  it("never queues phantom winnings at the stored colony cap", () => {
+    const s = store();
+    s.update((p) => { p.colony = 1e15; });
+    s.recordResult(true, "fire");
+    expect(s.get().colony).toBe(1e15);
+    expect(s.get().pendingHomeGain).toBeNull();
+  });
+});

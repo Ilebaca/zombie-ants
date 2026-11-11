@@ -5509,3 +5509,12 @@ and reset nav/menu/home-bar references together. Detached screens cannot be repl
 with `replaceWith`; retaining them caused blank Settings after returning to a colony.
 No profile keys or progress are removed by this view cleanup. Sign-in regression tests
 cover repeat returns, navigation recreation and separation between account saves.
+
+## Home match reward flight
+Winning still credits troops immediately in `ProfileStore.recordResult`. Its account-scoped
+`pendingHomeGain` is presentation metadata, persisted with the payout, never a second
+reward. `ui/home-gain.ts` waits for visible Home, flies at most twelve painted swords
+from Play into the troop count, and updates that count and chapter fill in place on impact.
+Other routes preserve the receipt; leaving Home or suspending saves only the unseen part.
+Account changes dispose the effect before replacing views. Reduced motion shows the final
+balance without flights. Never delay settlement or credit resources from animation frames.
