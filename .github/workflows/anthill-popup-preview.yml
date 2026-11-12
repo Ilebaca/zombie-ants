@@ -1,0 +1,25 @@
+name: Anthill popup preview
+on:
+  push:
+    branches: [codex/anthill-popup]
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npx vitest run src/ui/__tests__/meta.test.ts src/ui/__tests__/anthill-popup.test.ts src/ui/__tests__/traits.test.ts
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: anthill-popup-preview
+          path: dist/
+          retention-days: 7

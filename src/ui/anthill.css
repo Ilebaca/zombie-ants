@@ -29,7 +29,7 @@
   pointer-events: none;
 }
 #app #anthill .hill-cover > .screentop,
-#app #anthill .hill-cover > .nest-sum,
+
 #app #anthill > .screenbody {
   width: min(calc(100% - var(--sp8)), var(--page));
   margin-inline: auto;
@@ -39,8 +39,11 @@
   top: auto;
 }
 #app #anthill .nest-sum {
-  position: relative;
-  margin-top: var(--block);
+  position: absolute;
+  inset-inline: 0;
+  bottom: var(--block);
+  width: min(calc(100% - var(--sp8)), var(--page));
+  margin: 0 auto;
   padding: var(--block);
   border: none;
   border-radius: var(--action-radius);
@@ -66,6 +69,7 @@
   overflow: visible;
 }
 #app #anthill .nest {
+  position: relative;
   margin: 0;
   padding-bottom: var(--block);
   border: none;
@@ -74,18 +78,16 @@
   overflow: visible;
 }
 #app #anthill .nest-lvl:first-child .room { margin-top: 0; }
-#app #anthill .nest-line,
-#app #anthill .nest-node {
-  background: #74283f;
-  border-color: #8b3b51;
-}
-#app #anthill .nest-node::after {
-  background: #74283f;
-  border-color: #8b3b51;
-}
-#app #anthill .nest-lvl.dug .nest-node {
-  background: var(--hud-go);
-  border-color: var(--hud-go);
+#app #anthill .hill-tunnels {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  fill: none;
+  stroke: #2c0c18;
+  stroke-width: 8px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 #app #anthill .room { position: relative; z-index: 1; }
 #app #anthill .room-pocket {
@@ -110,3 +112,81 @@
   z-index: 1;
   margin-inline: 0;
 }
+
+#app #anthill .nest-lvl.open > .room { outline-color: var(--hud-go) !important; }
+
+/* Portaled to #app so deck transforms and page scrolling cannot clip the popup. */
+#app .hill-popup {
+  --ink: var(--hud-ink);
+  --ink-soft: var(--hud-dim);
+  --muted: var(--hud-mute);
+  --grass: var(--hud-go);
+  position: absolute;
+  z-index: 130;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin: 0;
+  border: none;
+  border-radius: var(--action-radius);
+  outline: var(--action-stroke) solid var(--action-frame);
+  outline-offset: calc(-1 * var(--action-stroke));
+  background: var(--hud-card);
+  color: var(--hud-ink);
+  box-shadow: 0 var(--action-depth) 0 var(--action-frame) !important;
+}
+#app .hill-popup-pointer {
+  position: absolute;
+  left: calc(var(--hill-arrow) - 12px);
+  top: -14px;
+  width: 24px;
+  height: 16px;
+  pointer-events: none;
+  overflow: visible;
+}
+#app .hill-popup-pointer path {
+  fill: var(--hud-card);
+  stroke: var(--action-frame);
+  stroke-width: var(--action-stroke);
+  stroke-linejoin: round;
+}
+#app .hill-popup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--block);
+  flex: none;
+  padding: 10px var(--block);
+  border-bottom: var(--action-stroke) solid var(--action-frame);
+}
+#app .hill-popup-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 16px;
+}
+#app .hill-popup-close {
+  flex: none;
+  width: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  height: 28px;
+  padding: 0;
+}
+#app .hill-popup-content {
+  min-height: 0;
+  padding: var(--block);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+#app .hill-popup .room-open {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent;
+}
+#app .hill-popup.fresh .che-now .che-v { color: var(--muted); }
+#app .hill-popup.maxed .pip.on { background: var(--gold); }
