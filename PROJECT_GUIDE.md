@@ -5724,3 +5724,15 @@ composition, battle HUD, title-free Road and single-viewport setup keep their ex
 structures. Trait picker/detail layers still portal to #app, outside the page scroller.
 chrome.redraw captures the root scroll position before rebuilding a standard page and
 restores it after render; custom views with an inner scroller retain the same fallback.
+
+
+## Illustrated Anthill cover
+Anthill uses the supplied leaf-carrying-ant cover, full bleed from the screen top to
+Granary's top edge. The image uses cover sizing and bottom alignment. The shared title,
+mycelium purse and excavation bar sit over it, with the usual safe-area clearance.
+The cover and all controls scroll together in the Anthill root; there is no pinned header.
+The screen background is exactly #541729. Remove the old CSS mound and enclosing soil
+panel; retain chamber connections, account upgrades, purchase rules and inline traits.
+Chamber art comes from ui/anthill-art.ts: throne for Royal Chamber, larva for Brood Nursery,
+red ant for Soldier Caste, shield for Metapleural Gland and mushrooms for Fungal Cultivation.
+These are the original supplied images, encoded as small WebP assets with icon alpha intact.
