@@ -266,3 +266,16 @@
   padding: var(--block);
   border-top: var(--action-stroke) solid var(--action-frame);
 }
+
+/* Selection colors the entire raised frame, including its lower ledge. */
+#app #antarium .ccard.sel .an-tile {
+  box-shadow: 0 var(--action-depth) 0 var(--hud-ink) !important;
+}
+#app #anthill .nest-lvl.open > .room,
+#app :is(.skincard.on, .trtile.armed) {
+  outline-color: var(--hud-go) !important;
+  box-shadow: 0 var(--action-depth) 0 var(--hud-go) !important;
+}
+#app :is(.room, .skincard, .trtile, .tropen, .histrow, .sirow):focus-visible {
+  box-shadow: 0 var(--action-depth) 0 var(--hud-ink) !important;
+}
