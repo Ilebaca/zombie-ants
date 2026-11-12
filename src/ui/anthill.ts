@@ -23,7 +23,7 @@ export function buildAnthill(store: ProfileStore): HTMLElement {
   let unmountTunnels = (): void => {};
 
   const markSelection = (): void => {
-    for (const row of root.querySelectorAll<HTMLElement>(".nest-lvl")) {
+    for (const row of Array.from(root.querySelectorAll<HTMLElement>(".nest-lvl"))) {
       const active = row.dataset.chamber === selected;
       row.classList.toggle("open", active);
       const button = row.querySelector<HTMLButtonElement>(".room");

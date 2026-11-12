@@ -47,7 +47,9 @@ export function mountAnthillPopup(
       const safeBottom = parseFloat(getComputedStyle(owner).getPropertyValue("--safe-bottom")) || 0;
       // Scroll only when necessary; no rows, margins or document heights are changed.
       const room = viewport.bottom - target.bottom - safeBottom - 24;
-      const needed = Math.min(panel.scrollHeight, 300, viewport.height * .55);
+      const content = panel.querySelector<HTMLElement>(".hill-popup-content");
+      const header = panel.querySelector<HTMLElement>(".hill-popup-head");
+      const needed = Math.min((content?.scrollHeight ?? panel.scrollHeight) + (header?.offsetHeight ?? 0), 320, viewport.height * .55);
       if (viewport.height > 0 && room < needed) owner.scrollTop += needed - room;
     }
     place();

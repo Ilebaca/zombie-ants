@@ -10,6 +10,7 @@
 #app #anthill .hill-cover {
   position: relative;
   isolation: isolate;
+  z-index: 1;
   flex: none;
   width: 100%;
   height: calc(clamp(280px, 82vw, 420px) + var(--safe-top));
