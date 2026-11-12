@@ -217,7 +217,7 @@ describe("the trait picker", () => {
     const root = bench(store());
     const caps = Array.from(root.querySelectorAll(".trtotal-c")).map(e => e.textContent);
     expect(caps).toHaveLength(3);
-    for (const cap of caps) expect(cap).toMatch(/^max \\d+%$/);
+    for (const cap of caps) expect(cap).toMatch(/^max \d+%$/);
   });
 });
 

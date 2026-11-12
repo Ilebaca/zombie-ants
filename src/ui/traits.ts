@@ -3,7 +3,6 @@
  * Browsing never changes a loadout; only Equip or Remove writes to the store.
  */
 import { groupSections } from "./groups";
-import { SPECIES } from "../engine";
 import {
   ATK_CAP, DEF_CAP, FUSE_DEALS, LUCK_CAP, SPECIES_ORDER, TRAIT_SLOTS,
   TRAIT_TIER, effectFigure, effectText, fitsScope, itemDef, markOf, scopeName, slotChapter,
