@@ -33,3 +33,5 @@
 #app #luckyhatch .hatchwrap,
 #app #luckyhatch .hatchstage { flex: 1 0 auto; }
 #app #luckyhatch .hatchfoot { padding-bottom: 0; }
+
+#app #luckyhatch { padding-bottom: var(--screen-bottom); }
