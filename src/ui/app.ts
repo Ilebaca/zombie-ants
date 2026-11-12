@@ -931,9 +931,15 @@ export class App {
 
   /** Trait collection links lead to the loadout on its owning page. */
   private openTraits(scope: TraitScope): void {
-    if (scope === "hill") { this.show("anthill"); return; }
-    this.speciesPage = this.profile.isUnlocked(scope) ? scope : this.profile.get().lastSpecies;
-    this.show("antup");
+    if (scope === "hill") this.show("anthill");
+    else {
+      this.speciesPage = this.profile.isUnlocked(scope) ? scope : this.profile.get().lastSpecies;
+      this.show("antup");
+    }
+    queueMicrotask(() => {
+      const row = this.host.querySelector<HTMLElement>(scope === "hill" ? "#hillTraits" : "#spgTraits");
+      row?.scrollIntoView?.({ block: "center" });
+    });
   }
 
   /** The slide-in drawer behind the hamburger. One element, reused. */

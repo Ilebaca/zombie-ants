@@ -81,7 +81,7 @@ export function buildTraitSlots(store: ProfileStore, opts: TraitSlotsOptions): H
     card.append(
       close, el("div", "trait-detail-tier", tier.name), emblem, name, effect,
       el("p", "trait-detail-note", def?.note ?? ""),
-      el("p", "trait-detail-scope", !compatible ? "Anthill uses universal traits" : owner && !worn ? `Moves from ${scopeName(owner)} when equipped` : "Usable at any species level"),
+      el("p", "trait-detail-scope", !compatible ? `${def ? scopeName(def.species ?? "hill") : "Species"} trait · Anthill uses universal traits` : owner && !worn ? `Moves from ${scopeName(owner)} when equipped` : "Usable at any species level"),
     );
 
     const equip = el("button", "action-button trait-detail-equip", worn ? "Equipped" : "Equip") as HTMLButtonElement;
