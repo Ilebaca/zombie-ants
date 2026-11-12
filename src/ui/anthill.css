@@ -85,11 +85,13 @@
   pointer-events: none;
   fill: none;
   stroke: #2c0c18;
-  stroke-width: 8px;
+  --hill-tunnel-width: clamp(20px, 6vw, 26px);
+  stroke-width: var(--hill-tunnel-width);
   overflow: hidden;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+#app #anthill .hill-tunnel-branch { stroke-width: calc(var(--hill-tunnel-width) * .72); }
 #app #anthill .room { position: relative; z-index: 1; }
 #app #anthill .room-pocket {
   background: transparent;
