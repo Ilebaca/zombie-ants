@@ -102,8 +102,7 @@ export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): H
     layer.onclick = event => { event.stopPropagation(); closeDetail(); };
     layer.onkeydown = event => {
       if (event.key !== "Tab") return;
-      const controls = [close, equip].filter(button => !button.disabled);
-      const first = controls[0]!, last = controls[controls.length - 1]!;
+      const first = close, last = equip.disabled ? close : equip;
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault(); last.focus();
       } else if (!event.shiftKey && document.activeElement === last) {

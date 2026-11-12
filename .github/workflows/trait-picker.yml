@@ -17,6 +17,22 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test -- src/ui/__tests__/traits.test.ts src/ui/__tests__/back.test.ts src/ui/__tests__/meta.test.ts
+      - name: Verify browsing cannot silently equip
+        run: |
+          cp src/ui/traits.ts "$RUNNER_TEMP/original-traits.ts"
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("src/ui/traits.ts")
+          s = p.read_text()
+          assert "    returnFocus = source;" in s
+          p.write_text(s.replace("    returnFocus = source;", "    returnFocus = source;\n    store.equipTrait(scope, item.uid, selectedSlot ?? undefined);"))
+          PY
+          set +e
+          npx vitest run src/ui/__tests__/traits.test.ts -t "shows the actual rarity, effect and biology before equipping"
+          result=$?
+          set -e
+          cp "$RUNNER_TEMP/original-traits.ts" src/ui/traits.ts
+          test "$result" -eq 1
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
