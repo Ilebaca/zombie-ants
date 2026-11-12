@@ -1,0 +1,33 @@
+/* Shared page headers use one row, including pages with no back button.
+   Empty subtitle tracks and bottom-aligned names made deck headers shorter. */
+#app .screentop {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-rows: var(--tap);
+  grid-template-areas: "back title chip";
+  align-items: center;
+  column-gap: var(--inrow);
+  min-height: calc(var(--tap) + 2 * var(--block));
+  padding-block: var(--block);
+}
+#app .screentop > .screenh {
+  grid-area: title;
+  align-self: center;
+  justify-self: stretch;
+  min-width: 0;
+  font-size: clamp(18px, calc(6.25vw - 2px), var(--fs-hero));
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+#app .screentop > .backbtn {
+  grid-area: back;
+  align-self: center;
+  justify-self: start;
+}
+#app .screentop > .mycelchip {
+  grid-area: chip;
+  align-self: center;
+  justify-self: end;
+  margin: 0;
+}

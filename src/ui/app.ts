@@ -77,6 +77,7 @@ import "./skin.css";   // the look, layered over the structure
 import "./buttons.css"; // shared action faces, frames and interaction states
 import "./panels.css";  // matching frames for filled panels; component fills stay intact
 import "./traits.css"; // anchored trait picker and detail dialog
+import "./layout.css"; // consistent page headers across deck and detail screens
 import "./groups.css";  // one frame and shared dividers for related information rows
 
 /**

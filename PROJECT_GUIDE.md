@@ -5675,3 +5675,17 @@ X, any non-action dialog tap, Escape and Hardware Back close the top layer first
 retaining the picker and selection. An outside picker tap or second tap on its slot
 closes the picker. All listeners and layers belong to the screen, with no global portal.
 Keep the existing slot chapter gates, scope restrictions, trait caps and saved inventory.
+
+
+## Shared page header geometry
+ui/layout.css owns the common title row for deck pages and detail pages. It is one
+fixed-height row based on --tap with --block above/below, regardless of whether Back
+or a currency purse exists. The old empty subtitle grid row and end-aligned title
+must not determine header height. Titles, Back and purse share one vertical centre;
+the two outer columns are symmetric and the title stays centered on the page.
+Small phones reduce the shared title size so long species names stay on one line.
+Header balances at 10,000 or above use the existing compact formatter, retaining the
+exact amount in their accessible label. Keep the existing page gutters, body gap and
+safe-area clearance. Species artwork remains full bleed; its header and ordinary
+cards keep the same column as Antarium. Home, battle HUD and the title-free road have
+their own intentional layouts and do not acquire this page header.

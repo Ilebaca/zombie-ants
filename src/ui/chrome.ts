@@ -238,7 +238,8 @@ export function screenHeader(parent: HTMLElement, opts: HeaderOptions): void {
 function purseChip(mark: string, value: number): HTMLElement {
   const chip = el("div", "mycelchip");
   chip.dataset.purse = mark;
-  chip.append(resourceMark(mark, 18), el("b", "mycelv", String(value)));
+  // Long balances use the same compact notation as Home; aria-label keeps the exact amount.
+  chip.append(resourceMark(mark, 18), el("b", "mycelv", value >= 10_000 ? compact(value) : String(value)));
   chip.title = mark === "pheromone" ? "Pheromone crystal" : "Mycelium";
   chip.setAttribute("aria-label", mark === "pheromone"
     ? `${value} pheromone crystal${value === 1 ? "" : "s"}`
