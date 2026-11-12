@@ -9,7 +9,8 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { ProfileStore, TRAITS, TRAIT_SLOTS, TRAIT_TIER, effectFigure } from "../../platform";
 import { MemoryStore } from "../../platform";
-import { buildInventory, buildTraitBench, traitOpener } from "../traits";
+import { buildInventory, buildTraitSlots } from "../traits";
+import { dismissTraitPopups } from "../trait-popovers";
 import { buildSpeciesPage } from "../species";
 import { buildAnthill } from "../anthill";
 import { TIERS, basicLook, looksFor } from "../../engine";
@@ -38,21 +39,20 @@ const store = (colony = ROAD_LAST): ProfileStore => {
 };
 
 const bench = (s: ProfileStore, scope: TraitScope = "hill"): HTMLElement => {
-  const root = buildTraitBench(s, { scope, onBack: () => {} });
-  document.body.replaceChildren(root);
-  return root;
+  const host = document.createElement("div"); host.id = "app";
+  host.appendChild(buildTraitSlots(s, { scope }));
+  document.body.replaceChildren(host);
+  return host;
 };
-
-/** The two grids: the five slots, then everything spare. Both hold `.trtile`. */
-const grid = (root: HTMLElement, id: string): HTMLButtonElement[] =>
-  Array.from(root.querySelectorAll<HTMLButtonElement>(`#${id} .trtile`));
-const slots = (root: HTMLElement): HTMLButtonElement[] => grid(root, "trWorn");
-const rows = (root: HTMLElement): HTMLButtonElement[] => grid(root, "trBag");
+const slots = (root: HTMLElement): HTMLButtonElement[] =>
+  Array.from(root.querySelectorAll<HTMLButtonElement>(".trait-slot-row .trtile"));
+const rows = (root: HTMLElement): HTMLButtonElement[] =>
+  Array.from(root.querySelectorAll<HTMLButtonElement>(".trait-picker-grid .trtile"));
 
 describe("the trait picker", () => {
   const choose = (root: HTMLElement, slot = 0): void => { slots(root)[slot]!.click(); };
   const inspect = (root: HTMLElement, uid: string): void => {
-    root.querySelector<HTMLButtonElement>(`#trBag [data-uid="${uid}"]`)!.click();
+    root.querySelector<HTMLButtonElement>(`.trait-picker-grid [data-uid="${uid}"]`)!.click();
   };
   const equip = (root: HTMLElement): void => {
     root.querySelector<HTMLButtonElement>(".trait-detail-equip")!.click();
@@ -63,14 +63,14 @@ describe("the trait picker", () => {
     s.findTrait(UNIVERSAL[0]!.id, "rare");
     const root = bench(s);
     expect(slots(root)).toHaveLength(TRAIT_SLOTS);
-    expect(root.querySelector("#traitPicker")).toBeNull();
+    expect(root.querySelector(".trait-picker")).toBeNull();
     choose(root, 3);
-    expect(root.querySelector(".trait-slot-anchor > #traitPicker")).toBeTruthy();
+    expect(root.querySelector(".trait-picker")).toBeTruthy();
     expect(slots(root)[3]!.classList.contains("armed")).toBe(true);
     expect(slots(root)[3]!.getAttribute("aria-expanded")).toBe("true");
     expect(rows(root)).toHaveLength(1);
     choose(root, 3);
-    expect(root.querySelector("#traitPicker")).toBeNull();
+    expect(root.querySelector(".trait-picker")).toBeNull();
     expect(slots(root)[3]!.classList.contains("armed")).toBe(false);
   });
 
@@ -82,7 +82,7 @@ describe("the trait picker", () => {
     const root = bench(s);
     choose(root);
     expect(rows(root)).toHaveLength(2);
-    expect(root.querySelector(`#trBag [data-uid="${one.uid}"]`)!.classList.contains("worn")).toBe(true);
+    expect(root.querySelector(`.trait-picker-grid [data-uid="${one.uid}"]`)!.classList.contains("worn")).toBe(true);
     inspect(root, two.uid);
     expect(root.querySelector(".trait-detail-scope")!.textContent).toContain("Fire Ant");
     expect(root.querySelector<HTMLButtonElement>(".trait-detail-equip")!.disabled).toBe(true);
@@ -108,7 +108,8 @@ describe("the trait picker", () => {
     const s = store(), def = UNIVERSAL.find(t => t.kind === "attack")!;
     const one = s.findTrait(def.id, "mythic")!;
     let changes = 0;
-    const root = buildTraitBench(s, { scope: "hill", onBack: () => {}, onChanged: () => { changes++; } });
+    const root = document.createElement("div"); root.id = "app";
+    root.appendChild(buildTraitSlots(s, { scope: "hill", onChanged: () => { changes++; } }));
     document.body.replaceChildren(root);
     choose(root, 4);
     inspect(root, one.uid);
@@ -118,7 +119,7 @@ describe("the trait picker", () => {
     expect(s.bench("hill")[0]).toBeNull();
     expect(root.querySelector(".trtotal-v")!.textContent).toBe(`${TRAIT_TIER.mythic.stat}%`);
     expect(root.querySelector(".trait-detail-layer")).toBeNull();
-    expect(root.querySelector("#traitPicker")).toBeNull();
+    expect(root.querySelector(".trait-picker")).toBeNull();
     expect(changes).toBe(1);
   });
 
@@ -134,9 +135,10 @@ describe("the trait picker", () => {
     expect(s.bag.map(i => i.uid)).toContain(one.uid);
     choose(root, 1);
     inspect(root, two.uid);
-    expect(root.querySelector<HTMLButtonElement>(".trait-detail-equip")!.disabled).toBe(true);
+    expect(root.querySelector<HTMLButtonElement>(".trait-detail-equip")!.disabled).toBe(false);
     equip(root);
-    expect(s.bench("hill")[1]).toBeNull();
+    expect(s.bench("hill")[0]).toBeNull();
+    expect(s.bench("hill")[1]?.uid).toBe(two.uid);
   });
 
   it("can remove a selected trait explicitly", () => {
@@ -153,7 +155,7 @@ describe("the trait picker", () => {
   it("switches selected slots without changing equipment", () => {
     const root = bench(store());
     choose(root, 0); choose(root, 4);
-    expect(root.querySelectorAll("#trWorn .armed")).toHaveLength(1);
+    expect(root.querySelectorAll(".trait-slot-row .armed")).toHaveLength(1);
     expect(slots(root)[4]!.classList.contains("armed")).toBe(true);
     expect(root.querySelectorAll(".trait-picker")).toHaveLength(1);
   });
@@ -165,7 +167,7 @@ describe("the trait picker", () => {
       inspect(root, one.uid);
       root.querySelector<HTMLElement>(selector)!.click();
       expect(root.querySelector(".trait-detail-layer")).toBeNull();
-      expect(root.querySelector("#traitPicker")).toBeTruthy();
+      expect(root.querySelector(".trait-picker")).toBeTruthy();
       expect(slots(root)[2]!.classList.contains("armed")).toBe(true);
       expect(s.bench("hill").filter(Boolean)).toHaveLength(0);
     }
@@ -173,18 +175,13 @@ describe("the trait picker", () => {
 
   it("closes the highest layer first with Back and Escape", () => {
     const s = store(), one = s.findTrait(UNIVERSAL[0]!.id, "rare")!;
-    let back = 0;
-    const root = buildTraitBench(s, { scope: "hill", onBack: () => { back++; } });
-    document.body.replaceChildren(root);
-    choose(root); inspect(root, one.uid);
-    root.querySelector<HTMLButtonElement>("#trBack")!.click();
+    const root = bench(s); choose(root); inspect(root, one.uid);
+    expect(dismissTraitPopups(root)).toBe(true);
     expect(root.querySelector(".trait-detail-layer")).toBeNull();
-    expect(root.querySelector("#traitPicker")).toBeTruthy();
+    expect(root.querySelector(".trait-picker")).toBeTruthy();
     root.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-    expect(root.querySelector("#traitPicker")).toBeNull();
-    expect(back).toBe(0);
-    root.querySelector<HTMLButtonElement>("#trBack")!.click();
-    expect(back).toBe(1);
+    expect(root.querySelector(".trait-picker")).toBeNull();
+    expect(dismissTraitPopups(root)).toBe(false);
   });
 
   it("restores focus and contains keyboard focus within the detail dialog", () => {
@@ -205,12 +202,12 @@ describe("the trait picker", () => {
     const s = new ProfileStore(new MemoryStore());
     const root = bench(s);
     slots(root)[1]!.click();
-    expect(root.querySelector("#traitPicker")).toBeNull();
+    expect(root.querySelector(".trait-picker")).toBeNull();
     choose(root);
     expect(root.querySelector(".trempty")!.textContent).toContain("lucky hatch");
     root.querySelector<HTMLElement>(".trtotals")!.click();
-    expect(root.querySelector("#traitPicker")).toBeNull();
-    expect(root.querySelector("#trWorn .armed")).toBeNull();
+    expect(root.querySelector(".trait-picker")).toBeNull();
+    expect(root.querySelector(".trait-slot-row .armed")).toBeNull();
   });
 
   it("keeps the three bonus ceilings visible", () => {
@@ -218,55 +215,6 @@ describe("the trait picker", () => {
     const caps = Array.from(root.querySelectorAll(".trtotal-c")).map(e => e.textContent);
     expect(caps).toHaveLength(3);
     for (const cap of caps) expect(cap).toMatch(/^max \d+%$/);
-  });
-});
-
-describe("the row that opens it", () => {
-  /**
-   * It shows the traits THEMSELVES. A row of dashes said how many and, when one was lit,
-   * that something rare was worn somewhere — never what it did.
-   */
-  it("shows each worn trait, with what it is worth, and holds the empty slots", () => {
-    const s = store();
-    const def = UNIVERSAL[0]!;
-    s.equipTrait("hill", s.findTrait(def.id, "rare")!.uid);
-    const row = traitOpener(s, "hill", () => {}, null);
-
-    expect(row.querySelectorAll(".tropen-slot").length).toBe(TRAIT_SLOTS);
-    expect(row.querySelectorAll(".tropen-slot.filled").length).toBe(1);
-    expect(row.querySelectorAll(".tropen-slot.empty").length).toBe(TRAIT_SLOTS - 1);
-
-    const worn = row.querySelector<HTMLElement>(".tropen-slot.filled");
-    expect(worn?.title, "the trait is not named").toContain(def.name);
-    expect(worn?.title).toContain("Rare");
-    expect(worn?.style.getPropertyValue("--tier")).toBe(TRAIT_TIER.rare.colour);
-    expect(worn?.querySelector(".tropen-slot-v")?.textContent, "what it is worth is missing")
-      .toBe(effectFigure(def, "rare"));
-  });
-
-  /** Nothing equipped still has to SAY nothing is equipped, in words as well as squares. */
-  it("says so in words when the bench is empty", () => {
-    const row = traitOpener(store(), "hill", () => {}, null);
-    expect(row.textContent).toContain("No traits equipped");
-    expect(row.querySelectorAll(".tropen-slot.filled").length).toBe(0);
-    expect(row.querySelectorAll(".tropen-slot.empty").length).toBe(TRAIT_SLOTS);
-  });
-
-  /** A number is something to play toward. A padlock says only that you cannot. */
-  it("names the chapter when it is locked, and does not open", () => {
-    let opened = 0;
-    const row = traitOpener(store(), "hill", () => { opened++; }, "Chapter 10");
-    expect(row.textContent).toContain("Chapter 10");
-    row.click();
-    expect(opened).toBe(0);
-    // A locked bench shows no slots: five empty squares would say it is open and unused.
-    expect(row.querySelectorAll(".tropen-slot").length).toBe(0);
-  });
-
-  it("opens when it is not locked", () => {
-    let opened = 0;
-    traitOpener(store(), "hill", () => { opened++; }, null).click();
-    expect(opened).toBe(1);
   });
 });
 
@@ -345,13 +293,13 @@ describe("the inventory", () => {
     const inv = inventory(early);
     expect(inv.querySelectorAll(".invhead")).toHaveLength(1);
     expect(inv.querySelector(".trtile")?.getAttribute("data-uid")).toBe(one.uid);
-    const hill = buildAnthill(early, { onTraits: () => {} });
+    const hill = buildAnthill(early);
     expect(hill.querySelector("#hillTraits")?.classList.contains("locked")).toBe(false);
-    const species = buildSpeciesPage(early, { species: "fire", onBack: () => {}, onTraits: () => {} });
+    const species = buildSpeciesPage(early, { species: "fire", onBack: () => {} });
     expect(species.querySelector("#spgTraits")?.classList.contains("locked")).toBe(false);
     const root = bench(early);
-    expect(root.querySelectorAll("#trWorn .trtile.empty")).toHaveLength(1);
-    expect(root.querySelectorAll("#trWorn .trtile.shut")).toHaveLength(4);
+    expect(root.querySelectorAll(".trait-slot-row .trtile.empty")).toHaveLength(1);
+    expect(root.querySelectorAll(".trait-slot-row .trtile.shut")).toHaveLength(4);
     slots(root)[0]?.click();
     rows(root)[0]?.click();
     root.querySelector<HTMLButtonElement>(".trait-detail-equip")!.click();
@@ -375,35 +323,42 @@ describe("the inventory", () => {
  * is WEARING — while everything in the card above summarised what the colony IS. It is
  * the card's last line now, and still a door.
  */
-describe("where the colony page keeps its traits", () => {
-  const grown = (): ProfileStore => {
+describe("inline species loadouts", () => {
+  it("keeps individual slots below Upgrade in the species hero, with no navigation row", () => {
     const s = new ProfileStore(new MemoryStore());
-    s.update((p) => { p.colony = 2_000_000; });
-    return s;
-  };
-
-  it("puts the row inside the hero card, last, with its slots", () => {
-    let opened = 0;
-    const page = buildSpeciesPage(grown(), {
-      species: "fire", onBack: () => {}, onTraits: () => { opened++; },
-    });
-    const hero = page.querySelector(".spghero");
-    const row = hero?.querySelector<HTMLElement>("#spgTraits");
-    expect(row, "the traits row is not in the hero card").toBeTruthy();
-    expect(hero?.lastElementChild, "something was added after it").toBe(row);
-    expect(row?.querySelectorAll(".tropen-slot").length, "the slots are not shown")
-      .toBe(TRAIT_SLOTS);
-
-    // Still a door.
-    row?.click();
-    expect(opened).toBe(1);
+    const page = buildSpeciesPage(s, { species: "bullet", onBack: () => {} });
+    const hero = page.querySelector(".spghero")!, traits = hero.querySelector("#spgTraits")!;
+    expect(hero.lastElementChild).toBe(traits);
+    expect(traits.tagName).toBe("DIV");
+    expect(traits.querySelectorAll(".trait-slot-row .trtile")).toHaveLength(5);
+    expect(traits.querySelectorAll(".trtile.shut")).toHaveLength(4);
+    expect(page.querySelector(".tropen")).toBeNull();
   });
-
-  /** The section it used to have is gone, or the page says "Traits" twice. */
-  it("keeps no separate Traits section", () => {
-    const page = buildSpeciesPage(grown(), { species: "fire", onBack: () => {} });
-    const heads = Array.from(page.querySelectorAll(".secthead")).map((h) => h.textContent);
-    expect(heads).not.toContain("Traits");
+  it("equips every rarity on a level-zero species without leaving its page", () => {
+    const s = new ProfileStore(new MemoryStore());
+    const host = document.createElement("div"); host.id = "app"; document.body.replaceChildren(host);
+    for (const tier of ["common","uncommon","rare","exceptional","mythic"] as const) {
+      const one = s.findTrait(FIRE[0]!.id,tier)!;
+      const page = buildSpeciesPage(s, { species: "bullet", onBack: () => {} });
+      host.replaceChildren(page);
+      page.querySelector<HTMLButtonElement>("#spgTraits [data-slot='0']")!.click();
+      host.querySelector<HTMLButtonElement>(`.trait-picker [data-uid="${one.uid}"]`)!.click();
+      expect(host.querySelector<HTMLButtonElement>(".trait-detail-equip")!.disabled).toBe(false);
+      host.querySelector<HTMLButtonElement>(".trait-detail-equip")!.click();
+      expect(s.bench("bullet")[0]!.uid).toBe(one.uid);
+      expect(s.get().research.bullet?.level ?? 0).toBe(0);
+      expect(host.querySelector(".trait-picker")).toBeNull();
+      expect(host.querySelector("#antup")).toBe(page);
+    }
+  });
+  it("cleans up portal layers when their owning page is removed", async () => {
+    const s = store(); s.findTrait(FIRE[0]!.id,"rare");
+    const host = document.createElement("div"); host.id = "app"; document.body.replaceChildren(host);
+    const page = buildSpeciesPage(s,{species:"fire",onBack:()=>{}}); host.appendChild(page);
+    page.querySelector<HTMLButtonElement>("#spgTraits [data-slot='0']")!.click();
+    expect(host.querySelector(".trait-picker")!.parentElement).toBe(host);
+    page.remove(); await Promise.resolve();
+    expect(host.querySelector(".trait-picker")).toBeNull();
   });
 });
 
@@ -504,53 +459,27 @@ describe("choosing a colony's look", () => {
  * squares is a bench that looks finished. And a number is something to play toward, where
  * a padlock only says you cannot — the same rule the granary's levels follow.
  */
-describe("slots that have not opened yet", () => {
-  const at = (chapter: number): ProfileStore =>
-    store(stopColony((chapter - 1) * ROAD_CHAPTER_STOPS));
-
-  it("draws all five, with the shut ones naming their chapter", () => {
-    const root = bench(at(20));
-    const cells = Array.from(root.querySelectorAll("#trWorn > *"));
-    expect(cells.length, "the bench shrank instead of locking").toBe(5);
-    expect(root.querySelectorAll("#trWorn .trtile.shut").length).toBe(3);
-    expect(cells[2]?.textContent).toContain(`CH ${slotChapter(2)}`);
-    expect(cells[4]?.textContent).toContain(`CH ${slotChapter(4)}`);
-    // The two that ARE open are live controls.
-    expect((cells[0] as HTMLElement).tagName).toBe("BUTTON");
-    expect((cells[2] as HTMLElement).tagName, "a shut slot was a button").not.toBe("BUTTON");
+describe("slots every five chapters", () => {
+  const at = (chapter:number):ProfileStore => store(stopColony(Math.max(0,chapter-1)*ROAD_CHAPTER_STOPS));
+  it("shows all five individual slots with their actual chapter requirements", () => {
+    const root=bench(at(5));
+    expect(slots(root)).toHaveLength(5);
+    expect(root.querySelectorAll(".trait-slot-row .shut")).toHaveLength(3);
+    expect(slots(root)[2]!.textContent).toContain("CH 10");
+    expect(slots(root)[4]!.textContent).toContain("CH 20");
   });
-
-  /** "2 / 5" on a bench with two slots reads as three empty ones nobody can see. */
-  it("counts against the slots that are open, not against five", () => {
-    const said = bench(at(20)).textContent ?? "";
-    expect(said).toContain("Equipped  0 / 2");
-    expect(said).not.toContain("0 / 5");
-  });
-
-  it("opens them one at a time, ten chapters apart", () => {
-    for (const [chapter, open] of [[10, 1], [20, 2], [30, 3], [40, 4], [50, 5]] as const) {
-      const root = bench(at(chapter));
-      expect(root.querySelectorAll("#trWorn .trtile.shut").length,
-        `chapter ${chapter} did not have ${open} slots`).toBe(5 - open);
+  it("opens slots at 0, 5, 10, 15 and 20 on both pages", () => {
+    expect(SLOT_STEP).toBe(5);
+    expect([0,1,2,3,4].map(slotChapter)).toEqual([0,5,10,15,20]);
+    for(const [chapter,open] of [[1,1],[5,2],[10,3],[15,4],[20,5]] as const) {
+      for(const scope of ["hill","fire"] as const) {
+        const root=bench(at(chapter),scope);
+        expect(root.querySelectorAll(".trait-slot-row .shut")).toHaveLength(5-open);
+        expect(root.querySelector(".trait-slots-count")!.textContent).toBe(`0 / ${open}`);
+      }
     }
-    expect(SLOT_STEP).toBe(10);
-  });
-
-  /** The opener row is the same five squares, so it locks the same way. */
-  it("locks the same slots on the row that opens the bench", () => {
-    const row = traitOpener(at(20), "hill", () => {}, null);
-    expect(row.querySelectorAll(".tropen-slot").length).toBe(5);
-    expect(row.querySelectorAll(".tropen-slot.shut").length).toBe(3);
-    expect(row.textContent).toContain("No traits equipped");
-  });
-
-  it("counts against the open slots on that row too", () => {
-    const s = at(20);
-    s.equipTrait("hill", s.findTrait(UNIVERSAL[0]!.id, "rare")!.uid);
-    expect(traitOpener(s, "hill", () => {}, null).textContent).toContain("1 of 2 equipped");
   });
 });
-
 
 /* ======================================================================= FUSING
 

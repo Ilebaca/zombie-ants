@@ -13,6 +13,7 @@ export function dismissTraitPopups(host: HTMLElement, all = false): boolean {
     if (!top) break;
     top.dispatchEvent(new Event("dismiss-trait-popup"));
     dismissed = true;
+    if (host.contains(top)) break;
   } while (all);
   return dismissed;
 }
