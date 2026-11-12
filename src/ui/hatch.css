@@ -23,3 +23,13 @@
 #app #luckyhatch .hb-c { opacity: 1; }
 
 #app #luckyhatch .hatchtrade .ht-c:not(.ht-to) { color: var(--hud-ink); }
+
+/* Let the stage absorb spare height so the controls finish at the normal page
+   inset. Auto bases and no shrinking preserve scrolling on shorter phones. */
+#app #luckyhatch > .screenbody {
+  flex: 1 0 auto;
+  padding-bottom: var(--action-depth);
+}
+#app #luckyhatch .hatchwrap,
+#app #luckyhatch .hatchstage { flex: 1 0 auto; }
+#app #luckyhatch .hatchfoot { padding-bottom: 0; }
