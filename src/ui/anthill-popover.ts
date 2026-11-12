@@ -77,7 +77,7 @@ export function mountAnthillPopup(
   });
   observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:["class"]});
   host.addEventListener("click", outside, true);
-  host.addEventListener("keydown", key, true);
+  document.addEventListener("keydown", key, true);
   owner.addEventListener("scroll", scrolled);
   window.addEventListener("resize", place);
   window.visualViewport?.addEventListener("resize", place);
@@ -85,7 +85,7 @@ export function mountAnthillPopup(
     live = false;
     observer.disconnect();
     host.removeEventListener("click", outside, true);
-    host.removeEventListener("keydown", key, true);
+    document.removeEventListener("keydown", key, true);
     owner.removeEventListener("scroll", scrolled);
     window.removeEventListener("resize", place);
     window.visualViewport?.removeEventListener("resize", place);

@@ -10,7 +10,6 @@
 #app #anthill .hill-cover {
   position: relative;
   isolation: isolate;
-  z-index: 1;
   flex: none;
   width: 100%;
   height: calc(clamp(280px, 82vw, 420px) + var(--safe-top));
@@ -78,7 +77,7 @@
   background: transparent;
   overflow: visible;
 }
-#app #anthill .nest-lvl:first-child .room { margin-top: 0; }
+#app #anthill .nest-lvl[data-chamber="granary"] .room { margin-top: 0; }
 #app #anthill .hill-tunnels {
   position: absolute;
   left: 0;
@@ -87,6 +86,7 @@
   fill: none;
   stroke: #2c0c18;
   stroke-width: 8px;
+  overflow: hidden;
   stroke-linecap: round;
   stroke-linejoin: round;
 }

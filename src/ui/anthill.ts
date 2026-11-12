@@ -88,7 +88,8 @@ export function buildAnthill(store: ProfileStore): HTMLElement {
     panel.append(header, content);
     panel.addEventListener("dismiss-anthill-popup", close);
     unmountPopup = mountAnthillPopup(root, anchor, panel, close, makeSpace);
-    if (makeSpace) dismiss.focus({ preventScroll: true });
+    const focus = makeSpace ? dismiss : panel.querySelector<HTMLButtonElement>(".buybtn:not(:disabled)") ?? dismiss;
+    focus.focus({ preventScroll: true });
   };
 
   const toggle = (id: string): void => {

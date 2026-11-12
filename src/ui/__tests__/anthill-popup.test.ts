@@ -69,6 +69,8 @@ describe("Anthill floating chamber details", () => {
     expect(host.querySelector(".hill-popup")?.getAttribute("data-chamber")).toBe("royal");
     expect(host.querySelector(".hill-popup .che-next")?.textContent).toContain("+2 soldiers");
     expect(root.querySelector('[data-chamber="royal"] .room-lv')?.textContent).toBe("LV 1/5");
+    document.body.dispatchEvent(new KeyboardEvent("keydown", {key:"Escape", bubbles:true}));
+    expect(host.querySelector(".hill-popup")).toBeNull();
   });
 
   it("removes the portal when the owner is hidden or removed", async () => {
