@@ -21,7 +21,8 @@ import type {
 import { setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
 import { buildAvatarPicker } from "./avatarpicker";
-import { buildInventory, buildTraitBench } from "./traits";
+import { buildInventory } from "./traits";
+import { dismissTraitPopups } from "./trait-popovers";
 import { settleMatch } from "./settle";
 import { buildAntarium } from "./antarium";
 import { buildSpeciesPage } from "./species";
@@ -88,7 +89,7 @@ type ScreenId =
   | "home" | "formation" | "history"
   | "anthill" | "antarium" | "antup" | "achievements" | "quests" | "profile"
   | "challenges" | "daily" | "rules" | "settings" | "news" | "friends" | "support"
-  | "luckyhatch" | "leaderboard" | "shop" | "traits" | "inventory" | "keepsafe"
+  | "luckyhatch" | "leaderboard" | "shop" | "inventory" | "keepsafe"
   | "avatars" | "inbox";
 
 /**
@@ -133,15 +134,6 @@ export class App {
   private nav: HTMLElement | null = null;
   /** Which colony the #antup page is showing. */
   private speciesPage: SpeciesId = "leafcutter";
-  /**
-   * Which bench the trait screen is showing, and where Back goes.
-   *
-   * One screen serves the anthill's five and every colony's five, so the scope has to
-   * live out here — and so does the way back, because the same screen is reached from
-   * two different places and must not strand the player on the other one.
-   */
-  private traitScope: TraitScope = "hill";
-  private traitBack: ScreenId = "anthill";
   private menu: HTMLElement | null = null;
   /** The five-tab deck. Built on first use, then it outlives every screen. */
   private deck: Deck<DeckId> | null = null;
@@ -443,6 +435,7 @@ export class App {
    */
   destroy(): void {
     this.destroyed = true;
+    dismissTraitPopups(this.host, true);
     dismissRewardReveal(this.host);
     this.homeGain.cancel();
     this.dropLive();
@@ -521,6 +514,7 @@ export class App {
 
   /** Discard every view reference when the account's DOM is replaced. */
   private clearAccountView(): void {
+    dismissTraitPopups(this.host, true);
     dismissRewardReveal(this.host);
     this.homeGain.cancel();
     this.tour.stop();
@@ -770,6 +764,7 @@ export class App {
    * press or throw the game away.
    */
   goBack(): boolean {
+    if (dismissTraitPopups(this.host)) return true;
     if (dismissRewardReveal(this.host)) return true;
     // The tour holds the interface until it gets the tap it asked for. Swallowed rather
     // than obeyed: closing the app is not the answer to a step somebody is reading.
@@ -809,6 +804,7 @@ export class App {
   /* --------------------------------------------------------------------- ROUTER */
 
   private show(id: ScreenId): void {
+    dismissTraitPopups(this.host, true);
     dismissRewardReveal(this.host);
     if (id !== "home") this.homeGain.cancel();
     this.activeScreen = id;
@@ -933,11 +929,17 @@ export class App {
     });
   }
 
-  /** Open a bench, remembering which screen sent us so Back is not a guess. */
-  private openTraits(scope: TraitScope, back: ScreenId): void {
-    this.traitScope = scope;
-    this.traitBack = back;
-    this.show("traits");
+  /** Trait collection links lead to the loadout on its owning page. */
+  private openTraits(scope: TraitScope): void {
+    if (scope === "hill") this.show("anthill");
+    else {
+      this.speciesPage = this.profile.isUnlocked(scope) ? scope : this.profile.get().lastSpecies;
+      this.show("antup");
+    }
+    queueMicrotask(() => {
+      const row = this.host.querySelector<HTMLElement>(scope === "hill" ? "#hillTraits" : "#spgTraits");
+      row?.scrollIntoView?.({ block: "center" });
+    });
   }
 
   /** The slide-in drawer behind the hamburger. One element, reused. */
@@ -1008,7 +1010,7 @@ export class App {
       return screen;
     }
     if (id === "anthill") {
-      return buildAnthill(this.profile, { onTraits: () => this.openTraits("hill", "anthill") });
+      return buildAnthill(this.profile);
     }
     if (id === "keepsafe") {
       return buildKeepSafe(this.profile, {
@@ -1021,9 +1023,8 @@ export class App {
     if (id === "inventory") {
       return buildInventory(this.profile, {
         onBack: () => this.show("home"),
-        // Straight into the bench a tile belongs to, and Back from there comes here —
-        // the inventory is where the player was, not the screen the bench usually sits on.
-        onOpen: (scope) => this.openTraits(scope, "inventory"),
+        // Open the inline controls on an owning page, with no separate trait screen.
+        onOpen: (scope) => this.openTraits(scope),
       });
     }
     if (id === "avatars") {
@@ -1033,12 +1034,6 @@ export class App {
         onBack: () => this.show("profile"),
         // The top bar wears the avatar too, so home is stale the moment one is chosen.
         onChanged: () => this.deck?.refresh("home"),
-      });
-    }
-    if (id === "traits") {
-      return buildTraitBench(this.profile, {
-        scope: this.traitScope,
-        onBack: () => this.show(this.traitBack),
       });
     }
     if (id === "achievements") return buildColonyRoad(this.profile, () => this.show("home"), () => this.show("shop"));
@@ -1055,7 +1050,7 @@ export class App {
         // Straight to the anthill's five: they are the ones that apply whatever colony
         // is fielded, so they are the right first thing to see from a screen about the
         // player rather than about one species.
-        onTraits: () => this.openTraits("hill", "profile"),
+        onTraits: () => this.openTraits("hill"),
         // The face on this screen is the one the picker changes, so it opens from here.
         onAvatars: () => this.show("avatars"),
       });
@@ -1172,7 +1167,6 @@ export class App {
       return buildSpeciesPage(this.profile, {
         species: this.speciesPage,
         onBack: () => this.show("antarium"),
-        onTraits: () => this.openTraits(this.speciesPage, "antup"),
       });
     }
     return buildAntarium(this.profile, {

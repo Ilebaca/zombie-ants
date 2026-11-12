@@ -16,10 +16,9 @@
  *             sooner — a chance, so a run of matches without it is the design rather
  *             than a bug (engine/state.ts rolls it off the seeded stream)
  *
- * WHERE THEY GO. A species trait goes in one of that colony's five slots; a universal
- * trait goes in one of the anthill's five. That is the same split the rest of the
- * progression layer already has — research is per-colony, chambers are account-wide — so
- * a player who already understands the Anthill understands where a universal trait lives.
+ * WHERE THEY GO. Every trait can be equipped by any species, at any research level.
+ * The Anthill retains its universal-trait loadout. Each owned copy is equipped in
+ * one place at a time, so moving it never doubles its contribution.
  *
  * WHAT THE ENGINE SEES is three finished percentages (PlayerMods.atkPct / defPct /
  * boonPct). The engine owns what a percentage DOES; this file owns what a tier is WORTH,
@@ -88,44 +87,16 @@ export const TRAIT_TIER: Record<TraitTier, TraitTierDef> = Object.fromEntries(
 /** Slots, per colony and for the anthill. Five each, as designed. */
 export const TRAIT_SLOTS = 5;
 
-/**
- * SLOTS OPEN ONE EVERY TEN CHAPTERS, on both benches.
- *
- * Five slots handed over at once is a bench a player fills in an afternoon and never
- * looks at again — the choice a trait is supposed to be only exists while there are more
- * traits than room. Opened one at a time it is a decision every ten chapters instead: what
- * comes off to make room, and what the fifth one is finally for.
- *
- * The first slot is available from chapter 1. Later slots retain their chapter
- * 20/30/40/50 milestones, so opening the feature earlier does not change later progression.
- *
- * IT IS THE SAME LADDER ON BOTH BENCHES. The anthill's five and a colony's five open at
- * the same chapters, because they are the same feature seen twice — a player who has four
- * slots has four everywhere, and a rule that differed per bench would be two rules to
- * learn for one thing.
- */
-export const SLOT_STEP = 10;
-
-/** The chapter slot `i` (0-based) opens at. */
-export const slotChapter = (i: number): number => i === 0 ? TRAITS_CHAPTER : (i + 1) * SLOT_STEP;
-
-/**
- * How many slots this chapter has opened, 0 through `TRAIT_SLOTS`.
- *
- * Clamped at both ends: below the chapter traits open at there are none, and past the end
- * of the road there are five — never six, however far a colony runs past the last rung.
- */
-export function slotsOpen(chapter: number, pass = false): number {
-  // All players have the first slot from chapter 1. Retain pass compatibility for
-  // legacy callers; ownership never opens additional progression slots.
-  let n = pass ? 1 : 0;
-  while (n < TRAIT_SLOTS && chapter >= slotChapter(n)) n++;
-  return n;
+/** Five slots: available immediately, then at chapters 5, 10, 15 and 20. */
+export const SLOT_STEP = 5;
+export const slotChapter = (i: number): number => i * SLOT_STEP;
+export function slotsOpen(chapter: number, _pass = false): number {
+  return Math.max(1, Math.min(TRAIT_SLOTS, Math.floor(chapter / SLOT_STEP) + 1));
 }
 
 /** Whether one slot is open. The only question the screens actually ask. */
 export const slotOpen = (i: number, chapter: number, pass = false): boolean =>
-  i < slotsOpen(chapter, pass);
+  i >= 0 && i < slotsOpen(chapter, pass);
 
 /**
  * Ceilings on what a whole collection may add.
@@ -308,7 +279,7 @@ const BY_ID = new Map(TRAITS.map((t) => [t.id, t]));
 
 export const traitDef = (id: string): TraitDef | null => BY_ID.get(id) ?? null;
 
-/** The traits that can go in a given bench: a colony's own, or the universal ones. */
+/** Traits grouped by their biological origin, for drops and collection labels. */
 export const traitsFor = (scope: TraitScope): TraitDef[] =>
   TRAITS.filter((t) => (scope === "hill" ? t.species === null : t.species === scope));
 
@@ -341,7 +312,7 @@ export const itemDef = (item: TraitItem): TraitDef | null => traitDef(item.def);
 export function fitsScope(item: TraitItem, scope: TraitScope): boolean {
   const def = itemDef(item);
   if (!def) return false;
-  return scope === "hill" ? def.species === null : def.species === scope;
+  return scope === "hill" ? def.species === null : true;
 }
 
 /* -------------------------------------------------------------- THE TOTALS */

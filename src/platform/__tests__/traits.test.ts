@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-  ATK_CAP, LUCK_CAP, SLOT_STEP, TRAITS, TRAITS_CHAPTER, TRAIT_SLOTS, TRAIT_TIER,
+  ATK_CAP, LUCK_CAP, SLOT_STEP, TRAITS, TRAIT_SLOTS, TRAIT_TIER,
   TRAIT_TIERS, combine, effectText, fitsScope, rollDrop, rollTier, slotChapter, slotOpen,
   slotsOpen, tierOdds, totalsOf, traitDef, traitsFor,
 } from "../traits";
@@ -16,7 +16,7 @@ import type { TraitItem, TraitTier } from "../traits";
 import { ProfileStore, normalise } from "../profile";
 import { MemoryStore } from "../storage";
 import { SPECIES } from "../../engine";
-import { ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, ROAD_LAST, stopColony } from "../road";
+import { ROAD_CHAPTER_STOPS, ROAD_LAST, stopColony } from "../road";
 import { COLONY_START } from "../colony";
 
 const item = (def: string, tier: TraitTier, uid = def): TraitItem => ({ uid, def, tier });
@@ -117,14 +117,14 @@ describe("what fits where", () => {
   it("keeps a colony's trait out of the anthill and everyone else's colony", () => {
     const mine = TRAITS.find((t) => t.species === "fire")!;
     expect(fitsScope(item(mine.id, "rare"), "fire")).toBe(true);
-    expect(fitsScope(item(mine.id, "rare"), "ghost")).toBe(false);
+    expect(fitsScope(item(mine.id, "rare"), "ghost")).toBe(true);
     expect(fitsScope(item(mine.id, "rare"), "hill")).toBe(false);
   });
 
   it("keeps a universal trait out of a colony", () => {
     const shared = TRAITS.find((t) => t.species === null)!;
     expect(fitsScope(item(shared.id, "rare"), "hill")).toBe(true);
-    expect(fitsScope(item(shared.id, "rare"), "fire")).toBe(false);
+    expect(fitsScope(item(shared.id, "rare"), "fire")).toBe(true);
   });
 });
 
@@ -250,8 +250,9 @@ describe("the bag and the benches", () => {
     const mine = TRAITS.find((t) => t.species === "fire")!;
     const one = s.findTrait(mine.id, "rare")!;
     expect(s.equipTrait("hill", one.uid)).toBe(false);
-    expect(s.equipTrait("ghost", one.uid)).toBe(false);
+    expect(s.equipTrait("ghost", one.uid)).toBe(true);
     expect(s.equipTrait("fire", one.uid)).toBe(true);
+    expect(s.bench("ghost")[0]).toBeNull();
   });
 
   it("refuses a sixth trait rather than pushing one out", () => {
@@ -268,7 +269,9 @@ describe("the bag and the benches", () => {
     const s = rich();
     const one = s.findTrait(TRAITS.find((t) => t.species === null)!.id, "rare")!;
     expect(s.equipTrait("hill", one.uid, 0)).toBe(true);
-    expect(s.equipTrait("hill", one.uid, 1)).toBe(false);
+    expect(s.equipTrait("hill", one.uid, 1)).toBe(true);
+    expect(s.bench("hill")[0]).toBeNull();
+    expect(s.bench("hill")[1]?.uid).toBe(one.uid);
   });
 
   /** Throwing one away has to take it off the bench in the SAME write. */
@@ -359,106 +362,71 @@ describe("reading a save back", () => {
  * again — the choice a trait is supposed to be only exists while there are more traits
  * than room.
  */
-describe("when each slot opens", () => {
-  const at = (chapter: number): ProfileStore => {
-    const s = new ProfileStore(new MemoryStore());
-    // The colony is what decides the chapter, so a chapter is set by picking a rung.
-    s.update((p) => { p.colony = chapter <= 1 ? COLONY_START : stopColony((chapter - 1) * ROAD_CHAPTER_STOPS); });
-    return s;
+describe("slots opening immediately, then every five chapters", () => {
+  const at = (chapter:number):ProfileStore => {
+    const s=new ProfileStore(new MemoryStore());
+    s.update(p=>{p.colony=chapter<=1?COLONY_START:stopColony((chapter-1)*ROAD_CHAPTER_STOPS);});return s;
   };
-
-  it("opens one every ten chapters, the first where traits open", () => {
-    expect(SLOT_STEP).toBe(10);
-    expect([0, 1, 2, 3, 4].map(slotChapter)).toEqual([1, 20, 30, 40, 50]);
-    // The first opens with the feature itself, and the last on the road's last chapter —
-    // so the bench is still growing on the final rung.
-    expect(slotChapter(0)).toBe(TRAITS_CHAPTER);
-    expect(slotChapter(TRAIT_SLOTS - 1)).toBe(ROAD_CHAPTERS);
-  });
-
-  it("counts none before traits open, and never more than five", () => {
-    expect(slotsOpen(0)).toBe(0);
-    expect(slotsOpen(1)).toBe(1);
-    expect(slotsOpen(9)).toBe(1);
-    expect(slotsOpen(10)).toBe(1);
-    expect(slotsOpen(19)).toBe(1);
-    expect(slotsOpen(20)).toBe(2);
-    expect(slotsOpen(50)).toBe(TRAIT_SLOTS);
-    // However far a colony runs past the last rung, there is no sixth slot.
-    expect(slotsOpen(500)).toBe(TRAIT_SLOTS);
-    expect(slotOpen(0, 10)).toBe(true);
-    expect(slotOpen(1, 10)).toBe(false);
-  });
-
-  /** THE SAME LADDER ON BOTH BENCHES — they are the same feature seen twice. */
-  it("refuses a slot the road has not opened, on either bench", () => {
-    const s = at(10);
-    expect(s.slotsOpen()).toBe(1);
-    const uids = TRAITS.filter((t) => t.species === null).slice(0, 2)
-      .map((t) => s.findTrait(t.id, "common")!.uid);
-
-    expect(s.equipTrait("hill", uids[0]!)).toBe(true);
-    expect(s.equipTrait("hill", uids[1]!), "a second slot was open at chapter 10").toBe(false);
-    expect(s.equipTrait("hill", uids[1]!, 1), "a locked slot took a trait").toBe(false);
-    expect(s.bench("hill").filter(Boolean).length).toBe(1);
-
-    const mine = s.findTrait(TRAITS.find((t) => t.species === "fire")!.id, "common")!;
-    expect(s.equipTrait("fire", mine.uid)).toBe(true);
-    const more = s.findTrait(TRAITS.filter((t) => t.species === "fire")[1]!.id, "common")!;
-    expect(s.equipTrait("fire", more.uid), "a colony bench had a different ladder").toBe(false);
-  });
-
-  it("keeps chapter-one access and the slot schedule the same after a pass purchase", () => {
-    const s = at(1);
-    expect(s.slotsOpen()).toBe(1);
-    s.grantPass();
-    expect(s.traitsOpen()).toBe(true);
-    expect(s.hatchOpen()).toBe(true);
-    expect(s.slotsOpen()).toBe(1);
-    expect(slotOpen(0, 1, true)).toBe(true);
-    expect(slotOpen(1, 1, true)).toBe(false);
-    for (const scope of ["hill", "fire"] as const) {
-      const def = TRAITS.find((t) => scope === "hill" ? t.species === null : t.species === scope)!;
-      const one = s.findTrait(def.id, "rare")!;
-      expect(s.equipTrait(scope, one.uid)).toBe(true);
-      expect(s.benchTotals(scope).atkPct).toBeGreaterThan(0);
+  it("uses chapter milestones 0, 5, 10, 15 and 20", () => {
+    expect(SLOT_STEP).toBe(5);
+    expect([0,1,2,3,4].map(slotChapter)).toEqual([0,5,10,15,20]);
+    for(const [chapter,open] of [[0,1],[1,1],[4,1],[5,2],[9,2],[10,3],[14,3],[15,4],[19,4],[20,5],[50,5],[500,5]]) {
+      expect(slotsOpen(chapter!)).toBe(open);
+      expect(slotsOpen(chapter!,true)).toBe(open);
     }
-    const totals = s.modsFor("fire").you.atkPct;
-    expect(totals).toBeGreaterThan(s.benchTotals("hill").atkPct);
-    s.update((p) => { p.colony = 0; });
-    expect(s.traitsOpen()).toBe(true);
+    expect(slotOpen(-1,20)).toBe(false);
+    expect(slotOpen(4,19)).toBe(false);
+    expect(slotOpen(4,20)).toBe(true);
+  });
+  it("refuses closed slots on both loadouts", () => {
+    const s=at(1);
+    const uids=TRAITS.filter(t=>t.species===null).slice(0,2).map(t=>s.findTrait(t.id,"common")!.uid);
+    for(const scope of ["hill","fire"] as const) {
+      expect(s.equipTrait(scope,uids[0]!,0)).toBe(true);
+      expect(s.equipTrait(scope,uids[1]!,1)).toBe(false);
+    }
+    expect(s.bench("hill")[0]).toBeNull();
+    expect(s.bench("fire")[0]?.uid).toBe(uids[0]);
+  });
+  it("does not change milestones after buying a pass", () => {
+    const s=at(1);s.grantPass();
     expect(s.slotsOpen()).toBe(1);
-    expect(s.modsFor("fire").you.atkPct).toBe(totals);
-  });
-
-  it("names the chapter of the next slot, and nothing once all five are open", () => {
-    expect(at(10).nextSlotChapter()).toBe(20);
-    expect(at(20).nextSlotChapter()).toBe(30);
-    expect(at(50).nextSlotChapter()).toBeNull();
-  });
-
-  /**
-   * A COLONY SHRINKS ON A DEFEAT, so a player can drop back under a boundary. The trait
-   * stays where it is — clearing the slot would mean a loss silently costing a loadout —
-   * and simply stops counting until they climb again.
-   */
-  it("stops counting a trait in a slot that has closed, without throwing it away", () => {
-    const s = at(20);
+    s.update(p=>{p.colony=stopColony(4*ROAD_CHAPTER_STOPS);});
     expect(s.slotsOpen()).toBe(2);
-    const uids = TRAITS.filter((t) => t.species === null).slice(0, 2)
-      .map((t) => s.findTrait(t.id, "mythic")!.uid);
-    for (const uid of uids) expect(s.equipTrait("hill", uid)).toBe(true);
-    const both = s.benchTotals("hill");
-
-    s.update((p) => { p.colony = stopColony(9 * ROAD_CHAPTER_STOPS); });      // back to chapter 10
+    expect(s.nextSlotChapter()).toBe(10);
+    expect(at(20).nextSlotChapter()).toBeNull();
+  });
+  it("equips every rarity on a level-zero species", () => {
+    const s=at(1);
+    for(const tier of TRAIT_TIERS) {
+      const one=s.findTrait(TRAITS.find(t=>t.species==="fire")!.id,tier)!;
+      expect(s.equipTrait("bullet",one.uid,0)).toBe(true);
+      expect(s.bench("bullet")[0]?.uid).toBe(one.uid);
+      expect(s.get().research.bullet?.level??0).toBe(0);
+    }
+  });
+  it("moves one owned copy between pages without double-counting or losing it on reload", () => {
+    const memory=new MemoryStore(),s=new ProfileStore(memory);
+    const one=s.findTrait(TRAITS.find(t=>t.species===null)!.id,"mythic")!;
+    expect(s.equipTrait("hill",one.uid,0)).toBe(true);
+    expect(s.equipTrait("bullet",one.uid,0)).toBe(true);
+    expect(s.bench("hill")[0]).toBeNull();
+    expect(s.bag).toHaveLength(1);
+    const reopened=new ProfileStore(memory);
+    expect(reopened.bench("bullet")[0]?.uid).toBe(one.uid);
+    expect(reopened.bench("hill")[0]).toBeNull();
+    expect(reopened.modsFor("bullet").you.atkPct).toBe(TRAIT_TIER.mythic.stat);
+  });
+  it("keeps an equipped copy saved when a slot closes after troop losses", () => {
+    const s=at(5);
+    const held=TRAITS.filter(t=>t.species===null).slice(0,2).map(t=>s.findTrait(t.id,"mythic")!);
+    held.forEach(i=>expect(s.equipTrait("hill",i.uid)).toBe(true));
+    const both=s.benchTotals("hill");
+    s.update(p=>{p.colony=COLONY_START;});
     expect(s.slotsOpen()).toBe(1);
-    const one = s.benchTotals("hill");
-    expect(one.atkPct + one.defPct + one.luckPct,
-      "a closed slot still counted").toBeLessThan(both.atkPct + both.defPct + both.luckPct);
-    // ...and it is still THERE, so climbing back restores it.
-    expect(s.bench("hill").filter(Boolean).length).toBe(2);
-    s.update((p) => { p.colony = stopColony(19 * ROAD_CHAPTER_STOPS); });
+    expect(s.bench("hill").filter(Boolean)).toHaveLength(2);
+    expect(s.benchTotals("hill").atkPct).toBeLessThan(both.atkPct);
+    s.update(p=>{p.colony=stopColony(4*ROAD_CHAPTER_STOPS);});
     expect(s.benchTotals("hill")).toEqual(both);
   });
 });
-

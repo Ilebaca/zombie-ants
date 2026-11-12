@@ -46,24 +46,20 @@ describe("going up one", () => {
     app.destroy();
   });
 
-  it("dismisses trait details, then the picker, before leaving the bench", () => {
-    const { host, app, profile } = open();
-    profile.findTrait("u.mandible", "rare");
+  it("dismisses inline trait layers before leaving the owning page", () => {
+    const {host,app,profile}=open(); profile.findTrait("u.mandible","rare");
     host.querySelector<HTMLButtonElement>("[data-nav='anthill']")!.click();
-    host.querySelector<HTMLButtonElement>("#hillTraits")!.click();
-    host.querySelector<HTMLButtonElement>("#trWorn [data-slot='0']")!.click();
-    host.querySelector<HTMLButtonElement>("#trBag .trtile")!.click();
+    host.querySelector<HTMLButtonElement>("#hillTraits [data-slot='0']")!.click();
+    host.querySelector<HTMLButtonElement>(".trait-picker-grid .trtile")!.click();
     expect(host.querySelector(".trait-detail-layer")).not.toBeNull();
     expect(app.goBack()).toBe(true);
     expect(host.querySelector(".trait-detail-layer")).toBeNull();
     expect(host.querySelector(".trait-picker")).not.toBeNull();
-    expect(showing(host)).toContain("traits");
+    expect(host.querySelector("#traits")).toBeNull();
     expect(app.goBack()).toBe(true);
     expect(host.querySelector(".trait-picker")).toBeNull();
-    expect(showing(host)).toContain("traits");
     expect(app.goBack()).toBe(true);
-    expect(showing(host)).not.toContain("traits");
-    app.destroy();
+    expect(app.goBack()).toBe(false); app.destroy();
   });
 
   it("comes back to home from another deck screen", () => {

@@ -23,14 +23,9 @@ import {
 import type { ChamberDef, GranaryState, ProfileStore } from "../platform";
 import { buyButton, effectRow, el, pips, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
-import { traitOpener } from "./traits";
+import { buildTraitSlots } from "./traits";
 
-export interface AnthillOptions {
-  /** Open the anthill's five universal trait slots. */
-  onTraits?: () => void;
-}
-
-export function buildAnthill(store: ProfileStore, opts: AnthillOptions = {}): HTMLElement {
+export function buildAnthill(store: ProfileStore): HTMLElement {
   const root = screenEl("anthill");
   // Which chamber is standing open. It survives a re-render — buying a level must not
   // close the room the player is in the middle of digging.
@@ -87,9 +82,7 @@ export function buildAnthill(store: ProfileStore, opts: AnthillOptions = {}): HT
     // to whichever colony is fielded, which is exactly what a chamber does, so this is
     // the screen they belong on. It is not IN the cross-section, because a trait is not
     // a room: nothing is dug for it.
-    wrap.append(el("div", "secthead", "Traits"));
-    wrap.appendChild(traitOpener(store, "hill", () => opts.onTraits?.(),
-      null));
+    wrap.appendChild(buildTraitSlots(store, { scope: "hill" }));
 
     body.appendChild(wrap);
     root.appendChild(body);

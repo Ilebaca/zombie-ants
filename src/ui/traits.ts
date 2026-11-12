@@ -10,15 +10,17 @@ import {
 import type { ProfileStore, TraitItem, TraitScope } from "../platform";
 import { buyButton, el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
+import { mountTraitPicker, traitPopupHost } from "./trait-popovers";
 
-export interface TraitBenchOptions {
+export interface TraitSlotsOptions {
   scope: TraitScope;
-  onBack: () => void;
   onChanged?: () => void;
 }
 
-export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): HTMLElement {
-  const root = screenEl("traits");
+export function buildTraitSlots(store: ProfileStore, opts: TraitSlotsOptions): HTMLElement {
+  const root = el("div", "trait-slots");
+  root.id = opts.scope === "hill" ? "hillTraits" : "spgTraits";
+  let unmountPicker = (): void => {};
   const { scope } = opts;
   let selectedSlot: number | null = null;
   let detail: HTMLElement | null = null;
@@ -38,13 +40,7 @@ export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): H
     const slot = selectedSlot;
     selectedSlot = null;
     render();
-    root.querySelector<HTMLButtonElement>(`#trWorn [data-slot="${slot}"]`)?.focus({ preventScroll: true });
-  };
-
-  const back = (): void => {
-    if (detail) closeDetail();
-    else if (selectedSlot !== null) closePicker();
-    else opts.onBack();
+    root.querySelector<HTMLButtonElement>(`.trait-slot-row [data-slot="${slot}"]`)?.focus({ preventScroll: true });
   };
 
   const changed = (): void => {
@@ -59,7 +55,7 @@ export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): H
     returnFocus = source;
     const def = itemDef(item);
     const tier = TRAIT_TIER[item.tier];
-    const worn = store.bench(scope).some(current => current?.uid === item.uid);
+    const worn = selectedSlot !== null && store.bench(scope)[selectedSlot]?.uid === item.uid;
     const compatible = fitsScope(item, scope);
     const layer = el("div", "trait-detail-layer");
     const card = el("section", "trait-detail");
@@ -81,11 +77,11 @@ export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): H
     name.id = "traitDetailName";
     const effect = el("p", "trait-detail-effect", def ? effectText(def, item.tier) : "");
     effect.id = "traitDetailEffect";
-    const owner = def ? scopeName(def.species ?? "hill") : "";
+    const owner = Object.entries(store.get().wearing).find(([, slots]) => slots.includes(item.uid))?.[0] as TraitScope | undefined;
     card.append(
       close, el("div", "trait-detail-tier", tier.name), emblem, name, effect,
       el("p", "trait-detail-note", def?.note ?? ""),
-      el("p", "trait-detail-scope", `${owner}${compatible ? "" : " · Fits a different bench"}`),
+      el("p", "trait-detail-scope", !compatible ? `${def ? scopeName(def.species ?? "hill") : "Species"} trait · Anthill uses universal traits` : owner && !worn ? `Moves from ${scopeName(owner)} when equipped` : "Usable at any species level"),
     );
 
     const equip = el("button", "action-button trait-detail-equip", worn ? "Equipped" : "Equip") as HTMLButtonElement;
@@ -110,23 +106,22 @@ export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): H
       }
     };
     detail = layer;
-    root.appendChild(layer);
+    layer.addEventListener("dismiss-trait-popup", closeDetail);
+    traitPopupHost(root).appendChild(layer);
     close.focus({ preventScroll: true });
   };
 
   const picker = (): HTMLElement => {
     const panel = el("section", "trait-picker");
-    panel.id = "traitPicker";
+    panel.id = `traitPicker-${scope}`;
     panel.setAttribute("aria-label", "Choose a trait");
     panel.style.setProperty("--trait-arrow", `${10 + (selectedSlot ?? 0) * 20}%`);
     const head = el("div", "trait-picker-head");
     head.append(el("span", undefined, "Your traits"), el("span", "trait-picker-count", String(store.bag.length)));
     panel.appendChild(head);
     const list = el("div", "trgrid trait-picker-grid");
-    list.id = "trBag";
-    const worn = new Set(store.bag.filter(item =>
-      store.bench(itemDef(item)?.species ?? "hill").some(current => current?.uid === item.uid),
-    ).map(item => item.uid));
+    list.classList.add("trait-picker-grid");
+    const worn = new Set(Object.values(store.get().wearing).flat().filter(Boolean));
     const items = [...store.bag].sort((a, b) => Number(fitsScope(b, scope)) - Number(fitsScope(a, scope)));
     for (const item of items) {
       const cell = readOnlyTile(item, () => openDetail(item, cell));
@@ -149,7 +144,7 @@ export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): H
 
   const slotRow = (): HTMLElement => {
     const row = el("div", "trgrid");
-    row.id = "trWorn";
+    row.classList.add("trait-slot-row");
     store.bench(scope).forEach((item, i) => {
       if (i >= store.slotsOpen()) {
         const shut = el("span", "trtile shut");
@@ -165,7 +160,7 @@ export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): H
         closeDetail();
         selectedSlot = i;
         render();
-        root.querySelector<HTMLButtonElement>(`#trWorn [data-slot="${i}"]`)?.focus({ preventScroll: true });
+        root.querySelector<HTMLButtonElement>(`.trait-slot-row [data-slot="${i}"]`)?.focus({ preventScroll: true });
       };
       const cell = item ? readOnlyTile(item, select) : el("button", "trtile empty") as HTMLButtonElement;
       cell.type = "button";
@@ -178,10 +173,20 @@ export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): H
       cell.classList.toggle("armed", selectedSlot === i);
       cell.dataset.slot = String(i);
       cell.setAttribute("aria-expanded", String(selectedSlot === i));
-      if (selectedSlot === i) cell.setAttribute("aria-controls", "traitPicker");
+      if (selectedSlot === i) cell.setAttribute("aria-controls", `traitPicker-${scope}`);
       row.appendChild(cell);
     });
     return row;
+  };
+
+  const totalsBox = (): HTMLElement => {
+    const t = store.benchTotals(scope), box = el("div", "trtotals");
+    box.append(
+      totalCell("attack", "Attack", t.atkPct, ATK_CAP),
+      totalCell("defence", "Defence", t.defPct, DEF_CAP),
+      totalCell("clock", "Cooldown", t.luckPct, LUCK_CAP),
+    );
+    return box;
   };
 
   const totalCell = (mark: string, label: string, value: number, cap: number): HTMLElement => {
@@ -193,38 +198,21 @@ export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): H
   };
 
   const render = (): void => {
-    redraw(root);
-    screenHeader(root, { title: scopeName(scope), onBack: back, backId: "trBack" });
-    const body = el("div", "screenbody sb-top");
-    const wrap = el("div", "trwrap");
-    wrap.id = "trBody";
-    wrap.appendChild(el("div", "secthead", `Equipped  ${store.bench(scope).filter(Boolean).length} / ${store.slotsOpen()}`));
-    const anchor = el("div", "trait-slot-anchor");
-    anchor.appendChild(slotRow());
-    if (selectedSlot !== null) anchor.appendChild(picker());
-    const t = store.benchTotals(scope);
-    const totals = el("div", "trtotals");
-    totals.append(
-      totalCell("attack", "Attack", t.atkPct, ATK_CAP),
-      totalCell("defence", "Defence", t.defPct, DEF_CAP),
-      totalCell("clock", "Cooldown", t.luckPct, LUCK_CAP),
-    );
-    wrap.append(anchor, totals);
-    body.appendChild(wrap);
-    root.appendChild(body);
+    unmountPicker();
+    unmountPicker = () => {};
+    root.replaceChildren();
+    const heading = el("div", "trait-slots-head");
+    heading.append(el("span", undefined, "Traits"), el("span", "trait-slots-count",
+      `${store.bench(scope).slice(0, store.slotsOpen()).filter(Boolean).length} / ${store.slotsOpen()}`));
+    const row = slotRow();
+    root.append(heading, row, totalsBox());
+    if (selectedSlot !== null) {
+      const panel = picker();
+      panel.addEventListener("dismiss-trait-popup", closePicker);
+      unmountPicker = mountTraitPicker(root, row, selectedSlot, panel, closePicker);
+    }
   };
 
-  root.onclick = event => {
-    if (!(event.target instanceof Element)) return;
-    if (!event.target.closest("#trWorn, .trait-picker, .trait-detail-layer, #trBack")) closePicker();
-  };
-  root.onkeydown = event => {
-    if (event.key !== "Escape") return;
-    if (!detail && selectedSlot === null) return;
-    event.preventDefault();
-    event.stopPropagation();
-    back();
-  };
   render();
   return root;
 }
@@ -277,9 +265,10 @@ export function buildInventory(store: ProfileStore, opts: InventoryOptions): HTM
 
     const benches: TraitScope[] = ["hill", ...SPECIES_ORDER];
     for (const scope of benches) {
-      const mine = bag.filter((i) => fitsScope(i, scope));
+      const mine = bag.filter((i) => itemDef(i)?.species === (scope === "hill" ? null : scope));
       if (mine.length === 0) continue;
-      const worn = new Set(store.bench(scope).flatMap((i) => (i ? [i.uid] : [])));
+      const equipped = new Set(Object.values(store.get().wearing).flat().filter(Boolean));
+      const worn = new Set(mine.filter(item => equipped.has(item.uid)).map(item => item.uid));
 
       const head = el("button", "invhead") as HTMLButtonElement;
       head.type = "button";
@@ -414,41 +403,6 @@ function readOnlyTile(item: TraitItem, onTap: () => void): HTMLButtonElement {
   return cell;
 }
 
-/**
- * The five slots at a glance: the same square as the bench's, small enough to sit on a row.
- *
- * A `span` rather than a `button`, because the whole row is already the button — a control
- * inside a control is a tap that lands on neither. The name still rides on `title` and
- * `aria-label`, exactly as it does on the full-size tile.
- */
-function miniBench(worn: readonly (TraitItem | null)[], open: number): HTMLElement {
-  const row = el("div", "tropen-slots");
-  worn.forEach((item, i) => {
-    // Slots the road has not opened are drawn too, so the row is the same five squares
-    // the bench is — just plainly not all live yet.
-    if (i >= open) {
-      row.appendChild(el("span", "tropen-slot shut"));
-      return;
-    }
-    if (!item) {
-      row.appendChild(el("span", "tropen-slot empty"));
-      return;
-    }
-    const def = itemDef(item);
-    const tier = TRAIT_TIER[item.tier];
-    const cell = el("span", "tropen-slot filled");
-    cell.style.setProperty("--tier", tier.colour);
-    const mark = el("span", "tropen-slot-i");
-    mark.appendChild(icon(def?.icon ?? "star", 16));
-    cell.append(mark, el("span", "tropen-slot-v", def ? effectFigure(def, item.tier) : ""));
-    const label = def ? `${def.name} · ${tier.name} · ${effectText(def, item.tier)}` : tier.name;
-    cell.title = label;
-    cell.setAttribute("aria-label", label);
-    row.appendChild(cell);
-  });
-  return row;
-}
-
 /** A screen with nothing on it has to say WHY, or it reads as one that failed to load. */
 function locked(head: string, note: string): HTMLElement {
   const box = el("div", "trempty");
@@ -456,50 +410,3 @@ function locked(head: string, note: string): HTMLElement {
   return box;
 }
 
-/**
- * THE ROW THAT OPENS IT, shown on the species page and in the anthill.
- *
- * IT SHOWS THE TRAITS THEMSELVES, not a count and not a row of dashes.
- *
- * "3 / 5" says how many and nothing about WHICH, and which is the whole of what a player
- * checks before a match. The dashes it carried before were only half a step from that: a
- * lit pip in the tier's colour said a rare one was worn SOMEWHERE, and nothing about what
- * it did. So the row carries the same square the bench does, shrunk — the trait's own
- * mark in its tier's colour with what it is worth under it — and an empty slot is drawn
- * as an empty slot rather than left out, because five squares with two filled is a
- * loadout and two squares is a list.
- *
- * The line above them still states the state, so a bench with nothing on it says so in
- * words as well as in five empty squares. A locked bench says the chapter, never a
- * padlock: a number is something to play toward.
- */
-export function traitOpener(
-  store: ProfileStore, scope: TraitScope, onOpen: () => void, locked: string | null,
-): HTMLElement {
-  const row = el("button", "tropen" + (locked ? " locked" : "")) as HTMLButtonElement;
-  row.type = "button";
-  row.id = scope === "hill" ? "hillTraits" : "spgTraits";
-
-  const worn = locked ? [] : store.bench(scope);
-  const on = worn.filter(Boolean).length;
-  const open = locked ? 0 : store.slotsOpen();
-
-  const mid = el("div", "tropen-mid");
-  const top = el("div", "tropen-top");
-  // The row sits under a heading that already says "Traits", so repeating the word here
-  // would be the only text on it and would say nothing. It states the STATE instead.
-  top.append(el("span", "tropen-t",
-    locked ? "Traits" : on ? `${on} of ${open} equipped` : "No traits equipped"));
-  if (locked) top.append(el("span", "tropen-c", locked));
-  mid.appendChild(top);
-
-  if (!locked) mid.appendChild(miniBench(worn, open));
-
-  const slot = el("span", "tropen-i");
-  slot.appendChild(icon(locked ? "lock" : "star", 18));
-  row.append(slot, mid);
-  // No chevron while it is locked: an arrow into a door that does not open is the row
-  // promising something the tap will not deliver.
-  if (!locked) { row.appendChild(icon("next", 14)); row.onclick = onOpen; }
-  return row;
-}

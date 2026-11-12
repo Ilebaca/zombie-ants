@@ -5691,3 +5691,24 @@ cards keep the same column as Antarium. Home, battle HUD and the title-free road
 their own intentional layouts and do not acquire this page header.
 The direct page body owns its top gap, even when it also carries a wrapper class
 (such as Friends' frbody). Inner-wrapper reset rules must not erase that clearance.
+
+
+## Inline trait loadouts — replaces the separate trait screen
+Species pages render five individual slots inside the hero immediately after Upgrade.
+Anthill renders the same controls below the chambers. There is no standalone Traits
+route and no click-through Traits row. Inventory and Profile links go to the owning
+species or Anthill page and scroll to its inline controls.
+Slots open at chapters 0, 5, 10, 15 and 20; rarity and research level never restrict Equip.
+Every owned trait can be used by any species. The Anthill keeps its universal-trait
+loadout. One owned copy occupies one slot across all loadouts: Equip moves it from its
+previous location, and replacements remain in the bag. Saved loadouts are deduplicated
+globally without dropping collected items. Attack/defence/cooldown caps are unchanged.
+The inventory groups by biological origin, rather than by compatibility, so widening
+species compatibility does not duplicate its collection rows.
+The picker and centered details portal to #app to escape hero clipping and deck
+transforms. The picker follows its selected slot as the page scrolls/resizes. Make
+space below the row using the existing scroller; on short screens a picker may flip
+above with its pointer attached to that edge. An open SVG triangle covers its border
+seam, with no crossing rectangle/line. Green selection stays until the picker closes.
+X, any non-action modal tap, Escape and Hardware Back close the top layer first.
+Routing, teardown or removing the owner clears both layers and their listeners.
