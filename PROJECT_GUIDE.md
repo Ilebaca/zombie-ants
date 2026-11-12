@@ -5736,3 +5736,16 @@ panel; retain chamber connections, account upgrades, purchase rules and inline t
 Chamber art comes from ui/anthill-art.ts: throne for Royal Chamber, larva for Brood Nursery,
 red ant for Soldier Caste, shield for Metapleural Gland and mushrooms for Fungal Cultivation.
 These are the original supplied images, encoded as small WebP assets with icon alpha intact.
+
+
+## Anthill anchored chamber details
+The excavation block is anchored at the bottom of the existing cover, immediately above
+Granary. Keep the cover asset, crop, frame size, title, purse and chamber positions unchanged.
+Dark curved SVG tunnels start under that block and run behind the alternating chamber cards.
+Chambers start closed. Tapping a card toggles one floating details panel below that card;
+never insert its details into the room grid or move later rooms to make space.
+The panel portals to #app above the bottom navigation, follows its anchor while scrolling
+and resizing, and always stays below it. Short screens scroll the page only as needed and
+constrain the panel's own content height. X, Escape, Hardware Back, outside taps and routing
+close it. A successful purchase refreshes the same panel and updates the purse and excavation
+count through ProfileStore, without changing the underlying chamber spacing.

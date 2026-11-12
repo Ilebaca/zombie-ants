@@ -48,7 +48,12 @@ const click = (el: Element | null | undefined): void => {
 /** The buy button on the card whose title matches. */
 const buyIn = (root: HTMLElement, selector: string, name: string): HTMLButtonElement | null => {
   for (const cell of Array.from(root.querySelectorAll(selector))) {
-    if (cell.textContent?.includes(name)) return cell.querySelector<HTMLButtonElement>(".buybtn");
+    if (cell.textContent?.includes(name)) {
+      if (root.id === "anthill") {
+        return root.querySelector<HTMLButtonElement>(`.hill-popup[data-chamber="${(cell as HTMLElement).dataset.chamber}"] .buybtn`);
+      }
+      return cell.querySelector<HTMLButtonElement>(".buybtn");
+    }
   }
   return null;
 };
@@ -107,7 +112,7 @@ describe("anthill screen", () => {
     const root = buildAnthill(store());
     const gland = openRoom(root, "Metapleural Gland");
     expect(gland?.className, "the tapped chamber did not open").toContain("open");
-    expect(gland?.querySelector(".room-open"), "nothing was in it").not.toBeNull();
+    expect(root.querySelector(".hill-popup .room-open"), "nothing was in it").not.toBeNull();
     expect(root.querySelectorAll(".nest-lvl.open").length, "two chambers stood open").toBe(1);
     expect(gland?.querySelector(".room")?.getAttribute("aria-expanded")).toBe("true");
   });
@@ -115,8 +120,7 @@ describe("anthill screen", () => {
   it("buys a level and re-renders with the new one", () => {
     const s = store(chamberCost(0));
     const root = buildAnthill(s);
-    // The granary stands open on arrival, so a chamber has to be opened to reach its
-    // price — only the open room carries a buy button.
+    // Open the chamber to reach its floating price panel.
     openRoom(root, "Royal Chamber");
     click(buyIn(root, ".nest-lvl", "Royal Chamber"));
     expect(s.get().hill.royal).toBe(1);
@@ -177,10 +181,11 @@ describe("anthill screen", () => {
   // The rate is derived from what a victory pays — that is how it stays honest at every
   // colony size — but that is OUR reference. The player is told troops per hour and per
   // day; pricing one thing in another is not an explanation.
-  it("opens on the granary, and states its rate in troops, never in wins", () => {
+  it("states the granary rate in troops, never in wins, when opened", () => {
     const s = store(0, 0, 10_000);
     const root = buildAnthill(s);
-    const open = root.querySelector<HTMLElement>(".nest-lvl.open");
+    openRoom(root, "Granary");
+    const open = root.querySelector<HTMLElement>(".hill-popup");
     expect(open?.dataset.chamber).toBe("granary");
     const now = open?.querySelector(".che-now .che-v")?.textContent ?? "";
     const next = open?.querySelector(".che-next .che-v")?.textContent ?? "";
@@ -200,6 +205,7 @@ describe("anthill screen", () => {
   // first level reads "+0/h", which looks broken rather than slow.
   it("writes a rate below one troop an hour as a fraction", () => {
     const root = buildAnthill(store());
+    openRoom(root, "Granary");
     expect(root.querySelector(".che-now .che-v")?.textContent).toMatch(/\+\d\.\d troops\/hour/);
   });
 
@@ -207,7 +213,8 @@ describe("anthill screen", () => {
     const s = store(100000);
     expect(chapterOf(s.get().colony)).toBeLessThan(GRANARY_LEVELS[1]!.chapter);
     const root = buildAnthill(s);
-    const open = root.querySelector<HTMLElement>(".nest-lvl.open");
+    openRoom(root, "Granary");
+    const open = root.querySelector<HTMLElement>(".hill-popup");
     expect(open?.querySelector(".glock")?.textContent)
       .toBe(`Chapter ${GRANARY_LEVELS[1]!.chapter}`);
     expect(open?.querySelector(".buybtn"), "priced a level the road has not reached")
@@ -218,8 +225,9 @@ describe("anthill screen", () => {
     const s = store(100000);
     s.update((p) => { p.colony = stopColony((GRANARY_LEVELS[1]!.chapter - 1) * ROAD_CHAPTER_STOPS + 1); });
     const root = buildAnthill(s);
+    openRoom(root, "Granary");
     expect(root.querySelector(".glock"), "still gated with the chapter reached").toBeNull();
-    click(root.querySelector<HTMLButtonElement>(".nest-lvl.open .buybtn"));
+    click(root.querySelector<HTMLButtonElement>(".hill-popup .buybtn"));
     expect(s.get().granary).toBe(2);
     expect(root.querySelector(".nest-lvl.open")?.textContent).toContain(`LV 2/${GRANARY_MAX}`);
   });
@@ -228,18 +236,20 @@ describe("anthill screen", () => {
   it("states the level you have and the one you would buy as two rows", () => {
     const s = store(100000);
     s.buyChamber("royal");
-    const room = openRoom(buildAnthill(s), "Royal Chamber");
-    expect(room?.querySelector(".che-now .che-v")?.textContent)
+    const root = buildAnthill(s);
+    openRoom(root, "Royal Chamber");
+    expect(root.querySelector(".che-now .che-v")?.textContent)
       .toBe("+1 soldier in your base at match start");
-    expect(room?.querySelector(".che-next .che-v")?.textContent)
+    expect(root.querySelector(".che-next .che-v")?.textContent)
       .toBe("+2 soldiers in your base at match start");
   });
 
   it("offers nothing to buy on a chamber that is finished", () => {
     const s = store(100000);
     for (let i = 0; i < CHAMBER_MAX.royal; i++) s.buyChamber("royal");
-    const room = openRoom(buildAnthill(s), "Royal Chamber");
-    expect(room?.querySelector(".che-next")).toBeNull();
+    const root = buildAnthill(s);
+    const room = openRoom(root, "Royal Chamber");
+    expect(root.querySelector(".hill-popup .che-next")).toBeNull();
     expect(room?.className).toContain("maxed");
   });
 

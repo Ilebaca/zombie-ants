@@ -20,6 +20,7 @@ import type {
 } from "../platform";
 import { setFactionColor } from "../render";
 import { buildAnthill } from "./anthill";
+import { dismissAnthillPopup } from "./anthill-popover";
 import { buildAvatarPicker } from "./avatarpicker";
 import { buildInventory } from "./traits";
 import { dismissTraitPopups } from "./trait-popovers";
@@ -437,6 +438,7 @@ export class App {
   destroy(): void {
     this.destroyed = true;
     dismissTraitPopups(this.host, true);
+    dismissAnthillPopup(this.host);
     dismissRewardReveal(this.host);
     this.homeGain.cancel();
     this.dropLive();
@@ -516,6 +518,7 @@ export class App {
   /** Discard every view reference when the account's DOM is replaced. */
   private clearAccountView(): void {
     dismissTraitPopups(this.host, true);
+    dismissAnthillPopup(this.host);
     dismissRewardReveal(this.host);
     this.homeGain.cancel();
     this.tour.stop();
@@ -766,6 +769,7 @@ export class App {
    */
   goBack(): boolean {
     if (dismissTraitPopups(this.host)) return true;
+    if (dismissAnthillPopup(this.host)) return true;
     if (dismissRewardReveal(this.host)) return true;
     // The tour holds the interface until it gets the tap it asked for. Swallowed rather
     // than obeyed: closing the app is not the answer to a step somebody is reading.
@@ -806,6 +810,7 @@ export class App {
 
   private show(id: ScreenId): void {
     dismissTraitPopups(this.host, true);
+    dismissAnthillPopup(this.host);
     dismissRewardReveal(this.host);
     if (id !== "home") this.homeGain.cancel();
     this.activeScreen = id;

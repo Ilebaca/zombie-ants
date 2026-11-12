@@ -13,73 +13,128 @@ import { buyButton, effectRow, el, pips, redraw, screenEl, screenHeader, toast }
 import { icon } from "./icons";
 import { buildTraitSlots } from "./traits";
 import { anthillCover, chamberArt } from "./anthill-art";
+import { mountAnthillPopup } from "./anthill-popover";
+import { mountAnthillTunnels } from "./anthill-tunnels";
 
 export function buildAnthill(store: ProfileStore): HTMLElement {
   const root = screenEl("anthill");
-  // Which chamber is standing open. It survives a re-render — buying a level must not
-  // close the room the player is in the middle of digging.
-  let open: string = GRANARY;
+  let selected: string | null = null;
+  let unmountPopup = (): void => {};
+  let unmountTunnels = (): void => {};
+
+  const markSelection = (): void => {
+    for (const row of Array.from(root.querySelectorAll<HTMLElement>(".nest-lvl"))) {
+      const active = row.dataset.chamber === selected;
+      row.classList.toggle("open", active);
+      const button = row.querySelector<HTMLButtonElement>(".room");
+      button?.setAttribute("aria-expanded", String(active));
+      if (active) button?.setAttribute("aria-controls", "hillChamberPopup");
+      else button?.removeAttribute("aria-controls");
+    }
+  };
+
+  const close = (): void => {
+    const target = selected;
+    selected = null;
+    unmountPopup();
+    unmountPopup = () => {};
+    markSelection();
+    root.querySelector<HTMLButtonElement>(`[data-chamber="${target}"] .room`)?.focus({ preventScroll: true });
+  };
+
+  const openDetails = (id: string, makeSpace = true): void => {
+    unmountPopup();
+    selected = id;
+    markSelection();
+    const anchor = root.querySelector<HTMLButtonElement>(`[data-chamber="${id}"] .room`);
+    if (!anchor) { close(); return; }
+    const profile = store.get();
+    const chamber = CHAMBERS.find(ch => ch.id === id);
+    const name = id === GRANARY ? "Granary" : chamber?.name;
+    if (!name) { close(); return; }
+
+    const panel = el("section", "hill-popup");
+    panel.id = "hillChamberPopup";
+    panel.dataset.chamber = id;
+    panel.classList.toggle("fresh", !!chamber && !(profile.hill[chamber.id] ?? 0));
+    panel.classList.toggle("maxed", !!chamber && (profile.hill[chamber.id] ?? 0) >= chamber.max);
+    panel.setAttribute("role", "dialog");
+    panel.setAttribute("aria-labelledby", "hillPopupName");
+    const header = el("div", "hill-popup-head");
+    const title = el("h2", "hill-popup-name", name);
+    title.id = "hillPopupName";
+    const dismiss = el("button", "action-button secondary hill-popup-close");
+    dismiss.type = "button";
+    dismiss.setAttribute("aria-label", "Close chamber details");
+    dismiss.appendChild(icon("cross", 16));
+    dismiss.onclick = close;
+    header.append(title, dismiss);
+    const content = el("div", "hill-popup-content");
+
+    if (id === GRANARY) {
+      content.appendChild(granaryDetail(store.granary(), profile.mycel, () => {
+        if (!store.buyGranary()) return;
+        render();
+        toast(root, `Granary → Lv ${store.get().granary}`, "hive");
+      }));
+    } else if (chamber) {
+      const lv = profile.hill[chamber.id] ?? 0;
+      content.appendChild(detail(chamber, lv, profile.mycel, lv >= chamber.max, () => {
+        if (!store.buyChamber(chamber.id)) return;
+        render();
+        toast(root, `${chamber.name} → Lv ${store.get().hill[chamber.id] ?? 0}`, "hive");
+      }));
+    }
+    panel.append(header, content);
+    panel.addEventListener("dismiss-anthill-popup", close);
+    unmountPopup = mountAnthillPopup(root, anchor, panel, close, makeSpace);
+    const focus = makeSpace ? dismiss : panel.querySelector<HTMLButtonElement>(".buybtn:not(:disabled)") ?? dismiss;
+    focus.focus({ preventScroll: true });
+  };
+
+  const toggle = (id: string): void => {
+    if (selected === id) close();
+    else openDetails(id);
+  };
 
   const render = (): void => {
+    unmountPopup();
+    unmountTunnels();
     const profile = store.get();
     const levelOf = (ch: ChamberDef): number => profile.hill[ch.id] ?? 0;
-
     redraw(root);
     const dug = CHAMBERS.reduce((n, ch) => n + levelOf(ch), profile.granary);
     const total = CHAMBERS.reduce((n, ch) => n + ch.max, GRANARY_MAX);
     const cover = el("div", "hill-cover");
-    if (anthillCover) {
-      const art = el("img", "hill-cover-art");
-      art.src = anthillCover;
-      art.alt = "";
-      art.decoding = "async";
-      art.fetchPriority = "high";
-      cover.appendChild(art);
-    }
-    // No back arrow on a bottom-nav tab. The shared row stays over the cover.
+    const art = el("img", "hill-cover-art");
+    art.src = anthillCover;
+    art.alt = "";
+    art.decoding = "async";
+    art.fetchPriority = "high";
+    cover.appendChild(art);
     screenHeader(cover, { title: "Anthill", mycel: profile.mycel });
-    cover.appendChild(surface(dug, total));
+    const progress = surface(dug, total);
+    cover.appendChild(progress);
     root.appendChild(cover);
 
     const body = el("div", "screenbody sb-top");
     const wrap = el("div", "hillwrap");
-
     const nest = el("div", "nest");
-    // THE GRANARY IS THE FIRST ROOM DOWN, and it is not a chamber: a chamber changes a
-    // match, and this one changes the colony between matches. It shares the picture
-    // because it is a room in the same nest — it just belongs to the meta layer, so it
-    // has its own level, its own price and its own gate (platform/granary.ts).
-    nest.appendChild(granaryRoom(store.granary(), 0, profile.mycel, open === GRANARY, {
-      onOpen: () => { open = GRANARY; render(); },
-      onBuy: () => {
-        if (!store.buyGranary()) return;
-        const lv = store.get().granary;
-        render();
-        toast(root, `Granary → Lv ${lv}`, "hive");
-      },
+    nest.appendChild(granaryRoom(store.granary(), {
+      onOpen: () => toggle(GRANARY),
     }));
     CHAMBERS.forEach((ch, i) => {
-      nest.appendChild(level(ch, i + 1, levelOf(ch), profile.mycel, open === ch.id, {
-        onOpen: () => { open = ch.id; render(); },
-        onBuy: () => {
-          const was = levelOf(ch);
-          if (!store.buyChamber(ch.id)) return;
-          // `open` is deliberately not touched: the only buy button on the screen is the
-          // one inside the chamber that is already standing open, and re-rendering must
-          // leave the player where they were rather than shutting the room they just dug.
-          render();
-          toast(root, `${ch.name} → Lv ${was + 1}`, "hive");
-        },
+      nest.appendChild(level(ch, i + 1, levelOf(ch), {
+        onOpen: () => toggle(ch.id),
       }));
     });
-    wrap.appendChild(nest);
-
-    // Universal traits remain below the account-wide chamber upgrades.
-    wrap.appendChild(buildTraitSlots(store, { scope: "hill" }));
-
+    wrap.append(nest, buildTraitSlots(store, { scope: "hill" }));
     body.appendChild(wrap);
     root.appendChild(body);
     groupSections(root);
+    unmountTunnels = mountAnthillTunnels(root, progress, nest);
+    markSelection();
+    if (selected) openDetails(selected, false);
   };
 
   render();
@@ -106,7 +161,7 @@ function surface(dug: number, total: number): HTMLElement {
   return sum;
 }
 
-interface RoomHandlers { onOpen: () => void; onBuy: () => void }
+interface RoomHandlers { onOpen: () => void }
 
 /**
  * One level of the nest: the shaft passing through it, and the chamber hollowed out beside.
@@ -116,24 +171,22 @@ interface RoomHandlers { onOpen: () => void; onBuy: () => void }
  * of comparison text would be a paragraph in a gutter.
  */
 function level(
-  ch: ChamberDef, index: number, lv: number, purse: number, open: boolean, on: RoomHandlers,
+  ch: ChamberDef, index: number, lv: number, on: RoomHandlers,
 ): HTMLElement {
   const maxed = lv >= ch.max;
   const side = index % 2 === 0 ? "left" : "right";
   const row = el("div", `nest-lvl ${side}`
-    + (lv ? " dug" : " fresh") + (maxed ? " maxed" : "") + (open ? " open" : ""));
+    + (lv ? " dug" : " fresh") + (maxed ? " maxed" : ""));
   row.dataset.chamber = ch.id;
 
   const spine = el("div", "nest-spine");
-  // THE SHAFT CARRIES NO DEPTH NUMBER. It counted the levels 1-6 down the side of the
-  // nest, which is a number for a thing nobody is choosing between: the chambers are
-  // named, they are read top to bottom, and how deep one is dug is not a fact the
-  // screen is about. Reported as "there are numbers from 1-6 for some reason".
-  spine.append(el("span", "nest-line"), el("span", "nest-node"));
+  // Preserve the existing row sizing; one SVG behind the rooms draws the tunnels.
+  spine.setAttribute("aria-hidden", "true");
 
   const room = el("button", "room");
   room.type = "button";
-  room.setAttribute("aria-expanded", String(open));
+  room.setAttribute("aria-expanded", "false");
+  room.setAttribute("aria-haspopup", "dialog");
   const pocket = el("span", "room-pocket");
   const art = chamberArt[ch.id];
   if (art) {
@@ -156,7 +209,6 @@ function level(
   room.onclick = on.onOpen;
 
   row.append(spine, room);
-  if (open) row.appendChild(detail(ch, lv, purse, maxed, on.onBuy));
   return row;
 }
 
@@ -236,23 +288,21 @@ const rateLine = (rate: number, lid: number): string =>
  * is meant to be earning it.
  */
 function granaryRoom(
-  g: GranaryState, index: number, purse: number, open: boolean, on: RoomHandlers,
+  g: GranaryState, on: RoomHandlers,
 ): HTMLElement {
   const maxed = !g.next;
   const row = el("div", "nest-lvl left"
-    + " dug" + (maxed ? " maxed" : "") + (open ? " open" : ""));
+    + " dug" + (maxed ? " maxed" : ""));
   row.dataset.chamber = GRANARY;
 
   const spine = el("div", "nest-spine");
-  // THE SHAFT CARRIES NO DEPTH NUMBER. It counted the levels 1-6 down the side of the
-  // nest, which is a number for a thing nobody is choosing between: the chambers are
-  // named, they are read top to bottom, and how deep one is dug is not a fact the
-  // screen is about. Reported as "there are numbers from 1-6 for some reason".
-  spine.append(el("span", "nest-line"), el("span", "nest-node"));
+  // Preserve the existing row sizing; one SVG behind the rooms draws the tunnels.
+  spine.setAttribute("aria-hidden", "true");
 
   const room = el("button", "room");
   room.type = "button";
-  room.setAttribute("aria-expanded", String(open));
+  room.setAttribute("aria-expanded", "false");
+  room.setAttribute("aria-haspopup", "dialog");
   const pocket = el("span", "room-pocket");
   pocket.appendChild(icon("granary", 22));
   const label = el("span", "room-txt");
@@ -264,7 +314,6 @@ function granaryRoom(
   room.onclick = on.onOpen;
 
   row.append(spine, room);
-  if (open) row.appendChild(granaryDetail(g, purse, on.onBuy));
   return row;
 }
 
