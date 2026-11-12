@@ -783,11 +783,11 @@ function bagAndBenches(p: Partial<Profile>): Pick<Profile, "bag" | "wearing" | "
   }
 
   const wearing: Record<string, (string | null)[]> = {};
+  const used = new Set<string>();
   const held = new Set(bag.map((i) => i.uid));
   const source = p.wearing && typeof p.wearing === "object" ? p.wearing : {};
   for (const scope of BENCHES) {
     const slots = Array.isArray(source[scope]) ? source[scope] : [];
-    const used = new Set<string>();
     wearing[scope] = Array.from({ length: TRAIT_SLOTS }, (_, i) => {
       const uid = slots[i];
       // One item cannot be in two slots. A save that says otherwise would show the same
@@ -1030,19 +1030,20 @@ export class ProfileStore {
    * exactly one colony's bench and a universal one fits only the anthill.
    */
   equipTrait(scope: TraitScope, uid: string, slot?: number): boolean {
-    const item = this.profile.bag.find((b) => b.uid === uid);
+    const item = this.profile.bag.find(b => b.uid === uid);
     if (!item || !fitsScope(item, scope)) return false;
-    const slots = [...(this.profile.wearing[scope] ?? [])];
-    if (slots.includes(uid)) return false;
-    // A SLOT THE ROAD HAS NOT OPENED IS NOT A SLOT. Refused rather than clamped, so a
-    // tap on a locked one does nothing at all instead of quietly filling a different one
-    // — the screen offers only open slots, and this is the answer if anything else asks.
-    const at = slot ?? slots.findIndex((s, i) => !s && i < this.slotsOpen());
-    if (at < 0 || at >= this.slotsOpen()) return false;
-    this.update((p) => {
+    const slots = Array.from({ length: TRAIT_SLOTS }, (_, i) => this.profile.wearing[scope]?.[i] ?? null);
+    if (slot === undefined && slots.includes(uid)) return false;
+    const target = slot ?? slots.findIndex((s, i) => !s && i < this.slotsOpen());
+    if (target < 0 || target >= this.slotsOpen() || slots[target] === uid) return false;
+    this.update(p => {
+      // A collected copy moves between loadouts, never counts twice.
+      for (const [owner, worn] of Object.entries(p.wearing)) {
+        p.wearing[owner] = worn.map(current => current === uid ? null : current);
+      }
       const bench = [...(p.wearing[scope] ?? [])];
       while (bench.length < TRAIT_SLOTS) bench.push(null);
-      bench[at] = uid;
+      bench[target] = uid;
       p.wearing[scope] = bench;
     });
     return true;

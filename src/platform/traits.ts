@@ -88,44 +88,16 @@ export const TRAIT_TIER: Record<TraitTier, TraitTierDef> = Object.fromEntries(
 /** Slots, per colony and for the anthill. Five each, as designed. */
 export const TRAIT_SLOTS = 5;
 
-/**
- * SLOTS OPEN ONE EVERY TEN CHAPTERS, on both benches.
- *
- * Five slots handed over at once is a bench a player fills in an afternoon and never
- * looks at again — the choice a trait is supposed to be only exists while there are more
- * traits than room. Opened one at a time it is a decision every ten chapters instead: what
- * comes off to make room, and what the fifth one is finally for.
- *
- * The first slot is available from chapter 1. Later slots retain their chapter
- * 20/30/40/50 milestones, so opening the feature earlier does not change later progression.
- *
- * IT IS THE SAME LADDER ON BOTH BENCHES. The anthill's five and a colony's five open at
- * the same chapters, because they are the same feature seen twice — a player who has four
- * slots has four everywhere, and a rule that differed per bench would be two rules to
- * learn for one thing.
- */
-export const SLOT_STEP = 10;
-
-/** The chapter slot `i` (0-based) opens at. */
-export const slotChapter = (i: number): number => i === 0 ? TRAITS_CHAPTER : (i + 1) * SLOT_STEP;
-
-/**
- * How many slots this chapter has opened, 0 through `TRAIT_SLOTS`.
- *
- * Clamped at both ends: below the chapter traits open at there are none, and past the end
- * of the road there are five — never six, however far a colony runs past the last rung.
- */
-export function slotsOpen(chapter: number, pass = false): number {
-  // All players have the first slot from chapter 1. Retain pass compatibility for
-  // legacy callers; ownership never opens additional progression slots.
-  let n = pass ? 1 : 0;
-  while (n < TRAIT_SLOTS && chapter >= slotChapter(n)) n++;
-  return n;
+/** Five slots: available immediately, then at chapters 5, 10, 15 and 20. */
+export const SLOT_STEP = 5;
+export const slotChapter = (i: number): number => i * SLOT_STEP;
+export function slotsOpen(chapter: number, _pass = false): number {
+  return Math.max(1, Math.min(TRAIT_SLOTS, Math.floor(chapter / SLOT_STEP) + 1));
 }
 
 /** Whether one slot is open. The only question the screens actually ask. */
 export const slotOpen = (i: number, chapter: number, pass = false): boolean =>
-  i < slotsOpen(chapter, pass);
+  i >= 0 && i < slotsOpen(chapter, pass);
 
 /**
  * Ceilings on what a whole collection may add.
@@ -341,7 +313,7 @@ export const itemDef = (item: TraitItem): TraitDef | null => traitDef(item.def);
 export function fitsScope(item: TraitItem, scope: TraitScope): boolean {
   const def = itemDef(item);
   if (!def) return false;
-  return scope === "hill" ? def.species === null : def.species === scope;
+  return scope === "hill" ? def.species === null : true;
 }
 
 /* -------------------------------------------------------------- THE TOTALS */

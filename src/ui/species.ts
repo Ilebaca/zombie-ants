@@ -15,13 +15,12 @@ import { researchPips } from "./research";
 import { abilityArtFor } from "./abilityart";
 import { coverFor } from "./covers";
 import { icon } from "./icons";
-import { traitOpener } from "./traits";
+import { buildTraitSlots } from "./traits";
 
 export interface SpeciesPageOptions {
   species: SpeciesId;
   onBack: () => void;
   /** Open this colony's five trait slots. */
-  onTraits?: () => void;
 }
 
 export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions): HTMLElement {
@@ -70,8 +69,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
       upgrade.setAttribute("aria-label", `Upgrade ${species.name} to level ${level + 1} for ${cost} pheromone crystals`);
     }
     page.appendChild(hero(id, level, tier.name, tier.col, upgrade,
-      traitOpener(store, id, () => opts.onTraits?.(),
-        null)));
+      buildTraitSlots(store, { scope: id })));
 
     // SKINS COME AFTER RESEARCH, and they are the whole of what this screen can CHANGE
     // for free. Research is the point of the page and leads it; a look costs nothing,
