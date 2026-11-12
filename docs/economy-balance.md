@@ -48,10 +48,10 @@ One reproducible seed, with balanced purchases and all daily claims remembered:
 | Goal | Previous, 3 matches/day | New, 3 matches/day | New, 2 matches/day |
 | --- | ---: | ---: | ---: |
 | First upgrade | Day 1 | Day 1 | Day 1 |
-| First earnable species | Day 4 | Day 8 | Day 10 |
-| All four earnable species | Day 14 | Day 56 | Day 71 |
+| First earnable species | Day 4 | Day 8 | Day 11 |
+| All four earnable species | Day 14 | Day 57 | Day 71 |
 | Main species level 10 | Day 9 | Day 38 | Day 43 |
-| All chambers maxed | Day 29 | Day 129 | Day 166 |
+| All chambers maxed | Day 29 | Day 130 | Day 166 |
 | All free species researched | Day 86 | Day 337 | Day 371 |
 | Road completed | Day 290 | Day 296 | Day 388 |
 
@@ -60,13 +60,12 @@ At one match daily, the first species projects to day 14 and the main species to
 40% and 60% win rates, the main species projects to days 39 and 37; losses still earn
 mycelium and XP. This avoids making a losing day a wasted day.
 
-In the first regular week, the new curve delivered five chamber levels, main species
-level 5 and ten earned hatch rolls. On day 30 it had ten chamber levels and main level 9.
-The early decisions remain frequent; the final steps require saving.
+Early research steps remain affordable from daily income; the later steps require saving.
+Players can keep progressing their main while reserving mycelium for the next species.
 
 Twelve seeded regular-player runs all bought their first species on day 8. The main
-species reached level 10 on days 37–38, chambers finished on days 128–131 and free
-research on days 334–338. The close range reflects this fixed routine and income floor,
+species reached level 10 on days 37–38, chambers finished on days 129–131 and free
+research on days 333–338. The close range reflects this fixed routine and income floor,
 not a prediction that real players behave identically.
 
 The more engaged scenario includes a daily-challenge attempt and claiming weekly league
@@ -83,7 +82,9 @@ An optional day count can be supplied, for example `npm run economy -- 365`.
 - One session and granary collection per day; the gift is claimed each day.
 - A match lasts 45 turns, captures 12 enemy tiles on a win or 6 on a loss, and casts two
   abilities. A Hive queen is taken in 35% of matches. These event counts are assumptions,
-  not telemetry. The player uses Carpenter when a tunnel quest requires it.
+  not telemetry. The player uses an owned tunnel-capable species when a tunnel quest requires it.
+  Tunnel quests are not assigned before Ghost is unlocked; untouched impossible legacy
+  goals are replaced once without rerolling the rest of the day or discarding progress.
 - Quest progress and claims use the real daily roll and goal checks. A three-match
   player cannot complete Play 5 Matches. Win quests depend on actual projected wins.
 - Both match XP and quest XP feed the real level-reward claims. Road rewards are claimed

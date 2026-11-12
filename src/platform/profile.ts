@@ -1918,7 +1918,25 @@ export class ProfileStore {
    */
   dailyQuests(now: number = Date.now()): readonly QuestState[] {
     const today = dayIndex(now);
-    if (this.profile.questDay === today && this.profile.quests.length) return this.profile.quests;
+    const canTunnel = this.profile.unlocked.some(id => SPECIES[id].ability.kind === "tunnel");
+    if (this.profile.questDay === today && this.profile.quests.length) {
+      // Repair only an untouched, impossible legacy goal. Other progress and claims stay put,
+      // and the repaired selection is persisted, so reopening or buying a species cannot reroll it.
+      const blocked = !canTunnel && this.profile.quests.find(q =>
+        questDef(q.id)?.kind === "tunnel" && !q.claimed && q.progress === 0);
+      if (blocked) {
+        const replacement = rollQuests(today, false)
+          .find(q => {
+            const kind = questDef(q.id)?.kind;
+            return (kind === "conquered" || kind === "ability" || kind === "queen")
+              && !this.profile.quests.some(existing => existing.id === q.id);
+          });
+        if (replacement) this.update(p => {
+          p.quests = p.quests.map(q => q.id === blocked.id ? replacement : q);
+        });
+      }
+      return this.profile.quests;
+    }
 
     // The streak is incremented by the sweep itself (claimQuest); a new day only has to
     // decide whether the run survives — it does when yesterday was swept and was yesterday.
@@ -1927,7 +1945,7 @@ export class ProfileStore {
     this.update((p) => {
       if (!swept || !consecutive) p.questStreak = 0;
       p.questDay = today;
-      p.quests = rollQuests(today);
+      p.quests = rollQuests(today, canTunnel);
     });
     return this.profile.quests;
   }

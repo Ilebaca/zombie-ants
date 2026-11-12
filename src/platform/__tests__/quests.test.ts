@@ -164,7 +164,7 @@ describe("daily rollover", () => {
 
     const tomorrow = s.dailyQuests(at(19_001));
     expect(tomorrow.every((x) => x.progress === 0 && !x.claimed)).toBe(true);
-    expect(tomorrow.map((x) => x.id)).toEqual(rollQuests(dayIndex(at(19_001))).map((x) => x.id));
+    expect(tomorrow.map((x) => x.id)).toEqual(rollQuests(dayIndex(at(19_001)), false).map((x) => x.id));
   });
 
   it("extends the streak only for a swept day followed immediately by the next", () => {
@@ -271,5 +271,58 @@ describe("the day's spread", () => {
       expect(q.text.length, q.id).toBeGreaterThan(6);
     }
     expect(new Set(QUEST_POOL.map((q) => q.id)).size).toBe(QUEST_POOL.length);
+  });
+});
+
+describe("daily goals respect owned abilities", () => {
+  const tunnelDay = (): number => {
+    for (let day = 19000; day < 19500; day++) {
+      if (rollQuests(day).some(q => questDef(q.id)?.kind === "tunnel")) return day;
+    }
+    throw new Error("No tunnelling quest in the fixture range");
+  };
+
+  it("does not assign Tunnelling before a tunnel species is owned", () => {
+    for (let day = 19000; day < 19120; day++) {
+      const s = store();
+      expect(s.dailyQuests(at(day)).some(q => questDef(q.id)?.kind === "tunnel")).toBe(false);
+      expect(s.dailyQuests(at(day))).toHaveLength(QUESTS_PER_DAY);
+    }
+    const s = store();
+    s.grantSpecies("ghost");
+    expect(s.dailyQuests(at(tunnelDay())).some(q => questDef(q.id)?.kind === "tunnel")).toBe(true);
+  });
+
+  it("repairs only an untouched impossible goal and persists the same replacement", () => {
+    const day = tunnelDay(), now = at(day);
+    const memory = new MemoryStore();
+    const s = new ProfileStore(memory);
+    const original = rollQuests(day);
+    original[0]!.progress = 1;
+    original[1]!.claimed = true;
+    s.update(p => { p.questDay = dayIndex(now); p.quests = original; p.mycel = 123; p.pheromone = 456; });
+    const repaired = [...s.dailyQuests(now)];
+    expect(repaired.some(q => questDef(q.id)?.kind === "tunnel")).toBe(false);
+    expect(repaired[0]).toEqual(original[0]);
+    expect(repaired[1]).toEqual(original[1]);
+    expect(s.get().mycel).toBe(123);
+    expect(s.get().pheromone).toBe(456);
+    const loaded = new ProfileStore(memory);
+    expect(loaded.dailyQuests(now)).toEqual(repaired);
+    loaded.grantSpecies("ghost");
+    expect(loaded.dailyQuests(now)).toEqual(repaired);
+  });
+
+  it("does not discard progress or claimed rewards from an old goal", () => {
+    for (const claimed of [false, true]) {
+      const day = tunnelDay(), now = at(day);
+      const s = store();
+      const quests = rollQuests(day);
+      const tunnel = quests.find(q => questDef(q.id)?.kind === "tunnel")!;
+      tunnel.progress = 1;
+      tunnel.claimed = claimed;
+      s.update(p => { p.questDay = dayIndex(now); p.quests = quests; });
+      expect(s.dailyQuests(now)).toEqual(quests);
+    }
   });
 });

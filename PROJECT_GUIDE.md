@@ -5644,7 +5644,7 @@ goals are reached. Premium species are not a required free-player mycelium/resea
 
 Target: a few daily games at an even record. The measured three-match routine buys an
 upgrade on day one, a first species around day eight, maxes a main around day 38, chambers
-around day 129, and free research around day 337. These are planning estimates, not promises.
+around day 130, and free research around day 337. These are planning estimates, not promises.
 Use `npm run economy` to regenerate scenarios and seeded cohorts. Tests hold broad bands.
 
 Ghost/Pharaoh/Army/Bullet cost 600/800/1,400/2,000 mycelium. Rarity is explicit catalogue
@@ -5654,3 +5654,9 @@ Keep grants, wallets, earned levels, unlocks, combat benefits and caps intact. T
 gift, match/quest/road payouts, granary prices, hatch income and collection exchanges stay
 unchanged. Challenge payouts live in platform/challenge-rewards.ts so UI and the model
 read the same values. Do not use the old model that omitted match income and daily gifts.
+
+Daily quest eligibility follows owned abilities. Tunnelling goals require an owned tunnel
+species (Ghost). Repair an untouched, unclaimed legacy tunnel goal once, persisting the
+replacement and preserving the other goals; never reroll the day after a later purchase.
+The economy projection selects species by ability kind rather than assuming Carpenter
+can tunnel (it uses Fortify).
