@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { CHAMBER_MAX, SPECIES_LEVEL_MAX, chamberCost, researchCost } from "../../engine";
-import { COLONY_START, losses, winnings } from "../colony";
+import { losses, winnings } from "../colony";
 import { GRANARY_LEVELS, granaryFull, granaryRate } from "../granary";
 import { ROAD_CHAPTER_STOPS, chapterOf, stopColony } from "../road";
 import { DAILY_GIFT, MATCH_MYCEL, ProfileStore } from "../profile";
