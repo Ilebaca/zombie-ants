@@ -22,6 +22,8 @@
  * facts that tell one challenge from another, so they are what the card carries.
  */
 import { groupSections } from "./groups";
+import { CHALLENGE_REWARD, DAILY_BONUS_PHEROMONE } from "../platform/challenge-rewards";
+export { CHALLENGE_REWARD, DAILY_BONUS_PHEROMONE } from "../platform/challenge-rewards";
 import type { MapId, ShapeId, SpeciesId } from "../engine";
 import { SPECIES } from "../engine";
 import type { ProfileStore } from "../platform";
@@ -93,8 +95,6 @@ export const GOAL_TEXT: Record<ChallengeGoal, string> = {
  * daily screen advertises "250 pheromone + 40 mycelium" while paying the same 40 — the pheromone half
  * is honoured here so the promise on screen is the promise kept.
  */
-export const CHALLENGE_REWARD = 12;
-export const DAILY_BONUS_PHEROMONE = 10;
 
 
 /** The day the daily is drawn for. One challenge a day, the same one for everybody. */
