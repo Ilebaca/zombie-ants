@@ -139,3 +139,12 @@
   translate: 0 var(--action-depth);
   box-shadow: 0 0 0 var(--action-edge) !important;
 }
+
+/* Resource prices warn about the balance, independently of a button's disabled state.
+   MAX, Owned, pending actions and real-money shop prices do not use this marker. */
+:root { --price-insufficient: #ff6b6b; }
+#app .resource-price { opacity: 1 !important; }
+#app .resource-price.shortfall { color: var(--price-insufficient) !important; }
+#app :is(.buybtn, .antcta, .hatchbtn, .hatchtrade) :is(.hudmark, .hb-c) {
+  opacity: 1 !important;
+}

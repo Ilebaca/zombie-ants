@@ -1,0 +1,25 @@
+/* Reserve exactly the 3:4 larva artwork's space even with an empty purse. */
+#app #luckyhatch .hatchstage:empty::before {
+  content: "";
+  display: block;
+  width: min(40vw, 215px);
+  aspect-ratio: 3 / 4;
+}
+#app #luckyhatch .hatchlarva { aspect-ratio: 3 / 4; }
+
+/* An unavailable trade keeps its solid card face and legible labels. */
+#app #luckyhatch .hatchtrade {
+  opacity: 1;
+  filter: none;
+}
+#app #luckyhatch .hatchtrade .ht-go {
+  background: var(--hud-go);
+  color: var(--hud-face);
+}
+#app #luckyhatch .hatchtrade:disabled .ht-go {
+  background: var(--hud-face);
+  color: var(--hud-mute);
+}
+#app #luckyhatch .hb-c { opacity: 1; }
+
+#app #luckyhatch .hatchtrade .ht-c:not(.ht-to) { color: var(--hud-ink); }

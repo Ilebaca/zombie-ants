@@ -20,7 +20,7 @@ import {
 } from "../platform";
 import type { Cue, Feedback, HatchPrize, ProfileStore } from "../platform";
 import { TIER_IDS } from "../engine";
-import { el, resourceMark, screenEl, screenHeader, toast } from "./chrome";
+import { el, resourceMark, resourcePrice, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 import { buildOdds } from "./odds";
 import { buildRewardReveal, hatchReward } from "./reward-reveal";
@@ -199,7 +199,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     row.id = "hatchTrade";
 
     const from = el("span", "ht-c");
-    from.append(resourceMark("mycel", 15), el("span", undefined, String(LARVA_MYCEL)));
+    from.append(resourceMark("mycel", 15), resourcePrice(LARVA_MYCEL, !can));
     const into = el("span", "ht-c ht-to");
     into.append(resourceMark("brood", 15), el("span", undefined, "1"));
     row.append(from, icon("next", 12), into, el("span", "ht-go", "Trade"));
@@ -322,6 +322,12 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
 
   /* ------------------------------------------------------------------ THE BUTTON */
 
+  const hatchPrice = (cost: number, insufficient: boolean): HTMLElement => {
+    const label = el("span", "hb-c");
+    label.append(resourcePrice(cost, insufficient), document.createTextNode(" larva"));
+    return label;
+  };
+
   const foot = (): HTMLElement => {
     const box = el("div", "hatchfoot");
     const can = store.get().larva >= HATCH_COST;
@@ -333,7 +339,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     // It never says "you cannot": it says what it costs, and the plus above is the answer.
     btn.append(
       el("span", "hb-t", busy ? "Hatching…" : "Hatch"),
-      el("span", "hb-c", `${HATCH_COST} larva`),
+      hatchPrice(HATCH_COST, !busy && !can),
     );
     btn.onclick = () => (can ? run() : opts.onBuyLarva());
     box.appendChild(btn);
@@ -354,7 +360,7 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
     many.disabled = busy || !enough;
     many.append(
       el("span", "hb-t", `Hatch ${BULK}`),
-      el("span", "hb-c", `${HATCH_COST * BULK} larva`),
+      hatchPrice(HATCH_COST * BULK, !busy && !enough),
     );
     many.onclick = () => runMany();
     box.appendChild(many);

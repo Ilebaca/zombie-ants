@@ -55,6 +55,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     const upgrade = buyButton({
       icon: "pheromone", cost, maxed,
       affordable: store.isUnlocked(id) && profile.pheromone >= cost,
+      insufficient: profile.pheromone < cost,
       onBuy: () => {
         if (!store.buyResearch(id)) return;
         render();
