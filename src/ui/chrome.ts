@@ -145,14 +145,15 @@ export function el<K extends keyof HTMLElementTagNameMap>(
  * list of those names here would be a list to keep in step with twelve other files.
  */
 export function redraw(root: HTMLElement): void {
-  const scrolled = Array.from(root.querySelectorAll<HTMLElement>("*"))
+  const scrolled = root.scrollTop > 0 ? root : Array.from(root.querySelectorAll<HTMLElement>("*"))
     .find((e) => e.scrollTop > 0);
   const top = scrolled?.scrollTop ?? 0;
-  const key = scrolled ? selectorFor(scrolled) : null;
+  const self = scrolled === root;
+  const key = scrolled && !self ? selectorFor(scrolled) : null;
   root.replaceChildren();
-  if (!key || top <= 0) return;
+  if ((!self && !key) || top <= 0) return;
   queueMicrotask(() => {
-    const again = root.querySelector<HTMLElement>(key);
+    const again = self ? root : key ? root.querySelector<HTMLElement>(key) : null;
     if (again) again.scrollTop = top;
   });
 }

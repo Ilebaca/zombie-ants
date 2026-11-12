@@ -5712,3 +5712,15 @@ above with its pointer attached to that edge. An open SVG triangle covers its bo
 seam, with no crossing rectangle/line. Green selection stays until the picker closes.
 X, any non-action modal tap, Escape and Hardware Back close the top layer first.
 Routing, teardown or removing the owner clears both layers and their listeners.
+
+
+## Page titles scroll with their content
+Standard pages with a direct .screentop use the .screen as their one vertical scroller.
+The title row, Back button, resource purse and body scroll together. ui/layout.css
+removes the inner viewport from .screenbody and its list/content wrappers; do not pin
+the title or reinstate a second scroll container below it.
+Keep the shared header geometry, page column and safe-area clearance. The fixed Home
+composition, battle HUD, title-free Road and single-viewport setup keep their existing
+structures. Trait picker/detail layers still portal to #app, outside the page scroller.
+chrome.redraw captures the root scroll position before rebuilding a standard page and
+restores it after render; custom views with an inner scroller retain the same fallback.

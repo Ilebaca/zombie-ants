@@ -36,3 +36,23 @@
 #app .screen > .screentop ~ .screenbody {
   padding-top: var(--block);
 }
+
+/* Standard pages scroll as a single document, including their title row.
+   Bodies/wrappers must not create a second viewport below the header. */
+#app .screen:has(> .screentop) {
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+#app .screen:has(> .screentop) > .screentop {
+  position: relative;
+  top: auto;
+  flex: none;
+}
+#app .screen:has(> .screentop)
+:is(.screenbody, .antscroll, .hillwrap, .shopwrap, .setwrap, .newswrap,
+    .spgwrap, .histlist, .kswrap, .lblist, .frbody, .spwrap, .hatchwrap, .quests) {
+  flex: none;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
