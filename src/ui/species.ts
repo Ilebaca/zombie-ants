@@ -20,7 +20,6 @@ import { buildTraitSlots } from "./traits";
 export interface SpeciesPageOptions {
   species: SpeciesId;
   onBack: () => void;
-  /** Open this colony's five trait slots. */
 }
 
 export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions): HTMLElement {

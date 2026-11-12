@@ -179,6 +179,16 @@ export function buildTraitSlots(store: ProfileStore, opts: TraitSlotsOptions): H
     return row;
   };
 
+  const totalsBox = (): HTMLElement => {
+    const t = store.benchTotals(scope), box = el("div", "trtotals");
+    box.append(
+      totalCell("attack", "Attack", t.atkPct, ATK_CAP),
+      totalCell("defence", "Defence", t.defPct, DEF_CAP),
+      totalCell("clock", "Cooldown", t.luckPct, LUCK_CAP),
+    );
+    return box;
+  };
+
   const totalCell = (mark: string, label: string, value: number, cap: number): HTMLElement => {
     const cell = el("div", "trtotal" + (value >= cap ? " capped" : ""));
     const head = el("div", "trtotal-k");

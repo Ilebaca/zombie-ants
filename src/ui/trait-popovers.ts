@@ -1,5 +1,4 @@
 /** Anchored trait layers live above scrolling/clipped cards and the deck. */
-import { el } from "./chrome";
 
 export function traitPopupHost(owner: HTMLElement): HTMLElement {
   return owner.closest<HTMLElement>("#app") ?? owner.closest<HTMLElement>(".screen") ?? owner;

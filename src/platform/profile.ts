@@ -1018,17 +1018,7 @@ export class ProfileStore {
     return this.profile.bag.filter((i) => fitsScope(i, scope) && !worn.has(i.uid));
   }
 
-  /**
-   * Put an item in a bench.
-   *
-   * Returns false rather than throwing when it cannot — an item that does not fit the
-   * bench, a bench with no room, an item already worn there — so a screen can tap
-   * optimistically and nothing ever goes half-applied, the same contract every other
-   * spend on this store has.
-   *
-   * An item worn in ANOTHER bench is impossible by construction: a species trait fits
-   * exactly one colony's bench and a universal one fits only the anthill.
-   */
+  /** Equip into an open slot, moving this owned copy from any previous loadout. */
   equipTrait(scope: TraitScope, uid: string, slot?: number): boolean {
     const item = this.profile.bag.find(b => b.uid === uid);
     if (!item || !fitsScope(item, scope)) return false;

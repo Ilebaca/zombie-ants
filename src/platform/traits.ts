@@ -16,10 +16,9 @@
  *             sooner — a chance, so a run of matches without it is the design rather
  *             than a bug (engine/state.ts rolls it off the seeded stream)
  *
- * WHERE THEY GO. A species trait goes in one of that colony's five slots; a universal
- * trait goes in one of the anthill's five. That is the same split the rest of the
- * progression layer already has — research is per-colony, chambers are account-wide — so
- * a player who already understands the Anthill understands where a universal trait lives.
+ * WHERE THEY GO. Every trait can be equipped by any species, at any research level.
+ * The Anthill retains its universal-trait loadout. Each owned copy is equipped in
+ * one place at a time, so moving it never doubles its contribution.
  *
  * WHAT THE ENGINE SEES is three finished percentages (PlayerMods.atkPct / defPct /
  * boonPct). The engine owns what a percentage DOES; this file owns what a tier is WORTH,
@@ -280,7 +279,7 @@ const BY_ID = new Map(TRAITS.map((t) => [t.id, t]));
 
 export const traitDef = (id: string): TraitDef | null => BY_ID.get(id) ?? null;
 
-/** The traits that can go in a given bench: a colony's own, or the universal ones. */
+/** Traits grouped by their biological origin, for drops and collection labels. */
 export const traitsFor = (scope: TraitScope): TraitDef[] =>
   TRAITS.filter((t) => (scope === "hill" ? t.species === null : t.species === scope));
 
