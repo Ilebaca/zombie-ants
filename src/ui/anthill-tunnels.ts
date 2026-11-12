@@ -20,7 +20,7 @@ export function mountAnthillTunnels(
     const start = progress.getBoundingClientRect().bottom - bounds.top;
     const points = rooms.map((room, i) => {
       const r = room.getBoundingClientRect();
-      return { x: bounds.width / 2 + [4, -5, 6, -4, 5, 0][i % 6]!,
+      return { x: bounds.width / 2 + ([4, -5, 6, -4, 5, 0][i % 6] ?? 0),
         y: r.top + r.height / 2 - bounds.top,
         edge: room.closest(".left") ? r.right - bounds.left - 12 : r.left - bounds.left + 12 };
     });
