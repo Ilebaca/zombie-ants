@@ -4,7 +4,7 @@ import type { SpeciesId } from "../../engine";
 import { MemoryStore } from "../storage";
 import { BAG_MAX, ProfileStore, normalise } from "../profile";
 import { traitDef } from "../traits";
-import { CHAMBERS, RESEARCH_TOTAL_MAX, SPECIES_ORDER, SPECIES_UNLOCK } from "../catalogue";
+import { CHAMBERS, RESEARCH_TOTAL_MAX, SPECIES_ORDER, SPECIES_UNLOCK, TIERS, tierOf } from "../catalogue";
 import {
   ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, ROAD_FIRST, ROAD_LAST, ROAD_STOPS, freeReward, isChapterEnd, passReward,
   rewardFor, roadColony, roadKey, roadStops, rungOfChapter, stopColony, stopReached,
@@ -34,10 +34,12 @@ describe("catalogue", () => {
     for (const id of store().get().unlocked) expect(SPECIES_UNLOCK[id]).toBe(0);
   });
 
-  it("lists every species exactly once, in price order", () => {
+  it("lists every species once by rarity, with earnable species in price order", () => {
     expect(SPECIES_ORDER.length).toBe(Object.keys(SPECIES).length);
     expect(new Set(SPECIES_ORDER).size).toBe(SPECIES_ORDER.length);
-    const prices = SPECIES_ORDER.map((id) => SPECIES_UNLOCK[id]);
+    const ranks = SPECIES_ORDER.map(id => TIERS.findIndex(tier => tier.k === tierOf(id).k));
+    expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
+    const prices = SPECIES_ORDER.filter(id => !SPECIES[id].premium).map(id => SPECIES_UNLOCK[id]);
     expect(prices).toEqual([...prices].sort((a, b) => a - b));
   });
 

@@ -95,10 +95,15 @@ export const TRAIT_PCT_CAP = 40;
 /** Anthill caps. Fungal Cultivation is deliberately shorter than the rest. */
 export const CHAMBER_MAX = { royal: 5, brood: 5, soldierCaste: 5, gland: 5, cultivate: 3 } as const;
 
-export const chamberCost = (level: number): number => 60 + level * 55;
+/** Next chamber level: an affordable start followed by progressively longer goals. */
+const CHAMBER_PRICES = [100, 240, 500, 950, 1600] as const;
+export const chamberCost = (level: number): number =>
+  CHAMBER_PRICES[Math.max(0, Math.min(CHAMBER_PRICES.length - 1, Math.floor(level)))] ?? 1600;
 
-/** Next unified colony level. Ten upgrades total 1,800 crystals, matching the old full tree. */
-export const researchCost = (level: number): number => 45 + level * 30;
+/** Ten unified upgrades total 6,140 crystals; the capped combat benefits are unchanged. */
+const RESEARCH_PRICES = [90, 140, 210, 300, 420, 570, 750, 960, 1200, 1500] as const;
+export const researchCost = (level: number): number =>
+  RESEARCH_PRICES[Math.max(0, Math.min(RESEARCH_PRICES.length - 1, Math.floor(level)))] ?? 1500;
 
 
 /* ------------------------------------------------- WHAT THE ABILITIES DO

@@ -76,7 +76,7 @@ export const SHOP_PRODUCTS: readonly Product[] = [
   },
   {
     id: "bundle.hoard", kind: "bundle", price: "€9.99", icon: "crown",
-    title: "Queen's Hoard", sub: "The whole anthill",
+    title: "Queen's Hoard", sub: "Resources & Colony Pass",
     // ON THE TILE THAT REALLY IS THE BEST VALUE. It sat on the Brood Bundle, which is 281
     // units per euro against this one's 340 — with the Colony Pass on top. The label was
     // simply false, and a false claim on a price is the kind both stores act on.

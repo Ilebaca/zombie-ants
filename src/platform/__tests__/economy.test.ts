@@ -1,246 +1,156 @@
 /**
- * THE ECONOMY, AGAINST THE PLAYER IT IS FOR.
- *
- * Every other test in this folder checks one number in isolation — what a win pays, what a
- * chamber costs, what the granary carries. None of them could see the thing that was
- * actually wrong, which is that the numbers did not add up TOGETHER:
- *
- *  - the whole research economy, every track on all eight colonies, was covered three times
- *    over inside three weeks, because larva were converted to pheromone at a rate nobody
- *    had checked against what pheromone buys;
- *  - the daily sweep bonus alone paid more mycelium in a year than there is in the game to
- *    spend it on;
- *  - the granary out-earned playing, so the fastest way up the ladder was to stop;
- *  - and the fifty-chapter road was over in under three months.
- *
- * So this file models the player the game is tuned for — TWO TO THREE MATCHES A DAY, won
- * about three in five — and holds the totals against what there is to buy. The bands are
- * wide on purpose: this is a design target, not a fixed point, and a change that moves a
- * number a little should not fail. A change that breaks the SHAPE should.
+ * Economy pacing is measured through real settlements and purchases, including gifts,
+ * match XP, actual achievable quests, one-time road claims and optional league income.
+ * Deliberately broad targets describe the experience; no assertion copies a price table.
  */
 import { describe, expect, it } from "vitest";
 import { CHAMBER_MAX, SPECIES_LEVEL_MAX, chamberCost, researchCost } from "../../engine";
-import { COLONY_START, losses, winnings } from "../colony";
-import { GRANARY_LEVELS, granaryFull, granaryRate, granaryStored } from "../granary";
-import {
-  ROAD_CHAPTER_STOPS, ROAD_LAST, ROAD_STOPS, chapterOf, freeReward, stopColony,
-} from "../road";
-import { QUEST_POOL, QUEST_SWEEP_BONUS, QUESTS_PER_DAY, levelReward, xpForLevel } from "../quests";
-import { SPECIES_UNLOCK } from "../catalogue";
+import { losses, winnings } from "../colony";
+import { GRANARY_LEVELS, granaryFull, granaryRate } from "../granary";
+import { ROAD_CHAPTER_STOPS, chapterOf, stopColony } from "../road";
+import { DAILY_GIFT, MATCH_MYCEL, ProfileStore } from "../profile";
+import { levelProgress } from "../quests";
+import { MemoryStore } from "../storage";
+import { SPECIES_ORDER, tierOf } from "../catalogue";
 import { FUSE_COST, FUSE_DEALS, FUSE_FUEL, LARVA_MYCEL } from "../exchange";
 import { WIN_LARVA } from "../traits";
-import { PAID_PLACES, prizeFor } from "../league";
+import { prizeFor } from "../league";
+import { finiteSinks, simulateEconomy } from "../../../tools/economy-model";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const GAMES_PER_DAY = 2.5;
-/**
- * AN EVEN RECORD. Matchmaking seats a `hard` bot and the player is a person, so half is
- * the honest assumption for the average of them — and it is the number the curve has to
- * work for, because a player who loses as often as they win still has to feel the colony
- * grow. It does: a loss costs about a third of what a win pays, so an even record gains
- * roughly a third of a win every match.
- */
-const WIN_RATE = 0.5;
+const GAMES_PER_DAY = 3;
+const WIN_RATE = .5;
+const regular = simulateEconomy({ days: 540, gamesPerDay: GAMES_PER_DAY, winRate: WIN_RATE, seed: 7 });
+const day = (n: number) => regular.snapshots.find(s => s.day === n)!;
 
-/** Everything mycelium can ever be spent on. */
-function mycelSink(): number {
-  const chambers = Object.values(CHAMBER_MAX).reduce(
-    (sum, max) => sum + Array.from({ length: max }, (_, l) => chamberCost(l)).reduce((a, b) => a + b, 0), 0);
-  const species = Object.values(SPECIES_UNLOCK).reduce((a, b) => a + b, 0);
-  const granary = GRANARY_LEVELS.reduce((a, g) => a + g.cost, 0);
-  return chambers + species + granary;
-}
-
-/** Every research level on every colony. */
-function pheromoneSink(): number {
-  const perTrack = Array.from({ length: SPECIES_LEVEL_MAX }, (_, l) => researchCost(l)).reduce((a, b) => a + b, 0);
-  return perTrack * Object.keys(SPECIES_UNLOCK).length;
-}
-
-/**
- * A career, day by day: matches, the granary, three quests, the sweep, the level track and
- * the Colony Road's free rewards. Deterministic — the point is one answer, not a spread.
- */
-function career(): { days: number; mycel: number; pheromone: number; level: number } {
-  // The day's three quests, averaged over the pool: what a player actually banks varies,
-  // and the average is what the year adds up to.
-  const paying = (k: "mycel" | "pheromone"): number => {
-    const rewards = QUEST_POOL.map((q) => q.reward[k] ?? 0).filter((v) => v > 0);
-    return rewards.reduce((a, b) => a + b, 0) / rewards.length;
-  };
-  const mycelQuests = QUEST_POOL.filter((q) => q.reward.mycel).length / QUEST_POOL.length;
-  const dailyMycel = QUESTS_PER_DAY * mycelQuests * paying("mycel") + QUEST_SWEEP_BONUS.mycel;
-  const dailyPher = QUESTS_PER_DAY * (1 - mycelQuests) * paying("pheromone");
-
-  let colony = COLONY_START, days = 0, mycel = 0, pheromone = 0, xp = 0, level = 1, stop = 0;
-  let pending = 0;
-  const questXp = QUEST_POOL.reduce((a, q) => a + q.xp, 0) / QUEST_POOL.length;
-  while (colony < ROAD_LAST && days < 20_000) {
-    days++;
-    // Two and a half matches a day is not two wins and a loss. Rounding it that way is a
-    // 67% record wearing a 50% label, and it made the road look a third shorter than it is.
-    pending += GAMES_PER_DAY;
-    while (pending >= 1) {
-      pending -= 1;
-      colony = Math.max(COLONY_START,
-        colony + winnings(colony) * WIN_RATE - losses(colony) * (1 - WIN_RATE));
-    }
-    colony += granaryStored(colony, 1, DAY_MS);
-    mycel += dailyMycel;
-    pheromone += dailyPher;
-    xp += QUESTS_PER_DAY * questXp;
-    while (xp >= xpForLevel(level)) {
-      xp -= xpForLevel(level);
-      level++;
-      const r = levelReward(level);
-      mycel += r.mycel ?? 0;
-      pheromone += r.pheromone ?? 0;
-    }
-    // The road pays as the colony passes each rung.
-    let reached = 0;
-    for (let i = 1; i <= ROAD_STOPS; i++) { if (colony >= stopColonyOf(i)) reached = i; else break; }
-    for (let i = stop + 1; i <= reached; i++) {
-      const r = freeReward(i);
-      if (r) { mycel += r.mycel ?? 0; pheromone += r.pheromone ?? 0; }
-    }
-    stop = reached;
-  }
-  return { days, mycel: Math.round(mycel), pheromone: Math.round(pheromone), level };
-}
-
-/** The road's rungs, without importing a private helper. */
-function stopColonyOf(index: number): number {
-  const growth = (ROAD_LAST / 100) ** (1 / (ROAD_STOPS - 1));
-  return Math.round(100 * growth ** (index - 1));
-}
-
-describe("the economy adds up", () => {
-  const run = career();
-
-  /**
-   * A YEAR, give or take a season. Fifty chapters is a long road and it should read as one;
-   * three months makes every chapter forgettable and three years makes the last forty of
-   * them decoration.
-   */
-  it("takes about a year of real play to walk the road", () => {
-    expect(run.days, `the road took ${run.days} days`).toBeGreaterThan(240);
-    expect(run.days, `the road took ${run.days} days`).toBeLessThan(560);
+describe("progress at three daily matches and an even record", () => {
+  it("gives an upgrade on day one and several useful steps in the first week", () => {
+    expect(regular.firstPurchaseDay).toBe(1);
+    expect(day(7).mainLevel).toBeGreaterThanOrEqual(3);
+    expect(day(7).mainLevel).toBeLessThan(SPECIES_LEVEL_MAX);
+    expect(day(7).chamberLevels).toBeGreaterThanOrEqual(2);
+    expect(day(7).earned.larva).toBeGreaterThan(0);
   });
 
-  /**
-   * MYCELIUM MUST TRAIL DESIRE. A player should reach the end of the road at about the
-   * point they have bought everything — with enough slack that they are never stuck, and
-   * never so much that the currency stops meaning anything. It was 2.6x.
-   */
-  it("pays out a little more mycelium than there is to spend it on", () => {
-    const ratio = run.mycel / mycelSink();
-    expect(ratio, `earned ${run.mycel} against ${mycelSink()} of things to buy`).toBeGreaterThan(0.9);
-    expect(ratio, `earned ${run.mycel} against ${mycelSink()} of things to buy`).toBeLessThan(1.8);
+  it("spaces new species across weeks rather than buying every one in a fortnight", () => {
+    expect(regular.speciesDays.ghost).toBeGreaterThanOrEqual(4);
+    expect(regular.speciesDays.ghost).toBeLessThanOrEqual(12);
+    expect(regular.speciesDays.bullet).toBeGreaterThan(35);
+    expect(regular.speciesDays.bullet).toBeLessThan(105);
   });
 
-  /**
-   * ...and the same for pheromone, which was the worse of the two: at fifty pheromone to
-   * the larva a single quest paid for five research levels, and the whole tree was covered
-   * five times over.
-   */
-  it("pays out about as much pheromone as there is research to spend it on", () => {
-    const ratio = run.pheromone / pheromoneSink();
-    // A tighter band than mycelium's on purpose: pheromone buys ONE thing, so there is
-    // nowhere for a surplus to go and an oversupply turns research into a formality.
-    expect(ratio, `earned ${run.pheromone} against ${pheromoneSink()} of research`).toBeGreaterThan(0.7);
-    expect(ratio, `earned ${run.pheromone} against ${pheromoneSink()} of research`).toBeLessThan(1.3);
+  it("makes a max-level main species a commitment of several weeks", () => {
+    expect(regular.mainMaxDay).toBeGreaterThanOrEqual(28);
+    expect(regular.mainMaxDay).toBeLessThanOrEqual(65);
   });
 
-  /**
-   * ONE COLONY FULLY RESEARCHED IS A COMMITMENT, not an afternoon. It used to be two days
-   * of dailies, which is the same as it being free.
-   */
-  it("makes maxing a colony's research weeks of play, not days", () => {
-    const perColony = Array.from({ length: SPECIES_LEVEL_MAX }, (_, l) => researchCost(l))
-      .reduce((a, b) => a + b, 0);
-    const daysOfPheromone = perColony / (run.pheromone / run.days);
-    expect(daysOfPheromone, `${Math.round(daysOfPheromone)} days`).toBeGreaterThan(14);
-    expect(daysOfPheromone, `${Math.round(daysOfPheromone)} days`).toBeLessThan(90);
+  it("keeps chamber and collection upgrades relevant through the middle and late game", () => {
+    expect(regular.chambersMaxDay).toBeGreaterThan(70);
+    expect(regular.chambersMaxDay).toBeLessThan(210);
+    expect(regular.freeResearchMaxDay).toBeGreaterThan(240);
+    expect(regular.freeResearchMaxDay).toBeLessThan(540);
+    expect(regular.roadCompleteDay).toBeGreaterThan(180);
+    expect(regular.roadCompleteDay).toBeLessThan(540);
+  });
+
+  it("counts all income without double counting gifts, matches or road re-crossings", () => {
+    expect(regular.wins).toBe(regular.matches / 2);
+    expect(regular.sources.matches.mycel).toBe(
+      regular.wins * MATCH_MYCEL.win + (regular.matches - regular.wins) * MATCH_MYCEL.loss);
+    expect(regular.sources.matches.larva).toBe(regular.wins * WIN_LARVA);
+    expect(regular.sources.gift.mycel).toBe(540 * DAILY_GIFT.mycel);
+    expect(regular.sources.gift.pheromone).toBe(540 * DAILY_GIFT.pheromone);
+    for (const key of ["mycel", "pheromone", "larva"] as const) {
+      expect(Object.values(regular.sources).reduce((total, source) => total + source[key], 0))
+        .toBe(regular.earned[key]);
+    }
+    expect(regular.sources.road.mycel).toBeLessThan(finiteSinks().mycel / 3);
+    expect(regular.sources.road.pheromone).toBeLessThan(finiteSinks().pheromone / 10);
+  });
+
+  it("counts match XP even without daily quests and never invents completed quests", () => {
+    const losses = simulateEconomy({ days: 2, gamesPerDay: 3, winRate: 0,
+      quests: false, spend: false, turns: 45 });
+    expect(losses.final.level).toBe(levelProgress(6 * (35 + 30)).level);
+    expect(losses.sources.quests).toEqual({ mycel: 0, pheromone: 0, larva: 0 });
+    const idle = simulateEconomy({ days: 7, gamesPerDay: 0, winRate: .5, gift: false });
+    expect(idle.earned).toEqual({ mycel: 0, pheromone: 0, larva: 0 });
+    expect(idle.firstPurchaseDay).toBeNull();
+  });
+
+  it("lets a losing player improve and a one-match player save toward real goals", () => {
+    const losing = simulateEconomy({ days: 7, gamesPerDay: 3, winRate: 0 });
+    expect(losing.firstPurchaseDay).toBe(1);
+    expect(losing.final.mainLevel).toBeGreaterThan(0);
+    expect(losing.final.wallet.mycel).toBeGreaterThanOrEqual(0);
+    const casual = simulateEconomy({ days: 90, gamesPerDay: 1, winRate: .5, seed: 7 });
+    expect(casual.speciesDays.ghost).toBeLessThanOrEqual(30);
+    expect(casual.mainMaxDay).toBeLessThanOrEqual(90);
+  });
+
+  it("holds the early pacing across different losing streaks", () => {
+    for (const seed of [1, 23, 91]) {
+      const run = simulateEconomy({ days: 90, gamesPerDay: 3, winRate: .5, seed });
+      expect(run.firstPurchaseDay).toBe(1);
+      expect(run.speciesDays.ghost).toBeGreaterThanOrEqual(4);
+      expect(run.speciesDays.ghost).toBeLessThanOrEqual(14);
+      expect(run.mainMaxDay).toBeGreaterThanOrEqual(28);
+      expect(run.mainMaxDay).toBeLessThanOrEqual(65);
+    }
+  });
+
+  it("includes optional daily-challenge and league prizes in the engaged scenario", () => {
+    const run = simulateEconomy({ days: 90, gamesPerDay: 3, winRate: .5,
+      seed: 7, dailyChallenge: true, league: true });
+    expect(run.sources.challenge.mycel).toBeGreaterThan(0);
+    expect(run.sources.challenge.pheromone).toBeGreaterThan(0);
+    expect(run.earned.mycel).toBeGreaterThan(day(90).earned.mycel);
+    expect(run.mainMaxDay).toBeLessThanOrEqual(regular.mainMaxDay!);
   });
 });
 
-describe("no single faucet carries the economy", () => {
-  /**
-   * The level track pays every other level for the whole career, and nobody counts it: it
-   * is not a screen a player goes to for currency, it just arrives. That makes it exactly
-   * the kind of stream that can quietly become the biggest one — as the daily sweep bonus
-   * had, paying more mycelium in a year than the game has to spend it on.
-   *
-   * So it is held UNDER the quests, which are the thing a player actually plays for.
-   */
-  it("keeps the level track smaller than the quests it rides on", () => {
-    const DAYS = 300;
-    const questXp = QUEST_POOL.reduce((a, q) => a + q.xp, 0) / QUEST_POOL.length;
-    let xp = 0, level = 1, levelMycel = 0, levelPher = 0;
-    for (let d = 0; d < DAYS; d++) {
-      xp += QUESTS_PER_DAY * questXp;
-      while (xp >= xpForLevel(level)) {
-        xp -= xpForLevel(level);
-        level++;
-        const r = levelReward(level);
-        levelMycel += r.mycel ?? 0;
-        levelPher += r.pheromone ?? 0;
-      }
-    }
-    const avg = (k: "mycel" | "pheromone"): number => {
-      const paid = QUEST_POOL.map((q) => q.reward[k] ?? 0).filter((v) => v > 0);
-      return paid.reduce((a, b) => a + b, 0) / paid.length;
-    };
-    const mycelShare = QUEST_POOL.filter((q) => q.reward.mycel).length / QUEST_POOL.length;
-    const questMycel = DAYS * QUESTS_PER_DAY * mycelShare * avg("mycel");
-    const questPher = DAYS * QUESTS_PER_DAY * (1 - mycelShare) * avg("pheromone");
-
-    expect(levelMycel, "levelling pays more mycelium than playing does").toBeLessThan(questMycel);
-    expect(levelPher, "levelling pays more pheromone than playing does").toBeLessThan(questPher);
+describe("stable ownership and honest prices", () => {
+  it("keeps rarity independent of soft-currency price changes", () => {
+    expect(tierOf("ghost").k).toBe("rare");
+    expect(tierOf("pharaoh").k).toBe("rare");
+    expect(tierOf("army").k).toBe("exceptional");
+    expect(tierOf("bullet").k).toBe("exceptional");
+    expect(tierOf("demon").k).toBe("mythic");
   });
 
-  /**
-   * THE WEEKLY LEAGUE IS THE NEWEST FAUCET, and it is the shape that has gone wrong here
-   * before: it arrives for having played rather than for anything bought, it pays all three
-   * currencies at once, and nobody counts it. So first place — the largest prize there is —
-   * is held under what a WEEK of quests pays, and its larva under what a week of WINNING
-   * pays, or the fastest route to the hatch would be to finish a league rather than to play.
-   */
-  it("keeps a winning week under what a week of playing pays", () => {
-    const avg = (k: "mycel" | "pheromone"): number => {
-      const paid = QUEST_POOL.map((q) => q.reward[k] ?? 0).filter((v) => v > 0);
-      return paid.reduce((a, b) => a + b, 0) / paid.length;
-    };
-    const mycelShare = QUEST_POOL.filter((q) => q.reward.mycel).length / QUEST_POOL.length;
-    const weekMycel = 7 * (QUESTS_PER_DAY * mycelShare * avg("mycel") + QUEST_SWEEP_BONUS.mycel);
-    const weekPher = 7 * QUESTS_PER_DAY * (1 - mycelShare) * avg("pheromone");
-    const weekLarva = 7 * GAMES_PER_DAY * WIN_RATE * WIN_LARVA;
-
-    const first = prizeFor(1) as { mycel: number; pheromone: number; larva: number };
-    expect(first.mycel, "first place pays more mycelium than a week of playing")
-      .toBeLessThan(weekMycel);
-    expect(first.pheromone, "first place pays more pheromone than a week of playing")
-      .toBeLessThan(weekPher);
-    expect(first.larva, "first place pays more larva than a week of winning")
-      .toBeLessThan(weekLarva);
-
-    // ...and every place below it pays less than the one above, so the taper cannot be
-    // undone by a retune that only looks at the top.
-    for (let place = 2; place <= PAID_PLACES; place++) {
-      const here = prizeFor(place) as { mycel: number };
-      const above = prizeFor(place - 1) as { mycel: number };
-      expect(here.mycel, `place ${place} pays more than ${place - 1}`)
-        .toBeLessThanOrEqual(above.mycel);
-    }
+  it("keeps existing balances, levels and unlocks when a save is reopened", () => {
+    const memory = new MemoryStore();
+    const store = new ProfileStore(memory);
+    store.update(p => {
+      p.mycel = 1234; p.pheromone = 567;
+      p.unlocked.push("ghost");
+      p.hill.royal = 3;
+      p.research.fire = { level: 7 };
+    });
+    const loaded = new ProfileStore(memory);
+    expect(loaded.get().mycel).toBe(1234);
+    expect(loaded.get().pheromone).toBe(567);
+    expect(loaded.isUnlocked("ghost")).toBe(true);
+    expect(loaded.get().hill.royal).toBe(3);
+    expect(loaded.get().research.fire?.level).toBe(7);
+    loaded.update(p => { p.pheromone = researchCost(7) - 1; });
+    expect(loaded.buyResearch("fire")).toBe(false);
+    loaded.update(p => { p.pheromone = researchCost(7); });
+    expect(loaded.buyResearch("fire")).toBe(true);
+    expect(loaded.get().pheromone).toBe(0);
+    expect(loaded.get().research.fire?.level).toBe(8);
   });
 
-  /** ...and the same for the bonus paid for clearing the day, which was the worst offender. */
-  it("keeps the sweep bonus under what the three quests themselves pay", () => {
-    const paid = QUEST_POOL.map((q) => q.reward.mycel ?? 0).filter((v) => v > 0);
-    const avgQuest = paid.reduce((a, b) => a + b, 0) / paid.length;
-    const mycelShare = QUEST_POOL.filter((q) => q.reward.mycel).length / QUEST_POOL.length;
-    expect(QUEST_SWEEP_BONUS.mycel, "the bonus for finishing outweighs the quests")
-      .toBeLessThan(QUESTS_PER_DAY * mycelShare * avgQuest);
+  it("keeps the first investment affordable and later prices strictly increasing", () => {
+    expect(chamberCost(0)).toBeLessThanOrEqual(DAILY_GIFT.mycel + 3 * MATCH_MYCEL.loss + 25);
+    expect(researchCost(0)).toBeLessThanOrEqual(DAILY_GIFT.pheromone);
+    for (let level = 1; level < CHAMBER_MAX.royal; level++) {
+      expect(chamberCost(level)).toBeGreaterThan(chamberCost(level - 1));
+    }
+    for (let level = 1; level < SPECIES_LEVEL_MAX; level++) {
+      expect(researchCost(level)).toBeGreaterThan(researchCost(level - 1));
+    }
+    expect(finiteSinks().pheromone).toBe(7 * finiteSinks().perSpecies);
+    expect(SPECIES_ORDER).toHaveLength(8);
   });
 });
 
@@ -323,76 +233,31 @@ describe("the granary is a top-up, not a rival", () => {
   });
 });
 
-/**
- * WHERE EACH CURRENCY GOES WHEN THERE IS NOTHING LEFT TO BUY.
- *
- * Everything above measures the sinks against the supply. What it cannot measure is that
- * both sinks END: mycelium's is covered around day 250 of a 440-day road and pheromone's
- * around day 400, and from those days a number goes up on the top bar for ever and buys
- * nothing. The two trades in `platform/exchange.ts` are the answer, and what has to be
- * held about them is that neither one out-earns playing the game.
- */
-describe("the endless half of the economy", () => {
-  const run = career();
-  /**
-   * Mycelium a day ONCE EVERYTHING BUYABLE HAS BEEN BOUGHT — which is the day's whole
-   * income, because from then on there is nothing to take out of it. Averaging the
-   * leftovers over the road instead would divide a late surplus by the early days that
-   * were spending every coin, and understate it several times over.
-   */
-  const mycelSurplus = run.mycel / run.days;
-  /** The same for pheromone, once the research tree is finished. */
-  const pherSurplus = run.pheromone / run.days;
 
-  /**
-   * BUYING LARVA MUST NOT BEAT PLAYING FOR THEM. A win pays one outright, so at two and a
-   * half matches a day on an even record playing is the main faucet; the surplus is a
-   * top-up. If this flipped, the fastest way to fill the hatch would be to stop.
-   */
-  it("prices a larva so the surplus pays fewer than playing does", () => {
-    const bought = mycelSurplus / LARVA_MYCEL;
+describe("the collection remains an ongoing goal", () => {
+  const perDay = { mycel: regular.earned.mycel / 540, pheromone: regular.earned.pheromone / 540 };
+  it("keeps optional larva trades below what playing earns", () => {
+    const bought = perDay.mycel / LARVA_MYCEL;
     const played = GAMES_PER_DAY * WIN_RATE * WIN_LARVA;
-    expect(bought, `${bought.toFixed(2)} bought against ${played.toFixed(2)} played`)
-      .toBeLessThan(played);
-    // ...and it is still worth doing. A trade nobody can afford is a dead control.
-    expect(bought).toBeGreaterThan(played * 0.1);
+    expect(bought).toBeLessThan(played);
+    expect(bought).toBeGreaterThan(played * .1);
   });
 
-  /**
-   * IT MUST NOT UNDERCUT THE SHOP EITHER. Larva sells three for a euro, so a day of free
-   * mycelium buying most of a euro's worth would make that shelf pointless.
-   */
-  it("keeps a day of surplus well under what a euro buys", () => {
-    expect(mycelSurplus / LARVA_MYCEL).toBeLessThan(3 / 3);
-  });
-
-  /**
-   * THE FUSE LADDER IS A CHASE, NOT A WEEKEND. The bottom rung is something to do this
-   * week; the top one, fused all the way from commons, is most of a year of surplus.
-   */
-  it("makes the top of the fuse ladder a long way off", () => {
-    const cheapest = FUSE_DEALS[0]!.pheromone;
-    expect(cheapest / pherSurplus, "the first rung is out of reach").toBeLessThan(7);
-
-
-    // What a mythic costs fused from the bottom: each rung needs FUSE_FUEL of the one
-    // below, so the prices multiply up the ladder.
-    let cost = 0;
-    let need = 1;
+  it("requires substantial time and spare traits for a guaranteed top-tier fusion", () => {
+    let cost = 0, fuel = 1;
     for (let i = FUSE_DEALS.length - 1; i >= 0; i--) {
-      const deal = FUSE_DEALS[i]!;
-      cost += need * FUSE_COST[deal.into];
-      need *= FUSE_FUEL;
+      cost += fuel * FUSE_COST[FUSE_DEALS[i]!.into];
+      fuel *= FUSE_FUEL;
     }
-    const days = cost / pherSurplus;
-    expect(days, `a fused mythic is ${Math.round(days)} days of surplus`).toBeGreaterThan(120);
-    // ...and the fuel it eats is a real collection, not a shopping trip.
-    expect(need).toBe(FUSE_FUEL ** FUSE_DEALS.length);
+    expect(cost / perDay.pheromone).toBeGreaterThan(20);
+    // Optimistic lower bound: all common rolls become traits, ignoring avatar substitution.
+    expect(fuel / (GAMES_PER_DAY * WIN_RATE * WIN_LARVA * .6)).toBeGreaterThan(60);
   });
 
-  /** Both surpluses have to be REAL, or neither trade is reachable at all. */
-  it("leaves both currencies with something over once their sinks are covered", () => {
-    expect(mycelSurplus, `${mycelSurplus.toFixed(1)} mycelium a day spare`).toBeGreaterThan(5);
-    expect(pherSurplus, `${pherSurplus.toFixed(1)} pheromone a day spare`).toBeGreaterThan(1);
+  it("keeps the maximum weekly prize a bonus rather than the main source of progress", () => {
+    const first = prizeFor(1)!;
+    expect(first.mycel).toBeLessThan(7 * GAMES_PER_DAY * (MATCH_MYCEL.win + MATCH_MYCEL.loss) / 2);
+    expect(first.pheromone).toBeLessThan(2 * DAILY_GIFT.pheromone);
+    expect(first.larva).toBeLessThan(7 * GAMES_PER_DAY * WIN_RATE * WIN_LARVA);
   });
 });

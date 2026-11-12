@@ -455,9 +455,8 @@ describe("antarium collection", () => {
   });
 
   /**
-   * The counts are READ OFF THE CATALOGUE, never typed here. A tier is derived from a
-   * colony's price, so retuning one price moves a colony between two headings — and a
-   * hardcoded "3/3" then fails on a change that is not a bug, or passes one that is.
+   * Counts read the catalogue's explicit rarities. Retuning a price must not move a
+   * species between headings or change its artwork colour.
    */
   it("counts owned colonies per tier", () => {
     const root = openAntarium(store());
