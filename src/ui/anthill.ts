@@ -1,19 +1,7 @@
 /**
- * The Anthill: a cross-section of the nest, dug one chamber at a time.
- *
- * It was a list. Five cards down a page, each naming a chamber and stating a number — an
- * honest table of upgrades and nothing whatever to do with an ant colony. The nest is the
- * one thing on this screen that is a PLACE, so the screen is a picture of it: a shaft going
- * down from the surface with a chamber hollowed out at each level, alternating sides the
- * way a real one branches. Tapping a chamber opens it in place; buying digs it deeper.
- *
- * The picture is DOM, not canvas, for two reasons. Each chamber is a real button, so it
- * takes a tap and a focus ring without any hit-testing of our own; and the whole screen can
- * be driven and asserted on in a jsdom test (PROJECT_GUIDE.md §11), which a canvas cannot.
- *
- * Chambers are the account-wide half of progression — they apply to whatever species is
- * fielded. The screen only ever *asks* ProfileStore to spend; it never touches the numbers
- * itself, so an unaffordable tap is a no-op rather than a half-finished purchase.
+ * Anthill upgrades beneath a full-width illustrated cover.
+ * The title, purse and excavation progress scroll with the page.
+ * Purchases always go through ProfileStore; render never changes progression.
  */
 import { groupSections } from "./groups";
 import { chamberCost } from "../engine";
@@ -24,6 +12,7 @@ import type { ChamberDef, GranaryState, ProfileStore } from "../platform";
 import { buyButton, effectRow, el, pips, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
 import { buildTraitSlots } from "./traits";
+import { anthillCover, chamberArt } from "./anthill-art";
 
 export function buildAnthill(store: ProfileStore): HTMLElement {
   const root = screenEl("anthill");
@@ -36,17 +25,24 @@ export function buildAnthill(store: ProfileStore): HTMLElement {
     const levelOf = (ch: ChamberDef): number => profile.hill[ch.id] ?? 0;
 
     redraw(root);
-    // No back arrow: this is a bottom-nav tab, and the nav is how the player leaves it.
-    screenHeader(root, {
-      title: "Anthill", mycel: profile.mycel,
-    });
+    const dug = CHAMBERS.reduce((n, ch) => n + levelOf(ch), profile.granary);
+    const total = CHAMBERS.reduce((n, ch) => n + ch.max, GRANARY_MAX);
+    const cover = el("div", "hill-cover");
+    if (anthillCover) {
+      const art = el("img", "hill-cover-art");
+      art.src = anthillCover;
+      art.alt = "";
+      art.decoding = "async";
+      art.fetchPriority = "high";
+      cover.appendChild(art);
+    }
+    // No back arrow on a bottom-nav tab. The shared row stays over the cover.
+    screenHeader(cover, { title: "Anthill", mycel: profile.mycel });
+    cover.appendChild(surface(dug, total));
+    root.appendChild(cover);
 
     const body = el("div", "screenbody sb-top");
     const wrap = el("div", "hillwrap");
-
-    const dug = CHAMBERS.reduce((n, ch) => n + levelOf(ch), profile.granary);
-    const total = CHAMBERS.reduce((n, ch) => n + ch.max, GRANARY_MAX);
-    wrap.appendChild(surface(dug, total));
 
     const nest = el("div", "nest");
     // THE GRANARY IS THE FIRST ROOM DOWN, and it is not a chamber: a chamber changes a
@@ -78,10 +74,7 @@ export function buildAnthill(store: ProfileStore): HTMLElement {
     });
     wrap.appendChild(nest);
 
-    // THE UNIVERSAL BENCH LIVES IN THE NEST, under the picture of it — these five apply
-    // to whichever colony is fielded, which is exactly what a chamber does, so this is
-    // the screen they belong on. It is not IN the cross-section, because a trait is not
-    // a room: nothing is dug for it.
+    // Universal traits remain below the account-wide chamber upgrades.
     wrap.appendChild(buildTraitSlots(store, { scope: "hill" }));
 
     body.appendChild(wrap);
@@ -93,32 +86,24 @@ export function buildAnthill(store: ProfileStore): HTMLElement {
   return root;
 }
 
-/**
- * The ground, and the way in.
- *
- * The shaft has to start somewhere or the first chamber floats: this is the mound and the
- * entrance hole the tunnel drops from, with the one figure the screen could never say
- * before — how far along the whole nest is.
- */
+/** The same excavation count and progress, over the cover instead of a drawn mound. */
 function surface(dug: number, total: number): HTMLElement {
-  const top = el("div", "nest-top");
-
-  const sky = el("div", "nest-sky");
-  sky.append(el("span", "nest-mound"), el("span", "nest-mouth"));
-  top.appendChild(sky);
-
   const sum = el("div", "nest-sum");
   sum.append(
     el("span", "nest-sum-k", "Excavated"),
     el("span", "nest-sum-v", `${dug} / ${total}`),
   );
   const track = el("div", "hl-track");
+  track.setAttribute("role", "progressbar");
+  track.setAttribute("aria-label", "Excavated");
+  track.setAttribute("aria-valuemin", "0");
+  track.setAttribute("aria-valuemax", String(total));
+  track.setAttribute("aria-valuenow", String(dug));
   const fill = el("span", "hl-fill");
   fill.style.width = `${Math.round((dug / total) * 100)}%`;
   track.appendChild(fill);
   sum.appendChild(track);
-  top.appendChild(sum);
-  return top;
+  return sum;
 }
 
 interface RoomHandlers { onOpen: () => void; onBuy: () => void }
@@ -150,7 +135,18 @@ function level(
   room.type = "button";
   room.setAttribute("aria-expanded", String(open));
   const pocket = el("span", "room-pocket");
-  pocket.appendChild(icon(ch.icon, 22));
+  const art = chamberArt[ch.id];
+  if (art) {
+    const img = el("img", "room-art");
+    img.src = art;
+    img.alt = "";
+    img.decoding = "async";
+    img.width = 48;
+    img.height = 48;
+    pocket.appendChild(img);
+  } else {
+    pocket.appendChild(icon(ch.icon, 22));
+  }
   const label = el("span", "room-txt");
   label.append(
     el("b", "room-nm", ch.name),

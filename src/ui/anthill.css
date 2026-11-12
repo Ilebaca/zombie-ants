@@ -1,0 +1,112 @@
+/* The Anthill is one scrolling page. Its art is full bleed; controls share the
+   same reading column and safe-area clearance as the other screens. */
+#app #anthill {
+  --hill-ground: #541729;
+  background: var(--hill-ground);
+  padding: 0 0 var(--nav-space);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+#app #anthill .hill-cover {
+  position: relative;
+  isolation: isolate;
+  flex: none;
+  width: 100%;
+  height: calc(clamp(280px, 82vw, 420px) + var(--safe-top));
+  padding-top: var(--screen-top);
+  overflow: hidden;
+  background: var(--hill-ground);
+}
+#app #anthill .hill-cover-art {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center bottom;
+  pointer-events: none;
+}
+#app #anthill .hill-cover > .screentop,
+#app #anthill .hill-cover > .nest-sum,
+#app #anthill > .screenbody {
+  width: min(calc(100% - var(--sp8)), var(--page));
+  margin-inline: auto;
+}
+#app #anthill .hill-cover > .screentop {
+  position: relative;
+  top: auto;
+}
+#app #anthill .nest-sum {
+  position: relative;
+  margin-top: var(--block);
+  padding: var(--block);
+  border: none;
+  border-radius: var(--action-radius);
+  outline: var(--action-stroke) solid var(--action-frame);
+  outline-offset: calc(-1 * var(--action-stroke));
+  background: var(--hud-card);
+  box-shadow: 0 var(--action-depth) 0 var(--action-frame) !important;
+}
+#app #anthill .nest-sum-k { color: var(--hud-dim); }
+#app #anthill .nest-sum-v { color: var(--hud-ink); }
+#app #anthill > .screenbody {
+  flex: none;
+  height: auto;
+  max-height: none;
+  padding: 0 0 var(--block);
+  overflow: visible;
+}
+#app #anthill .hillwrap {
+  flex: none;
+  height: auto;
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+}
+#app #anthill .nest {
+  margin: 0;
+  padding-bottom: var(--block);
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+#app #anthill .nest-lvl:first-child .room { margin-top: 0; }
+#app #anthill .nest-line,
+#app #anthill .nest-node {
+  background: #74283f;
+  border-color: #8b3b51;
+}
+#app #anthill .nest-node::after {
+  background: #74283f;
+  border-color: #8b3b51;
+}
+#app #anthill .nest-lvl.dug .nest-node {
+  background: var(--hud-go);
+  border-color: var(--hud-go);
+}
+#app #anthill .room { position: relative; z-index: 1; }
+#app #anthill .room-pocket {
+  background: transparent;
+  border-radius: 0;
+}
+#app #anthill .room-pocket > :is(img, svg) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+#app #anthill .room-art {
+  width: 100%;
+  object-fit: contain;
+}
+/* Painted art needs a little more room than the previous flat glyph. */
+#app #anthill .room:has(.room-art) {
+  grid-template-columns: clamp(32px, 10vw, 44px) minmax(0, 1fr);
+}
+#app #anthill .room-open {
+  position: relative;
+  z-index: 1;
+  margin-inline: 0;
+}
