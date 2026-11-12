@@ -1,0 +1,25 @@
+name: Hatch and prices preview
+on:
+  push:
+    branches: [codex/hatch-prices]
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npx vitest run src/ui/__tests__/hatch.test.ts src/ui/__tests__/prices.test.ts src/ui/__tests__/meta.test.ts src/ui/__tests__/traits.test.ts
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hatch-prices-preview
+          path: dist/
+          retention-days: 7

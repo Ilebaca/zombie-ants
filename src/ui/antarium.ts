@@ -8,7 +8,7 @@ import type { ProfileStore } from "../platform";
 import { cardArt } from "./cards";
 import { researchPips } from "./research";
 import { showRewardReveal } from "./reward-reveal";
-import { el, hudMark, redraw, screenEl, screenHeader, toast } from "./chrome";
+import { el, hudMark, redraw, resourcePrice, screenEl, screenHeader, toast } from "./chrome";
 
 export interface AntariumOptions {
   /** Opens the per-species page. The app router owns which screen is showing. */
@@ -113,7 +113,9 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
     if (owned) {
       btn.textContent = "Upgrade & research";
     } else {
-      btn.append(hudMark("mycel", 22), el("span", "ant-price", String(price)));
+      const amount = resourcePrice(price, !affordable);
+      amount.classList.add("ant-price");
+      btn.append(hudMark("mycel", 22), amount);
       btn.setAttribute("aria-label", `Unlock ${species.name} for ${price} mycelium`);
     }
 

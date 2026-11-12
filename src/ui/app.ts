@@ -81,7 +81,8 @@ import "./panels.css";  // matching frames for filled panels; component fills st
 import "./traits.css"; // anchored trait picker and detail dialog
 import "./layout.css"; // consistent page headers across deck and detail screens
 import "./groups.css";
-import "./anthill.css";  // one frame and shared dividers for related information rows
+import "./anthill.css";
+import "./hatch.css";  // one frame and shared dividers for related information rows
 
 /**
  * Route ids are the legacy build's screen ids. The stylesheet is that build's, and some of

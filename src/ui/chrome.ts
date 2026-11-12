@@ -602,6 +602,8 @@ export interface BuyOptions {
   icon: string;
   cost: number;
   affordable: boolean;
+  /** Currency shortfall, separate from ownership or other non-price locks. */
+  insufficient?: boolean;
   maxed: boolean;
   onBuy: () => void;
 }
@@ -610,6 +612,11 @@ export interface BuyOptions {
  * A price button. Unaffordable prices stay visible but dead (legacy `.buybtn.off`) — the
  * player needs to see what they are saving toward.
  */
+/** One resource amount; only a missing balance gives the price its red warning. */
+export function resourcePrice(amount: number, insufficient = false): HTMLSpanElement {
+  return el("span", "resource-price" + (insufficient ? " shortfall" : ""), String(amount));
+}
+
 export function buyButton(opts: BuyOptions): HTMLButtonElement {
   if (opts.maxed) {
     const b = el("button", "buybtn max", "MAX");
@@ -619,7 +626,7 @@ export function buyButton(opts: BuyOptions): HTMLButtonElement {
   const b = el("button", "buybtn" + (opts.affordable ? "" : " off"));
   // THE PAINTED currency mark, the same one the top bar carries: a price is the purse
   // counted somewhere else, and two drawings of one currency read as two currencies.
-  b.append(resourceMark(opts.icon, 15), el("span", undefined, String(opts.cost)));
+  b.append(resourceMark(opts.icon, 15), resourcePrice(opts.cost, opts.insufficient ?? !opts.affordable));
   b.disabled = !opts.affordable;
   if (opts.affordable) b.onclick = opts.onBuy;
   return b;

@@ -223,3 +223,13 @@
 #app .rd-prize.got {
   filter: grayscale(1);
 }
+
+/* Currency surfaces use solid fills even when laid over scene artwork. */
+#app :is(.mycelchip, .curchip, .lootchip, .hatchpurse, .hatchtrade) {
+  background: var(--hud-card) !important;
+  opacity: 1 !important;
+}
+#app .tn-coin {
+  background: var(--hud-face) !important;
+  opacity: 1 !important;
+}
