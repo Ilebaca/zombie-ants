@@ -31,3 +31,8 @@
   justify-self: end;
   margin: 0;
 }
+
+/* A wrapper class on the body itself must not cancel the page's top gap. */
+#app .screen > .screentop ~ .screenbody {
+  padding-top: var(--block);
+}

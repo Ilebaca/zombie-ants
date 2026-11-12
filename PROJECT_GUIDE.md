@@ -5689,3 +5689,5 @@ exact amount in their accessible label. Keep the existing page gutters, body gap
 safe-area clearance. Species artwork remains full bleed; its header and ordinary
 cards keep the same column as Antarium. Home, battle HUD and the title-free road have
 their own intentional layouts and do not acquire this page header.
+The direct page body owns its top gap, even when it also carries a wrapper class
+(such as Friends' frbody). Inner-wrapper reset rules must not erase that clearance.
