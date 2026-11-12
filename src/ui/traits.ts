@@ -1,21 +1,8 @@
 /**
- * THE TRAIT BENCH — five slots, and everything you have found underneath them.
- *
- * One screen does both halves on purpose. A separate inventory would mean walking away
- * from the slots to look at the thing you are choosing FOR them, and back again to see
- * whether it helped; here the totals sit between the two, so slotting something and
- * watching the number move is one gesture in one place.
- *
- * It is the same screen for a colony's five and for the anthill's five — a bench is a
- * bench, and two screens that differ only in which pool they draw from would be two
- * places to fix everything. `scope` is the whole difference.
- *
- * WHAT IT SHOWS THAT THE NUMBERS ALONE DO NOT: the CAP. A player stacking attack traits
- * has to be able to see the ceiling before they hit it, or the fifth one silently doing
- * nothing reads as a bug in the game rather than as a rule of it.
+ * Trait slots open an anchored collection picker, then a separate detail dialog.
+ * Browsing never changes a loadout; only Equip or Remove writes to the store.
  */
 import { groupSections } from "./groups";
-import { SPECIES } from "../engine";
 import {
   ATK_CAP, DEF_CAP, FUSE_DEALS, LUCK_CAP, SPECIES_ORDER, TRAIT_SLOTS,
   TRAIT_TIER, effectFigure, effectText, fitsScope, itemDef, markOf, scopeName, slotChapter,
@@ -27,70 +14,144 @@ import { icon } from "./icons";
 export interface TraitBenchOptions {
   scope: TraitScope;
   onBack: () => void;
-  /** Told after any change, so the screen behind can redraw its own trait row. */
   onChanged?: () => void;
 }
 
 export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): HTMLElement {
   const root = screenEl("traits");
   const { scope } = opts;
+  let selectedSlot: number | null = null;
+  let detail: HTMLElement | null = null;
+  let returnFocus: HTMLElement | null = null;
 
-  /**
-   * The slot a tap from the bag will fill.
-   *
-   * `null` means "the first free one", which is what an empty bench wants — a player
-   * filling five slots in a row should not have to aim at each. Tapping a slot ARMS it,
-   * so replacing one particular trait is also two taps rather than a remove and an add.
-   */
-  let armed: number | null = null;
-
-  const render = (): void => {
-    redraw(root);
-    screenHeader(root, {
-      title: scopeName(scope), onBack: opts.onBack,
-      backId: "trBack",
-    });
-
-    const body = el("div", "screenbody sb-top");
-    const wrap = el("div", "trwrap");
-    wrap.id = "trBody";
-
-    const bench = store.bench(scope);
-    // The heading counts against what is OPEN, not against five. "2 / 5" on a bench with
-    // two slots reads as three empty ones the player cannot see.
-    const open = store.slotsOpen();
-    wrap.append(el("div", "secthead", `Equipped  ${bench.filter(Boolean).length} / ${open}`));
-    wrap.appendChild(slotRow(bench, open));
-    wrap.appendChild(totalsBox());
-
-    const spare = store.spare(scope);
-    wrap.append(el("div", "secthead", `Inventory  ${spare.length}`));
-    if (spare.length === 0) wrap.appendChild(emptyBag());
-    else {
-      const list = el("div", "trgrid");
-      list.id = "trBag";
-      for (const item of spare) list.appendChild(bagTile(item));
-      wrap.appendChild(list);
-    }
-
-    body.appendChild(wrap);
-    root.appendChild(body);
-    groupSections(root);
+  const closeDetail = (): void => {
+    if (!detail) return;
+    detail.remove();
+    detail = null;
+    if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+    returnFocus = null;
   };
 
-  const changed = (): void => { render(); opts.onChanged?.(); };
+  const closePicker = (): void => {
+    closeDetail();
+    if (selectedSlot === null) return;
+    const slot = selectedSlot;
+    selectedSlot = null;
+    render();
+    root.querySelector<HTMLButtonElement>(`#trWorn [data-slot="${slot}"]`)?.focus({ preventScroll: true });
+  };
 
-  /* --------------------------------------------------------------- THE SLOTS */
+  const back = (): void => {
+    if (detail) closeDetail();
+    else if (selectedSlot !== null) closePicker();
+    else opts.onBack();
+  };
 
-  const slotRow = (bench: (TraitItem | null)[], open: number): HTMLElement => {
+  const changed = (): void => {
+    closeDetail();
+    selectedSlot = null;
+    render();
+    opts.onChanged?.();
+  };
+
+  const openDetail = (item: TraitItem, source: HTMLElement): void => {
+    closeDetail();
+    returnFocus = source;
+    const def = itemDef(item);
+    const tier = TRAIT_TIER[item.tier];
+    const worn = store.bench(scope).some(current => current?.uid === item.uid);
+    const compatible = fitsScope(item, scope);
+    const layer = el("div", "trait-detail-layer");
+    const card = el("section", "trait-detail");
+    card.setAttribute("role", "dialog");
+    card.setAttribute("aria-modal", "true");
+    card.setAttribute("aria-labelledby", "traitDetailName");
+    card.setAttribute("aria-describedby", "traitDetailEffect");
+    card.style.setProperty("--tier", tier.colour);
+
+    const close = el("button", "action-button secondary trait-detail-close") as HTMLButtonElement;
+    close.type = "button";
+    close.setAttribute("aria-label", "Close trait details");
+    close.appendChild(icon("cross", 16));
+    close.onclick = event => { event.stopPropagation(); closeDetail(); };
+
+    const emblem = el("div", "trait-detail-emblem");
+    emblem.appendChild(icon(def?.icon ?? "star", 64));
+    const name = el("h2", "trait-detail-name", def?.name ?? "Trait");
+    name.id = "traitDetailName";
+    const effect = el("p", "trait-detail-effect", def ? effectText(def, item.tier) : "");
+    effect.id = "traitDetailEffect";
+    const owner = def ? scopeName(def.species ?? "hill") : "";
+    card.append(
+      close, el("div", "trait-detail-tier", tier.name), emblem, name, effect,
+      el("p", "trait-detail-note", def?.note ?? ""),
+      el("p", "trait-detail-scope", `${owner}${compatible ? "" : " · Fits a different bench"}`),
+    );
+
+    const equip = el("button", "action-button trait-detail-equip", worn ? "Equipped" : "Equip") as HTMLButtonElement;
+    equip.type = "button";
+    equip.disabled = !compatible || worn || selectedSlot === null;
+    equip.onclick = event => {
+      event.stopPropagation();
+      if (selectedSlot === null || !store.equipTrait(scope, item.uid, selectedSlot)) return;
+      changed();
+    };
+    card.appendChild(equip);
+    layer.appendChild(card);
+    // A tap on the card or its backdrop dismisses it; the action buttons handle their own taps.
+    layer.onclick = event => { event.stopPropagation(); closeDetail(); };
+    layer.onkeydown = event => {
+      if (event.key !== "Tab") return;
+      const first = close, last = equip.disabled ? close : equip;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first.focus();
+      }
+    };
+    detail = layer;
+    root.appendChild(layer);
+    close.focus({ preventScroll: true });
+  };
+
+  const picker = (): HTMLElement => {
+    const panel = el("section", "trait-picker");
+    panel.id = "traitPicker";
+    panel.setAttribute("aria-label", "Choose a trait");
+    panel.style.setProperty("--trait-arrow", `${10 + (selectedSlot ?? 0) * 20}%`);
+    const head = el("div", "trait-picker-head");
+    head.append(el("span", undefined, "Your traits"), el("span", "trait-picker-count", String(store.bag.length)));
+    panel.appendChild(head);
+    const list = el("div", "trgrid trait-picker-grid");
+    list.id = "trBag";
+    const worn = new Set(store.bag.filter(item =>
+      store.bench(itemDef(item)?.species ?? "hill").some(current => current?.uid === item.uid),
+    ).map(item => item.uid));
+    const items = [...store.bag].sort((a, b) => Number(fitsScope(b, scope)) - Number(fitsScope(a, scope)));
+    for (const item of items) {
+      const cell = readOnlyTile(item, () => openDetail(item, cell));
+      cell.classList.toggle("worn", worn.has(item.uid));
+      cell.classList.toggle("other-scope", !fitsScope(item, scope));
+      list.appendChild(cell);
+    }
+    if (items.length) panel.appendChild(list);
+    else panel.appendChild(locked("Nothing found yet", "Find traits on the Colony Road and in the lucky hatch."));
+    if (selectedSlot !== null && store.bench(scope)[selectedSlot]) {
+      const remove = el("button", "action-button secondary trait-picker-remove", "Remove trait") as HTMLButtonElement;
+      remove.type = "button";
+      remove.onclick = () => {
+        if (selectedSlot !== null && store.unequipTrait(scope, selectedSlot)) changed();
+      };
+      panel.appendChild(remove);
+    }
+    return panel;
+  };
+
+  const slotRow = (): HTMLElement => {
     const row = el("div", "trgrid");
     row.id = "trWorn";
-    bench.forEach((item, i) => {
-      // A SLOT THE ROAD HAS NOT OPENED IS DRAWN, and it names its chapter. Five squares
-      // with two live is the shape of the bench a player is working toward; two squares
-      // is a bench that looks finished. A number is something to play toward, where a
-      // padlock only says you cannot — the same rule the granary's levels follow.
-      if (i >= open) {
+    store.bench(scope).forEach((item, i) => {
+      if (i >= store.slotsOpen()) {
         const shut = el("span", "trtile shut");
         shut.dataset.slot = String(i);
         shut.append(icon("lock", 15), el("span", "trtile-ch", `CH ${slotChapter(i)}`));
@@ -99,112 +160,71 @@ export function buildTraitBench(store: ProfileStore, opts: TraitBenchOptions): H
         row.appendChild(shut);
         return;
       }
-      if (item) {
-        const cell = tile(item, () => { store.unequipTrait(scope, i); armed = null; changed(); });
-        cell.classList.add("worn");
-        cell.dataset.slot = String(i);
-        row.appendChild(cell);
-        return;
-      }
-      const cell = el("button", "trtile empty" + (armed === i ? " armed" : "")) as HTMLButtonElement;
+      const select = (): void => {
+        if (selectedSlot === i) { closePicker(); return; }
+        closeDetail();
+        selectedSlot = i;
+        render();
+        root.querySelector<HTMLButtonElement>(`#trWorn [data-slot="${i}"]`)?.focus({ preventScroll: true });
+      };
+      const cell = item ? readOnlyTile(item, select) : el("button", "trtile empty") as HTMLButtonElement;
       cell.type = "button";
+      if (!item) {
+        cell.appendChild(icon("plus", 18));
+        cell.setAttribute("aria-label", `Empty slot ${i + 1}`);
+        cell.onclick = select;
+      }
+      cell.classList.toggle("worn", !!item);
+      cell.classList.toggle("armed", selectedSlot === i);
       cell.dataset.slot = String(i);
-      cell.appendChild(icon("plus", 18));
-      cell.setAttribute("aria-label", `Empty slot ${i + 1}`);
-      // Arming toggles: an accidental tap would otherwise leave the screen in a state
-      // with no way out but the back button.
-      cell.onclick = () => { armed = armed === i ? null : i; render(); };
+      cell.setAttribute("aria-expanded", String(selectedSlot === i));
+      if (selectedSlot === i) cell.setAttribute("aria-controls", "traitPicker");
       row.appendChild(cell);
     });
     return row;
   };
 
-  /**
-   * ONE SQUARE, AND IT IS THE SAME SQUARE IN BOTH HALVES.
-   *
-   * A worn trait and a spare one are the same object, so they are drawn the same: the
-   * trait's own mark in its tier's colour, and under it the kind — sword, shield or
-   * clock — with what it is worth. That is the whole tile. A name and a line of biology
-   * would not survive being five across on a phone, and five across is what makes an
-   * inventory something you can take in at a glance instead of scroll through.
-   *
-   * The name is still there for anything that reads the page rather than looks at it:
-   * `title` for a pointer, `aria-label` for a screen reader.
-   */
-  const tile = (item: TraitItem, onTap: () => void): HTMLButtonElement => {
-    const def = itemDef(item);
-    const tier = TRAIT_TIER[item.tier];
-    const cell = el("button", "trtile filled") as HTMLButtonElement;
-    cell.type = "button";
-    cell.dataset.uid = item.uid;
-    cell.style.setProperty("--tier", tier.colour);
-
-    const mark = el("span", "trtile-i");
-    mark.appendChild(icon(def?.icon ?? "star", 22));
-
-    const foot = el("span", "trtile-f");
-    foot.appendChild(icon(def ? markOf(def.kind) : "spark", 11));
-    foot.appendChild(el("span", "trtile-v", def ? effectFigure(def, item.tier) : ""));
-
-    cell.append(mark, foot);
-    const label = def ? `${def.name} · ${tier.name} · ${effectText(def, item.tier)}` : tier.name;
-    cell.title = label;
-    cell.setAttribute("aria-label", label);
-    cell.onclick = onTap;
-    return cell;
-  };
-
-  /* -------------------------------------------------------------- THE TOTALS */
-
-  /**
-   * What this bench is worth, and what the ceiling is.
-   *
-   * The cap is printed beside every figure rather than only when it is reached: a limit
-   * a player discovers by watching a number stop moving reads as a bug.
-   */
-  const totalsBox = (): HTMLElement => {
-    const t = store.benchTotals(scope);
-    const box = el("div", "trtotals");
-    box.append(
-      totalCell("attack", "Attack", t.atkPct, ATK_CAP),
-      totalCell("defence", "Defence", t.defPct, DEF_CAP),
-      // "Cooldown", not "−1 cooldown": the label wrapped onto two lines in a
-      // three-across row and pushed that one cell taller than its neighbours.
-      totalCell("clock", "Cooldown", t.luckPct, LUCK_CAP),
-    );
-    return box;
-  };
-
   const totalCell = (mark: string, label: string, value: number, cap: number): HTMLElement => {
     const cell = el("div", "trtotal" + (value >= cap ? " capped" : ""));
     const head = el("div", "trtotal-k");
-    head.appendChild(icon(mark, 13));
-    head.appendChild(el("span", undefined, label));
+    head.append(icon(mark, 13), el("span", undefined, label));
     cell.append(head, el("div", "trtotal-v", `${value}%`), el("div", "trtotal-c", `max ${cap}%`));
     return cell;
   };
 
-  /* ----------------------------------------------------------- THE INVENTORY */
-
-  const bagTile = (item: TraitItem): HTMLElement => tile(item, () => {
-    // `armed` is a slot the player pointed at; without one it goes in the first gap.
-    const ok = store.equipTrait(scope, item.uid, armed ?? undefined);
-    armed = null;
-    if (!ok) { toast(root, "No room — take one off first", "bad"); render(); return; }
-    changed();
-  });
-
-  const emptyBag = (): HTMLElement => {
-    const box = el("div", "trempty");
-    box.append(
-      el("div", "trempty-h", "Nothing to fit here yet"),
-      el("div", "trempty-p", scope === "hill"
-        ? "Universal traits come from the Colony Road and the lucky hatch. They work for every colony."
-        : `${SPECIES[scope].name} traits come from the Colony Road and the lucky hatch.`),
+  const render = (): void => {
+    redraw(root);
+    screenHeader(root, { title: scopeName(scope), onBack: back, backId: "trBack" });
+    const body = el("div", "screenbody sb-top");
+    const wrap = el("div", "trwrap");
+    wrap.id = "trBody";
+    wrap.appendChild(el("div", "secthead", `Equipped  ${store.bench(scope).filter(Boolean).length} / ${store.slotsOpen()}`));
+    const anchor = el("div", "trait-slot-anchor");
+    anchor.appendChild(slotRow());
+    if (selectedSlot !== null) anchor.appendChild(picker());
+    const t = store.benchTotals(scope);
+    const totals = el("div", "trtotals");
+    totals.append(
+      totalCell("attack", "Attack", t.atkPct, ATK_CAP),
+      totalCell("defence", "Defence", t.defPct, DEF_CAP),
+      totalCell("clock", "Cooldown", t.luckPct, LUCK_CAP),
     );
-    return box;
+    wrap.append(anchor, totals);
+    body.appendChild(wrap);
+    root.appendChild(body);
   };
 
+  root.onclick = event => {
+    if (!(event.target instanceof Element)) return;
+    if (!event.target.closest("#trWorn, .trait-picker, .trait-detail-layer, #trBack")) closePicker();
+  };
+  root.onkeydown = event => {
+    if (event.key !== "Escape") return;
+    if (!detail && selectedSlot === null) return;
+    event.preventDefault();
+    event.stopPropagation();
+    back();
+  };
   render();
   return root;
 }

@@ -1,0 +1,127 @@
+/* Trait browsing floats over the bench. Opening either layer never moves its slots. */
+#traits .trait-slot-anchor { position: relative; z-index: 2; min-width: 0; }
+#traits .trait-picker {
+  position: absolute;
+  top: calc(100% + 16px);
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: min(360px, 46vh);
+  box-sizing: border-box;
+  padding: 16px;
+  border: var(--action-stroke) solid var(--action-frame);
+  border-radius: var(--action-radius);
+  background: var(--hud-panel, #27272f) !important;
+  color: var(--hud-ink);
+  box-shadow: 0 var(--action-depth) 0 var(--action-frame) !important;
+}
+#traits .trait-picker::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: calc(var(--trait-arrow) - 9px);
+  width: 16px;
+  height: 16px;
+  transform: rotate(45deg);
+  border-top: var(--action-stroke) solid var(--action-frame);
+  border-left: var(--action-stroke) solid var(--action-frame);
+  background: var(--hud-panel, #27272f) !important;
+}
+#traits .trait-picker-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+#traits .trait-picker-count { color: var(--hud-dim); }
+#traits .trait-picker-grid {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+  flex: 0 1 auto;
+  padding: 2px 2px calc(var(--action-depth) + 2px);
+}
+#traits .trait-picker-grid .trtile { min-width: 0; }
+#traits .trait-picker-grid .other-scope { opacity: .55; }
+#traits .trait-picker .trempty { padding: 12px; }
+#traits .trait-picker-remove { width: 100%; min-height: 40px; flex: none; }
+#traits .trait-detail-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+  background: #0009 !important;
+}
+#traits .trait-detail {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  width: min(100%, 380px);
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+  padding: 28px 20px 22px;
+  border: var(--action-stroke) solid var(--action-frame);
+  border-radius: var(--action-radius);
+  background: var(--hud-panel, #27272f) !important;
+  color: var(--hud-ink);
+  text-align: center;
+  box-shadow: 0 var(--action-depth) 0 var(--action-frame) !important;
+}
+#traits .trait-detail-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+#traits .trait-detail-tier {
+  color: var(--tier);
+  font-family: var(--font-display);
+  font-size: 16px;
+  padding: 0 32px;
+  text-transform: uppercase;
+}
+#traits .trait-detail-emblem {
+  display: grid;
+  place-items: center;
+  width: 108px;
+  height: 108px;
+  border-radius: var(--action-radius);
+  color: var(--tier);
+  background: color-mix(in srgb, var(--tier) 18%, #12151c) !important;
+}
+#traits .trait-detail-name {
+  margin: 0;
+  font: 28px / 1.15 var(--font-display);
+  overflow-wrap: anywhere;
+}
+#traits .trait-detail-effect {
+  margin: 0;
+  color: var(--hud-go);
+  font: 20px / 1.3 var(--font-display);
+}
+#traits .trait-detail-note {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+}
+#traits .trait-detail-scope {
+  margin: 0;
+  color: var(--hud-dim);
+  font-size: 13px;
+  line-height: 1.4;
+}
+#traits .trait-detail-equip { width: 100%; min-height: 48px; font-size: 20px; }

@@ -16,7 +16,7 @@ HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getC
 beforeEach(() => { document.body.replaceChildren(); });
 afterEach(() => { vi.useRealTimers(); });
 
-function open(): { host: HTMLElement; app: App } {
+function open(): { host: HTMLElement; app: App; profile: ProfileStore } {
   const host = document.createElement("div");
   host.id = "app";
   document.body.appendChild(host);
@@ -24,7 +24,7 @@ function open(): { host: HTMLElement; app: App } {
   profile.update((p) => { p.tourSeen = TOUR_VERSION; });
   const app = new App(host, profile);
   app.start();
-  return { host, app };
+  return { host, app, profile };
 }
 
 /**
@@ -43,6 +43,26 @@ describe("going up one", () => {
   it("says no on the home screen with nothing over it", () => {
     const { app } = open();
     expect(app.goBack()).toBe(false);
+    app.destroy();
+  });
+
+  it("dismisses trait details, then the picker, before leaving the bench", () => {
+    const { host, app, profile } = open();
+    profile.findTrait("u.mandible", "rare");
+    host.querySelector<HTMLButtonElement>("[data-nav='anthill']")!.click();
+    host.querySelector<HTMLButtonElement>("#hillTraits")!.click();
+    host.querySelector<HTMLButtonElement>("#trWorn [data-slot='0']")!.click();
+    host.querySelector<HTMLButtonElement>("#trBag .trtile")!.click();
+    expect(host.querySelector(".trait-detail-layer")).not.toBeNull();
+    expect(app.goBack()).toBe(true);
+    expect(host.querySelector(".trait-detail-layer")).toBeNull();
+    expect(host.querySelector(".trait-picker")).not.toBeNull();
+    expect(showing(host)).toContain("traits");
+    expect(app.goBack()).toBe(true);
+    expect(host.querySelector(".trait-picker")).toBeNull();
+    expect(showing(host)).toContain("traits");
+    expect(app.goBack()).toBe(true);
+    expect(showing(host)).not.toContain("traits");
     app.destroy();
   });
 

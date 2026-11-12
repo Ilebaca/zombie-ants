@@ -5660,3 +5660,18 @@ species (Ghost). Repair an untouched, unclaimed legacy tunnel goal once, persist
 replacement and preserving the other goals; never reroll the day after a later purchase.
 The economy projection selects species by ability kind rather than assuming Carpenter
 can tunnel (it uses Fortify).
+
+
+## Trait slot picker and detail confirmation
+Trait benches keep five individual slots and their bonus totals. Tapping an open slot
+selects it with the green outline and opens an absolutely positioned picker below the
+slot row; its arrow points to that slot. Opening or closing either popup never changes
+the layout or equipment. The picker shows all owned traits, including worn items.
+Compatible traits come first; other scopes remain inspectable but cannot be equipped.
+A second, centered dialog shows name, rarity, actual effect, biology and owning bench.
+Only Equip writes into the selected slot; already-worn items cannot be duplicated.
+Remove trait in the picker explicitly unequips a filled slot without destroying it.
+X, any non-action dialog tap, Escape and Hardware Back close the top layer first,
+retaining the picker and selection. An outside picker tap or second tap on its slot
+closes the picker. All listeners and layers belong to the screen, with no global portal.
+Keep the existing slot chapter gates, scope restrictions, trait caps and saved inventory.

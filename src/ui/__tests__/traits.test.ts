@@ -49,96 +49,175 @@ const grid = (root: HTMLElement, id: string): HTMLButtonElement[] =>
 const slots = (root: HTMLElement): HTMLButtonElement[] => grid(root, "trWorn");
 const rows = (root: HTMLElement): HTMLButtonElement[] => grid(root, "trBag");
 
-describe("the bench", () => {
-  it("always shows five slots, filled or not", () => {
-    expect(slots(bench(store())).length).toBe(TRAIT_SLOTS);
-  });
+describe("the trait picker", () => {
+  const choose = (root: HTMLElement, slot = 0): void => { slots(root)[slot]!.click(); };
+  const inspect = (root: HTMLElement, uid: string): void => {
+    root.querySelector<HTMLButtonElement>(`#trBag [data-uid="${uid}"]`)!.click();
+  };
+  const equip = (root: HTMLElement): void => {
+    root.querySelector<HTMLButtonElement>(".trait-detail-equip")!.click();
+  };
 
-  it("lists what fits and nothing else", () => {
-    const s = store();
-    s.findTrait(UNIVERSAL[0]!.id, "rare");
-    s.findTrait(FIRE[0]!.id, "mythic");
-    expect(rows(bench(s, "hill")).length, "a colony's trait was offered to the anthill").toBe(1);
-    expect(rows(bench(s, "fire")).length).toBe(1);
-    expect(rows(bench(s, "ghost")).length).toBe(0);
-  });
-
-  it("puts a tapped trait in the first free slot", () => {
+  it("keeps five individual slots and opens inventory only below the selected slot", () => {
     const s = store();
     s.findTrait(UNIVERSAL[0]!.id, "rare");
     const root = bench(s);
-    rows(root)[0]?.click();
-    expect(s.bench("hill")[0]).toBeTruthy();
-    expect(slots(root)[0]?.classList.contains("filled")).toBe(true);
-    // ...and it leaves the inventory, because it is not spare any more.
-    expect(rows(root).length).toBe(0);
+    expect(slots(root)).toHaveLength(TRAIT_SLOTS);
+    expect(root.querySelector("#traitPicker")).toBeNull();
+    choose(root, 3);
+    expect(root.querySelector(".trait-slot-anchor > #traitPicker")).toBeTruthy();
+    expect(slots(root)[3]!.classList.contains("armed")).toBe(true);
+    expect(slots(root)[3]!.getAttribute("aria-expanded")).toBe("true");
+    expect(rows(root)).toHaveLength(1);
+    choose(root, 3);
+    expect(root.querySelector("#traitPicker")).toBeNull();
+    expect(slots(root)[3]!.classList.contains("armed")).toBe(false);
   });
 
-  it("takes one off when its slot is tapped, and it comes back to the bag", () => {
+  it("shows the whole collection, including worn and other-colony traits", () => {
     const s = store();
     const one = s.findTrait(UNIVERSAL[0]!.id, "rare")!;
+    const two = s.findTrait(FIRE[0]!.id, "mythic")!;
     s.equipTrait("hill", one.uid);
     const root = bench(s);
-    slots(root)[0]?.click();
+    choose(root);
+    expect(rows(root)).toHaveLength(2);
+    expect(root.querySelector(`#trBag [data-uid="${one.uid}"]`)!.classList.contains("worn")).toBe(true);
+    inspect(root, two.uid);
+    expect(root.querySelector(".trait-detail-scope")!.textContent).toContain("Fire Ant");
+    expect(root.querySelector<HTMLButtonElement>(".trait-detail-equip")!.disabled).toBe(true);
+    equip(root);
+    expect(s.bench("hill")[0]!.uid).toBe(one.uid);
+  });
+
+  it("shows the actual rarity, effect and biology before equipping", () => {
+    const s = store(), def = UNIVERSAL.find(t => t.kind === "attack")!;
+    const one = s.findTrait(def.id, "mythic")!;
+    const root = bench(s);
+    choose(root);
+    inspect(root, one.uid);
+    expect(root.querySelector(".trait-detail-name")!.textContent).toBe(def.name);
+    expect(root.querySelector(".trait-detail-effect")!.textContent).toContain(effectFigure(def, one.tier));
+    expect(root.querySelector(".trait-detail-note")!.textContent).toBe(def.note);
+    expect(root.querySelector(".trait-detail-tier")!.textContent).toBe("Mythic");
+    expect(s.bench("hill").filter(Boolean)).toHaveLength(0);
+    expect(slots(root)[0]!.classList.contains("armed")).toBe(true);
+  });
+
+  it("equips only after confirmation, into the chosen slot, and updates totals", () => {
+    const s = store(), def = UNIVERSAL.find(t => t.kind === "attack")!;
+    const one = s.findTrait(def.id, "mythic")!;
+    let changes = 0;
+    const root = buildTraitBench(s, { scope: "hill", onBack: () => {}, onChanged: () => { changes++; } });
+    document.body.replaceChildren(root);
+    choose(root, 4);
+    inspect(root, one.uid);
+    expect(s.bench("hill")[4]).toBeNull();
+    equip(root);
+    expect(s.bench("hill")[4]!.uid).toBe(one.uid);
     expect(s.bench("hill")[0]).toBeNull();
-    expect(rows(root).length, "it did not come back to the inventory").toBe(1);
+    expect(root.querySelector(".trtotal-v")!.textContent).toBe(`${TRAIT_TIER.mythic.stat}%`);
+    expect(root.querySelector(".trait-detail-layer")).toBeNull();
+    expect(root.querySelector("#traitPicker")).toBeNull();
+    expect(changes).toBe(1);
   });
 
-  /**
-   * Tapping an empty slot ARMS it, so replacing one particular trait is two taps rather
-   * than a remove and an add. Without it, filling the fourth slot while the first three
-   * are full is fine — but choosing WHICH gap is impossible.
-   */
-  it("fills the slot the player pointed at", () => {
-    const s = store();
-    for (let i = 0; i < 3; i++) s.equipTrait("hill", s.findTrait(UNIVERSAL[i]!.id, "common")!.uid);
-    const spare = s.findTrait(UNIVERSAL[4]!.id, "mythic")!;
+  it("replaces a filled slot without deleting the previous item", () => {
+    const s = store(), one = s.findTrait(UNIVERSAL[0]!.id, "rare")!;
+    const two = s.findTrait(UNIVERSAL[1]!.id, "mythic")!;
+    s.equipTrait("hill", one.uid);
     const root = bench(s);
-    slots(root)[4]?.click();          // arm the LAST slot, not the first free one
-    rows(root)[0]?.click();
-    expect(s.bench("hill")[4]?.uid).toBe(spare.uid);
-    expect(s.bench("hill")[3]).toBeNull();
+    choose(root);
+    expect(s.bench("hill")[0]!.uid).toBe(one.uid);
+    inspect(root, two.uid); equip(root);
+    expect(s.bench("hill")[0]!.uid).toBe(two.uid);
+    expect(s.bag.map(i => i.uid)).toContain(one.uid);
+    choose(root, 1);
+    inspect(root, two.uid);
+    expect(root.querySelector<HTMLButtonElement>(".trait-detail-equip")!.disabled).toBe(true);
+    equip(root);
+    expect(s.bench("hill")[1]).toBeNull();
   });
 
-  it("lets an armed slot be disarmed by tapping it again", () => {
-    const s = store();
-    s.findTrait(UNIVERSAL[0]!.id, "rare");
+  it("can remove a selected trait explicitly", () => {
+    const s = store(), one = s.findTrait(UNIVERSAL[0]!.id, "rare")!;
+    s.equipTrait("hill", one.uid);
     const root = bench(s);
-    slots(root)[2]?.click();
-    expect(slots(root)[2]?.classList.contains("armed")).toBe(true);
-    slots(root)[2]?.click();
-    expect(slots(root)[2]?.classList.contains("armed")).toBe(false);
-    // Disarmed, so it goes in the first gap rather than the one that was pointed at.
-    rows(root)[0]?.click();
-    expect(s.bench("hill")[0]).toBeTruthy();
+    choose(root);
+    root.querySelector<HTMLButtonElement>(".trait-picker-remove")!.click();
+    expect(s.bench("hill")[0]).toBeNull();
+    expect(s.bag.map(i => i.uid)).toContain(one.uid);
+    expect(root.querySelector(".trait-picker")).toBeNull();
   });
 
-  /**
-   * THE TOTAL HAS TO MOVE ON THE SCREEN. It is the whole reason the slots and the bag
-   * share a page: you slot something and you watch the number change.
-   */
-  it("moves the total when something is slotted", () => {
-    const s = store();
-    const attack = UNIVERSAL.find((t) => t.kind === "attack")!;
-    s.findTrait(attack.id, "mythic");
-    const root = bench(s);
-    const value = (): string => root.querySelector(".trtotal .trtotal-v")?.textContent ?? "";
-    expect(value()).toBe("0%");
-    rows(root)[0]?.click();
-    expect(value()).toBe(`${TRAIT_TIER.mythic.stat}%`);
-  });
-
-  /** A ceiling a player only finds by watching a number stop moving reads as a bug. */
-  it("prints the ceiling beside every figure", () => {
+  it("switches selected slots without changing equipment", () => {
     const root = bench(store());
-    const caps = Array.from(root.querySelectorAll(".trtotal-c")).map((e) => e.textContent);
-    expect(caps.length).toBe(3);
-    for (const c of caps) expect(c).toMatch(/^max \d+%$/);
+    choose(root, 0); choose(root, 4);
+    expect(root.querySelectorAll("#trWorn .armed")).toHaveLength(1);
+    expect(slots(root)[4]!.classList.contains("armed")).toBe(true);
+    expect(root.querySelectorAll(".trait-picker")).toHaveLength(1);
   });
 
-  it("says what an empty inventory means rather than showing nothing", () => {
+  it("closes details by X, backdrop or card tap while retaining the picker and selection", () => {
+    const s = store(), one = s.findTrait(UNIVERSAL[0]!.id, "rare")!;
+    const root = bench(s); choose(root, 2);
+    for (const selector of [".trait-detail-close", ".trait-detail-layer", ".trait-detail-name"]) {
+      inspect(root, one.uid);
+      root.querySelector<HTMLElement>(selector)!.click();
+      expect(root.querySelector(".trait-detail-layer")).toBeNull();
+      expect(root.querySelector("#traitPicker")).toBeTruthy();
+      expect(slots(root)[2]!.classList.contains("armed")).toBe(true);
+      expect(s.bench("hill").filter(Boolean)).toHaveLength(0);
+    }
+  });
+
+  it("closes the highest layer first with Back and Escape", () => {
+    const s = store(), one = s.findTrait(UNIVERSAL[0]!.id, "rare")!;
+    let back = 0;
+    const root = buildTraitBench(s, { scope: "hill", onBack: () => { back++; } });
+    document.body.replaceChildren(root);
+    choose(root); inspect(root, one.uid);
+    root.querySelector<HTMLButtonElement>("#trBack")!.click();
+    expect(root.querySelector(".trait-detail-layer")).toBeNull();
+    expect(root.querySelector("#traitPicker")).toBeTruthy();
+    root.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(root.querySelector("#traitPicker")).toBeNull();
+    expect(back).toBe(0);
+    root.querySelector<HTMLButtonElement>("#trBack")!.click();
+    expect(back).toBe(1);
+  });
+
+  it("restores focus and contains keyboard focus within the detail dialog", () => {
+    const s = store(), one = s.findTrait(UNIVERSAL[0]!.id, "rare")!;
+    const root = bench(s); choose(root); inspect(root, one.uid);
+    const close = root.querySelector<HTMLButtonElement>(".trait-detail-close")!;
+    const equip = root.querySelector<HTMLButtonElement>(".trait-detail-equip")!;
+    expect(document.activeElement).toBe(close);
+    close.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true }));
+    expect(document.activeElement).toBe(equip);
+    equip.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }));
+    expect(document.activeElement).toBe(close);
+    close.click();
+    expect(document.activeElement).toBe(rows(root)[0]);
+  });
+
+  it("dismisses the picker on an outside tap and never opens a locked slot", () => {
+    const s = new ProfileStore(new MemoryStore());
+    const root = bench(s);
+    slots(root)[1]!.click();
+    expect(root.querySelector("#traitPicker")).toBeNull();
+    choose(root);
+    expect(root.querySelector(".trempty")!.textContent).toContain("lucky hatch");
+    root.querySelector<HTMLElement>(".trtotals")!.click();
+    expect(root.querySelector("#traitPicker")).toBeNull();
+    expect(root.querySelector("#trWorn .armed")).toBeNull();
+  });
+
+  it("keeps the three bonus ceilings visible", () => {
     const root = bench(store());
-    expect(root.querySelector(".trempty")?.textContent?.length ?? 0).toBeGreaterThan(30);
+    const caps = Array.from(root.querySelectorAll(".trtotal-c")).map(e => e.textContent);
+    expect(caps).toHaveLength(3);
+    for (const cap of caps) expect(cap).toMatch(/^max \d+%$/);
   });
 });
 
@@ -273,7 +352,9 @@ describe("the inventory", () => {
     const root = bench(early);
     expect(root.querySelectorAll("#trWorn .trtile.empty")).toHaveLength(1);
     expect(root.querySelectorAll("#trWorn .trtile.shut")).toHaveLength(4);
+    slots(root)[0]?.click();
     rows(root)[0]?.click();
+    root.querySelector<HTMLButtonElement>(".trait-detail-equip")!.click();
     expect(early.bench("hill")[0]?.uid).toBe(one.uid);
     expect(early.benchTotals("hill").atkPct).toBeGreaterThan(0);
   });
