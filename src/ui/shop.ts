@@ -143,6 +143,7 @@ export function buildShop(
   const tile = (product: Product): HTMLElement => {
     const owned = isOwned(product);
     const cell = el("div", "stile" + (product.kind === "pass" ? " pass-product" : ""));
+    cell.dataset.product = product.id;
     if (product.ribbon) {
       cell.appendChild(el("span", `ribbon ${product.ribbonClass ?? ""}`.trim(), product.ribbon));
     }

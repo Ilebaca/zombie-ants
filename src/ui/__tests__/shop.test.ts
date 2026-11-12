@@ -45,17 +45,11 @@ const build = (s: ProfileStore, gw: PurchaseGateway): HTMLElement => {
 /**
  * The tile whose text names this product, and the button on it.
  *
- * Matched on the NAME, never on the price: a tile that has been bought reads "Owned" where
- * the price was, and the test that checks exactly that could not then find it again.
+ * Matched on the stable product id. A bundle can mention the pass in its copy without
+ * being mistaken for the standalone pass product.
  */
-const tileFor = (root: HTMLElement, id: string): HTMLElement | null => {
-  const product = productById(id);
-  if (!product) return null;
-  const label = product.title
-    ?? (product.grant.mycel ?? product.grant.pheromone ?? 0).toLocaleString();
-  return Array.from(root.querySelectorAll<HTMLElement>(".stile"))
-    .find((t) => t.textContent?.includes(label)) ?? null;
-};
+const tileFor = (root: HTMLElement, id: string): HTMLElement | null =>
+  root.querySelector<HTMLElement>(`[data-product="${id}"]`);
 const buyIn = (root: HTMLElement, id: string): HTMLButtonElement | null =>
   tileFor(root, id)?.querySelector<HTMLButtonElement>(".buybar") ?? null;
 

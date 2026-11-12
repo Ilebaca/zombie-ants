@@ -5654,3 +5654,9 @@ Keep grants, wallets, earned levels, unlocks, combat benefits and caps intact. T
 gift, match/quest/road payouts, granary prices, hatch income and collection exchanges stay
 unchanged. Challenge payouts live in platform/challenge-rewards.ts so UI and the model
 read the same values. Do not use the old model that omitted match income and daily gifts.
+
+Daily quest eligibility follows owned abilities. Tunnelling goals require an owned tunnel
+species (Ghost). Repair an untouched, unclaimed legacy tunnel goal once, persisting the
+replacement and preserving the other goals; never reroll the day after a later purchase.
+The economy projection selects species by ability kind rather than assuming Carpenter
+can tunnel (it uses Fortify).

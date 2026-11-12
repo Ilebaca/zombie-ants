@@ -219,9 +219,10 @@ export function simulateEconomy(options: EconomyOptions): EconomyRun {
     claimRoad();
     if (options.gift !== false) track("gift", () => { store.claimDailyGift(now); });
     const tunnelQuest = store.get().quests.some(q => questDef(q.id)?.kind === "tunnel");
+    const tunnelSpecies = store.get().unlocked.find(id => SPECIES[id].ability.kind === "tunnel");
     for (let game = 0; game < options.gamesPerDay; game++) {
       const won = nextResult();
-      const species: SpeciesId = tunnelQuest ? "carpenter" : MAIN;
+      const species: SpeciesId = tunnelQuest && tunnelSpecies ? tunnelSpecies : MAIN;
       const turns = options.turns ?? 45;
       const queens = events() < .35 ? 1 : 0;
       track("matches", () => {
@@ -236,7 +237,7 @@ export function simulateEconomy(options: EconomyOptions): EconomyRun {
         store.questProgress("conquered", won ? 12 : 6, now);
         store.questProgress("ability", 2, now);
         if (queens) store.questProgress("queen", queens, now);
-        if (tunnelQuest) store.questProgress("tunnel", 1, now);
+        if (SPECIES[species].ability.kind === "tunnel") store.questProgress("tunnel", 1, now);
         if (won) { store.questProgress("win", 1, now); store.questProgress("nest", 1, now); }
         track("quests", () => {
           for (const quest of store.get().quests) store.claimQuest(quest.id, now);

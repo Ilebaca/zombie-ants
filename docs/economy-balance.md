@@ -64,6 +64,11 @@ In the first regular week, the new curve delivered five chamber levels, main spe
 level 5 and ten earned hatch rolls. On day 30 it had ten chamber levels and main level 9.
 The early decisions remain frequent; the final steps require saving.
 
+Twelve seeded regular-player runs all bought their first species on day 8. The main
+species reached level 10 on days 37–38, chambers finished on days 128–131 and free
+research on days 334–338. The close range reflects this fixed routine and income floor,
+not a prediction that real players behave identically.
+
 The more engaged scenario includes a daily-challenge attempt and claiming weekly league
 prizes. It maxes the main species around day 35 and all free research around day 318.
 Neither a pass nor purchases are required for these projections.
@@ -78,7 +83,9 @@ An optional day count can be supplied, for example `npm run economy -- 365`.
 - One session and granary collection per day; the gift is claimed each day.
 - A match lasts 45 turns, captures 12 enemy tiles on a win or 6 on a loss, and casts two
   abilities. A Hive queen is taken in 35% of matches. These event counts are assumptions,
-  not telemetry. The player uses Carpenter when a tunnel quest requires it.
+  not telemetry. The player uses an owned tunnel-capable species when a tunnel quest requires it.
+  Tunnel quests are not assigned before Ghost is unlocked; untouched impossible legacy
+  goals are replaced once without rerolling the rest of the day or discarding progress.
 - Quest progress and claims use the real daily roll and goal checks. A three-match
   player cannot complete Play 5 Matches. Win quests depend on actual projected wins.
 - Both match XP and quest XP feed the real level-reward claims. Road rewards are claimed

@@ -17,7 +17,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
-      - run: npm test -- src/platform/__tests__/economy.test.ts src/platform/__tests__/progression.test.ts src/platform/__tests__/profile.test.ts src/ui/__tests__/meta.test.ts
+      - run: npm test -- src/platform/__tests__/economy.test.ts src/platform/__tests__/progression.test.ts src/platform/__tests__/profile.test.ts src/ui/__tests__/meta.test.ts src/platform/__tests__/quests.test.ts src/ui/__tests__/shop.test.ts
       - run: npx tsx tools/economy.ts 540 > /tmp/balanced-economy.json
       - name: Summarise pacing and seeded variation
         shell: python

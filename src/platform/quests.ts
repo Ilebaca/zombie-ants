@@ -126,20 +126,23 @@ export function msUntilRollover(now: number = Date.now()): number {
  * independent draws regularly produced "Play 3 matches" and "Play 5 matches" on the same
  * card, which is one quest asked twice.
  *
+ * Tunnelling goals are omitted until a tunnel-capable species is owned. Eligibility
+ * affects only a new roll; the profile preserves the selected quests for the whole day.
+ *
  * A bucket that somehow has nothing in it is skipped and the shortfall made up from the
  * rest of the pool, so the day always has its three.
  */
-export function rollQuests(day: number): QuestState[] {
+export function rollQuests(day: number, canTunnel = true): QuestState[] {
   const rng = mulberry32(hash(day));
   const picked: QuestDef[] = [];
   for (const kinds of BUCKETS) {
     if (picked.length >= QUESTS_PER_DAY) break;
-    const options = QUEST_POOL.filter((q) => kinds.includes(q.kind));
+    const options = QUEST_POOL.filter((q) => kinds.includes(q.kind) && (canTunnel || q.kind !== "tunnel"));
     const q = options[Math.floor(rng() * options.length)];
     if (q) picked.push(q);
   }
   // Backstop: never hand back fewer than three, whatever the buckets happen to hold.
-  const rest = QUEST_POOL.filter((q) => !picked.includes(q));
+  const rest = QUEST_POOL.filter((q) => !picked.includes(q) && (canTunnel || q.kind !== "tunnel"));
   while (picked.length < QUESTS_PER_DAY && rest.length) {
     const [q] = rest.splice(Math.floor(rng() * rest.length), 1);
     if (q) picked.push(q);
