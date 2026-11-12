@@ -4,7 +4,7 @@
  */
 import { groupSections } from "./groups";
 import {
-  ATK_CAP, DEF_CAP, FUSE_DEALS, LUCK_CAP, SPECIES_ORDER, TRAIT_SLOTS,
+  ATK_CAP, DEF_CAP, FUSE_DEALS, LUCK_CAP, SPECIES_ORDER,
   TRAIT_TIER, effectFigure, effectText, fitsScope, itemDef, markOf, scopeName, slotChapter,
 } from "../platform";
 import type { ProfileStore, TraitItem, TraitScope } from "../platform";
@@ -275,7 +275,7 @@ export function buildInventory(store: ProfileStore, opts: InventoryOptions): HTM
       head.dataset.scope = scope;
       head.append(
         el("span", "invhead-t", scopeName(scope)),
-        el("span", "invhead-c", `${worn.size} / ${TRAIT_SLOTS} worn · ${mine.length} held`),
+        el("span", "invhead-c", `${worn.size} equipped · ${mine.length} held`),
         icon("next", 13),
       );
       head.onclick = () => opts.onOpen(scope);

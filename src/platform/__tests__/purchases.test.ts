@@ -99,7 +99,7 @@ describe("granting what was bought", () => {
       s.applyGrant(purchase.grant!);
       expect(s.get().pass).toBe(true);
       expect(s.slotsOpen()).toBe(1);
-      expect(s.nextSlotChapter()).toBe(20);
+      expect(s.nextSlotChapter()).toBe(5);
       expect(s.claimRoad("p3", () => 0)).toBe(true);
       const trait = s.get().bag[0]!;
       expect(s.equipTrait("hill", trait.uid)).toBe(true);
@@ -112,7 +112,7 @@ describe("granting what was bought", () => {
       expect(loaded.slotsOpen()).toBe(1);
       expect(loaded.modsFor("fire").you.atkPct).toBe(s.modsFor("fire").you.atkPct);
       expect(loaded.hatch(() => .5)).not.toBeNull();
-      loaded.update((p) => { p.colony = stopColony(19 * ROAD_CHAPTER_STOPS); });
+      loaded.update((p) => { p.colony = stopColony(4 * ROAD_CHAPTER_STOPS); });
       expect(loaded.slotsOpen()).toBe(2);
     }
   });
