@@ -5568,7 +5568,7 @@ portrait. The badge uses its tile frame's shared corner-radius token; the banner
 Species start at level 0 and cap at 10, independent of ownership. The profile stores one
 `research[id].level`; one crystal purchase advances attack, defence and cooldown chance
 together. Attack/defence each grow linearly to +25% of that species' base; cooldown chance
-grows from 0% to 10%. Ten purchases still total 1,800 crystals per species.
+grows from 0% to 10%. Ten purchases total 6,140 crystals per species under the November economy curve.
 
 Legacy profiles convert the highest independent research track to twice its old level,
 so earned attack/defence never decrease. This is idempotent and does not change currencies.
@@ -5635,3 +5635,22 @@ or rolls another result. Shop reveals read the actual successful grant, never th
 Deck reveals portal to #app so transforms cannot clip them or expose navigation.
 Tap anywhere or press Hardware Back to dismiss. Preserve the display font, unstroked
 text and sharp frames; do not change viewport sizing to present a reveal.
+
+## Economy curve — 12 November 2026
+The current balance source is [docs/economy-balance.md](docs/economy-balance.md); its
+actual-store simulation supersedes §8c's old aggregate income estimates and price totals.
+Daily gifts, match mycelium and match XP must be included. Quests pay only when their real
+goals are reached. Premium species are not a required free-player mycelium/research sink.
+
+Target: a few daily games at an even record. The measured three-match routine buys an
+upgrade on day one, a first species around day eight, maxes a main around day 38, chambers
+around day 129, and free research around day 337. These are planning estimates, not promises.
+Use `npm run economy` to regenerate scenarios and seeded cohorts. Tests hold broad bands.
+
+Ghost/Pharaoh/Army/Bullet cost 600/800/1,400/2,000 mycelium. Rarity is explicit catalogue
+data and does not change with price. Chamber prices are 100/240/500/950/1,600; ten species
+levels cost 90/140/210/300/420/570/750/960/1,200/1,500 crystals (6,140 total).
+Keep grants, wallets, earned levels, unlocks, combat benefits and caps intact. The regular
+gift, match/quest/road payouts, granary prices, hatch income and collection exchanges stay
+unchanged. Challenge payouts live in platform/challenge-rewards.ts so UI and the model
+read the same values. Do not use the old model that omitted match income and daily gifts.

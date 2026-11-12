@@ -1,4 +1,4 @@
-name: Audit economy pacing
+name: Validate economy balance
 on:
   push:
     branches: [economy-audit-20261112]
@@ -16,36 +16,20 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - name: Project current prices
-        run: npx tsx tools/economy.ts 540 > /tmp/baseline-economy.json
-      - name: Apply candidate prices to this disposable audit checkout only
-        shell: python
-        run: |
-          from pathlib import Path
-          config = Path('src/engine/config.ts')
-          text = config.read_text()
-          text = text.replace('60 + level * 55', '[100, 240, 500, 950, 1600][Math.max(0, Math.min(4, Math.floor(level)))] ?? 1600')
-          text = text.replace('45 + level * 30', '[90, 140, 210, 300, 420, 570, 750, 960, 1200, 1500][Math.max(0, Math.min(9, Math.floor(level)))] ?? 1500')
-          config.write_text(text)
-          catalogue = Path('src/platform/catalogue.ts')
-          text = catalogue.read_text().replace('ghost: 260, pharaoh: 260', 'ghost: 600, pharaoh: 800').replace('army: 300', 'army: 1400').replace('bullet: 320', 'bullet: 2000').replace('cost <= 280', 'cost <= 800')
-          catalogue.write_text(text)
-      - name: Project candidate prices
-        run: npx tsx tools/economy.ts 540 > /tmp/candidate-economy.json
-      - name: Summarise both projections
+      - run: npm run lint
+      - run: npm test -- src/platform/__tests__/economy.test.ts src/platform/__tests__/progression.test.ts src/platform/__tests__/profile.test.ts src/ui/__tests__/meta.test.ts
+      - run: npx tsx tools/economy.ts 540 > /tmp/balanced-economy.json
+      - name: Summarise pacing and seeded variation
         shell: python
         run: |
           import json
           from pathlib import Path
-          for name in ('baseline', 'candidate'):
-            data = json.loads(Path('/tmp/' + name + '-economy.json').read_text())
-            print(name, 'SINKS', json.dumps(data['sinks']))
-            for row in data['scenarios']:
-              print(name, json.dumps({key: row[key] for key in ('name','matches','wins','firstPurchaseDay','speciesDays','mainMaxDay','chambersMaxDay','freeResearchMaxDay','roadCompleteDay','earned')}))
-              if row['name'] == 'regular':
-                print(name, 'REGULAR SOURCES', json.dumps(row['sources']))
-                print(name, 'REGULAR SNAPSHOTS', json.dumps(row['snapshots']))
+          data = json.loads(Path('/tmp/balanced-economy.json').read_text())
+          print('SINKS', json.dumps(data['sinks']))
+          for row in data['scenarios']:
+            print('SCENARIO', json.dumps({key: row[key] for key in ('name','matches','wins','firstPurchaseDay','speciesDays','mainMaxDay','chambersMaxDay','freeResearchMaxDay','roadCompleteDay','earned')}))
+          print('COHORT', json.dumps(data['cohort']))
       - uses: actions/upload-artifact@v4
         with:
-          name: economy-projections
-          path: /tmp/*-economy.json
+          name: balanced-economy-projections
+          path: /tmp/balanced-economy.json

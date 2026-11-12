@@ -12,7 +12,13 @@ const scenarios: [string, Partial<EconomyOptions>][] = [
   ["experienced", { gamesPerDay: 3, winRate: .6 }],
   ["engaged", { gamesPerDay: 3, league: true, dailyChallenge: true }],
 ];
-console.log(JSON.stringify({ sinks: finiteSinks(), scenarios: scenarios.map(([name, patch]) => {
+const cohort = Array.from({ length: 12 }, (_, i) => {
+  const r = simulateEconomy({ days, gamesPerDay: 3, winRate: .5, seed: i + 1 });
+  return { seed: i + 1, firstPurchaseDay: r.firstPurchaseDay, speciesDays: r.speciesDays,
+    mainMaxDay: r.mainMaxDay, chambersMaxDay: r.chambersMaxDay,
+    freeResearchMaxDay: r.freeResearchMaxDay, roadCompleteDay: r.roadCompleteDay };
+});
+console.log(JSON.stringify({ sinks: finiteSinks(), cohort, scenarios: scenarios.map(([name, patch]) => {
   const r = simulateEconomy({ days, gamesPerDay: 3, winRate: .5, seed: 7, ...patch });
   return { name, options: r.options, matches: r.matches, wins: r.wins,
     sources: r.sources, earned: r.earned, firstPurchaseDay: r.firstPurchaseDay,

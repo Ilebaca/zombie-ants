@@ -58,14 +58,14 @@ export const CHAMBERS: readonly ChamberDef[] = [
 ];
 
 /**
- * Mycelium price of each species, exactly as the legacy build prices them (SPEC_UNLOCK).
+ * Mycelium price of each species, paced against a few daily matches at an even record.
  * Zero means a starter colony — the three the player already has (profile.ts
  * STARTER_SPECIES). Demon is premium: it is priced here so the Antarium can show a number,
  * but `premium` species are gated by the shop, not by mycel.
  */
 export const SPECIES_UNLOCK: Record<SpeciesId, number> = {
-  ghost: 260, pharaoh: 260, leafcutter: 0, fire: 0, army: 300,
-  carpenter: 0, bullet: 320, demon: 700,
+  ghost: 600, pharaoh: 800, leafcutter: 0, fire: 0, army: 1400,
+  carpenter: 0, bullet: 2000, demon: 700,
 };
 
 /**
@@ -104,13 +104,15 @@ export const TIERS: readonly Tier[] = RANKS.map((id) => ({
   fill: TIER_DEFS[id].fill,
 }));
 
-/** Tier is derived from price, never stored — one number decides colour, name and order. */
+/** Prices can be balanced without silently changing rarity, colours or collection order. */
+const SPECIES_RARITY: Record<SpeciesId, TierId> = {
+  leafcutter: "uncommon", fire: "uncommon", carpenter: "uncommon",
+  ghost: "rare", pharaoh: "rare", army: "exceptional", bullet: "exceptional",
+  demon: "mythic",
+};
+
 export function tierOf(id: SpeciesId): Tier {
-  if (SPECIES[id].premium) return TIERS[3] as Tier;
-  const cost = SPECIES_UNLOCK[id];
-  if (cost === 0) return TIERS[0] as Tier;
-  if (cost <= 280) return TIERS[1] as Tier;
-  return TIERS[2] as Tier;
+  return TIERS[RANKS.indexOf(SPECIES_RARITY[id])] as Tier;
 }
 
 const tierRank = (id: SpeciesId): number => TIERS.findIndex((t) => t.k === tierOf(id).k);
