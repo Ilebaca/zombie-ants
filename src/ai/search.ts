@@ -342,9 +342,20 @@ export function chooseMove(
     }
   }
 
-  // Easy plays the top heuristic move without looking ahead at all.
+  // Saved Easy matches retain the original heuristic. A one-ply campaign policy
+  // evaluates the result of its own action, so early chapter awareness still matters.
   if (profile.depth <= 1) {
-    return { move: candidates[0] ?? null, value: candidates[0]?.score ?? 0, depth: 1, nodes: 0 };
+    if (typeof difficulty === "string") {
+      return { move: candidates[0] ?? null, value: candidates[0]?.score ?? 0, depth: 1, nodes: 0 };
+    }
+    let best: Candidate | null = null, value = -Infinity;
+    for (const candidate of candidates) {
+      s.nodes++;
+      const next = withAction(state, me, candidate.action, s,
+        () => evaluateWith(state, me, ctx.mods, profile.weights));
+      if (next > value) {best = candidate;value = next;}
+    }
+    return {move:best,value,depth:1,nodes:s.nodes};
   }
 
   const opp = otherPlayer(me);
