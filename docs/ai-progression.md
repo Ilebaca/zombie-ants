@@ -10,7 +10,10 @@ scenario controls. Existing matches keep their saved policy and equipment.
 `progress = (chapter - 1) / 49`. Equipment and skill are independent.
 
 - Evaluation weights blend from the novice evaluation to the full evaluation.
-  Income, threatened pieces, nest danger and infrastructure become more important.
+  Threatened pieces, nest danger and infrastructure become more important. Actual
+  species/chamber income stays valuable in long games. A gradually weighted assault
+  estimate rewards assembling and delivering enough force to break a growing nest,
+  rather than treating every army above 40 troops as equally useful.
 - Reinforcement starts at chapter 5, long travel at 9, infrastructure defence at 11,
   capture continuation at 13, rally at 19 and searched ability timing at 24.
 - Search grows from 1 to 6 plies, 4 to 10 candidates, and 300 to 12,000 nodes.

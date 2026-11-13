@@ -119,6 +119,9 @@ export function profileFor(level: AiLevel): Profile {
   for (const key of Object.keys(FULL) as Array<keyof EvalWeights>) {
     weights[key] = NAIVE[key] + (FULL[key] - NAIVE[key]) * skill;
   }
+  // Long matches still need income and a force large enough to break the growing nest.
+  weights.incomeFloor = 1.5 * skill;
+  weights.assault = 180 * skill;
   return {
     depth: 1 + Math.floor(skill * 5), branching: 4 + Math.floor(skill * 6),
     quiescence: skill >= .24,
