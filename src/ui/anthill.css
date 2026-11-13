@@ -166,7 +166,7 @@
   margin: 0;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 16px;
+  font-size: max(8px, calc((16px) * var(--ui-type-scale, .92)));
 }
 #app .hill-popup-close {
   flex: none;

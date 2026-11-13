@@ -31,7 +31,7 @@
   justify-content: space-between;
   gap: 12px;
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: max(8px, calc((20px) * var(--ui-type-scale, .92)));
 }
 #app .trait-picker-count { color: var(--hud-dim); }
 #app .trait-picker-grid {
@@ -86,7 +86,7 @@
 #app .trait-detail-tier {
   color: var(--tier);
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: max(8px, calc((16px) * var(--ui-type-scale, .92)));
   padding: 0 32px;
   text-transform: uppercase;
 }
@@ -101,26 +101,26 @@
 }
 #app .trait-detail-name {
   margin: 0;
-  font: 28px / 1.15 var(--font-display);
+  font: max(8px, calc(28px * var(--ui-type-scale, .92))) / 1.15 var(--font-display);
   overflow-wrap: anywhere;
 }
 #app .trait-detail-effect {
   margin: 0;
   color: var(--hud-go);
-  font: 20px / 1.3 var(--font-display);
+  font: max(8px, calc(20px * var(--ui-type-scale, .92))) / 1.3 var(--font-display);
 }
 #app .trait-detail-note {
   margin: 0;
-  font-size: 15px;
+  font-size: max(8px, calc((15px) * var(--ui-type-scale, .92)));
   line-height: 1.45;
 }
 #app .trait-detail-scope {
   margin: 0;
   color: var(--hud-dim);
-  font-size: 13px;
+  font-size: max(8px, calc((13px) * var(--ui-type-scale, .92)));
   line-height: 1.4;
 }
-#app .trait-detail-equip { width: 100%; min-height: 48px; font-size: 20px; }
+#app .trait-detail-equip { width: 100%; min-height: 48px; font-size: max(8px, calc((20px) * var(--ui-type-scale, .92))); }
 
 #app .trait-slots { display: grid; gap: 12px; min-width: 0; }
 #app #antup .spghero > .trait-slots {
@@ -139,6 +139,6 @@
   border-radius: 0 !important; background: none; padding: 0; gap: 8px;
 }
 #app .trait-slots .trtotal { padding: 4px 0; background: transparent; }
-#app .trait-slots .trtotal-k { font-size: 9px; }
-#app .trait-slots .trtotal-v { font-size: 16px; }
-#app .trait-slots .trtotal-c { font-size: 10px; }
+#app .trait-slots .trtotal-k { font-size: max(8px, calc((9px) * var(--ui-type-scale, .92))); }
+#app .trait-slots .trtotal-v { font-size: max(8px, calc((16px) * var(--ui-type-scale, .92))); }
+#app .trait-slots .trtotal-c { font-size: max(8px, calc((10px) * var(--ui-type-scale, .92))); }

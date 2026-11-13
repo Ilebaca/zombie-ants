@@ -583,7 +583,7 @@ footer { background: var(--bg1); }
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   text-align: center;
   padding: 3px 4px;
-  font-size: 10px;
+  font-size: max(8px, calc((10px) * var(--ui-type-scale, .92)));
   line-height: 13px;
   letter-spacing: .4px;
   white-space: nowrap;
@@ -594,10 +594,10 @@ footer { background: var(--bg1); }
 /* The strip covers the top of the art, so the art starts below it. */
 .stile:has(.ribbon) .art { padding-top: 26px; }
 /* Long product names were set at the currency tiles' size and wrapped to three lines. */
-.stile .amt { font-size: 15px; line-height: 19px; }
-.tilerow .stile:has(.sub) .amt { font-size: 14px; line-height: 18px; }
-.coscell .cn { font-size: 10.5px; }
-.coscell .eq { font-size: 10.5px; }
+.stile .amt { font-size: max(8px, calc((15px) * var(--ui-type-scale, .92))); line-height: 19px; }
+.tilerow .stile:has(.sub) .amt { font-size: max(8px, calc((14px) * var(--ui-type-scale, .92))); line-height: 18px; }
+.coscell .cn { font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92))); }
+.coscell .eq { font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92))); }
 
 /* ------------------------------------------------------------ CHALLENGES
    Five stacked full-width buttons filled the screen and let barely two
@@ -623,7 +623,7 @@ footer { background: var(--bg1); }
   padding: 0 18px;
   margin: 0;
   white-space: nowrap;
-  font-size: 14px;
+  font-size: max(8px, calc((14px) * var(--ui-type-scale, .92)));
 }
 /* Green = go. `.challplay` also carries `.cta`, and the gold `.cta` rule comes later in
    this file, so it needs the extra class to win. */
@@ -641,7 +641,7 @@ footer { background: var(--bg1); }
    its place instead of filling the first screenful. */
 .dhero { padding: 12px 12px 12px; margin-bottom: 10px; }
 .dhero canvas, .dhero img { width: 96px; height: 96px; }
-.dhero .dname { font-size: 19px; }
+.dhero .dname { font-size: max(8px, calc((19px) * var(--ui-type-scale, .92))); }
 
 /* Segmented control: the selected tab is a raised pill, not just a colour. */
 .auptabs { background: rgba(0, 0, 0, .28); box-shadow: none; border: none; }
@@ -655,7 +655,7 @@ footer { background: var(--bg1); }
    icon and a wide buy button, so every row ran five lines deep. The row
    aligns to the top and gives the text back the width. */
 .rtrack { align-items: flex-start; gap: 8px; }
-.rtrack .ri { width: 26px; height: 26px; font-size: 14px; margin-top: 1px; }
+.rtrack .ri { width: 26px; height: 26px; font-size: max(8px, calc((14px) * var(--ui-type-scale, .92))); margin-top: 1px; }
 .rtrack .buybtn { min-width: 58px; padding: 8px 10px; }
 
 /* ------------------------------------------------------------------ SHOP
@@ -669,7 +669,7 @@ footer { background: var(--bg1); }
 /* ------------------------------------------------------------------ MATCH
    The tutorial toasts are 98px of card sitting on top of the board. They
    are a hint, not a headline: one tight line of type, and out of the way. */
-.toast { padding: 7px 13px; font-size: 12.5px; line-height: 1.3; }
+.toast { padding: 7px 13px; font-size: max(8px, calc((12.5px) * var(--ui-type-scale, .92))); line-height: 1.3; }
 #toast { top: 8px; gap: 5px; width: 96%; }
 
 /* --------------------------------------------------------------- SETUP
@@ -692,7 +692,7 @@ footer { background: var(--bg1); }
   padding: 10px 14px;
 }
 .mp canvas, .mp img { width: 76px; height: 76px; flex: 0 0 auto; }
-.mp .snm { font-size: 15px; }
+.mp .snm { font-size: max(8px, calc((15px) * var(--ui-type-scale, .92))); }
 .mp, .shp, .sp { border-color: transparent; }
 
 /* The step's action belongs at the bottom of the step, not floating under the last card.
@@ -711,9 +711,9 @@ footer { background: var(--bg1); }
 .pickslider { flex: 1; min-height: 0; align-items: center; }
 .sp { padding: 20px 14px 22px; }
 .sp .face canvas, .sp .face img { width: 132px; height: 132px; }
-.sp .nm { font-size: 20px; }
-.sp .ds, .sp .tr { font-size: 13px; }
-.sp .mods { font-size: 15px; }
+.sp .nm { font-size: max(8px, calc((20px) * var(--ui-type-scale, .92))); }
+.sp .ds, .sp .tr { font-size: max(8px, calc((13px) * var(--ui-type-scale, .92))); }
+.sp .mods { font-size: max(8px, calc((15px) * var(--ui-type-scale, .92))); }
 
 /* ======================================================================
    DARK-GROUND CORRECTIONS
@@ -908,7 +908,7 @@ body,
 .screentop .screenh {
   grid-area: title;
   align-self: end;
-  font-size: 21px;
+  font-size: max(8px, calc((21px) * var(--ui-type-scale, .92)));
   line-height: 1.1;
   letter-spacing: .2px;
   text-shadow: none;
@@ -927,7 +927,7 @@ body,
   text-align: left;
 }
 .sechead h3, .secthead, .tierhead .tname {
-  font-size: 11.5px;
+  font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.4px;
   text-transform: uppercase;
@@ -954,7 +954,7 @@ body,
   color: var(--muted);
   background: none;
   border-radius: 9px;
-  font-size: 10.5px;
+  font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92)));
   font-weight: 800;
   letter-spacing: .2px;
   transition: color .15s ease;
@@ -1000,7 +1000,7 @@ body,
 .c-trophy .tn-ic { background: rgba(255, 182, 46, .18); color: var(--gold); }
 .c-mycel .tn-ic { background: rgba(242, 103, 76, .2); color: #ff8f6d; }
 .c-pheromone .tn-ic { background: rgba(79, 184, 240, .18); color: var(--sky); }
-.tn-coin .tn-num { font-size: 12.5px; font-weight: 900; color: var(--ink); letter-spacing: .2px; }
+.tn-coin .tn-num { font-size: max(8px, calc((12.5px) * var(--ui-type-scale, .92))); font-weight: 900; color: var(--ink); letter-spacing: .2px; }
 .tn-plus {
   display: grid;
   place-items: center;
@@ -1030,12 +1030,12 @@ body,
 }
 .mycelchip b {
   color: var(--ink);
-  font-size: 13px;
+  font-size: max(8px, calc((13px) * var(--ui-type-scale, .92)));
   font-family: var(--font-display);
   font-weight: 400;
   letter-spacing: 0;
 }
-.mycelchip small { color: var(--muted); font-size: 9.5px; letter-spacing: .8px; }
+.mycelchip small { color: var(--muted); font-size: max(8px, calc((9.5px) * var(--ui-type-scale, .92))); letter-spacing: .8px; }
 
 /* ----------------------------------------------------------------- HOME
    The artwork is the whole screen, so it gets a wordmark at the top and
@@ -1049,7 +1049,7 @@ body,
    at all now — the artwork is the title screen and nothing is written over
    it (see HOME below). */
 .hilltag {
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 3.4px;
   color: var(--ink-soft);
@@ -1090,7 +1090,7 @@ body,
 }
 .playbtn {
   height: 58px;
-  font-size: 21px;
+  font-size: max(8px, calc((21px) * var(--ui-type-scale, .92)));
   box-shadow: 0 4px 0 var(--grass-edge), 0 10px 26px rgba(0, 0, 0, .45), var(--sheen);
 }
 
@@ -1215,7 +1215,7 @@ body,
 }
 .topnav { background: none; border-bottom: none; }
 
-.dailyfab small { font-size: 8.5px; font-weight: 900; letter-spacing: .4px; }
+.dailyfab small { font-size: max(8px, calc((8.5px) * var(--ui-type-scale, .92))); font-weight: 900; letter-spacing: .4px; }
 
 
 /* ---------------------------------------------------------- ICON PLATES
@@ -1255,7 +1255,7 @@ body,
   background: var(--panel-hi);
   color: var(--grass-glow);
   box-shadow: var(--bevel);
-  font-size: 14px;
+  font-size: max(8px, calc((14px) * var(--ui-type-scale, .92)));
 }
 
 /* ---------------------------------------------------------------- SHOP
@@ -1272,7 +1272,7 @@ body,
   border-radius: 10px;
   color: var(--ink-soft);
   box-shadow: var(--sheen);
-  font-size: 12.5px;
+  font-size: max(8px, calc((12.5px) * var(--ui-type-scale, .92)));
   line-height: 1.45;
   text-align: left;
 }
@@ -1294,15 +1294,15 @@ body,
   color: var(--gold-glow);
   font-size: 0;
 }
-.stile .amt { font-size: 17px; font-weight: 900; letter-spacing: .2px; }
-.stile .sub { font-size: 11px; color: var(--muted); }
-.buybar { font-size: 15px; }
+.stile .amt { font-size: max(8px, calc((17px) * var(--ui-type-scale, .92))); font-weight: 900; letter-spacing: .2px; }
+.stile .sub { font-size: max(8px, calc((11px) * var(--ui-type-scale, .92))); color: var(--muted); }
+.buybar { font-size: max(8px, calc((15px) * var(--ui-type-scale, .92))); }
 
 /* The section already says MYCELIUM; the line under it repeated the same
    idea a size down and in the same caps, so it read as a second heading. */
 .secsub {
   margin: -4px 16px 10px;
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 600;
   letter-spacing: .1px;
   text-transform: none;
@@ -1347,14 +1347,14 @@ body,
   background: var(--grass);
   color: #10300c;
   box-shadow: 0 4px 0 var(--grass-edge), var(--sheen);
-  font-size: 17px;
+  font-size: max(8px, calc((17px) * var(--ui-type-scale, .92)));
 }
 #mapNext:active, #toFormation:active { box-shadow: 0 1px 0 var(--grass-edge); }
 
 /* A map card is a choice between match LENGTHS, not board sizes. */
 .mpwords { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .mpmeta {
-  font-size: 11.5px;
+  font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92)));
   font-weight: 600;
   color: var(--muted);
   line-height: 1.3;
@@ -1454,14 +1454,14 @@ body,
 }
 
 .tourttl {
-  font-size: 15px;
+  font-size: max(8px, calc((15px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .2px;
   color: var(--grass-glow);
   margin-bottom: 4px;
 }
 
-.tourtxt { font-size: 13.5px; line-height: 1.42; color: var(--ink-soft); }
+.tourtxt { font-size: max(8px, calc((13.5px) * var(--ui-type-scale, .92))); line-height: 1.42; color: var(--ink-soft); }
 
 .tourrow {
   display: flex;
@@ -1474,7 +1474,7 @@ body,
 .tourbtns { display: flex; align-items: center; gap: 8px; }
 
 .tourcount {
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 800;
   letter-spacing: .4px;
   color: var(--muted);
@@ -1485,7 +1485,7 @@ body,
   border: 0;
   color: var(--muted);
   font: inherit;
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 700;
   padding: 6px 4px;
   text-decoration: underline;
@@ -1494,7 +1494,7 @@ body,
 
 .tournext {
   font: inherit;
-  font-size: 13px;
+  font-size: max(8px, calc((13px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .3px;
   color: #06210a;
@@ -1884,9 +1884,9 @@ button:not(.playbtn):active,
   text-align: center;
 }
 
-.card.result h1 { font-size: 32px; letter-spacing: -.5px; margin-bottom: 6px; }
+.card.result h1 { font-size: max(8px, calc((32px) * var(--ui-type-scale, .92))); letter-spacing: -.5px; margin-bottom: 6px; }
 .card.result .tag {
-  font-size: 13px;
+  font-size: max(8px, calc((13px) * var(--ui-type-scale, .92)));
   line-height: 1.45;
   color: var(--ink-soft);
   margin: 0 auto 18px;
@@ -1916,9 +1916,9 @@ button:not(.playbtn):active,
 }
 
 .payout .payv { display: flex; align-items: center; gap: 5px; }
-.payout .payv b { font-size: 19px; font-weight: 900; letter-spacing: -.3px; color: var(--ink); }
+.payout .payv b { font-size: max(8px, calc((19px) * var(--ui-type-scale, .92))); font-weight: 900; letter-spacing: -.3px; color: var(--ink); }
 .payout small {
-  font-size: 10.5px;
+  font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92)));
   font-weight: 800;
   letter-spacing: .3px;
   color: var(--muted);
@@ -1945,7 +1945,7 @@ button:not(.playbtn):active,
   background: color-mix(in srgb, var(--gold) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--gold) 34%, transparent);
   color: var(--gold);
-  font-size: 12.5px;
+  font-size: max(8px, calc((12.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
 }
 .larvawon span { font-weight: 700; color: var(--muted); }
@@ -1960,7 +1960,7 @@ button:not(.playbtn):active,
   border-radius: var(--r-md);
   background: var(--gold);
   color: #3a2600;
-  font-size: 13.5px;
+  font-size: max(8px, calc((13.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .2px;
 }
@@ -1987,23 +1987,23 @@ button:not(.playbtn):active,
   background: var(--panel);
 }
 
-.fact .fk { font-size: 11.5px; font-weight: 800; color: var(--muted); }
-.fact .fv { font-size: 15px; font-weight: 900; color: var(--ink); }
+.fact .fk { font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92))); font-weight: 800; color: var(--muted); }
+.fact .fv { font-size: max(8px, calc((15px) * var(--ui-type-scale, .92))); font-weight: 900; color: var(--ink); }
 
 /* ------------------------------------------------------------------ ACTIONS
    One primary in the go colour, two equal secondaries under it. The old
    card put the main action in the SPEND colour and left the two ways out
    as odd-sized pills, centred and unrelated. */
 .resultacts { display: flex; flex-direction: column; gap: 8px; }
-.resultacts .cta { width: 100%; padding: 14px 0; font-size: 17px; }
+.resultacts .cta { width: 100%; padding: 14px 0; font-size: max(8px, calc((17px) * var(--ui-type-scale, .92))); }
 .resultminor { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.resultminor .ghostbtn { width: 100%; padding: 11px 0; font-size: 13.5px; }
+.resultminor .ghostbtn { width: 100%; padding: 11px 0; font-size: max(8px, calc((13.5px) * var(--ui-type-scale, .92))); }
 
 /* On a narrow phone the card should breathe at the edges rather than
    filling them. */
 @media (max-width: 380px) {
   .card.result { padding: 18px 14px 14px; }
-  .payout .payv b { font-size: 17px; }
+  .payout .payv b { font-size: max(8px, calc((17px) * var(--ui-type-scale, .92))); }
 }
 
 /* The card carries its own `width: min(520px, 94vw)` from the legacy sheet, which on a
@@ -2089,7 +2089,7 @@ button:not(.playbtn):active,
   padding: 12px 16px 14px;
 }
 .nest-sum-k {
-  font-size: 10px;
+  font-size: max(8px, calc((10px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.4px;
   text-transform: uppercase;
@@ -2097,7 +2097,7 @@ button:not(.playbtn):active,
 }
 /* The count is a figure, not a label: gold, tabular, and not shouted. */
 .nest-sum-v {
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .2px;
   color: var(--gold);
@@ -2246,7 +2246,7 @@ button:not(.playbtn):active,
 
 .room-txt { display: grid; gap: 3px; min-width: 0; }
 .room-nm {
-  font-size: clamp(11px, 3.3vw, 13px);
+  font-size: max(8px, calc((clamp(11px, 3.3vw, 13px)) * var(--ui-type-scale, .92)));
   font-weight: 900;
   line-height: 1.2;
   letter-spacing: .1px;
@@ -2257,7 +2257,7 @@ button:not(.playbtn):active,
   overflow-wrap: break-word;
 }
 .room-lv {
-  font-size: 10px;
+  font-size: max(8px, calc((10px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -2287,7 +2287,7 @@ button:not(.playbtn):active,
 }
 .room-open .chdesc {
   margin: 0 0 12px;
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 500;
   line-height: 1.5;
   /* `--muted` on this ground is 3.7:1 — under AA for text this size. */
@@ -2311,14 +2311,14 @@ button:not(.playbtn):active,
 }
 .che-row + .che-row { margin-top: 7px; }
 .che-k {
-  font-size: 9.5px;
+  font-size: max(8px, calc((9.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.1px;
   text-transform: uppercase;
   color: var(--muted);
 }
 .che-v {
-  font-size: 12.5px;
+  font-size: max(8px, calc((12.5px) * var(--ui-type-scale, .92)));
   font-weight: 700;
   line-height: 1.4;
 }
@@ -2444,7 +2444,7 @@ button:not(.playbtn):active,
    things on one line is neither of them being the heading. */
 .ru-no {
   flex: 0 0 auto;
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.4px;
   color: var(--grass-glow);
@@ -2452,7 +2452,7 @@ button:not(.playbtn):active,
 }
 .ru-h {
   margin: 0 0 10px;
-  font-size: 18px;
+  font-size: max(8px, calc((18px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   line-height: 1.2;
   letter-spacing: -.2px;
@@ -2501,7 +2501,7 @@ button:not(.playbtn):active,
   border-radius: var(--r-md);
 }
 .ru-cap {
-  font-size: 11.5px;
+  font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92)));
   font-weight: 700;
   letter-spacing: .1px;
   color: var(--muted);
@@ -2581,14 +2581,14 @@ button:not(.playbtn):active,
   border-radius: 99px;
   background: var(--grass);
   color: #06210c;
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   text-align: center;
 }
 .pf-who { min-width: 0; display: grid; gap: 4px; }
-.pf-name { font-size: 17px; font-weight: 900; letter-spacing: .2px; }
-.pf-sub { font-size: 11px; font-weight: 800; letter-spacing: .3px; color: var(--muted); }
-.pf-xp { font-size: 10.5px; font-weight: 800; letter-spacing: .3px; color: var(--ink-soft); }
+.pf-name { font-size: max(8px, calc((17px) * var(--ui-type-scale, .92))); font-weight: 900; letter-spacing: .2px; }
+.pf-sub { font-size: max(8px, calc((11px) * var(--ui-type-scale, .92))); font-weight: 800; letter-spacing: .3px; color: var(--muted); }
+.pf-xp { font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92))); font-weight: 800; letter-spacing: .3px; color: var(--ink-soft); }
 /* Its OWN bar. The legacy sheet gives `.qbar` a height only inside `.qhero`, so borrowing
    that class here drew a track with no height at all — invisible, and silently so. */
 .pf-bar {
@@ -2621,14 +2621,14 @@ button:not(.playbtn):active,
   background: var(--panel);
 }
 .pf-k {
-  font-size: 9.5px;
+  font-size: max(8px, calc((9.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.1px;
   text-transform: uppercase;
   color: var(--muted);
 }
 .pf-v {
-  font-size: 17px;
+  font-size: max(8px, calc((17px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: -.2px;
   color: var(--ink);
@@ -2664,9 +2664,9 @@ button:not(.playbtn):active,
 }
 .pf-row-mid { min-width: 0; display: grid; gap: 7px; }
 .pf-row-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.pf-row-t { font-size: 13px; font-weight: 900; letter-spacing: .1px; }
+.pf-row-t { font-size: max(8px, calc((13px) * var(--ui-type-scale, .92))); font-weight: 900; letter-spacing: .1px; }
 .pf-row-c {
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--gold);
   font-variant-numeric: tabular-nums;
@@ -2721,7 +2721,7 @@ button:not(.playbtn):active,
 .col-size { display: grid; justify-items: center; gap: 1px; }
 .col-mid { min-width: 0; display: grid; gap: 5px; }
 .col-t {
-  font-size: 9.5px;
+  font-size: max(8px, calc((9.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.4px;
   text-transform: uppercase;
@@ -2738,7 +2738,7 @@ button:not(.playbtn):active,
   display: block;
   min-width: 4.7ch;
   text-align: center;
-  font-size: 27px;
+  font-size: max(8px, calc((27px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   line-height: 1;
   letter-spacing: -.6px;
@@ -2746,7 +2746,7 @@ button:not(.playbtn):active,
   font-variant-numeric: tabular-nums;
 }
 .col-k {
-  font-size: 8.5px;
+  font-size: max(8px, calc((8.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.2px;
   text-transform: uppercase;
@@ -2787,7 +2787,7 @@ button:not(.playbtn):active,
 }
 .pf-colony-k,
 .pf-colony-s {
-  font-size: 9.5px;
+  font-size: max(8px, calc((9.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.4px;
   text-transform: uppercase;
@@ -2798,7 +2798,7 @@ button:not(.playbtn):active,
    the 360 column and does not fit a 320 phone's 296; the clamp tops out at the size
    it has always been and only ever takes something away below about 470px wide. */
 .pf-colony-n {
-  font-size: clamp(26px, 9vw, 42px);
+  font-size: max(8px, calc((clamp(26px, 9vw, 42px)) * var(--ui-type-scale, .92)));
   font-weight: 900;
   line-height: 1.05;
   letter-spacing: -1.4px;
@@ -2903,14 +2903,14 @@ button:not(.playbtn):active,
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--font-display);
-  font-size: clamp(20px, 5.5vw, 27px);
+  font-size: max(8px, calc((clamp(20px, 5.5vw, 27px)) * var(--ui-type-scale, .92)));
   font-weight: 400;
   line-height: 1.2;
   color: var(--hud-ink);
 }
 #app .mmk-colony {
   font-family: var(--font-display);
-  font-size: clamp(13px, 3.5vw, 17px);
+  font-size: max(8px, calc((clamp(13px, 3.5vw, 17px)) * var(--ui-type-scale, .92)));
   font-weight: 400;
   line-height: 1.25;
   font-variant-numeric: tabular-nums;
@@ -2932,7 +2932,7 @@ button:not(.playbtn):active,
   background: var(--hud-card);
   color: var(--hud-ink);
   font-family: var(--font-display);
-  font-size: clamp(20px, 5vw, 25px);
+  font-size: max(8px, calc((clamp(20px, 5vw, 25px)) * var(--ui-type-scale, .92)));
   font-weight: 400;
   line-height: 1;
 }
@@ -2965,7 +2965,7 @@ button:not(.playbtn):active,
   color: var(--hud-mute);
   text-align: center;
   font-family: var(--font-display);
-  font-size: clamp(11px, 3vw, 14px);
+  font-size: max(8px, calc((clamp(11px, 3vw, 14px)) * var(--ui-type-scale, .92)));
   font-weight: 400;
   line-height: 1.25;
   letter-spacing: .5px;
@@ -2981,8 +2981,8 @@ button:not(.playbtn):active,
     --mmk-row-height: 172px;
     --mmk-versus-height: 48px;
   }
-  #app .mmk-name { font-size: 19px; }
-  #app .mmk-colony { font-size: 12px; }
+  #app .mmk-name { font-size: max(8px, calc((19px) * var(--ui-type-scale, .92))); }
+  #app .mmk-colony { font-size: max(8px, calc((12px) * var(--ui-type-scale, .92))); }
 }
 @media (prefers-reduced-motion: reduce) {
   #app .mmk-strip { animation: none; }
@@ -3138,7 +3138,7 @@ button:not(.playbtn):active,
   justify-content: center;
   gap: 8px;
   min-width: 0;
-  font-size: 21px;
+  font-size: max(8px, calc((21px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: -.3px;
   color: var(--ink);
@@ -3187,10 +3187,10 @@ button:not(.playbtn):active,
   border-color: var(--grass);
   color: var(--ink);
 }
-.granpill .gp-n { font-size: 14px; font-weight: 900; letter-spacing: -.2px; }
+.granpill .gp-n { font-size: max(8px, calc((14px) * var(--ui-type-scale, .92))); font-weight: 900; letter-spacing: -.2px; }
 .granpill.ready .gp-n { color: var(--grass-glow); }
 .granpill .gp-k {
-  font-size: 10px;
+  font-size: max(8px, calc((10px) * var(--ui-type-scale, .92)));
   font-weight: 800;
   letter-spacing: .3px;
   text-transform: uppercase;
@@ -3202,7 +3202,7 @@ button:not(.playbtn):active,
   border-radius: 99px;
   background: var(--grass);
   color: #06210f;
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .3px;
 }
@@ -3216,13 +3216,13 @@ button:not(.playbtn):active,
   margin-top: 10px;
 }
 .gstore-k {
-  font-size: 10px;
+  font-size: max(8px, calc((10px) * var(--ui-type-scale, .92)));
   font-weight: 800;
   letter-spacing: .3px;
   text-transform: uppercase;
   color: var(--muted);
 }
-.gstore-v { font-size: 12px; font-weight: 900; color: var(--ink); }
+.gstore-v { font-size: max(8px, calc((12px) * var(--ui-type-scale, .92))); font-weight: 900; color: var(--ink); }
 .gstore .hl-track { grid-column: 1 / -1; }
 
 /* A level the road has not reached says WHEN, not a price it would refuse. */
@@ -3230,7 +3230,7 @@ button:not(.playbtn):active,
   padding: 6px 12px;
   border-radius: 99px;
   border: 1px dashed var(--line);
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .3px;
   color: var(--muted);
@@ -3278,9 +3278,9 @@ button:not(.playbtn):active,
   color: var(--grass-glow);
 }
 .setrow-mid { min-width: 0; display: grid; gap: 3px; }
-.setrow-t { font-size: 13px; font-weight: 900; letter-spacing: .1px; }
+.setrow-t { font-size: max(8px, calc((13px) * var(--ui-type-scale, .92))); font-weight: 900; letter-spacing: .1px; }
 /* --ink-soft, not --muted: muted at this size on this ground is under AA. */
-.setrow-d { font-size: 11px; font-weight: 700; line-height: 1.35; color: var(--ink-soft); }
+.setrow-d { font-size: max(8px, calc((11px) * var(--ui-type-scale, .92))); font-weight: 700; line-height: 1.35; color: var(--ink-soft); }
 
 /* The value IS the control on a setting that cycles, so it is the thing that
    looks pressable and the row around it does not. */
@@ -3290,7 +3290,7 @@ button:not(.playbtn):active,
   background: rgba(255, 255, 255, .07);
   border: 1px solid var(--line);
   font-family: var(--font);
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .2px;
   color: var(--grass-glow);
@@ -3314,7 +3314,7 @@ button:not(.playbtn):active,
   background: rgba(0, 0, 0, .3);
   border: 1px solid var(--line);
   font-family: var(--font);
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--ink);
   text-align: right;
@@ -3353,7 +3353,7 @@ button:not(.playbtn):active,
   background: rgba(0, 0, 0, .34);
   border: 1px solid var(--line);
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   color: var(--ink-soft);
   word-break: break-all;
 }
@@ -3375,14 +3375,14 @@ button:not(.playbtn):active,
   border-top: 1px solid var(--line);
 }
 .setfoot-n {
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.4px;
   text-transform: uppercase;
   color: var(--ink-soft);
 }
 .setfoot-b {
-  font-size: 10px;
+  font-size: max(8px, calc((10px) * var(--ui-type-scale, .92)));
   font-weight: 800;
   letter-spacing: .4px;
   color: var(--muted);
@@ -3425,7 +3425,7 @@ button:not(.playbtn):active,
 /* Where the player stands, in words. A highlighted row says which one is
    theirs; it never said what place that was. */
 .lbstand {
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .1px;
   color: var(--gold-glow);
@@ -3440,7 +3440,7 @@ button:not(.playbtn):active,
 }
 .lbtrack i { display: block; height: 100%; border-radius: 99px; background: var(--c); }
 .lbnext {
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 800;
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
@@ -3470,7 +3470,7 @@ button:not(.playbtn):active,
   background: transparent;
   color: var(--ink-soft);
   font: inherit;
-  font-size: 12.5px;
+  font-size: max(8px, calc((12.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .2px;
   cursor: pointer;
@@ -3482,7 +3482,7 @@ button:not(.playbtn):active,
    banner. A losing week is printed in the losing colour, exactly as a defeat is
    on the result card: the number really does go down. */
 .lbgain {
-  font-size: 15px;
+  font-size: max(8px, calc((15px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--grass-glow);
   font-variant-numeric: tabular-nums;
@@ -3495,7 +3495,7 @@ button:not(.playbtn):active,
 .lbtime { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
 .lbtime .lbtrack { flex: 1; margin-top: 0; }
 .lbclock {
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 800;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
@@ -3512,14 +3512,14 @@ button:not(.playbtn):active,
   background: var(--panel);
 }
 .lblast.paid { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 12%, var(--panel)); }
-.lblastname { font-size: 11px; font-weight: 800; color: var(--muted); letter-spacing: .3px; }
+.lblastname { font-size: max(8px, calc((11px) * var(--ui-type-scale, .92))); font-weight: 800; color: var(--muted); letter-spacing: .3px; }
 .lblastplace {
-  font-size: 15px;
+  font-size: max(8px, calc((15px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
-.lblastprize { font-size: 12px; font-weight: 800; color: var(--ink-soft); margin-top: 2px; }
+.lblastprize { font-size: max(8px, calc((12px) * var(--ui-type-scale, .92))); font-weight: 800; color: var(--ink-soft); margin-top: 2px; }
 .lblast.paid .lblastprize { color: var(--gold-glow); }
 
 /* A paid place is marked on the row itself: the ten that are playing for
@@ -3537,7 +3537,7 @@ button:not(.playbtn):active,
   align-items: center;
   gap: 3px;
   margin-top: 2px;
-  font-size: 10.5px;
+  font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--gold-glow);
   font-variant-numeric: tabular-nums;
@@ -3552,7 +3552,7 @@ button:not(.playbtn):active,
    the whole of what this tab shows about a colony. */
 .lbpname { display: flex; flex-direction: column; justify-content: center; gap: 1px; }
 .lbwho { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lbch { font-size: 10.5px; font-weight: 800; color: var(--muted); }
+.lbch { font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92))); font-weight: 800; color: var(--muted); }
 
 /* A rival is a colony, not a string: every other screen in the game gives an
    opponent a head, and this was the one that did not. */
@@ -3619,7 +3619,7 @@ button:not(.playbtn):active,
 .newstag {
   padding: 2px 8px;
   border-radius: 99px;
-  font-size: 9.5px;
+  font-size: max(8px, calc((9.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .5px;
   text-transform: uppercase;
@@ -3630,20 +3630,20 @@ button:not(.playbtn):active,
 .newstag.tag-balance { color: var(--gold); }
 /* How long ago, not a date: what a reader wants to know is whether it is new,
    and "27 Aug" only answers that if they know today's date. */
-.newsage { font-size: 10.5px; font-weight: 800; color: var(--muted); }
-.newstitle { margin: 0; font-size: 15px; font-weight: 900; letter-spacing: -.2px; }
-.newslead { margin: 0; font-size: 12px; font-weight: 700; line-height: 1.35; color: var(--ink-soft); }
+.newsage { font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92))); font-weight: 800; color: var(--muted); }
+.newstitle { margin: 0; font-size: max(8px, calc((15px) * var(--ui-type-scale, .92))); font-weight: 900; letter-spacing: -.2px; }
+.newslead { margin: 0; font-size: max(8px, calc((12px) * var(--ui-type-scale, .92))); font-weight: 700; line-height: 1.35; color: var(--ink-soft); }
 .newsmore {
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 0 14px 11px 96px;
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--grass-glow);
 }
 .newsbody { padding: 2px 14px 14px; display: grid; gap: 9px; }
-.newsbody p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--ink-soft); }
+.newsbody p { margin: 0; font-size: max(8px, calc((12.5px) * var(--ui-type-scale, .92))); line-height: 1.5; color: var(--ink-soft); }
 
 /* ============================================================================
    ==  FRIENDS  ===============================================================
@@ -3671,7 +3671,7 @@ button:not(.playbtn):active,
   border-radius: 99px;
   background: none;
   font-family: var(--font);
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .2px;
   color: var(--muted);
@@ -3684,7 +3684,7 @@ button:not(.playbtn):active,
   border-radius: 99px;
   background: var(--grass);
   color: #06210f;
-  font-size: 10px;
+  font-size: max(8px, calc((10px) * var(--ui-type-scale, .92)));
   font-weight: 900;
 }
 .frpanel { display: grid; gap: var(--stack); padding-bottom: 12px; }
@@ -3706,13 +3706,13 @@ button:not(.playbtn):active,
 .frface canvas, .frface img { display: block; width: 36px; height: 36px; }
 .frmid { min-width: 0; display: grid; gap: 1px; }
 .frname {
-  font-size: 13px;
+  font-size: max(8px, calc((13px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.frsub { font-size: 11px; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+.frsub { font-size: max(8px, calc((11px) * var(--ui-type-scale, .92))); font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
 .frpair { display: flex; gap: 6px; }
 .frbtn {
   padding: 7px 12px;
@@ -3720,7 +3720,7 @@ button:not(.playbtn):active,
   border: 1px solid var(--grass);
   background: var(--grass);
   font-family: var(--font);
-  font-size: 11.5px;
+  font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: #06210f;
   cursor: pointer;
@@ -3748,12 +3748,12 @@ button:not(.playbtn):active,
 .frask {
   align-self: center;
   padding-right: 2px;
-  font-size: 11.5px;
+  font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--danger);
   white-space: nowrap;
 }
-.frstate { font-size: 11.5px; font-weight: 900; color: var(--muted); }
+.frstate { font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92))); font-weight: 900; color: var(--muted); }
 .frsearch { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 4px; }
 .frfield {
   padding: 10px 14px;
@@ -3761,7 +3761,7 @@ button:not(.playbtn):active,
   background: rgba(0, 0, 0, .3);
   border: 1px solid var(--line);
   font-family: var(--font);
-  font-size: 13px;
+  font-size: max(8px, calc((13px) * var(--ui-type-scale, .92)));
   font-weight: 800;
   color: var(--ink);
 }
@@ -3779,7 +3779,7 @@ button:not(.playbtn):active,
 /* An empty panel says what would be in it. A blank one reads as broken. */
 .frhint {
   margin: 10px 2px;
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 700;
   line-height: 1.5;
   color: var(--ink-soft);
@@ -3813,13 +3813,13 @@ button:not(.playbtn):active,
   text-align: left;
   cursor: pointer;
 }
-.spqt { font-size: 12.5px; font-weight: 900; line-height: 1.35; }
+.spqt { font-size: max(8px, calc((12.5px) * var(--ui-type-scale, .92))); font-weight: 900; line-height: 1.35; }
 .spqhead svg { flex: none; color: var(--muted); transition: transform 140ms ease; }
 .spq.open .spqhead svg { transform: rotate(90deg); color: var(--grass-glow); }
 .spqa {
   margin: 0;
   padding: 0 13px 13px;
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 700;
   line-height: 1.55;
   color: var(--ink-soft);
@@ -3842,7 +3842,7 @@ button:not(.playbtn):active,
   background: rgba(0, 0, 0, .28);
   border: 1px solid var(--line);
   font-family: var(--font);
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--muted);
   cursor: pointer;
@@ -3855,7 +3855,7 @@ button:not(.playbtn):active,
   background: rgba(0, 0, 0, .3);
   border: 1px solid var(--line);
   font-family: var(--font);
-  font-size: 12.5px;
+  font-size: max(8px, calc((12.5px) * var(--ui-type-scale, .92)));
   font-weight: 700;
   line-height: 1.45;
   color: var(--ink);
@@ -3864,7 +3864,7 @@ button:not(.playbtn):active,
 .sptext:focus { outline: none; border-color: var(--grass); }
 .spsend { width: 100%; margin: 0; }
 /* Said plainly, because it is surprising: this build has nowhere to post to. */
-.spnote { margin: 0; font-size: 10.5px; font-weight: 700; line-height: 1.45; color: var(--muted); }
+.spnote { margin: 0; font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92))); font-weight: 700; line-height: 1.45; color: var(--muted); }
 .spsent { display: grid; gap: 5px; }
 .spmsg {
   display: grid;
@@ -3874,9 +3874,9 @@ button:not(.playbtn):active,
   background: var(--panel);
   border: 1px solid var(--line);
 }
-.spmsg-k { font-size: 10px; font-weight: 900; letter-spacing: .4px; text-transform: uppercase; color: var(--muted); }
+.spmsg-k { font-size: max(8px, calc((10px) * var(--ui-type-scale, .92))); font-weight: 900; letter-spacing: .4px; text-transform: uppercase; color: var(--muted); }
 .spmsg-t {
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 700;
   color: var(--ink-soft);
   display: -webkit-box;
@@ -3886,10 +3886,10 @@ button:not(.playbtn):active,
 }
 .spfact { display: grid; grid-template-columns: 26px auto 1fr; align-items: center; gap: 10px; }
 .spfact-i { display: grid; place-items: center; color: var(--grass-glow); }
-.spfact-k { font-size: 12px; font-weight: 900; }
+.spfact-k { font-size: max(8px, calc((12px) * var(--ui-type-scale, .92))); font-weight: 900; }
 .spfact-v {
   justify-self: end;
-  font-size: 11.5px;
+  font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92)));
   font-weight: 800;
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
@@ -3907,7 +3907,7 @@ button:not(.playbtn):active,
   border-radius: 99px;
   background: var(--grass);
   color: #06210f;
-  font-size: 10.5px;
+  font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   text-align: center;
 }
@@ -4002,14 +4002,14 @@ button:not(.playbtn):active,
 }
 .spgwho { min-width: 0; display: grid; gap: 2px; }
 .spgtier {
-  font-size: 9.5px;
+  font-size: max(8px, calc((9.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.1px;
   text-transform: uppercase;
   color: var(--tc);
 }
-.spgname { font-size: 21px; font-weight: 900; letter-spacing: -.4px; line-height: 1.1; }
-.spgblurb { font-size: 11.5px; font-weight: 700; line-height: 1.35; color: var(--ink-soft); }
+.spgname { font-size: max(8px, calc((21px) * var(--ui-type-scale, .92))); font-weight: 900; letter-spacing: -.4px; line-height: 1.1; }
+.spgblurb { font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92))); font-weight: 700; line-height: 1.35; color: var(--ink-soft); }
 
 /* The bars run over the REAL span of every colony in the game, read off SPECIES.
    They used to be drawn against a made-up ceiling of 1.7, so 0.90 filled half a
@@ -4019,7 +4019,7 @@ button:not(.playbtn):active,
    show where a colony sits in a range at all. */
 .spgstats { grid-column: 1 / -1; display: grid; gap: 5px; margin-top: 4px; }
 .spgstat { display: grid; grid-template-columns: 62px 1fr 40px; align-items: center; gap: 10px; }
-.spgstat-k { font-size: 10px; font-weight: 900; letter-spacing: .4px; color: var(--muted); }
+.spgstat-k { font-size: max(8px, calc((10px) * var(--ui-type-scale, .92))); font-weight: 900; letter-spacing: .4px; color: var(--muted); }
 .spgstat-b {
   position: relative;
   height: 7px;
@@ -4033,7 +4033,7 @@ button:not(.playbtn):active,
 .spgstat-f.grown { background: var(--grass-glow); }
 .spgstat-v {
   justify-self: end;
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   font-variant-numeric: tabular-nums;
 }
@@ -4041,13 +4041,13 @@ button:not(.playbtn):active,
 
 .spgdone { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; }
 .spgdone-k {
-  font-size: 10px;
+  font-size: max(8px, calc((10px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .4px;
   text-transform: uppercase;
   color: var(--muted);
 }
-.spgdone-v { font-size: 11.5px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.spgdone-v { font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92))); font-weight: 900; font-variant-numeric: tabular-nums; }
 .spgdone .rb-seg { grid-column: 1 / -1; }
 
 /* THE TRAIT ROW IS THE HERO'S LAST LINE, not a card sitting inside a card.
@@ -4065,7 +4065,7 @@ button:not(.playbtn):active,
 .rb-nl .rb-name { min-width: 0; }
 .rb-nl .lv {
   flex: none;
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   background: var(--tc);
   color: #0a0f18;
@@ -4139,7 +4139,7 @@ button:not(.playbtn):active,
   background: color-mix(in srgb, var(--grass) 12%, var(--panel));
 }
 .skincard-t {
-  font-size: 8.5px;
+  font-size: max(8px, calc((8.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .5px;
   text-transform: uppercase;
@@ -4158,7 +4158,7 @@ button:not(.playbtn):active,
 /* Drawn at twice the size it is shown at, which is what keeps it sharp. */
 .skincard-c { width: 100%; height: auto; }
 .skincard-n {
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   line-height: 1.15;
   text-align: center;
@@ -4167,7 +4167,7 @@ button:not(.playbtn):active,
 /* The state is WRITTEN. "Worn" and "owned but not worn" are one hairline
    apart, and the difference is the whole of what the row says. */
 .skincard-s {
-  font-size: 9px;
+  font-size: max(8px, calc((9px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .6px;
   text-transform: uppercase;
@@ -4196,12 +4196,12 @@ button:not(.playbtn):active,
 }
 .spgtrack.maxed .spgti { color: var(--gold); }
 .spgtt { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.spgtn { font-size: 13px; font-weight: 900; }
-.spgtl { font-size: 10px; font-weight: 900; letter-spacing: .4px; color: var(--muted); }
+.spgtn { font-size: max(8px, calc((13px) * var(--ui-type-scale, .92))); font-weight: 900; }
+.spgtl { font-size: max(8px, calc((10px) * var(--ui-type-scale, .92))); font-weight: 900; letter-spacing: .4px; color: var(--muted); }
 .spgtrack.maxed .spgtl { color: var(--gold); }
 .spgtd {
   margin: 7px 0 9px;
-  font-size: 11.5px;
+  font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92)));
   font-weight: 700;
   line-height: 1.4;
   color: var(--ink-soft);
@@ -4250,17 +4250,17 @@ button:not(.playbtn):active,
   border-radius: 99px;
   background: rgba(0, 0, 0, .28);
   border: 1px solid var(--line);
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--muted);
 }
 /* Lit when research has moved it off its base — the one thing on this card that
    is about the player rather than about the ant. */
 .spgchip.lit { border-color: var(--grass); color: var(--grass-glow); }
-.spgtext { margin: 0; font-size: 12.5px; font-weight: 700; line-height: 1.5; color: var(--ink-soft); }
-.spgtrait { margin: 0; font-size: 13px; font-weight: 800; line-height: 1.4; color: var(--ink); }
+.spgtext { margin: 0; font-size: max(8px, calc((12.5px) * var(--ui-type-scale, .92))); font-weight: 700; line-height: 1.5; color: var(--ink-soft); }
+.spgtrait { margin: 0; font-size: max(8px, calc((13px) * var(--ui-type-scale, .92))); font-weight: 800; line-height: 1.4; color: var(--ink); }
 .spglabel {
-  font-size: 9.5px;
+  font-size: max(8px, calc((9.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.1px;
   text-transform: uppercase;
@@ -4293,13 +4293,13 @@ button:not(.playbtn):active,
   border: 1px solid var(--line);
 }
 .chalsum-k {
-  font-size: 10px;
+  font-size: max(8px, calc((10px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .5px;
   text-transform: uppercase;
   color: var(--muted);
 }
-.chalsum-v { font-size: 13px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.chalsum-v { font-size: max(8px, calc((13px) * var(--ui-type-scale, .92))); font-weight: 900; font-variant-numeric: tabular-nums; }
 .chalsum .hl-track { grid-column: 1 / -1; }
 
 .challist { display: grid; gap: var(--stack); }
@@ -4318,7 +4318,7 @@ button:not(.playbtn):active,
 .chalcard.locked .chalname { color: var(--ink-soft); }
 
 .chaltop { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.chalname { font-size: 14px; font-weight: 900; letter-spacing: -.2px; }
+.chalname { font-size: max(8px, calc((14px) * var(--ui-type-scale, .92))); font-weight: 900; letter-spacing: -.2px; }
 
 /* Marks from the icon family, not ★ and ☆ glyphs. */
 .chalstars { display: flex; gap: 2px; flex: none; color: var(--panel-edge); }
@@ -4335,20 +4335,20 @@ button:not(.playbtn):active,
   padding: 3px 8px;
   border-radius: 99px;
   background: rgba(0, 0, 0, .28);
-  font-size: 10.5px;
+  font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--muted);
 }
-.chalgoal { margin: 0; font-size: 12.5px; font-weight: 700; line-height: 1.4; color: var(--ink-soft); }
+.chalgoal { margin: 0; font-size: max(8px, calc((12.5px) * var(--ui-type-scale, .92))); font-weight: 700; line-height: 1.4; color: var(--ink-soft); }
 
 .chalfoot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.chalfoot .challplay { width: auto; margin: 0; padding: 9px 22px; font-size: 14px; }
+.chalfoot .challplay { width: auto; margin: 0; padding: 9px 22px; font-size: max(8px, calc((14px) * var(--ui-type-scale, .92))); }
 /* What beating it pays — a price tag, not a sentence under the card. */
 .chalpay {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--gold);
 }
@@ -4356,7 +4356,7 @@ button:not(.playbtn):active,
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 11.5px;
+  font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--muted);
 }
@@ -4369,7 +4369,7 @@ button:not(.playbtn):active,
   background: none;
   border: 1px solid var(--line);
   font-family: var(--font);
-  font-size: 11.5px;
+  font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--ink-soft);
   cursor: pointer;
@@ -4383,7 +4383,7 @@ button:not(.playbtn):active,
   justify-content: center;
   gap: 6px;
   padding: 4px 0;
-  font-size: 11.5px;
+  font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92)));
   font-weight: 800;
   color: var(--muted);
 }
@@ -4406,8 +4406,8 @@ button:not(.playbtn):active,
 }
 .chalmore svg { color: var(--muted); }
 .chalmore-t { display: grid; gap: 2px; }
-.chalmore-t b { font-size: 13px; font-weight: 900; }
-.chalmore-t span { font-size: 11px; font-weight: 800; color: var(--muted); }
+.chalmore-t b { font-size: max(8px, calc((13px) * var(--ui-type-scale, .92))); font-weight: 900; }
+.chalmore-t span { font-size: max(8px, calc((11px) * var(--ui-type-scale, .92))); font-weight: 800; color: var(--muted); }
 
 /* A switch reports its own state in a word: "On" and "Off" survive a
    screenshot and a player who has never seen the control before. */
@@ -4692,12 +4692,12 @@ button:not(.playbtn):active,
   animation: rot-turn 2.4s ease-in-out infinite;
 }
 #rotate .rot-h {
-  font-size: 19px;
+  font-size: max(8px, calc((19px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .2px;
 }
 #rotate .rot-p {
-  font-size: 13px;
+  font-size: max(8px, calc((13px) * var(--ui-type-scale, .92)));
   font-weight: 700;
   color: var(--ink-soft, #b7c9b7);
   max-width: 260px;
@@ -4748,7 +4748,7 @@ button:not(.playbtn):active,
    so this line has the whole bar and only ellipsises for a name that genuinely needs
    it. */
 .invwho {
-  font-size: 12.5px;
+  font-size: max(8px, calc((12.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--ink);
   line-height: 1.2;
@@ -4757,7 +4757,7 @@ button:not(.playbtn):active,
   white-space: nowrap;
 }
 .invwhat {
-  font-size: 10.5px;
+  font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92)));
   font-weight: 700;
   color: var(--ink-soft);
   overflow: hidden;
@@ -4774,7 +4774,7 @@ button:not(.playbtn):active,
   color: #10240f;
   font-family: var(--font);
   font-weight: 900;
-  font-size: 13px;
+  font-size: max(8px, calc((13px) * var(--ui-type-scale, .92)));
   cursor: pointer;
 }
 .invghost {
@@ -4831,14 +4831,14 @@ button:not(.playbtn):active,
 
 .histmid { min-width: 0; display: grid; gap: 2px; }
 .histwho {
-  font-size: 13px;
+  font-size: max(8px, calc((13px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .histwhat {
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 800;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
@@ -4849,7 +4849,7 @@ button:not(.playbtn):active,
 
 .histright { display: grid; justify-items: end; gap: 2px; }
 .histresult {
-  font-size: 10px;
+  font-size: max(8px, calc((10px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .9px;
   text-transform: uppercase;
@@ -4861,7 +4861,7 @@ button:not(.playbtn):active,
    column — and a defeat is printed in the losing colour, because it cost
    troops (§8a, the same rule the result card follows). */
 .histdelta {
-  font-size: 14px;
+  font-size: max(8px, calc((14px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   color: var(--grass-glow);
@@ -4869,8 +4869,8 @@ button:not(.playbtn):active,
 .histrow.lost .histdelta { color: var(--danger); }
 
 .histempty { display: grid; gap: 6px; justify-items: center; padding: 40px 20px; text-align: center; }
-.histemptyh { font-size: 15px; font-weight: 900; }
-.histemptyp { font-size: 12px; font-weight: 700; line-height: 1.5; color: var(--ink-soft); max-width: 24em; }
+.histemptyh { font-size: max(8px, calc((15px) * var(--ui-type-scale, .92))); font-weight: 900; }
+.histemptyp { font-size: max(8px, calc((12px) * var(--ui-type-scale, .92))); font-weight: 700; line-height: 1.5; color: var(--ink-soft); max-width: 24em; }
 
 /* ---- The player ------------------------------------------------------------
    The board fills what is left and the controls sit under it, which is the
@@ -4895,7 +4895,7 @@ button:not(.playbtn):active,
   padding: 10px 12px 14px;
 }
 .replayturn {
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
@@ -4908,7 +4908,7 @@ button:not(.playbtn):active,
   border: 1px solid var(--grass);
   background: var(--grass);
   font-family: var(--font);
-  font-size: 13px;
+  font-size: max(8px, calc((13px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: #0d1c0b;
   cursor: pointer;
@@ -4986,7 +4986,7 @@ button:not(.playbtn):active,
   cursor: default;
 }
 .trtile-ch {
-  font-size: 8.5px;
+  font-size: max(8px, calc((8.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .3px;
   color: var(--muted);
@@ -5006,7 +5006,7 @@ button:not(.playbtn):active,
 }
 .trtile-f svg { flex: none; }
 .trtile-v {
-  font-size: 10px;
+  font-size: max(8px, calc((10px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   color: var(--grass-glow);
@@ -5046,13 +5046,13 @@ button:not(.playbtn):active,
   cursor: pointer;
 }
 .invhead-t {
-  font-size: 11.5px;
+  font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.4px;
   text-transform: uppercase;
   color: var(--ink-soft);
 }
-.invhead-c { font-size: 10.5px; font-weight: 800; color: var(--muted); }
+.invhead-c { font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92))); font-weight: 800; color: var(--muted); }
 .invhead > svg { color: var(--muted); align-self: center; }
 
 /* ---- What it adds up to ----
@@ -5075,7 +5075,7 @@ button:not(.playbtn):active,
   align-items: center;
   gap: 4px;
   min-width: 0;
-  font-size: 9px;
+  font-size: max(8px, calc((9px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: .4px;
   text-transform: uppercase;
@@ -5083,19 +5083,19 @@ button:not(.playbtn):active,
 }
 .trtotal-k svg { flex: none; }
 .trtotal-v {
-  font-size: 17px;
+  font-size: max(8px, calc((17px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--grass-glow);
   font-variant-numeric: tabular-nums;
 }
-.trtotal-c { font-size: 9.5px; font-weight: 800; color: var(--muted); }
+.trtotal-c { font-size: max(8px, calc((9.5px) * var(--ui-type-scale, .92))); font-weight: 800; color: var(--muted); }
 /* At the ceiling the figure goes gold rather than red: it is the top of the
    scale, not a fault. */
 .trtotal.capped .trtotal-v { color: var(--gold); }
 
 .trempty { display: grid; gap: 6px; justify-items: center; padding: 30px 20px; text-align: center; }
-.trempty-h { font-size: 14px; font-weight: 900; }
-.trempty-p { font-size: 12px; font-weight: 700; line-height: 1.5; color: var(--ink-soft); max-width: 26em; }
+.trempty-h { font-size: max(8px, calc((14px) * var(--ui-type-scale, .92))); font-weight: 900; }
+.trempty-p { font-size: max(8px, calc((12px) * var(--ui-type-scale, .92))); font-weight: 700; line-height: 1.5; color: var(--ink-soft); max-width: 26em; }
 
 /* ---- The row that opens it ----
    It carries the five slots in miniature rather than a count: "3 / 5" says how
@@ -5133,9 +5133,9 @@ button:not(.playbtn):active,
 .tropen.locked .tropen-i { color: var(--muted); }
 .tropen-mid { min-width: 0; display: grid; gap: 7px; }
 .tropen-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.tropen-t { font-size: 13px; font-weight: 900; letter-spacing: .1px; }
+.tropen-t { font-size: max(8px, calc((13px) * var(--ui-type-scale, .92))); font-weight: 900; letter-spacing: .1px; }
 /* The chapter, never a padlock: a number is something to play toward. */
-.tropen-c { font-size: 11px; font-weight: 900; color: var(--gold); }
+.tropen-c { font-size: max(8px, calc((11px) * var(--ui-type-scale, .92))); font-weight: 900; color: var(--gold); }
 /* THE FIVE SLOTS, AS THEY ACTUALLY ARE. A row of dashes said how many and a
    lit one said a rare was worn somewhere; neither said WHAT. This is the
    bench's own square shrunk to fit a row — five equal columns, so an empty
@@ -5174,7 +5174,7 @@ button:not(.playbtn):active,
 }
 .tropen-slot-i { display: grid; place-items: center; color: var(--tier); }
 .tropen-slot-v {
-  font-size: 8.5px;
+  font-size: max(8px, calc((8.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   letter-spacing: -.2px;
@@ -5182,7 +5182,7 @@ button:not(.playbtn):active,
 }
 
 /* A found trait's count, under the collection row that counts the slots. */
-.pf-row-note { font-size: 10.5px; font-weight: 800; color: var(--muted); }
+.pf-row-note { font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92))); font-weight: 800; color: var(--muted); }
 
 /* ============================================================================
    ==  THE LUCKY HATCH  =======================================================
@@ -5267,9 +5267,9 @@ button:not(.playbtn):active,
   border: 1px solid var(--line);
 }
 .hp-i { display: grid; place-items: center; color: var(--gold); }
-.hp-n { font-size: 19px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.hp-n { font-size: max(8px, calc((19px) * var(--ui-type-scale, .92))); font-weight: 900; font-variant-numeric: tabular-nums; }
 .hp-k {
-  font-size: 10px;
+  font-size: max(8px, calc((10px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.1px;
   text-transform: uppercase;
@@ -5426,18 +5426,18 @@ button:not(.playbtn):active,
   border: 2px solid var(--tier);
 }
 .hp-tier {
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.4px;
   text-transform: uppercase;
   color: var(--tier);
 }
-.hp-name { font-size: 19px; font-weight: 900; letter-spacing: .2px; text-align: center; }
+.hp-name { font-size: max(8px, calc((19px) * var(--ui-type-scale, .92))); font-weight: 900; letter-spacing: .2px; text-align: center; }
 .hp-eff {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 13px;
+  font-size: max(8px, calc((13px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--grass-glow);
 }
@@ -5448,7 +5448,7 @@ button:not(.playbtn):active,
    TWO COLUMNS of five, the whole handful readable without moving. */
 .hatchprize.many { gap: 10px; width: min(100%, 420px); }
 .hp-many-h {
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.4px;
   text-transform: uppercase;
@@ -5478,7 +5478,7 @@ button:not(.playbtn):active,
    column past its track — a grid item's automatic minimum is its CONTENT. */
 .hp-one-t { display: grid; gap: 1px; min-width: 0; }
 .hp-one-n {
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--ink);
   white-space: nowrap;
@@ -5486,7 +5486,7 @@ button:not(.playbtn):active,
   text-overflow: ellipsis;
 }
 .hp-one-e {
-  font-size: 9.5px;
+  font-size: max(8px, calc((9.5px) * var(--ui-type-scale, .92)));
   font-weight: 800;
   color: var(--ink-soft);
   white-space: nowrap;
@@ -5495,7 +5495,7 @@ button:not(.playbtn):active,
 }
 /* A skin in the batch goes somewhere the button under it does not. */
 .hp-many-n {
-  font-size: 10.5px;
+  font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92)));
   font-weight: 700;
   text-align: center;
   color: var(--muted);
@@ -5513,7 +5513,7 @@ button:not(.playbtn):active,
   background: none;
   border: none;
   font-family: var(--font);
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 800;
   color: var(--muted);
   cursor: pointer;
@@ -5546,8 +5546,8 @@ button:not(.playbtn):active,
 .hatchbtn[disabled] { background: color-mix(in srgb, var(--grass) 78%, #0b1409); cursor: default; }
 /* ...and the out state has no fill to darken, so it dims its ink instead. */
 .hatchbtn.out[disabled] { background: rgba(255, 255, 255, .07); color: var(--muted); }
-.hb-t { font-size: 17px; font-weight: 900; letter-spacing: .4px; text-transform: uppercase; }
-.hb-c { font-size: 11px; font-weight: 800; opacity: .75; }
+.hb-t { font-size: max(8px, calc((17px) * var(--ui-type-scale, .92))); font-weight: 900; letter-spacing: .4px; text-transform: uppercase; }
+.hb-c { font-size: max(8px, calc((11px) * var(--ui-type-scale, .92))); font-weight: 800; opacity: .75; }
 
 /* ---- The handful ----
    Under the one that always works, and quieter than it: one primary action on
@@ -5561,7 +5561,7 @@ button:not(.playbtn):active,
   border: 1px solid color-mix(in srgb, var(--grass) 55%, transparent);
   color: var(--grass-glow);
 }
-.hatchbtn.bulk .hb-t { font-size: 14px; }
+.hatchbtn.bulk .hb-t { font-size: max(8px, calc((14px) * var(--ui-type-scale, .92))); }
 /* IT IS ALWAYS DRAWN, so it has a state for a purse that cannot cover it, and
    that state has to read as UNCLICKABLE rather than merely quiet. The BORDER
    goes with the ink: a dim label inside a live green outline reads as a button
@@ -5587,7 +5587,7 @@ button:not(.playbtn):active,
 }
 .ho-h {
   grid-column: 1 / -1;
-  font-size: 10px;
+  font-size: max(8px, calc((10px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.2px;
   text-transform: uppercase;
@@ -5626,14 +5626,14 @@ button:not(.playbtn):active,
    lifted toward white, which is the one way to keep the colour saying which
    rung it is while separating it from a fill made of the same colour. The DOT
    stays the pure tier: it is the swatch, and it has no text on it to read. */
-.ho-n { font-size: 8px; font-weight: 800; letter-spacing: .2px; color: var(--ink-soft); }
-.ho-p { font-size: 12px; font-weight: 900; color: color-mix(in srgb, var(--tier) 78%, #fff); }
+.ho-n { font-size: max(8px, calc((8px) * var(--ui-type-scale, .92))); font-weight: 800; letter-spacing: .2px; color: var(--ink-soft); }
+.ho-p { font-size: max(8px, calc((12px) * var(--ui-type-scale, .92))); font-weight: 900; color: color-mix(in srgb, var(--tier) 78%, #fff); }
 /* A skin is not a sixth tier — no stat, and nowhere on the rarity curve — so
    it is a sentence under the row rather than a column squeezed into it. */
 .ho-note {
   grid-column: 1 / -1;
   padding-top: 2px;
-  font-size: 10.5px;
+  font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92)));
   font-weight: 700;
   line-height: 1.35;
   text-align: center;
@@ -5675,9 +5675,9 @@ button:not(.playbtn):active,
   color: var(--muted);
   border: 1px dashed var(--line);
 }
-.hatchshut-h { font-size: 16px; font-weight: 900; color: var(--gold); }
+.hatchshut-h { font-size: max(8px, calc((16px) * var(--ui-type-scale, .92))); font-weight: 900; color: var(--gold); }
 .hatchshut-p {
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 700;
   line-height: 1.5;
   color: var(--ink-soft);
@@ -5727,7 +5727,7 @@ button:not(.playbtn):active,
   cursor: pointer;
 }
 .hatchtrade > svg { color: var(--muted); }
-.ht-c { display: flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 900; }
+.ht-c { display: flex; align-items: center; gap: 4px; font-size: max(8px, calc((12.5px) * var(--ui-type-scale, .92))); font-weight: 900; }
 /* Named halves rather than :first-child / :last-of-type — the Trade pill is a span
    too, so ":last-of-type" was matching IT and the larva side never took a colour.
    Each side wears the colour that currency already has: mycelium as the top bar
@@ -5741,7 +5741,7 @@ button:not(.playbtn):active,
   border-radius: 99px;
   background: color-mix(in srgb, var(--grass-glow) 18%, transparent);
   color: var(--grass-glow);
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 0.6px;
   text-transform: uppercase;
@@ -5765,13 +5765,13 @@ button:not(.playbtn):active,
   border: 1px solid var(--line);
 }
 .fb-h {
-  font-size: 11.5px;
+  font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.4px;
   text-transform: uppercase;
   color: var(--ink-soft);
 }
-.fb-p { font-size: 11.5px; font-weight: 700; line-height: 1.45; color: var(--muted); }
+.fb-p { font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92))); font-weight: 700; line-height: 1.45; color: var(--muted); }
 /* No side padding of its own: the row sat inside `.fusebox`, which carried it.
    The box is nothing now (§ A BLOCK NEVER HOLDS BLOCKS), so the row is in the
    shared padding group and this is only the legacy fallback. */
@@ -5784,9 +5784,9 @@ button:not(.playbtn):active,
 }
 .fb-trade { grid-column: 1; display: flex; align-items: center; gap: 7px; }
 .fb-trade > svg { color: var(--muted); }
-.fb-n { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 800; }
+.fb-n { display: flex; align-items: center; gap: 5px; font-size: max(8px, calc((12px) * var(--ui-type-scale, .92))); font-weight: 800; }
 .fb-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--tier); }
-.fb-sp { grid-column: 1; font-size: 10.5px; font-weight: 800; color: var(--muted); }
+.fb-sp { grid-column: 1; font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92))); font-weight: 800; color: var(--muted); }
 .fb-row .buybtn { grid-column: 2; grid-row: 1 / span 2; }
 
 /* ==================================================================== SIGN IN
@@ -5811,14 +5811,14 @@ button:not(.playbtn):active,
   gap: var(--stack);
 }
 .si-mark {
-  font-size: 12px;
+  font-size: max(8px, calc((12px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 3px;
   color: var(--grass-glow);
   text-align: center;
 }
 .si-h {
-  font-size: 24px;
+  font-size: max(8px, calc((24px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--ink);
   text-align: center;
@@ -5851,13 +5851,13 @@ button:not(.playbtn):active,
 .si-face { width: 36px; height: 36px; }
 .si-txt { min-width: 0; }
 .si-name {
-  font-size: 15px;
+  font-size: max(8px, calc((15px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.si-sub { font-size: 11px; font-weight: 800; color: var(--muted); margin-top: 2px; }
+.si-sub { font-size: max(8px, calc((11px) * var(--ui-type-scale, .92))); font-weight: 800; color: var(--muted); margin-top: 2px; }
 
 /* ---- Starting, and the code box ---- */
 .sibox {
@@ -5877,7 +5877,7 @@ button:not(.playbtn):active,
   border: 1px solid var(--line);
   color: var(--ink);
   font-family: var(--font);
-  font-size: 15px;
+  font-size: max(8px, calc((15px) * var(--ui-type-scale, .92)));
   font-weight: 800;
 }
 .si-field::placeholder { color: var(--muted); }
@@ -5889,12 +5889,12 @@ button:not(.playbtn):active,
   border: none;
   color: #10240f;
   font-family: var(--font);
-  font-size: 15px;
+  font-size: max(8px, calc((15px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   cursor: pointer;
 }
 .si-go:active { transform: translateY(1px); }
-.si-note { font-size: 11.5px; font-weight: 700; line-height: 1.45; color: var(--muted); margin: 0; }
+.si-note { font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92))); font-weight: 700; line-height: 1.45; color: var(--muted); margin: 0; }
 /* A quiet second option, never a second Start: one green button per screen. */
 .si-alt {
   display: flex;
@@ -5906,7 +5906,7 @@ button:not(.playbtn):active,
   border: none;
   color: var(--grass-glow);
   font-family: var(--font);
-  font-size: 13px;
+  font-size: max(8px, calc((13px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   cursor: pointer;
 }
@@ -5949,7 +5949,7 @@ button:not(.playbtn):active,
 .sg-t {
   flex: 1;
   min-width: 0;
-  font-size: 13px;
+  font-size: max(8px, calc((13px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -5999,7 +5999,7 @@ button:not(.playbtn):active,
   border-radius: var(--r-md);
   border: 1px solid var(--line);
   background: var(--bg1);
-  font-size: 11.5px;
+  font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92)));
   font-weight: 700;
   line-height: 1.5;
   color: var(--muted);
@@ -6031,7 +6031,7 @@ button:not(.playbtn):active,
   border: 1px solid var(--line);
   color: var(--ink-soft);
   font-family: var(--font);
-  font-size: 14px;
+  font-size: max(8px, calc((14px) * var(--ui-type-scale, .92)));
   font-weight: 800;
   cursor: pointer;
 }
@@ -6039,7 +6039,7 @@ button:not(.playbtn):active,
 .restorebtn:disabled { opacity: .5; }
 .restorenote {
   max-width: 300px;
-  font-size: 11.5px;
+  font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92)));
   font-weight: 700;
   line-height: 1.45;
   color: var(--muted);
@@ -6074,8 +6074,8 @@ button:not(.playbtn):active,
 .wnrow .newshero { width: 64px; min-height: 64px; }
 .wnrow .newshero canvas { width: 64px; height: 64px; }
 .wnwords { min-width: 0; padding: 10px 12px 10px 0; }
-.wnt { font-size: 14px; font-weight: 900; color: var(--ink); }
-.wnl { font-size: 12px; font-weight: 700; color: var(--ink-soft); line-height: 1.4; }
+.wnt { font-size: max(8px, calc((14px) * var(--ui-type-scale, .92))); font-weight: 900; color: var(--ink); }
+.wnl { font-size: max(8px, calc((12px) * var(--ui-type-scale, .92))); font-weight: 700; color: var(--ink-soft); line-height: 1.4; }
 .wnfoot {
   display: flex;
   gap: 10px;
@@ -6101,7 +6101,7 @@ button:not(.playbtn):active,
   border: 1px solid var(--line);
   color: var(--ink-soft);
   font-family: var(--font);
-  font-size: 14px;
+  font-size: max(8px, calc((14px) * var(--ui-type-scale, .92)));
   font-weight: 800;
   white-space: nowrap;
   cursor: pointer;
@@ -6123,7 +6123,7 @@ button:not(.playbtn):active,
    they are not the line that gets read. */
 .rb-w { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .rb-sub {
-  font-size: 11px;
+  font-size: max(8px, calc((11px) * var(--ui-type-scale, .92)));
   font-weight: 700;
   color: var(--muted);
   overflow: hidden;
@@ -6143,7 +6143,7 @@ button:not(.playbtn):active,
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 15px;
+  font-size: max(8px, calc((15px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   color: var(--ink);
   margin-bottom: 6px;
@@ -6154,20 +6154,20 @@ button:not(.playbtn):active,
 .ks-eviction { border-color: color-mix(in srgb, var(--gold) 45%, transparent); }
 .ks-unwritable { border-color: color-mix(in srgb, var(--danger) 50%, transparent); }
 .ks-h2 {
-  font-size: 11.5px;
+  font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.4px;
   text-transform: uppercase;
   color: var(--ink-soft);
   margin-bottom: 8px;
 }
-.ks-p { font-size: 13px; font-weight: 700; line-height: 1.55; color: var(--ink-soft); margin: 0; }
+.ks-p { font-size: max(8px, calc((13px) * var(--ui-type-scale, .92))); font-weight: 700; line-height: 1.55; color: var(--ink-soft); margin: 0; }
 .kssteps {
   margin: 0;
   padding-left: 20px;
   display: grid;
   gap: 7px;
-  font-size: 13px;
+  font-size: max(8px, calc((13px) * var(--ui-type-scale, .92)));
   font-weight: 700;
   line-height: 1.5;
   color: var(--ink-soft);
@@ -6319,7 +6319,7 @@ button:not(.playbtn):active,
   border-radius: 50%;
   background: #1c1737;
   color: #fff;
-  font-size: calc(18 * var(--rd-u));
+  font-size: max(8px, calc((calc(18 * var(--rd-u))) * var(--ui-type-scale, .92)));
   font-weight: 400;
   line-height: 1;
   text-shadow: 0 2px 0 #0a0823 !important;
@@ -6329,7 +6329,7 @@ button:not(.playbtn):active,
   top: calc(100% + 6 * var(--rd-u));
   padding: calc(2 * var(--rd-u)) calc(3 * var(--rd-u));
   color: #c3b8ef;
-  font-size: calc(10 * var(--rd-u));
+  font-size: max(8px, calc((calc(10 * var(--rd-u))) * var(--ui-type-scale, .92)));
   line-height: 1;
   white-space: nowrap;
 }
@@ -6431,7 +6431,7 @@ button:not(.playbtn):active,
   width: 100%;
   height: calc(28 * var(--rd-u));
   color: #fff;
-  font-size: calc(25 * var(--rd-u));
+  font-size: max(8px, calc((calc(25 * var(--rd-u))) * var(--ui-type-scale, .92)));
   font-weight: 400;
   white-space: nowrap;
   text-shadow: 0 calc(2 * var(--rd-u)) 0 #101037 !important;
@@ -6443,9 +6443,9 @@ button:not(.playbtn):active,
 .rd-prize.free .rd-amount, .rd-prize.free .rd-caption {
   bottom: calc(10 * var(--rd-u));
   height: calc(26 * var(--rd-u));
-  font-size: calc(23 * var(--rd-u));
+  font-size: max(8px, calc((calc(23 * var(--rd-u))) * var(--ui-type-scale, .92)));
 }
-.rd-caption, .rd-prize.free .rd-caption { font-size: calc(17 * var(--rd-u)); text-transform: uppercase; }
+.rd-caption, .rd-prize.free .rd-caption { font-size: max(8px, calc((calc(17 * var(--rd-u))) * var(--ui-type-scale, .92))); text-transform: uppercase; }
 .rd-lock, .rd-done {
   position: absolute;
   z-index: 5;
@@ -6473,7 +6473,7 @@ button:not(.playbtn):active,
   background: var(--rd-accent);
   color: var(--rd-accent-ink);
   border-radius: calc(2 * var(--rd-u));
-  font-size: calc(11 * var(--rd-u));
+  font-size: max(8px, calc((calc(11 * var(--rd-u))) * var(--ui-type-scale, .92)));
   text-shadow: none !important;
 }
 .rd-prize.got .rd-mark { filter: saturate(.82); }
@@ -6536,12 +6536,12 @@ button:not(.playbtn):active,
 .rd-gatek {
   grid-column: 1;
   text-align: right;
-  font-size: calc(18 * var(--rd-u));
+  font-size: max(8px, calc((calc(18 * var(--rd-u))) * var(--ui-type-scale, .92)));
   text-transform: uppercase;
 }
 .rd-gaten {
   grid-column: 3;
-  font-size: calc(16 * var(--rd-u));
+  font-size: max(8px, calc((calc(16 * var(--rd-u))) * var(--ui-type-scale, .92)));
   text-align: left;
 }
 .rd-tracknames {
@@ -6564,7 +6564,7 @@ button:not(.playbtn):active,
   border-radius: calc(5 * var(--rd-u));
   background: #0c1c20cc;
   color: #fff;
-  font-size: calc(13 * var(--rd-u));
+  font-size: max(8px, calc((calc(13 * var(--rd-u))) * var(--ui-type-scale, .92)));
   white-space: nowrap;
   text-shadow: 0 2px 0 #000 !important;
 }
@@ -6588,7 +6588,7 @@ button:not(.playbtn):active,
   left: calc(32 * var(--rd-u));
   right: calc(7 * var(--rd-u));
   color: #fff;
-  font-size: calc(10 * var(--rd-u));
+  font-size: max(8px, calc((calc(10 * var(--rd-u))) * var(--ui-type-scale, .92)));
   line-height: 1.1;
   text-align: center;
   text-transform: uppercase;
@@ -6625,7 +6625,7 @@ button:not(.playbtn):active,
   margin-top: calc(-5 * var(--rd-u));
   color: var(--rd-accent-ink);
   font-family: var(--font-display);
-  font-size: calc(69 * var(--rd-u));
+  font-size: max(8px, calc((calc(69 * var(--rd-u))) * var(--ui-type-scale, .92)));
   line-height: 1;
   text-shadow: 0 calc(2 * var(--rd-u)) 0 var(--rd-accent-pale) !important;
 }
@@ -6660,7 +6660,7 @@ button:not(.playbtn):active,
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
   background: var(--rd-accent-pale);
 }
-.rd-player .roadt { color: inherit; font-size: calc(17 * var(--rd-u)); font-weight: 400; white-space: nowrap; }
+.rd-player .roadt { color: inherit; font-size: max(8px, calc((calc(17 * var(--rd-u))) * var(--ui-type-scale, .92))); font-weight: 400; white-space: nowrap; }
 
 /* ------------------------------------------------------- WHAT IT PAID
    Confirms the currency and amount actually banked. `#achievements.popped` is what lifts
@@ -6706,7 +6706,7 @@ button:not(.playbtn):active,
   cursor: pointer;
 }
 .rd-popk {
-  font-size: 10.5px;
+  font-size: max(8px, calc((10.5px) * var(--ui-type-scale, .92)));
   font-weight: 900;
   letter-spacing: 1.6px;
   text-transform: uppercase;
@@ -6724,8 +6724,8 @@ button:not(.playbtn):active,
   background: color-mix(in srgb, var(--rd-accent) 14%, var(--panel));
   color: var(--rd-accent-light);
 }
-.rd-popn { font-family: var(--font-display); font-size: 26px; font-weight: 400; color: var(--rd-accent-light); }
-.rd-popu { font-size: 13px; font-weight: 800; color: var(--ink-soft); }
+.rd-popn { font-family: var(--font-display); font-size: max(8px, calc((26px) * var(--ui-type-scale, .92))); font-weight: 400; color: var(--rd-accent-light); }
+.rd-popu { font-size: max(8px, calc((13px) * var(--ui-type-scale, .92))); font-weight: 800; color: var(--ink-soft); }
 
 /* ==========================================================================
    THE HOME SCREEN, REDRAWN TO THE DESIGN (Figma `03-home 2`, node 134:31)
@@ -6890,13 +6890,14 @@ button:not(.playbtn):active,
   --r-btn: 5px;
   /* Four sizes, and only four: a label, a figure, body, a title. */
   --fs-label: 8px;
-  --fs-small: 10px;
-  --fs-body: 12px;
-  --fs-title: 14px;
+  --ui-type-scale: .92;
+  --fs-small: max(8px, calc(10px * var(--ui-type-scale)));
+  --fs-body: max(10px, calc(12px * var(--ui-type-scale)));
+  --fs-title: calc(14px * var(--ui-type-scale));
   /* And a fifth that is not one of the four, because it is not a label of any kind: the
      one line on a screen that is a NAME, set in the display face and read first. The
      Antarium's banner is the only thing wearing it so far. */
-  --fs-hero: 22px;
+  --fs-hero: calc(22px * var(--ui-type-scale));
   /* A COLONY YOU DO NOT OWN. Not a rarity — a locked tile is this grey whatever rung it
      sits on, which is the whole point of it, so it is a token here rather than a sixth
      entry in a ladder it is not part of. */
@@ -7076,7 +7077,7 @@ button:not(.playbtn):active,
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: calc(16 * var(--u));
+  font-size: max(8px, calc((calc(16 * var(--u))) * var(--ui-type-scale, .92)));
   line-height: 1;
   color: var(--hud-ink);
   text-align: center;
@@ -7147,7 +7148,7 @@ button:not(.playbtn):active,
 #home .col-n {
   display: block;
   min-width: 0;
-  font-size: var(--colline);
+  font-size: max(8px, calc((var(--colline)) * var(--ui-type-scale, .92)));
   line-height: 1;
   color: var(--hud-ink);
   text-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 #000 !important;
@@ -7259,7 +7260,7 @@ button:not(.playbtn):active,
   display: block;
 }
 #home .granpill .gp-n {
-  font-size: calc(16 * var(--u));
+  font-size: max(8px, calc((calc(16 * var(--u))) * var(--ui-type-scale, .92)));
   line-height: 1;
   color: var(--hud-ink);
   /* ONE pixel here and two on the colony figure, which is the two frames' own
@@ -7276,7 +7277,7 @@ button:not(.playbtn):active,
   padding: 0;
   border-radius: 0;
   background: none;
-  font-size: calc(10 * var(--u));
+  font-size: max(8px, calc((calc(10 * var(--u))) * var(--ui-type-scale, .92)));
   line-height: 1;
   letter-spacing: 0;
   text-transform: uppercase;
@@ -7397,7 +7398,7 @@ button:not(.playbtn):active,
   border-radius: calc(5 * var(--u));
   background: var(--hud-go);
   color: var(--hud-ink);
-  font-size: calc(32 * var(--u));
+  font-size: max(8px, calc((calc(32 * var(--u))) * var(--ui-type-scale, .92)));
   line-height: 1;
   text-align: center;
   box-shadow: var(--hud-ledge) !important;
@@ -7573,7 +7574,7 @@ button:not(.playbtn):active,
   color: var(--hud-ink);
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: calc(12 * var(--u));
+  font-size: max(8px, calc((calc(12 * var(--u))) * var(--ui-type-scale, .92)));
   line-height: 1;
 }
 .menudraw .menuitem:active {
@@ -8231,7 +8232,7 @@ button:not(.playbtn):active,
   padding: clamp(4px, calc(1.2 * var(--game-vh)), 9px) 3px;
   gap: clamp(1px, calc(.4 * var(--game-vh)), 3px);
 }
-.match .brow4 .btn .lb { font-size: clamp(8.5px, calc(1.25 * var(--game-vh)), 9.5px); }
+.match .brow4 .btn .lb { font-size: max(8px, calc((clamp(8.5px, calc(1.25 * var(--game-vh)), 9.5px)) * var(--ui-type-scale, .92))); }
 /* The mark is an SVG with width/height ATTRIBUTES on it (the shell fills the
    slot with `icon(name, 20)`), and an attribute is what CSS overrides here —
    without this rule the label shrinks under a mark that never does. */
@@ -8270,7 +8271,7 @@ button:not(.playbtn):active,
   border-radius: 999px;
   padding: clamp(5px, calc(1 * var(--game-vh)), 8px) clamp(8px, calc(1.6 * var(--game-vh)), 11px);
 }
-.match .brow .btn.surr .lb { display: none; font-size: clamp(9.5px, calc(1.4 * var(--game-vh)), 11px); }
+.match .brow .btn.surr .lb { display: none; font-size: max(8px, calc((clamp(9.5px, calc(1.4 * var(--game-vh)), 11px)) * var(--ui-type-scale, .92))); }
 .match .brow .btn.surr.armed .lb { display: block; }
 .match .brow .btn.surr .ic svg {
   width: clamp(14px, calc(2.4 * var(--game-vh)), 18px);
@@ -8383,7 +8384,7 @@ button:not(.playbtn):active,
   object-fit: cover;
   border: 3px solid var(--grass);
 }
-.av-hero-k { font-size: 11.5px; font-weight: 800; color: var(--ink-soft); }
+.av-hero-k { font-size: max(8px, calc((11.5px) * var(--ui-type-scale, .92))); font-weight: 800; color: var(--ink-soft); }
 
 .avgrid {
   display: grid;
@@ -8474,7 +8475,7 @@ button:not(.playbtn):active,
 /* The worn one is the only tile with a COLOURED edge, so "which am I wearing" is
    answered by the grid as well as by the hero above it. */
 .av-t.on { border-color: var(--grass); }
-.av-note { font-size: 11px; font-weight: 700; line-height: 1.5; color: var(--muted); }
+.av-note { font-size: max(8px, calc((11px) * var(--ui-type-scale, .92))); font-weight: 700; line-height: 1.5; color: var(--muted); }
 
 /* ======================================================================
    THE PROFILE, DRAWN TO THE DESIGN
@@ -9401,10 +9402,10 @@ body,
   display: block; width: 100%; padding: 16px; border: none;
   color: var(--ink); background: transparent; text-align: left;
 }
-.mail-head h2 { margin: 8px 0 0; font-size: 19px; line-height: 1.25; overflow-wrap: anywhere; }
-.mail-meta { display: flex; align-items: center; gap: 8px; color: var(--hud-mute); font-size: 12px; }
+.mail-head h2 { margin: 8px 0 0; font-size: max(8px, calc((19px) * var(--ui-type-scale, .92))); line-height: 1.25; overflow-wrap: anywhere; }
+.mail-meta { display: flex; align-items: center; gap: 8px; color: var(--hud-mute); font-size: max(8px, calc((12px) * var(--ui-type-scale, .92))); }
 .mail-body { padding: 0 16px 16px; }
-.mail-body p, .live-copy { color: var(--hud-dim); font-size: 14px; line-height: 1.5; }
+.mail-body p, .live-copy { color: var(--hud-dim); font-size: max(8px, calc((14px) * var(--ui-type-scale, .92))); line-height: 1.5; }
 .mail-body p { white-space: pre-wrap; overflow-wrap: anywhere; text-align: left; }
 .live-update h1 { margin-bottom: 12px; }
 .live-update-actions { display: grid; gap: 12px; margin-top: 20px; }
@@ -9413,4 +9414,9 @@ body,
 .menudraw {
   max-height: calc(var(--installed-height, calc(100 * var(--game-vh))) - var(--home-top) - var(--safe-bottom) - 24px);
   overflow-y: auto;
+}
+
+/* Narrow phones use a quieter type scale; control sizes and layout gutters stay shared. */
+@media (max-width: 360px) {
+  :root { --ui-type-scale: .84; }
 }

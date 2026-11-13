@@ -286,7 +286,7 @@ describe("the design scales", () => {
     expect(ruleFor(css, ".room-pocket")).toMatch(/width:\s*clamp\([^)]*44px\)/);
 
     const nm = ruleFor(css, ".room-nm");
-    expect(nm).toMatch(/font-size:\s*clamp\([^)]*13px\)/);
+    expect(nm).toMatch(/font-size:[^;]*clamp\([^)]*13px\)/);
     expect(nm, "a name longer than the catalogue's would spill rather than break")
       .toMatch(/overflow-wrap:\s*break-word/);
   });
@@ -545,7 +545,8 @@ describe("the drawer is drawn to the design", () => {
     const row = rulesFor(css, ".menudraw .menuitem");
     expect(row).toMatch(dp("height", 24));
     expect(row).toMatch(/background:\s*rgba\(255, 255, 255, \.05\)/);
-    expect(row).toMatch(dp("font-size", 12));
+    expect(row).toContain("12 * var(--u)");
+    expect(row).toContain("var(--ui-type-scale");
     expect(row).toMatch(/color:\s*var\(--hud-ink\)/);
   });
 
@@ -963,7 +964,8 @@ describe("the colony bar and the tab tray", () => {
     expect(root, "the ink height is not derived from the font-size")
       .toMatch(/--colink:\s*calc\(var\(--colline\) \* 0?\.\d+\)/);
     // The FIGURE is set in the font-size; the two things matched to it take the INK.
-    expect(ruleFor(css, "#home .col-n")).toMatch(/font-size:\s*var\(--colline\)/);
+    expect(ruleFor(css, "#home .col-n")).toContain("var(--colline)");
+    expect(ruleFor(css, "#home .col-n")).toContain("var(--ui-type-scale");
     expect(ruleFor(css, "#home .col-mark svg,\n#home .col-mark .hudmark"))
       .toMatch(/height:\s*var\(--colink\)/);
     expect(ruleFor(css, "#home .col-rail .tr-bar"))
@@ -1159,12 +1161,14 @@ describe("the shop is written in the shared language", () => {
     for (const [name, value] of [
       ["--hud-card", "#282930"], ["--hud-well", "#12151c"], ["--hud-dim", "#d5d5d5"],
       ["--r-card", "7px"], ["--r-btn", "5px"],
-      ["--fs-label", "8px"], ["--fs-small", "10px"],
-      ["--fs-body", "12px"], ["--fs-title", "14px"],
+      ["--fs-label", "8px"], ["--ui-type-scale", ".92"],
       ["--block", "12px"], ["--inrow", "8px"],
     ]) {
       expect(root, `${name} is not the design's value`)
         .toMatch(new RegExp(`${name}:\\s*${value}`, "i"));
+    }
+    for (const name of ["--fs-small", "--fs-body", "--fs-title", "--fs-hero"]) {
+      expect(root).toMatch(new RegExp(`${name}:[^;]*var\\(--ui-type-scale\\)`));
     }
   });
 

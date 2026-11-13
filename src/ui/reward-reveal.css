@@ -45,8 +45,8 @@
   -webkit-text-stroke: 0;
   text-shadow: none !important;
 }
-.reward-name { font-size: clamp(24px, 7vw, 38px); }
-.reward-amount { font-size: clamp(34px, 10vw, 54px); }
+.reward-name { font-size: max(8px, calc((clamp(24px, 7vw, 38px)) * var(--ui-type-scale, .92))); }
+.reward-amount { font-size: max(8px, calc((clamp(34px, 10vw, 54px)) * var(--ui-type-scale, .92))); }
 .reward-art {
   position: relative;
   display: grid;
@@ -85,10 +85,10 @@
 }
 .reward-content.multiple:not(.haul) > .reward-item:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .multiple .reward-item { --reward-size: min(36vw, calc(24 * var(--game-vh, 1vh)), 200px); gap: 12px; }
-.multiple .reward-name { font-size: clamp(18px, 4.5vw, 26px); }
-.multiple .reward-amount { font-size: clamp(26px, 7vw, 38px); }
+.multiple .reward-name { font-size: max(8px, calc((clamp(18px, 4.5vw, 26px)) * var(--ui-type-scale, .92))); }
+.multiple .reward-amount { font-size: max(8px, calc((clamp(26px, 7vw, 38px)) * var(--ui-type-scale, .92))); }
 .haul .reward-item { --reward-size: min(20vw, calc(10 * var(--game-vh, 1vh)), 86px); gap: 6px; }
-.haul .reward-name { font-size: clamp(12px, 3.5vw, 18px); }
+.haul .reward-name { font-size: max(8px, calc((clamp(12px, 3.5vw, 18px)) * var(--ui-type-scale, .92))); }
 .reward-content.haul { gap: min(calc(2 * var(--game-vh, 1vh)), 16px) 12px; }
 @media (orientation: landscape) and (max-height: 600px) {
   .reward-item { --reward-size: min(42vw, calc(45 * var(--game-vh, 1vh)), 260px); gap: 12px; }

@@ -80,7 +80,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
 
     const rating = powerTag(store.powerFor(id).total, {context:species.name});
     rating.id = "speciesPower";
-    page.querySelector(".spghero")?.prepend(rating);
+    page.querySelector(".spgname-row")?.appendChild(rating);
 
     // SKINS COME AFTER RESEARCH, and they are the whole of what this screen can CHANGE
     // for free. Research is the point of the page and leads it; a look costs nothing,
@@ -202,7 +202,9 @@ function hero(
   who.appendChild(el("div", "spgtier", species.premium ? "Mythic · Premium" : tierName));
   const name = el("div", "spgname", species.name);
   name.style.color = pal[1] as string;
-  who.append(name, el("div", "spgblurb", species.blurb));
+  const nameRow = el("div", "spgname-row");
+  nameRow.appendChild(name);
+  who.append(nameRow, el("div", "spgblurb", species.blurb));
   box.appendChild(who);
 
   const done = el("div", "spgdone");

@@ -1,5 +1,5 @@
 /** Collection portraits, shared levels and species purchases. */
-import { SPECIES, SPECIES_LEVEL_MAX, researchedStats } from "../engine";
+import { SPECIES, SPECIES_LEVEL_MAX } from "../engine";
 import type { SpeciesId } from "../engine";
 import {
   SPECIES_ORDER, SPECIES_UNLOCK, TIERS, tierOf,
@@ -62,33 +62,25 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
     return box;
   };
 
-  /** The hero strip: the colony's tile, its two numbers, its name and its research. */
+  /** The hero strip: portrait, total power, name and research progress. */
   const banner = (): HTMLElement => {
     const id = selected;
     const species = SPECIES[id];
-    const stats = researchedStats(id, levelOf(store, id));
 
     const box = el("div", "rbanner power-host");
     box.id = "antBanner";
     box.appendChild(tile(id));
 
     const info = el("div", "rb-info");
-    // THE TWO NUMBERS LEAD, because they are what the colony IS. The rarity word that
-    // used to sit here is gone: the tile under it is painted in that rarity's colour and
-    // the section the card sits in is headed with its name, so a third saying was the
-    // same fact written three ways on one screen.
     const meta = el("div", "rb-meta");
-    meta.append(
-      statChip("attack", stats.attack.toFixed(2)),
-      statChip("defence", stats.defence.toFixed(2)),
-    );
+    meta.appendChild(powerTag(store.powerFor(id).total, {context:species.name}));
     info.append(
       meta,
       el("div", "rb-name", species.name),
       el("div", "rb-tag", species.blurb),
       researchPips(levelOf(store, id)),
     );
-    box.append(info, powerTag(store.powerFor(id).total, {context:species.name}));
+    box.appendChild(info);
     return box;
   };
 
@@ -172,12 +164,7 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
 
     card.classList.add("power-host");
     card.append(tile(id), powerTag(store.powerFor(id).total, {compact:true,context:SPECIES[id].name}));
-    // THE NAME AND NOTHING UNDER IT. The card used to carry the colony's attack and
-    // defence as a bare pair — "0.86 · 0.87" — which is two numbers with no label, no
-    // scale and nothing to compare them against, and reads as some kind of level rather
-    // than as a stat. Both figures are a tap away as LABELLED chips on the banner above,
-    // and the colony's own page draws them as bars measured against every other colony.
-    //
+    // Detailed combat stats belong on the species page; the collection shows name and power.
     // The PRICE went with the veil that used to carry it. A locked tile is grey and its
     // ownership is shown by its gray art; the price is a thing to act on, so
     // it belongs on the one control that can act on it.
@@ -199,9 +186,3 @@ export const levelOf = (store: ProfileStore, id: SpeciesId): number =>
 
 export const LEVEL_MAX = SPECIES_LEVEL_MAX;
 
-/** One species stat: a mark and a number, in the pill the stylesheet draws. */
-function statChip(mark: string, value: string): HTMLElement {
-  const chip = el("span", "statchip");
-  chip.append(hudMark(mark, 14), el("span", undefined, value));
-  return chip;
-}

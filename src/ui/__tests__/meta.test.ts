@@ -576,11 +576,9 @@ describe("antarium collection", () => {
     expect(root.querySelector(".rb-nl"), "the old level line came back").toBeNull();
     expect(root.querySelector("#antBanner .an-lv")).toBeNull();
     expect(root.querySelector(".an-lv")).toBeNull();
-    // Attack and defence lead; level progress is in the banner's research pips.
-    expect(root.querySelectorAll(".rb-meta .statchip").length).toBe(2);
-    expect(root.querySelector(".rb-meta .lv"), "the level rejoined the chips").toBeNull();
-    expect(root.querySelector(".rb-meta")?.textContent, "the cooldown came back")
-      .not.toContain("t");
+    // Total power replaces the individual combat chips in the preview.
+    expect(root.querySelectorAll(".rb-meta .statchip")).toHaveLength(0);
+    expect(root.querySelector("#antBanner .rb-meta .power-tag")).not.toBeNull();
   });
 
   it("opens an owned colony's page through the call to action", () => {
