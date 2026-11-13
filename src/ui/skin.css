@@ -7993,15 +7993,14 @@ button:not(.playbtn):active,
   color: var(--hud-dim);
 }
 
-/* The picture, once there is one. It fills the tile and is allowed to bleed:
-   the art is painted on its own ground, so anything it does at the edges is
-   the artist's decision rather than a crop. */
+/* Keep the painting inside the frame's inner rounded edge. */
 #antarium .an-art {
   position: absolute;
-  inset: 0;
+  inset: var(--action-stroke, 2px);
   display: block;
-  width: 100%;
-  height: 100%;
+  width: calc(100% - 2 * var(--action-stroke, 2px));
+  height: calc(100% - 2 * var(--action-stroke, 2px));
+  border-radius: max(0px, calc(var(--action-radius, 12px) - var(--action-stroke, 2px)));
   object-fit: cover;
 }
 
@@ -8017,10 +8016,13 @@ button:not(.playbtn):active,
   background: var(--hud-card);
   box-shadow: var(--hud-ledge) !important;
 }
-/* The hero tile is as tall as the card it sits in rather than square: what
-   is beside it is four stacked lines, and a square tile would either leave
-   a band of empty card under it or push the card taller than its contents. */
-#antarium .rbanner .an-tile { flex: none; width: 110px; }
+/* The preview stays square even when adjacent text makes the banner taller. */
+#antarium .rbanner .an-tile {
+  flex: none;
+  width: 110px;
+  aspect-ratio: 1;
+  align-self: center;
+}
 
 #antarium .rb-info {
   flex: 1 1 0;
