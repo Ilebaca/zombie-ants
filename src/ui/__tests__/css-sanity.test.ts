@@ -1161,7 +1161,7 @@ describe("the shop is written in the shared language", () => {
     for (const [name, value] of [
       ["--hud-card", "#282930"], ["--hud-well", "#12151c"], ["--hud-dim", "#d5d5d5"],
       ["--r-card", "7px"], ["--r-btn", "5px"],
-      ["--fs-label", "8px"], ["--ui-type-scale", ".92"],
+      ["--fs-label", "8px"], ["--ui-type-scale", "1"], ["--power-type-scale", ".92"],
       ["--block", "12px"], ["--inrow", "8px"],
     ]) {
       expect(root, `${name} is not the design's value`)

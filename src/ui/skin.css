@@ -6890,7 +6890,8 @@ button:not(.playbtn):active,
   --r-btn: 5px;
   /* Four sizes, and only four: a label, a figure, body, a title. */
   --fs-label: 8px;
-  --ui-type-scale: .92;
+  --ui-type-scale: 1;
+  --power-type-scale: .92;
   --fs-small: max(8px, calc(10px * var(--ui-type-scale)));
   --fs-body: max(10px, calc(12px * var(--ui-type-scale)));
   --fs-title: calc(14px * var(--ui-type-scale));
@@ -9418,5 +9419,10 @@ body,
 
 /* Narrow phones use a quieter type scale; control sizes and layout gutters stay shared. */
 @media (max-width: 360px) {
-  :root { --ui-type-scale: .84; }
+  :root { --ui-type-scale: .84; --power-type-scale: .84; }
+}
+
+/* Larger displays have room for clearer labels and body copy; power keeps its own scale. */
+@media (min-width: 600px) {
+  :root { --ui-type-scale: 1.1; --fs-label: 9px; }
 }
