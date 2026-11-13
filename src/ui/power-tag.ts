@@ -61,14 +61,14 @@ export function burstPowerTag(tag: HTMLElement): void {
   flare.id = "power-tail-flare";
   // Separate curved tongues curl above, through and below the stretching tail.
   const upper = [
-    "M116 14C123 7 123-4 134-7C131 3 147 0 156-10C156 2 146 12 134 11C125 10 123 18 116 14Z",
-    "M116 14C125 12 127-1 139-3C135 6 155 2 162-5C158 8 148 15 135 12C126 10 123 19 116 14Z",
-    "M116 14C127 7 129 1 138-5C134 5 148 10 157 3C151 16 142 17 133 13C125 11 122 19 116 14Z",
+    "M116 14C123-2 123-20 134-24C131-8 147-9 156-26C156-8 146 5 134 4C125 3 123 18 116 14Z",
+    "M116 14C125 5 127-15 139-18C135-3 155-8 162-22C158-5 148 9 135 6C126 4 123 19 116 14Z",
+    "M116 14C127-1 129-14 138-23C134-7 148-2 157-16C151 2 142 10 133 7C125 4 122 19 116 14Z",
   ] as const;
   const lower = [
-    "M116 30C123 37 123 48 134 51C131 41 147 44 156 54C156 42 146 32 134 33C125 34 123 26 116 30Z",
-    "M116 30C125 32 127 45 139 47C135 38 155 42 162 49C158 36 148 29 135 32C126 34 123 25 116 30Z",
-    "M116 30C127 37 129 43 138 49C134 39 148 34 157 41C151 28 142 27 133 31C125 33 122 25 116 30Z",
+    "M116 30C123 46 123 64 134 68C131 52 147 53 156 70C156 52 146 39 134 40C125 41 123 26 116 30Z",
+    "M116 30C125 39 127 59 139 62C135 47 155 52 162 66C158 49 148 35 135 38C126 40 123 25 116 30Z",
+    "M116 30C127 45 129 58 138 67C134 51 148 46 157 60C151 42 142 34 133 37C125 40 122 25 116 30Z",
   ] as const;
   const middle = [
     "M126 22C139 12 143 24 151 17C160 11 167 15 169 7C171 22 159 30 150 25C140 19 136 29 126 22Z",
@@ -86,7 +86,7 @@ export function burstPowerTag(tag: HTMLElement): void {
       { d: `path("${waves[2]}")`, opacity: 1, transform: "scale(.95,1)", fill: "#ffc363", offset: .4 },
       { d: `path("${waves[1]}")`, opacity: .7, transform: "scale(.7,.65)", fill: "#ee6040", offset: .7 },
       { d: `path("${waves[0]}")`, opacity: 0, transform: "scale(.15,.2)", fill: "#db4147", offset: 1 },
-    ], { duration: 1000 - index * 40, easing: "cubic-bezier(.2,.65,.35,1)", fill: "both" });
+    ], { duration: 1000 - index * 40, easing: "linear", fill: "both" });
     return { tongue, animation };
   });
   const settle = (): void => {
