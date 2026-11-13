@@ -27,6 +27,7 @@ import { dismissTraitPopups } from "./trait-popovers";
 import { settleMatch } from "./settle";
 import { buildAntarium } from "./antarium";
 import { buildSpeciesPage } from "./species";
+import { burstPowerTag } from "./power-tag";
 import { buildProfile } from "./profile";
 import { icon } from "./icons";
 import { NAV_SCREENS, bottomNav, el, granaryPill, hudMark, screenEl, topBar } from "./chrome";
@@ -850,6 +851,11 @@ export class App {
       this.screens.set(id, fresh);
     }
     for (const [key, el] of this.screens) el.classList.toggle("hidden", key !== id);
+    // Entry feedback starts after mounting and revealing the species page.
+    if (id === "antup") {
+      const rating = this.screens.get(id)?.querySelector<HTMLElement>("#speciesPower");
+      if (rating) burstPowerTag(rating);
+    }
   }
 
   /* ---------------------------------------------------------------------- DECK */
