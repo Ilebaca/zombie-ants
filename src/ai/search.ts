@@ -329,7 +329,7 @@ export function chooseMove(
   }
 
   if (typeof difficulty !== "string") {
-    const skill = Math.max(0, Math.min(1, difficulty.skill));
+    const skill = Number.isFinite(difficulty.skill) ? Math.max(0, Math.min(1, difficulty.skill)) : 0;
     // Position-derived choices do not advance the board RNG or depend on phone speed.
     const random = seeded(state.rng ^ Math.imul(state.turn, 0x9e3779b9) ^ (me === "you" ? 0x51ed : 0x7ad1));
     if (candidates.length > 1 && random() < .72 * (1 - skill) ** 2) {

@@ -18,7 +18,8 @@ export const campaignChapter = (chapter: number): number =>
 /** Baseline chapter loadout; optional step only reduces gear, never increases it. */
 export function chapterLoadout(chapter: number, species: SpeciesId, step = campaignChapter(chapter) - 1) {
   const at = campaignChapter(chapter);
-  const progress = Math.max(0, Math.min(at - 1, Math.floor(step))) / 49;
+  const safeStep = Number.isFinite(step) ? Math.floor(step) : 0;
+  const progress = Math.max(0, Math.min(at - 1, safeStep)) / 49;
   const mods: PlayerMods = { ...NEUTRAL_MODS, researchLevel: Math.floor(progress * 10) };
   for (const key of Object.keys(CHAMBER_MAX) as Array<keyof typeof CHAMBER_MAX>) {
     mods[key] = Math.floor(CHAMBER_MAX[key] * progress);
@@ -50,7 +51,8 @@ export function campaignOpponent(
   const at = campaignChapter(chapter);
   const progress = (at - 1) / 49;
   const playerPower = combatPower(playerSpecies, playerMods);
-  const ceiling = playerPower.total * (.90 + .15 * progress);
+  const baseline = combatPower(playerSpecies, NEUTRAL_MODS).total;
+  const ceiling = (baseline + .65 * Math.max(0, playerPower.total - baseline)) * (.90 + .15 * progress);
   let step = at - 1;
   let loadout = chapterLoadout(at, species, step);
   while (step > 0 && combatPower(species, loadout.mods).total > ceiling) {

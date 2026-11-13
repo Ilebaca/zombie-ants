@@ -1123,7 +1123,7 @@ export class App {
       return buildSettings({
         profile: this.profile,
         onBack: () => this.show("home"),
-        difficulty: `Chapter ${chapterOf(this.profile.get().colony)} · Adaptive`,
+        difficulty: "Automatic",
         adaptive: true,
         onCycleDifficulty: () => {
           const order = DIFFICULTIES;
