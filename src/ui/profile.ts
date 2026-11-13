@@ -186,6 +186,7 @@ function who(
   side.append(
     el("div", "pf-name", profile.name),
     el("div", "pf-sub", `Colony level ${progress.level}`),
+    el("div", "pf-sub", `${SPECIES[profile.lastSpecies].name} · Power ${store.powerFor(profile.lastSpecies).total}`),
   );
   const bar = el("div", "pf-bar");
   const fill = el("i");

@@ -74,6 +74,7 @@ export interface MatchOptions {
   mods: Record<Player, PlayerMods>;
   ctx: ActionContext;
   difficulty: Difficulty;
+  aiControl?: import("../engine").AdaptiveControl;
   /**
    * Who plays the enemy's turns. Defaults to the local search.
    *
@@ -261,7 +262,7 @@ export class MatchScreen {
     // at the end is the whole match rather than the part played after the phone rang.
     if (opts.resumed) this.moves = [...opts.resumed.moves];
     this.opponent = opts.opponent
-      ?? new AiOpponent("ai", opts.difficulty, opts.ctx);
+      ?? new AiOpponent("ai", opts.difficulty, opts.ctx, opts.aiControl);
     this.root = document.createElement("div");
     this.root.className = "match";
     // `.match` is `display: contents` (skin.css) so header/timeband/main/footer are laid

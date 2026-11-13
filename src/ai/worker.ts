@@ -12,14 +12,14 @@
  */
 /// <reference lib="webworker" />
 import { aiTurn } from "./search";
-import type { Difficulty } from "./search";
+import type { AiLevel } from "./search";
 import type { ActionContext, EngineEvent, GameState, Move, Player } from "../engine";
 
 export interface ThinkRequest {
   id: number;
   state: GameState;
   me: Player;
-  difficulty: Difficulty;
+  difficulty: AiLevel;
   ctx: ActionContext;
 }
 

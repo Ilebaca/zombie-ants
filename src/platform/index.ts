@@ -105,3 +105,6 @@ export {
 export type {
   Drop, TraitDef, TraitItem, TraitKind, TraitScope, TraitTier, TraitTierDef, TraitTotals,
 } from "./traits";
+
+export { campaignChapter, campaignOpponent, chapterLoadout } from "./campaign-ai";
+export type { CampaignOpponent } from "./campaign-ai";

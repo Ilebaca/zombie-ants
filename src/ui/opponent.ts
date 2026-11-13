@@ -15,7 +15,7 @@
  * the reveal is given before the turn hands back, are drama and belong to the screen.
  */
 import { applyMove } from "../engine";
-import type { ActionContext, GameState, Move, Player, PlayerMods } from "../engine";
+import type { ActionContext, AdaptiveControl, GameState, Move, Player, PlayerMods } from "../engine";
 import type { Difficulty } from "../ai/search";
 import { Thinker } from "../ai/thinker";
 import type { Thought } from "../ai/thinker";
@@ -40,10 +40,11 @@ export class AiOpponent implements OpponentSource {
     private me: Player,
     private difficulty: Difficulty,
     private ctx: ActionContext,
+    private control?: AdaptiveControl,
   ) {}
 
   async takeTurn(state: GameState, signal: AbortSignal): Promise<Thought | null> {
-    const thought = await this.thinker.think(state, this.me, this.difficulty, this.ctx);
+    const thought = await this.thinker.think(state, this.me, this.control ?? this.difficulty, this.ctx);
     return signal.aborted ? null : thought;
   }
 

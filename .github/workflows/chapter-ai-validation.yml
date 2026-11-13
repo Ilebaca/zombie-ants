@@ -1,0 +1,25 @@
+name: Chapter AI validation
+on:
+  push:
+    branches: [development/chapter-ai-power]
+permissions:
+  contents: read
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npx vitest run src/ai src/engine src/platform/__tests__/matchmaking.test.ts src/platform/__tests__/suspend.test.ts src/ui/__tests__/opponent.test.ts
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chapter-ai-web
+          path: dist/
+          retention-days: 7

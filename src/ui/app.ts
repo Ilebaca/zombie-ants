@@ -11,7 +11,7 @@ import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
 import {
   DemoGateway, LocalDuels, LocalFriendService, LocalMatchmaker, LocalSupportGateway,
-  ProfileStore, TOUR_VERSION, botsForChapter, chapterOf, faceOf, makeFeedback,
+  ProfileStore, TOUR_VERSION, botsForChapter, campaignOpponent, chapterOf, faceOf, makeFeedback,
   scoreQuestEvents,
 } from "../platform";
 import type {
@@ -117,7 +117,6 @@ const DECK = ["shop", "anthill", "home", "antarium", "challenges"] as const;
 type DeckId = (typeof DECK)[number];
 const isDeck = (id: string): id is DeckId => (DECK as readonly string[]).includes(id);
 
-const DIFFICULTY_LABEL: Record<Difficulty, string> = { easy: "Easy", normal: "Normal", hard: "Hard", impossible: "Impossible" };
 
 /** Setup choices that survive between matches. */
 /**
@@ -1124,7 +1123,8 @@ export class App {
       return buildSettings({
         profile: this.profile,
         onBack: () => this.show("home"),
-        difficulty: DIFFICULTY_LABEL[this.difficulty],
+        difficulty: `Chapter ${chapterOf(this.profile.get().colony)} · Adaptive`,
+        adaptive: true,
         onCycleDifficulty: () => {
           const order = DIFFICULTIES;
           this.difficulty = order[(order.indexOf(this.difficulty) + 1) % order.length] as Difficulty;
@@ -1651,8 +1651,12 @@ export class App {
     // resumed match keeps the ones it was OPENED with: research bought between two sittings
     // must not change a board that is already half played, or the record stops replaying.
     const difficulty: SuspendDifficulty = resume?.difficulty
-      ?? (tutorial ? "easy" : this.difficulty === "impossible" ? "impossible" : seated ? "hard" : this.difficulty);
-    const mods = resume?.setup.mods ?? this.profile.modsFor(mySpecies, difficulty);
+      ?? (tutorial ? "easy" : this.challenge ? this.difficulty : "normal");
+    const baseMods = this.profile.modsFor(mySpecies, difficulty);
+    const campaign = !resume && !tutorial && !this.challenge && !seated?.human
+      ? campaignOpponent(chapterOf(this.profile.get().colony), aiSpecies, mySpecies, baseMods.you)
+      : null;
+    const mods = resume?.setup.mods ?? (campaign ? {you:baseMods.you, ai:campaign.mods} : baseMods);
     // Counted as the match runs: by the time it ends the surge may have lapsed and the
     // hive handed its tiles back, so the board can no longer say it happened.
     let queensTaken = resume?.queens ?? 0;
@@ -1699,6 +1703,7 @@ export class App {
       aiShape: enemyShape,
       mods,
       first,
+      ...(campaign ? {aiControl:campaign.control} : {}),
     };
     const state = resume?.state ?? createGame({
       map,
@@ -1797,6 +1802,7 @@ export class App {
        * to matched opponents as well as challenges; tutorials always stay Easy.
        */
       difficulty,
+      aiControl: setup.aiControl,
       map,
       // Picked back up rather than started: the board is already the one it left off on,
       // so this is the moves that got it there and the clock already spent on them.

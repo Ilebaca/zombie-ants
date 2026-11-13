@@ -9,7 +9,7 @@
  */
 import {
   DIFFICULTIES, opponentModifiers, CHAMBER_MAX, MAPS, RESEARCH_MAX, SPECIES_LEVEL_MAX, SPECIES, speciesLevel, basicLook, chamberCost, lookById,
-  looksFor, researchCost,
+  looksFor, researchCost, combatPower,
 } from "../engine";
 import { COLONY_START, grownColony } from "./colony";
 import type { Difficulty, Look, Player, PlayerMods, SpeciesId } from "../engine";
@@ -1216,6 +1216,9 @@ export class ProfileStore {
   modsFor(species: SpeciesId, difficulty: Difficulty = "normal"): Record<Player, PlayerMods> {
     return { you: modsFrom(this.profile, species), ai: opponentModifiers(difficulty) };
   }
+
+  /** Combat-active loadout only; inventory and currencies do not inflate the rating. */
+  powerFor(species: SpeciesId) { return combatPower(species, modsFrom(this.profile, species)); }
 
   isUnlocked(id: SpeciesId): boolean { return this.profile.unlocked.includes(id); }
 

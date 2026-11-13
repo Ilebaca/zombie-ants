@@ -11,7 +11,7 @@
 import { restore, snapshot } from "../engine";
 import type { ActionContext, EngineEvent, GameState, Move, Player } from "../engine";
 import { aiTurn } from "./search";
-import type { Difficulty } from "./search";
+import type { AiLevel } from "./search";
 import type { ThinkReply, ThinkRequest } from "./worker";
 
 export interface Thought {
@@ -59,7 +59,7 @@ export class Thinker {
     }
   }
 
-  think(state: GameState, me: Player, difficulty: Difficulty, ctx: ActionContext): Promise<Thought> {
+  think(state: GameState, me: Player, difficulty: AiLevel, ctx: ActionContext): Promise<Thought> {
     const inline = (): Thought => {
       // On a copy, so the caller's board is untouched whichever way the search ran.
       const next = structuredClone(state);
