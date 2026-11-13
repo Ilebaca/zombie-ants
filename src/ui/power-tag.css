@@ -14,7 +14,7 @@
   min-width: 92px;
   box-sizing: border-box;
   padding: 7px 22px 7px 10px;
-  border: var(--action-stroke, 2px) solid var(--power-edge);
+  border: var(--action-stroke, 2px) solid var(--power-edge) !important;
   border-radius: var(--action-radius, 12px);
   background: var(--power-face);
   color: var(--hud-ink, #fff9df);
@@ -24,7 +24,7 @@
   white-space: nowrap;
   pointer-events: none;
 }
-#app .power-tag__label { font: 900 8px/1 var(--font-body, sans-serif); letter-spacing: .8px; color: #ffb3b7; }
+#app .power-tag__label { font: 400 8px/1 var(--font-display); letter-spacing: .8px; color: #ffb3b7; }
 #app .power-tag__value { font-size: 17px; font-weight: 400; font-variant-numeric: tabular-nums; }
 #app .power-tag__flame {
   position: absolute;
@@ -67,3 +67,9 @@
 
 /* Reserve room for flame tips above collection tiles, outside their portrait clips. */
 #app #antarium .cgrid { padding-top: 22px; }
+
+#app .power-tag__flame-edge { vector-effect: non-scaling-stroke; }
+#app .mmk-avatar > .power-tag { right: -3px; min-width: 0; gap: 4px; padding: 6px 18px 6px 8px; }
+#app .mmk-avatar .power-tag__value { font-size: 14px; }
+#app .mmk-avatar .power-tag__label { font-size: 7px; }
+#app .mmk-avatar .power-tag__flame { width: 29px; height: 34px; top: -23px; }
