@@ -1,67 +1,68 @@
-/* Compact die-cut power sticker. Shared across collection, detail and versus. */
+/* A single die-cut flame-tail silhouette, with the score inside its rounded body. */
 #app .power-host { position: relative; }
 #app .power-tag {
   position: absolute;
   z-index: 4;
-  top: -12px;
-  right: 10px;
+  top: -13px;
+  right: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  min-width: 94px;
+  min-width: 88px;
   box-sizing: border-box;
-  padding: 6px 10px 6px 29px;
-  border: 3px solid #fff3d5 !important;
-  border-radius: 9px 12px 10px 7px;
-  background: #db4147;
+  padding: 8px 29px 8px 13px;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent;
   color: #fff9e9;
-  box-shadow: 0 3px 0 #762a35, 0 5px 7px #10121845 !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 2px 0 #762a35);
   font-family: var(--font-display);
   line-height: 1;
   white-space: nowrap;
   pointer-events: none;
-  transform: rotate(-4deg);
-  transform-origin: 80% 50%;
+  transform: rotate(-3deg);
+  transform-origin: 75% 50%;
 }
-#app .power-tag::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 7px;
-  height: 7px;
-  border-radius: 2px 0 5px 0;
-  background: #ffdfae;
-  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+#app .power-tag__label { display: none !important; }
+#app .power-tag__value {
+  position: relative;
+  z-index: 1;
+  font-size: 17px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
 }
-#app .power-tag__label { font: 400 7px/1 var(--font-display); letter-spacing: .6px; color: #ffe4cb; }
-#app .power-tag__value { font-size: 17px; font-weight: 400; font-variant-numeric: tabular-nums; }
 #app .power-tag__flame {
   position: absolute;
-  width: 23px;
-  height: 29px;
-  top: -7px;
-  left: 3px;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   overflow: visible;
-  transform: rotate(-7deg);
 }
-#app .power-tag__flame-edge { fill: #f47437; stroke: #fff3d5; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-#app .power-tag__flame-fill { fill: #ffb444; }
-#app .power-tag__flame-core { fill: #fff0a2; }
+#app .power-tag__flame-edge {
+  fill: #db4147;
+  stroke: #fff3d5;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+#app .power-tag__flame-fill {
+  fill: none;
+  stroke: #ffb16e;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
 #app .power-tag--compact {
-  top: -6px;
-  right: 0;
-  min-width: 53px;
-  gap: 0;
-  padding: 5px 7px 5px 20px;
-  border-width: 2px !important;
-  border-radius: 7px 9px 8px 6px;
+  top: -8px;
+  right: -1px;
+  min-width: 63px;
+  padding: 7px 19px 7px 9px;
 }
-#app .power-tag--compact::after { width: 5px; height: 5px; }
-#app .power-tag--compact .power-tag__label { display: none !important; }
 #app .power-tag--compact .power-tag__value { font-size: 12px; }
-#app .power-tag--compact .power-tag__flame { width: 18px; height: 23px; top: -6px; left: 0; }
+#app .power-tag--compact .power-tag__flame-edge { stroke-width: 2; }
 #app #antarium .ccard.power-host { overflow: visible; }
 #app #antBanner.power-host { margin-top: 14px; overflow: visible; }
 #app #antBanner.power-host .rb-info { padding-top: 12px; }
@@ -78,12 +79,13 @@
 #app .setup-colony-preview .coverslide { height: 100%; }
 #app .setup-colony-preview > .power-tag { right: max(16px, calc((100% - var(--setup-width)) / 2)); }
 #app .mmk-avatar { position: relative; width: var(--mmk-head-size); }
-#app .mmk-avatar > .power-tag { right: -6px; }
 
 
-/* Keep the small flame clear of the portrait's clipping frame. */
+
+
 #app #antarium .cgrid { padding-top: 14px; }
-#app .mmk-avatar > .power-tag { right: -3px; min-width: 0; gap: 4px; padding: 5px 8px 5px 23px; }
+#app .mmk-avatar > .power-tag { right: -5px; min-width: 76px; padding: 8px 24px 8px 11px; }
 #app .mmk-avatar .power-tag__value { font-size: 14px; }
-#app .mmk-avatar .power-tag__label { font-size: 7px; }
-#app .mmk-avatar .power-tag__flame { width: 20px; height: 25px; top: -6px; left: 1px; }
+
+#app .power-tag--compact .power-tag__flame,
+#app .mmk-avatar .power-tag__flame { inset: 0; width: 100%; height: 100%; transform: none; }
