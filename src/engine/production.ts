@@ -2,7 +2,7 @@ import { PROD } from "./config";
 import { allTiles, nestTile } from "./board";
 import { isConnected } from "./connectivity";
 import { hiveBuffMultiplier } from "./hive";
-import { speciesOf } from "./species";
+import { recordedGrowthFactor } from "./record-rules";
 import type { EngineEvent, GameState, Player, PlayerMods, Tile } from "./types";
 
 /** Tiles that generate soldiers. Veins are infrastructure and produce NOTHING. */
@@ -10,7 +10,7 @@ function producers(state: GameState, p: Player): Tile[] {
   return allTiles(state).filter((t) => t.owner === p && (t.struct === "stable" || t.struct === "nest"));
 }
 
-/** Base output of a single tile, before species/hive multipliers. */
+/** Base output of a single tile, before the shared Hive multiplier. */
 function tileOutput(t: Tile, mods: PlayerMods): number {
   if (t.struct === "nest") return PROD.nest;
   if (t.terrain === "resource") return PROD.resourceStable + mods.cultivate;  // Fungal Cultivation
@@ -28,18 +28,17 @@ export function incomeOf(state: GameState, p: Player, mods: PlayerMods): number 
     income += tileOutput(t, mods);
   }
   if (state.hive.phase === "buff" && state.hive.owner === p) income *= hiveBuffMultiplier(state);
-  income *= speciesOf(state.species[p]).prod;
+  income *= recordedGrowthFactor(state, p);
   return Math.round(income) + (nestTile(state, p) ? mods.brood : 0);
 }
 
 /**
- * Apply a turn of growth. Fractional output accumulates on the tile so slow economies
- * still tick forward rather than rounding away to nothing.
+ * Apply the shared tile rates. Fractional carry remains readable for archived positions.
  */
 export function runProduction(
   state: GameState, p: Player, mods: PlayerMods, events: EngineEvent[] = [],
 ): EngineEvent[] {
-  const rate = speciesOf(state.species[p]).prod;
+  const rate = recordedGrowthFactor(state, p);
   const surge = state.hive.phase === "buff" && state.hive.owner === p ? hiveBuffMultiplier(state) : 1;
   let gained = 0;
 

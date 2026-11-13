@@ -149,7 +149,7 @@ sheet("sheet-02-colonies", () => {
   for (const id of ALL) {
     const s = SPECIES[id];
     const c = cell(antPortrait(id, 180), el("div", "sh-name", s.name));
-    c.append(el("div", "sh-note", `ATK ${s.atk.toFixed(2)}  ·  DEF ${s.def.toFixed(2)}  ·  PROD ${s.prod.toFixed(2)}`));
+    c.append(el("div", "sh-note", `ATK ${s.atk.toFixed(2)}  ·  DEF ${s.def.toFixed(2)}`));
     c.append(el("div", "sh-note", s.blurb));
     c.append(el("div", "sh-note", `${s.ability.name} — ${s.ability.cooldown}t cooldown`));
     g.append(c);

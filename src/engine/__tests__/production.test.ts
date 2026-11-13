@@ -6,7 +6,7 @@ const mods = { ...NEUTRAL_MODS };
 
 describe("production", () => {
   it("pays nest 2, stable 1, resource 3", () => {
-    const s = blankGame("small", { you: "ghost", ai: "fire" });  // ghost prod = 1.0
+    const s = blankGame("small", { you: "ghost", ai: "fire" });
     put(s, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
     put(s, 2, 1, { owner: "you", struct: "stable", soldiers: 3 });
     put(s, 3, 1, { owner: "you", struct: "stable", soldiers: 3, terrain: "resource" });
@@ -39,14 +39,14 @@ describe("production", () => {
     expect(incomeOf(s, "you", { ...mods, cultivate: 3 })).toBe(8);   // resource 3 -> 6
   });
 
-  it("carries fractional growth instead of rounding it away", () => {
-    const s = blankGame("small", { you: "bullet", ai: "fire" });   // prod 0.70
+  it("adds exactly one troop to an ordinary tile each turn", () => {
+    const s = blankGame("small", { you: "bullet", ai: "fire" });
     put(s, 1, 1, { owner: "you", struct: "stable", soldiers: 1 });
     put(s, 1, 2, { owner: "you", struct: "nest", soldiers: 10 });
     recomputeConnectivity(s);
     const start = tile(s, 1, 1).soldiers;
     for (let i = 0; i < 4; i++) runProduction(s, "you", mods);
-    expect(tile(s, 1, 1).soldiers).toBeGreaterThan(start);   // 0.7/turn still accumulates
+    expect(tile(s, 1, 1).soldiers).toBe(start + 4);
   });
 
   it("hatches Brood Nursery soldiers into the nest", () => {
@@ -58,7 +58,7 @@ describe("production", () => {
   });
 });
 
-it("includes Brood Nursery in displayed income without applying the species multiplier twice", () => {
+it("includes Brood Nursery in displayed income and actual output", () => {
   const state = blankGame("small", { you: "ghost", ai: "fire" });
   put(state, 1, 1, { owner: "you", struct: "nest", soldiers: 10 });
   recomputeConnectivity(state);
@@ -66,4 +66,22 @@ it("includes Brood Nursery in displayed income without applying the species mult
   const events = runProduction(state, "you", { ...mods, brood: 5 });
   const gained = events.find((event) => event.type === "production");
   expect(gained?.type === "production" ? gained.gained : 0).toBe(7);
+});
+
+it("uses identical regular and special tile output for all eight species", () => {
+  for(const species of ["ghost","pharaoh","leafcutter","fire","army","carpenter","bullet","demon"] as const){
+    const s=blankGame("small",{you:species,ai:"fire"});
+    put(s,1,1,{owner:"you",struct:"nest",soldiers:10});
+    put(s,2,1,{owner:"you",struct:"stable",soldiers:3});
+    put(s,3,1,{owner:"you",struct:"stable",soldiers:3,terrain:"resource"});
+    recomputeConnectivity(s);
+    expect(incomeOf(s,"you",mods)).toBe(6);
+    for(let turn=1;turn<=10;turn++){
+      runProduction(s,"you",mods);
+      expect(tile(s,1,1).soldiers).toBe(10+2*turn);
+      expect(tile(s,2,1).soldiers).toBe(3+turn);
+      expect(tile(s,3,1).soldiers).toBe(3+3*turn);
+    }
+    expect(incomeOf(s,"you",{...mods,brood:2,cultivate:3})).toBe(11);
+  }
 });

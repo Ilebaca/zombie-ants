@@ -9,7 +9,7 @@ import {
   abilityOf, abilityReady, abilitySpendsTurn, activateAbility, allTiles,
   attackMultiplier, blockedByEnemyLeaf, defenceMultiplier, distance, endTurn,
   flatDefence, incomeOf, isConnected, keepOn, nestTile, otherPlayer, restore,
-  PROD, speciesOf, hiveBuffMultiplier, snapshot, tunnelTargets,
+  PROD, hiveBuffMultiplier, snapshot, tunnelTargets,
 } from "../engine";
 import type { ActionContext, Coord, EngineEvent, GameState, Move, Player } from "../engine";
 import { FULL, WIN, evaluate } from "./evaluate";
@@ -84,7 +84,7 @@ export function evaluateImpossible(state: GameState, me: Player, context: Action
     const defence = defenceMultiplier(state, defender, context.mods[defender]);
     const flat = flatDefence(state, nest, context.mods[defender]);
     const surge = state.hive.phase === "buff" && state.hive.owner === defender ? hiveBuffMultiplier(state) : 1;
-    const growth = (PROD.nest * speciesOf(state.species[defender]).prod * surge
+    const growth = (PROD.nest * surge
       + context.mods[defender].brood) * defence;
     let first = 0, second = 0;
     for (const tile of tiles) {

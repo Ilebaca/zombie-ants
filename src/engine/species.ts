@@ -5,7 +5,7 @@ import {
 import type { Species, SpeciesId } from "./types";
 
 /**
- * Eight colonies. The multiplier spread is intentionally narrow (0.70–1.25):
+ * Eight colonies. Attack and defence vary within a narrow range:
  * species should change HOW you win, not guarantee that you do.
  *
  * EVERY NUMBER IN THE COPY IS READ FROM `config.ts`, never typed. These sentences are what
@@ -17,56 +17,56 @@ import type { Species, SpeciesId } from "./types";
  */
 export const SPECIES: Record<SpeciesId, Species> = {
   ghost: {
-    id: "ghost", name: "Ghost Ant", atk: 1.21, def: 1.09, prod: 1.0,
+    id: "ghost", name: "Ghost Ant", atk: 1.21, def: 1.09,
     blurb: "Stealth over strength.",
     trait: "Pheromone mask — soldier counts hidden until contact.",
     ability: { name: "Tunnelling", kind: "tunnel", cooldown: 5, startSpent: true,
       desc: `Dig a hidden gallery to an empty tile deep in the field. The tunnel mouth is yours instantly with ${KEEP_TUNNEL} workers, stays linked to the colony even when surrounded, and you can Rally to it or expand from it like any tile. It must always hold ${KEEP_TUNNEL} workers. Digging costs your turn.` },
   },
   pharaoh: {
-    id: "pharaoh", name: "Pharaoh Ant", atk: 0.99, def: 1.12, prod: 1.25,
+    id: "pharaoh", name: "Pharaoh Ant", atk: 0.99, def: 1.12,
     blurb: "The supercolony.",
     trait: "Budding — rapid, costless expansion.",
     ability: { name: "Bud", kind: "bud", cooldown: 6,
       desc: `Every tile with ${BUD_MIN}+ troops buds a new colony onto an adjacent empty tile — for free.` },
   },
   leafcutter: {
-    id: "leafcutter", name: "Leafcutter Ant", atk: 1.13, def: 1.25, prod: 1.15,
-    blurb: "Economic powerhouse.",
+    id: "leafcutter", name: "Leafcutter Ant", atk: 1.13, def: 1.25,
+    blurb: "Builds living defenses.",
     trait: "Fungal cultivation — terraforms the field.",
     ability: { name: "Fungal Garden", kind: "leaf", cooldown: 6,
       desc: `Grows a leaf wall on your borders — impassable to the enemy for ${LEAF_TURNS} turns; +${asPct(ARMOUR_DEF)}% defense after it withers. Exocrine reservoir research (Lv 2–4) makes one wall permanent per cast, up to 1/2/3 total.` },
   },
   fire: {
-    id: "fire", name: "Fire Ant", atk: 0.86, def: 0.87, prod: 1.05,
+    id: "fire", name: "Fire Ant", atk: 0.86, def: 0.87,
     blurb: "Balanced & territorial.",
     trait: "Swarm response — scorched-earth defender.",
     ability: { name: "Wildfire", kind: "fire", cooldown: 7,
       desc: `Your colony's borders ignite for ${FIRE_TURNS} turns; enemies on fire lose ${sharePct(FIRE_BITE)}% each turn and any vein caught in it burns away. Detached tiles don't ignite.` },
   },
   army: {
-    id: "army", name: "Army Ant", atk: 1.10, def: 0.79, prod: 0.95,
+    id: "army", name: "Army Ant", atk: 1.10, def: 0.79,
     blurb: "Nomadic raider.",
     trait: "Bivouac — a devouring column.",
     ability: { name: "Feeding Swarm", kind: "swarm", cooldown: 6,
       desc: `Bordering tiles lose ${sharePct(SWARM_BITE)}% of their troops — devoured and added to your colony. Enemy veins are destroyed, wild garrisons and the Hive are eaten too. Only tiles touching your colony at cast time.` },
   },
   carpenter: {
-    id: "carpenter", name: "Carpenter Ant", atk: 0.91, def: 1.06, prod: 1.05,
+    id: "carpenter", name: "Carpenter Ant", atk: 0.91, def: 1.06,
     blurb: "The fortress.",
     trait: "Reinforced veins — digs in hard.",
     ability: { name: "Fortify", kind: "fortify", cooldown: 6,
       desc: `Majors muster on the border: every frontline tile gains +${sharePct(FORTIFY_GAIN)}% garrison, and the whole colony defends at +${asPct(FORTIFY_DEF)}% for ${FORTIFY_TURNS} turns.` },
   },
   bullet: {
-    id: "bullet", name: "Bullet Ant", atk: 1.22, def: 0.84, prod: 0.70,
+    id: "bullet", name: "Bullet Ant", atk: 1.22, def: 0.84,
     blurb: "Hits hardest, holds least.",
     trait: "Pain gland — chemical barrage.",
     ability: { name: "Venom Rain", kind: "venom", cooldown: 6,
       desc: `Venom rains across the whole board at random. Enemy tiles caught in it lose ${VENOM_BITE} troops/turn for ${VENOM_TURNS} turns — your tiles and both main bases are immune.` },
   },
   demon: {
-    id: "demon", name: "Demon Ant", atk: 1.09, def: 1.0, prod: 0.95, premium: true,
+    id: "demon", name: "Demon Ant", atk: 1.09, def: 1.0, premium: true,
     blurb: "Breaks the enemy's nerve.",
     trait: "Terror pheromone — panics nearby colonies into flight.",
     ability: { name: "Flee", kind: "flee", cooldown: 6,

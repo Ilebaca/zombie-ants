@@ -56,6 +56,9 @@ export type Move =
  * that without having watched.
  */
 export interface MatchSetup {
+  rulesVersion?: 1 | 2;
+  /** Resume migration: promote rules after this many recorded moves. */
+  ruleChanges?: Array<{after:number; rulesVersion:2}>;
   /** Campaign opponent skill, frozen with this match; old recordings omit it. */
   aiControl?: AdaptiveControl;
   map: MapId;
@@ -164,7 +167,8 @@ function done(events: EngineEvent[]): MoveResult {
 
 /** The opening board for a setup. The one place a match's first position is decided. */
 export function openingBoard(setup: MatchSetup): GameState {
-  return createGame({
+  const state = createGame({
+    rulesVersion: setup.rulesVersion ?? 2,
     map: setup.map,
     species: setup.species,
     seed: setup.seed,
@@ -175,6 +179,15 @@ export function openingBoard(setup: MatchSetup): GameState {
     // was played with the player moving first.
     first: setup.first ?? "you",
   });
+  applyRecordRules(state, setup, 0);
+  return state;
+}
+
+/** Rules changes are record metadata, never player actions or extra turns. */
+export function applyRecordRules(state: GameState, setup: MatchSetup, applied: number): void {
+  if (Array.isArray(setup.ruleChanges) && setup.ruleChanges.some(change => change?.after === applied && change.rulesVersion === 2)) {
+    state.rulesVersion = 2;
+  }
 }
 
 export interface Replay {
@@ -202,9 +215,11 @@ export function replayMatch(record: MatchRecord): Replay {
   const mods = record.setup.mods ?? { you: NEUTRAL_MODS, ai: NEUTRAL_MODS };
   let applied = 0;
   for (const move of record.moves) {
+    applyRecordRules(state, record.setup, applied);
     const result = applyMove(state, state.current, move, mods);
     if (!result.ok) return { state, applied, refused: result.why };
     applied++;
   }
+  applyRecordRules(state, record.setup, applied);
   return { state, applied, refused: null };
 }

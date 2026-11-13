@@ -337,7 +337,7 @@ const SECTIONS: Section[] = [
     blocks: [
       { p: [
         "Each species is a real ant, and its ability is something that ant really does. The ",
-        "attack, defence and production ratings span a deliberately narrow band: a colony ",
+        "attack and defence ratings span a deliberately narrow band: a colony ",
         "changes ", { b: "how" }, " you win, not whether you can.",
       ] },
       { list: Object.values(SPECIES).map((sp) => [{ b: sp.name }, ` — ${sp.blurb}`]) },

@@ -13,7 +13,7 @@
  */
 import {
   PROD, attackMultiplier, defenceMultiplier, distance, flatDefence,
-  isConnected, isHiveTerrain, keepOn, neighbours, nestTile, otherPlayer, speciesOf,
+  isConnected, isHiveTerrain, keepOn, neighbours, nestTile, otherPlayer,
 } from "../engine";
 import type { GameState, Player, PlayerMods, Tile } from "../engine";
 
@@ -167,7 +167,7 @@ export function evaluate(
   const assault: Record<Player, [number, number]> = {you:[0,0],ai:[0,0]};
   const nestDemand = (holder: Player, steps: number): number => {
     const nest = holder === me ? myNest : oppNest;
-    const growth = PROD.nest * speciesOf(state.species[holder]).prod + mods[holder].brood;
+    const growth = PROD.nest + mods[holder].brood;
     return nest.soldiers * def[holder] + flatDefence(state, nest, mods[holder])
       + growth * def[holder] * steps;
   };
@@ -201,7 +201,7 @@ export function evaluate(
       if (w.assault > 0) {
         const base = t.struct === "nest" ? PROD.nest
           : t.terrain === "resource" ? PROD.resourceStable + mods[t.owner].cultivate : PROD.stable;
-        s.income += base * speciesOf(state.species[t.owner]).prod
+        s.income += base
           + (t.struct === "nest" ? mods[t.owner].brood : 0);
       } else s.income += t.terrain === "resource" ? PROD.resourceStable : PROD.stable;
     }

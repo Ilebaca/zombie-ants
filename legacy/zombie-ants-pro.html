@@ -1120,23 +1120,23 @@ function applyMap(sizeKey){
 
 // Species: deterministic combat modifiers (from the GDD). Each has one activatable ability (ab).
 const SPECIES = {
-  ghost:     { name:"Ghost Ant",   atk:1.21, def:1.09, prod:1, blurb:"Stealth over strength. Strikes unseen.",     trait:"Pheromone mask — soldier counts hidden until contact.",
+  ghost:     { name:"Ghost Ant",   atk:1.21, def:1.09, blurb:"Stealth over strength. Strikes unseen.",     trait:"Pheromone mask — soldier counts hidden until contact.",
                ab:{ name:"Tunnelling",    cd:5, kind:"tunnel",  startSpent:true,  desc:"Dig a hidden gallery to an empty tile deep in the field. The tunnel mouth is yours instantly with 5 workers, stays linked to the colony even when surrounded, and you can Rally to it or expand from it like any tile. It must always hold 5 workers." } },
-  pharaoh:   { name:"Pharaoh Ant", atk:0.99, def:1.12, prod:1.25, blurb:"The supercolony. Splits and floods.",        trait:"Budding — rapid, costless expansion.",
+  pharaoh:   { name:"Pharaoh Ant", atk:0.99, def:1.12, blurb:"The supercolony. Splits and floods.",        trait:"Budding — rapid, costless expansion.",
                ab:{ name:"Bud",           cd:6, kind:"bud",     desc:"Every tile with 40+ troops buds a new colony onto an adjacent empty tile — for free." } },
-  leafcutter:{ name:"Leafcutter",  atk:1.13, def:1.25, prod:1.15, blurb:"Economic powerhouse. Avoids the fight.",      trait:"Fungal cultivation — terraforms the field.",
+  leafcutter:{ name:"Leafcutter",  atk:1.13, def:1.25, blurb:"Living walls. Reshapes the field.",      trait:"Fungal cultivation — terraforms the field.",
                ab:{ name:"Fungal Garden", cd:6, kind:"leaf",    desc:"Grows a leaf wall on your borders — impassable to the enemy for 4 turns; +40% defense after it withers. Exocrine reservoir research (Lv 2–4) makes one wall permanent per cast, up to 1/2/3 total." } },
-  fire:      { name:"Fire Ant",    atk:0.86, def:0.87, prod:1.05, blurb:"Balanced & territorial. The honest fighter.", trait:"Swarm response — scorched-earth defender.",
+  fire:      { name:"Fire Ant",    atk:0.86, def:0.87, blurb:"Balanced & territorial. The honest fighter.", trait:"Swarm response — scorched-earth defender.",
                ab:{ name:"Wildfire",      cd:6, kind:"fire",    desc:"Your colony's borders ignite for 3 turns; enemies on fire lose 30% each turn. Detached tiles don't ignite." } },
-  army:      { name:"Army Ant",    atk:1.10, def:0.79, prod:0.95, blurb:"Nomadic raider. Lives to attack.",            trait:"Bivouac — a devouring column.",
+  army:      { name:"Army Ant",    atk:1.10, def:0.79, blurb:"Nomadic raider. Lives to attack.",            trait:"Bivouac — a devouring column.",
                ab:{ name:"Feeding Swarm", cd:6, kind:"swarm",   desc:"Bordering enemy tiles lose 15% of their troops — devoured and added to your colony. Only tiles touching your colony at cast time are eaten." } },
-  weaver:    { name:"Weaver Ant",  atk:1.07, def:1.04, prod:1, blurb:"The expansionist. Many fronts at once.",      trait:"Silk bridges — pushes into enemy ground.",
+  weaver:    { name:"Weaver Ant",  atk:1.07, def:1.04, blurb:"The expansionist. Many fronts at once.",      trait:"Silk bridges — pushes into enemy ground.",
                ab:{ name:"Spread",        cd:5, kind:"spread",  desc:"Claim every empty tile you border on the enemy's half of the map." } },
-  carpenter: { name:"Carpenter",   atk:0.91, def:1.06, prod:1.05, blurb:"The fortress. Nightmare to dislodge.",        trait:"Reinforced veins — digs in hard.",
+  carpenter: { name:"Carpenter",   atk:0.91, def:1.06, blurb:"The fortress. Nightmare to dislodge.",        trait:"Reinforced veins — digs in hard.",
                ab:{ name:"Fortify",       cd:6, kind:"fortify", desc:"Majors muster on the border: every frontline tile gains +12% garrison, and the whole colony defends at +70% for 3 turns." } },
-  bullet:    { name:"Bullet Ant",  atk:1.22, def:0.84, prod:0.7, blurb:"Glass cannon. Devastating per unit.",         trait:"Pain gland — chemical barrage.",
+  bullet:    { name:"Bullet Ant",  atk:1.22, def:0.84, blurb:"Glass cannon. Devastating per unit.",         trait:"Pain gland — chemical barrage.",
                ab:{ name:"Venom Rain",    cd:6, kind:"venom",   desc:"Venom rains across the whole board at random. Enemy tiles caught in it lose 10 troops/turn for 3 turns — your tiles and both main bases are immune." } },
-  demon:     { name:"Demon Ant",   atk:1.09, def:1.0, prod:0.95, blurb:"Premium. Sacrifices her own for power.", premium:true, trait:"Terror pheromone — panics nearby colonies into flight.",
+  demon:     { name:"Demon Ant",   atk:1.09, def:1.0, blurb:"Premium. Sacrifices her own for power.", premium:true, trait:"Terror pheromone — panics nearby colonies into flight.",
                ab:{ name:"Flee",          cd:6, kind:"flee",    desc:"Fear ripples out: every mobile enemy garrison within 3 tiles of your colony flees directly away until it is beyond that reach. Veins, tunnels, resources and the Hive cannot be pushed. Tiles that collide while fleeing merge into one." } },
 };
 // Faction palette per species [base, glow, dark] — grounded in the real ant's colouring.
@@ -1321,7 +1321,6 @@ function resMult(p, key){
 }
 function atkMult(p){ return resMult(p,"m"); }
 function defMult(p){ return resMult(p,"c"); }
-function prodMult(p){ return 1; }                                    // (Fungus Garden removed)
 function abLvl(p){ return p==="you" ? (resOf(G.youSpecies||"fire").a||0) : 0; }
 function abCD(p, ab){ return Math.max(2, ab.cd - (abLvl(p)>=RES_MAX ? 1 : 0)); }   // just 1 turn, and only at max
 function abPow(p){ return 1 + 0.06*abLvl(p); }                        // each level hits slightly harder
@@ -1368,7 +1367,6 @@ function incomeOf(p){
     inc += t.struct==="nest" ? C.prod.nest : (t.terrain==="resource"? (C.prod.resourceStable + hillOf(p,"cultivate")) : C.prod.stable);
   });
   if(G.hive.phase==="buff" && G.hive.owner===p) inc*=hiveBuffMult();
-  inc *= (specOf(p).prod || 1) * prodMult(p);            // species rate × research & Fungus Garden
   return Math.round(inc);
 }
 function armyOf(p){ let s=0; for(let r=0;r<C.N;r++)for(let c=0;c<C.N;c++){const t=G.grid[r][c]; if(t.owner===p) s+=t.soldiers;} return s; }
@@ -1416,12 +1414,10 @@ function isConnected(t){
 
 function runProduction(p){
   recomputeConn();
-  const pm = (specOf(p).prod || 1) * prodMult(p);       // species rate × research & Fungus Garden
   producers(p).forEach(t=>{
     if(!isConnected(t)) return;                          // detached: cut off from the colony, no growth
     let g = t.struct==="nest" ? C.prod.nest : (t.terrain==="resource"? C.prod.resourceStable : C.prod.stable);
     if(G.hive.phase==="buff" && G.hive.owner===p) g*=hiveBuffMult();
-    g *= pm;
     t.prodAcc = (t.prodAcc||0) + g;                      // carry fractional growth so soldiers stay whole
     const add = Math.floor(t.prodAcc); t.prodAcc -= add;
     t.soldiers += add;

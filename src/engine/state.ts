@@ -1,4 +1,5 @@
 import { MAPS, START_SOLDIERS } from "./config";
+import { CURRENT_RULES_VERSION } from "./record-rules";
 import type { MapId } from "./config";
 import {
   allTiles, isHiveTerrain, makeGrid, nestTile, otherPlayer, razeTile, tileAt,
@@ -16,6 +17,8 @@ import type {
 } from "./types";
 
 export interface NewGameOptions {
+  /** Explicit only for archived records; live matches use current rules. */
+  rulesVersion?: 1 | 2;
   map: MapId;
   species: Record<Player, SpeciesId>;
   /** Five-tile starting shape, as offsets from the corner anchor. */
@@ -81,6 +84,7 @@ export function createGame(opts: NewGameOptions): GameState {
   const grid: Grid = makeGrid(def.size);
 
   const state: GameState = {
+    rulesVersion: opts.rulesVersion ?? CURRENT_RULES_VERSION,
     grid,
     size: def.size,
     turn: 1,
@@ -331,6 +335,7 @@ export function endByObjective(state: GameState, winner: Player): EngineEvent[] 
 /* ----------------------------------------------------- SNAPSHOT / RESTORE (for AI) */
 
 export interface Snapshot {
+  rulesVersion: 1 | 2;
   tiles: Tile[];
   turn: number;
   current: Player;
@@ -354,6 +359,7 @@ export interface Snapshot {
  */
 export function snapshot(state: GameState): Snapshot {
   return {
+    rulesVersion: state.rulesVersion ?? CURRENT_RULES_VERSION,
     tiles: allTiles(state).map((t) => ({ ...t })),
     turn: state.turn,
     current: state.current,
@@ -378,6 +384,7 @@ export function restore(state: GameState, snap: Snapshot): void {
       if (saved) row[c] = { ...saved };
     }
   }
+  state.rulesVersion = snap.rulesVersion;
   state.turn = snap.turn;
   state.current = snap.current;
   state.over = snap.over;

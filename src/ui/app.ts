@@ -1699,6 +1699,7 @@ export class App {
     // brings its own back verbatim rather than rebuilding a matching copy: two spellings
     // of one opening is two boards waiting to disagree.
     const setup: MatchSetup = resume?.setup ?? {
+      rulesVersion: 2,
       map,
       species: { you: mySpecies, ai: aiSpecies },
       seed,

@@ -5,7 +5,7 @@ import type { PlayerMods, SpeciesId } from "../index";
 describe("universal combat loadout power", () => {
   it("rates every species from its own combat statistics", () => {
     const ratings = Object.keys(SPECIES).map(id => combatPower(id as SpeciesId, NEUTRAL_MODS));
-    expect(ratings.every(r => r.version === 1 && Number.isFinite(r.total) && r.total > 0)).toBe(true);
+    expect(ratings.every(r => r.version === 2 && Number.isFinite(r.total) && r.total > 0)).toBe(true);
     expect(new Set(ratings.map(r => r.total)).size).toBeGreaterThan(5);
     for (const r of ratings) expect(r.total).toBe(Math.round(r.attack+r.defence+r.economy+r.ability+r.opening));
   });
@@ -32,4 +32,11 @@ describe("universal combat loadout power", () => {
     expect(combatPower("fire",{...NEUTRAL_MODS,mandible:5}).attack)
       .toBe(combatPower("fire",{...NEUTRAL_MODS,researchLevel:10}).attack);
   });
+});
+
+it("gives every species identical production power for the same shared upgrades", () => {
+  const base=Object.keys(SPECIES).map(id=>combatPower(id as SpeciesId,NEUTRAL_MODS).economy);
+  expect(new Set(base)).toEqual(new Set([300]));
+  for(const id of Object.keys(SPECIES) as SpeciesId[])
+    expect(combatPower(id,{...NEUTRAL_MODS,brood:2,cultivate:1}).economy).toBe(400);
 });
