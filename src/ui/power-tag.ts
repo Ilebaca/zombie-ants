@@ -13,13 +13,10 @@ export function powerTag(total: number, opts: PowerTagOptions = {}): HTMLElement
   svg.setAttribute("viewBox", "0 0 140 44");
   svg.setAttribute("aria-hidden", "true");
   svg.setAttribute("preserveAspectRatio", "none");
-  for (const [d, cls] of [
-    ["M23 3H121L108 13Q104 16 110 17L136 21Q140 22 136 24L111 30Q107 31 111 34L120 41H23C12 41 3 33 3 22S12 3 23 3Z", "power-tag__flame-edge"],
-    ["M23 8H102M10 20C11 13 16 8 23 8", "power-tag__flame-fill"],
-  ] as const) {
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", d);path.setAttribute("class", cls);svg.appendChild(path);
-  }
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("class", "power-tag__flame-edge");
+  path.setAttribute("d", flameOutline());
+  svg.appendChild(path);
   tag.append(label, value, svg);
   updatePowerTag(tag, total);
   return tag;
@@ -35,65 +32,104 @@ export function updatePowerTag(tag: HTMLElement, total: number): void {
   tag.title = "Total power · species, research, combat chambers and equipped traits";
 }
 
-/** Entry and loadout feedback settle back to the exact idle phase. */
+/** All poses share one continuous cubic outline, so the charge can travel through it. */
+function flameOutline(center = -100, energy = 0, kick = 0, sway = 0): string {
+  const swell = (x: number): number => energy * Math.exp(-Math.pow((x - center) / 23, 2));
+  const top = (x: number): string => `${x} ${3 - swell(x)}`;
+  const bottom = (x: number): string => `${x} ${41 + swell(x)}`;
+  const cap = swell(10) * .4;
+  return `M${top(23)}
+    C${top(32)} ${top(41)} ${top(50)}
+    C${top(59)} ${top(69)} ${top(78)}
+    C${top(87)} ${top(96)} ${top(104)}
+    C110 ${3 - swell(110)} 116 ${3 - swell(116)} ${121 + kick * 14} ${3 - sway * 4}
+    C${117 + kick * 8} ${6 - sway * 3} 112 10 108 ${13 + sway * 2}
+    C104 16 106 17 110 17
+    C119 ${18 + sway * 4} ${127 + kick * 13} ${20 + sway * 7} ${136 + kick * 24} ${21 + sway * 6}
+    C${140 + kick * 24} ${22 + sway * 6} ${140 + kick * 24} ${23 + sway * 6} ${136 + kick * 24} ${24 + sway * 6}
+    C${128 + kick * 12} ${26 + sway * 5} 119 28 111 ${30 + sway * 2}
+    C107 31 108 32 111 34
+    C114 ${37 - sway * 2} ${117 + kick * 8} ${40 - sway * 3} ${120 + kick * 13} ${41 - sway * 4}
+    C116 ${41 + swell(116)} 110 ${41 + swell(110)} ${bottom(104)}
+    C${bottom(96)} ${bottom(87)} ${bottom(78)}
+    C${bottom(69)} ${bottom(59)} ${bottom(50)}
+    C${bottom(41)} ${bottom(32)} ${bottom(23)}
+    C12 ${41 + swell(23)} ${3 - cap} 33 ${3 - cap} 22
+    C${3 - cap} 11 12 ${3 - swell(23)} ${top(23)}Z`.replace(/\s+/g, " ");
+}
+
+/** Entry and loadout feedback: charge left to right, release, then resume idle. */
 const activeFlares = new WeakMap<HTMLElement, () => void>();
+let chargeSequence = 0;
 export function burstPowerTag(tag: HTMLElement): void {
   const path = tag.querySelector<SVGPathElement>(".power-tag__flame-edge");
-  if (!path || !tag.isConnected || typeof path.animate !== "function"
+  const svg = path?.ownerSVGElement;
+  if (!path || !svg || !tag.isConnected || typeof path.animate !== "function"
     || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
 
-  const start = getComputedStyle(path);
-  const from = { d: start.getPropertyValue("d"), fill: start.fill };
+  const from = getComputedStyle(path).getPropertyValue("d");
   activeFlares.get(tag)?.();
   const idle = path.getAnimations().filter(animation => animation.playState === "running");
   idle.forEach(animation => animation.pause());
-  const resting = getComputedStyle(path);
-  const back = { d: resting.getPropertyValue("d"), fill: resting.fill };
+  const back = getComputedStyle(path).getPropertyValue("d");
+  const pose = (offset: number, center: number, energy: number, kick = 0, sway = 0): Keyframe =>
+    ({ offset, d: `path("${flameOutline(center, energy, kick, sway)}")` });
   const flare = path.animate([
-    { ...from, offset: 0, easing: "cubic-bezier(.18,.75,.3,1)" },
-    { d: 'path("M23 3H145L119 8Q108 15 123 13L165 16Q172 20 164 25L124 31Q110 35 124 38L142 41H23C12 41 3 33 3 22S12 3 23 3Z")',
-      fill: "#fa853f", offset: .18, easing: "ease-in-out" },
-    { d: 'path("M23 3H137L114 13Q106 18 119 17L158 25Q166 29 158 30L121 32Q109 34 120 36L134 41H23C12 41 3 33 3 22S12 3 23 3Z")',
-      fill: "#ee6040", offset: .42, easing: "ease-out" },
-    { ...back, offset: 1 },
-  ], { duration: 1000 });
-
+    { d: from, offset: 0 },
+    pose(.12, 10, 4),
+    pose(.24, 42, 5.5),
+    pose(.36, 78, 6),
+    pose(.46, 110, 5),
+    pose(.54, 130, 1, 1, -.8),
+    pose(.60, 150, 0, .65, 1),
+    pose(.65, 150, 0, .85, -1),
+    pose(.69, 150, 0, .55, 1),
+    pose(.73, 150, 0, .65, -.8),
+    pose(.77, 150, 0, .4, .6),
+    pose(.81, 150, 0, .45, -.5),
+    pose(.86, 150, 0, .25, .35),
+    pose(.92, 150, 0, .12, -.15),
+    { d: back, offset: 1 },
+  ], { duration: 1000, easing: "linear" });
   flare.id = "power-tail-flare";
-  // Separate curved tongues curl above, through and below the stretching tail.
-  const upper = [
-    "M116 14C123-2 123-20 134-24C131-8 147-9 156-26C156-8 146 5 134 4C125 3 123 18 116 14Z",
-    "M116 14C125 5 127-15 139-18C135-3 155-8 162-22C158-5 148 9 135 6C126 4 123 19 116 14Z",
-    "M116 14C127-1 129-14 138-23C134-7 148-2 157-16C151 2 142 10 133 7C125 4 122 19 116 14Z",
+
+  // The hot band is a fill inside the same outline, never another flame shape.
+  const ns = "http://www.w3.org/2000/svg";
+  const defs = document.createElementNS(ns, "defs");
+  const gradient = document.createElementNS(ns, "linearGradient");
+  gradient.id = `power-charge-${++chargeSequence}`;
+  gradient.setAttribute("gradientUnits", "userSpaceOnUse");
+  const stops = [
+    [0, "#db4147"], [.25, "#ef6740"], [.5, "#ffe09a"], [.75, "#ef6740"], [1, "#db4147"],
   ] as const;
-  const lower = [
-    "M116 30C123 46 123 64 134 68C131 52 147 53 156 70C156 52 146 39 134 40C125 41 123 26 116 30Z",
-    "M116 30C125 39 127 59 139 62C135 47 155 52 162 66C158 49 148 35 135 38C126 40 123 25 116 30Z",
-    "M116 30C127 45 129 58 138 67C134 51 148 46 157 60C151 42 142 34 133 37C125 40 122 25 116 30Z",
-  ] as const;
-  const middle = [
-    "M126 22C139 12 143 24 151 17C160 11 167 15 169 7C171 22 159 30 150 25C140 19 136 29 126 22Z",
-    "M126 22C137 25 143 13 154 18C162 23 166 13 172 18C167 31 158 31 149 27C140 21 137 31 126 22Z",
-    "M126 22C139 16 143 27 154 21C162 17 168 23 170 14C168 29 158 34 148 28C140 23 135 30 126 22Z",
-  ] as const;
-  const tongues = [upper, lower, middle].map((waves, index) => {
-    const tongue = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    tongue.setAttribute("class", "power-tag__burst-wisp");
-    tongue.setAttribute("d", waves[0]);
-    path.before(tongue);
-    const animation = tongue.animate([
-      { d: `path("${waves[0]}")`, opacity: 0, transform: "scale(.15,.2)", offset: 0 },
-      { d: `path("${waves[1]}")`, opacity: 1, transform: "scale(1,1)", fill: "#fa853f", offset: .15 },
-      { d: `path("${waves[2]}")`, opacity: 1, transform: "scale(.95,1)", fill: "#ffc363", offset: .4 },
-      { d: `path("${waves[1]}")`, opacity: .7, transform: "scale(.7,.65)", fill: "#ee6040", offset: .7 },
-      { d: `path("${waves[0]}")`, opacity: 0, transform: "scale(.15,.2)", fill: "#db4147", offset: 1 },
-    ], { duration: 1000 - index * 40, easing: "linear", fill: "both" });
-    return { tongue, animation };
-  });
+  for (const [offset, colour] of stops) {
+    const stop = document.createElementNS(ns, "stop");
+    stop.setAttribute("offset", String(offset));
+    stop.setAttribute("stop-color", colour);
+    gradient.appendChild(stop);
+  }
+  defs.appendChild(gradient);
+  svg.prepend(defs);
+  const originalFill = path.style.fill;
+  path.style.fill = `url(#${gradient.id})`;
+  let frame = 0;
+  const light = (): void => {
+    const t = Math.max(0, Math.min(1, Number(flare.currentTime ?? 0) / 1000));
+    const center = t < .54 ? -20 + 150 * (t / .54) : 130 + 75 * ((t - .54) / .46);
+    gradient.setAttribute("x1", String(center - 30));
+    gradient.setAttribute("x2", String(center + 30));
+    gradient.setAttribute("y1", "22");
+    gradient.setAttribute("y2", "22");
+    frame = requestAnimationFrame(light);
+  };
+  light();
   const settle = (): void => {
     flare.onfinish = null;
     flare.oncancel = null;
     flare.cancel();
-    tongues.forEach(({ tongue, animation }) => { animation.cancel(); tongue.remove(); });
+    cancelAnimationFrame(frame);
+    path.style.fill = originalFill;
+    defs.remove();
     idle.forEach(animation => { if (animation.playState === "paused") animation.play(); });
     if (activeFlares.get(tag) === settle) activeFlares.delete(tag);
   };
