@@ -5,11 +5,12 @@
  */
 import type { Opponent } from "../platform";
 import { compact, faceOf } from "../platform";
-import { SPECIES } from "../engine";
+import { SPECIES, NEUTRAL_MODS, combatPower } from "../engine";
 import type { SpeciesId } from "../engine";
 import { SPECIES_COL } from "../render";
 import { avatarFace, el } from "./chrome";
 import { cutCoverFor } from "./covers";
+import { powerTag } from "./power-tag";
 
 /** One side's card. The player's is fixed; the opponent's is what the reel lands on. */
 export interface Seat {
@@ -18,12 +19,16 @@ export interface Seat {
   species: SpeciesId;
   /** The selected account avatar, when supplied. */
   avatar?: string | null;
+  /** Active combat loadout, supplied by the match setup owner. */
+  power?: number;
 }
 
 export interface MatchmakingOptions {
   you: Seat;
   /** Who to reel past while the search runs. Never the one who is found. */
   roster: readonly Opponent[];
+  /** Uses the same chapter equipment calculation as the upcoming match. */
+  opponentPower?: (foe: Opponent) => number;
   /** Resolves with whoever was seated; rejects if the search was abandoned. */
   search: () => Promise<Opponent>;
   /** The opponent is on screen and the halves have parted. The match starts here. */
@@ -115,7 +120,7 @@ export class MatchmakingScreen {
     const roster = this.opts.roster;
     if (!roster.length) return;
     const strip = el("div", "mmk-strip");
-    for (const seat of [...roster, ...roster]) strip.appendChild(seatCard(seat));
+    for (const seat of [...roster, ...roster]) strip.appendChild(seatCard({...seat,power:this.opts.opponentPower?.(seat)}));
     strip.style.animationDuration = `${roster.length * REEL_MS_PER_CARD}ms`;
     this.reel.appendChild(strip);
   }
@@ -134,7 +139,7 @@ export class MatchmakingScreen {
   /** Somebody is seated: stop dead, show them, hold, then part. */
   private land(foe: Opponent): void {
     this.reel.remove();
-    this.foeCard.appendChild(seatCard(foe));
+    this.foeCard.appendChild(seatCard({...foe,power:this.opts.opponentPower?.(foe)}));
     this.foeCard.classList.add("on");
     this.status.textContent = this.opts.awaiting
       ? `${this.opts.awaiting} is ready`
@@ -178,7 +183,10 @@ function seatCard(seat: Seat): HTMLElement {
   portrait.appendChild(avatarFace(faceOf(seat.avatar), 112));
   const troops = el("div", "mmk-colony", `${compact(seat.colony)} troops`);
   troops.style.color = (SPECIES_COL[seat.species] ?? SPECIES_COL.fire)[1] as string;
-  profile.append(portrait, el("div", "mmk-name", seat.name), troops);
+  const avatar = el("div", "mmk-avatar power-host");
+  avatar.append(portrait, powerTag(seat.power ?? combatPower(seat.species, NEUTRAL_MODS).total,
+    {context:SPECIES[seat.species].name}));
+  profile.append(avatar, el("div", "mmk-name", seat.name), troops);
   const art = cutCoverFor(seat.species);
   if (art) {
     const body = document.createElement("img");
