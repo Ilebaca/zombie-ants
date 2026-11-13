@@ -490,16 +490,18 @@ describe("antarium collection", () => {
     const s = store(10_000, 10_000);
     const root = openAntarium(s);
     expect(cardFor(root, "Army Ant")?.className).toContain("locked");
-    expect(cardFor(root, "Army Ant")?.querySelector(".an-lv")?.textContent).toBe("0");
+    expect(cardFor(root, "Army Ant")?.querySelector(".an-lv")).toBeNull();
+    expect(levelOf(s, "army")).toBe(0);
     expect(cardFor(root, "Fire Ant")?.className).not.toContain("locked");
-    expect(cardFor(root, "Fire Ant")?.querySelector(".an-lv")?.textContent).toBe("0");
+    expect(cardFor(root, "Fire Ant")?.querySelector(".an-lv")).toBeNull();
+    expect(levelOf(s, "fire")).toBe(0);
     s.unlockSpecies("army");
     expect(levelOf(s, "army")).toBe(0);
     s.buyResearch("army");
     expect(levelOf(s, "army")).toBe(1);
   });
 
-  it("draws the ten shared rungs and keeps the collection badge in agreement", () => {
+  it("draws the ten shared rungs while leaving portraits free of level badges", () => {
     const s = store(100_000, 100_000);
     const root = openAntarium(s);
     expect(root.querySelectorAll("#antBanner .rb-pip")).toHaveLength(10);
@@ -510,16 +512,17 @@ describe("antarium collection", () => {
     const again = openAntarium(s);
     expect(again.querySelectorAll("#antBanner .rb-pip.on")).toHaveLength(3);
     expect(again.querySelector("#antBanner .an-lv")).toBeNull();
-    expect(again.querySelector(`.ccard[data-ant="${id}"] .an-lv`)?.textContent).toBe("3");
+    expect(again.querySelector(".an-lv")).toBeNull();
+    expect(levelOf(s, id)).toBe(3);
   });
 
-  /** A colony you do not own lights none of them, which is the badge's 0 drawn long. */
+  /** A colony you do not own lights none of its research rungs. */
   it("lights no rung on a colony you do not own", () => {
     const root = openAntarium(store());
     click(cardFor(root, "Bullet Ant"));
     expect(root.querySelectorAll("#antBanner .rb-pip.on").length).toBe(0);
     expect(root.querySelector("#antBanner .an-lv")).toBeNull();
-    expect(root.querySelector('.ccard[data-ant="bullet"] .an-lv')?.textContent).toBe("0");
+    expect(root.querySelector(".an-lv")).toBeNull();
   });
 
   /**
@@ -569,12 +572,11 @@ describe("antarium collection", () => {
     click(cardFor(root, "Bullet Ant"));
     expect(root.querySelector(".rb-name")?.textContent).toBe("Bullet Ant");
     expect(root.querySelector("#antCTA")?.textContent).toContain(String(SPECIES_UNLOCK.bullet));
-    // The level badge stays in the listing, while the large portrait stays clear.
+    // Neither the listing nor the large portrait carries a level badge.
     expect(root.querySelector(".rb-nl"), "the old level line came back").toBeNull();
     expect(root.querySelector("#antBanner .an-lv")).toBeNull();
-    expect(root.querySelector('.ccard[data-ant="bullet"] .an-lv')?.textContent).toBe("0");
-    // Two chips, not four: the level is in the listing, and the cooldown — the one
-    // fact this screen is not about — is stated on the colony's own page instead.
+    expect(root.querySelector(".an-lv")).toBeNull();
+    // Attack and defence lead; level progress is in the banner's research pips.
     expect(root.querySelectorAll(".rb-meta .statchip").length).toBe(2);
     expect(root.querySelector(".rb-meta .lv"), "the level rejoined the chips").toBeNull();
     expect(root.querySelector(".rb-meta")?.textContent, "the cooldown came back")
@@ -1166,11 +1168,11 @@ describe("legacy markup parity", () => {
     // section is headed with its name), the rule between a heading and its count, and the
     // veil that printed a price on every locked card.
     for (const cls of ["rbanner", "rb-info", "rb-name", "rb-tag", "rb-meta", "rb-seg",
-      "an-tile", "an-lv", "antcta", "antscroll", "tierhead", "tiergrp", "tl", "tc",
+      "an-tile", "antcta", "antscroll", "tierhead", "tiergrp", "tl", "tc",
       "cgrid", "ccard", "cname"]) {
       expect(landmarks(root), `.${cls} missing`).toContain(cls);
     }
-    for (const gone of ["rb-tier", "tline", "cveil", "clv"]) {
+    for (const gone of ["rb-tier", "tline", "cveil", "clv", "an-lv"]) {
       expect(landmarks(root), `.${gone} came back with the legacy skeleton`).not.toContain(gone);
     }
     // A card carries the NAME and nothing under it: the stat pair was two unlabelled
@@ -1185,8 +1187,8 @@ describe("legacy markup parity", () => {
    * NOTHING UNDER THE NAME, INCLUDING ONCE THERE IS RESEARCH.
    *
    * The card used to grow a progress bar the moment a colony had any research — so it
-   * showed under some cards and not others, drawing the same number the "LV 15" badge
-   * already carries, with no label on it. Two rules under two cards out of eight read as a
+   * showed under some cards and not others, duplicating the selected banner's research
+   * progress with no label on it. Two rules under two cards out of eight read as a
    * stray line rather than as a measure of anything.
    */
   it("grows no bar under a card once its colony has research", () => {
@@ -1197,9 +1199,8 @@ describe("legacy markup parity", () => {
     const root = buildAntarium(s, { onOpenSpecies: () => {} });
     const card = Array.from(root.querySelectorAll<HTMLElement>(".ccard"))
       .find((c) => c.dataset.ant === "fire");
-    // The listing badge carries only purchased upgrades.
-    expect(card?.querySelector(".an-lv")?.textContent, "the level badge went with it")
-      .toBe("3");
+    // Portraits remain free of badges even after research upgrades.
+    expect(card?.querySelector(".an-lv"), "a level badge returned to the portrait").toBeNull();
     expect(card?.querySelectorAll(".rb-pip").length, "a card grew the banner's rungs").toBe(0);
     expect(card?.querySelector(".cbar"), "a research bar grew under the name").toBeNull();
     expect(root.querySelector(".cbar"), "a research bar grew under some card").toBeNull();
