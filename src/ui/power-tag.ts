@@ -35,7 +35,7 @@ export function updatePowerTag(tag: HTMLElement, total: number): void {
   tag.title = "Total power · species, research, combat chambers and equipped traits";
 }
 
-/** Flare only after a successful loadout change, then resume the exact idle phase. */
+/** Entry and loadout feedback settle back to the exact idle phase. */
 const activeFlares = new WeakMap<HTMLElement, () => void>();
 export function burstPowerTag(tag: HTMLElement): void {
   const path = tag.querySelector<SVGPathElement>(".power-tag__flame-edge");
@@ -51,18 +51,49 @@ export function burstPowerTag(tag: HTMLElement): void {
   const back = { d: resting.getPropertyValue("d"), fill: resting.fill };
   const flare = path.animate([
     { ...from, offset: 0, easing: "cubic-bezier(.18,.75,.3,1)" },
-    { d: 'path("M23 3H137L117 10Q110 14 119 15L154 19Q160 20 155 23L121 31Q112 34 119 37L134 41H23C12 41 3 33 3 22S12 3 23 3Z")',
+    { d: 'path("M23 3H145L119 8Q108 15 123 13L165 16Q172 20 164 25L124 31Q110 35 124 38L142 41H23C12 41 3 33 3 22S12 3 23 3Z")',
       fill: "#fa853f", offset: .18, easing: "ease-in-out" },
-    { d: 'path("M23 3H132L113 11Q108 15 115 17L148 23Q154 24 149 26L119 31Q111 32 116 35L129 41H23C12 41 3 33 3 22S12 3 23 3Z")',
+    { d: 'path("M23 3H137L114 13Q106 18 119 17L158 25Q166 29 158 30L121 32Q109 34 120 36L134 41H23C12 41 3 33 3 22S12 3 23 3Z")',
       fill: "#ee6040", offset: .42, easing: "ease-out" },
     { ...back, offset: 1 },
   ], { duration: 1000 });
 
   flare.id = "power-tail-flare";
+  // Separate curved tongues curl above, through and below the stretching tail.
+  const upper = [
+    "M116 14C123 7 123-4 134-7C131 3 147 0 156-10C156 2 146 12 134 11C125 10 123 18 116 14Z",
+    "M116 14C125 12 127-1 139-3C135 6 155 2 162-5C158 8 148 15 135 12C126 10 123 19 116 14Z",
+    "M116 14C127 7 129 1 138-5C134 5 148 10 157 3C151 16 142 17 133 13C125 11 122 19 116 14Z",
+  ];
+  const lower = [
+    "M116 30C123 37 123 48 134 51C131 41 147 44 156 54C156 42 146 32 134 33C125 34 123 26 116 30Z",
+    "M116 30C125 32 127 45 139 47C135 38 155 42 162 49C158 36 148 29 135 32C126 34 123 25 116 30Z",
+    "M116 30C127 37 129 43 138 49C134 39 148 34 157 41C151 28 142 27 133 31C125 33 122 25 116 30Z",
+  ];
+  const middle = [
+    "M126 22C139 12 143 24 151 17C160 11 167 15 169 7C171 22 159 30 150 25C140 19 136 29 126 22Z",
+    "M126 22C137 25 143 13 154 18C162 23 166 13 172 18C167 31 158 31 149 27C140 21 137 31 126 22Z",
+    "M126 22C139 16 143 27 154 21C162 17 168 23 170 14C168 29 158 34 148 28C140 23 135 30 126 22Z",
+  ];
+  const tongues = [upper, lower, middle].map((waves, index) => {
+    const tongue = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    tongue.setAttribute("class", "power-tag__burst-wisp");
+    tongue.setAttribute("d", waves[0]!);
+    path.before(tongue);
+    const animation = tongue.animate([
+      { d: `path("${waves[0]}")`, opacity: 0, transform: "scale(.15,.2)", offset: 0 },
+      { d: `path("${waves[1]}")`, opacity: 1, transform: "scale(1,1)", fill: "#fa853f", offset: .15 },
+      { d: `path("${waves[2]}")`, opacity: 1, transform: "scale(.95,1)", fill: "#ffc363", offset: .4 },
+      { d: `path("${waves[1]}")`, opacity: .7, transform: "scale(.7,.65)", fill: "#ee6040", offset: .7 },
+      { d: `path("${waves[0]}")`, opacity: 0, transform: "scale(.15,.2)", fill: "#db4147", offset: 1 },
+    ], { duration: 1000 - index * 40, easing: "cubic-bezier(.2,.65,.35,1)", fill: "both" });
+    return { tongue, animation };
+  });
   const settle = (): void => {
     flare.onfinish = null;
     flare.oncancel = null;
     flare.cancel();
+    tongues.forEach(({ tongue, animation }) => { animation.cancel(); tongue.remove(); });
     idle.forEach(animation => { if (animation.playState === "paused") animation.play(); });
     if (activeFlares.get(tag) === settle) activeFlares.delete(tag);
   };
