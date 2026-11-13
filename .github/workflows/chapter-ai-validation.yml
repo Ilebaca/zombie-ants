@@ -5,9 +5,13 @@ on:
 permissions:
   contents: read
 jobs:
-  probe:
+  skill:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -15,8 +19,30 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx tsx tools/ai-probe.ts
+      - run: npx tsx tools/skill-balance.ts ${{ matrix.shard }}
       - uses: actions/upload-artifact@v4
         with:
-          name: chapter-ai-probe
+          name: chapter-ai-skill-${{ matrix.shard }}
+          path: reports/
+  report:
+    needs: skill
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: chapter-ai-skill-*
+          merge-multiple: true
+          path: reports/
+      - run: |
+          python - <<'PY'
+          import glob,json
+          reports=sorted([json.load(open(p)) for p in glob.glob('reports/skill-*.json')],key=lambda r:r['shard'])
+          assert len(reports)==10
+          summary=dict(games=10,strongScore=sum(r['score'] for r in reports)/10,wins=sum(r['score']==1 for r in reports),draws=sum(not r['decisive'] for r in reports),results=reports)
+          json.dump(summary,open('reports/skill-summary.json','w'),indent=2)
+          print(json.dumps({k:v for k,v in summary.items() if k!='results'}))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chapter-ai-skill-report
           path: reports/
