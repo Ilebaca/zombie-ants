@@ -1244,12 +1244,16 @@ describe("the antarium is written in the shared language", () => {
   /**
    * Two radii, a pill, and an explicit reset. The research PIP is the one exemption and
    * it is named: it is a 12px mark rather than a card or a button, and either token on it
-   * is a lozenge.
+   * is a lozenge. Artwork uses the outer frame radius minus its stroke for a concentric clip.
    */
   it("rounds every corner with a token, a pill or a reset", () => {
     const bad: string[] = [];
     for (const m of ant.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
       if ((m[1] ?? "").includes("rb-pip")) continue;
+      if ((m[1] ?? "").trim() === "#antarium .an-art") {
+        expect(m[2]).toContain("border-radius: max(0px, calc(var(--action-radius, 12px) - var(--action-stroke, 2px)))");
+        continue;
+      }
       for (const d of (m[2] ?? "").matchAll(/border-radius:\s*([^;]+);/g)) {
         const v = (d[1] ?? "").trim();
         if (!/^(var\(--r-(card|btn)\)|999px|0)$/.test(v)) bad.push(`${(m[1] ?? "").trim()} → ${v}`);
