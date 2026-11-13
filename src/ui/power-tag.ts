@@ -64,21 +64,21 @@ export function burstPowerTag(tag: HTMLElement): void {
     "M116 14C123 7 123-4 134-7C131 3 147 0 156-10C156 2 146 12 134 11C125 10 123 18 116 14Z",
     "M116 14C125 12 127-1 139-3C135 6 155 2 162-5C158 8 148 15 135 12C126 10 123 19 116 14Z",
     "M116 14C127 7 129 1 138-5C134 5 148 10 157 3C151 16 142 17 133 13C125 11 122 19 116 14Z",
-  ];
+  ] as const;
   const lower = [
     "M116 30C123 37 123 48 134 51C131 41 147 44 156 54C156 42 146 32 134 33C125 34 123 26 116 30Z",
     "M116 30C125 32 127 45 139 47C135 38 155 42 162 49C158 36 148 29 135 32C126 34 123 25 116 30Z",
     "M116 30C127 37 129 43 138 49C134 39 148 34 157 41C151 28 142 27 133 31C125 33 122 25 116 30Z",
-  ];
+  ] as const;
   const middle = [
     "M126 22C139 12 143 24 151 17C160 11 167 15 169 7C171 22 159 30 150 25C140 19 136 29 126 22Z",
     "M126 22C137 25 143 13 154 18C162 23 166 13 172 18C167 31 158 31 149 27C140 21 137 31 126 22Z",
     "M126 22C139 16 143 27 154 21C162 17 168 23 170 14C168 29 158 34 148 28C140 23 135 30 126 22Z",
-  ];
+  ] as const;
   const tongues = [upper, lower, middle].map((waves, index) => {
     const tongue = document.createElementNS("http://www.w3.org/2000/svg", "path");
     tongue.setAttribute("class", "power-tag__burst-wisp");
-    tongue.setAttribute("d", waves[0]!);
+    tongue.setAttribute("d", waves[0]);
     path.before(tongue);
     const animation = tongue.animate([
       { d: `path("${waves[0]}")`, opacity: 0, transform: "scale(.15,.2)", offset: 0 },
