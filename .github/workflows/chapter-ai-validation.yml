@@ -5,6 +5,44 @@ on:
 permissions:
   contents: read
 jobs:
+  validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chapter-ai-web
+          path: dist/
+          retention-days: 7
+  balance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        from: [1,6,11,16,21,26,31,36,41,46]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx tools/chapter-balance.ts ${{ matrix.from }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chapter-balance-${{ matrix.from }}
+          path: reports/
+          retention-days: 7
   skill:
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -25,9 +63,14 @@ jobs:
           name: chapter-ai-skill-${{ matrix.shard }}
           path: reports/
   report:
-    needs: skill
+    needs: [balance, skill]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: chapter-balance-*
+          merge-multiple: true
+          path: reports/
       - uses: actions/download-artifact@v4
         with:
           pattern: chapter-ai-skill-*
@@ -36,13 +79,22 @@ jobs:
       - run: |
           python - <<'PY'
           import glob,json
-          reports=sorted([json.load(open(p)) for p in glob.glob('reports/skill-*.json')],key=lambda r:r['shard'])
-          assert len(reports)==10
-          summary=dict(games=10,strongScore=sum(r['score'] for r in reports)/10,wins=sum(r['score']==1 for r in reports),draws=sum(not r['decisive'] for r in reports),results=reports)
-          json.dump(summary,open('reports/skill-summary.json','w'),indent=2)
-          print(json.dumps({k:v for k,v in summary.items() if k!='results'}))
+          reports=[json.load(open(p)) for p in glob.glob('reports/chapter-*.json')]
+          chapters=sorted([c for r in reports for c in r['chapters']],key=lambda c:c['chapter'])
+          assert [c['chapter'] for c in chapters]==list(range(1,51))
+          bands=[]
+          for lo,hi in [(1,5),(6,15),(16,30),(31,40),(41,50)]:
+              games=[g for c in chapters if lo<=c['chapter']<=hi for g in c['results']]
+              bands.append(dict(chapters=[lo,hi],games=len(games),playerScore=sum(g['score'] for g in games)/len(games),draws=sum(not g['decisive'] for g in games),maxThinkMs=max(g['maxThinkMs'] for g in games)))
+          skills=sorted([json.load(open(p)) for p in glob.glob('reports/skill-*.json')],key=lambda r:r['shard'])
+          assert len(skills)==10
+          summary=dict(chapters=chapters,bands=bands,skillAblation=[r['skillAblation'] for r in reports],gearAblation=[r['gearAblation'] for r in reports],extendedSkill=skills)
+          print(json.dumps(dict(extendedSkillScore=sum(r['score'] for r in skills)/10,extendedSkillWins=sum(r['score']==1 for r in skills),extendedSkillDraws=sum(not r['decisive'] for r in skills))))
+          json.dump(summary,open('reports/summary.json','w'),indent=2)
+          print(json.dumps(dict(bands=bands,skillScore=sum(r['skillAblation']['score'] for r in reports)/len(reports),gearScore=sum(r['gearAblation']['score'] for r in reports)/len(reports))))
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: chapter-ai-skill-report
+          name: chapter-balance-report
           path: reports/
+          retention-days: 7

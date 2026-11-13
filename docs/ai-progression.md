@@ -39,6 +39,15 @@ shows Automatic rather than allowing the old manual campaign selection.
 - Trait rarity progresses through the existing five tiers. Attack, defence and
   cooldown traits use real inventory definitions, values and combined caps.
 
+Scheduled ceilings before the loadout-power adjustment:
+
+| Chapter | Research | Five-level chambers | Cultivation | Total traits | Trait tier |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 1 | 0 | 0 | 0 | 0 | — |
+| 10 | 1 | 0 | 0 | 1 | Common |
+| 25 | 4 | 2 | 1 | 4 | Rare |
+| 50 | 10 | 5 | 3 | 10 | Mythic |
+
 The chapter maximum is then reduced if it would create an excessive equipment
 gap. Let `B` be the player's selected species power without upgrades and `P`
 their active loadout power. The opponent equipment target is at most
@@ -112,8 +121,14 @@ skill rises from 0.12 to 0.92 and gear follows the baseline schedule. Separate
 equal-equipment skill comparisons and equal-skill gear comparisons add 20 games.
 Every action is replayed and the final snapshots must agree.
 
-The harness disables the wall clock while preserving node limits so runner load
-does not change search quality. It records actual thinking time separately.
+By default the harness uses the shipped wall-clock and node limits, as a real worker
+does. Thinking time and the deepest completed search can vary with hardware and runner
+load; paired sides reduce first-move bias but do not remove timing variance. Add
+`--nodes` to disable the clock for repeatable full-node diagnostics; this upper-bound
+mode can take substantially longer and is not a phone-performance measurement.
+`npx tsx tools/skill-balance.ts 0` through `9` add ten equal-equipment, paired-side
+skill comparisons through 160 rounds, recording force-delivery diagnostics: 230 games
+in the complete audit.
 An unfinished game at 80 rounds is reported as a draw (half a point), never
 adjudicated as a fabricated win. Small per-chapter samples are diagnostic, not
 statistical proof of an exact difficulty ordering or human win rate.

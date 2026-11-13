@@ -4,7 +4,8 @@ import type { MatchSetup, Move, Player, SpeciesId } from "../src/engine";
 import { aiTurn } from "../src/ai/search";
 import { mkdirSync,writeFileSync } from "node:fs";
 import assert from "node:assert/strict";
-Date.now=()=>0;
+// Use the same wall-clock and node limits as the shipped worker.
+if(process.argv.includes("--nodes"))Date.now=()=>0;
 const shard=Number(process.argv[2]??0),pair=Math.floor(shard/2);
 const species:SpeciesId=(["fire","leafcutter","carpenter","ghost","army"] as const)[pair]??"fire";
 const strong:Player=shard%2?"ai":"you";

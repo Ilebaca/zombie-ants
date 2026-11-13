@@ -34,8 +34,9 @@ function game(player:Agent, enemy:Agent, seed:number, playerSide:Player) {
 const from=Number(process.argv[2]??1);
 const to=Math.min(50,from+4);
 const realClock=Date.now;
-// Node budgets decide search quality, not shared-runner clock noise.
-Date.now=()=>0;
+// Default to the shipped clock/node limits. --nodes isolates search quality at full
+// node budgets for repeatable diagnostics, but is intentionally much more expensive.
+if(process.argv.includes("--nodes"))Date.now=()=>0;
 const began=performance.now();
 const chapters=[];
 try {
