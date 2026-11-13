@@ -13,10 +13,10 @@ export function powerTag(total: number, opts: PowerTagOptions = {}): HTMLElement
   svg.setAttribute("viewBox", "0 0 34 40");
   svg.setAttribute("aria-hidden", "true");
   for (const [d, cls] of [
-    ["M2 39C-1 31 4 28 5 22C7 25 9 24 10 21C13 14 7 11 15 2C14 12 26 13 24 23C29 21 29 17 29 15C37 25 32 31 33 39", "power-tag__flame-edge"],
+    ["M2 28C0 26 4 25 5 22C7 25 9 24 10 21C13 14 7 11 15 2C14 12 26 13 24 23C29 21 29 17 29 15C37 25 32 31 33 39", "power-tag__flame-edge"],
     ["M11 33C5 27 15 24 14 15C24 21 22 25 23 28C26 26 28 25 28 23C33 32 23 37 17 37Z", "power-tag__flame-fill"],
     ["M16 35C12 31 19 28 19 24C25 29 24 33 20 36Z", "power-tag__flame-core"],
-  ]) {
+  ] as const) {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", d);path.setAttribute("class", cls);svg.appendChild(path);
   }

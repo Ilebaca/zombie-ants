@@ -31,7 +31,7 @@
   width: 34px;
   height: 40px;
   top: -27px;
-  right: -3px;
+  right: 0;
   overflow: visible;
 }
 #app .power-tag__flame-edge { fill: var(--power-face); stroke: var(--power-edge); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -46,7 +46,7 @@
 }
 #app .power-tag--compact .power-tag__label { display: none; }
 #app .power-tag--compact .power-tag__value { font-size: 12px; }
-#app .power-tag--compact .power-tag__flame { width: 25px; height: 30px; top: -21px; right: -3px; }
+#app .power-tag--compact .power-tag__flame { width: 25px; height: 30px; top: -21px; right: 0; }
 #app #antarium .ccard.power-host { overflow: visible; }
 #app #antBanner.power-host { margin-top: 14px; overflow: visible; }
 #app #antBanner.power-host .rb-info { padding-top: 12px; }
