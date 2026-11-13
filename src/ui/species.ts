@@ -16,7 +16,7 @@ import { abilityArtFor } from "./abilityart";
 import { coverFor } from "./covers";
 import { icon } from "./icons";
 import { buildTraitSlots } from "./traits";
-import { powerTag, updatePowerTag } from "./power-tag";
+import { burstPowerTag, powerTag, updatePowerTag } from "./power-tag";
 
 export interface SpeciesPageOptions {
   species: SpeciesId;
@@ -28,7 +28,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
   const id = opts.species;
   const species = SPECIES[id];
 
-  const render = (): void => {
+  const render = (flare = false): void => {
     const profile = store.get();
     const level = profile.research[id]?.level ?? 0;
     const tier = tierOf(id);
@@ -59,7 +59,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
       insufficient: profile.pheromone < cost,
       onBuy: () => {
         if (!store.buyResearch(id)) return;
-        render();
+        render(true);
         toast(root, `${species.name} → Lv ${level + 1}`, "hive");
       },
     });
@@ -70,9 +70,12 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
       upgrade.setAttribute("aria-label", `Upgrade ${species.name} to level ${level + 1} for ${cost} pheromone crystals`);
     }
     page.appendChild(hero(id, level, tier.name, tier.col, upgrade,
-      buildTraitSlots(store, { scope: id, onChanged: () => {
+      buildTraitSlots(store, { scope: id, onChanged: change => {
         const rating = root.querySelector("#speciesPower");
-        if (rating instanceof HTMLElement) updatePowerTag(rating, store.powerFor(id).total);
+        if (rating instanceof HTMLElement) {
+          updatePowerTag(rating, store.powerFor(id).total);
+          if (change === "equip") burstPowerTag(rating);
+        }
       } })));
 
     const rating = powerTag(store.powerFor(id).total, {context:species.name});
@@ -94,6 +97,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     body.appendChild(page);
     root.appendChild(body);
     groupSections(root);
+    if (flare) burstPowerTag(rating);
   };
 
   /**

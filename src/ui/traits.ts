@@ -14,7 +14,7 @@ import { mountTraitPicker, traitPopupHost } from "./trait-popovers";
 
 export interface TraitSlotsOptions {
   scope: TraitScope;
-  onChanged?: () => void;
+  onChanged?: (change: "equip" | "remove") => void;
 }
 
 export function buildTraitSlots(store: ProfileStore, opts: TraitSlotsOptions): HTMLElement {
@@ -43,11 +43,11 @@ export function buildTraitSlots(store: ProfileStore, opts: TraitSlotsOptions): H
     root.querySelector<HTMLButtonElement>(`.trait-slot-row [data-slot="${slot}"]`)?.focus({ preventScroll: true });
   };
 
-  const changed = (): void => {
+  const changed = (change: "equip" | "remove"): void => {
     closeDetail();
     selectedSlot = null;
     render();
-    opts.onChanged?.();
+    opts.onChanged?.(change);
   };
 
   const openDetail = (item: TraitItem, source: HTMLElement): void => {
@@ -90,7 +90,7 @@ export function buildTraitSlots(store: ProfileStore, opts: TraitSlotsOptions): H
     equip.onclick = event => {
       event.stopPropagation();
       if (selectedSlot === null || !store.equipTrait(scope, item.uid, selectedSlot)) return;
-      changed();
+      changed("equip");
     };
     card.appendChild(equip);
     layer.appendChild(card);
@@ -135,7 +135,7 @@ export function buildTraitSlots(store: ProfileStore, opts: TraitSlotsOptions): H
       const remove = el("button", "action-button secondary trait-picker-remove", "Remove trait") as HTMLButtonElement;
       remove.type = "button";
       remove.onclick = () => {
-        if (selectedSlot !== null && store.unequipTrait(scope, selectedSlot)) changed();
+        if (selectedSlot !== null && store.unequipTrait(scope, selectedSlot)) changed("remove");
       };
       panel.appendChild(remove);
     }
