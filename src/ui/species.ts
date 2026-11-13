@@ -69,7 +69,10 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
       upgrade.setAttribute("aria-label", `Upgrade ${species.name} to level ${level + 1} for ${cost} pheromone crystals`);
     }
     page.appendChild(hero(id, level, tier.name, tier.col, upgrade,
-      buildTraitSlots(store, { scope: id })));
+      buildTraitSlots(store, { scope: id, onChanged: () => {
+        const rating = root.querySelector("#speciesPower");
+        if (rating) rating.textContent = `Loadout power ${store.powerFor(id).total}`;
+      } })));
 
     const rating = el("div", "spgcooldown-note", `Loadout power ${store.powerFor(id).total}`);
     rating.id = "speciesPower";

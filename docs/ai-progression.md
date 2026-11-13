@@ -137,3 +137,28 @@ Human ability cannot be inferred from chapter alone. Live balance should monitor
 win rate by chapter and loadout-power band, repeat attempts, match duration and
 abandonment before changing the curve. Avoid tuning one isolated chapter from
 four simulated games, and retain the opening policy in match records when tuning.
+
+## Release validation
+
+The release audit uses the shipped worker budgets and legal engine moves. Its
+extended equal-equipment skill comparison produced 7 wins, 3 cutoff draws and
+0 losses for the chapter-50 policy against chapter 1 across five species with
+sides swapped. This isolates a substantial tactical difference without research,
+chambers or traits. A cutoff draw is not treated as a victory.
+
+The full automated suite passes 1,862 tests across 120 files. Browser checks at
+320 px and 390 px cover matching power displays, live upgrade refresh, automatic
+difficulty, worker replies, chapter-one neutral equipment, chapter-50 loadout
+adjustment and preserved controls/modifiers after resuming against a changed
+profile. Sample worker replies ranged from 2–12 ms for chapter 1 to about 210 ms
+for chapter 50; these are desktop samples, not mobile-device latency guarantees.
+
+The [recorded release audit](ai-balance-report.json) retains all 50 chapter summaries.
+Of 200 campaign games, 44 ended in reference-player wins, 16 in opponent wins and
+140 were unfinished at the 80-round cutoff. The reference policy is a synthetic
+player whose skill rises from 0.12 to 0.92; these are not human win rates.
+Late chapter bands remained competitive in this model, with reference-player
+points around 54–55% including half-points for draws. The short per-chapter
+sample and high cutoff count limit pacing conclusions; human telemetry is still
+needed to calibrate actual completion times and win rates. No exact human
+difficulty claim follows from these results.
