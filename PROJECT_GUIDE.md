@@ -5767,3 +5767,12 @@ matching. Power excludes skill, wallet, colony size and unequipped inventory.
 Freeze aiControl and mods in MatchSetup when a match opens. Resume must not
 recompute either from a changed profile. Never adjust equipment mid-match, give
 bots hidden combat advantages, or infer an exact human win rate from self-play.
+
+## Shared tile production (13 November 2026)
+
+All species use the same base output: ordinary stable 1, nest 2, resource stable 3.
+The Species type has no production attribute. Anthill upgrades and the Hive apply
+by shared rules. AI estimates, score version 2, manuals and collection previews
+must not introduce native growth differences. Archived pre-v2 move records are
+interpreted using their original arithmetic; resuming promotes the live board to
+rules v2 at a recorded move boundary so future turns and replays remain consistent.

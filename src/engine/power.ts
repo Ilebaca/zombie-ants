@@ -4,7 +4,7 @@ import { combatResearch, cooldownChance, speciesLevel } from "./research";
 import { SPECIES } from "./species";
 import type { AbilityKind, PlayerMods, SpeciesId } from "./types";
 
-export const POWER_VERSION = 1;
+export const POWER_VERSION = 2;
 const finite = (n: number, max: number): number => Number.isFinite(n) ? Math.max(0, Math.min(max, n)) : 0;
 const ABILITY_VALUE: Record<AbilityKind, number> = {
   tunnel: 1.12, bud: 1.08, leaf: 1.08, fire: 1.05,
@@ -12,7 +12,7 @@ const ABILITY_VALUE: Record<AbilityKind, number> = {
 };
 
 export interface PowerRating {
-  version: 1;
+  version: typeof POWER_VERSION;
   total: number;
   /** Weighted points, before rounding; their sum is the total. */
   attack: number;
@@ -38,7 +38,7 @@ export function combatPower(species: SpeciesId, input: PlayerMods): PowerRating 
     * (1 + finite(mods.defPct, TRAIT_PCT_CAP) / 100) + nestDefence / 30 + mods.gland * .01);
   // A common reference position: one nest, four ordinary producers, two resources.
   const baseIncome = PROD.nest + 4 * PROD.stable + 2 * PROD.resourceStable;
-  const economy = 300 * (((baseIncome + 2 * mods.cultivate) * s.prod + mods.brood) / baseIncome);
+  const economy = 300 * ((baseIncome + 2 * mods.cultivate + mods.brood) / baseIncome);
   const recovery = mods.researchLevel === undefined ? 0 : cooldownChance(mods.researchLevel) / 100;
   const cooldown = Math.max(1, s.ability.cooldown - finite(mods.boonPct, 50) / 100);
   const ability = 100 * ABILITY_VALUE[s.ability.kind] * (1 + recovery) * 6 / cooldown;

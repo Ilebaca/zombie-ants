@@ -848,7 +848,7 @@ function matchLogs(raw: unknown): MatchLog[] {
       playedMs: num(m.playedMs, 1e12),
       colonyBefore: num(m.colonyBefore, 1e15),
       colonyAfter: num(m.colonyAfter, 1e15),
-      ...(Array.isArray(record?.moves) && record?.setup ? { record } : {}),
+      ...(Array.isArray(record?.moves) && record?.setup ? { record:{...record,setup:{...record.setup,rulesVersion:record.setup.rulesVersion ?? 1}} } : {}),
     }));
 }
 

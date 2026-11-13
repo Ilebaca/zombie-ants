@@ -11,7 +11,7 @@
  * is drawn reaches replays on the same commit. Nothing is stored but the moves.
  */
 import { groupSections } from "./groups";
-import { applyMove, openingBoard, restore, snapshot } from "../engine";
+import { applyMove, applyRecordRules, openingBoard, restore, snapshot } from "../engine";
 import type { GameState, MatchRecord, Player } from "../engine";
 import { MAPS, SPECIES } from "../engine";
 import { BoardRenderer } from "../render";
@@ -224,6 +224,7 @@ export class ReplayScreen {
   private advance(): void {
     const move = this.record.moves[this.at];
     if (this.stuck || !move) { this.pause(); return; }
+    applyRecordRules(this.state, this.record.setup, this.at);
     const result = applyMove(this.state, this.state.current, move, this.record.setup.mods);
     // A record that will not replay is a bug in the RECORDING, not in the watching. It
     // stops where it stopped and stays stopped — skipping the move and playing the rest
@@ -232,6 +233,7 @@ export class ReplayScreen {
     // refusal that only pauses is a refusal another tap on Step walks straight past.
     if (!result.ok) { this.stuck = true; this.pause(); return; }
     this.at++;
+    applyRecordRules(this.state, this.record.setup, this.at);
     this.renderer.consume(result.events);
     this.refresh();
   }

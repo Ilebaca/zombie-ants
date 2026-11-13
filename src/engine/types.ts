@@ -78,6 +78,8 @@ export interface TileEffect {
 export const PERMANENT = 99999;
 
 export interface GameState {
+  /** Version 1 exists only while reconstructing archived move records. */
+  rulesVersion?: 1 | 2;
   grid: Grid;
   size: number;
   turn: number;
@@ -141,7 +143,6 @@ export interface Species {
   name: string;
   atk: number;
   def: number;
-  prod: number;
   premium?: boolean;
   blurb: string;
   trait: string;

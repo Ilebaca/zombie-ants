@@ -111,6 +111,13 @@ export class SuspendStore {
       this.clear();
       return null;
     }
+    if (replay.state.rulesVersion === 1) {
+      const setup: MatchSetup = {...saved.setup, ruleChanges:[...(Array.isArray(saved.setup.ruleChanges) ? saved.setup.ruleChanges : []),
+        {after:saved.moves.length,rulesVersion:2}]};
+      replay.state.rulesVersion = 2;
+      this.save({...saved,setup});
+      return {...saved,setup,state:replay.state};
+    }
     return { ...saved, state: replay.state };
   }
 
@@ -125,7 +132,7 @@ export class SuspendStore {
    */
   save(match: Suspended): void {
     try {
-      this.store.set(this.key, JSON.stringify(match));
+      this.store.set(this.key, JSON.stringify({...match,setup:{...match.setup,rulesVersion:match.setup.rulesVersion ?? 2}}));
     } catch {
       // A quota error must never take the match down with it — the player is mid-turn.
     }
@@ -143,7 +150,7 @@ export class SuspendStore {
       if (!parsed || typeof parsed !== "object") return null;
       if (!parsed.setup || !Array.isArray(parsed.moves)) return null;
       return {
-        setup: parsed.setup,
+        setup: {...parsed.setup, rulesVersion:parsed.setup.rulesVersion ?? 1},
         moves: parsed.moves,
         playedMs: Number(parsed.playedMs) || 0,
         queens: Number(parsed.queens) || 0,

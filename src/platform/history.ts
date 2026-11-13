@@ -70,7 +70,8 @@ export function fitRecord(log: MatchLog): MatchLog {
 
 /** Newest first, capped. The one place the order and the cap are decided. */
 export function addToHistory(history: readonly MatchLog[], log: MatchLog): MatchLog[] {
-  return [fitRecord(log), ...history.filter((h) => h.id !== log.id)].slice(0, HISTORY_MAX);
+  const current = log.record ? {...log,record:{...log.record,setup:{...log.record.setup,rulesVersion:log.record.setup.rulesVersion ?? 2 as const}}} : log;
+  return [fitRecord(current), ...history.filter((h) => h.id !== log.id)].slice(0, HISTORY_MAX);
 }
 
 /** A short line for the list: who, and how it went. */

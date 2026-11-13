@@ -11,7 +11,7 @@ scenario controls. Existing matches keep their saved policy and equipment.
 
 - Evaluation weights blend from the novice evaluation to the full evaluation.
   Threatened pieces, nest danger and infrastructure become more important. Actual
-  species/chamber income stays valuable in long games. A gradually weighted assault
+  tile/chamber income stays valuable in long games. A gradually weighted assault
   estimate rewards assembling and delivering enough force to break a growing nest,
   rather than treating every army above 40 troops as equally useful.
 - Reinforcement starts at chapter 5, long travel at 9, infrastructure defence at 11,
@@ -67,7 +67,7 @@ Early enemy rosters use Fire in chapter 1, starter species through chapter 7,
 add Ghost/Pharaoh at 8 and Army/Bullet at 16. Cosmetics and wallet balances do
 not determine strength.
 
-## Universal loadout power, version 1
+## Universal loadout power, version 2
 
 `engine/combatPower(species, mods)` is shared by player display and opponent
 configuration. `ProfileStore.powerFor` obtains the same active modifiers used
@@ -85,7 +85,7 @@ The score is the rounded sum of five weighted components:
 | Opening | 50 × starting troops including Royal Chamber / 22 |
 
 The reference economy is one nest, four ordinary producers and two resource
-producers; cultivation, brood and species production all affect it. Nest defence
+producers; cultivation and brood affect it. Nest defence
 uses the engine's actual rounded bonus, scaled by 30; gland contributes 0.01 per
 level. Ability-kind estimates range from 1.05 to 1.12 and the cooldown estimate
 includes capped trait luck and the level-based recovery chance.
@@ -162,3 +162,16 @@ points around 54–55% including half-points for draws. The short per-chapter
 sample and high cutoff count limit pacing conclusions; human telemetry is still
 needed to calibrate actual completion times and win rates. No exact human
 difficulty claim follows from these results.
+
+## Shared tile output (power version 2)
+
+Ordinary producing tiles add 1 troop per turn for every colony. Nests add 2 and
+resource producers add 3 before shared upgrades and the Hive bonus. Species have
+no production attribute. Power's reference-income term is now
+`300 * (12 + 2 * cultivation + brood) / 12` for every species. The old release
+audit is historical and does not describe this corrected balance.
+
+New match records store rules version 2. Archived records retain their recorded
+arithmetic. Resuming a pre-v2 fight reconstructs its position and records a rule
+transition at the resume boundary; all subsequent production uses shared output.
+This preserves the board, moves and replay without keeping old rates in live play.

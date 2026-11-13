@@ -671,5 +671,8 @@
         49
       ]
     }
-  ]
+  ],
+  "historical": true,
+  "supersededByPowerVersion": 2,
+  "note": "Historical pre-correction audit; current tile output and power use shared rates. These outcomes are not current balance validation."
 }

@@ -29,3 +29,6 @@ export * from "./opponent-mods";
 export * from "./research";
 
 export * from "./power";
+
+export { CURRENT_RULES_VERSION } from "./record-rules";
+export { applyRecordRules } from "./protocol";

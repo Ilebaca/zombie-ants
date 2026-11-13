@@ -205,7 +205,7 @@ table tbody tr:hover { background: #f5f1ea; }
     </table></div>
 
     <h2>Production</h2>
-    <p>At the start of your turn every <strong>connected</strong> tile you own produces. Fractions accumulate on the tile and convert to whole soldiers as they cross 1.0, so slow economies still tick forward.</p>
+    <p>At the start of your turn every <strong>connected</strong> tile you own produces. Ordinary producing tiles add one soldier per turn for every colony; special tiles use their shared tile-specific rates.</p>
     <div class="tw"><table>
       <thead><tr><th>Tile</th><th>Base output / turn</th></tr></thead>
       <tbody>
@@ -216,7 +216,7 @@ table tbody tr:hover { background: #f5f1ea; }
         <tr><td>Detached tile</td><td>0 — cut off from the queen</td></tr>
       </tbody>
     </table></div>
-    <p>Output is then multiplied by the species production rate, by any research, and — if you hold the Hive queen — by the Hive growth multiplier. The <strong>Brood Nursery</strong> anthill chamber adds a flat hatch of soldiers onto your nest each turn.</p>
+    <p>Holding the Hive queen applies the shared Hive growth multiplier. Fungal Cultivation upgrades add production to resource tiles. The <strong>Brood Nursery</strong> anthill chamber adds a flat hatch of soldiers onto your nest each turn.</p>
 
     <h2>Win conditions</h2>
     <ul>
@@ -422,19 +422,19 @@ table tbody tr:hover { background: #f5f1ea; }
   <div class="page">
     <div class="eyebrow">Species</div>
     <h1>Eight colonies</h1>
-    <p>Every species is a stat triangle plus one ability. Values are exact multipliers applied in combat and production.</p>
+    <p>Every species has attack and defence modifiers plus one ability. Tile production follows the same rules for every colony.</p>
 
     <div class="tw"><table>
-      <thead><tr><th>Species</th><th>Atk</th><th>Def</th><th>Prod</th><th>Identity</th><th>Ability</th></tr></thead>
+      <thead><tr><th>Species</th><th>Atk</th><th>Def</th><th>Identity</th><th>Ability</th></tr></thead>
       <tbody>
-        <tr><td><strong>Ghost Ant</strong></td><td>1.21</td><td>1.09</td><td>1.00</td><td>Stealth over strength — soldier counts hidden until contact</td><td>Tunnelling</td></tr>
-        <tr><td><strong>Pharaoh Ant</strong></td><td>0.99</td><td>1.12</td><td><strong>1.25</strong></td><td>The supercolony — budding, costless expansion</td><td>Bud</td></tr>
-        <tr><td><strong>Leafcutter Ant</strong></td><td>1.13</td><td><strong>1.25</strong></td><td>1.15</td><td>Economic powerhouse that terraforms the field</td><td>Fungal Garden</td></tr>
-        <tr><td><strong>Fire Ant</strong></td><td>0.86</td><td>0.87</td><td>1.05</td><td>Balanced territorial scorched-earth defender</td><td>Wildfire</td></tr>
-        <tr><td><strong>Army Ant</strong></td><td>1.10</td><td>0.79</td><td>0.95</td><td>Nomadic raider — a devouring column</td><td>Feeding Swarm</td></tr>
-                <tr><td><strong>Carpenter Ant</strong></td><td>0.91</td><td>1.06</td><td>1.05</td><td>The fortress — a nightmare to dislodge</td><td>Fortify</td></tr>
-        <tr><td><strong>Bullet Ant</strong></td><td><strong>1.22</strong></td><td>0.84</td><td><strong>0.70</strong></td><td>Glass cannon — devastating per unit, starving economy</td><td>Venom Rain</td></tr>
-        <tr><td><strong>Demon Ant</strong> <span class="badge new">premium</span></td><td>1.09</td><td>1.00</td><td>0.95</td><td>Sacrifices her own for power — terror pheromone</td><td>Flee</td></tr>
+        <tr><td><strong>Ghost Ant</strong></td><td>1.21</td><td>1.09</td><td>Stealth over strength — soldier counts hidden until contact</td><td>Tunnelling</td></tr>
+        <tr><td><strong>Pharaoh Ant</strong></td><td>0.99</td><td>1.12</td><td>The supercolony — budding, costless expansion</td><td>Bud</td></tr>
+        <tr><td><strong>Leafcutter Ant</strong></td><td>1.13</td><td><strong>1.25</strong></td><td>Living walls reshape the battlefield</td><td>Fungal Garden</td></tr>
+        <tr><td><strong>Fire Ant</strong></td><td>0.86</td><td>0.87</td><td>Balanced territorial scorched-earth defender</td><td>Wildfire</td></tr>
+        <tr><td><strong>Army Ant</strong></td><td>1.10</td><td>0.79</td><td>Nomadic raider — a devouring column</td><td>Feeding Swarm</td></tr>
+                <tr><td><strong>Carpenter Ant</strong></td><td>0.91</td><td>1.06</td><td>The fortress — a nightmare to dislodge</td><td>Fortify</td></tr>
+        <tr><td><strong>Bullet Ant</strong></td><td><strong>1.22</strong></td><td>0.84</td><td>High attack with a fragile defence</td><td>Venom Rain</td></tr>
+        <tr><td><strong>Demon Ant</strong> <span class="badge new">premium</span></td><td>1.09</td><td>1.00</td><td>Sacrifices her own for power — terror pheromone</td><td>Flee</td></tr>
       </tbody>
     </table></div>
 
