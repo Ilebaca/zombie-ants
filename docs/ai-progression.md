@@ -146,8 +146,8 @@ extended equal-equipment skill comparison produced 7 wins, 3 cutoff draws and
 sides swapped. This isolates a substantial tactical difference without research,
 chambers or traits. A cutoff draw is not treated as a victory.
 
-The full automated suite passes 1,862 tests across 120 files. Browser checks at
-320 px and 390 px cover matching power displays, live upgrade refresh, automatic
+The full automated suite passes 1,863 tests across 120 files. Browser checks at
+320 px and 390 px cover matching power displays, live upgrade and trait refresh, automatic
 difficulty, worker replies, chapter-one neutral equipment, chapter-50 loadout
 adjustment and preserved controls/modifiers after resuming against a changed
 profile. Sample worker replies ranged from 2–12 ms for chapter 1 to about 210 ms

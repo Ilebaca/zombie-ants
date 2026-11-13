@@ -551,3 +551,21 @@ describe("fusing spares", () => {
     expect(s.bag.length).toBe(FUSE_FUEL);
   });
 });
+
+it("refreshes loadout power immediately after equipping and removing a species trait", () => {
+  const s=store(),def=FIRE.find(t=>t.kind==="attack")!;
+  const one=s.findTrait(def.id,"mythic")!;
+  const host=document.createElement("div");host.id="app";
+  const page=buildSpeciesPage(s,{species:"fire",onBack:()=>{}});
+  host.appendChild(page);document.body.replaceChildren(host);
+  const read=():number=>Number(page.querySelector("#speciesPower")!.textContent!.match(/\d+/)?.[0]);
+  const base=read();
+  page.querySelector<HTMLButtonElement>('#spgTraits [data-slot="0"]')!.click();
+  host.querySelector<HTMLButtonElement>(`.trait-picker-grid [data-uid="${one.uid}"]`)!.click();
+  host.querySelector<HTMLButtonElement>(".trait-detail-equip")!.click();
+  expect(read()).toBe(s.powerFor("fire").total);
+  expect(read()).toBeGreaterThan(base);
+  page.querySelector<HTMLButtonElement>('#spgTraits [data-slot="0"]')!.click();
+  host.querySelector<HTMLButtonElement>(".trait-picker-remove")!.click();
+  expect(read()).toBe(base);
+});
