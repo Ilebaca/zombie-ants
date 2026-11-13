@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { createGame, defaultContext, snapshot, applyMove } from "../../engine";
-import { aiTurn, profileFor } from "../search";
+import { createGame, defaultContext, snapshot, applyMove, recomputeConnectivity } from "../../engine";
+import { blankGame, put } from "../../engine/__tests__/helpers";
+import { aiTurn, chooseMove, profileFor } from "../search";
 import { Thinker } from "../thinker";
 
 describe("one chapter-scaled search", () => {
@@ -46,4 +47,20 @@ describe("one chapter-scaled search", () => {
       expect(thought.moves.length).toBeGreaterThan(0);
     }finally{thinker.dispose();clock.mockRestore();}
   });
+});
+
+it("learns a winning rally without any equipment advantage", () => {
+  const clock=vi.spyOn(Date,"now").mockReturnValue(0);
+  try {
+    const s=blankGame("small");
+    put(s,0,0,{owner:"ai",struct:"nest",soldiers:10});
+    for(const [c,r] of [[1,0],[2,0],[3,0],[1,1],[2,1],[3,1]] as const)
+      put(s,c,r,{owner:"ai",struct:"stable",soldiers:8});
+    put(s,4,0,{owner:"you",struct:"nest",soldiers:30});
+    recomputeConnectivity(s);s.current="ai";
+    const ctx=defaultContext(),before=snapshot(s);
+    expect(chooseMove(s,"ai",{version:1,chapter:1,skill:0},ctx).move?.action.kind).not.toBe("rally");
+    expect(chooseMove(s,"ai",{version:1,chapter:50,skill:1},ctx).move?.action.kind).toBe("rally");
+    expect(snapshot(s)).toEqual(before);
+  }finally{clock.mockRestore();}
 });

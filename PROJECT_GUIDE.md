@@ -5749,3 +5749,21 @@ and resizing, and always stays below it. Short screens scroll the page only as n
 constrain the panel's own content height. X, Escape, Hardware Back, outside taps and routing
 close it. A successful purchase refreshes the same panel and updates the purse and excavation
 count through ProfileStore, without changing the underlying chamber spacing.
+
+
+## Campaign AI and loadout power (current policy, November 2026)
+
+This section supersedes earlier regular-match recommendations to use Hard or
+Impossible, including manual campaign difficulty selection. New regular bot
+matches use one chapter-scaled policy; tutorials, fixed challenges and already
+saved matches retain their own controls. See [AI progression](docs/ai-progression.md)
+for the curve, legal equipment target, score formula and reproducible benchmark.
+
+Skill belongs in ai/search.ts; campaign equipment assignment belongs in
+platform/campaign-ai.ts. engine/power.ts is the shared versioned loadout estimate.
+Use ProfileStore.powerFor for player display and the same combat modifiers for
+matching. Power excludes skill, wallet, colony size and unequipped inventory.
+
+Freeze aiControl and mods in MatchSetup when a match opens. Resume must not
+recompute either from a changed profile. Never adjust equipment mid-match, give
+bots hidden combat advantages, or infer an exact human win rate from self-play.
