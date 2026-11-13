@@ -647,3 +647,20 @@ describe("abilities never break the board", () => {
     expect(tile(s, 2, 1).soldiers).not.toBe(before);
   });
 });
+
+it("records and cools down an armour-only leaf cast", () => {
+  const s=withSpecies("leafcutter");
+  put(s,1,1,{owner:"you",struct:"nest",soldiers:10});
+  put(s,7,7,{owner:"ai",struct:"nest",soldiers:10});
+  // Border ground is already walled; the nest itself still needs armour.
+  for(const [c,r] of [[0,1],[2,1],[1,0],[1,2]]) addEffect(s,c as number,r as number,"leaf","you",4);
+  recomputeConnectivity(s);
+  const events=activateAbility(s,"you",mods());
+  expect(events.some(e=>e.type==="abilityCast")).toBe(true);
+  expect(events.some(e=>e.type==="effectApplied"&&e.kind==="armor")).toBe(true);
+  expect(s.cooldown.you).toBeGreaterThan(0);
+  s.cooldown.you=0;
+  const before=snapshot(s);
+  expect(activateAbility(s,"you",mods())).toEqual([]);
+  expect(snapshot(s)).toEqual(before);
+});

@@ -206,3 +206,18 @@ it("keeps Impossible on a suspended match", () => {
   sus.save({ ...held([]), difficulty: "impossible" });
   expect(sus.resume()?.difficulty).toBe("impossible");
 });
+
+it("freezes chapter skill and legal equipment across storage and resume", () => {
+  const { store, sus } = fresh();
+  const setup: MatchSetup = {...SETUP,
+    aiControl:{version:1, chapter:25, skill:24/49},
+    mods:{you:{...defaultContext().mods.you,researchLevel:4},
+      ai:{...defaultContext().mods.ai,researchLevel:3,royal:2,brood:2,atkPct:6}},
+  };
+  sus.save({...held(realMoves(2)),setup});
+  // Use a new reader to cross the JSON boundary rather than sharing object references.
+  const resumed=new SuspendStore(store,PROFILE_KEY).resume();
+  expect(resumed?.setup.aiControl).toEqual(setup.aiControl);
+  expect(resumed?.setup.mods).toEqual(setup.mods);
+  expect(resumed?.difficulty).toBe("hard"); // saved policy takes precedence over this legacy fallback
+});

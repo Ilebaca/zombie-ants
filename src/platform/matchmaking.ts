@@ -9,8 +9,8 @@
  *
  * THE RULE, when nobody answers: after `SEARCH_MS` the search gives up and seats a bot from
  * the roster for the player's own chapter. The player is not told — a bot has a name, a
- * colony and a colony head like anyone else, and it plays on `hard`, which is the level
- * that beats `normal` 96% of the time. An opponent who folds is worse than no opponent.
+ * colony and an identity portrait like anyone else. Campaign skill and legal equipment
+ * are assigned separately by campaignOpponent when the match opens.
  *
  * The roster is GENERATED, not typed out: twenty per chapter across the road's fifty is a
  * thousand names, and a table that long is a thousand chances to leave one stale when the

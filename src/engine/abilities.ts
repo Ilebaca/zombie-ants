@@ -270,7 +270,9 @@ function castLeaf(state: GameState, p: Player, mods: PlayerMods, events: EngineE
       break;                                              // exactly one new permanent leaf per cast
     }
   }
-  return seen.size > 0;
+  // Fresh armour is a successful cast even when there is no empty ground for a leaf.
+  // Otherwise the board changes but no cooldown or replay move records that change.
+  return events.length > 0;
 }
 
 /** Fire Ant — the border ignites. Burns enemies, wild garrisons and the hive alike. */

@@ -23,9 +23,9 @@ export type { Action, Candidate } from "./moves";
  * a move, see the opponent's best reply, and undo it perfectly. The engine returns events
  * and never animates, so search needs no "am I simulating?" flag (PROJECT_GUIDE.md §3).
  *
- * The three difficulties are three DIFFERENT PLAYERS, not one player at three depths:
- * they see different amounts of the board, know different actions, and search to different
- * horizons. That is what makes them tell apart across a match rather than on a spreadsheet.
+ * Campaign opponents share one search policy. Chapter gradually increases evaluation
+ * awareness, action repertoire, lookahead and search budget while reducing mistakes.
+ * Named profiles remain available for saved matches, fixed scenarios and benchmark controls.
  */
 
 import type { AdaptiveControl, Difficulty } from "../engine";
@@ -431,7 +431,7 @@ export function aiTurn(
 
   // An ability is a free extra action, so fire it first and still take a move afterwards —
   // unless it is one that spends the turn, and then the cast IS the move.
-  // Easy, Normal and Hard retain neutral modifiers; Impossible is configured at match setup.
+  // Equipment is frozen in the match setup; the policy only decides how to play it.
   if (abilityReady(state, me) && shouldCast(state, me, ctx, profile)) {
     state.current = me;
     const cast = activateAbility(state, me, ctx.mods[me]);

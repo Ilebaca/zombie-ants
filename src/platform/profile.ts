@@ -1,8 +1,8 @@
 /**
  * The player's persistent colony record.
  *
- * Human modifiers come from the saved colony. Enemy modifiers come from the selected
- * difficulty: Easy through Hard remain neutral; Impossible has capped chamber/research levels.
+ * Human modifiers come from the saved colony. Regular opponents are configured separately
+ * by campaignOpponent; modsFor retains named presets for old saves and fixed scenarios.
  *
  * The engine does not import this module. Search runs on engine state alone, which is what
  * keeps simulation from writing stats or currencies (PROJECT_GUIDE.md §5).
