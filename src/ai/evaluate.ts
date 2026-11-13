@@ -13,7 +13,7 @@
  */
 import {
   PROD, attackMultiplier, defenceMultiplier, distance, flatDefence,
-  isConnected, isHiveTerrain, keepOn, neighbours, nestTile, otherPlayer,
+  isConnected, isHiveTerrain, keepOn, neighbours, nestTile, otherPlayer, speciesOf,
 } from "../engine";
 import type { GameState, Player, PlayerMods, Tile } from "../engine";
 
@@ -29,6 +29,8 @@ export interface EvalWeights {
   army: number;
   /** Largest single stack, capped. Same army spread thin loses to the same army in one fist. */
   concentration: number;
+  /** Ability to assemble and deliver a force large enough to break a growing nest. */
+  assault: number;
   /** What the opponent can capture on their next move, and what we can capture on ours. */
   hanging: number;
   nestThreat: number;
@@ -66,6 +68,7 @@ export const FULL: EvalWeights = {
   resource: 10,
   army: 1.2,
   concentration: 1.6,
+  assault: 0,
   hanging: 0.7,
   nestThreat: 4,
   nestPressure: 3,
@@ -161,6 +164,13 @@ export function evaluate(
   const side: Record<Player, Side> = { you: blankSide(), ai: blankSide() };
   const wantsTactics = w.hanging > 0;
   let myArmy = 0, oppArmy = 0, nearest = 99;
+  const assault: Record<Player, [number, number]> = {you:[0,0],ai:[0,0]};
+  const nestDemand = (holder: Player, steps: number): number => {
+    const nest = holder === me ? myNest : oppNest;
+    const growth = PROD.nest * speciesOf(state.species[holder]).prod + mods[holder].brood;
+    return nest.soldiers * def[holder] + flatDefence(state, nest, mods[holder])
+      + growth * def[holder] * steps;
+  };
 
   // ONE pass over the grid. This function runs at every leaf of the search, so the
   // difference between one walk and four (allTiles + armyOf + the advance scan) is the
@@ -176,10 +186,24 @@ export function evaluate(
     } else oppArmy += t.soldiers;
 
     if (!isConnected(state, t)) continue;
+    if (w.assault > 0 && t.soldiers > keepOn(t)) {
+      const target = t.owner === me ? oppNest : myNest;
+      const steps = Math.max(1, distance(t, target) - 1);
+      const strength = Math.min(1.5, (t.soldiers - keepOn(t)) * atk[t.owner]
+        / Math.max(1, nestDemand(otherPlayer(t.owner), steps))) / steps;
+      const best = assault[t.owner];
+      if (strength > best[0]) {best[1] = best[0];best[0] = strength;}
+      else best[1] = Math.max(best[1], strength);
+    }
     const s = side[t.owner];
     s.tiles += t.struct === "vein" ? VEIN_SHARE : 1;
     if (t.struct === "stable" || t.struct === "nest") {
-      s.income += t.terrain === "resource" ? PROD.resourceStable : PROD.stable;
+      if (w.assault > 0) {
+        const base = t.struct === "nest" ? PROD.nest
+          : t.terrain === "resource" ? PROD.resourceStable + mods[t.owner].cultivate : PROD.stable;
+        s.income += base * speciesOf(state.species[t.owner]).prod
+          + (t.struct === "nest" ? mods[t.owner].brood : 0);
+      } else s.income += t.terrain === "resource" ? PROD.resourceStable : PROD.stable;
     }
     if (t.terrain === "resource") s.resources++;
     if (isHiveTerrain(t)) s.hiveTiles++;
@@ -224,6 +248,7 @@ export function evaluate(
     + (mine.resources - theirs.resources) * w.resource
     + (myArmy - oppArmy) * w.army
     + (fistValue(mine.maxStack) - fistValue(theirs.maxStack)) * w.concentration
+    + (assault[me][0] + .25 * assault[me][1] - assault[opp][0] - .25 * assault[opp][1]) * w.assault
     + (mine.hiveTiles - theirs.hiveTiles) * w.hive
     // What THEY are about to lose is as good as what we are about to lose is bad.
     + (theirs.hanging - mine.hanging) * w.hanging;

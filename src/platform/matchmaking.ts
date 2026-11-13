@@ -9,15 +9,15 @@
  *
  * THE RULE, when nobody answers: after `SEARCH_MS` the search gives up and seats a bot from
  * the roster for the player's own chapter. The player is not told — a bot has a name, a
- * colony and a colony head like anyone else, and it plays on `hard`, which is the level
- * that beats `normal` 96% of the time. An opponent who folds is worse than no opponent.
+ * colony and an identity portrait like anyone else. Campaign skill and legal equipment
+ * are assigned separately by campaignOpponent when the match opens.
  *
  * The roster is GENERATED, not typed out: twenty per chapter across the road's fifty is a
  * thousand names, and a table that long is a thousand chances to leave one stale when the
  * road is retuned. It is derived from the chapter number instead, so the same chapter
  * always fields the same twenty and a player meets a familiar ladder rather than noise.
  */
-import { SPECIES_ORDER } from "./catalogue";
+
 import { seeded } from "../engine";
 import type { SpeciesId } from "../engine";
 import { ROAD_CHAPTERS, ROAD_CHAPTER_STOPS, chapterOf, stopColony } from "./road";
@@ -66,7 +66,11 @@ export function botsForChapter(chapter: number): Opponent[] {
   for (let i = 0; i < BOTS_PER_CHAPTER; i++) {
     const stem = RIVAL_NAMES[Math.floor(rand() * RIVAL_NAMES.length)] as string;
     const tag = 11 + Math.floor(rand() * 89);
-    const species = SPECIES_ORDER[Math.floor(rand() * SPECIES_ORDER.length)] as SpeciesId;
+    const roster: SpeciesId[] = at === 1 ? ["fire"]
+      : at < 8 ? ["fire", "leafcutter", "carpenter"]
+        : at < 16 ? ["fire", "leafcutter", "carpenter", "ghost", "pharaoh"]
+          : ["fire", "leafcutter", "carpenter", "ghost", "pharaoh", "army", "bullet"];
+    const species = roster[Math.floor(rand() * roster.length)] as SpeciesId;
     out.push({
       name: `${stem}${tag}`,
       colony: Math.round(low + (high - low) * rand()),

@@ -13,6 +13,7 @@ export interface SettingsOptions {
   onBack: () => void;
   /** Current values, shown on the rows that cycle. */
   difficulty: string;
+  adaptive?: boolean;
   onCycleDifficulty: () => void;
   onHowToPlay: () => void;
   /** Flipping a switch writes the profile AND tells the live device — see `App`. */
@@ -63,7 +64,7 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
       title: "Enemy AI",
       value: opts.difficulty,
       id: "setDiff",
-      onPick: opts.onCycleDifficulty,
+      onPick: opts.adaptive ? undefined : opts.onCycleDifficulty,
     }),
 
     el("div", "secthead", "Sound & feel"),
@@ -157,7 +158,7 @@ function shell(parts: RowParts, tag: "div" | "button"): HTMLElement {
   return row;
 }
 
-interface ValueRow extends RowParts { value: string; onPick: () => void }
+interface ValueRow extends RowParts { value: string; onPick?: () => void }
 
 /** A setting that cycles through a short list. The value IS the control. */
 function valueRow(parts: ValueRow): HTMLElement {
@@ -166,7 +167,8 @@ function valueRow(parts: ValueRow): HTMLElement {
   // The id belongs on the thing that is pressed, not on the row around it.
   btn.id = parts.id;
   row.id = `${parts.id}Row`;
-  btn.onclick = parts.onPick;
+  if (parts.onPick) btn.onclick = parts.onPick;
+  else btn.disabled = true;
   row.appendChild(btn);
   return row;
 }

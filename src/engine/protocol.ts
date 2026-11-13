@@ -31,6 +31,7 @@ import type { MapId } from "./config";
 import { createGame, endTurn } from "./state";
 import { NEUTRAL_MODS } from "./types";
 import type { Coord, EngineEvent, GameState, Player, PlayerMods, SpeciesId } from "./types";
+import type { AdaptiveControl } from "./difficulty";
 
 /**
  * One thing a player did.
@@ -55,6 +56,8 @@ export type Move =
  * that without having watched.
  */
 export interface MatchSetup {
+  /** Campaign opponent skill, frozen with this match; old recordings omit it. */
+  aiControl?: AdaptiveControl;
   map: MapId;
   species: Record<Player, SpeciesId>;
   seed: number;

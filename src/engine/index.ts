@@ -27,3 +27,5 @@ export * from "./difficulty";
 export * from "./opponent-mods";
 
 export * from "./research";
+
+export * from "./power";

@@ -1,0 +1,675 @@
+{
+  "policyVersion": 1,
+  "powerVersion": 1,
+  "sourceCommit": "d845a502f0377979777cab8470d233ddf3ae01a1",
+  "validationRun": "https://github.com/Ilebaca/zombie-ants/actions/runs/43350093998",
+  "mode": "Shipping wall-clock and node limits; hardware-dependent search quality",
+  "referencePlayer": {
+    "skill": "0.12 + 0.80 * (chapter - 1) / 49",
+    "gear": "chapterLoadout(chapter, species)",
+    "gamesPerChapter": 4,
+    "roundCutoff": 80,
+    "unfinished": "Draw; half a point; never adjudicated"
+  },
+  "bands": [
+    {
+      "chapters": [
+        1,
+        5
+      ],
+      "games": 20,
+      "playerScore": 0.5,
+      "draws": 20,
+      "maxThinkMs": 14
+    },
+    {
+      "chapters": [
+        6,
+        15
+      ],
+      "games": 40,
+      "playerScore": 0.5625,
+      "draws": 33,
+      "maxThinkMs": 108
+    },
+    {
+      "chapters": [
+        16,
+        30
+      ],
+      "games": 60,
+      "playerScore": 0.6333333333333333,
+      "draws": 38,
+      "maxThinkMs": 292
+    },
+    {
+      "chapters": [
+        31,
+        40
+      ],
+      "games": 40,
+      "playerScore": 0.55,
+      "draws": 24,
+      "maxThinkMs": 290
+    },
+    {
+      "chapters": [
+        41,
+        50
+      ],
+      "games": 40,
+      "playerScore": 0.5375,
+      "draws": 25,
+      "maxThinkMs": 434
+    }
+  ],
+  "skillOnly": {
+    "games": 10,
+    "wins": 7,
+    "draws": 3,
+    "losses": 0,
+    "roundCutoff": 160,
+    "results": [
+      {
+        "species": "fire",
+        "strongSide": "you",
+        "score": 1,
+        "round": 87
+      },
+      {
+        "species": "fire",
+        "strongSide": "ai",
+        "score": 1,
+        "round": 41
+      },
+      {
+        "species": "leafcutter",
+        "strongSide": "you",
+        "score": 0.5,
+        "round": 161
+      },
+      {
+        "species": "leafcutter",
+        "strongSide": "ai",
+        "score": 1,
+        "round": 62
+      },
+      {
+        "species": "carpenter",
+        "strongSide": "you",
+        "score": 1,
+        "round": 96
+      },
+      {
+        "species": "carpenter",
+        "strongSide": "ai",
+        "score": 1,
+        "round": 120
+      },
+      {
+        "species": "ghost",
+        "strongSide": "you",
+        "score": 0.5,
+        "round": 161
+      },
+      {
+        "species": "ghost",
+        "strongSide": "ai",
+        "score": 0.5,
+        "round": 161
+      },
+      {
+        "species": "army",
+        "strongSide": "you",
+        "score": 1,
+        "round": 142
+      },
+      {
+        "species": "army",
+        "strongSide": "ai",
+        "score": 1,
+        "round": 120
+      }
+    ]
+  },
+  "chapters": [
+    {
+      "chapter": 1,
+      "playerScore": 0.5,
+      "draws": 4,
+      "meanEnemyToPlayerPower": 0.806060606060606,
+      "enemySkill": 0,
+      "gearSteps": [
+        0
+      ]
+    },
+    {
+      "chapter": 2,
+      "playerScore": 0.5,
+      "draws": 4,
+      "meanEnemyToPlayerPower": 1.0712166172106825,
+      "enemySkill": 0.02040816326530612,
+      "gearSteps": [
+        0
+      ]
+    },
+    {
+      "chapter": 3,
+      "playerScore": 0.5,
+      "draws": 4,
+      "meanEnemyToPlayerPower": 1.163265306122449,
+      "enemySkill": 0.04081632653061224,
+      "gearSteps": [
+        0
+      ]
+    },
+    {
+      "chapter": 4,
+      "playerScore": 0.5,
+      "draws": 4,
+      "meanEnemyToPlayerPower": 0.9030303030303031,
+      "enemySkill": 0.061224489795918366,
+      "gearSteps": [
+        0,
+        3
+      ]
+    },
+    {
+      "chapter": 5,
+      "playerScore": 0.5,
+      "draws": 4,
+      "meanEnemyToPlayerPower": 0.9208704253214639,
+      "enemySkill": 0.08163265306122448,
+      "gearSteps": [
+        0
+      ]
+    },
+    {
+      "chapter": 6,
+      "playerScore": 0.5,
+      "draws": 4,
+      "meanEnemyToPlayerPower": 1.2209302325581395,
+      "enemySkill": 0.10204081632653061,
+      "gearSteps": [
+        0
+      ]
+    },
+    {
+      "chapter": 7,
+      "playerScore": 0.5,
+      "draws": 4,
+      "meanEnemyToPlayerPower": 0.8051063829787234,
+      "enemySkill": 0.12244897959183673,
+      "gearSteps": [
+        6
+      ]
+    },
+    {
+      "chapter": 8,
+      "playerScore": 0.5,
+      "draws": 4,
+      "meanEnemyToPlayerPower": 0.9631379715441848,
+      "enemySkill": 0.14285714285714285,
+      "gearSteps": [
+        0
+      ]
+    },
+    {
+      "chapter": 9,
+      "playerScore": 0.625,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 1.0513978831857673,
+      "enemySkill": 0.16326530612244897,
+      "gearSteps": [
+        0
+      ]
+    },
+    {
+      "chapter": 10,
+      "playerScore": 0.625,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.9489038212465235,
+      "enemySkill": 0.1836734693877551,
+      "gearSteps": [
+        0,
+        9
+      ]
+    },
+    {
+      "chapter": 11,
+      "playerScore": 0.5,
+      "draws": 4,
+      "meanEnemyToPlayerPower": 0.9192678928782241,
+      "enemySkill": 0.20408163265306123,
+      "gearSteps": [
+        0,
+        4
+      ]
+    },
+    {
+      "chapter": 12,
+      "playerScore": 0.625,
+      "draws": 1,
+      "meanEnemyToPlayerPower": 0.9044585189425817,
+      "enemySkill": 0.22448979591836735,
+      "gearSteps": [
+        0,
+        9
+      ]
+    },
+    {
+      "chapter": 13,
+      "playerScore": 0.625,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.9207121776933603,
+      "enemySkill": 0.24489795918367346,
+      "gearSteps": [
+        0,
+        9
+      ]
+    },
+    {
+      "chapter": 14,
+      "playerScore": 0.5,
+      "draws": 4,
+      "meanEnemyToPlayerPower": 0.9245118362744492,
+      "enemySkill": 0.2653061224489796,
+      "gearSteps": [
+        0,
+        13
+      ]
+    },
+    {
+      "chapter": 15,
+      "playerScore": 0.625,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.9886724393363577,
+      "enemySkill": 0.2857142857142857,
+      "gearSteps": [
+        0
+      ]
+    },
+    {
+      "chapter": 16,
+      "playerScore": 0.625,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.9527158413274566,
+      "enemySkill": 0.30612244897959184,
+      "gearSteps": [
+        0,
+        9
+      ]
+    },
+    {
+      "chapter": 17,
+      "playerScore": 0.625,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.8992140101553087,
+      "enemySkill": 0.32653061224489793,
+      "gearSteps": [
+        0,
+        16
+      ]
+    },
+    {
+      "chapter": 18,
+      "playerScore": 0.75,
+      "draws": 2,
+      "meanEnemyToPlayerPower": 0.9109985838416031,
+      "enemySkill": 0.3469387755102041,
+      "gearSteps": [
+        0,
+        17
+      ]
+    },
+    {
+      "chapter": 19,
+      "playerScore": 0.75,
+      "draws": 2,
+      "meanEnemyToPlayerPower": 0.9428336750024813,
+      "enemySkill": 0.3673469387755102,
+      "gearSteps": [
+        0,
+        18
+      ]
+    },
+    {
+      "chapter": 20,
+      "playerScore": 0.375,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.9667487130349226,
+      "enemySkill": 0.3877551020408163,
+      "gearSteps": [
+        0,
+        16
+      ]
+    },
+    {
+      "chapter": 21,
+      "playerScore": 0.75,
+      "draws": 2,
+      "meanEnemyToPlayerPower": 0.9201340341019499,
+      "enemySkill": 0.40816326530612246,
+      "gearSteps": [
+        0,
+        20
+      ]
+    },
+    {
+      "chapter": 22,
+      "playerScore": 0.5,
+      "draws": 4,
+      "meanEnemyToPlayerPower": 0.870611382741465,
+      "enemySkill": 0.42857142857142855,
+      "gearSteps": [
+        19,
+        21
+      ]
+    },
+    {
+      "chapter": 23,
+      "playerScore": 0.75,
+      "draws": 2,
+      "meanEnemyToPlayerPower": 0.9392026980283639,
+      "enemySkill": 0.4489795918367347,
+      "gearSteps": [
+        0,
+        16
+      ]
+    },
+    {
+      "chapter": 24,
+      "playerScore": 0.5,
+      "draws": 4,
+      "meanEnemyToPlayerPower": 0.9296558518349343,
+      "enemySkill": 0.46938775510204084,
+      "gearSteps": [
+        0,
+        16
+      ]
+    },
+    {
+      "chapter": 25,
+      "playerScore": 0.75,
+      "draws": 2,
+      "meanEnemyToPlayerPower": 0.8797463476966447,
+      "enemySkill": 0.4897959183673469,
+      "gearSteps": [
+        14,
+        24
+      ]
+    },
+    {
+      "chapter": 26,
+      "playerScore": 0.875,
+      "draws": 1,
+      "meanEnemyToPlayerPower": 0.8807874250381793,
+      "enemySkill": 0.5102040816326531,
+      "gearSteps": [
+        0,
+        25
+      ]
+    },
+    {
+      "chapter": 27,
+      "playerScore": 0.375,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.8905116136590374,
+      "enemySkill": 0.5306122448979592,
+      "gearSteps": [
+        16
+      ]
+    },
+    {
+      "chapter": 28,
+      "playerScore": 0.625,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.9246661919173936,
+      "enemySkill": 0.5510204081632653,
+      "gearSteps": [
+        0,
+        27
+      ]
+    },
+    {
+      "chapter": 29,
+      "playerScore": 0.875,
+      "draws": 1,
+      "meanEnemyToPlayerPower": 0.8561910921762442,
+      "enemySkill": 0.5714285714285714,
+      "gearSteps": [
+        16,
+        28
+      ]
+    },
+    {
+      "chapter": 30,
+      "playerScore": 0.375,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.8917069243156199,
+      "enemySkill": 0.5918367346938775,
+      "gearSteps": [
+        16,
+        19
+      ]
+    },
+    {
+      "chapter": 31,
+      "playerScore": 0.375,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.868893554073326,
+      "enemySkill": 0.6122448979591837,
+      "gearSteps": [
+        4,
+        30
+      ]
+    },
+    {
+      "chapter": 32,
+      "playerScore": 0.625,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.8760091921877866,
+      "enemySkill": 0.6326530612244898,
+      "gearSteps": [
+        19,
+        29
+      ]
+    },
+    {
+      "chapter": 33,
+      "playerScore": 0.625,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.8683004985822556,
+      "enemySkill": 0.6530612244897959,
+      "gearSteps": [
+        29,
+        32
+      ]
+    },
+    {
+      "chapter": 34,
+      "playerScore": 0.625,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.9027354841364553,
+      "enemySkill": 0.673469387755102,
+      "gearSteps": [
+        29
+      ]
+    },
+    {
+      "chapter": 35,
+      "playerScore": 0.5,
+      "draws": 2,
+      "meanEnemyToPlayerPower": 0.8706041012823459,
+      "enemySkill": 0.6938775510204082,
+      "gearSteps": [
+        9,
+        34
+      ]
+    },
+    {
+      "chapter": 36,
+      "playerScore": 0.625,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.8945120890518303,
+      "enemySkill": 0.7142857142857143,
+      "gearSteps": [
+        29,
+        32
+      ]
+    },
+    {
+      "chapter": 37,
+      "playerScore": 0.625,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.9066039729501267,
+      "enemySkill": 0.7346938775510204,
+      "gearSteps": [
+        24,
+        32
+      ]
+    },
+    {
+      "chapter": 38,
+      "playerScore": 0.25,
+      "draws": 2,
+      "meanEnemyToPlayerPower": 0.8917786304130983,
+      "enemySkill": 0.7551020408163265,
+      "gearSteps": [
+        19,
+        37
+      ]
+    },
+    {
+      "chapter": 39,
+      "playerScore": 0.75,
+      "draws": 2,
+      "meanEnemyToPlayerPower": 0.8693526292709812,
+      "enemySkill": 0.7755102040816326,
+      "gearSteps": [
+        9,
+        38
+      ]
+    },
+    {
+      "chapter": 40,
+      "playerScore": 0.5,
+      "draws": 0,
+      "meanEnemyToPlayerPower": 0.8576236894662654,
+      "enemySkill": 0.7959183673469388,
+      "gearSteps": [
+        32,
+        39
+      ]
+    },
+    {
+      "chapter": 41,
+      "playerScore": 0.625,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.8874953564938068,
+      "enemySkill": 0.8163265306122449,
+      "gearSteps": [
+        19,
+        29
+      ]
+    },
+    {
+      "chapter": 42,
+      "playerScore": 0.75,
+      "draws": 2,
+      "meanEnemyToPlayerPower": 0.8988565162907268,
+      "enemySkill": 0.8367346938775511,
+      "gearSteps": [
+        16,
+        41
+      ]
+    },
+    {
+      "chapter": 43,
+      "playerScore": 0.375,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.8717606676632137,
+      "enemySkill": 0.8571428571428571,
+      "gearSteps": [
+        39,
+        42
+      ]
+    },
+    {
+      "chapter": 44,
+      "playerScore": 0.5,
+      "draws": 2,
+      "meanEnemyToPlayerPower": 0.8743789293479864,
+      "enemySkill": 0.8775510204081632,
+      "gearSteps": [
+        39
+      ]
+    },
+    {
+      "chapter": 45,
+      "playerScore": 0.25,
+      "draws": 2,
+      "meanEnemyToPlayerPower": 0.8791568008418837,
+      "enemySkill": 0.8979591836734694,
+      "gearSteps": [
+        39,
+        44
+      ]
+    },
+    {
+      "chapter": 46,
+      "playerScore": 0.625,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.8943851878634488,
+      "enemySkill": 0.9183673469387755,
+      "gearSteps": [
+        19,
+        39
+      ]
+    },
+    {
+      "chapter": 47,
+      "playerScore": 0.625,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.8805233313406969,
+      "enemySkill": 0.9387755102040817,
+      "gearSteps": [
+        29,
+        39
+      ]
+    },
+    {
+      "chapter": 48,
+      "playerScore": 0.5,
+      "draws": 2,
+      "meanEnemyToPlayerPower": 0.8895989612393489,
+      "enemySkill": 0.9591836734693877,
+      "gearSteps": [
+        29,
+        39
+      ]
+    },
+    {
+      "chapter": 49,
+      "playerScore": 0.375,
+      "draws": 3,
+      "meanEnemyToPlayerPower": 0.8996279933779934,
+      "enemySkill": 0.9795918367346939,
+      "gearSteps": [
+        34,
+        39
+      ]
+    },
+    {
+      "chapter": 50,
+      "playerScore": 0.75,
+      "draws": 2,
+      "meanEnemyToPlayerPower": 0.8474747908865765,
+      "enemySkill": 1,
+      "gearSteps": [
+        39,
+        49
+      ]
+    }
+  ]
+}

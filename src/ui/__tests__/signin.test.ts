@@ -227,7 +227,7 @@ describe("returning through the colony picker", () => {
       choose(host, other);
       openSettings(host);
       expect(host.querySelector<HTMLInputElement>("#setName")?.value).toBe("Second");
-      expect(host.querySelector("#setDiff")?.textContent).toBe("Impossible");
+      expect(host.querySelector("#setDiff")?.textContent).toBe("Automatic");
       host.querySelector<HTMLButtonElement>("#settings .backbtn")!.click();
       host.querySelector<HTMLButtonElement>("#home .tn-id")!.click();
       expect(host.querySelector("#profile .pf-hero")?.textContent).toContain("Second");

@@ -1,7 +1,7 @@
 import {
   allTiles, isHiveTerrain, neighbours, otherPlayer,
   attackMultiplier, defenceMultiplier, fight, flatDefence,
-  endTurn,
+  endTurn, seeded,
   snapshot, restore,
   abilityOf, abilityReady, abilitySpendsTurn, activateAbility, frontline,
 } from "../engine";
@@ -23,12 +23,13 @@ export type { Action, Candidate } from "./moves";
  * a move, see the opponent's best reply, and undo it perfectly. The engine returns events
  * and never animates, so search needs no "am I simulating?" flag (PROJECT_GUIDE.md §3).
  *
- * The three difficulties are three DIFFERENT PLAYERS, not one player at three depths:
- * they see different amounts of the board, know different actions, and search to different
- * horizons. That is what makes them tell apart across a match rather than on a spreadsheet.
+ * Campaign opponents share one search policy. Chapter gradually increases evaluation
+ * awareness, action repertoire, lookahead and search budget while reducing mistakes.
+ * Named profiles remain available for saved matches, fixed scenarios and benchmark controls.
  */
 
-import type { Difficulty } from "../engine";
+import type { AdaptiveControl, Difficulty } from "../engine";
+export type AiLevel = Difficulty | AdaptiveControl;
 export type { Difficulty } from "../engine";
 import { IMPOSSIBLE_WEIGHTS, executePlannedTurn, planImpossibleTurn } from "./impossible";
 
@@ -109,6 +110,27 @@ export const PROFILES: Record<Difficulty, Profile> = {
     timeBudgetMs: 320,
   },
 };
+
+/** One campaign search policy, continuously tuned across the fifty chapters. */
+export function profileFor(level: AiLevel): Profile {
+  if (typeof level === "string") return PROFILES[level];
+  const skill = Number.isFinite(level.skill) ? Math.max(0, Math.min(1, level.skill)) : 0;
+  const weights = { ...NAIVE };
+  for (const key of Object.keys(FULL) as Array<keyof EvalWeights>) {
+    weights[key] = NAIVE[key] + (FULL[key] - NAIVE[key]) * skill;
+  }
+  // Long matches still need income and a force large enough to break the growing nest.
+  weights.incomeFloor = 1.5 * skill;
+  weights.assault = 180 * skill;
+  return {
+    depth: 1 + Math.floor(skill * 5), branching: 4 + Math.floor(skill * 6),
+    quiescence: skill >= .24,
+    gen: { reinforce: skill >= .08, travel: skill >= .16, rally: skill >= .35, veinGuard: skill >= .20 },
+    weights, searchAbility: skill >= .45,
+    nodeBudget: Math.round(300 + 11700 * skill * skill),
+    timeBudgetMs: Math.round(35 + 145 * skill * skill),
+  };
+}
 
 /* ------------------------------------------------------------------ EVALUATION */
 
@@ -290,9 +312,9 @@ export interface Decision { move: Candidate | null; value: number; depth: number
  * leaving it half-formed.
  */
 export function chooseMove(
-  state: GameState, me: Player, difficulty: Difficulty, ctx: ActionContext,
+  state: GameState, me: Player, difficulty: AiLevel, ctx: ActionContext,
 ): Decision {
-  const profile = PROFILES[difficulty];
+  const profile = profileFor(difficulty);
   if (difficulty === "impossible") {
     const decision = planImpossibleTurn(state, me, ctx, profile, true);
     return {
@@ -309,9 +331,31 @@ export function chooseMove(
     return { move: null, value: evaluateWith(state, me, ctx.mods, profile.weights), depth: 0, nodes: 0 };
   }
 
-  // Easy plays the top heuristic move without looking ahead at all.
+  if (typeof difficulty !== "string") {
+    const skill = Number.isFinite(difficulty.skill) ? Math.max(0, Math.min(1, difficulty.skill)) : 0;
+    // Position-derived choices do not advance the board RNG or depend on phone speed.
+    const random = seeded(state.rng ^ Math.imul(state.turn, 0x9e3779b9) ^ (me === "you" ? 0x51ed : 0x7ad1));
+    if (candidates.length > 1 && random() < .72 * (1 - skill) ** 2) {
+      const rank = 1 + Math.floor(random() * Math.min(candidates.length - 1, 1 + Math.floor(3 * (1 - skill))));
+      const move = candidates[rank] ?? candidates[0] ?? null;
+      return { move, value: move?.score ?? 0, depth: 1, nodes: 0 };
+    }
+  }
+
+  // Saved Easy matches retain the original heuristic. A one-ply campaign policy
+  // evaluates the result of its own action, so early chapter awareness still matters.
   if (profile.depth <= 1) {
-    return { move: candidates[0] ?? null, value: candidates[0]?.score ?? 0, depth: 1, nodes: 0 };
+    if (typeof difficulty === "string") {
+      return { move: candidates[0] ?? null, value: candidates[0]?.score ?? 0, depth: 1, nodes: 0 };
+    }
+    let best: Candidate | null = null, value = -Infinity;
+    for (const candidate of candidates) {
+      s.nodes++;
+      const next = withAction(state, me, candidate.action, s,
+        () => evaluateWith(state, me, ctx.mods, profile.weights));
+      if (next > value) {best = candidate;value = next;}
+    }
+    return {move:best,value,depth:1,nodes:s.nodes};
   }
 
   const opp = otherPlayer(me);
@@ -380,7 +424,7 @@ export function generateMoves(
  * then the ability, then the chosen action.
  */
 export function aiTurn(
-  state: GameState, me: Player, difficulty: Difficulty, ctx: ActionContext,
+  state: GameState, me: Player, difficulty: AiLevel, ctx: ActionContext,
   /**
    * Where to write down what it played, for anything that needs the turn as DATA rather
    * than as a finished board — a replay, or a record a server can verify
@@ -396,12 +440,12 @@ export function aiTurn(
     const decision = planImpossibleTurn(state, me, ctx, PROFILES.impossible);
     return executePlannedTurn(state, me, decision.plan, ctx, into);
   }
-  const profile = PROFILES[difficulty];
+  const profile = profileFor(difficulty);
   const events: EngineEvent[] = [];
 
   // An ability is a free extra action, so fire it first and still take a move afterwards —
   // unless it is one that spends the turn, and then the cast IS the move.
-  // Easy, Normal and Hard retain neutral modifiers; Impossible is configured at match setup.
+  // Equipment is frozen in the match setup; the policy only decides how to play it.
   if (abilityReady(state, me) && shouldCast(state, me, ctx, profile)) {
     state.current = me;
     const cast = activateAbility(state, me, ctx.mods[me]);

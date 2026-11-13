@@ -71,6 +71,10 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     page.appendChild(hero(id, level, tier.name, tier.col, upgrade,
       buildTraitSlots(store, { scope: id })));
 
+    const rating = el("div", "spgcooldown-note", `Loadout power ${store.powerFor(id).total}`);
+    rating.id = "speciesPower";
+    page.querySelector(".spgwho")?.appendChild(rating);
+
     // SKINS COME AFTER RESEARCH, and they are the whole of what this screen can CHANGE
     // for free. Research is the point of the page and leads it; a look costs nothing,
     // affects nothing, and is the one thing here a player picks rather than buys.
