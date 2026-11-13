@@ -1,52 +1,67 @@
-/* The game's raised frame, with a red edge continuing into the flame extension. */
+/* Compact die-cut power sticker. Shared across collection, detail and versus. */
 #app .power-host { position: relative; }
 #app .power-tag {
-  --power-edge: #ed4b55;
-  --power-face: #272830;
   position: absolute;
   z-index: 4;
-  top: -14px;
+  top: -12px;
   right: 10px;
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-width: 92px;
+  gap: 5px;
+  min-width: 94px;
   box-sizing: border-box;
-  padding: 7px 22px 7px 10px;
-  border: var(--action-stroke, 2px) solid var(--power-edge) !important;
-  border-radius: var(--action-radius, 12px);
-  background: var(--power-face);
-  color: var(--hud-ink, #fff9df);
-  box-shadow: 0 var(--action-depth, 4px) 0 var(--power-edge) !important;
+  padding: 6px 10px 6px 29px;
+  border: 3px solid #fff3d5 !important;
+  border-radius: 9px 12px 10px 7px;
+  background: #db4147;
+  color: #fff9e9;
+  box-shadow: 0 3px 0 #762a35, 0 5px 7px #10121845 !important;
   font-family: var(--font-display);
   line-height: 1;
   white-space: nowrap;
   pointer-events: none;
+  transform: rotate(-4deg);
+  transform-origin: 80% 50%;
 }
-#app .power-tag__label { font: 400 8px/1 var(--font-display); letter-spacing: .8px; color: #ffb3b7; }
+#app .power-tag::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px 0 5px 0;
+  background: #ffdfae;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+#app .power-tag__label { font: 400 7px/1 var(--font-display); letter-spacing: .6px; color: #ffe4cb; }
 #app .power-tag__value { font-size: 17px; font-weight: 400; font-variant-numeric: tabular-nums; }
 #app .power-tag__flame {
   position: absolute;
-  width: 34px;
-  height: 40px;
-  top: -27px;
-  right: 0;
-  overflow: visible;
-}
-#app .power-tag__flame-edge { fill: var(--power-face); stroke: var(--power-edge); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-#app .power-tag__flame-fill { fill: #ff8745; }
-#app .power-tag__flame-core { fill: #ffe383; }
-#app .power-tag--compact {
+  width: 23px;
+  height: 29px;
   top: -7px;
-  right: 0;
-  min-width: 48px;
-  padding: 5px 15px 5px 6px;
-  border-radius: 9px;
+  left: 3px;
+  overflow: visible;
+  transform: rotate(-7deg);
 }
-#app .power-tag--compact .power-tag__label { display: none; }
+#app .power-tag__flame-edge { fill: #f47437; stroke: #fff3d5; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+#app .power-tag__flame-fill { fill: #ffb444; }
+#app .power-tag__flame-core { fill: #fff0a2; }
+#app .power-tag--compact {
+  top: -6px;
+  right: 0;
+  min-width: 53px;
+  gap: 0;
+  padding: 5px 7px 5px 20px;
+  border-width: 2px !important;
+  border-radius: 7px 9px 8px 6px;
+}
+#app .power-tag--compact::after { width: 5px; height: 5px; }
+#app .power-tag--compact .power-tag__label { display: none !important; }
 #app .power-tag--compact .power-tag__value { font-size: 12px; }
-#app .power-tag--compact .power-tag__flame { width: 25px; height: 30px; top: -21px; right: 0; }
+#app .power-tag--compact .power-tag__flame { width: 18px; height: 23px; top: -6px; left: 0; }
 #app #antarium .ccard.power-host { overflow: visible; }
 #app #antBanner.power-host { margin-top: 14px; overflow: visible; }
 #app #antBanner.power-host .rb-info { padding-top: 12px; }
@@ -65,11 +80,10 @@
 #app .mmk-avatar { position: relative; width: var(--mmk-head-size); }
 #app .mmk-avatar > .power-tag { right: -6px; }
 
-/* Reserve room for flame tips above collection tiles, outside their portrait clips. */
-#app #antarium .cgrid { padding-top: 22px; }
 
-#app .power-tag__flame-edge { vector-effect: non-scaling-stroke; }
-#app .mmk-avatar > .power-tag { right: -3px; min-width: 0; gap: 4px; padding: 6px 18px 6px 8px; }
+/* Keep the small flame clear of the portrait's clipping frame. */
+#app #antarium .cgrid { padding-top: 14px; }
+#app .mmk-avatar > .power-tag { right: -3px; min-width: 0; gap: 4px; padding: 5px 8px 5px 23px; }
 #app .mmk-avatar .power-tag__value { font-size: 14px; }
 #app .mmk-avatar .power-tag__label { font-size: 7px; }
-#app .mmk-avatar .power-tag__flame { width: 29px; height: 34px; top: -23px; }
+#app .mmk-avatar .power-tag__flame { width: 20px; height: 25px; top: -6px; left: 1px; }

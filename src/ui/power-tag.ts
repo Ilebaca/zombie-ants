@@ -1,4 +1,4 @@
-/** Shared combat-power tag. Decorative flame and frame never change the score. */
+/** Shared combat-power tag. Decorative sticker and flame never change the score. */
 import { el } from "./chrome";
 import "./power-tag.css";
 
@@ -10,12 +10,12 @@ export function powerTag(total: number, opts: PowerTagOptions = {}): HTMLElement
   const value = el("span", "power-tag__value");
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("class", "power-tag__flame");
-  svg.setAttribute("viewBox", "0 0 34 40");
+  svg.setAttribute("viewBox", "0 0 24 30");
   svg.setAttribute("aria-hidden", "true");
   for (const [d, cls] of [
-    ["M2 28C0 26 4 25 5 22C7 25 9 24 10 21C13 14 7 11 15 2C14 12 26 13 24 23C29 21 29 17 29 15C37 25 32 31 33 39", "power-tag__flame-edge"],
-    ["M11 33C5 27 15 24 14 15C24 21 22 25 23 28C26 26 28 25 28 23C33 32 23 37 17 37Z", "power-tag__flame-fill"],
-    ["M16 35C12 31 19 28 19 24C25 29 24 33 20 36Z", "power-tag__flame-core"],
+    ["M12 1C13 8 21 10 21 18C21 24 17 28 11 28C5 28 2 24 2 19C2 15 5 12 6 9C6 14 9 14 10 11C12 7 10 5 12 1Z", "power-tag__flame-edge"],
+    ["M12 6C14 11 19 13 19 19C19 23 16 26 11 26C7 26 4 23 4 19C4 17 5 16 6 14C7 17 11 17 12 13C13 10 12 8 12 6Z", "power-tag__flame-fill"],
+    ["M12 16C12 20 16 20 15 23C14 26 8 26 8 22C8 20 11 19 12 16Z", "power-tag__flame-core"],
   ] as const) {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", d);path.setAttribute("class", cls);svg.appendChild(path);
