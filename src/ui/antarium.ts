@@ -7,6 +7,7 @@ import {
 import type { ProfileStore } from "../platform";
 import { cardArt } from "./cards";
 import { researchPips } from "./research";
+import { powerTag } from "./power-tag";
 import { showRewardReveal } from "./reward-reveal";
 import { el, hudMark, redraw, resourcePrice, screenEl, screenHeader, toast } from "./chrome";
 
@@ -69,7 +70,7 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
     const species = SPECIES[id];
     const stats = researchedStats(id, levelOf(store, id));
 
-    const box = el("div", "rbanner");
+    const box = el("div", "rbanner power-host");
     box.id = "antBanner";
     box.appendChild(tile(id, false));
 
@@ -89,7 +90,7 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
       el("div", "rb-tag", species.blurb),
       researchPips(levelOf(store, id)),
     );
-    box.appendChild(info);
+    box.append(info, powerTag(store.powerFor(id).total, {context:species.name}));
     return box;
   };
 
@@ -171,7 +172,8 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
         id === selected ? "sel" : ""].filter(Boolean).join(" "));
     card.dataset.ant = id;
 
-    card.appendChild(tile(id, true));
+    card.classList.add("power-host");
+    card.append(tile(id, true), powerTag(store.powerFor(id).total, {compact:true,context:SPECIES[id].name}));
     // THE NAME AND NOTHING UNDER IT. The card used to carry the colony's attack and
     // defence as a bare pair — "0.86 · 0.87" — which is two numbers with no label, no
     // scale and nothing to compare them against, and reads as some kind of level rather

@@ -16,6 +16,7 @@ import { abilityArtFor } from "./abilityart";
 import { coverFor } from "./covers";
 import { icon } from "./icons";
 import { buildTraitSlots } from "./traits";
+import { powerTag, updatePowerTag } from "./power-tag";
 
 export interface SpeciesPageOptions {
   species: SpeciesId;
@@ -71,12 +72,12 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     page.appendChild(hero(id, level, tier.name, tier.col, upgrade,
       buildTraitSlots(store, { scope: id, onChanged: () => {
         const rating = root.querySelector("#speciesPower");
-        if (rating) rating.textContent = `Loadout power ${store.powerFor(id).total}`;
+        if (rating instanceof HTMLElement) updatePowerTag(rating, store.powerFor(id).total);
       } })));
 
-    const rating = el("div", "spgcooldown-note", `Loadout power ${store.powerFor(id).total}`);
+    const rating = powerTag(store.powerFor(id).total, {context:species.name});
     rating.id = "speciesPower";
-    page.querySelector(".spgwho")?.appendChild(rating);
+    page.querySelector(".spghero")?.prepend(rating);
 
     // SKINS COME AFTER RESEARCH, and they are the whole of what this screen can CHANGE
     // for free. Research is the point of the page and leads it; a look costs nothing,
@@ -190,7 +191,7 @@ function hero(
 ): HTMLElement {
   const species = SPECIES[id];
   const pal = SPECIES_COL[id];
-  const box = el("div", "spghero");
+  const box = el("div", "spghero power-host");
   box.style.setProperty("--tc", tierCol);
 
   const who = el("div", "spgwho");

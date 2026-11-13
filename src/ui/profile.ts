@@ -31,6 +31,7 @@ import {
 import type { ProfileStore, TraitScope } from "../platform";
 import { antPortrait, avatarFace, clockOf, el, levelRewardChip, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
+import { powerTag } from "./power-tag";
 
 export interface ProfileOptions {
   onBack: () => void;
@@ -159,7 +160,7 @@ function who(
   const profile = store.get();
   const progress = store.level();
 
-  const box = el("div", "pf-hero");
+  const box = el("div", "pf-hero power-host");
 
   // THE FACE IS A CONTROL NOW, because there is something to choose.
   const face = el("button", "pf-face") as HTMLButtonElement;
@@ -186,7 +187,7 @@ function who(
   side.append(
     el("div", "pf-name", profile.name),
     el("div", "pf-sub", `Colony level ${progress.level}`),
-    el("div", "pf-sub", `${SPECIES[profile.lastSpecies].name} · Power ${store.powerFor(profile.lastSpecies).total}`),
+    el("div", "pf-sub", SPECIES[profile.lastSpecies].name),
   );
   const bar = el("div", "pf-bar");
   const fill = el("i");
@@ -195,7 +196,7 @@ function who(
   side.append(bar,
     el("div", "pf-xp", `${progress.into} / ${progress.need} XP to level ${progress.level + 1}`));
 
-  box.append(face, side);
+  box.append(face, side, powerTag(store.powerFor(profile.lastSpecies).total, {context:SPECIES[profile.lastSpecies].name}));
 
   // Level rewards are tapped, not auto-paid: reaching a level should feel like collecting.
   const unclaimed = store.unclaimedLevels();

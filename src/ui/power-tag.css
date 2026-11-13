@@ -1,0 +1,75 @@
+/* The game's raised frame, with a red edge continuing into the flame extension. */
+#app .power-host { position: relative; }
+#app .power-tag {
+  --power-edge: #ed4b55;
+  --power-face: #272830;
+  position: absolute;
+  z-index: 4;
+  top: -14px;
+  right: 10px;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  min-width: 92px;
+  box-sizing: border-box;
+  padding: 7px 22px 7px 10px;
+  border: var(--action-stroke, 2px) solid var(--power-edge) !important;
+  border-radius: var(--action-radius, 12px);
+  background: var(--power-face);
+  color: var(--hud-ink, #fff9df);
+  box-shadow: 0 var(--action-depth, 4px) 0 var(--power-edge) !important;
+  font-family: var(--font-display);
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+#app .power-tag__label { font: 400 8px/1 var(--font-display); letter-spacing: .8px; color: #ffb3b7; }
+#app .power-tag__value { font-size: 17px; font-weight: 400; font-variant-numeric: tabular-nums; }
+#app .power-tag__flame {
+  position: absolute;
+  width: 34px;
+  height: 40px;
+  top: -27px;
+  right: 0;
+  overflow: visible;
+}
+#app .power-tag__flame-edge { fill: var(--power-face); stroke: var(--power-edge); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#app .power-tag__flame-fill { fill: #ff8745; }
+#app .power-tag__flame-core { fill: #ffe383; }
+#app .power-tag--compact {
+  top: -7px;
+  right: 0;
+  min-width: 48px;
+  padding: 5px 15px 5px 6px;
+  border-radius: 9px;
+}
+#app .power-tag--compact .power-tag__label { display: none; }
+#app .power-tag--compact .power-tag__value { font-size: 12px; }
+#app .power-tag--compact .power-tag__flame { width: 25px; height: 30px; top: -21px; right: 0; }
+#app #antarium .ccard.power-host { overflow: visible; }
+#app #antBanner.power-host { margin-top: 14px; overflow: visible; }
+#app #antBanner.power-host .rb-info { padding-top: 12px; }
+#app .spghero.power-host { overflow: visible; }
+#app .spghero.power-host .spgtier { padding-inline-end: 110px; }
+#app .pf-hero.power-host { overflow: visible; padding-top: 26px; }
+#app .setup-colony-preview {
+  position: relative;
+  width: 100%;
+  max-height: calc(100% - 44px);
+  aspect-ratio: 1567 / 900;
+}
+#app .setup-colony-preview:not(.on) { display: none; }
+#app .setup-colony-preview .coverslide { height: 100%; }
+#app .setup-colony-preview > .power-tag { right: max(16px, calc((100% - var(--setup-width)) / 2)); }
+#app .mmk-avatar { position: relative; width: var(--mmk-head-size); }
+#app .mmk-avatar > .power-tag { right: -6px; }
+
+/* Reserve room for flame tips above collection tiles, outside their portrait clips. */
+#app #antarium .cgrid { padding-top: 22px; }
+
+#app .power-tag__flame-edge { vector-effect: non-scaling-stroke; }
+#app .mmk-avatar > .power-tag { right: -3px; min-width: 0; gap: 4px; padding: 6px 18px 6px 8px; }
+#app .mmk-avatar .power-tag__value { font-size: 14px; }
+#app .mmk-avatar .power-tag__label { font-size: 7px; }
+#app .mmk-avatar .power-tag__flame { width: 29px; height: 34px; top: -23px; }

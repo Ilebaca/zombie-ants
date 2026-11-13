@@ -30,6 +30,7 @@ import { antHead, drawSnapshot, groundReady, lookCol, setFactionColor } from "..
 import { cutCoverFor } from "./covers";
 import { el, screenEl, screenHeader, setupSteps } from "./chrome";
 import { icon } from "./icons";
+import { powerTag, updatePowerTag } from "./power-tag";
 
 /** What a match is built from. The setup screen is the only thing that writes it. */
 export interface Choices {
@@ -109,7 +110,11 @@ export function buildSetup(o: SetupOptions): HTMLElement {
   const rail = el("div", "coverrail");
   for (const id of owned) rail.appendChild(coverPane(id, o.profile.lookFor(id)));
   reel.appendChild(rail);
-  stage.appendChild(reel);
+  const preview = el("div", "setup-colony-preview power-host");
+  const power = powerTag(o.profile.powerFor(o.choices.species).total);
+  power.id = "setupPower";
+  preview.append(reel, power);
+  stage.appendChild(preview);
   root.appendChild(stage);
 
   const foot = el("div", "setupfoot");
@@ -136,6 +141,8 @@ export function buildSetup(o: SetupOptions): HTMLElement {
     // rebuilding it per press would restart the slide from a standing start every time.
     const picking = step === "species";
     reel.classList.toggle("on", picking);
+    preview.classList.toggle("on", picking);
+    updatePowerTag(power, o.profile.powerFor(o.choices.species).total);
     shot.classList.toggle("off", picking);
     rail.style.transform = `translate3d(${-100 * Math.max(0, owned.indexOf(o.choices.species))}%,0,0)`;
     // THE GROUND THE MATCH WILL BE PLAYED ON, not a generic one: the player is choosing a
