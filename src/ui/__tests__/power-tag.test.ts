@@ -57,3 +57,41 @@ it("shows the found opponent's adjusted equipment power and retains the two-seco
   expect(found).not.toHaveBeenCalled();
   await vi.advanceTimersByTimeAsync(2000);expect(found).toHaveBeenCalledWith(foe);screen.destroy();
 });
+
+it("keeps unowned badges grey and without a live fire effect at every level", () => {
+  const tag=powerTag(1200,{owned:false,level:10});
+  expect(tag.classList.contains("power-tag--locked")).toBe(true);
+  expect(tag.dataset.fire).toBe("false");
+  expect(tag.querySelector("canvas")).toBeNull();
+});
+
+it("gates the live effect by owned species research level and removes it at zero", () => {
+  const tag=powerTag(1200,{owned:true,level:0});
+  expect(tag.querySelector("canvas")).toBeNull();
+  const shape=tag.querySelector(".power-tag__flame-edge")?.getAttribute("d");
+  updatePowerTag(tag,1230,{owned:true,level:1});
+  expect(tag.dataset.level).toBe("1");
+  expect(tag.querySelector(".power-tag__fire")).not.toBeNull();
+  updatePowerTag(tag,1500,{owned:true,level:99});
+  expect(tag.dataset.level).toBe("10");
+  expect(tag.querySelector(".power-tag__flame-edge")?.getAttribute("d")).toBe(shape);
+  updatePowerTag(tag,1200,{level:0});
+  expect(tag.querySelector(".power-tag__fire")).toBeNull();
+});
+
+it("passes ownership and research level through collection, detail and selection previews", () => {
+  const s=new ProfileStore(new MemoryStore());
+  s.update(p=>{p.research.fire={level:7};});
+  const collection=buildAntarium(s,{onOpenSpecies:()=>{}});
+  collection.querySelector<HTMLElement>('[data-ant="fire"]')?.click();
+  for(const tag of [collection.querySelector('[data-ant="fire"] .power-tag'),collection.querySelector('#antBanner .power-tag')]) {
+    expect(tag?.getAttribute("data-level")).toBe("7");
+    expect(tag?.getAttribute("data-owned")).toBe("true");
+  }
+  expect(collection.querySelector('[data-ant="bullet"] .power-tag')?.getAttribute("data-owned")).toBe("false");
+  const detail=buildSpeciesPage(s,{species:"fire",onBack:()=>{}});
+  expect(detail.querySelector("#speciesPower")?.getAttribute("data-level")).toBe("7");
+  const choices:Choices={species:"fire",map:"small",shape:"wedge"};
+  const setup=buildSetup({choices,profile:s,onBack:()=>{},onBegin:()=>{}});
+  expect(setup.querySelector("#setupPower")?.getAttribute("data-level")).toBe("7");
+});

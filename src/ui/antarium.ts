@@ -73,7 +73,7 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
 
     const info = el("div", "rb-info");
     const meta = el("div", "rb-meta");
-    meta.appendChild(powerTag(store.powerFor(id).total, {context:species.name}));
+    meta.appendChild(powerTag(store.powerFor(id).total, {context:species.name, owned:store.isUnlocked(id), level:levelOf(store,id)}));
     info.append(
       meta,
       el("div", "rb-name", species.name),
@@ -163,7 +163,7 @@ export function buildAntarium(store: ProfileStore, opts: AntariumOptions): HTMLE
     card.dataset.ant = id;
 
     card.classList.add("power-host");
-    card.append(tile(id), powerTag(store.powerFor(id).total, {compact:true,context:SPECIES[id].name}));
+    card.append(tile(id), powerTag(store.powerFor(id).total, {compact:true,context:SPECIES[id].name,owned:store.isUnlocked(id),level:levelOf(store,id)}));
     // Detailed combat stats belong on the species page; the collection shows name and power.
     // The PRICE went with the veil that used to carry it. A locked tile is grey and its
     // ownership is shown by its gray art; the price is a thing to act on, so

@@ -111,7 +111,7 @@ export function buildSetup(o: SetupOptions): HTMLElement {
   for (const id of owned) rail.appendChild(coverPane(id, o.profile.lookFor(id)));
   reel.appendChild(rail);
   const preview = el("div", "setup-colony-preview power-host");
-  const power = powerTag(o.profile.powerFor(o.choices.species).total);
+  const power = powerTag(o.profile.powerFor(o.choices.species).total, {level:o.profile.get().research[o.choices.species]?.level ?? 0, owned:o.profile.isUnlocked(o.choices.species)});
   power.id = "setupPower";
   preview.append(reel, power);
   stage.appendChild(preview);
@@ -142,7 +142,7 @@ export function buildSetup(o: SetupOptions): HTMLElement {
     const picking = step === "species";
     reel.classList.toggle("on", picking);
     preview.classList.toggle("on", picking);
-    updatePowerTag(power, o.profile.powerFor(o.choices.species).total);
+    updatePowerTag(power, o.profile.powerFor(o.choices.species).total, {level:o.profile.get().research[o.choices.species]?.level ?? 0, owned:o.profile.isUnlocked(o.choices.species)});
     shot.classList.toggle("off", picking);
     rail.style.transform = `translate3d(${-100 * Math.max(0, owned.indexOf(o.choices.species))}%,0,0)`;
     // THE GROUND THE MATCH WILL BE PLAYED ON, not a generic one: the player is choosing a
