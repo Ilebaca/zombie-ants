@@ -16,7 +16,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
-      - run: npx vitest run src/engine/__tests__/power.test.ts src/engine/__tests__/traits.test.ts src/engine/__tests__/research.test.ts src/platform/__tests__/traits.test.ts src/platform/__tests__/campaign-ai.test.ts src/ui/__tests__
+      - run: npm test
       - run: npm run build
       - uses: actions/upload-artifact@v4
         with:
