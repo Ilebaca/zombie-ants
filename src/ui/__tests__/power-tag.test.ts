@@ -7,7 +7,6 @@ import { powerTag, updatePowerTag } from "../power-tag";
 import { MemoryStore, ProfileStore, campaignOpponent } from "../../platform";
 import type { Choices } from "../setup";
 import type { Opponent } from "../../platform";
-HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
 afterEach(()=>{document.body.replaceChildren();vi.useRealTimers();});
 
 it("updates only the number and accessible name while retaining the attached flame",()=>{
@@ -62,12 +61,12 @@ it("keeps unowned badges grey and without a live fire effect at every level", ()
   const tag=powerTag(1200,{owned:false,level:10});
   expect(tag.classList.contains("power-tag--locked")).toBe(true);
   expect(tag.dataset.fire).toBe("false");
-  expect(tag.querySelector("canvas")).toBeNull();
+  expect(tag.querySelector(".power-tag__fire")).toBeNull();
 });
 
 it("gates the live effect by owned species research level and removes it at zero", () => {
   const tag=powerTag(1200,{owned:true,level:0});
-  expect(tag.querySelector("canvas")).toBeNull();
+  expect(tag.querySelector(".power-tag__fire")).toBeNull();
   const shape=tag.querySelector(".power-tag__flame-edge")?.getAttribute("d");
   updatePowerTag(tag,1230,{owned:true,level:1});
   expect(tag.dataset.level).toBe("1");
@@ -94,4 +93,12 @@ it("passes ownership and research level through collection, detail and selection
   const choices:Choices={species:"fire",map:"small",shape:"wedge"};
   const setup=buildSetup({choices,profile:s,onBack:()=>{},onBegin:()=>{}});
   expect(setup.querySelector("#setupPower")?.getAttribute("data-level")).toBe("7");
+});
+
+it("uses flat vector artwork for the badge and its level effect", () => {
+  const tag=powerTag(1450,{owned:true,level:10});
+  expect(tag.querySelector("canvas")).toBeNull();
+  expect(tag.querySelector("linearGradient")).toBeNull();
+  expect(tag.querySelector("radialGradient")).toBeNull();
+  expect(tag.querySelectorAll(".power-tag__fire path")).toHaveLength(2);
 });

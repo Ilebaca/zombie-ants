@@ -1,160 +1,102 @@
-/** Shared, visibility-aware heat simulation for flames behind power badges. */
-const WIDTH = 98, HEIGHT = 55;
+/** Flat, joined flame illustrations. Only this backdrop animates; the badge stays rigid. */
+const NS = "http://www.w3.org/2000/svg";
+const POSES = [
+  "M2 41C-5 28 1 18 8 11C7 23 15 23 19 18C20 5 29 1 31-10C36 0 34 11 43 15C46 1 59 0 59-17C69-5 63 4 75 12C79 2 90 0 90-12C100-2 94 9 105 15C110 4 122 3 124-5C125 10 131 14 135 18C142 13 145 11 145 5C153 21 146 32 139 41C108 47 32 47 2 41Z",
+  "M2 41C-3 29 4 21 9 14C9 25 17 23 20 19C23 8 27 2 35-7C36 4 38 10 45 16C50 3 55-2 56-14C67-3 67 7 77 14C83 4 86-4 93-9C100 1 98 10 107 16C113 7 119 0 127-2C125 11 133 15 136 20C144 16 143 11 147 8C152 24 145 33 139 41C108 47 32 47 2 41Z",
+  "M2 41C-6 27 0 17 6 8C6 21 13 25 18 17C17 6 30 4 28-13C39-3 35 10 42 14C44 3 60 1 63-13C68-1 61 5 73 11C76-1 90 2 88-15C101-5 93 9 104 13C108 2 124 6 121-8C130 5 128 15 134 17C140 9 147 14 143 2C154 18 147 31 139 41C108 47 32 47 2 41Z",
+] as const;
 interface Fire {
-  canvas: HTMLCanvasElement;
-  ctx: CanvasRenderingContext2D;
-  buffer: HTMLCanvasElement;
-  paint: CanvasRenderingContext2D;
-  image: ImageData;
-  heat: Float32Array;
-  next: Float32Array;
-  seeds: number[];
-  level: number;
+  svg: SVGSVGElement;
+  pulse: SVGGElement;
+  animations: Animation[];
+  boost: Animation | null;
   visible: boolean;
-  boostUntil: number;
 }
-const fires = new Map<HTMLCanvasElement, Fire>();
-let frame = 0, last = 0;
+const fires = new Map<SVGSVGElement, Fire>();
 let observer: IntersectionObserver | null = null;
+let cleanup: MutationObserver | null = null;
 let motion: MediaQueryList | null = null;
-const clamp = (n: number): number => Math.max(0, Math.min(1, n));
-function wake(): void {
-  if (!frame && typeof requestAnimationFrame === "function" && !motion?.matches) frame = requestAnimationFrame(tick);
+function remove(svg: SVGSVGElement): void {
+  const f = fires.get(svg);
+  if (f) { f.animations.forEach(a => a.cancel()); f.boost?.cancel(); fires.delete(svg); }
+  observer?.unobserve(svg);
+  svg.remove();
 }
-function tick(now: number): void {
-  frame = 0;
-  let active = false;
-  for (const [canvas, fire] of fires) {
-    if (!canvas.isConnected) { observer?.unobserve(canvas); fires.delete(canvas); continue; }
-    if (!fire.visible || motion?.matches || document.hidden || !canvas.getClientRects().length) continue;
-    active = true;
-    if (now - last >= 32) draw(fire, now);
-  }
-  if (now - last >= 32) last = now;
-  if (active) wake();
-}
-function rgb(hue: number, light: number): [number, number, number] {
-  const a = Math.min(light, 1 - light);
-  const channel = (n: number): number => {
-    const k = (n + hue / 30) % 12;
-    return 255 * (light - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)));
-  };
-  return [channel(0), channel(8), channel(4)];
-}
-function draw(f: Fire, now: number, render = true): void {
-  const t = now / 1000, boost = clamp((f.boostUntil - now) / 1000);
-  const cooling = .14 - .009 * f.level - boost * .012;
-  for (let y = 0; y < HEIGHT - 2; y++) {
-    const drift = Math.sin(t * 3.4 + y * .39) * .8;
-    for (let x = 1; x < WIDTH - 1; x++) {
-      const sx = Math.max(1, Math.min(WIDTH - 2, Math.round(x + drift + Math.random() - .5)));
-      const below = (y + 1) * WIDTH + sx;
-      f.next[y * WIDTH + x] = Math.max(0,
-        ((f.heat[below - 1] ?? 0) + (f.heat[below] ?? 0) + (f.heat[below + 1] ?? 0)
-          + (f.heat[below + WIDTH] ?? 0)) * .25 - cooling * (.55 + Math.random() * .65));
-    }
-  }
-  [f.heat, f.next] = [f.next, f.heat];
-  f.next.fill(0);
-  for (const index of f.seeds) {
-    const pulse = .8 + .2 * Math.sin(t * 9 + (index % WIDTH) * .42);
-    f.heat[index] = (.65 + Math.random() * .6 + f.level * .035 + boost * .25) * pulse;
-  }
-  if (!render) return;
-  const pixels = f.image.data;
-  for (let i = 0; i < f.heat.length; i++) {
-    const h = clamp((f.heat[i] ?? 0) * .86);
-    const x = i % WIDTH, y = Math.floor(i / WIDTH);
-    const edge = clamp(y / 5) * clamp(x / 3) * clamp((WIDTH - 1 - x) / 3);
-    const alpha = clamp((h - .055) * 2.5) * edge;
-    let colour: [number, number, number];
-    if (f.level >= 8) {
-      const hue = f.level === 8 ? 278 + h * 25 : f.level === 9 ? 205 - h * 25
-        : (t * 62 + h * 105 + Math.floor(i / WIDTH) * 1.7) % 360;
-      colour = rgb(hue, .18 + h * .76);
-    } else {
-      colour = [Math.min(255, 160 + h * 210), Math.max(0, Math.min(255, (h - .1) * 345)),
-        Math.max(0, Math.min(235, (h - .62) * 620))];
-    }
-    const at = i * 4;
-    pixels[at] = colour[0]; pixels[at + 1] = colour[1]; pixels[at + 2] = colour[2];
-    pixels[at + 3] = alpha * 255;
-  }
-  f.paint.putImageData(f.image, 0, 0);
-  f.ctx.clearRect(0, 0, 196, 110);
-  f.ctx.filter = "blur(3px)"; f.ctx.globalAlpha = .65;
-  f.ctx.drawImage(f.buffer, 0, 0, 196, 110);
-  f.ctx.filter = "none"; f.ctx.globalAlpha = 1;
-  f.ctx.drawImage(f.buffer, 0, 0, 196, 110);
+function sync(f: Fire): void {
+  f.animations.forEach(a => {
+    if (f.visible && !motion?.matches && !document.hidden) a.play();
+    else a.pause();
+  });
 }
 function watch(): void {
   if (!motion && typeof window.matchMedia === "function") {
     motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    motion.addEventListener?.("change", () => {
-      if (motion?.matches) {
-        if (frame) cancelAnimationFrame(frame);
-        frame = 0;
-        for (const f of fires.values()) f.ctx.clearRect(0, 0, 196, 110);
-      } else wake();
-    });
-    document.addEventListener("visibilitychange", wake);
+    motion.addEventListener?.("change", () => { for (const f of fires.values()) sync(f); });
+    document.addEventListener("visibilitychange", () => { for (const f of fires.values()) sync(f); });
   }
   if (!observer && typeof IntersectionObserver !== "undefined") {
     observer = new IntersectionObserver(entries => {
       for (const entry of entries) {
-        const f = fires.get(entry.target as HTMLCanvasElement);
-        if (f) f.visible = entry.isIntersecting;
+        const f = fires.get(entry.target as SVGSVGElement);
+        if (f) { f.visible = entry.isIntersecting; sync(f); }
       }
-      wake();
     }, { rootMargin: "20px" });
   }
+  if (!cleanup && typeof MutationObserver !== "undefined") {
+    cleanup = new MutationObserver(() => {
+      for (const svg of fires.keys()) if (!svg.isConnected) remove(svg);
+    });
+    cleanup.observe(document.documentElement, { childList: true, subtree: true });
+  }
 }
-export function setPowerFire(tag: HTMLElement, level: number, outline: string): void {
-  const previous = tag.querySelector<HTMLCanvasElement>(".power-tag__fire");
-  if (level <= 0) {
-    if (previous) { observer?.unobserve(previous); fires.delete(previous); previous.remove(); }
-    return;
+export function setPowerFire(tag: HTMLElement, level: number): void {
+  const previous = tag.querySelector<SVGSVGElement>(".power-tag__fire");
+  if (previous && Number(previous.dataset.level) === level) return;
+  if (previous) remove(previous);
+  if (level <= 0) return;
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("class", "power-tag__fire");
+  svg.setAttribute("viewBox", "0 0 140 44");
+  svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  svg.setAttribute("aria-hidden", "true");
+  svg.dataset.level = String(level);
+  const size = document.createElementNS(NS, "g");
+  const height = .24 + level * .076;
+  size.setAttribute("transform", `translate(70 3) scale(${.92 + level * .008} ${height}) translate(-70 -3)`);
+  const pulse = document.createElementNS(NS, "g");
+  pulse.setAttribute("class", "power-tag__fire-pulse");
+  const outer = document.createElementNS(NS, "path");
+  outer.setAttribute("class", "power-tag__fire-outer");
+  outer.setAttribute("d", POSES[0]);
+  const inner = document.createElementNS(NS, "path");
+  inner.setAttribute("class", "power-tag__fire-inner");
+  inner.setAttribute("d", POSES[0]);
+  inner.setAttribute("transform", "translate(0 5) scale(1 .82)");
+  outer.setAttribute("fill", level < 8 ? "#f26a35" : level === 9 ? "#307dcc" : "#8851c8");
+  inner.setAttribute("fill", level < 8 ? "#ffd36f" : level === 9 ? "#8fe1ff" : "#dbb3ff");
+  pulse.append(outer, inner); size.appendChild(pulse); svg.appendChild(size); tag.prepend(svg);
+  if (typeof outer.animate !== "function") return;
+  const loop = (path: SVGPathElement, delay: number): Animation =>
+    path.animate([...POSES, POSES[0]].map(d => ({ d: `path("${d}")` })),
+      { duration: 1900 - level * 55, iterations: Infinity, easing: "ease-in-out", delay });
+  const animations = [loop(outer, 0), loop(inner, -250)];
+  if (level === 10) {
+    animations.push(outer.animate([{fill:"#8851c8"},{fill:"#307dcc"},{fill:"#d65287"},{fill:"#8851c8"}],
+      {duration:4800,iterations:Infinity,easing:"ease-in-out"}));
+    animations.push(inner.animate([{fill:"#dbb3ff"},{fill:"#8fe1ff"},{fill:"#ffd58c"},{fill:"#dbb3ff"}],
+      {duration:4800,iterations:Infinity,easing:"ease-in-out"}));
   }
-  if (previous) {
-    const current = fires.get(previous);
-    if (current) current.level = level;
-    wake();
-    return;
-  }
-  const canvas = document.createElement("canvas");
-  canvas.className = "power-tag__fire";
-  canvas.width = 196; canvas.height = 110;
-  canvas.setAttribute("aria-hidden", "true");
-  tag.prepend(canvas);
-  // The DOM still describes the effect in non-canvas test and accessibility environments.
-  if (typeof Path2D === "undefined" || typeof requestAnimationFrame !== "function") return;
-  const ctx = canvas.getContext("2d");
-  const buffer = document.createElement("canvas");
-  buffer.width = WIDTH; buffer.height = HEIGHT;
-  const paint = buffer.getContext("2d");
-  if (!ctx || !paint) return;
-  const shape = new Path2D(outline), mask = new Uint8Array(WIDTH * HEIGHT), seeds: number[] = [];
-  for (let y = 0; y < HEIGHT; y++) for (let x = 0; x < WIDTH; x++) {
-    mask[y * WIDTH + x] = paint.isPointInPath(shape, x * 2 - 28, y * 2 - 44) ? 1 : 0;
-  }
-  for (let y = 1; y < HEIGHT - 1; y++) for (let x = 1; x < WIDTH - 1; x++) {
-    const at = y * WIDTH + x;
-    if (mask[at] && (!mask[at - 1] || !mask[at + 1] || !mask[at - WIDTH] || !mask[at + WIDTH])) seeds.push(at);
-  }
-  const f: Fire = { canvas, ctx, buffer, paint, image: paint.createImageData(WIDTH, HEIGHT),
-    heat: new Float32Array(WIDTH * HEIGHT), next: new Float32Array(WIDTH * HEIGHT), seeds,
-    level, visible: true, boostUntil: 0 };
-  fires.set(canvas, f);
-  watch(); observer?.observe(canvas);
-  // Warm the heat field before its first visible frame.
-  for (let i = 0; i < 18; i++) draw(f, performance.now(), false);
-  draw(f, performance.now());
-  wake();
+  animations.forEach(a => a.pause());
+  const f: Fire = { svg, pulse, animations, boost: null, visible: true };
+  fires.set(svg, f);
+  watch();
+  if (observer) observer.observe(svg); else sync(f);
 }
 export function flarePowerFire(tag: HTMLElement): void {
-  const canvas = tag.querySelector<HTMLCanvasElement>(".power-tag__fire");
-  const f = canvas && fires.get(canvas);
-  if (!f || motion?.matches) return;
-  f.boostUntil = performance.now() + 1000;
-  wake();
+  const svg = tag.querySelector<SVGSVGElement>(".power-tag__fire");
+  const f = svg && fires.get(svg);
+  if (!f || motion?.matches || typeof f.pulse.animate !== "function") return;
+  f.boost?.cancel();
+  f.boost = f.pulse.animate([{transform:"scaleY(1)"},{transform:"scaleY(1.12)",offset:.2},{transform:"scaleY(1)"}],
+    {duration:1000,easing:"ease-out"});
 }
