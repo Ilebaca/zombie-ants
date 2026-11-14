@@ -202,7 +202,7 @@ function hero(id: SpeciesId, level: number): HTMLElement {
   stats.append(
     statCard("attack", "Attack", now.attack.toFixed(2)),
     statCard("defence", "Defence", now.defence.toFixed(2)),
-    statCard("cooldown", "Cooldown", `${now.cooldown}%`),
+    statCard("cooldown", "CDR chance", `${now.cooldown}%`),
   );
   box.append(done, stats);
   return box;
