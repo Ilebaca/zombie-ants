@@ -680,28 +680,30 @@ describe("species page", () => {
     expect(s.get().mycel).toBe(500);
   });
 
-  it("places the single upgrade below the stats and above the unboxed trait row", () => {
+  it("places the single upgrade below the stats with individual trait slots outside", () => {
     const root = openPage(store());
     const hero = root.querySelector(".spghero")!;
     const upgrade = hero.querySelector("#spgUpgrade")!;
     const stats = hero.querySelector(".spgstats")!;
-    const traits = hero.querySelector("#spgTraits")!;
+    const traits = root.querySelector("#spgTraits")!;
     expect(stats.compareDocumentPosition(upgrade) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(upgrade.nextElementSibling).toBe(traits);
-    expect(traits.parentElement).toBe(hero);
+    expect(hero.lastElementChild).toBe(upgrade);
+    expect(hero.nextElementSibling).toBe(traits);
     expect(traits.closest(".panel-group")).toBeNull();
   });
 
-  it("grows attack and defense beyond the unchanged base length", () => {
+  it("updates the three icon stat cards together when research is upgraded", () => {
     const s = store(0, 100000);
-    const widths = (): number[] => Array.from(openPage(s).querySelectorAll<HTMLElement>(
-      '[data-stat="attack"] .spgstat-f')).map((f) => parseFloat(f.style.width));
-    const [before, base] = widths();
-    expect(before).toBe(base);
+    const before = openPage(s);
+    const read = (root: HTMLElement): string[] =>
+      Array.from(root.querySelectorAll(".spgstat-v")).map(n => n.textContent ?? "");
     s.buyResearch("fire");
-    const [after, baseAfter] = widths();
-    expect(after).toBeGreaterThan(baseAfter!);
-    expect(baseAfter).toBe(base);
+    const after = openPage(s);
+    expect(Number(read(after)[0])).toBeGreaterThan(Number(read(before)[0]));
+    expect(Number(read(after)[1])).toBeGreaterThan(Number(read(before)[1]));
+    expect(read(after)[2]).toBe("1%");
+    expect(after.querySelectorAll(".spgstats .spgstat > svg")).toHaveLength(3);
+    expect(after.querySelectorAll(".spgtags > *")).toHaveLength(2);
   });
 
   it("caps all three stats at level ten and disables further purchases", () => {

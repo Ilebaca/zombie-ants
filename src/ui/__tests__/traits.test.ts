@@ -324,11 +324,13 @@ describe("the inventory", () => {
  * the card's last line now, and still a door.
  */
 describe("inline species loadouts", () => {
-  it("keeps individual slots below Upgrade in the species hero, with no navigation row", () => {
+  it("keeps individual slots below the upgrade panel, with no navigation row", () => {
     const s = new ProfileStore(new MemoryStore());
     const page = buildSpeciesPage(s, { species: "bullet", onBack: () => {} });
-    const hero = page.querySelector(".spghero")!, traits = hero.querySelector("#spgTraits")!;
-    expect(hero.lastElementChild).toBe(traits);
+    const hero = page.querySelector(".spghero")!, traits = page.querySelector("#spgTraits")!;
+    expect(hero.nextElementSibling).toBe(traits);
+    expect(hero.lastElementChild?.id).toBe("spgUpgrade");
+    expect(traits.querySelector(".trtotals")).toBeNull();
     expect(traits.tagName).toBe("DIV");
     expect(traits.querySelectorAll(".trait-slot-row .trtile")).toHaveLength(5);
     expect(traits.querySelectorAll(".trtile.shut")).toHaveLength(4);

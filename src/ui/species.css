@@ -1,0 +1,65 @@
+/* Species upgrades use the shared card frame, gutters and spacing tokens. */
+#app #antup .spghero {
+  position: relative;
+  gap: var(--block);
+  padding: calc(var(--block) + 10px) var(--block) var(--block);
+  margin-top: var(--block);
+  overflow: visible;
+}
+#app #antup .spgtags {
+  position: absolute;
+  inset: 0 var(--block) auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--inrow);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+#app #antup .spgrarity {
+  padding: 5px 9px;
+  border: var(--action-stroke) solid var(--action-frame);
+  border-radius: 7px;
+  background: var(--hud-panel, #27272f);
+  box-shadow: 0 2px 0 var(--action-frame);
+  color: var(--tc);
+  font-family: var(--font-display);
+  font-size: var(--fs-small);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+#app #antup .spgtags > .power-tag { position: relative; inset: auto; flex: none; }
+#app #antup .spgdone { margin: 0; gap: var(--inrow); }
+#app #antup .spgstats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--inrow);
+  margin: 0;
+}
+#app #antup .spgstat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: var(--inrow) 4px;
+  border: var(--action-stroke) solid var(--action-frame);
+  border-radius: var(--action-radius);
+  background: var(--hud-face);
+  box-shadow: 0 var(--action-depth) 0 var(--action-frame);
+  color: var(--hud-dim);
+}
+#app #antup .spgstat-v {
+  justify-self: center;
+  color: var(--hud-go);
+  font-family: var(--font-display);
+  font-size: max(8px, calc(19px * var(--ui-type-scale, 1)));
+}
+#app #antup .spgstat-k {
+  font-size: var(--fs-small);
+  letter-spacing: 0;
+  text-align: center;
+}
+#app #antup .spgupgrade { margin-top: var(--action-depth); }
+#app #antup .trait-slots--standalone { margin-top: var(--action-depth); gap: 0; }
+#app #antup .trait-slots--standalone .trait-slot-row { gap: var(--inrow); }

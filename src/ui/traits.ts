@@ -14,11 +14,14 @@ import { mountTraitPicker, traitPopupHost } from "./trait-popovers";
 
 export interface TraitSlotsOptions {
   scope: TraitScope;
+  /** Species pages show individual slots below the upgrade panel. */
+  standalone?: boolean;
   onChanged?: (change: "equip" | "remove") => void;
 }
 
 export function buildTraitSlots(store: ProfileStore, opts: TraitSlotsOptions): HTMLElement {
   const root = el("div", "trait-slots");
+  root.classList.toggle("trait-slots--standalone", !!opts.standalone);
   root.id = opts.scope === "hill" ? "hillTraits" : "spgTraits";
   let unmountPicker = (): void => {};
   const { scope } = opts;
@@ -205,7 +208,10 @@ export function buildTraitSlots(store: ProfileStore, opts: TraitSlotsOptions): H
     heading.append(el("span", undefined, "Traits"), el("span", "trait-slots-count",
       `${store.bench(scope).slice(0, store.slotsOpen()).filter(Boolean).length} / ${store.slotsOpen()}`));
     const row = slotRow();
-    root.append(heading, row, totalsBox());
+    if (opts.standalone) {
+      root.setAttribute("aria-label", "Traits");
+      root.appendChild(row);
+    } else root.append(heading, row, totalsBox());
     if (selectedSlot !== null) {
       const panel = picker();
       panel.addEventListener("dismiss-trait-popup", closePicker);

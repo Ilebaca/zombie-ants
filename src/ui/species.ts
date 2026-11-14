@@ -1,7 +1,7 @@
 /** Species upgrades: ten shared levels, combat stats and a single trait row. */
 import { groupSections } from "./groups";
 import {
-  SPECIES_LEVEL_MAX, RESEARCH_STAT_CAP, COOLDOWN_CHANCE_CAP, SPECIES, TIERS,
+  SPECIES_LEVEL_MAX, SPECIES, TIERS,
   looksFor, researchCost, researchedStats,
 } from "../engine";
 import type { Look, SpeciesId } from "../engine";
@@ -9,14 +9,14 @@ import {
   SPECIES_NOTES, tierOf,
 } from "../platform";
 import type { ProfileStore } from "../platform";
-import { SPECIES_COL } from "../render";
 import { antPortrait, buyButton, el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { researchPips } from "./research";
 import { abilityArtFor } from "./abilityart";
 import { coverFor } from "./covers";
 import { icon } from "./icons";
 import { buildTraitSlots } from "./traits";
-import { burstPowerTag, powerTag, updatePowerTag } from "./power-tag";
+import { powerTag, updatePowerTag } from "./power-tag";
+import "./species.css";
 
 export interface SpeciesPageOptions {
   species: SpeciesId;
@@ -28,7 +28,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
   const id = opts.species;
   const species = SPECIES[id];
 
-  const render = (flare = false): void => {
+  const render = (): void => {
     const profile = store.get();
     const level = profile.research[id]?.level ?? 0;
     const tier = tierOf(id);
@@ -59,7 +59,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
       insufficient: profile.pheromone < cost,
       onBuy: () => {
         if (!store.buyResearch(id)) return;
-        render(true);
+        render();
         toast(root, `${species.name} → Lv ${level + 1}`, "hive");
       },
     });
@@ -69,18 +69,18 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
       upgrade.prepend(el("span", "spgupgrade-label", "Upgrade"));
       upgrade.setAttribute("aria-label", `Upgrade ${species.name} to level ${level + 1} for ${cost} pheromone crystals`);
     }
-    page.appendChild(hero(id, level, tier.name, tier.col, upgrade,
-      buildTraitSlots(store, { scope: id, onChanged: change => {
-        const rating = root.querySelector("#speciesPower");
-        if (rating instanceof HTMLElement) {
-          updatePowerTag(rating, store.powerFor(id).total, {level:store.get().research[id]?.level ?? 0, owned:store.isUnlocked(id)});
-          if (change === "equip") burstPowerTag(rating);
-        }
-      } })));
-
+    const main = hero(id, level);
+    const tags = el("div", "spgtags");
+    const rarity = el("span", "spgrarity", species.premium ? "Mythic · Premium" : tier.name);
+    rarity.style.setProperty("--tc", tier.col);
     const rating = powerTag(store.powerFor(id).total, {context:species.name, level, owned:store.isUnlocked(id)});
     rating.id = "speciesPower";
-    page.querySelector(".spgname-row")?.appendChild(rating);
+    tags.append(rarity, rating);
+    main.prepend(tags);
+    main.appendChild(upgrade);
+    page.append(main, buildTraitSlots(store, { scope: id, standalone: true, onChanged: () => {
+      updatePowerTag(rating, store.powerFor(id).total, {level:store.get().research[id]?.level ?? 0, owned:store.isUnlocked(id)});
+    } }));
 
     // SKINS COME AFTER RESEARCH, and they are the whole of what this screen can CHANGE
     // for free. Research is the point of the page and leads it; a look costs nothing,
@@ -97,7 +97,6 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     body.appendChild(page);
     root.appendChild(body);
     groupSections(root);
-    if (flare) burstPowerTag(rating);
   };
 
   /**
@@ -189,72 +188,33 @@ function cover(id: SpeciesId, look: Look): HTMLElement {
   return box;
 }
 
-function hero(
-  id: SpeciesId, level: number, tierName: string, tierCol: string,
-  upgrade: HTMLElement, traits: HTMLElement,
-): HTMLElement {
-  const species = SPECIES[id];
-  const pal = SPECIES_COL[id];
+/** Level progress and three equal stat cards share the standard panel rhythm. */
+function hero(id: SpeciesId, level: number): HTMLElement {
   const box = el("div", "spghero power-host");
-  box.style.setProperty("--tc", tierCol);
-
-  const who = el("div", "spgwho");
-  who.appendChild(el("div", "spgtier", species.premium ? "Mythic · Premium" : tierName));
-  const name = el("div", "spgname", species.name);
-  name.style.color = pal[1] as string;
-  const nameRow = el("div", "spgname-row");
-  nameRow.appendChild(name);
-  who.append(nameRow, el("div", "spgblurb", species.blurb));
-  box.appendChild(who);
-
   const done = el("div", "spgdone");
   done.append(
     el("span", "spgdone-k", "Level"),
     el("span", "spgdone-v", `${level} / ${SPECIES_LEVEL_MAX}`),
     researchPips(level),
   );
-  box.appendChild(done);
-
   const now = researchedStats(id, level);
   const stats = el("div", "spgstats");
   stats.append(
-    statBar("Attack", species.atk, now.attack, statRange("atk"), tierCol),
-    statBar("Defense", species.def, now.defence, statRange("def"), tierCol),
-    statBar("Cooldown", 0, now.cooldown, { min: 0, max: COOLDOWN_CHANCE_CAP }, tierCol, true),
+    statCard("attack", "Attack", now.attack.toFixed(2)),
+    statCard("defence", "Defence", now.defence.toFixed(2)),
+    statCard("cooldown", "Cooldown", `${now.cooldown}%`),
   );
-  box.append(stats, el("p", "spgcooldown-note",
-    "Chance each turn to reduce ability cooldown by one extra turn."), upgrade, traits);
+  box.append(done, stats);
   return box;
 }
 
-/** Every species shares the same attack/defence scale, including research headroom. */
-function statRange(kind: "atk" | "def"): { min: number; max: number } {
-  const values = Object.values(SPECIES).map((s) => s[kind]);
-  const min = Math.min(...values);
-  const max = Math.max(...values) * (1 + RESEARCH_STAT_CAP);
-  return { min: min - (max - min) * 0.25, max };
-}
-
-/** Base and upgraded value share a bounded scale. Cooldown shows its 0–10% range. */
-function statBar(
-  label: string, base: number, now: number, range: { min: number; max: number },
-  colour: string, percent = false,
-): HTMLElement {
-  const at = (value: number): number =>
-    Math.max(0, Math.min(100, ((value - range.min) / (range.max - range.min)) * 100));
-  const row = el("div", "spgstat");
-  row.dataset.stat = percent ? "cooldown" : label.toLowerCase();
-  row.append(el("span", "spgstat-k", label));
-  const bar = el("span", "spgstat-b");
-  const grown = el("span", "spgstat-f grown");
-  grown.style.width = `${at(now)}%`;
-  const own = el("span", "spgstat-f base");
-  own.style.width = `${at(base)}%`;
-  own.style.background = colour;
-  bar.append(grown, own);
-  row.append(bar, el("span", "spgstat-v" + (now > base ? " up" : ""),
-    percent ? `${now}%` : now.toFixed(2)));
-  return row;
+function statCard(kind: string, label: string, value: string): HTMLElement {
+  const card = el("div", "spgstat");
+  card.dataset.stat = kind;
+  card.append(icon(kind === "cooldown" ? "clock" : kind, 22),
+    el("span", "spgstat-v", value), el("span", "spgstat-k", label));
+  if (kind === "cooldown") card.title = "Chance each turn to reduce ability cooldown by one extra turn.";
+  return card;
 }
 
 /* --------------------------------------------------------------------- THE ABILITY */
