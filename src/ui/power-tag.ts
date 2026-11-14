@@ -1,10 +1,9 @@
-/** A flat illustrated power badge with a separate, level-driven flame backdrop. */
+/** Static illustrated power badge with one clean, continuous border. */
 import { el } from "./chrome";
-import { flarePowerFire, setPowerFire } from "./power-fire";
 import "./power-tag.css";
 
 export interface PowerTagOptions { compact?: boolean; context?: string; level?: number; owned?: boolean }
-const OUTLINE = "M23 3H121L108 13Q104 16 110 17L136 21Q140 22 136 24L111 30Q107 31 111 34L120 41H23C12 41 3 33 3 22S12 3 23 3Z";
+const OUTLINE = "M23 4H120L108 14Q106 16 110 17L135 21Q138 22 135 23L110 29Q106 30 109 33L120 40H23C12.5 40 4 32 4 22S12.5 4 23 4Z";
 export function powerTag(total: number, opts: PowerTagOptions = {}): HTMLElement {
   const tag = el("div", "power-tag" + (opts.compact ? " power-tag--compact" : ""));
   if (opts.context) tag.dataset.context = opts.context;
@@ -18,12 +17,8 @@ export function powerTag(total: number, opts: PowerTagOptions = {}): HTMLElement
   svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
   const rim = document.createElementNS(ns, "path");
   rim.setAttribute("class", "power-tag__flame-edge");
-  rim.setAttribute("d", OUTLINE); rim.setAttribute("fill", "#c7ced0");
-  const face = document.createElementNS(ns, "path");
-  face.setAttribute("class", "power-tag__face");
-  face.setAttribute("d", OUTLINE); face.setAttribute("fill", "#dc4947");
-  face.setAttribute("transform", "translate(4 4) scale(.94 .82)");
-  svg.append(rim, face);
+  rim.setAttribute("d", OUTLINE); rim.setAttribute("fill", "#dc4947");
+  svg.appendChild(rim);
   tag.append(label, value, svg);
   updatePowerTag(tag, total, opts);
   return tag;
@@ -36,14 +31,11 @@ export function updatePowerTag(tag: HTMLElement, total: number, opts: Pick<Power
   tag.dataset.power = String(score);
   tag.dataset.level = String(level);
   tag.dataset.owned = String(owned);
-  tag.dataset.fire = String(owned && level > 0);
+  tag.dataset.fire = "false";
   tag.classList.toggle("power-tag--locked", !owned);
   const number = tag.querySelector(".power-tag__value");
   if (number) number.textContent = tag.classList.contains("power-tag--compact") ? String(score) : score.toLocaleString("en-US");
   const context = tag.dataset.context;
   tag.setAttribute("aria-label", `${context ? context + ": " : ""}Total power ${score.toLocaleString("en-US")}`);
   tag.title = "Total power · species, research, combat chambers and equipped traits";
-  setPowerFire(tag, owned ? level : 0);
 }
-/** Upgrade and entry feedback energises the fire, never the rigid badge. */
-export function burstPowerTag(tag: HTMLElement): void { flarePowerFire(tag); }

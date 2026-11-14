@@ -64,18 +64,16 @@ it("keeps unowned badges grey and without a live fire effect at every level", ()
   expect(tag.querySelector(".power-tag__fire")).toBeNull();
 });
 
-it("gates the live effect by owned species research level and removes it at zero", () => {
+it("keeps every owned level static and preserves the same clean outline", () => {
   const tag=powerTag(1200,{owned:true,level:0});
-  expect(tag.querySelector(".power-tag__fire")).toBeNull();
   const shape=tag.querySelector(".power-tag__flame-edge")?.getAttribute("d");
-  updatePowerTag(tag,1230,{owned:true,level:1});
-  expect(tag.dataset.level).toBe("1");
-  expect(tag.querySelector(".power-tag__fire")).not.toBeNull();
-  updatePowerTag(tag,1500,{owned:true,level:99});
-  expect(tag.dataset.level).toBe("10");
-  expect(tag.querySelector(".power-tag__flame-edge")?.getAttribute("d")).toBe(shape);
-  updatePowerTag(tag,1200,{level:0});
-  expect(tag.querySelector(".power-tag__fire")).toBeNull();
+  for (const level of [0,1,5,10,99]) {
+    updatePowerTag(tag,1500,{owned:true,level});
+    expect(tag.dataset.level).toBe(String(Math.min(10,level)));
+    expect(tag.dataset.fire).toBe("false");
+    expect(tag.querySelector(".power-tag__fire")).toBeNull();
+    expect(tag.querySelector(".power-tag__flame-edge")?.getAttribute("d")).toBe(shape);
+  }
 });
 
 it("passes ownership and research level through collection, detail and selection previews", () => {
@@ -95,10 +93,10 @@ it("passes ownership and research level through collection, detail and selection
   expect(setup.querySelector("#setupPower")?.getAttribute("data-level")).toBe("7");
 });
 
-it("uses flat vector artwork for the badge and its level effect", () => {
+it("uses one flat vector shape for the badge", () => {
   const tag=powerTag(1450,{owned:true,level:10});
   expect(tag.querySelector("canvas")).toBeNull();
   expect(tag.querySelector("linearGradient")).toBeNull();
   expect(tag.querySelector("radialGradient")).toBeNull();
-  expect(tag.querySelectorAll(".power-tag__fire path")).toHaveLength(2);
+  expect(tag.querySelectorAll("svg path")).toHaveLength(1);
 });
