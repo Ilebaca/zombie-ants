@@ -71,11 +71,11 @@ export interface TraitTierDef {
  */
 /** What a rung is worth and how often it lands. The name and the colour come from the ladder. */
 const WORTH: Record<TraitTier, { stat: number; luck: number; weight: number }> = {
-  common:      { stat: 1, luck: 3,  weight: 60 },
-  uncommon:    { stat: 2, luck: 6,  weight: 25 },
-  rare:        { stat: 3, luck: 10, weight: 10 },
-  exceptional: { stat: 5, luck: 15, weight: 4 },
-  mythic:      { stat: 8, luck: 22, weight: 1 },
+  common:      { stat: 1, luck: 2,  weight: 60 },
+  uncommon:    { stat: 2, luck: 4,  weight: 25 },
+  rare:        { stat: 3, luck: 6, weight: 10 },
+  exceptional: { stat: 5, luck: 8, weight: 4 },
+  mythic:      { stat: 8, luck: 10, weight: 1 },
 };
 
 export const TRAIT_TIER: Record<TraitTier, TraitTierDef> = Object.fromEntries(
@@ -330,9 +330,8 @@ export interface TraitTotals {
  * a second attack trait worth exactly as much as the first.
  *
  * The cooldown chances do NOT sum, and that is the one piece of arithmetic here worth
- * arguing about: two 22% chances are not a 44% chance, they are two draws — 1 − 0.78²,
- * which is 39%. Summing them would let five mythics guarantee the boon, and a certainty
- * is not what the trait says it gives. Independent chances also mean the second copy is
+ * arguing about: two 10% chances are not a 20% chance, they are two draws — 1 − 0.9²,
+ * which is 19%. Independent chances mean the second copy is
  * worth slightly less than the first, which is the right shape for a thing that could
  * otherwise be stacked to a sure thing.
  */

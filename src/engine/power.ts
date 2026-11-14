@@ -4,7 +4,9 @@ import { combatResearch, cooldownChance, speciesLevel } from "./research";
 import { SPECIES } from "./species";
 import type { AbilityKind, PlayerMods, SpeciesId } from "./types";
 
-export const POWER_VERSION = 2;
+export const POWER_VERSION = 3;
+/** Utility budget: +10% CDR chance is worth 20 points, comparable to a top attack trait. */
+export const CDR_POWER_PER_PERCENT = 2;
 const finite = (n: number, max: number): number => Number.isFinite(n) ? Math.max(0, Math.min(max, n)) : 0;
 const ABILITY_VALUE: Record<AbilityKind, number> = {
   tunnel: 1.12, bud: 1.08, leaf: 1.08, fire: 1.05,
@@ -39,9 +41,11 @@ export function combatPower(species: SpeciesId, input: PlayerMods): PowerRating 
   // A common reference position: one nest, four ordinary producers, two resources.
   const baseIncome = PROD.nest + 4 * PROD.stable + 2 * PROD.resourceStable;
   const economy = 300 * ((baseIncome + 2 * mods.cultivate + mods.brood) / baseIncome);
-  const recovery = mods.researchLevel === undefined ? 0 : cooldownChance(mods.researchLevel) / 100;
-  const cooldown = Math.max(1, s.ability.cooldown - finite(mods.boonPct, 50) / 100);
-  const ability = 100 * ABILITY_VALUE[s.ability.kind] * (1 + recovery) * 6 / cooldown;
+  const recovery = mods.researchLevel === undefined ? 0 : cooldownChance(mods.researchLevel);
+  // CDR is an explicit utility contribution, not a fractional turn subtracted from
+  // the native cooldown. Research and trait chances retain their separate combat rules.
+  const cdrUtility = CDR_POWER_PER_PERCENT * (recovery + finite(mods.boonPct, 50));
+  const ability = 100 * ABILITY_VALUE[s.ability.kind] * 6 / Math.max(1, s.ability.cooldown) + cdrUtility;
   const starting = START_SOLDIERS.nest + 4 * START_SOLDIERS.stable;
   const opening = 50 * (starting + mods.royal) / starting;
   return { version: POWER_VERSION, total: Math.round(attack + defence + economy + ability + opening),

@@ -1937,8 +1937,8 @@ rather than a purchase.
   - **It gates the SLOT, never the hatch.** Every tier is rollable from the moment the
     hatch opens — what a player is short of is room, not rarity.
 - **THE COOLDOWN CHANCES DO NOT SUM, and that is the one piece of arithmetic here worth
-  arguing about.** Two 22% chances are not 44%, they are two draws — 1 − 0.78², or 39%.
-  Summing them would let five mythics GUARANTEE the boon, and a certainty is not what the
+  arguing about.** Two 10% chances are not 20%, they are two draws — 1 − 0.9², or 19%.
+  Independent stacking keeps diminishing returns, and a certainty is not what the
   trait says it gives; it would also make the fifth copy worth as much as the first, when
   the whole shape of a stacked chance is that it is worth less. Attack and defence DO sum,
   because that is what a player expects of a percentage.
@@ -5772,7 +5772,22 @@ bots hidden combat advantages, or infer an exact human win rate from self-play.
 
 All species use the same base output: ordinary stable 1, nest 2, resource stable 3.
 The Species type has no production attribute. Anthill upgrades and the Hive apply
-by shared rules. AI estimates, score version 2, manuals and collection previews
+by shared rules. AI estimates, score version 3, manuals and collection previews
 must not introduce native growth differences. Archived pre-v2 move records are
 interpreted using their original arithmetic; resuming promotes the live board to
 rules v2 at a recorded move boundary so future turns and replays remain consistent.
+
+### CDR trait values and combat power, version 3
+
+Individual CDR traits grant 2/4/6/8/10% from Common through Mythic. Existing items
+derive their value from this table, so saved copies update without changing ownership.
+Independent stacking and the 50% combined trait cap remain unchanged. Trait boons
+still roll once at match start; species research still rolls during each cooldown turn.
+
+The power rating gives CDR an explicit utility budget of 2 points per percentage
+point. A 10% trait adds 20 power, comparable to a Mythic attack trait. Research CDR
+uses the same score weight; its attack and defence gains are counted separately.
+This is a versioned equipment estimate, not a measured win-rate conversion.
+
+Species stat cards show only an icon and value, side by side. Accessible labels retain
+Attack, Defence and CDR chance; the popup continues to explain the trait mechanic.

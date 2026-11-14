@@ -212,7 +212,9 @@ function statCard(kind: string, label: string, value: string): HTMLElement {
   const card = el("div", "spgstat");
   card.dataset.stat = kind;
   card.append(icon(kind === "cooldown" ? "clock" : kind, 22),
-    el("span", "spgstat-v", value), el("span", "spgstat-k", label));
+    el("span", "spgstat-v", value));
+  card.setAttribute("role", "img");
+  card.setAttribute("aria-label", `${label}: ${value}`);
   if (kind === "cooldown") card.title = "Chance each turn to reduce ability cooldown by one extra turn.";
   return card;
 }

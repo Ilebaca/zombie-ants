@@ -76,10 +76,8 @@ describe("adding a bench up", () => {
   });
 
   /**
-   * TWO 22% CHANCES ARE NOT A 44% CHANCE. They are two draws — 1 − 0.78², which is 39%.
-   * Summing them would let five mythics GUARANTEE the boon, and a certainty is not what
-   * the trait says it gives; it would also make the fifth copy worth as much as the
-   * first, when the whole shape of a stacked chance is that it is worth less.
+   * TWO 10% CHANCES ARE NOT A 20% CHANCE. They are two draws — 1 − 0.9², which is 19%.
+   * Independent chances retain diminishing returns as the player equips more copies.
    */
   it("draws cooldown chances independently rather than adding them", () => {
     const one = totalsOf([item(cd[0]!.id, "mythic", "a")]).luckPct;
@@ -429,4 +427,26 @@ describe("slots opening immediately, then every five chapters", () => {
     s.update(p=>{p.colony=stopColony(4*ROAD_CHAPTER_STOPS);});
     expect(s.benchTotals("hill")).toEqual(both);
   });
+});
+
+it("scales individual CDR traits evenly up to a ten-percent Mythic", () => {
+  expect(TRAIT_TIERS.map(tier => TRAIT_TIER[tier].luck)).toEqual([2,4,6,8,10]);
+  const cdr = TRAITS.find(trait => trait.kind === "cooldown")!;
+  for (const tier of TRAIT_TIERS) {
+    expect(totalsOf([item(cdr.id,tier)]).luckPct).toBe(TRAIT_TIER[tier].luck);
+  }
+});
+
+it("recalculates an existing CDR trait and its power on equip, remove and reload", () => {
+  const memory = new MemoryStore(), s = new ProfileStore(memory);
+  const cdr = s.findTrait("fire.reburn","mythic")!;
+  const before = s.powerFor("fire").total;
+  expect(s.equipTrait("fire",cdr.uid,0)).toBe(true);
+  expect(s.modsFor("fire").you.boonPct).toBe(10);
+  expect(s.powerFor("fire").total - before).toBe(20);
+  const reopened = new ProfileStore(memory);
+  expect(reopened.modsFor("fire").you.boonPct).toBe(10);
+  expect(reopened.powerFor("fire").total).toBe(before + 20);
+  expect(reopened.unequipTrait("fire",0)).toBe(true);
+  expect(reopened.powerFor("fire").total).toBe(before);
 });

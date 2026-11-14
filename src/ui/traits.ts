@@ -187,7 +187,7 @@ export function buildTraitSlots(store: ProfileStore, opts: TraitSlotsOptions): H
     box.append(
       totalCell("attack", "Attack", t.atkPct, ATK_CAP),
       totalCell("defence", "Defence", t.defPct, DEF_CAP),
-      totalCell("clock", "Cooldown", t.luckPct, LUCK_CAP),
+      totalCell("clock", "CDR chance", t.luckPct, LUCK_CAP),
     );
     return box;
   };
