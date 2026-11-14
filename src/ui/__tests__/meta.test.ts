@@ -703,6 +703,8 @@ describe("species page", () => {
     expect(Number(read(after)[1])).toBeGreaterThan(Number(read(before)[1]));
     expect(read(after)[2]).toBe("1%");
     expect(after.querySelectorAll(".spgstats .spgstat > svg")).toHaveLength(3);
+    expect(after.querySelectorAll(".spgstat-k")).toHaveLength(0);
+    expect(after.querySelector('[data-stat="cooldown"]')?.getAttribute("aria-label")).toBe("CDR chance: 1%");
     expect(after.querySelectorAll(".spgtags > *")).toHaveLength(2);
   });
 

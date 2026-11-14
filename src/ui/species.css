@@ -37,12 +37,13 @@
   margin: 0;
 }
 #app #antup .spgstat {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  justify-items: center;
-  gap: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--inrow);
   min-width: 0;
-  padding: var(--inrow) 4px;
+  min-height: 56px;
+  padding: var(--block) var(--inrow);
   border: var(--action-stroke) solid var(--action-frame);
   border-radius: var(--action-radius);
   background: var(--hud-face);
@@ -55,11 +56,7 @@
   font-family: var(--font-display);
   font-size: max(8px, calc(19px * var(--ui-type-scale, 1)));
 }
-#app #antup .spgstat-k {
-  font-size: var(--fs-small);
-  letter-spacing: 0;
-  text-align: center;
-}
+#app #antup .spgstat > .ic { flex: none; }
 #app #antup .spgupgrade { margin-top: var(--action-depth); }
 #app #antup .trait-slots--standalone { margin-top: var(--action-depth); gap: 0; }
 #app #antup .trait-slots--standalone .trait-slot-row { gap: var(--inrow); }
