@@ -21,6 +21,7 @@ export interface Seat {
   avatar?: string | null;
   /** Active combat loadout, supplied by the match setup owner. */
   power?: number;
+  level?: number;
 }
 
 export interface MatchmakingOptions {
@@ -29,6 +30,7 @@ export interface MatchmakingOptions {
   roster: readonly Opponent[];
   /** Uses the same chapter equipment calculation as the upcoming match. */
   opponentPower?: (foe: Opponent) => number;
+  opponentLevel?: (foe: Opponent) => number;
   /** Resolves with whoever was seated; rejects if the search was abandoned. */
   search: () => Promise<Opponent>;
   /** The opponent is on screen and the halves have parted. The match starts here. */
@@ -120,7 +122,7 @@ export class MatchmakingScreen {
     const roster = this.opts.roster;
     if (!roster.length) return;
     const strip = el("div", "mmk-strip");
-    for (const seat of [...roster, ...roster]) strip.appendChild(seatCard({...seat,power:this.opts.opponentPower?.(seat)}));
+    for (const seat of [...roster, ...roster]) strip.appendChild(seatCard({...seat,power:this.opts.opponentPower?.(seat),level:this.opts.opponentLevel?.(seat)}));
     strip.style.animationDuration = `${roster.length * REEL_MS_PER_CARD}ms`;
     this.reel.appendChild(strip);
   }
@@ -139,7 +141,7 @@ export class MatchmakingScreen {
   /** Somebody is seated: stop dead, show them, hold, then part. */
   private land(foe: Opponent): void {
     this.reel.remove();
-    this.foeCard.appendChild(seatCard({...foe,power:this.opts.opponentPower?.(foe)}));
+    this.foeCard.appendChild(seatCard({...foe,power:this.opts.opponentPower?.(foe),level:this.opts.opponentLevel?.(foe)}));
     this.foeCard.classList.add("on");
     this.status.textContent = this.opts.awaiting
       ? `${this.opts.awaiting} is ready`
@@ -185,7 +187,7 @@ function seatCard(seat: Seat): HTMLElement {
   troops.style.color = (SPECIES_COL[seat.species] ?? SPECIES_COL.fire)[1] as string;
   const avatar = el("div", "mmk-avatar power-host");
   avatar.append(portrait, powerTag(seat.power ?? combatPower(seat.species, NEUTRAL_MODS).total,
-    {context:SPECIES[seat.species].name}));
+    {context:SPECIES[seat.species].name,level:seat.level ?? 0,owned:true}));
   profile.append(avatar, el("div", "mmk-name", seat.name), troops);
   const art = cutCoverFor(seat.species);
   if (art) {

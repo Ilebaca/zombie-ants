@@ -196,7 +196,7 @@ function who(
   side.append(bar,
     el("div", "pf-xp", `${progress.into} / ${progress.need} XP to level ${progress.level + 1}`));
 
-  box.append(face, side, powerTag(store.powerFor(profile.lastSpecies).total, {context:SPECIES[profile.lastSpecies].name}));
+  box.append(face, side, powerTag(store.powerFor(profile.lastSpecies).total, {context:SPECIES[profile.lastSpecies].name, level:profile.research[profile.lastSpecies]?.level ?? 0, owned:store.isUnlocked(profile.lastSpecies)}));
 
   // Level rewards are tapped, not auto-paid: reaching a level should feel like collecting.
   const unclaimed = store.unclaimedLevels();

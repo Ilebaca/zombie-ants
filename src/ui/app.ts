@@ -1486,13 +1486,15 @@ export class App {
 
     const screen: MatchmakingScreen = new MatchmakingScreen(this.host, {
       you: { name: me.name, colony: me.colony, species: this.choices.species, avatar: faceOf(me.avatar),
-        power: this.profile.powerFor(this.choices.species).total },
+        power: this.profile.powerFor(this.choices.species).total, level: me.research[this.choices.species]?.level ?? 0 },
       // The reel shows the chapter the player is actually in, so the faces going past are
       // the ones they could plausibly be seated against.
       roster: botsForChapter(chapterOf(me.colony)),
       opponentPower: (foe) => foe.human ? combatPower(foe.species, NEUTRAL_MODS).total
         : campaignOpponent(chapterOf(me.colony), foe.species, this.choices.species,
           this.profile.modsFor(this.choices.species).you).power.total,
+      opponentLevel: (foe) => foe.human ? 0 : campaignOpponent(chapterOf(me.colony), foe.species, this.choices.species,
+        this.profile.modsFor(this.choices.species).you).mods.researchLevel ?? 0,
       search: () => this.matchmaker.find(me.colony, screen.signal),
       // The halves are still parting: the match starts under them, so the opening
       // plays through the widening gap rather than after it.
@@ -1549,7 +1551,7 @@ export class App {
 
     const screen: MatchmakingScreen = new MatchmakingScreen(this.host, {
       you: { name: me.name, colony: me.colony, species: this.choices.species, avatar: faceOf(me.avatar),
-        power: this.profile.powerFor(this.choices.species).total },
+        power: this.profile.powerFor(this.choices.species).total, level: me.research[this.choices.species]?.level ?? 0 },
       // Their own friends go past rather than a chapter of strangers: this is a screen
       // about people the player knows, and the one it stops on is one of them.
       roster: me.friends

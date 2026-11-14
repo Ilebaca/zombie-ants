@@ -73,12 +73,12 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
       buildTraitSlots(store, { scope: id, onChanged: change => {
         const rating = root.querySelector("#speciesPower");
         if (rating instanceof HTMLElement) {
-          updatePowerTag(rating, store.powerFor(id).total);
+          updatePowerTag(rating, store.powerFor(id).total, {level:store.get().research[id]?.level ?? 0, owned:store.isUnlocked(id)});
           if (change === "equip") burstPowerTag(rating);
         }
       } })));
 
-    const rating = powerTag(store.powerFor(id).total, {context:species.name});
+    const rating = powerTag(store.powerFor(id).total, {context:species.name, level, owned:store.isUnlocked(id)});
     rating.id = "speciesPower";
     page.querySelector(".spgname-row")?.appendChild(rating);
 
