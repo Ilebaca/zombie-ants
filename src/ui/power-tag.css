@@ -1,4 +1,4 @@
-/* Rigid metal badges share one ratio; live fire is composited underneath. */
+/* Flat illustrated badges share one ratio; joined vector flames sit underneath. */
 #app .power-host { position: relative; }
 #app .power-tag {
   position: absolute;
@@ -17,7 +17,7 @@
   background: transparent;
   color: #fff9e9;
   box-shadow: none !important;
-  filter: drop-shadow(0 2px 0 #141a23);
+  filter: none;
   font-family: var(--font-display);
   line-height: 1;
   white-space: nowrap;
@@ -44,27 +44,29 @@
   width: 100%;
   height: 100%;
   overflow: visible;
+  filter: drop-shadow(0 2px 0 #30313a);
 }
 #app .power-tag__flame-edge { stroke: #141c27; stroke-width: 1.5; stroke-linejoin: round; }
 #app .power-tag__face { stroke: #ffbc8c; stroke-width: .9; stroke-linejoin: round; }
-#app .power-tag--locked .power-tag__flame { filter: grayscale(1) brightness(.82); }
+#app .power-tag--locked .power-tag__flame { filter: grayscale(1) brightness(.82) drop-shadow(0 2px 0 #30313a); }
 #app .power-tag--locked .power-tag__value { color: #d0d3d8; }
 #app .power-tag__fire {
   position: absolute;
   z-index: 0;
-  left: -20%;
-  top: -100%;
-  width: 140%;
-  height: 250%;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   max-width: none;
-  aspect-ratio: auto;
+  aspect-ratio: 35 / 11;
   border: none;
   outline: none;
   border-radius: 0;
   background: transparent;
   box-shadow: none !important;
   pointer-events: none;
+  overflow: visible;
 }
+#app .power-tag__fire-pulse { transform-box: view-box; transform-origin: 70px 3px; }
 @media (prefers-reduced-motion: reduce) {
   #app .power-tag__fire { display: none; }
 }
