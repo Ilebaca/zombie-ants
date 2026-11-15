@@ -1,0 +1,24 @@
+name: Trait art validation
+on:
+  push:
+    branches: [development/trait-rarity-art]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npx vitest run src/ui/__tests__
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trait-art-preview
+          path: dist

@@ -44,10 +44,11 @@
   min-width: 0;
   min-height: 56px;
   padding: var(--block) var(--inrow);
-  border: var(--action-stroke) solid var(--action-frame);
+  border: 0;
+  outline: none;
   border-radius: var(--action-radius);
   background: var(--hud-face);
-  box-shadow: 0 var(--action-depth) 0 var(--action-frame);
+  box-shadow: none;
   color: var(--hud-dim);
 }
 #app #antup .spgstat-v {

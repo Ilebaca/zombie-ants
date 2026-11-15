@@ -4,7 +4,7 @@ import type { HatchPrize, TraitItem } from "../platform";
 import { SPECIES, TIERS } from "../engine";
 import type { SpeciesId } from "../engine";
 import { antPortrait, avatarFace, el, hudMark } from "./chrome";
-import { icon } from "./icons";
+import { traitEmblem } from "./trait-emblem";
 import { shelfArt } from "./shelf";
 import { cutCoverFor } from "./covers";
 
@@ -71,7 +71,7 @@ function rewardItem(reward: RevealedReward): HTMLElement {
       item.style.setProperty("--reward-colour", TIERS[reward.item.tier].colour);
       item.style.setProperty("--reward-fill", TIERS[reward.item.tier].fill);
       const emblem = el("div", "reward-emblem");
-      emblem.appendChild(icon(def?.icon ?? "spark", 140));
+      emblem.appendChild(traitEmblem(def?.kind ?? "attack", reward.item.tier));
       art.appendChild(emblem);
     } else {
       name = SPECIES[reward.species].name;
