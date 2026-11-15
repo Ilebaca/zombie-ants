@@ -57,7 +57,7 @@
   font-family: var(--font-display);
   font-size: max(8px, calc(19px * var(--ui-type-scale, 1)));
 }
-#app #antup .spgstat > .ic { flex: none; }
+#app #antup .spgstat > .combat-stat-icon { flex: none; width: 26px; height: 28px; filter: none; }
 #app #antup .spgupgrade { margin-top: var(--action-depth); }
 #app #antup .trait-slots--standalone { margin-top: var(--action-depth); gap: 0; }
 #app #antup .trait-slots--standalone .trait-slot-row { gap: var(--inrow); }

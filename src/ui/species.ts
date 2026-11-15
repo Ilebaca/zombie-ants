@@ -8,12 +8,13 @@ import type { Look, SpeciesId } from "../engine";
 import {
   SPECIES_NOTES, tierOf,
 } from "../platform";
-import type { ProfileStore } from "../platform";
+import type { ProfileStore, TraitKind } from "../platform";
 import { antPortrait, buyButton, el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { researchPips } from "./research";
 import { abilityArtFor } from "./abilityart";
 import { coverFor } from "./covers";
 import { icon } from "./icons";
+import { combatStatIcon } from "./trait-emblem";
 import { buildTraitSlots } from "./traits";
 import { mountTraitPicker } from "./trait-popovers";
 import { skinsIcon } from "./skins-icon";
@@ -250,10 +251,10 @@ function hero(id: SpeciesId, level: number): HTMLElement {
   return box;
 }
 
-function statCard(kind: string, label: string, value: string): HTMLElement {
+function statCard(kind: TraitKind, label: string, value: string): HTMLElement {
   const card = el("div", "spgstat");
   card.dataset.stat = kind;
-  card.append(icon(kind === "cooldown" ? "clock" : kind, 22),
+  card.append(combatStatIcon(kind),
     el("span", "spgstat-v", value));
   card.setAttribute("role", "img");
   card.setAttribute("aria-label", `${label}: ${value}`);

@@ -40,12 +40,8 @@ function shape(name: keyof SVGElementTagNameMap, attrs: Record<string,string>): 
   return node;
 }
 
-export function traitEmblem(kind: TraitKind, tier: TraitTier): SVGSVGElement {
-  const art = svg();
-  art.dataset.kind = kind;
-  art.dataset.tier = tier;
-  const [light,face,shade,core] = PALETTES[tier];
-  const id = "trait-art-" + ++sequence;
+/** The same illustrated sword, shield and clock are used without a badge in stat cards. */
+function statShapes(kind: TraitKind): SVGElement[] {
   const shield = [
     shape("path", {"d":"M64 33Q75 41 84 42Q85 65 64 82Q43 65 44 42Q53 41 64 33Z","fill":"#cceeff","stroke":"#30001f","stroke-width":"3","stroke-linejoin":"round"}),
     shape("path", {"d":"M64 35Q75 42 82 43Q82 64 64 79Z","fill":"#92caff"}),
@@ -65,6 +61,26 @@ export function traitEmblem(kind: TraitKind, tier: TraitTier): SVGSVGElement {
     shape("path", {"d":"M47 63L56 66 64 63 72 66 81 63 80 67 71 69 64 66 56 69 46 67Z","fill":"#ffe568"}),
     shape("rect", {"x":"57","y":"82","width":"14","height":"6","rx":"3","fill":"#ffc300","stroke":"#30001f","stroke-width":"2.5"}),
   ];
+  return kind === "attack" ? sword : kind === "defence" ? shield : clock;
+}
+
+export function combatStatIcon(kind: TraitKind): SVGSVGElement {
+  const art = svg();
+  art.classList.remove("trait-emblem");
+  art.classList.add("combat-stat-icon");
+  art.dataset.kind = kind;
+  art.setAttribute("viewBox", kind === "attack" ? "40 25 48 66"
+    : kind === "defence" ? "40 29 48 58" : "38 30 52 52");
+  art.append(...statShapes(kind));
+  return art;
+}
+
+export function traitEmblem(kind: TraitKind, tier: TraitTier): SVGSVGElement {
+  const art = svg();
+  art.dataset.kind = kind;
+  art.dataset.tier = tier;
+  const [light,face,shade,core] = PALETTES[tier];
+  const id = "trait-art-" + ++sequence;
   const gradient = shape("linearGradient", {id: id + "-rim", x1: "0", y1: "0", x2: ".7", y2: "1"});
   gradient.append(shape("stop", {"stop-color": light}),
     shape("stop", {offset: ".38", "stop-color": face}),
@@ -77,6 +93,6 @@ export function traitEmblem(kind: TraitKind, tier: TraitTier): SVGSVGElement {
     shape("ellipse", {cx: "64", cy: "56", rx: "34", ry: "36", fill: core, stroke: shade, "stroke-width": "2"}),
     shape("path", {d: "M35 26Q39 20 45 19", fill: "none", stroke: "#fffdf2", "stroke-width": "7", "stroke-linecap": "round"}),
     shape("path", {d: "M31 34L33 31", fill: "none", stroke: "#fffdf2", "stroke-width": "4", "stroke-linecap": "round"}),
-    ...(kind === "attack" ? sword : kind === "defence" ? shield : clock));
+    ...statShapes(kind));
   return art;
 }
