@@ -381,8 +381,10 @@ describe("choosing a colony's look", () => {
   const page = (s: ProfileStore): HTMLElement =>
     buildSpeciesPage(s, { species: "fire", onBack: () => {} });
 
-  const cards = (root: HTMLElement): HTMLButtonElement[] =>
-    Array.from(root.querySelectorAll<HTMLButtonElement>("#spgSkins .skincard"));
+  const cards = (root: HTMLElement): HTMLButtonElement[] => {
+    if (!root.querySelector("#spgSkins")) root.querySelector<HTMLButtonElement>("#spgSkinsToggle")!.click();
+    return Array.from(root.querySelectorAll<HTMLButtonElement>("#spgSkins .skincard"));
+  };
 
   /** Purple then red, so the row reads left to right in rarity order. */
   it("names each look's rarity, in the game's one colour for it", () => {
@@ -452,6 +454,31 @@ describe("choosing a colony's look", () => {
     expect(s.lookFor("fire")).toBe(basicLook("fire"));
     expect(s.get().look).toEqual({});
   });
+  it("opens skins from the rarity row and dismisses them before navigating away", async () => {
+    const root = page(grown());
+    const host = document.createElement("div"); host.id = "app";
+    host.appendChild(root); document.body.replaceChildren(host);
+    const button = root.querySelector<HTMLButtonElement>("#spgSkinsToggle")!;
+    const hero = root.querySelector(".spghero")!;
+    expect(button.parentElement?.querySelector(".spgrarity")).toBeTruthy();
+    expect(root.querySelector("#spgSkins")).toBeNull();
+    button.click();
+    expect(button.getAttribute("aria-expanded")).toBe("true");
+    expect(host.querySelector(".skin-picker #spgSkins")).toBeTruthy();
+    expect(root.querySelector(".spghero")).toBe(hero);
+    host.querySelector<HTMLButtonElement>(".skin-picker-close")!.click();
+    expect(host.querySelector(".skin-picker")).toBeNull();
+    button.click();
+    expect(dismissTraitPopups(host)).toBe(true);
+    expect(host.querySelector(".skin-picker")).toBeNull();
+    button.click();
+    root.querySelector<HTMLElement>(".spgstats")!.click();
+    expect(host.querySelector(".skin-picker")).toBeNull();
+    button.click();
+    root.remove(); await Promise.resolve();
+    expect(host.querySelector(".skin-picker")).toBeNull();
+  });
+
 });
 
 /**

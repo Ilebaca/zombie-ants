@@ -23,12 +23,12 @@
   stroke-width: 2.5;
   stroke-linejoin: round;
 }
-#app .trait-emblem { filter: drop-shadow(0 2px 0 #30001f); }
-#app .trait-socket { filter: drop-shadow(0 3px 0 var(--action-frame, #3d454d)); }
+#app .trait-emblem { filter: none; }
+#app .trait-socket { filter: none; }
 #app .trtile.armed .trait-emblem__outline { stroke: var(--hud-go); stroke-width: 3; }
-#app .trtile.armed .trait-emblem { filter: drop-shadow(0 3px 0 var(--hud-go)); }
+#app .trtile.armed .trait-emblem { filter: none; }
 #app .trtile:focus-visible .trait-emblem__outline { stroke: var(--hud-ink); stroke-width: 3; }
-#app .trtile:focus-visible .trait-emblem { filter: drop-shadow(0 3px 0 var(--hud-ink)); }
+#app .trtile:focus-visible .trait-emblem { filter: none; }
 #app .trtile-f {
   position: absolute;
   z-index: 1;
@@ -45,7 +45,7 @@
   color: var(--hud-ink);
   font-family: var(--font-display);
 }
-#app .trtile.worn::after { top: 5%; right: 12%; }
+#app .trgrid > .trtile.worn::after { content: none; display: none; }
 #app .trait-detail > .trait-detail-emblem {
   width: 140px;
   height: auto;
