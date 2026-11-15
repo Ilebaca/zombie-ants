@@ -5841,14 +5841,15 @@ New anchored popups should share this helper and use focus({preventScroll:true})
 ## Lucky Hatch reward distribution (2026-11-15)
 
 Rarity weights remain Common 60%, Uncommon 25%, Rare 10%, Exceptional 4%, Mythic 1%.
-Common is the grey tier. Common–Rare rolls pay traits 90% of the time and offer
-an avatar 10% of the time, from a fixed same-rarity pool (20/12/6 avatars).
-Completed avatar pools fall back to same-rarity traits without rerolling.
-Exceptional/Mythic always pay traits. Skins are excluded from larva rewards;
-previously owned skins remain saved and wearable. No replacement acquisition route
-has been introduced.
-Thus, with all avatar pools available, grey traits are 54% of all hatches and
-avatars total 9.5%; the shared hatch/shop odds panel explains the conditional split.
+Common is the grey tier and always pays a trait. Avatars appear only on Uncommon
+and Rare rolls, with a conditional 10% avatar chance and 90% trait chance.
+The 38 hatch avatars have fixed pools: 26 Uncommon and 12 Rare. Completed avatar
+pools pay same-rarity traits without rerolling. Exceptional/Mythic always pay traits.
+Skins are excluded from larva rewards; previously owned skins remain saved and
+wearable. No replacement skin acquisition route has been introduced.
+With all avatar pools available, grey traits are 60% of all hatches and avatars
+total 3.5%; the shared hatch/shop odds panel explains the conditional split.
 Existing owned avatars retain their ids. Hatch reveal frames use catalogue rarity.
-A full bag refuses an unstorable trait before spending larva; batch rolling stops
-on refusal and charges only awarded prizes. Avatar rewards do not need bag slots.
+A full bag refuses hatches before rolling or spending. A batch reserves enough
+bag capacity for every possible trait before it starts, preventing partial batches
+and free cosmetic rerolls. No larva is spent on a refused hatch.

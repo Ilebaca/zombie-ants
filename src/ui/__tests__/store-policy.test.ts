@@ -77,8 +77,8 @@ describe("loot box odds, before the purchase", () => {
   it("discloses the avatar split and trait-only top tiers without offering skins", () => {
     const root = buildShop(store(), gateway());
     const note = root.querySelector(".ho-note")?.textContent ?? "";
-    expect(note).toContain("Common–Rare: 90% traits · 10% avatars.");
-    expect(note).toContain("Exceptional and Mythic: traits only.");
+    expect(note).toContain("Uncommon–Rare: 90% traits · 10% avatars.");
+    expect(note).toContain("Common, Exceptional and Mythic: traits only.");
     expect(note).not.toContain("skin");
   });
 

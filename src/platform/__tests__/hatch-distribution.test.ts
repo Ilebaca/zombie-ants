@@ -18,17 +18,17 @@ const draws = (...values: number[]): (() => number) => {
 const tierRolls = [0.1, 0.7, 0.9, 0.97, 0.995];
 
 describe("hatch payout distribution", () => {
-  it("pays grey traits before the avatar collection is complete", () => {
+  it("always pays grey traits on Common rolls even when the avatar gate would succeed", () => {
     const s = store();
-    const prize = s.hatch(draws(0.2, 0.1, 0.1));
+    const prize = s.hatch(draws(0.2, 0.1, 0));
     expect(prize?.kind).toBe("trait");
     if (prize?.kind === "trait") expect(prize.item.tier).toBe("common");
     expect(s.avatars).toEqual([]);
     expect(s.get().larva).toBe(19);
   });
 
-  it("keeps the tier for both avatar and trait outcomes across Common–Rare", () => {
-    for (let t = 0; t < 3; t++) {
+  it("keeps the tier for both avatar and trait outcomes across Uncommon–Rare", () => {
+    for (let t = 1; t < 3; t++) {
       for (const gate of [0, 0.099999, 0.1, 0.999999]) {
         const s = store();
         const prize = s.hatch(draws(0.2, tierRolls[t]!, gate, 0.5));
@@ -71,7 +71,7 @@ describe("hatch payout distribution", () => {
     const s = new ProfileStore(storage);
     s.update((p) => { p.colony = 2_000_000; p.larva = 10; });
     const values = Array.from({ length: 10 }, (_, i) =>
-      i % 3 === 0 ? [0.2, 0.1, 0, 0.5] : [0.2, 0.1, 0.5]).flat();
+      i % 3 === 0 ? [0.2, 0.7, 0, 0.5] : [0.2, 0.1]).flat();
     const prizes = s.hatchMany(10, draws(...values));
     expect(prizes).toHaveLength(10);
     expect(prizes.filter((p) => p.kind === "trait")).toHaveLength(6);
@@ -96,9 +96,25 @@ describe("hatch payout distribution", () => {
     expect(s.hatch(draws(0.2, 0.1, 0.5))).toBeNull();
     expect(s.hatchMany(10, draws(0.2, 0.1, 0.5))).toEqual([]);
     expect(s.get().larva).toBe(before);
-    // Cosmetic awards remain collectible without a bag slot.
-    expect(s.hatch(draws(0.2, 0.1, 0, 0))?.kind).toBe("avatar");
-    expect(s.get().larva).toBe(before - 1);
+    // Refusal happens before RNG, preventing free rerolls for cosmetic outcomes.
+    let rolled = false;
+    expect(s.hatch(() => { rolled = true; return 0; })).toBeNull();
+    expect(rolled).toBe(false);
+    expect(s.get().larva).toBe(before);
+  });
+
+  it("refuses a batch before rolling unless every potential trait fits", () => {
+    const s = store();
+    const first = s.hatch(draws(0.2, 0.1));
+    if (first?.kind !== "trait") throw new Error("Missing trait");
+    for (let i = s.bag.length; i < BAG_MAX - 5; i++) s.findTrait(first.item.def, "common");
+    const before = s.get().larva;
+    let rolled = false;
+    expect(s.hatchMany(10, () => { rolled = true; return 0; })).toEqual([]);
+    expect(rolled).toBe(false);
+    expect(s.get().larva).toBe(before);
+    expect(s.hatchMany(5, draws(0.2, 0.1))).toHaveLength(5);
+    expect(s.get().larva).toBe(before - 5);
   });
 
   it("matches the displayed rarity weights and the conditional 10% avatar rate in 100,000 rolls", () => {
@@ -125,8 +141,8 @@ describe("hatch payout distribution", () => {
     for (let i = 0; i < TIER_IDS.length; i++) {
       expect(Math.abs(tiers[TIER_IDS[i]!]! / total * 100 - expected[i]!)).toBeLessThan(0.5);
     }
-    expect(Math.abs(avatars / total * 100 - 9.5)).toBeLessThan(0.5);
-    expect(Math.abs(greyTraits / total * 100 - 54)).toBeLessThan(0.5);
+    expect(Math.abs(avatars / total * 100 - 3.5)).toBeLessThan(0.5);
+    expect(Math.abs(greyTraits / total * 100 - 60)).toBeLessThan(0.5);
     console.info("Hatch audit", { total, tiers, avatars, greyTraits });
   });
 });

@@ -18,7 +18,7 @@
  *   They are ordered to climb — small charm early, the showpieces in the last ten — so
  *   the road hands out something visibly better the further it is walked.
  *
- *   THE REST — thirty-eight — are occasional LUCKY HATCH rewards across Common–Rare (`HATCH_AVATARS`).
+ *   THE REST — thirty-eight — are occasional LUCKY HATCH rewards across Uncommon–Rare (`HATCH_AVATARS`).
  *
  * THE ORDER IN `ROAD_AVATARS` IS THE ONLY THING THAT DECIDES WHICH CHAPTER PAYS WHICH,
  * and the three lists are the only thing that decides how an avatar is come by. Moving an
@@ -201,19 +201,15 @@ export const isFreeAvatar = (id: string): boolean => FREE_AVATARS.includes(id);
 export const roadAvatar = (chapter: number): string | null =>
   ROAD_AVATARS[chapter - 1] ?? null;
 
-/** Avatars share the first three rarity tiers, without replacing every trait roll. */
-export const HATCH_AVATAR_TIERS: readonly TierId[] = TIER_IDS.slice(0, 3);
+/** Avatars share the Uncommon and Rare rarity tiers, without replacing every trait roll. */
+export const HATCH_AVATAR_TIERS: readonly TierId[] = TIER_IDS.slice(1, 3);
 export const HATCH_AVATAR_CHANCE = 10;
 
 /** Fixed catalogue rarities; existing ownership ids need no save migration. */
-const RARE_AVATARS = new Set([33, 40, 55, 86, 87, 114].map((n) => `av${n}`));
-const UNCOMMON_AVATARS = new Set(
-  [51, 56, 62, 64, 74, 88, 100, 110, 120, 126, 127, 129].map((n) => `av${n}`),
-);
+const RARE_AVATARS = new Set([33, 40, 55, 74, 86, 87, 88, 100, 110, 114, 120, 126].map((n) => `av${n}`));
 export const hatchAvatarTier = (id: string): TierId | null =>
   !HATCH_AVATARS.includes(id) ? null
-    : RARE_AVATARS.has(id) ? "rare"
-      : UNCOMMON_AVATARS.has(id) ? "uncommon" : "common";
+    : RARE_AVATARS.has(id) ? "rare" : "uncommon";
 
 export const avatarTier = (tier: TierId): boolean => HATCH_AVATAR_TIERS.includes(tier);
 
@@ -233,7 +229,7 @@ export function rollAvatar(
   return pool[Math.floor(random() * pool.length)] ?? null;
 }
 
-/** Only 10% of Common–Rare rolls offer an avatar; 90% remain traits. */
+/** Only 10% of Uncommon–Rare rolls offer an avatar; 90% remain traits. */
 export function rollHatchAvatar(
   random: () => number, found: readonly string[], tier: TierId,
 ): string | null {

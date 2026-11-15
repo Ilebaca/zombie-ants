@@ -417,11 +417,11 @@ describe("a face in the larva", () => {
     let i = 0;
     return () => values[i++] ?? 0.5;
   };
-  const COMMON = 0.1, MYTHIC = 0.995;
+  const COMMON = 0.1, UNCOMMON = 0.7, MYTHIC = 0.995;
 
-  it("pays an avatar on a common roll while one is still locked", () => {
+  it("pays an avatar on an Uncommon roll when the avatar subroll succeeds", () => {
     const s = avatarStore(3);
-    const prize = s.hatch(rolls(COMMON));
+    const prize = s.hatch(rolls(UNCOMMON));
     expect(prize?.kind).toBe("avatar");
     if (prize?.kind === "avatar") {
       expect(HATCH_AVATARS).toContain(prize.id);
@@ -432,8 +432,8 @@ describe("a face in the larva", () => {
   });
 
   /** It never reaches above its own rung: the skins own the top and keep it. */
-  it("pays no avatar on Exceptional or Mythic rolls", () => {
-    for (const tier of [0.97, MYTHIC]) {
+  it("pays no avatar on Common, Exceptional or Mythic rolls", () => {
+    for (const tier of [COMMON, 0.97, MYTHIC]) {
       const s = avatarStore(3);
       expect(s.hatch(rolls(tier))?.kind).not.toBe("avatar");
       expect(s.avatars).toEqual([]);
@@ -453,7 +453,7 @@ describe("a face in the larva", () => {
     vi.useFakeTimers();
     try {
       const s = avatarStore(3);
-      const { root, spy } = build(s, rolls(COMMON));
+      const { root, spy } = build(s, rolls(UNCOMMON));
       tap(root, "hatchGo");
       vi.advanceTimersByTime(2000);
       const item = root.querySelector('.reward-item[data-kind="avatar"]');
@@ -474,7 +474,11 @@ describe("a face in the larva", () => {
     vi.useFakeTimers();
     try {
       const s = avatarStore(20);
-      const { root } = build(s, () => 0.05);
+      const { root } = build(s, (() => {
+        const values = Array.from({length: 10}, () => [0.2, UNCOMMON, 0.05, 0.5]).flat();
+        let i = 0;
+        return () => values[i++] ?? 0.5;
+      })());
       tap(root, "hatchGo10");
       vi.advanceTimersByTime(2000);
       const card = root.querySelector("#hatchPrize");
@@ -752,7 +756,7 @@ describe("avatar odds disclosure", () => {
   it("shows the conditional split alongside the unchanged rarity weights", () => {
     const { root } = build(store());
     expect(root.querySelector("#hatchOdds")?.textContent)
-      .toContain("Common–Rare: 90% traits · 10% avatars.");
+      .toContain("Uncommon–Rare: 90% traits · 10% avatars.");
     expect(root.querySelector("#hatchOdds")?.textContent)
       .toContain("Completed avatar pools pay same-rarity traits.");
   });

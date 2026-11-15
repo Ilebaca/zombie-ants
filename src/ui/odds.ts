@@ -68,7 +68,7 @@ export function buildOdds(heading = ""): HTMLElement {
   const note = el("div", "ho-note");
   note.append(
     el("span", "ho-line", `${avatarNames}: ${100 - HATCH_AVATAR_CHANCE}% traits · ${HATCH_AVATAR_CHANCE}% avatars.`),
-    el("span", "ho-line", "Exceptional and Mythic: traits only."),
+    el("span", "ho-line", "Common, Exceptional and Mythic: traits only."),
     el("span", "ho-line", "Completed avatar pools pay same-rarity traits."),
   );
   box.appendChild(note);

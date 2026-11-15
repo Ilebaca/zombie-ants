@@ -1728,7 +1728,7 @@ export class ProfileStore {
    * the tier is that finding one is the best thing that happens in the feature.
    */
   hatch(random: () => number = Math.random): HatchPrize | null {
-    if (!this.hatchOpen() || this.profile.larva < HATCH_COST) return null;
+    if (!this.hatchOpen() || this.profile.larva < HATCH_COST || this.profile.bag.length >= BAG_MAX) return null;
 
     const drop = rollDrop(random, [null, ...this.profile.unlocked]);
     if (!drop) return null;
@@ -1736,8 +1736,6 @@ export class ProfileStore {
     // Rarity stays unchanged. Most low-tier rolls pay traits even with avatars unowned.
     const avatar = rollHatchAvatar(random, this.profile.avatars, drop.tier);
 
-    // Refuse an unstorable trait before spending; cosmetics do not occupy bag slots.
-    if (!avatar && this.profile.bag.length >= BAG_MAX) return null;
     this.update((p) => { p.larva -= HATCH_COST; });
     if (avatar) {
       const found = this.findAvatar(avatar);
@@ -1750,13 +1748,10 @@ export class ProfileStore {
   /**
    * HATCH A WHOLE HANDFUL, one roll at a time.
    *
-   * It is `hatch()` in a loop and that is deliberate rather than lazy — the rolls are not
-   * independent of each other. A skin is rolled against the collection AS IT STANDS
-   * (platform/skins.ts), so committing each one before the next is what stops a batch
-   * paying the SAME skin twice; rolling ten against one snapshot would hand out
-   * duplicates of the rarest thing in the game. An AVATAR is rolled the same way and it
-   * also prevents a batch from paying a duplicate face.
-   *
+   * Each award is committed before the next roll, so a batch cannot pay the same
+   * avatar twice. An exhausted avatar rarity falls back to a trait of the same tier.
+   * Common rolls always pay traits. Skins are not part of the hatch reward table.
+
    * THE PURSE IS CHECKED ONCE, FOR THE WHOLE BATCH. A run that paid for six and then
    * stopped would be a button that did not do what it said, and the screen's own guard
    * only offers this when the larva are there — this is the one that actually protects
@@ -1768,7 +1763,8 @@ export class ProfileStore {
    */
   hatchMany(count: number, random: () => number = Math.random): HatchPrize[] {
     const n = Math.floor(count);
-    if (!this.hatchOpen() || n < 1 || this.profile.larva < HATCH_COST * n) return [];
+    if (!this.hatchOpen() || !Number.isFinite(n) || n < 1
+      || this.profile.larva < HATCH_COST * n || this.profile.bag.length + n > BAG_MAX) return [];
     const out: HatchPrize[] = [];
     for (let i = 0; i < n; i++) {
       const prize = this.hatch(random);

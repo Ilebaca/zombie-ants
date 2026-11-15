@@ -67,10 +67,10 @@ describe("the avatar catalogue", () => {
     expect(roadAvatar(ROAD_CHAPTERS + 1)).toBeNull();
   });
 
-  it("distributes hatch avatars across Common, Uncommon and Rare", () => {
-    expect(HATCH_AVATAR_TIERS).toEqual(TIER_IDS.slice(0, 3));
-    expect(HATCH_AVATAR_TIERS.map((tier) => lockedAvatars([], tier).length)).toEqual([20, 12, 6]);
-    for (const tier of TIER_IDS) expect(avatarTier(tier)).toBe(TIER_IDS.indexOf(tier) < 3);
+  it("distributes hatch avatars across Uncommon and Rare", () => {
+    expect(HATCH_AVATAR_TIERS).toEqual(TIER_IDS.slice(1, 3));
+    expect(HATCH_AVATAR_TIERS.map((tier) => lockedAvatars([], tier).length)).toEqual([26, 12]);
+    for (const tier of TIER_IDS) expect(avatarTier(tier)).toBe(TIER_IDS.indexOf(tier) >= 1 && TIER_IDS.indexOf(tier) <= 2);
     for (const id of HATCH_AVATARS) expect(HATCH_AVATAR_TIERS).toContain(hatchAvatarTier(id));
     for (const id of [...FREE_AVATARS, ...ROAD_AVATARS]) expect(hatchAvatarTier(id)).toBeNull();
   });
