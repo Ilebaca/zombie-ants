@@ -285,10 +285,15 @@ function abilityCard(id: SpeciesId): HTMLElement {
     box.appendChild(img);
   }
 
+  // THE WORDS ARE THEIR OWN BOX, so the card can lay the picture BESIDE them rather than
+  // above them. As direct children of a two-column grid the chips and the sentence would
+  // land in two different cells; wrapped, they are one column whatever the card does.
+  const body = el("div", "spgability-body");
   const chips = el("div", "spgchips");
   chips.append(chip("clock", `${cd}-turn cooldown`, false));
-  box.appendChild(chips);
-  box.appendChild(el("p", "spgtext", species.ability.desc));
+  body.appendChild(chips);
+  body.appendChild(el("p", "spgtext", species.ability.desc));
+  box.appendChild(body);
   return box;
 }
 

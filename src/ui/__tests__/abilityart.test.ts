@@ -16,6 +16,9 @@ import { resolve } from "node:path";
 import { SPECIES } from "../../engine";
 import type { SpeciesId } from "../../engine";
 import { abilityArtFor, abilityArtPainted } from "../abilityart";
+import { buildSpeciesPage } from "../species";
+import { ProfileStore } from "../../platform/profile";
+import { MemoryStore } from "../../platform/storage";
 
 const FOLDER = resolve(__dirname, "..", "abilities");
 /** An ABSENT folder is an answer, not an error — see faces.test.ts for what that cost. */
@@ -54,17 +57,44 @@ describe("an ability's painting", () => {
   });
 
   /**
-   * THE BAND IS A CROP, and the files are square. A rule that let the picture keep its
-   * own shape would put a 360px square in the middle of a page that already opens on a
-   * cover — so the ratio and the crop are asserted together, because either alone is
-   * a letterbox or a stretched painting.
+   * THE PICTURE IS SQUARE AND THE CARD READS ACROSS, asked for directly. It was a 2:1
+   * band across the top — a centre CROP of a square file, so two thirds of every
+   * painting was never shown, on a card twice as tall as it needed to be. The ratio and
+   * the crop are asserted together because either alone is a letterbox or a stretched
+   * painting, and the COLUMN with them because a square picture in a card that still
+   * stacks is the 360px slab the crop existed to avoid.
+   *
+   * None of this is visible to a jsdom test: there is no layout, and the markup is the
+   * same picture and the same sentence whichever way round they sit.
    */
-  it("shows the square file as a cropped band", () => {
+  it("lays the square picture beside the words", () => {
     const css = readFileSync(resolve(__dirname, "..", "skin.css"), "utf8");
-    const rule = /\.spgability-art\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
-    expect(rule, "no .spgability-art rule").not.toBe("");
-    expect(rule.replace(/\s/g, "")).toContain("aspect-ratio:2/1");
-    expect(rule.replace(/\s/g, "")).toContain("object-fit:cover");
-    expect(rule.replace(/\s/g, "")).toContain("width:100%");
+    const flat = (rule: string): string => rule.replace(/\s/g, "");
+
+    const art = /\.spgability-art\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
+    expect(art, "no .spgability-art rule").not.toBe("");
+    expect(flat(art), "the painting is not square").toContain("aspect-ratio:1/1");
+    expect(flat(art)).toContain("object-fit:cover");
+    expect(flat(art)).toContain("width:100%");
+
+    const card = /\.spgcard\.painted\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
+    expect(card, "no .spgcard.painted rule").not.toBe("");
+    expect(flat(card), "the card still stacks").toMatch(/grid-template-columns:[^;]+1fr/);
+    // Whichever of the two is taller, the slack falls either side of the shorter one.
+    expect(flat(card), "the two are not centred on each other").toContain("align-items:center");
+  });
+
+  /**
+   * THE WORDS ARE ONE COLUMN. As direct children of a two-column grid the chips and the
+   * sentence land in two different cells — the fault the wrapper exists to prevent, and
+   * one a stylesheet read alone cannot see.
+   */
+  it("keeps the chips and the rule in one box", () => {
+    const store = new ProfileStore(new MemoryStore());
+    const page = buildSpeciesPage(store, { species: "fire", onBack: () => {} });
+    const body = page.querySelector(".spgcard.painted > .spgability-body");
+    expect(body, "the ability's words are not in their own box").toBeTruthy();
+    expect(body?.querySelector(".spgchips"), "the chips are outside it").toBeTruthy();
+    expect(body?.querySelector(".spgtext"), "the rule is outside it").toBeTruthy();
   });
 });
