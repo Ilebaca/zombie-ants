@@ -1,0 +1,66 @@
+/* The badge is the tile: square backing frames must not sit behind its silhouette. */
+#app .trgrid > .trtile:is(.empty, .shut, .filled) {
+  position: relative;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  min-width: 0;
+  padding: 0;
+  gap: 2px;
+  border: none !important;
+  outline: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+#app .trait-emblem { display: block; width: 100%; height: 100%; overflow: visible; }
+#app .trtile > .trait-emblem,
+#app .trtile-i { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+#app .trtile > .ic, #app .trtile-ch { position: relative; z-index: 1; pointer-events: none; }
+#app .trait-socket .trait-emblem__outline {
+  fill: var(--hud-face, #1c2027);
+  stroke: var(--action-frame, #3d454d);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+#app .trait-emblem { filter: drop-shadow(0 2px 0 #30001f); }
+#app .trait-socket { filter: drop-shadow(0 3px 0 var(--action-frame, #3d454d)); }
+#app .trtile.armed .trait-emblem__outline { stroke: var(--hud-go); stroke-width: 3; }
+#app .trtile.armed .trait-emblem { filter: drop-shadow(0 3px 0 var(--hud-go)); }
+#app .trtile:focus-visible .trait-emblem__outline { stroke: var(--hud-ink); stroke-width: 3; }
+#app .trtile:focus-visible .trait-emblem { filter: drop-shadow(0 3px 0 var(--hud-ink)); }
+#app .trtile-f {
+  position: absolute;
+  z-index: 1;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  justify-content: center;
+  pointer-events: none;
+}
+#app .trtile-v {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: #171b22;
+  color: var(--hud-ink);
+  font-family: var(--font-display);
+}
+#app .trtile.worn::after { top: 5%; right: 12%; }
+#app .trait-detail > .trait-detail-emblem {
+  width: 140px;
+  height: auto;
+  aspect-ratio: 8 / 7;
+  border: 0;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+#app .reward-emblem:has(> .trait-emblem) {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none !important;
+}
+#app .reward-emblem > .trait-emblem { width: 100%; height: 100%; }

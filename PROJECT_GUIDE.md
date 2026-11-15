@@ -5791,3 +5791,17 @@ This is a versioned equipment estimate, not a measured win-rate conversion.
 
 Species stat cards show only an icon and value, side by side. Accessible labels retain
 Attack, Defence and CDR chance; the popup continues to explain the trait mechanic.
+
+### Trait rarity badges and empty sockets
+
+The supplied attack, defence and CDR badge designs are represented by the shared
+scalable SVG renderer in ui/trait-emblem.ts. Each kind uses the same five rarity
+palettes and outer outline. Empty and locked slots use that same silhouette in the
+neutral frame colour, with the plus or chapter lock inside it. Selected and focused
+states follow the silhouette, including its lower ledge; no square tile frame sits
+behind the badge. Picker, inventory, equipped slots, details and reward reveals all
+share this renderer. Names, numeric effects and equipment rules remain unchanged.
+
+SVG nodes are constructed with createElementNS and setAttribute, following the
+project's no-markup-injection rule. Component CSS is scoped above generic panel rules.
+The three species stat cards retain their solid fills but have no frame or shadow.

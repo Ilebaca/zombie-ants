@@ -5,11 +5,12 @@
 import { groupSections } from "./groups";
 import {
   ATK_CAP, DEF_CAP, FUSE_DEALS, LUCK_CAP, SPECIES_ORDER,
-  TRAIT_TIER, effectFigure, effectText, fitsScope, itemDef, markOf, scopeName, slotChapter,
+  TRAIT_TIER, effectFigure, effectText, fitsScope, itemDef, scopeName, slotChapter,
 } from "../platform";
 import type { ProfileStore, TraitItem, TraitScope } from "../platform";
 import { buyButton, el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
+import { traitEmblem, traitSocket } from "./trait-emblem";
 import { mountTraitPicker, traitPopupHost } from "./trait-popovers";
 
 export interface TraitSlotsOptions {
@@ -75,7 +76,7 @@ export function buildTraitSlots(store: ProfileStore, opts: TraitSlotsOptions): H
     close.onclick = event => { event.stopPropagation(); closeDetail(); };
 
     const emblem = el("div", "trait-detail-emblem");
-    emblem.appendChild(icon(def?.icon ?? "star", 64));
+    emblem.appendChild(traitEmblem(def?.kind ?? "attack", item.tier));
     const name = el("h2", "trait-detail-name", def?.name ?? "Trait");
     name.id = "traitDetailName";
     const effect = el("p", "trait-detail-effect", def ? effectText(def, item.tier) : "");
@@ -152,7 +153,7 @@ export function buildTraitSlots(store: ProfileStore, opts: TraitSlotsOptions): H
       if (i >= store.slotsOpen()) {
         const shut = el("span", "trtile shut");
         shut.dataset.slot = String(i);
-        shut.append(icon("lock", 15), el("span", "trtile-ch", `CH ${slotChapter(i)}`));
+        shut.append(traitSocket(), icon("lock", 15), el("span", "trtile-ch", `CH ${slotChapter(i)}`));
         shut.title = `Opens at chapter ${slotChapter(i)}`;
         shut.setAttribute("aria-label", shut.title);
         row.appendChild(shut);
@@ -168,7 +169,7 @@ export function buildTraitSlots(store: ProfileStore, opts: TraitSlotsOptions): H
       const cell = item ? readOnlyTile(item, select) : el("button", "trtile empty") as HTMLButtonElement;
       cell.type = "button";
       if (!item) {
-        cell.appendChild(icon("plus", 18));
+        cell.append(traitSocket(), icon("plus", 18));
         cell.setAttribute("aria-label", `Empty slot ${i + 1}`);
         cell.onclick = select;
       }
@@ -396,9 +397,8 @@ function readOnlyTile(item: TraitItem, onTap: () => void): HTMLButtonElement {
   cell.style.setProperty("--tier", tier.colour);
 
   const mark = el("span", "trtile-i");
-  mark.appendChild(icon(def?.icon ?? "star", 22));
+  mark.appendChild(traitEmblem(def?.kind ?? "attack", item.tier));
   const foot = el("span", "trtile-f");
-  foot.appendChild(icon(def ? markOf(def.kind) : "spark", 11));
   foot.appendChild(el("span", "trtile-v", def ? effectFigure(def, item.tier) : ""));
 
   cell.append(mark, foot);
