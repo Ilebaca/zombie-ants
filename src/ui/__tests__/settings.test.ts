@@ -13,7 +13,7 @@ import { buildSettings } from "../settings";
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
 
 interface Spy {
-  rules: number; tour: number; reset: number; diff: number;
+  rules: number; tour: number; reset: number;
   feedback: number; restored: number; signout: number; deleted: number;
 }
 
@@ -21,15 +21,13 @@ const build = (store = new ProfileStore(new MemoryStore())): {
   root: HTMLElement; store: ProfileStore; spy: Spy;
 } => {
   const spy: Spy = {
-    rules: 0, tour: 0, reset: 0, diff: 0,
+    rules: 0, tour: 0, reset: 0,
     feedback: 0, restored: 0, signout: 0, deleted: 0,
   };
   const root = buildSettings({
     profile: store,
     onBack: () => {},
-    difficulty: "Normal",
     onDelete: () => { spy.deleted++; },
-    onCycleDifficulty: () => { spy.diff++; },
     onHowToPlay: () => { spy.rules++; },
     onFeedbackChanged: () => { spy.feedback++; },
     onReplayTutorial: () => { spy.tour++; },
@@ -52,7 +50,13 @@ const press = (root: HTMLElement, id: string): void => {
 describe("the settings screen", () => {
   it("combines settings sections and keeps backup controls inside the shared frame", () => {
     const { root } = build();
-    expect(root.querySelectorAll(".panel-group")).toHaveLength(6);
+    // FIVE, since "The next match" went with the Enemy AI row it held. The headings are
+    // named as well as counted: a bare number is satisfied by any five groups, including
+    // the wrong five, which is exactly what a section quietly going missing looks like.
+    expect(root.querySelectorAll(".panel-group")).toHaveLength(5);
+    expect(Array.from(root.querySelectorAll(".secthead"), (h) => h.textContent)).toEqual(
+      ["Your colony", "Sound & feel", "Learning the game", "Your save", "Start over"],
+    );
     const sound = root.querySelector("#setSound")!;
     expect(sound.closest(".panel-group")).toBe(root.querySelector("#setMusic")!.closest(".panel-group"));
     const panel = root.querySelector<HTMLElement>("#setBackupPanel")!;
@@ -110,15 +114,24 @@ describe("the settings screen", () => {
 
   it("wires every row it does show", () => {
     const { root, spy } = build();
-    press(root, "setDiff");
     press(root, "setRules");
     press(root, "setTutorial");
-    expect(spy).toMatchObject({ diff: 1, rules: 1, tour: 1 });
+    expect(spy).toMatchObject({ rules: 1, tour: 1 });
   });
 
-  it("shows the current difficulty as the value of its row", () => {
+  /**
+   * THE ENEMY AI ROW IS GONE, and so is the section that held it, asked for directly:
+   * the opponent is chosen by the game, so there was nothing on this screen to set and
+   * the row had already stopped taking a tap (it read "Automatic" over a disabled
+   * button). Both halves are asserted, because deleting the row and leaving "The next
+   * match" standing is a heading over a gap — the fault the BOARD row's section was
+   * taken out on, and the one thing a screenshot shows that a row count does not.
+   */
+  it("offers nothing about the opponent", () => {
     const { root } = build();
-    expect(root.querySelector("#setDiff")?.textContent).toBe("Normal");
+    expect(root.querySelector("#setDiff"), "the Enemy AI row is back").toBeNull();
+    const heads = Array.from(root.querySelectorAll(".secthead"), (h) => h.textContent);
+    expect(heads, "its section is standing with nothing under it").not.toContain("The next match");
   });
 
   /**

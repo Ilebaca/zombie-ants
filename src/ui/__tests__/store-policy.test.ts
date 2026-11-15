@@ -112,8 +112,7 @@ describe("deleting the account", () => {
     let deleted = 0;
     const root = buildSettings({
       profile: store(),
-      onBack: () => {}, difficulty: "Normal",
-      onCycleDifficulty: () => {}, onHowToPlay: () => {},
+      onBack: () => {}, onHowToPlay: () => {},
       onFeedbackChanged: () => {}, onReplayTutorial: () => {}, onReset: () => {},
       onDelete: () => { deleted++; }, onSignOut: () => {}, onKeepSafe: () => {},
       onRestored: () => {}, playerCode: "ZA-TEST-TEST",

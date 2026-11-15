@@ -5,9 +5,8 @@
  * match — a match is created from the choices, handed to MatchScreen, and reported back
  * through `onExit`.
  */
-import { DIFFICULTIES, MAPS, START_SHAPES, NEUTRAL_MODS, combatPower, arrangeTutorial, createGame, startsFirst } from "../engine";
+import { MAPS, START_SHAPES, NEUTRAL_MODS, combatPower, arrangeTutorial, createGame, startsFirst } from "../engine";
 import type { MatchSetup, Player, SpeciesId } from "../engine";
-import type { Difficulty } from "../ai/search";
 import type { ShapeId } from "../engine";
 import {
   DemoGateway, LocalDuels, LocalFriendService, LocalMatchmaker, LocalSupportGateway,
@@ -139,8 +138,10 @@ export class App {
   private menu: HTMLElement | null = null;
   /** The five-tab deck. Built on first use, then it outlives every screen. */
   private deck: Deck<DeckId> | null = null;
-  /** Read from the profile at boot — a setting that forgets itself is not a setting. */
-  private difficulty: Difficulty;
+  /* NO `difficulty` FIELD. It was read from the profile at boot and handed to a match,
+     and the one control that set it is gone (§ NO "THE NEXT MATCH" SECTION in
+     ui/settings.ts): the tutorial plays Easy and everything else plays Normal, decided
+     where the match is opened rather than carried on the shell. */
   /**
    * Where purchases go. The demo gateway grants without charging, which is all the web
    * build can do; the Capacitor build swaps in RevenueCat behind the same interface.
@@ -359,7 +360,6 @@ export class App {
       species: saved.lastSpecies,
       shape: (saved.lastShape in START_SHAPES ? saved.lastShape : "wedge") as ShapeId,
     };
-    this.difficulty = saved.difficulty;
     // The faction colour is deliberately NOT set here. Like the legacy build, the home and
     // map screens paint in the stylesheet's default palette; the species picker is what
     // recolours the UI, and it does so on entry.
@@ -544,7 +544,6 @@ export class App {
    */
   private adoptProfile(): void {
     const saved = this.profile.get();
-    this.difficulty = saved.difficulty;
     this.choices = {
       map: "small",
       species: saved.lastSpecies,
@@ -1123,14 +1122,6 @@ export class App {
       return buildSettings({
         profile: this.profile,
         onBack: () => this.show("home"),
-        difficulty: "Automatic",
-        adaptive: true,
-        onCycleDifficulty: () => {
-          const order = DIFFICULTIES;
-          this.difficulty = order[(order.indexOf(this.difficulty) + 1) % order.length] as Difficulty;
-          this.profile.update((p) => { p.difficulty = this.difficulty; });
-          this.show("settings");
-        },
         onHowToPlay: () => this.show("rules"),
         // The switch writes the profile; this is what makes the live device agree with it
         // without waiting for a reload.
@@ -1657,8 +1648,13 @@ export class App {
     // Player upgrades come from the profile. Campaign equipment and skill are assigned
     // once at opening; a resumed match keeps both verbatim so later purchases cannot alter
     // an existing fight or invalidate its replay.
-    const difficulty: SuspendDifficulty = resume?.difficulty
-      ?? (tutorial ? "easy" : this.challenge ? this.difficulty : "normal");
+    // EVERY OPPONENT BUT THE TUTORIAL'S PLAYS NORMAL. A challenge used to take this off
+    // `profile.difficulty` — the Settings row that has just been removed — so with nothing
+    // able to set it, that read was a save field steering a match with no way to see it,
+    // which is the dead-switch fault this screen has been cleaned of twice already. The
+    // field stays on the save (a stored match records the difficulty it was played at,
+    // platform/suspend.ts); it is simply no longer what decides a new one.
+    const difficulty: SuspendDifficulty = resume?.difficulty ?? (tutorial ? "easy" : "normal");
     const baseMods = this.profile.modsFor(mySpecies, difficulty);
     const campaign = !resume && !tutorial && !this.challenge && !seated?.human
       ? campaignOpponent(chapterOf(this.profile.get().colony), aiSpecies, mySpecies, baseMods.you)

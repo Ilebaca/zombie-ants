@@ -1130,6 +1130,27 @@ last screen in the app still wearing the legacy skeleton. A deliberate deviation
   in the card above it summarised what the colony IS. A section is for a list and this is
   one row, so it rides in the hero on the card's own surface, under a hairline, still
   showing its five slots and still opening the bench.
+- **THE ABILITY CARD READS ACROSS, AND ITS PICTURE IS SQUARE**, asked for directly:
+  "make ability layout horizontal, keep image square". It was a 2:1 BAND over the card's
+  full width with the chips and the sentence stacked under it — a tall card on a screen
+  that is already a cover, a stat block, a research row and a trait rail — and the band
+  was a centre CROP of a SQUARE file, so two thirds of every painting was never shown.
+  Measured at five widths the card came down from 292 / 312 / 308 / 309 / 349 to
+  136 / 127 / 153 / 153 / 165: about half the height, and the whole painting.
+  - **THE COLUMN IS A CLAMP, never a fraction** (`clamp(96px, 34%, 148px)`). A flat
+    percentage is a 56px stamp on a 320 phone and a 220px slab on a tablet; measured, the
+    picture lands at 96 / 103 / 113 / 114 / 141 across those widths.
+  - **The two are CENTRED on each other.** Whichever is taller — a long rule on a narrow
+    phone, the square on a wide one — the slack falls either side of the shorter one
+    rather than all under it, which reads as a layout rather than as a gap.
+  - **THE WORDS NEEDED THEIR OWN BOX** (`.spgability-body`). As direct children of a
+    two-column grid the chips and the sentence land in two different cells; wrapped, they
+    are one column whatever the card does. A stylesheet read alone cannot see that.
+  - **And the rule stopped claiming to bleed.** It said `padding: 0` so the band could
+    reach the card's own edges, and `.spgcard` is in the design remap's shared padding
+    list far further down the file — a later list at equal specificity, so the band was
+    inset 12 all along. The square is inset on purpose now and takes the language's own
+    inner radius, because a hard corner inside a rounded card reads as unfinished.
 - **Research leads, and states NOW against NEXT.** It is what the screen is for, and a
   price beside "+5% attack per level" never says which level you are on or what the next
   one buys. It reuses the Anthill's comparison rows, so the two screens read as one app.
@@ -1354,10 +1375,11 @@ them and the halves part onto the board.
   finder is a new class and one line in `App`, the same seam `PurchaseGateway` uses. The
   search really waits `SEARCH_MS` (5s) — five seconds of decoration would have to be
   rewritten the day it is real.
-- **When nobody answers it seats a BOT, and the bot plays `hard`.** A bot stands in for a
-  person, and a person who folds is worse than no opponent: the player would see it was
-  not real. Settings' difficulty still drives a challenge, which is a scenario rather than
-  an opponent.
+- **When nobody answers it seats a BOT.** A bot stands in for a person, and a person who
+  folds is worse than no opponent: the player would see it was not real. What it plays is
+  the campaign opponent — NORMAL, on every chapter (§ THE PLAY STYLE DOES NOT SCALE in
+  `docs/ai-progression.md`), with equipment scaled to the chapter. A challenge plays the
+  same policy; only the tutorial's scripted opponent is Easy.
 - **The rosters are generated, not typed.** Twenty per chapter across fifty chapters is a
   thousand names, and a table that long is a thousand chances to leave one stale when the
   road is retuned. Seeded on the CHAPTER, so a chapter always fields the same twenty (a
@@ -4925,9 +4947,22 @@ are gone until there is something behind them.
   which is a fifth line sliced across the bottom edge, reading as a box that cannot fit its
   own text. `rows`, and a height in `em` against a fractional line-height, both land a few
   pixels off and slice one anyway.
-- **Enemy AI says what it actually governs.** A matchmade opponent always plays `hard`
-  (§ finding an opponent), so the setting drives challenges; the row states that, because
-  a setting that silently applies to less than its name suggests is worse than no setting.
+- **THERE IS NO ENEMY AI ROW, AND NO "THE NEXT MATCH" SECTION**, asked for directly:
+  "remove ui for ai since it's auto, we don't need any display there". The row had already
+  stopped taking a tap — it read "Automatic" over a disabled button once the campaign
+  opponent was chosen by the game — and a value the player cannot change is a LABEL, for
+  something they were never deciding. The heading went with it rather than being left over
+  a gap, which is the decision the BOARD row's section got when there stopped being a
+  board to choose: a section naming something the screen no longer offers is a screen
+  lying about itself, the rule the dead Sound and Vibration switches were taken out on.
+  - **And its last reader went too.** A CHALLENGE took its AI from that row's saved value
+    (`profile.difficulty`), so with nothing able to set it that read was a save field
+    steering a match with no way to see or change it. Every opponent but the tutorial's
+    plays Normal now, decided where the match is opened. The field stays on the save,
+    because a stored match records the difficulty it was played at.
+  - **`valueRow` went with it as well.** It built the one kind of row this screen no
+    longer has — a setting whose VALUE is the button — and Enemy AI was its last caller;
+    a builder with nothing calling it is an invitation to ship another row nobody needs.
 
 **SOUND AND HAPTICS ARE SYNTHESISED, NOT SHIPPED** (`src/platform/feedback.ts`). There is
 no asset pipeline in this project and no image file either — every picture is drawn by the

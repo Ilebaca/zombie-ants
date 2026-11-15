@@ -227,7 +227,9 @@ describe("returning through the colony picker", () => {
       choose(host, other);
       openSettings(host);
       expect(host.querySelector<HTMLInputElement>("#setName")?.value).toBe("Second");
-      expect(host.querySelector("#setDiff")?.textContent).toBe("Automatic");
+      // The Enemy AI row is gone from this screen (§ NO "THE NEXT MATCH" SECTION); the
+      // name above is what proves the right account's settings were rebuilt.
+      expect(host.querySelector("#setDiff")).toBeNull();
       host.querySelector<HTMLButtonElement>("#settings .backbtn")!.click();
       host.querySelector<HTMLButtonElement>("#home .tn-id")!.click();
       expect(host.querySelector("#profile .pf-hero")?.textContent).toContain("Second");

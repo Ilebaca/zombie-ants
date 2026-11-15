@@ -11,10 +11,6 @@ import { codeCopy, codeField, codePanel } from "./backupcode";
 export interface SettingsOptions {
   profile: ProfileStore;
   onBack: () => void;
-  /** Current values, shown on the rows that cycle. */
-  difficulty: string;
-  adaptive?: boolean;
-  onCycleDifficulty: () => void;
   onHowToPlay: () => void;
   /** Flipping a switch writes the profile AND tells the live device — see `App`. */
   onFeedbackChanged: () => void;
@@ -55,17 +51,17 @@ export function buildSettings(opts: SettingsOptions): HTMLElement {
       onGo: opts.onSignOut,
     }),
 
-    // NO BOARD ROW. There is one board now (engine/config.ts), and a control that cycles
-    // through a list of one is a screen lying about itself — the same reason the dead
-    // Sound and Vibration switches were taken out before there was audio behind them.
-    el("div", "secthead", "The next match"),
-    valueRow({
-      mark: "attack",
-      title: "Enemy AI",
-      value: opts.difficulty,
-      id: "setDiff",
-      onPick: opts.adaptive ? undefined : opts.onCycleDifficulty,
-    }),
+    // NO "THE NEXT MATCH" SECTION. It held one row — "Enemy AI", reading "Automatic" and
+    // refusing the tap (`onPick` was undefined whenever `adaptive`) — and the row is gone,
+    // asked for directly: the opponent is chosen by the game, so there is nothing on this
+    // screen to set. A value a player cannot change is a label, and a label for something
+    // they were never deciding is one more row between them and the rows that do work.
+    //
+    // THE HEADING WENT WITH IT rather than being left over a gap, which is the same
+    // decision the BOARD row got when there stopped being a board to choose
+    // (engine/config.ts): a section naming something the screen no longer offers is a
+    // screen lying about itself — the rule the dead Sound and Vibration switches were
+    // taken out on, before there was audio behind them.
 
     el("div", "secthead", "Sound & feel"),
     switchRow({
@@ -158,20 +154,12 @@ function shell(parts: RowParts, tag: "div" | "button"): HTMLElement {
   return row;
 }
 
-interface ValueRow extends RowParts { value: string; onPick?: () => void }
-
-/** A setting that cycles through a short list. The value IS the control. */
-function valueRow(parts: ValueRow): HTMLElement {
-  const row = shell(parts, "div");
-  const btn = el("button", "setval", parts.value);
-  // The id belongs on the thing that is pressed, not on the row around it.
-  btn.id = parts.id;
-  row.id = `${parts.id}Row`;
-  if (parts.onPick) btn.onclick = parts.onPick;
-  else btn.disabled = true;
-  row.appendChild(btn);
-  return row;
-}
+/* NO `valueRow` HERE ANY MORE. It built the one kind of row this screen no longer has —
+   a setting whose VALUE is the button — and Enemy AI was its last caller; the board row
+   went before it. A builder with nothing calling it is an invitation to ship another row
+   nobody needs, and its last job was drawing a disabled button over a word the player was
+   not choosing. `.setval` is untouched: it is also the switch, Show, Paste and all three
+   destructive buttons, so it was never this helper's class. */
 
 /** A setting that opens something else. The whole row takes the tap. */
 function goRow(parts: RowParts & { onGo: () => void }): HTMLElement {
