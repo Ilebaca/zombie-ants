@@ -5823,3 +5823,17 @@ The three horizontal species stat cards use the supplied illustrated sword, shie
 and clock designs as standalone marks. combatStatIcon in ui/trait-emblem.ts shares
 the stat artwork with the rarity badges and crops the viewBox to exclude badge rims.
 Their 26 × 28px boxes sit beside the numbers, with no visible labels or card frames.
+
+### Anchored popups never move the screen on opening
+
+Trait, skins and anthill popups stay below their trigger and never scroll the owning
+page automatically or flip above the trigger to fit the viewport. The player can
+scroll down normally. ui/popup-scroll.ts extends only the scrollable space at the end
+of the page when the panel would otherwise be unreachable; existing rows stay put.
+Portaled panels forward user wheel/touch gestures to that page until the panel is
+visible, then keep native scrolling inside long lists. Anthill details remain open
+when their anchor scrolls offscreen. Resize and opening perform no scroll writes.
+
+Closing a panel also preserves the current position. Extra end space is retired as
+the player scrolls back up, so removing the overlay cannot clamp the page upward.
+New anchored popups should share this helper and use focus({preventScroll:true}).

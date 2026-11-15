@@ -1,4 +1,5 @@
-/** Anchored trait layers live above scrolling/clipped cards and the deck. */
+/** Anchored loadout layers remain attached while the player scrolls. */
+import { mountPopupScroll } from "./popup-scroll";
 
 export function traitPopupHost(owner: HTMLElement): HTMLElement {
   return owner.closest<HTMLElement>("#app") ?? owner.closest<HTMLElement>(".screen") ?? owner;
@@ -34,19 +35,6 @@ export function mountTraitPicker(
   pointer.appendChild(path);
   panel.prepend(pointer);
 
-  const frame = host.getBoundingClientRect();
-  const needed = (anchor ?? row).getBoundingClientRect().bottom + Math.min(300, frame.height * .4) + 30 - frame.bottom;
-  if (needed > 0) {
-    let scroller = owner.parentElement;
-    while (scroller && scroller !== host) {
-      if (scroller.scrollHeight > scroller.clientHeight && /auto|scroll/.test(getComputedStyle(scroller).overflowY)) {
-        scroller.scrollTop += needed;
-        break;
-      }
-      scroller = scroller.parentElement;
-    }
-  }
-
   const place = (): void => {
     const bounds = row.getBoundingClientRect(), viewport = host.getBoundingClientRect();
     const target = (anchor ?? row.querySelector<HTMLElement>(`[data-slot="${selected}"]`))?.getBoundingClientRect();
@@ -54,15 +42,12 @@ export function mountTraitPicker(
     const width = Math.min(bounds.width, Math.max(0, viewport.width - 32));
     const left = Math.max(16, Math.min(bounds.left - viewport.left, viewport.width - width - 16));
     const edge = anchor ? target : bounds;
-    const below = viewport.bottom - edge.bottom - 30;
-    const above = edge.top - viewport.top - 30;
-    const flipped = below < 160 && above > below;
-    panel.classList.toggle("above", flipped);
+    panel.classList.remove("above");
     panel.style.width = `${width}px`;
     panel.style.left = `${left}px`;
-    panel.style.maxHeight = `${Math.max(100, Math.min(360, flipped ? above : below))}px`;
-    panel.style.top = flipped ? "auto" : `${edge.bottom - viewport.top + 14}px`;
-    panel.style.bottom = flipped ? `${viewport.bottom - edge.top + 14}px` : "auto";
+    panel.style.maxHeight = `${Math.max(100,Math.min(360,viewport.height - 32))}px`;
+    panel.style.top = `${edge.bottom - viewport.top + 14}px`;
+    panel.style.bottom = "auto";
     panel.style.setProperty("--trait-arrow", `${Math.max(16, Math.min(width - 16, target.left + target.width / 2 - viewport.left - left))}px`);
   };
   const outside = (event: Event): void => {
@@ -82,16 +67,13 @@ export function mountTraitPicker(
   });
   host.addEventListener("click", outside, true);
   host.addEventListener("keydown", key, true);
-  page?.addEventListener("scroll", place, true);
-  window.addEventListener("resize", place);
   observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:["class"]});
-  place();
+  const releaseScroll = mountPopupScroll(owner,panel,place);
   return () => {
     observer.disconnect();
     host.removeEventListener("click", outside, true);
     host.removeEventListener("keydown", key, true);
-    page?.removeEventListener("scroll", place, true);
-    window.removeEventListener("resize", place);
+    releaseScroll();
     panel.remove();
   };
 }

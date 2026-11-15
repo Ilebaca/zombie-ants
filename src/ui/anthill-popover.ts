@@ -1,4 +1,5 @@
-/** A chamber's details float above the deck, anchored below its own room button. */
+/** Chamber details stay below their room button while the player scrolls. */
+import { mountPopupScroll } from "./popup-scroll";
 export function dismissAnthillPopup(host: HTMLElement): boolean {
   const panel = host.querySelector<HTMLElement>(".hill-popup");
   if (!panel) return false;
@@ -8,7 +9,7 @@ export function dismissAnthillPopup(host: HTMLElement): boolean {
 
 export function mountAnthillPopup(
   owner: HTMLElement, anchor: HTMLElement, panel: HTMLElement,
-  onClose: () => void, makeSpace: boolean,
+  onClose: () => void,
 ): () => void {
   const host = owner.closest<HTMLElement>("#app") ?? owner;
   dismissAnthillPopup(host);
@@ -29,31 +30,13 @@ export function mountAnthillPopup(
     const column = owner.querySelector<HTMLElement>(".screenbody")?.getBoundingClientRect();
     const width = Math.min(column?.width ?? viewport.width - 32, viewport.width - 32);
     const left = Math.max(16, Math.min((column?.left ?? viewport.left + 16) - viewport.left, viewport.width - width - 16));
-    const safeBottom = parseFloat(getComputedStyle(owner).getPropertyValue("--safe-bottom")) || 0;
     const top = target.bottom - viewport.top + 12;
     panel.style.width = `${width}px`;
     panel.style.left = `${left}px`;
     panel.style.top = `${top}px`;
-    panel.style.maxHeight = `${Math.max(80, viewport.height - top - safeBottom - 12)}px`;
+    panel.style.maxHeight = "none";
     panel.style.setProperty("--hill-arrow", `${Math.max(18, Math.min(width - 18, target.left + target.width / 2 - viewport.left - left))}px`);
   };
-
-  let live = true;
-  place();
-  queueMicrotask(() => {
-    if (!live) return;
-    if (makeSpace) {
-      const viewport = host.getBoundingClientRect(), target = anchor.getBoundingClientRect();
-      const safeBottom = parseFloat(getComputedStyle(owner).getPropertyValue("--safe-bottom")) || 0;
-      // Scroll only when necessary; no rows, margins or document heights are changed.
-      const room = viewport.bottom - target.bottom - safeBottom - 24;
-      const content = panel.querySelector<HTMLElement>(".hill-popup-content");
-      const header = panel.querySelector<HTMLElement>(".hill-popup-head");
-      const needed = Math.min((content?.scrollHeight ?? panel.scrollHeight) + (header?.offsetHeight ?? 0), 320, viewport.height * .55);
-      if (viewport.height > 0 && room < needed) owner.scrollTop += needed - room;
-    }
-    place();
-  });
 
   const outside = (event: Event): void => {
     const target = event.target;
@@ -66,11 +49,6 @@ export function mountAnthillPopup(
     event.stopPropagation();
     onClose();
   };
-  const scrolled = (): void => {
-    const target = anchor.getBoundingClientRect(), viewport = host.getBoundingClientRect();
-    if (target.bottom < viewport.top || target.top > viewport.bottom) { onClose(); return; }
-    place();
-  };
   const observer = new MutationObserver(() => {
     if (!owner.isConnected || !anchor.isConnected || owner.classList.contains("hidden")
         || owner.closest(".deck.hidden")) onClose();
@@ -78,17 +56,12 @@ export function mountAnthillPopup(
   observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:["class"]});
   host.addEventListener("click", outside, true);
   document.addEventListener("keydown", key, true);
-  owner.addEventListener("scroll", scrolled);
-  window.addEventListener("resize", place);
-  window.visualViewport?.addEventListener("resize", place);
+  const releaseScroll = mountPopupScroll(owner,panel,place);
   return () => {
-    live = false;
     observer.disconnect();
     host.removeEventListener("click", outside, true);
     document.removeEventListener("keydown", key, true);
-    owner.removeEventListener("scroll", scrolled);
-    window.removeEventListener("resize", place);
-    window.visualViewport?.removeEventListener("resize", place);
+    releaseScroll();
     panel.remove();
   };
 }
