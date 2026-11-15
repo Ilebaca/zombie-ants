@@ -5818,3 +5818,8 @@ The mask is a scalable vector version of the supplied artwork in ui/skins-icon.t
 Trait badges and empty/locked slots have no SVG drop-shadow filters or equipped
 green dots. The selected state keeps the shape outline. Detail-popup effect text
 uses the trait rarity colour rather than the universal green highlight.
+
+The three horizontal species stat cards use the supplied illustrated sword, shield
+and clock designs as standalone marks. combatStatIcon in ui/trait-emblem.ts shares
+the stat artwork with the rarity badges and crops the viewBox to exclude badge rims.
+Their 26 × 28px boxes sit beside the numbers, with no visible labels or card frames.
