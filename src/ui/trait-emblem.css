@@ -1,5 +1,5 @@
 /* The badge is the tile: square backing frames must not sit behind its silhouette. */
-#app .trtile {
+#app .trgrid > .trtile:is(.empty, .shut, .filled) {
   position: relative;
   display: grid;
   place-content: center;
@@ -46,7 +46,7 @@
   font-family: var(--font-display);
 }
 #app .trtile.worn::after { top: 5%; right: 12%; }
-#app .trait-detail-emblem {
+#app .trait-detail > .trait-detail-emblem {
   width: 140px;
   height: auto;
   aspect-ratio: 8 / 7;

@@ -1,6 +1,7 @@
 import { afterEach, expect, it } from "vitest";
 import { TRAITS, TRAIT_TIERS, MemoryStore, ProfileStore } from "../../platform";
 import { buildTraitSlots } from "../traits";
+import { buildRewardReveal } from "../reward-reveal";
 import { traitEmblem, traitSocket } from "../trait-emblem";
 
 afterEach(() => document.body.replaceChildren());
@@ -37,4 +38,14 @@ it("uses sockets for empty and locked slots, and the correct badge after equippi
   expect(worn.dataset.kind).toBe("defence");
   expect(worn.dataset.tier).toBe("exceptional");
   expect(store.bench("fire")[0]?.uid).toBe(held.uid);
+});
+
+it("uses the same stat and rarity badge in a full-screen reward reveal", () => {
+  const store = new ProfileStore(new MemoryStore());
+  const item = store.findTrait("u.gland","rare")!;
+  const reveal = buildRewardReveal([{kind:"trait",item}],() => {});
+  const art = reveal.querySelector(".reward-emblem .trait-emblem") as SVGSVGElement;
+  expect(art.dataset.kind).toBe("cooldown");
+  expect(art.dataset.tier).toBe("rare");
+  expect(reveal.querySelector(".reward-name")!.textContent).toBe("Glandular Surplus");
 });
