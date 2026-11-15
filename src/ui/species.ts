@@ -16,6 +16,7 @@ import { coverFor } from "./covers";
 import { icon } from "./icons";
 import { buildTraitSlots } from "./traits";
 import { mountTraitPicker } from "./trait-popovers";
+import { skinsIcon } from "./skins-icon";
 import { powerTag, updatePowerTag } from "./power-tag";
 import "./species.css";
 
@@ -86,7 +87,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     skins.setAttribute("aria-label", "Skins");
     skins.setAttribute("aria-expanded", "false");
     skins.setAttribute("aria-controls", "speciesSkinsPicker");
-    skins.appendChild(icon("skins", 18));
+    skins.appendChild(skinsIcon());
     tagActions.append(rarity, skins);
     tags.append(tagActions, rating);
     main.prepend(tags);
