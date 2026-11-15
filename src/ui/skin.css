@@ -5645,7 +5645,7 @@ button:not(.playbtn):active,
    paragraph that did not fit. The comma is where the sentence already pauses,
    so that is the line. (Each half still wraps on a narrow phone if it has to;
    what is pinned is that the two never share a line.) */
-.ho-line { display: block; }
+.ho-line, .ho-avatar { display: block; }
 
 /* ---- A skin came out ----
    The portrait fills the disc rather than sitting in it: the picture IS the

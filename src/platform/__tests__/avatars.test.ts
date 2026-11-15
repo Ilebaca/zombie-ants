@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-  AVATAR_IDS, AVATAR_TIER, DEFAULT_AVATAR, FREE_AVATARS, HATCH_AVATARS, ROAD_AVATARS,
+  AVATAR_IDS, HATCH_AVATAR_TIERS, hatchAvatarTier, DEFAULT_AVATAR, FREE_AVATARS, HATCH_AVATARS, ROAD_AVATARS,
   ROAD_CHAPTERS, avatarName, avatarProgress, avatarTier, faceOf, isAvatar, isFreeAvatar, lockedAvatars,
   roadAvatar, rollAvatar,
 } from "../index";
@@ -67,15 +67,12 @@ describe("the avatar catalogue", () => {
     expect(roadAvatar(ROAD_CHAPTERS + 1)).toBeNull();
   });
 
-  /**
-   * THE BOTTOM RUNG, DERIVED. A skin is the top two rungs of the ladder and an avatar is
-   * the lowest one; writing "common" here would be the kind of copy that survives a
-   * retune of the ladder and quietly points at the wrong end of it.
-   */
-  it("comes out of the lowest tier there is", () => {
-    expect(AVATAR_TIER).toBe(TIER_IDS[0]);
-    expect(avatarTier(TIER_IDS[0])).toBe(true);
-    for (const t of TIER_IDS.slice(1)) expect(avatarTier(t)).toBe(false);
+  it("distributes hatch avatars across Common, Uncommon and Rare", () => {
+    expect(HATCH_AVATAR_TIERS).toEqual(TIER_IDS.slice(0, 3));
+    expect(HATCH_AVATAR_TIERS.map((tier) => lockedAvatars([], tier).length)).toEqual([20, 12, 6]);
+    for (const tier of TIER_IDS) expect(avatarTier(tier)).toBe(TIER_IDS.indexOf(tier) < 3);
+    for (const id of HATCH_AVATARS) expect(HATCH_AVATAR_TIERS).toContain(hatchAvatarTier(id));
+    for (const id of [...FREE_AVATARS, ...ROAD_AVATARS]) expect(hatchAvatarTier(id)).toBeNull();
   });
 });
 

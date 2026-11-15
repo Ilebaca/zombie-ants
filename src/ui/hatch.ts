@@ -16,7 +16,7 @@
  * whole reason the tiers have colours at all.
  */
 import {
-  AVATAR_TIER, HATCH_COST, LARVA_MYCEL,
+  hatchAvatarTier, HATCH_COST, LARVA_MYCEL,
 } from "../platform";
 import type { Cue, Feedback, HatchPrize, ProfileStore } from "../platform";
 import { TIER_IDS } from "../engine";
@@ -80,7 +80,7 @@ const prizeCue = (tier: string | undefined): Cue =>
 /** What a prize is worth to the ear, whichever kind it is. */
 const tierOf = (prize: HatchPrize): string | undefined =>
   prize.kind === "skin" ? prize.look.tier
-    : prize.kind === "avatar" ? AVATAR_TIER
+    : prize.kind === "avatar" ? hatchAvatarTier(prize.id) ?? undefined
       : prize.item.tier;
 
 /**

@@ -5837,3 +5837,16 @@ when their anchor scrolls offscreen. Resize and opening perform no scroll writes
 Closing a panel also preserves the current position. Extra end space is retired as
 the player scrolls back up, so removing the overlay cannot clamp the page upward.
 New anchored popups should share this helper and use focus({preventScroll:true}).
+
+## Lucky Hatch reward distribution (2026-11-15)
+
+Rarity weights remain Common 60%, Uncommon 25%, Rare 10%, Exceptional 4%, Mythic 1%.
+Common is the grey tier. Common–Rare rolls pay traits 90% of the time and offer
+an avatar 10% of the time, from a fixed same-rarity pool (20/12/6 avatars).
+Completed avatar pools fall back to same-rarity traits without rerolling.
+Exceptional/Mythic still pay an unowned same-tier skin or fall back to a trait.
+Thus, with all cosmetic pools available, grey traits are 54% of all hatches and
+avatars total 9.5%; the shared hatch/shop odds panel explains the conditional split.
+Existing owned avatars retain their ids. Hatch reveal frames use catalogue rarity.
+A full bag refuses an unstorable trait before spending larva; batch rolling stops
+on refusal and charges only awarded prizes. Cosmetic rewards do not need bag slots.

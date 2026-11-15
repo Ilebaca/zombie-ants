@@ -40,7 +40,7 @@ import {
   slotChapter, slotsOpen, totalsOf, traitDef,
 } from "./traits";
 import type { TraitItem, TraitScope, TraitTier, TraitTotals } from "./traits";
-import { avatarTier, faceOf, isAvatar, isFreeAvatar, rollAvatar } from "./avatars";
+import { faceOf, isAvatar, isFreeAvatar, rollHatchAvatar } from "./avatars";
 import { rollSkin, skinTier } from "./skins";
 import { LARVA_MYCEL, fuseDeal } from "./exchange";
 import type { DuelInvite } from "./duels";
@@ -1746,19 +1746,13 @@ export class ProfileStore {
       ? rollSkin(random, this.profile.unlocked, this.profile.skins, drop.tier)
       : null;
 
-    // AND AN AVATAR IS THE SAME RULE AT THE OTHER END OF THE LADDER. A skin is the top
-    // two rungs; an avatar is the BOTTOM one, so a common roll pays an avatar while one
-    // is still locked and falls back to a common TRAIT once the collection is finished.
-    // Neither carries a chance of its own, which is what keeps the odds printed on the
-    // hatch screen the odds the game really uses.
-    //
-    // It is rolled only when a skin did not land, because the two tiers never overlap —
-    // the `&&` is belt and braces against a retune that made them, where paying both
-    // would be one larva buying two prizes and a card that can only show one of them.
-    const avatar = !skin && avatarTier(drop.tier)
-      ? rollAvatar(random, this.profile.avatars)
+    // Rarity stays unchanged. Most low-tier rolls pay traits even with avatars unowned.
+    const avatar = !skin
+      ? rollHatchAvatar(random, this.profile.avatars, drop.tier)
       : null;
 
+    // Refuse an unstorable trait before spending; cosmetics do not occupy bag slots.
+    if (!skin && !avatar && this.profile.bag.length >= BAG_MAX) return null;
     this.update((p) => { p.larva -= HATCH_COST; });
     if (skin) {
       const found = this.findSkin(skin.id);
@@ -1780,8 +1774,7 @@ export class ProfileStore {
    * (platform/skins.ts), so committing each one before the next is what stops a batch
    * paying the SAME skin twice; rolling ten against one snapshot would hand out
    * duplicates of the rarest thing in the game. An AVATAR is rolled the same way and it
-   * matters far more often here: commons are six rolls in ten, so a batch of ten against
-   * one snapshot would hand back the same face several times over.
+   * also prevents a batch from paying a duplicate face.
    *
    * THE PURSE IS CHECKED ONCE, FOR THE WHOLE BATCH. A run that paid for six and then
    * stopped would be a button that did not do what it said, and the screen's own guard
@@ -1798,7 +1791,8 @@ export class ProfileStore {
     const out: HatchPrize[] = [];
     for (let i = 0; i < n; i++) {
       const prize = this.hatch(random);
-      if (prize) out.push(prize);
+      if (!prize) break;
+      out.push(prize);
     }
     return out;
   }

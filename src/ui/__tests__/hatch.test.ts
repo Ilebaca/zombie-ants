@@ -483,8 +483,8 @@ describe("a face in the larva", () => {
   });
 
   /** It never reaches above its own rung: the skins own the top and keep it. */
-  it("pays no avatar on any tier above the bottom one", () => {
-    for (const tier of [0.7, 0.9, MYTHIC]) {
+  it("pays no avatar on Exceptional or Mythic rolls", () => {
+    for (const tier of [0.97, MYTHIC]) {
       const s = avatarStore(3);
       expect(s.hatch(rolls(tier))?.kind).not.toBe("avatar");
       expect(s.avatars).toEqual([]);
@@ -504,7 +504,7 @@ describe("a face in the larva", () => {
     vi.useFakeTimers();
     try {
       const s = avatarStore(3);
-      const { root, spy } = build(s);
+      const { root, spy } = build(s, rolls(COMMON));
       tap(root, "hatchGo");
       vi.advanceTimersByTime(2000);
       const item = root.querySelector('.reward-item[data-kind="avatar"]');
@@ -525,7 +525,7 @@ describe("a face in the larva", () => {
     vi.useFakeTimers();
     try {
       const s = avatarStore(20);
-      const { root } = build(s, () => 0.1);
+      const { root } = build(s, () => 0.05);
       tap(root, "hatchGo10");
       vi.advanceTimersByTime(2000);
       const card = root.querySelector("#hatchPrize");
@@ -800,5 +800,15 @@ describe("the prize pop-up", () => {
     vi.useRealTimers();
     expect(root.querySelector("#hatchPop"), "a card was raised over another screen").toBeNull();
     expect(spy.changed, "a prize landed on a screen nobody was looking at").toBe(0);
+  });
+});
+
+describe("avatar odds disclosure", () => {
+  it("shows the conditional split alongside the unchanged rarity weights", () => {
+    const { root } = build(store());
+    expect(root.querySelector("#hatchOdds")?.textContent)
+      .toContain("Common–Rare: 90% traits · 10% avatars.");
+    expect(root.querySelector("#hatchOdds")?.textContent)
+      .toContain("Completed cosmetic pools pay same-rarity traits.");
   });
 });

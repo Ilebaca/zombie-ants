@@ -63,8 +63,8 @@
 }
 .reward-avatar {
   border-radius: var(--action-radius, 12px);
-  outline: var(--action-stroke, 2px) solid var(--action-frame, #434b51);
-  box-shadow: 0 4px 0 #434b51 !important;
+  outline: var(--action-stroke, 2px) solid var(--reward-colour, var(--action-frame, #434b51));
+  box-shadow: 0 4px 0 var(--reward-colour, #434b51) !important;
 }
 .reward-emblem {
   display: grid;

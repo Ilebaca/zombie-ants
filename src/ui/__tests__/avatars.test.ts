@@ -387,7 +387,7 @@ describe("the legacy .avatar class", () => {
     const rolled = (id: string): HTMLElement => {
       const h = buildHatch(loaded(), {
         onBack: () => {}, onBuyLarva: () => {}, onInventory: () => {},
-        onProfile: () => {}, onChanged: () => {}, random: () => 0.5,
+        onProfile: () => {}, onChanged: () => {}, random: () => 0.05,
       });
       document.body.replaceChildren(h);
       vi.useFakeTimers();

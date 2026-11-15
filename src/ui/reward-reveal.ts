@@ -1,5 +1,5 @@
 /** Shared, presentation-only reward reveal. The caller settles the claim first. */
-import { avatarName, itemDef } from "../platform";
+import { avatarName, hatchAvatarTier, itemDef } from "../platform";
 import type { HatchPrize, TraitItem } from "../platform";
 import { SPECIES, TIERS } from "../engine";
 import type { SpeciesId } from "../engine";
@@ -63,6 +63,11 @@ function rewardItem(reward: RevealedReward): HTMLElement {
     art = el("div", "reward-art");
     if (reward.kind === "avatar") {
       name = avatarName(reward.id);
+      const tier = hatchAvatarTier(reward.id);
+      if (tier) {
+        item.dataset.tier = tier;
+        item.style.setProperty("--reward-colour", TIERS[tier].colour);
+      }
       art.appendChild(avatarFace(reward.id, 240, "reward-avatar"));
     } else if (reward.kind === "trait") {
       const def = itemDef(reward.item);

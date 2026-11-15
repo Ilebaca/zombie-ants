@@ -16,7 +16,7 @@
  * the outcome that turns up most to the one that almost never does, and a player reads the
  * shape of that before they read any number on it.
  */
-import { SKIN_TIERS, TRAIT_TIER, TRAIT_TIERS, tierOdds } from "../platform";
+import { HATCH_AVATAR_CHANCE, HATCH_AVATAR_TIERS, SKIN_TIERS, TRAIT_TIER, TRAIT_TIERS, tierOdds } from "../platform";
 import { TIERS } from "../engine";
 import { el } from "./chrome";
 
@@ -76,6 +76,11 @@ export function buildOdds(heading = ""): HTMLElement {
   note.append(
     el("span", "ho-line", `${named} hatches pay a colony skin,`),
     el("span", "ho-line", "while you still have one to find."),
+  );
+  const avatarNames = [HATCH_AVATAR_TIERS[0]!, HATCH_AVATAR_TIERS.at(-1)!].map((t) => TIERS[t].name).join("–");
+  note.append(
+    el("span", "ho-avatar", `${avatarNames}: ${100 - HATCH_AVATAR_CHANCE}% traits · ${HATCH_AVATAR_CHANCE}% avatars.`),
+    el("span", "ho-avatar", "Completed cosmetic pools pay same-rarity traits."),
   );
   box.appendChild(note);
   return box;
