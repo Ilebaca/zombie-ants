@@ -34,42 +34,49 @@ export function traitSocket(): SVGSVGElement {
   return art;
 }
 
+function shape(name: keyof SVGElementTagNameMap, attrs: Record<string,string>): SVGElement {
+  const node = document.createElementNS(NS,name);
+  for (const [key,value] of Object.entries(attrs)) node.setAttribute(key,value);
+  return node;
+}
+
 export function traitEmblem(kind: TraitKind, tier: TraitTier): SVGSVGElement {
   const art = svg();
   art.dataset.kind = kind;
   art.dataset.tier = tier;
   const [light,face,shade,core] = PALETTES[tier];
   const id = "trait-art-" + ++sequence;
-  const shield = `
-    <path d="M64 33Q75 41 84 42Q85 65 64 82Q43 65 44 42Q53 41 64 33Z" fill="#cceeff" stroke="#30001f" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M64 35Q75 42 82 43Q82 64 64 79Z" fill="#92caff"/>
-  `;
-  const clock = `
-    <circle cx="64" cy="56" r="23" fill="#dafbe8" stroke="#30001f" stroke-width="3"/>
-    <path d="M64 35A21 21 0 0 1 64 77Z" fill="#b6efd1"/>
-    <path d="M64 39V57H80" fill="none" stroke="#30001f" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-  `;
-  const sword = `
-    <path d="M64 28L77 42 73 65H55L51 42Z" fill="#fff0cc" stroke="#30001f" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M64 30L75 42 72 64H64Z" fill="#ffaaa2"/><path d="M64 55L75 42 72 64H64Z" fill="#ff7f7c"/>
-    <path d="M57 68H71L70 83H58Z" fill="#a50b32" stroke="#30001f" stroke-width="3"/>
-    <path d="M58 74H70V79H58Z" fill="#650927"/>
-    <path d="M47 62L56 64 64 61 72 64 81 62 84 69 78 74 64 71 50 74 44 69Z" fill="#ffc300" stroke="#30001f" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M47 63L56 66 64 63 72 66 81 63 80 67 71 69 64 66 56 69 46 67Z" fill="#ffe568"/>
-    <rect x="57" y="82" width="14" height="6" rx="3" fill="#ffc300" stroke="#30001f" stroke-width="2.5"/>
-  `;
-  art.innerHTML = `
-    <defs>
-      <linearGradient id="${id}-rim" x1="0" y1="0" x2=".7" y2="1">
-        <stop stop-color="${light}"/><stop offset=".38" stop-color="${face}"/>
-        <stop offset="1" stop-color="${shade}"/>
-      </linearGradient>
-    </defs>
-    <path class="trait-emblem__outline" d="${TRAIT_OUTLINE}" fill="url(#${id}-rim)" stroke="#30001f" stroke-width="3" stroke-linejoin="round"/>
-    <ellipse cx="64" cy="56" rx="34" ry="36" fill="${core}" stroke="${shade}" stroke-width="2"/>
-    <path d="M35 26Q39 20 45 19" fill="none" stroke="#fffdf2" stroke-width="7" stroke-linecap="round"/>
-    <path d="M31 34L33 31" fill="none" stroke="#fffdf2" stroke-width="4" stroke-linecap="round"/>
-    ${kind === "attack" ? sword : kind === "defence" ? shield : clock}
-  `;
+  const shield = [
+    shape("path", {"d":"M64 33Q75 41 84 42Q85 65 64 82Q43 65 44 42Q53 41 64 33Z","fill":"#cceeff","stroke":"#30001f","stroke-width":"3","stroke-linejoin":"round"}),
+    shape("path", {"d":"M64 35Q75 42 82 43Q82 64 64 79Z","fill":"#92caff"}),
+  ];
+  const clock = [
+    shape("circle", {"cx":"64","cy":"56","r":"23","fill":"#dafbe8","stroke":"#30001f","stroke-width":"3"}),
+    shape("path", {"d":"M64 35A21 21 0 0 1 64 77Z","fill":"#b6efd1"}),
+    shape("path", {"d":"M64 39V57H80","fill":"none","stroke":"#30001f","stroke-width":"3.5","stroke-linecap":"round","stroke-linejoin":"round"}),
+  ];
+  const sword = [
+    shape("path", {"d":"M64 28L77 42 73 65H55L51 42Z","fill":"#fff0cc","stroke":"#30001f","stroke-width":"3","stroke-linejoin":"round"}),
+    shape("path", {"d":"M64 30L75 42 72 64H64Z","fill":"#ffaaa2"}),
+    shape("path", {"d":"M64 55L75 42 72 64H64Z","fill":"#ff7f7c"}),
+    shape("path", {"d":"M57 68H71L70 83H58Z","fill":"#a50b32","stroke":"#30001f","stroke-width":"3"}),
+    shape("path", {"d":"M58 74H70V79H58Z","fill":"#650927"}),
+    shape("path", {"d":"M47 62L56 64 64 61 72 64 81 62 84 69 78 74 64 71 50 74 44 69Z","fill":"#ffc300","stroke":"#30001f","stroke-width":"3","stroke-linejoin":"round"}),
+    shape("path", {"d":"M47 63L56 66 64 63 72 66 81 63 80 67 71 69 64 66 56 69 46 67Z","fill":"#ffe568"}),
+    shape("rect", {"x":"57","y":"82","width":"14","height":"6","rx":"3","fill":"#ffc300","stroke":"#30001f","stroke-width":"2.5"}),
+  ];
+  const gradient = shape("linearGradient", {id: id + "-rim", x1: "0", y1: "0", x2: ".7", y2: "1"});
+  gradient.append(shape("stop", {"stop-color": light}),
+    shape("stop", {offset: ".38", "stop-color": face}),
+    shape("stop", {offset: "1", "stop-color": shade}));
+  const defs = shape("defs", {});
+  defs.appendChild(gradient);
+  art.append(defs,
+    shape("path", {class: "trait-emblem__outline", d: TRAIT_OUTLINE, fill: `url(#${id}-rim)`,
+      stroke: "#30001f", "stroke-width": "3", "stroke-linejoin": "round"}),
+    shape("ellipse", {cx: "64", cy: "56", rx: "34", ry: "36", fill: core, stroke: shade, "stroke-width": "2"}),
+    shape("path", {d: "M35 26Q39 20 45 19", fill: "none", stroke: "#fffdf2", "stroke-width": "7", "stroke-linecap": "round"}),
+    shape("path", {d: "M31 34L33 31", fill: "none", stroke: "#fffdf2", "stroke-width": "4", "stroke-linecap": "round"}),
+    ...(kind === "attack" ? sword : kind === "defence" ? shield : clock));
   return art;
 }
