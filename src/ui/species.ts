@@ -15,6 +15,7 @@ import { abilityArtFor } from "./abilityart";
 import { coverFor } from "./covers";
 import { icon } from "./icons";
 import { buildTraitSlots } from "./traits";
+import { mountTraitPicker } from "./trait-popovers";
 import { powerTag, updatePowerTag } from "./power-tag";
 import "./species.css";
 
@@ -27,8 +28,11 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
   const root = screenEl("antup");
   const id = opts.species;
   const species = SPECIES[id];
+  let unmountSkins = (): void => {};
 
   const render = (): void => {
+    unmountSkins();
+    unmountSkins = () => {};
     const profile = store.get();
     const level = profile.research[id]?.level ?? 0;
     const tier = tierOf(id);
@@ -75,18 +79,21 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     rarity.style.setProperty("--tc", tier.col);
     const rating = powerTag(store.powerFor(id).total, {context:species.name, level, owned:store.isUnlocked(id)});
     rating.id = "speciesPower";
-    tags.append(rarity, rating);
+    const tagActions = el("div", "spgtag-actions");
+    const skins = el("button", "action-button secondary spgskins-toggle") as HTMLButtonElement;
+    skins.id = "spgSkinsToggle";
+    skins.type = "button";
+    skins.setAttribute("aria-label", "Skins");
+    skins.setAttribute("aria-expanded", "false");
+    skins.setAttribute("aria-controls", "speciesSkinsPicker");
+    skins.appendChild(icon("skins", 18));
+    tagActions.append(rarity, skins);
+    tags.append(tagActions, rating);
     main.prepend(tags);
     main.appendChild(upgrade);
     page.append(main, buildTraitSlots(store, { scope: id, standalone: true, onChanged: () => {
       updatePowerTag(rating, store.powerFor(id).total, {level:store.get().research[id]?.level ?? 0, owned:store.isUnlocked(id)});
     } }));
-
-    // SKINS COME AFTER RESEARCH, and they are the whole of what this screen can CHANGE
-    // for free. Research is the point of the page and leads it; a look costs nothing,
-    // affects nothing, and is the one thing here a player picks rather than buys.
-    page.appendChild(el("div", "secthead", "Skins"));
-    page.appendChild(skinRow());
 
     page.appendChild(el("div", "secthead", species.ability.name));
     page.appendChild(abilityCard(id));
@@ -97,6 +104,36 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     body.appendChild(page);
     root.appendChild(body);
     groupSections(root);
+
+    let open = false;
+    skins.onclick = () => {
+      if (open) { unmountSkins(); return; }
+      const panel = el("section", "trait-picker skin-picker");
+      panel.id = "speciesSkinsPicker";
+      panel.setAttribute("role", "dialog");
+      panel.setAttribute("aria-label", "Skins");
+      const head = el("div", "trait-picker-head");
+      const closeButton = el("button", "action-button secondary skin-picker-close") as HTMLButtonElement;
+      closeButton.type = "button";
+      closeButton.setAttribute("aria-label", "Close skins");
+      closeButton.appendChild(icon("cross", 14));
+      head.append(el("span", undefined, "Skins"), closeButton);
+      panel.append(head, skinRow());
+      let cleanup = (): void => {};
+      const close = (): void => {
+        open = false;
+        skins.setAttribute("aria-expanded", "false");
+        cleanup();
+        if (skins.isConnected) skins.focus({preventScroll:true});
+      };
+      panel.addEventListener("dismiss-trait-popup", close);
+      closeButton.onclick = close;
+      cleanup = mountTraitPicker(root, main, 0, panel, close, skins);
+      unmountSkins = close;
+      open = true;
+      skins.setAttribute("aria-expanded", "true");
+      closeButton.focus({preventScroll:true});
+    };
   };
 
   /**
@@ -143,7 +180,11 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
       // worn" are one hairline apart, and the difference is the whole of what the row says.
       card.append(el("span", "skincard-s", on ? "Worn" : owned ? "Wear" : "Locked"));
 
-      if (owned) card.onclick = () => { store.wearSkin(id, look.id); render(); };
+      if (owned) card.onclick = () => {
+        store.wearSkin(id, look.id);
+        render();
+        root.querySelector<HTMLElement>("#spgSkinsToggle")?.focus({preventScroll:true});
+      };
       row.appendChild(card);
     }
     return row;

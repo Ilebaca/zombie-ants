@@ -19,6 +19,7 @@ export function dismissTraitPopups(host: HTMLElement, all = false): boolean {
 
 export function mountTraitPicker(
   owner: HTMLElement, row: HTMLElement, selected: number, panel: HTMLElement, onClose: () => void,
+  anchor?: HTMLElement,
 ): () => void {
   const host = traitPopupHost(owner);
   // Only one loadout is edited at a time.
@@ -34,7 +35,7 @@ export function mountTraitPicker(
   panel.prepend(pointer);
 
   const frame = host.getBoundingClientRect();
-  const needed = row.getBoundingClientRect().bottom + Math.min(300, frame.height * .4) + 30 - frame.bottom;
+  const needed = (anchor ?? row).getBoundingClientRect().bottom + Math.min(300, frame.height * .4) + 30 - frame.bottom;
   if (needed > 0) {
     let scroller = owner.parentElement;
     while (scroller && scroller !== host) {
@@ -48,24 +49,25 @@ export function mountTraitPicker(
 
   const place = (): void => {
     const bounds = row.getBoundingClientRect(), viewport = host.getBoundingClientRect();
-    const target = row.querySelector<HTMLElement>(`[data-slot="${selected}"]`)?.getBoundingClientRect();
+    const target = (anchor ?? row.querySelector<HTMLElement>(`[data-slot="${selected}"]`))?.getBoundingClientRect();
     if (!target) return;
     const width = Math.min(bounds.width, Math.max(0, viewport.width - 32));
     const left = Math.max(16, Math.min(bounds.left - viewport.left, viewport.width - width - 16));
-    const below = viewport.bottom - bounds.bottom - 30;
-    const above = bounds.top - viewport.top - 30;
+    const edge = anchor ? target : bounds;
+    const below = viewport.bottom - edge.bottom - 30;
+    const above = edge.top - viewport.top - 30;
     const flipped = below < 160 && above > below;
     panel.classList.toggle("above", flipped);
     panel.style.width = `${width}px`;
     panel.style.left = `${left}px`;
     panel.style.maxHeight = `${Math.max(100, Math.min(360, flipped ? above : below))}px`;
-    panel.style.top = flipped ? "auto" : `${bounds.bottom - viewport.top + 14}px`;
-    panel.style.bottom = flipped ? `${viewport.bottom - bounds.top + 14}px` : "auto";
+    panel.style.top = flipped ? "auto" : `${edge.bottom - viewport.top + 14}px`;
+    panel.style.bottom = flipped ? `${viewport.bottom - edge.top + 14}px` : "auto";
     panel.style.setProperty("--trait-arrow", `${Math.max(16, Math.min(width - 16, target.left + target.width / 2 - viewport.left - left))}px`);
   };
   const outside = (event: Event): void => {
     const target = event.target;
-    if (!(target instanceof Node) || panel.contains(target) || row.contains(target)
+    if (!(target instanceof Node) || panel.contains(target) || (anchor ?? row).contains(target)
         || host.querySelector(".trait-detail-layer")?.contains(target)) return;
     onClose();
   };

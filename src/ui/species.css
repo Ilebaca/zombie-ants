@@ -61,3 +61,21 @@
 #app #antup .spgupgrade { margin-top: var(--action-depth); }
 #app #antup .trait-slots--standalone { margin-top: var(--action-depth); gap: 0; }
 #app #antup .trait-slots--standalone .trait-slot-row { gap: var(--inrow); }
+
+/* Skins open from the rarity row without adding a section to the page. */
+#app #antup .spgtag-actions { display: flex; align-items: center; gap: var(--inrow); }
+#app #antup .spgskins-toggle {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 28px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 7px !important;
+  pointer-events: auto;
+}
+#app .skin-picker { gap: var(--block); }
+#app .skin-picker .skinrow { gap: var(--inrow); min-height: 0; overflow-y: auto; padding-bottom: var(--action-depth); }
+#app .skin-picker .skincard { align-content: start; }
+#app .skin-picker .trait-picker-head { align-items: center; }
+#app .skin-picker-close { display: grid; place-items: center; width: 30px; height: 28px; min-height: 0; padding: 0; }
