@@ -1,7 +1,7 @@
 import {
   allTiles, isHiveTerrain, neighbours, otherPlayer,
   attackMultiplier, defenceMultiplier, fight, flatDefence,
-  endTurn, seeded,
+  endTurn,
   snapshot, restore,
   abilityOf, abilityReady, abilitySpendsTurn, activateAbility, frontline,
 } from "../engine";
@@ -111,25 +111,34 @@ export const PROFILES: Record<Difficulty, Profile> = {
   },
 };
 
-/** One campaign search policy, continuously tuned across the fifty chapters. */
+/**
+ * A CAMPAIGN OPPONENT PLAYS NORMAL, ON EVERY CHAPTER OF THE ROAD.
+ *
+ * THE PLAY STYLE NO LONGER SCALES, asked for directly: "I like the scaling for levels and
+ * traits and other stuff but not for play style. It's too dumb on chapter 1, it should be
+ * as our previous normal mode." This used to interpolate the whole policy off
+ * `control.skill`, which is `(chapter - 1) / 49` — so at chapter 1 it was ZERO, and zero
+ * is not Easy, it is well below it: one ply, four moves looked at, the NAIVE weights that
+ * cannot see what is hanging, no quiescence, and every one of `reinforce`, `travel`,
+ * `rally` and `veinGuard` switched off, on a budget of 300 nodes. On top of that the root
+ * threw the best move away 72% of the time (see `search`). A new player's first real
+ * opponent was the weakest search this file can express.
+ *
+ * WHAT STILL SCALES IS THE GEAR, and that is the whole of the feature's point:
+ * `platform/campaign-ai.ts` builds the opponent's chambers, research and traits from the
+ * chapter and holds them under a ceiling derived from the player's own power. A chapter-50
+ * opponent is better EQUIPPED, not better advised — which is the same split the game
+ * already makes for the player, where progression buys numbers and never decisions.
+ *
+ * It returns `PROFILES.normal` rather than a `skill` that approximates it, because "our
+ * previous normal mode" is a thing that exists in this file: a tuned, measured policy
+ * (94% behind Hard, 100% ahead of Easy) rather than a point on a curve that happens to
+ * land near it. `control.skill` is left ON the record — a saved match describes the
+ * opponent it was played against (engine/protocol.ts) — and is simply no longer what
+ * decides how that opponent thinks.
+ */
 export function profileFor(level: AiLevel): Profile {
-  if (typeof level === "string") return PROFILES[level];
-  const skill = Number.isFinite(level.skill) ? Math.max(0, Math.min(1, level.skill)) : 0;
-  const weights = { ...NAIVE };
-  for (const key of Object.keys(FULL) as Array<keyof EvalWeights>) {
-    weights[key] = NAIVE[key] + (FULL[key] - NAIVE[key]) * skill;
-  }
-  // Long matches still need income and a force large enough to break the growing nest.
-  weights.incomeFloor = 1.5 * skill;
-  weights.assault = 180 * skill;
-  return {
-    depth: 1 + Math.floor(skill * 5), branching: 4 + Math.floor(skill * 6),
-    quiescence: skill >= .24,
-    gen: { reinforce: skill >= .08, travel: skill >= .16, rally: skill >= .35, veinGuard: skill >= .20 },
-    weights, searchAbility: skill >= .45,
-    nodeBudget: Math.round(300 + 11700 * skill * skill),
-    timeBudgetMs: Math.round(35 + 145 * skill * skill),
-  };
+  return PROFILES[typeof level === "string" ? level : "normal"];
 }
 
 /* ------------------------------------------------------------------ EVALUATION */
@@ -331,16 +340,14 @@ export function chooseMove(
     return { move: null, value: evaluateWith(state, me, ctx.mods, profile.weights), depth: 0, nodes: 0 };
   }
 
-  if (typeof difficulty !== "string") {
-    const skill = Number.isFinite(difficulty.skill) ? Math.max(0, Math.min(1, difficulty.skill)) : 0;
-    // Position-derived choices do not advance the board RNG or depend on phone speed.
-    const random = seeded(state.rng ^ Math.imul(state.turn, 0x9e3779b9) ^ (me === "you" ? 0x51ed : 0x7ad1));
-    if (candidates.length > 1 && random() < .72 * (1 - skill) ** 2) {
-      const rank = 1 + Math.floor(random() * Math.min(candidates.length - 1, 1 + Math.floor(3 * (1 - skill))));
-      const move = candidates[rank] ?? candidates[0] ?? null;
-      return { move, value: move?.score ?? 0, depth: 1, nodes: 0 };
-    }
-  }
+  // NO BLUNDER ROLL. A campaign opponent used to throw its best move away with a chance
+  // of `.72 * (1 - skill) ** 2` — seven times in ten on chapter 1, and still one in four
+  // at the half-way point of the road. A search that has found the move and then plays
+  // the second or fourth one instead is not a weaker player, it is the same player making
+  // a mistake it had already seen; against a board this capture-dense that reads as the
+  // opponent not noticing a tile hanging in front of it. It went with the play-style
+  // scaling above (§ A CAMPAIGN OPPONENT PLAYS NORMAL) — the chapter buys the opponent
+  // equipment, never worse judgement.
 
   // Saved Easy matches retain the original heuristic. A one-ply campaign policy
   // evaluates the result of its own action, so early chapter awareness still matters.

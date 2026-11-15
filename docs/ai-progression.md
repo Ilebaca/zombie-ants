@@ -1,32 +1,45 @@
 # Campaign AI and loadout power
 
-Regular matchmaking uses one chapter-scaled policy. Chapter 1 has zero research,
-zero chambers and zero traits. Chapter 50 is the upper bound; chapters outside
-1–50 are clamped. Tutorials retain their script and fixed challenges retain their
-scenario controls. Existing matches keep their saved policy and equipment.
+Regular matchmaking scales the opponent's EQUIPMENT with the chapter and nothing
+else. Chapter 1 has zero research, zero chambers and zero traits. Chapter 50 is the
+upper bound; chapters outside 1–50 are clamped. Tutorials retain their script.
+Existing matches keep their saved equipment.
 
-## Skill progression
+## The play style does not scale
 
-`progress = (chapter - 1) / 49`. Equipment and skill are independent.
+**The opponent plays the Normal policy on every chapter of the road.** This is a
+reversal, asked for directly: *"I like the scaling for levels and traits and other
+stuff but not for play style. It's too dumb on chapter 1, it should be as our
+previous normal mode — just levels, traits and additions scale with chapters."*
 
-- Evaluation weights blend from the novice evaluation to the full evaluation.
-  Threatened pieces, nest danger and infrastructure become more important. Actual
-  tile/chamber income stays valuable in long games. A gradually weighted assault
-  estimate rewards assembling and delivering enough force to break a growing nest,
-  rather than treating every army above 40 troops as equally useful.
-- Reinforcement starts at chapter 5, long travel at 9, infrastructure defence at 11,
-  capture continuation at 13, rally at 19 and searched ability timing at 24.
-- Search grows from 1 to 6 plies, 4 to 10 candidates, and 300 to 12,000 nodes.
-  Its clock allowance grows from 35 to 180 ms, with additional small ability probes.
-  The clock is checked periodically, so these are search budgets, not strict total-turn
-  latency guarantees. A worker keeps thinking off the main rendering thread.
-- Seeded lower-ranked legal choices have probability
-  `0.72 * (1 - progress)^2`. This makes early opponents forgiving without inventing
-  moves or changing the engine RNG. At chapter 50 this intentional mistake rate is zero.
+What was here before interpolated the whole search policy off
+`progress = (chapter - 1) / 49`, so chapter 1 got `skill = 0`. Zero is not Easy, it
+is well below it: one ply, four candidates, the novice evaluation that cannot see
+what is hanging, no quiescence, none of reinforce / travel / rally / vein defence,
+and a 300-node budget — and on top of that the root discarded its own best move with
+probability `0.72 * (1 - progress)^2`, which is **seven times in ten** on chapter 1
+and still one in four at the half-way point of the road. A new player's first real
+opponent was the weakest search the file can express.
+
+Both are gone. `profileFor` returns the Normal profile for any campaign control, and
+the intentional-mistake roll is deleted outright — a search that finds the move and
+then plays a worse one is not a weaker player, it is the same player making a mistake
+it had already seen. The chapter buys the opponent equipment, never worse judgement,
+which is the same split the game makes for the player: progression buys numbers and
+never decisions.
+
+`AdaptiveControl.skill` stays on the record — a saved match describes the opponent it
+was played against — and is simply no longer read when deciding how that opponent
+thinks. Two tests hold this: every chapter's profile deep-equals Normal, and the same
+position produces the same move at chapter 1 as at chapter 50 (which is what catches
+the mistake roll returning, since it was the only thing that made the two differ).
 
 Named Easy/Normal/Hard/Impossible policies remain compatibility and benchmark
-controls. They are not separate campaign opponent versions. Regular Settings
-shows Automatic rather than allowing the old manual campaign selection.
+controls. **Settings no longer shows an Enemy AI row at all** — it read "Automatic"
+over a disabled button, which is a label for something the player was not choosing,
+so the row and its "The next match" section were removed. Challenges, which used to
+take their AI from that row's saved value, now play Normal with everything else; the
+tutorial still plays Easy.
 
 ## Legal equipment
 
@@ -103,7 +116,8 @@ reference. Never use a historical score instead of the saved combat modifiers.
 ## Match persistence
 
 `MatchSetup.aiControl` stores version, chapter and skill alongside actual
-equipment. Worker and inline fallback receive the same control. Suspension and
+equipment. The `skill` figure is now descriptive only — it records what the match
+was opened with and no longer decides how the opponent plays (see above). Worker and inline fallback receive the same control. Suspension and
 resume retain the entire setup, so later upgrades or a new chapter cannot change
 an interrupted opponent. Old records without aiControl use their saved named
 difficulty. Replays consume recorded legal moves, not new AI decisions.
@@ -113,6 +127,9 @@ difficulty. Replays consume recorded legal moves, not new AI decisions.
 The automated suite covers progression and trait legality across all 50 chapters
 and all species, score monotonicity and exclusions, legal reproducible turns,
 worker fallback and saved-match preservation.
+
+Note that the balance tool's reference-player skill sweep below describes the
+PLAYER side of each pairing; the opponent's own policy is Normal throughout.
 
 Run `npx tsx tools/chapter-balance.ts 1` to audit chapters 1–5; repeat with
 6, 11, …, 46 for all chapters. Each chapter has two seeded species pairings,

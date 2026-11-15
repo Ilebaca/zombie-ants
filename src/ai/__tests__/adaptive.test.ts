@@ -4,19 +4,30 @@ import { blankGame, put } from "../../engine/__tests__/helpers";
 import { aiTurn, chooseMove, profileFor } from "../search";
 import { Thinker } from "../thinker";
 
-describe("one chapter-scaled search", () => {
-  it("raises tactical awareness and search budgets throughout fifty chapters", () => {
-    let last=profileFor({version:1,chapter:1,skill:0});
-    for(let chapter=2;chapter<=50;chapter++){
-      const next=profileFor({version:1,chapter,skill:(chapter-1)/49});
-      expect(next.depth).toBeGreaterThanOrEqual(last.depth);
-      expect(next.nodeBudget).toBeGreaterThan(last.nodeBudget);
-      expect(next.weights.hanging).toBeGreaterThan(last.weights.hanging);
-      expect(next.timeBudgetMs).toBeLessThanOrEqual(180);
-      last=next;
+describe("one campaign search", () => {
+  /**
+   * THE PLAY STYLE IS THE SAME ON EVERY CHAPTER, and it is Normal.
+   *
+   * This used to assert the opposite — that each chapter searched deeper, on a bigger
+   * budget, with a higher `hanging` weight than the one before it — and that curve is
+   * what made chapter 1 the weakest search in the file (§ A CAMPAIGN OPPONENT PLAYS
+   * NORMAL). What scales is the opponent's GEAR, which is `platform/campaign-ai.ts` and
+   * has its own tests; nothing about how it thinks moves with the road.
+   *
+   * Deep-equal against the Normal profile rather than a list of fields: the fault being
+   * guarded against is an interpolation creeping back, and a check that only reads
+   * `depth` would pass against one that moved every other dial.
+   */
+  it("plays the Normal policy on every chapter of the road", () => {
+    const normal=profileFor("normal");
+    for(let chapter=1;chapter<=50;chapter++){
+      const at=profileFor({version:1,chapter,skill:(chapter-1)/49});
+      expect(at,`chapter ${chapter} does not play Normal`).toEqual(normal);
     }
-    expect(last.gen).toEqual({travel:true,rally:true,reinforce:true,veinGuard:true});
-    expect(last.searchAbility).toBe(true);
+    // And it is Normal rather than something that merely matches it today: the two
+    // weaker-and-stronger neighbours must still be different players.
+    expect(profileFor("easy")).not.toEqual(normal);
+    expect(profileFor("hard")).not.toEqual(normal);
   });
   it("chooses reproducible legal turns without corrupting the board RNG", () => {
     const clock=vi.spyOn(Date,"now").mockReturnValue(0);
@@ -49,7 +60,21 @@ describe("one chapter-scaled search", () => {
   });
 });
 
-it("learns a winning rally without any equipment advantage", () => {
+/**
+ * THE FIRST CHAPTER GETS THE SAME PLAYER AS THE LAST.
+ *
+ * It used to get a different one, twice over: the policy was interpolated off the
+ * chapter, and the root then threw its best move away with a chance of
+ * `.72 * (1 - skill) ** 2` — which at chapter 1 is seven times in ten. Both are gone, so
+ * the same position has to produce the same move at either end of the road.
+ *
+ * This is the assertion that catches the BLUNDER ROLL coming back on its own: the roll is
+ * seeded off the position, so both calls here draw the same number and only the
+ * skill-scaled threshold decides whether it fires — chapter 1 blunders where chapter 50
+ * does not, and the two answers part company. The test it replaces asserted exactly that
+ * parting as the feature.
+ */
+it("plays the same move on chapter 1 as on chapter 50", () => {
   const clock=vi.spyOn(Date,"now").mockReturnValue(0);
   try {
     const s=blankGame("small");
@@ -59,8 +84,12 @@ it("learns a winning rally without any equipment advantage", () => {
     put(s,4,0,{owner:"you",struct:"nest",soldiers:30});
     recomputeConnectivity(s);s.current="ai";
     const ctx=defaultContext(),before=snapshot(s);
-    expect(chooseMove(s,"ai",{version:1,chapter:1,skill:0},ctx).move?.action.kind).not.toBe("rally");
-    expect(chooseMove(s,"ai",{version:1,chapter:50,skill:1},ctx).move?.action.kind).toBe("rally");
+    const first=chooseMove(s,"ai",{version:1,chapter:1,skill:0},ctx).move;
+    const last=chooseMove(s,"ai",{version:1,chapter:50,skill:1},ctx).move;
+    expect(first,"the campaign opponent played nothing").toBeTruthy();
+    expect(first).toEqual(last);
+    // And it is the move NORMAL would play, which is what "our previous normal mode" is.
+    expect(first).toEqual(chooseMove(s,"ai","normal",ctx).move);
     expect(snapshot(s)).toEqual(before);
   }finally{clock.mockRestore();}
 });
