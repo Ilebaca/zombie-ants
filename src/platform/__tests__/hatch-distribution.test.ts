@@ -45,8 +45,9 @@ describe("hatch payout distribution", () => {
     for (const t of [3, 4]) {
       const s = store();
       const prize = s.hatch(draws(0.2, tierRolls[t]!, 0));
-      expect(prize?.kind).toBe("skin");
-      if (prize?.kind === "skin") expect(prize.look.tier).toBe(TIER_IDS[t]);
+      expect(prize?.kind).toBe("trait");
+      if (prize?.kind === "trait") expect(prize.item.tier).toBe(TIER_IDS[t]);
+      expect(s.skins).toEqual([]);
       expect(s.avatars).toEqual([]);
     }
   });

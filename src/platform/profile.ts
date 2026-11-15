@@ -41,7 +41,6 @@ import {
 } from "./traits";
 import type { TraitItem, TraitScope, TraitTier, TraitTotals } from "./traits";
 import { faceOf, isAvatar, isFreeAvatar, rollHatchAvatar } from "./avatars";
-import { rollSkin, skinTier } from "./skins";
 import { LARVA_MYCEL, fuseDeal } from "./exchange";
 import type { DuelInvite } from "./duels";
 import type { Friend, Person } from "./friends";
@@ -321,7 +320,6 @@ const STARTER_SPECIES: SpeciesId[] = ["leafcutter", "fire", "carpenter"];
  */
 export type HatchPrize =
   | { kind: "trait"; item: TraitItem }
-  | { kind: "skin"; look: Look }
   | { kind: "avatar"; id: string };
 
 export function defaultProfile(): Profile {
@@ -1732,32 +1730,15 @@ export class ProfileStore {
   hatch(random: () => number = Math.random): HatchPrize | null {
     if (!this.hatchOpen() || this.profile.larva < HATCH_COST) return null;
 
-    // ONE ROLL DECIDES BOTH. A skin is not a sixth rung and not a chance beside the
-    // ladder — it IS the top of it (platform/skins.ts). The tier is rolled exactly as it
-    // always was, and an Exceptional or Mythic roll pays a SKIN of that tier while one is
-    // still locked; with the collection complete it falls back to a trait of the SAME
-    // tier, so the last skin found never makes the hatch worse and never quietly demotes
-    // the prize. That is also the only way the odds printed on the screen are the odds
-    // the game uses: there is no second number to drift.
     const drop = rollDrop(random, [null, ...this.profile.unlocked]);
     if (!drop) return null;
 
-    const skin = skinTier(drop.tier)
-      ? rollSkin(random, this.profile.unlocked, this.profile.skins, drop.tier)
-      : null;
-
     // Rarity stays unchanged. Most low-tier rolls pay traits even with avatars unowned.
-    const avatar = !skin
-      ? rollHatchAvatar(random, this.profile.avatars, drop.tier)
-      : null;
+    const avatar = rollHatchAvatar(random, this.profile.avatars, drop.tier);
 
     // Refuse an unstorable trait before spending; cosmetics do not occupy bag slots.
-    if (!skin && !avatar && this.profile.bag.length >= BAG_MAX) return null;
+    if (!avatar && this.profile.bag.length >= BAG_MAX) return null;
     this.update((p) => { p.larva -= HATCH_COST; });
-    if (skin) {
-      const found = this.findSkin(skin.id);
-      return found ? { kind: "skin", look: found } : null;
-    }
     if (avatar) {
       const found = this.findAvatar(avatar);
       return found ? { kind: "avatar", id: found } : null;

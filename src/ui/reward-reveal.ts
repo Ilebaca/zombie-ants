@@ -29,7 +29,6 @@ export function resourceRewards(amounts: RewardAmounts): RevealedReward[] {
 
 export function hatchReward(prize: HatchPrize): RevealedReward | null {
   if (prize.kind === "trait") return { kind: "trait", item: prize.item };
-  if (prize.kind === "skin") return null;
   return { kind: "avatar", id: prize.id };
 }
 

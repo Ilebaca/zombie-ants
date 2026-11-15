@@ -16,7 +16,7 @@
  * the outcome that turns up most to the one that almost never does, and a player reads the
  * shape of that before they read any number on it.
  */
-import { HATCH_AVATAR_CHANCE, HATCH_AVATAR_TIERS, SKIN_TIERS, TRAIT_TIER, TRAIT_TIERS, tierOdds } from "../platform";
+import { HATCH_AVATAR_CHANCE, HATCH_AVATAR_TIERS, TRAIT_TIER, TRAIT_TIERS, tierOdds } from "../platform";
 import { TIERS } from "../engine";
 import { el } from "./chrome";
 
@@ -62,25 +62,14 @@ export function buildOdds(heading = ""): HTMLElement {
     rows.appendChild(row);
   }
   box.appendChild(rows);
-  // A skin has no chance of its own — it IS the top of this row (platform/skins.ts) — so
-  // the note names the tiers rather than a second number. Printed all the same: an outcome
-  // a player can get and was never told about is exactly what this panel prevents.
-  //
-  // IT BREAKS AT THE COMMA, and that is why the two halves are their own elements. Left
-  // as one string it wraps wherever the column runs out — mid-clause, on a different word
-  // at every width, which reads as a paragraph that did not fit. The comma is where the
-  // sentence already pauses, so that is the line: what the two tiers pay, then the
-  // condition on it.
-  const named = SKIN_TIERS.map((t) => TIERS[t].name).join(" and ");
+  const avatarNames = HATCH_AVATAR_TIERS
+    .filter((_, i) => i === 0 || i === HATCH_AVATAR_TIERS.length - 1)
+    .map((t) => TIERS[t].name).join("–");
   const note = el("div", "ho-note");
   note.append(
-    el("span", "ho-line", `${named} hatches pay a colony skin,`),
-    el("span", "ho-line", "while you still have one to find."),
-  );
-  const avatarNames = [HATCH_AVATAR_TIERS[0]!, HATCH_AVATAR_TIERS.at(-1)!].map((t) => TIERS[t].name).join("–");
-  note.append(
-    el("span", "ho-avatar", `${avatarNames}: ${100 - HATCH_AVATAR_CHANCE}% traits · ${HATCH_AVATAR_CHANCE}% avatars.`),
-    el("span", "ho-avatar", "Completed cosmetic pools pay same-rarity traits."),
+    el("span", "ho-line", `${avatarNames}: ${100 - HATCH_AVATAR_CHANCE}% traits · ${HATCH_AVATAR_CHANCE}% avatars.`),
+    el("span", "ho-line", "Exceptional and Mythic: traits only."),
+    el("span", "ho-line", "Completed avatar pools pay same-rarity traits."),
   );
   box.appendChild(note);
   return box;

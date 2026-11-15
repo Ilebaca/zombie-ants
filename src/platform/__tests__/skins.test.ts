@@ -16,7 +16,6 @@ import { SPECIES } from "../../engine";
 import type { SpeciesId } from "../../engine";
 import { MemoryStore, ProfileStore, defaultProfile, normalise } from "../index";
 import { SKIN_TIERS, lockedLooks, rollSkin, skinProgress, skinTier } from "../skins";
-import { HATCH_AVATARS } from "../avatars";
 
 const ALL = Object.keys(SPECIES) as SpeciesId[];
 
@@ -278,99 +277,27 @@ describe("owning and wearing one", () => {
   });
 });
 
-describe("hatching one", () => {
-  /**
-   * A roll lands on a tier, and an Exceptional or Mythic tier pays a SKIN. The first draw
-   * picks the trait, the second the tier, the third which skin.
-   */
-  const rolls = (tier: number, pick = 0): (() => number) => {
-    const values = [0.1, tier, pick];
-    let i = 0;
-    return () => values[i++] ?? 0.5;
-  };
-  /** The weighted tier roll runs over 0-1; the top 5% is exceptional and mythic. */
-  const MYTHIC = 0.995, COMMON = 0.1;
-
-  it("pays a skin when the tier roll lands on one a skin can be", () => {
-    const s = store(1);
-    const prize = s.hatch(rolls(MYTHIC));
-    expect(prize?.kind).toBe("skin");
-    if (prize?.kind === "skin") {
-      expect(prize.look.tier, "a mythic roll paid another tier").toBe("mythic");
-      expect(s.hasSkin(prize.look.id)).toBe(true);
-      expect(s.get().unlocked).toContain(prize.look.species);
+describe("skins stay outside larva rewards", () => {
+  it("pays same-tier traits at Exceptional and Mythic while skins remain locked", () => {
+    for (const [roll, tier] of [[0.97, "exceptional"], [0.995, "mythic"]] as const) {
+      const s = store(2);
+      let i = 0;
+      const prize = s.hatch(() => [0.1, roll][i++] ?? 0);
+      expect(prize?.kind).toBe("trait");
+      if (prize?.kind === "trait") expect(prize.item.tier).toBe(tier);
+      expect(s.skins).toEqual([]);
+      expect(s.get().larva).toBe(1);
     }
-    expect(s.get().larva).toBe(0);
-    expect(s.bag.length, "a skin went into the bag").toBe(0);
   });
 
-  it("pays an Exceptional skin from an Exceptional roll", () => {
+  it("preserves and wears an existing skin after hatching", () => {
     const s = store(1);
-    const prize = s.hatch(rolls(0.97));
-    expect(prize?.kind).toBe("skin");
-    if (prize?.kind === "skin") expect(prize.look.tier).toBe("exceptional");
-  });
-
-  /**
-   * NO SKIN COMES OUT OF A COMMON ROLL, which is the half of this that is about skins.
-   *
-   * What a common roll pays INSTEAD is an avatar while one is still locked — the same
-   * rule at the other end of the ladder (`platform/avatars.ts`) — so the collection is
-   * filled first here, and only then is the prize the trait it always was. Both halves
-   * are asserted, because "a common roll pays no skin" is true of either outcome and
-   * would pass against a build that had quietly stopped paying traits at all.
-   */
-  it("pays no skin at any tier below them", () => {
-    const s = store(1);
-    const prize = s.hatch(rolls(COMMON));
-    expect(prize?.kind, "a common roll paid a skin").not.toBe("skin");
-    expect(s.skins).toEqual([]);
-
-    const done = store(1);
-    for (const id of HATCH_AVATARS) done.findAvatar(id);
-    const after = done.hatch(rolls(COMMON));
-    expect(after?.kind, "a finished avatar collection did not fall back to a trait")
-      .toBe("trait");
-    expect(done.skins).toEqual([]);
-    expect(done.bag.length).toBe(1);
-  });
-
-  /**
-   * THE CHASE MUST NOT DEAD-END, AND MUST NOT DEMOTE. With every skin of that tier found,
-   * the roll falls back to a trait of the SAME tier — never nothing, and never a lesser one.
-   */
-  it("falls back to a trait of the same tier once that tier's skins are found", () => {
-    const s = store(1);
-    for (const look of lockedLooks(s.get().unlocked, [], "mythic")) s.findSkin(look.id);
-    const before = s.skins.length;
-    const prize = s.hatch(rolls(MYTHIC));
-    expect(prize?.kind, "a full collection ate the larva").toBe("trait");
-    if (prize?.kind === "trait") expect(prize.item.tier).toBe("mythic");
-    expect(s.skins.length).toBe(before);
-    expect(s.get().larva).toBe(0);
-  });
-
-  it("takes nothing when there is no larva", () => {
-    const s = store(0);
-    expect(s.hatch(rolls(MYTHIC))).toBeNull();
-    expect(s.skins).toEqual([]);
-    expect(s.bag.length).toBe(0);
-  });
-
-  /**
-   * The whole set is reachable from the two tiers alone, or a skin is in the game and can
-   * never be found. Purple and red together are 5 hatches in 100, which is the point.
-   */
-  it("can reach every skin a player owns a colony for", () => {
-    const s = store(4000);
-    let seed = 7;
-    const rnd = (): number => {
-      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-      return seed / 0x7fffffff;
-    };
-    for (let i = 0; i < 4000; i++) s.hatch(rnd);
-    const want = lockedLooks(s.get().unlocked, []).map((l) => l.id).sort();
-    expect([...s.skins].sort()).toEqual(want);
+    const look = looksFor("fire")[1]!;
+    s.findSkin(look.id);
+    s.wearSkin("fire", look.id);
+    s.hatch(() => 0.995);
+    expect(s.skins).toEqual([look.id]);
+    expect(s.lookFor("fire")).toBe(look);
   });
 });
 

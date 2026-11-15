@@ -145,7 +145,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
    * shown as a name over a generic mark would be the one prize in this game the screen
    * refuses to show. The basic look is always there and always wearable, so a player can
    * put a skin back; a locked one is drawn all the same, greyed, because seeing the two
-   * you have not found is the reason to keep opening the hatch.
+   * you have not found remains locked; skins are not larva rewards.
    *
    * Choosing is a tap, and it takes effect everywhere at once — the board, the pickers,
    * the plates beside the nest — because `ProfileStore.lookFor` is the single answer to
