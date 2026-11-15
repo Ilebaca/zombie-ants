@@ -42,7 +42,7 @@ export function buildAnthill(store: ProfileStore): HTMLElement {
     root.querySelector<HTMLButtonElement>(`[data-chamber="${target}"] .room`)?.focus({ preventScroll: true });
   };
 
-  const openDetails = (id: string, makeSpace = true): void => {
+  const openDetails = (id: string, focusClose = true): void => {
     unmountPopup();
     selected = id;
     markSelection();
@@ -87,8 +87,8 @@ export function buildAnthill(store: ProfileStore): HTMLElement {
     }
     panel.append(header, content);
     panel.addEventListener("dismiss-anthill-popup", close);
-    unmountPopup = mountAnthillPopup(root, anchor, panel, close, makeSpace);
-    const focus = makeSpace ? dismiss : panel.querySelector<HTMLButtonElement>(".buybtn:not(:disabled)") ?? dismiss;
+    unmountPopup = mountAnthillPopup(root, anchor, panel, close);
+    const focus = focusClose ? dismiss : panel.querySelector<HTMLButtonElement>(".buybtn:not(:disabled)") ?? dismiss;
     focus.focus({ preventScroll: true });
   };
 
