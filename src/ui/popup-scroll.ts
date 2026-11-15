@@ -65,13 +65,17 @@ export function mountPopupScroll(
   };
   let touchY: number | null = null, captured = false;
   const touchStart = (event: TouchEvent): void => {
-    touchY = event.touches.length === 1 ? event.touches[0]!.clientY : null;
+    const touch = event.touches.item(0);
+    touchY = event.touches.length === 1 && touch ? touch.clientY : null;
     captured = false;
   };
   const touchMove = (event: TouchEvent): void => {
     if (touchY === null || event.touches.length !== 1) return;
-    const next = event.touches[0]!.clientY, delta = touchY - next;
+    const touch = event.touches.item(0);
+    if (!touch) return;
+    const next = touch.clientY, delta = touchY - next;
     touchY = next;
+    if (!delta) return;
     const target = scrollTarget(event.target,delta);
     if (target !== page && !captured) return; // Preserve native scrolling inside visible lists.
     if (event.cancelable) event.preventDefault();
