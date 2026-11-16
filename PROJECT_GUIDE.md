@@ -5912,3 +5912,10 @@ src/ui/settings-icons/. settings-icons.ts maps them to the existing row ids; the
 delete-colony row reuses the matching trash illustration. These are decorative
 images beside visible labels. Keep the original controls, confirmation steps and
 save behavior. Do not add a filled tile behind the artwork.
+
+### Species cover alignment
+
+The individual species cover fills the screen from left edge to right edge at every
+viewport width. Its image uses object-fit: cover and object-position: center bottom,
+so any crop preserves the bottom of the artwork. Header and content cards retain
+their shared margins; do not constrain the cover to the content-card width.
