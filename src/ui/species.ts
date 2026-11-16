@@ -200,16 +200,8 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
 
 /* ------------------------------------------------------------------------ THE HERO */
 
-/**
- * THE PAINTING AT THE TOP, or the colony's own head while it is still to be painted.
- *
- * The BOX is the same either way — one ratio, stated once in `skin.css` and matching the
- * size the paintings are delivered at — so the page has the same shape on every colony
- * and a cover landing later moves nothing. `ui/covers.ts` is the table.
- *
- * The fallback is a CANVAS rather than a grey rectangle: the head is drawn by the same
- * code the board draws it with, wearing whatever look this colony has on, so a page with
- * no painting is still a picture of the right colony rather than a hole where one goes.
+/** Full-width square scene used exclusively on this species page.
+ * A missing scene falls back to the colony portrait while keeping the frame.
  */
 function cover(id: SpeciesId, look: Look): HTMLElement {
   const box = el("div", "spgcover");
