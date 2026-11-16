@@ -644,20 +644,32 @@ export class App {
         button: "Show me",
         enter: () => this.slideTo("home", false),
       },
+      // TWO COINS, AND THE TOUR HAS TO COUNT THEM. This said "Your three currencies" and
+      // named mycelium, pheromone and TROPHIES — and there are no trophies: that ladder
+      // became the COLONY (troops won and lost a match at a time) long ago, and the box
+      // this step lights holds exactly two coins. The third currency is LARVA, which is
+      // deliberately not in the top bar because the hatch is the only thing that spends
+      // it, so naming three here was wrong even with the right third one.
       {
         id: "currency",
-        title: "Your three currencies",
-        text: "Mycelium buys chambers and new colonies. Pheromone crystals pay for research. "
-          + "Trophies are what you win and lose with each match. You start with none — "
-          + "every one of them is earned on the board.",
+        title: "Your purse",
+        text: "Mycelium buys chambers and new colonies. Pheromone crystals pay for "
+          + "research. You start with none of either — both are earned on the board.",
         find: find(".tn-cur"),
       },
+      // AND THIS STEP LIT NOTHING AT ALL. It looked for `.troadbar`, which is the LEGACY
+      // stylesheet's trophy bar and has not been in this build's markup since the banner
+      // was rebuilt (`colonyBanner` in chrome.ts, id `colonyHero`). A step whose target
+      // resolves to nothing gets no hole — one shade panel covers the whole screen — so
+      // the player was handed a black screen and a bubble about a bar they could not see.
+      // Nothing failed: no test asked whether a step's target was still there.
       {
         id: "road",
-        title: "Colony Road",
-        text: "Every win pushes this bar along. Reach a marker and the reward is yours "
-          + "to claim.",
-        find: find(".troadbar"),
+        title: "The number you play for",
+        text: "Your colony: troops, won and lost a match at a time, with no ceiling. The "
+          + "bar runs to your next reward on the Colony Road and the mark shows what it "
+          + "pays — tap it any time to walk the road.",
+        find: find("#colonyHero"),
       },
       {
         id: "nav",

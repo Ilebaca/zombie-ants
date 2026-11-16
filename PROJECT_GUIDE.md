@@ -5289,6 +5289,22 @@ second overlay and the meta walk runs straight into the match one.
   panel swallows the tap before it reaches what is underneath. A hole punched with a
   `box-shadow` or a `clip-path` looks identical and still eats the tap in the middle, which
   is the one thing it must not do.
+- **A STEP THAT POINTS AT NOTHING IS A BLACK SCREEN, AND NOTHING FAILED.** A target is a
+  SELECTOR resolved when the step opens; when it matches nothing the overlay cuts no hole,
+  so one shade panel covers everything and the player gets a dark page with a bubble on it.
+  The "Colony Road" step did exactly that — it looked for `.troadbar`, which lives only in
+  the LEGACY stylesheet and has not been in this build's markup since the banner was
+  rebuilt as `#colonyHero`. It was found by WALKING the tour in a browser and reading the
+  ring's opacity per step, because nothing in the suite had ever asked whether a step's
+  target still existed. `onboarding.test.ts` asks now: it runs each step's own `enter` and
+  resolves its `find`, and the one step allowed to light nothing is NAMED (the welcome
+  card, a greeting over a dark screen) so the next targetless step cannot be waved through.
+- **AND THE COPY DRIFTS WITH THE UI.** The same walk said "Your three currencies" over a
+  box holding TWO coins, and named the third as TROPHIES — a ladder that became the COLONY
+  long ago. The real third currency is larva, which is deliberately not in the top bar
+  because the hatch is the only thing that spends it, so naming three was wrong even with
+  the right third one. The test counts the coins in the box the step LIGHTS rather than
+  trusting the sentence, and greps the step for "three" and "troph".
 - **Targets are looked up on every measure, never captured.** `show()` REBUILDS a screen on
   entry, so an element grabbed when the step list was written is a detached node by the time
   the step opens. The overlay re-measures on a 90 ms timer for the same reason: a step can

@@ -357,6 +357,70 @@ describe("a match with the tour up", () => {
   });
 
   /**
+   * EVERY STEP LIGHTS SOMETHING THAT IS STILL THERE.
+   *
+   * A step's target is a SELECTOR resolved at the moment the step opens, and a selector
+   * that matches nothing does not fail — the overlay simply cuts no hole, so one shade
+   * panel covers the whole screen and the player gets a black page with a bubble on it.
+   * That is what the "Colony Road" step did for as long as it looked for `.troadbar`: a
+   * class that lives only in the LEGACY stylesheet, left behind when the banner was
+   * rebuilt as `#colonyHero`. Nothing in this suite noticed, because nothing asked.
+   *
+   * It runs each step's own `enter` first — that is how the tour brings the screen up —
+   * and then resolves the step's `find` against the real DOM the app built.
+   *
+   * ONE STEP IS ALLOWED TO LIGHT NOTHING, and it is named rather than counted: the
+   * welcome card is a greeting over a dark screen, which is deliberate. Naming it is what
+   * stops the next targetless step being waved through as "the exempt one".
+   */
+  it("gives every step a target that still exists", () => {
+    const host = mount();
+    const app = new App(host, new ProfileStore(new MemoryStore()));
+    app.start();
+    const steps = (app as unknown as { metaSteps: () => TourStep[] }).metaSteps();
+    expect(steps.length, "the meta walk is empty").toBeGreaterThan(5);
+
+    const dark: string[] = [];
+    for (const step of steps) {
+      step.enter?.();
+      if (!step.find) {
+        // `rect` steps are the setup screen's, held by the test above; a step with
+        // neither is the one that lights nothing.
+        if (!step.rect) dark.push(step.id);
+        continue;
+      }
+      expect(step.find(), `the ${step.id} step points at nothing`).toBeTruthy();
+    }
+    expect(dark, "a step other than the welcome card lights nothing").toEqual(["welcome"]);
+    app.destroy();
+  });
+
+  /**
+   * THE COPY CANNOT NAME SOMETHING THE GAME DOES NOT HAVE.
+   *
+   * The purse step said "Your three currencies" and named mycelium, pheromone and
+   * TROPHIES — and there are no trophies: that ladder became the colony, troops won and
+   * lost a match at a time. The box the step lights holds exactly two coins, which is the
+   * assertion: the tour's count has to come from the chrome rather than from memory.
+   */
+  it("names as many currencies as the top bar shows", () => {
+    const host = mount();
+    const app = new App(host, new ProfileStore(new MemoryStore()));
+    app.start();
+    const steps = (app as unknown as { metaSteps: () => TourStep[] }).metaSteps();
+    const purse = steps.find((x) => x.id === "currency");
+    expect(purse, "the purse step is gone").toBeTruthy();
+
+    const coins = (purse?.find?.() as Element | null)?.children.length ?? 0;
+    expect(coins, "the purse step lights no coins").toBeGreaterThan(0);
+    const said = `${purse?.title ?? ""} ${purse?.text ?? ""}`;
+    expect(said, "the tour still counts a currency the top bar does not carry")
+      .not.toMatch(/\bthree\b/i);
+    expect(said, "trophies are not a thing this game has").not.toMatch(/troph/i);
+    app.destroy();
+  });
+
+  /**
    * THE ENEMY ANSWERS BETWEEN THE LESSONS. A walkthrough where the board never replies
    * teaches a solitaire — and the hand-over is half of how the game works.
    *
