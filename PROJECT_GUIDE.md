@@ -5888,3 +5888,27 @@ when their anchor scrolls offscreen. Resize and opening perform no scroll writes
 Closing a panel also preserves the current position. Extra end space is retired as
 the player scrolls back up, so removing the overlay cannot clamp the page upward.
 New anchored popups should share this helper and use focus({preventScroll:true}).
+
+## Lucky Hatch reward distribution (2026-11-15)
+
+Rarity weights remain Common 60%, Uncommon 25%, Rare 10%, Exceptional 4%, Mythic 1%.
+Common is the grey tier and always pays a trait. Avatars appear only on Uncommon
+and Rare rolls, with a conditional 10% avatar chance and 90% trait chance.
+The 38 hatch avatars have fixed pools: 26 Uncommon and 12 Rare. Completed avatar
+pools pay same-rarity traits without rerolling. Exceptional/Mythic always pay traits.
+Skins are excluded from larva rewards; previously owned skins remain saved and
+wearable. No replacement skin acquisition route has been introduced.
+With all avatar pools available, grey traits are 60% of all hatches and avatars
+total 3.5%; the shared hatch/shop odds panel explains the conditional split.
+Existing owned avatars retain their ids. Hatch reveal frames use catalogue rarity.
+A full bag refuses hatches before rolling or spending. A batch reserves enough
+bag capacity for every possible trait before it starts, preventing partial batches
+and free cosmetic rerolls. No larva is spent on a refused hatch.
+
+## Settings artwork (16 November 2026)
+
+The eleven supplied settings illustrations are sized transparent WebP assets under
+src/ui/settings-icons/. settings-icons.ts maps them to the existing row ids; the
+delete-colony row reuses the matching trash illustration. These are decorative
+images beside visible labels. Keep the original controls, confirmation steps and
+save behavior. Do not add a filled tile behind the artwork.

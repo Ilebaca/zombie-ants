@@ -6,6 +6,7 @@ import { BUILD, importProfile } from "../platform";
 import type { ProfileStore } from "../platform";
 import { el, screenEl, screenHeader, toast } from "./chrome";
 import { icon } from "./icons";
+import { settingsIcon } from "./settings-icons";
 import { codeCopy, codeField, codePanel } from "./backupcode";
 
 export interface SettingsOptions {
@@ -147,7 +148,9 @@ function shell(parts: RowParts, tag: "div" | "button"): HTMLElement {
   const row = el(tag, `setrow2 ${tag === "button" ? "setrow-go" : ""}`.trim());
   row.id = parts.id;
   const slot = el("span", "setrow-i");
-  slot.appendChild(icon(parts.mark, 18));
+  const artwork = settingsIcon(parts.id);
+  if (artwork) slot.classList.add("setrow-i-art");
+  slot.appendChild(artwork ?? icon(parts.mark, 18));
   const mid = el("span", "setrow-mid");
   mid.appendChild(el("span", "setrow-t", parts.title));
   row.append(slot, mid);

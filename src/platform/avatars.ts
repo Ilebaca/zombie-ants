@@ -18,7 +18,7 @@
  *   They are ordered to climb — small charm early, the showpieces in the last ten — so
  *   the road hands out something visibly better the further it is walked.
  *
- *   THE REST — thirty-eight — are the LUCKY HATCH's lowest rung (`HATCH_AVATARS`).
+ *   THE REST — thirty-eight — are occasional LUCKY HATCH rewards across Uncommon–Rare (`HATCH_AVATARS`).
  *
  * THE ORDER IN `ROAD_AVATARS` IS THE ONLY THING THAT DECIDES WHICH CHAPTER PAYS WHICH,
  * and the three lists are the only thing that decides how an avatar is come by. Moving an
@@ -201,48 +201,40 @@ export const isFreeAvatar = (id: string): boolean => FREE_AVATARS.includes(id);
 export const roadAvatar = (chapter: number): string | null =>
   ROAD_AVATARS[chapter - 1] ?? null;
 
-/**
- * THE TIER AN AVATAR COMES OUT OF, and it is the BOTTOM of the ladder.
- *
- * This is the skin rule stood on its head and it is deliberately the same mechanism
- * (`platform/skins.ts`). A skin is the TOP two rungs, so a roll there pays a skin while
- * one is locked; an avatar is the LOWEST rung, so a common roll pays an avatar while one
- * is locked. Neither needs a chance of its own, which is the only way the odds printed on
- * the hatch screen can be the odds the game actually uses — there is no second number
- * anywhere that can drift out of step with them.
- *
- * Derived from `TIER_IDS` rather than typed, so a retune of the ladder cannot leave this
- * pointing at a rung that is no longer the bottom one.
- */
-export const AVATAR_TIER: TierId = TIER_IDS[0];
+/** Avatars share the Uncommon and Rare rarity tiers, without replacing every trait roll. */
+export const HATCH_AVATAR_TIERS: readonly TierId[] = TIER_IDS.slice(1, 3);
+export const HATCH_AVATAR_CHANCE = 10;
 
-/** Whether a tier roll is one an avatar can come out of. */
-export const avatarTier = (tier: TierId): boolean => tier === AVATAR_TIER;
+/** Fixed catalogue rarities; existing ownership ids need no save migration. */
+const RARE_AVATARS = new Set([33, 40, 55, 74, 86, 87, 88, 100, 110, 114, 120, 126].map((n) => `av${n}`));
+export const hatchAvatarTier = (id: string): TierId | null =>
+  !HATCH_AVATARS.includes(id) ? null
+    : RARE_AVATARS.has(id) ? "rare" : "uncommon";
 
-/**
- * Every avatar this player could still find in the hatch.
- *
- * The ROAD's fifty are not in here: those are paid for by walking, and a hatch that could
- * also pay one would make the chapter it belongs to hand out nothing. Nor are the free
- * ten, for the obvious reason.
- */
-export const lockedAvatars = (found: readonly string[]): readonly string[] => {
+export const avatarTier = (tier: TierId): boolean => HATCH_AVATAR_TIERS.includes(tier);
+
+/** Unowned hatch avatars, optionally restricted to the rolled rarity. */
+export const lockedAvatars = (
+  found: readonly string[], tier?: TierId,
+): readonly string[] => {
   const has = new Set(found);
-  return HATCH_AVATARS.filter((id) => !has.has(id));
+  return HATCH_AVATARS.filter((id) => !has.has(id) && (!tier || hatchAvatarTier(id) === tier));
 };
 
-/**
- * One avatar out of the hatch pool, or null when there is none left to find.
- *
- * Null is not a failure — it is what makes a finished collection fall back to a common
- * TRAIT instead of eating the larva, so the last avatar found is never the moment the
- * hatch got worse. Exactly what `rollSkin` does at the other end of the ladder.
- */
+/** Select without duplicates; an exhausted rarity falls back to a same-tier trait. */
 export function rollAvatar(
-  random: () => number, found: readonly string[],
+  random: () => number, found: readonly string[], tier?: TierId,
 ): string | null {
-  const pool = lockedAvatars(found);
+  const pool = lockedAvatars(found, tier);
   return pool[Math.floor(random() * pool.length)] ?? null;
+}
+
+/** Only 10% of Uncommon–Rare rolls offer an avatar; 90% remain traits. */
+export function rollHatchAvatar(
+  random: () => number, found: readonly string[], tier: TierId,
+): string | null {
+  if (!avatarTier(tier) || random() >= HATCH_AVATAR_CHANCE / 100) return null;
+  return rollAvatar(random, found, tier);
 }
 
 /** How far the collection has come: held, out of all there are. */

@@ -10,9 +10,8 @@ import {
   HATCH_COST, LARVA_MYCEL, MemoryStore, ProfileStore, TRAITS, TRAIT_TIER,
   TRAIT_TIERS, itemDef, tierOdds,
 } from "../../platform";
-import { HATCH_AVATARS, SKIN_TIERS } from "../../platform";
+import { HATCH_AVATARS } from "../../platform";
 import type { Cue, Feedback } from "../../platform";
-import { TIERS, lookById } from "../../engine";
 import { buildHatch } from "../hatch";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
@@ -256,73 +255,23 @@ describe("what is in a larva", () => {
   });
 });
 
-/**
- * A SKIN CAME OUT.
- *
- * It is the one prize that does not go to the inventory, so the card must not offer that
- * as the way out — the only place a skin can be worn from is the colony it belongs to.
- */
-describe("hatching a skin", () => {
-  /**
-   * A stream that lands on a skin: pick the trait, then a tier in the top 5% of the
-   * weighted roll (which is where Exceptional and Mythic are), then which skin.
-   */
-  const skinRoll = (): (() => number) => {
-    const values = [0.1, 0.995, 0];
-    let i = 0;
-    return () => values[i++] ?? 0.5;
-  };
-
-  it("keeps skin unlocks as a notice without a full-screen reveal", () => {
+describe("high-rarity traits", () => {
+  it("reveals a Mythic trait without granting a skin", () => {
     const s = store(3);
+    let i = 0;
     const root = buildHatch(s, {
-      onBack: () => {}, onBuyLarva: () => {}, onInventory: () => {}, random: skinRoll(),
+      onBack: () => {}, onBuyLarva: () => {}, onInventory: () => {},
+      random: () => [0.1, 0.995][i++] ?? 0.5,
     });
     document.body.replaceChildren(root);
     vi.useFakeTimers();
     tap(root, "hatchGo");
     vi.advanceTimersByTime(1200);
     vi.useRealTimers();
-    const look = lookById(s.skins[0] as string);
-    expect(root.textContent).toContain(`${look?.name} unlocked`);
-    expect(s.bag.length).toBe(0);
-    expect(root.querySelector("#hatchPop")).toBeNull();
-  });
-  /**
-   * Printed, like the tiers. A skin has no chance of its own — it IS the top of the row —
-   * so the note NAMES the tiers rather than restating a number that could drift from them.
-   */
-  it("names the tiers a skin comes out of, beside the odds", () => {
-    const root = buildHatch(store(1), {
-      onBack: () => {}, onBuyLarva: () => {}, onInventory: () => {},
-    });
-    const said = root.querySelector("#hatchOdds")?.textContent ?? "";
-    for (const t of SKIN_TIERS) expect(said).toContain(TIERS[t].name);
-    expect(said).toContain("colony skin");
-  });
-
-  /**
-   * AND IT BREAKS AT THE COMMA.
-   *
-   * As one string the note wraps wherever the column runs out — mid-clause, on a
-   * different word at every screen width — which reads as a paragraph that did not fit
-   * rather than as one line saying what is paid and a second saying when. The halves are
-   * their own elements so the break cannot drift; `.ho-line` is what makes each a line.
-   */
-  it("puts the note on two lines, split at the comma", () => {
-    const root = buildHatch(store(1), {
-      onBack: () => {}, onBuyLarva: () => {}, onInventory: () => {},
-    });
-    const lines = Array.from(root.querySelectorAll("#hatchOdds .ho-note .ho-line"))
-      .map((n) => n.textContent ?? "");
-    expect(lines.length, "the note is one run of text again").toBe(2);
-    expect(lines[0]?.endsWith(","), `the first line does not end at the comma: ${lines[0]}`)
-      .toBe(true);
-    expect(lines[1], "the clause after the comma is not its own line").not.toContain(",");
-    // ...and the split lost nothing: the two halves are still the whole sentence.
-    expect(lines.join(" ")).toBe(
-      `${SKIN_TIERS.map((t) => TIERS[t].name).join(" and ")} hatches pay a colony skin,`
-      + " while you still have one to find.");
+    expect(s.skins).toEqual([]);
+    expect(s.bag).toHaveLength(1);
+    expect(s.bag[0]?.tier).toBe("mythic");
+    expect(root.querySelector('.reward-item[data-kind="trait"][data-tier="mythic"]')).toBeTruthy();
   });
 });
 
@@ -468,11 +417,11 @@ describe("a face in the larva", () => {
     let i = 0;
     return () => values[i++] ?? 0.5;
   };
-  const COMMON = 0.1, MYTHIC = 0.995;
+  const COMMON = 0.1, UNCOMMON = 0.7, MYTHIC = 0.995;
 
-  it("pays an avatar on a common roll while one is still locked", () => {
+  it("pays an avatar on an Uncommon roll when the avatar subroll succeeds", () => {
     const s = avatarStore(3);
-    const prize = s.hatch(rolls(COMMON));
+    const prize = s.hatch(rolls(UNCOMMON));
     expect(prize?.kind).toBe("avatar");
     if (prize?.kind === "avatar") {
       expect(HATCH_AVATARS).toContain(prize.id);
@@ -483,8 +432,8 @@ describe("a face in the larva", () => {
   });
 
   /** It never reaches above its own rung: the skins own the top and keep it. */
-  it("pays no avatar on any tier above the bottom one", () => {
-    for (const tier of [0.7, 0.9, MYTHIC]) {
+  it("pays no avatar on Common, Exceptional or Mythic rolls", () => {
+    for (const tier of [COMMON, 0.97, MYTHIC]) {
       const s = avatarStore(3);
       expect(s.hatch(rolls(tier))?.kind).not.toBe("avatar");
       expect(s.avatars).toEqual([]);
@@ -504,7 +453,7 @@ describe("a face in the larva", () => {
     vi.useFakeTimers();
     try {
       const s = avatarStore(3);
-      const { root, spy } = build(s);
+      const { root, spy } = build(s, rolls(UNCOMMON));
       tap(root, "hatchGo");
       vi.advanceTimersByTime(2000);
       const item = root.querySelector('.reward-item[data-kind="avatar"]');
@@ -525,7 +474,11 @@ describe("a face in the larva", () => {
     vi.useFakeTimers();
     try {
       const s = avatarStore(20);
-      const { root } = build(s, () => 0.1);
+      const { root } = build(s, (() => {
+        const values = Array.from({length: 10}, () => [0.2, UNCOMMON, 0.05, 0.5]).flat();
+        let i = 0;
+        return () => values[i++] ?? 0.5;
+      })());
       tap(root, "hatchGo10");
       vi.advanceTimersByTime(2000);
       const card = root.querySelector("#hatchPrize");
@@ -633,14 +586,10 @@ describe("the handful", () => {
     expect(heard[0], "the shell did not give way first").toBe("hatch");
     expect(heard.at(-1), "a handful of mythics sounded like a common").toBe("jackpot");
 
-    // A SKIN IN THE BATCH GOES SOMEWHERE THE BUTTON DOES NOT, so the card says so. At the
-    // top of the range every roll pays one while any is still locked, which is the whole
-    // point of the note: the inventory is the one place a skin will never be.
-    expect(s.skins.length, "the top of the range paid no skin at all").toBeGreaterThan(0);
-    expect(root.querySelector(".reward-amount")).toBeNull();
-    expect(root.querySelector('.reward-item[data-kind="skin"]')).toBeNull();
-    if (root.querySelector("#hatchPop")) root.querySelector<HTMLElement>("#hatchPop")!.click();
-    expect(root.textContent).toContain("unlocked");
+    expect(s.skins).toEqual([]);
+    expect(s.bag).toHaveLength(BULK);
+    expect(root.querySelectorAll('.reward-item[data-kind="trait"][data-tier="mythic"]')).toHaveLength(BULK);
+
   });
 
   /**
@@ -800,5 +749,15 @@ describe("the prize pop-up", () => {
     vi.useRealTimers();
     expect(root.querySelector("#hatchPop"), "a card was raised over another screen").toBeNull();
     expect(spy.changed, "a prize landed on a screen nobody was looking at").toBe(0);
+  });
+});
+
+describe("avatar odds disclosure", () => {
+  it("shows the conditional split alongside the unchanged rarity weights", () => {
+    const { root } = build(store());
+    expect(root.querySelector("#hatchOdds")?.textContent)
+      .toContain("Uncommon–Rare: 90% traits · 10% avatars.");
+    expect(root.querySelector("#hatchOdds")?.textContent)
+      .toContain("Completed avatar pools pay same-rarity traits.");
   });
 });

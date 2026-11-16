@@ -74,6 +74,14 @@ describe("loot box odds, before the purchase", () => {
 
   /** DERIVED, never restated: a printed chance that has drifted from the real one is the
    *  game lying about the only thing a player has to go on. */
+  it("discloses the avatar split and trait-only tiers without offering skins", () => {
+    const root = buildShop(store(), gateway());
+    const note = root.querySelector(".ho-note")?.textContent ?? "";
+    expect(note).toContain("Uncommon–Rare: 90% traits · 10% avatars.");
+    expect(note).toContain("Common, Exceptional and Mythic: traits only.");
+    expect(note).not.toContain("skin");
+  });
+
   it("reads the same weights the roll uses", () => {
     const total = TRAIT_TIERS.reduce((n, t) => n + tierOdds(t), 0);
     expect(Math.round(total)).toBe(100);

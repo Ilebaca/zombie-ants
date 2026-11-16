@@ -1,0 +1,11 @@
+/* The illustration supplies its own silhouette; no extra tile surrounds it. */
+#settings .setrow-i.setrow-i-art {
+  background: none;
+  border-radius: 0;
+}
+#settings .settings-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}

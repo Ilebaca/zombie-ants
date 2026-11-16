@@ -16,11 +16,11 @@
  * whole reason the tiers have colours at all.
  */
 import {
-  AVATAR_TIER, HATCH_COST, LARVA_MYCEL,
+  hatchAvatarTier, HATCH_COST, LARVA_MYCEL,
 } from "../platform";
 import type { Cue, Feedback, HatchPrize, ProfileStore } from "../platform";
 import { TIER_IDS } from "../engine";
-import { el, resourceMark, resourcePrice, screenEl, screenHeader, toast } from "./chrome";
+import { el, resourceMark, resourcePrice, screenEl, screenHeader } from "./chrome";
 import { icon } from "./icons";
 import { buildOdds } from "./odds";
 import { buildRewardReveal, hatchReward } from "./reward-reveal";
@@ -52,7 +52,7 @@ export interface HatchOptions {
   onInventory: () => void;
   /** Told after a hatch, so the drawer's counts and the screen behind can catch up. */
   onChanged?: () => void;
-  /** Into the colony a found skin belongs to — that is where it is worn from. */
+  /** Optional colony navigation hook retained for screen callers. */
   onColony?: (species: string) => void;
   /** Into the profile, from a found avatar: a face is worn there and nowhere else. */
   onProfile?: () => void;
@@ -68,7 +68,7 @@ export interface HatchOptions {
 /**
  * WHICH SOUND A PRIZE MAKES, off the same ladder that decides its colour.
  *
- * The top two rungs are the ones a skin can be and the ones a player is hatching FOR —
+ * The top two rungs are the rarest trait rewards a player is hatching for —
  * 5 rolls in 100 — so they get the cue that arrives rather than climbs. Read off
  * `TIER_IDS` rather than listed here, or a retune of the ladder would move a colour on one
  * screen and leave the sound where it was.
@@ -79,9 +79,7 @@ const prizeCue = (tier: string | undefined): Cue =>
 
 /** What a prize is worth to the ear, whichever kind it is. */
 const tierOf = (prize: HatchPrize): string | undefined =>
-  prize.kind === "skin" ? prize.look.tier
-    : prize.kind === "avatar" ? AVATAR_TIER
-      : prize.item.tier;
+  prize.kind === "avatar" ? hatchAvatarTier(prize.id) ?? undefined : prize.item.tier;
 
 /**
  * ONE CUE FOR A BATCH, AND IT IS THE LOUDEST THING IN IT.
@@ -262,33 +260,19 @@ export function buildHatch(store: ProfileStore, opts: HatchOptions): HTMLElement
 
   /* -------------------------------------------------------------------- THE PRIZE */
 
-  /** Only traits and avatars use the full-screen reveal; skins retain an unlock notice. */
+  /** Every hatch reward uses the shared full-screen reveal. */
   const revealedPrizes = () =>
     (haul.length ? haul : found ? [found] : []).flatMap(prize => {
       const reward = hatchReward(prize);
       return reward ? [reward] : [];
     });
 
-  const skinNotice = (prizes: readonly HatchPrize[] = haul.length ? haul : found ? [found] : []): void => {
-    const skins = prizes
-      .filter((prize) => prize.kind === "skin");
-    if (skins.length) toast(root, skins.map(prize => `${prize.look.name} unlocked`).join(" · "), "good");
-  };
-  const revealSettledPrizes = (): void => {
-    render();
-    if (revealedPrizes().length === 0) {
-      skinNotice();
-      found = null;
-      haul = [];
-    }
-  };
+  const revealSettledPrizes = (): void => { render(); };
 
   const close = (): void => {
-    const prizes = haul.length ? [...haul] : found ? [found] : [];
     found = null;
     haul = [];
     render();
-    skinNotice(prizes);
   };
 
   const popup = (): HTMLElement => {

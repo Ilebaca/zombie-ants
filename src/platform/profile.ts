@@ -40,8 +40,7 @@ import {
   slotChapter, slotsOpen, totalsOf, traitDef,
 } from "./traits";
 import type { TraitItem, TraitScope, TraitTier, TraitTotals } from "./traits";
-import { avatarTier, faceOf, isAvatar, isFreeAvatar, rollAvatar } from "./avatars";
-import { rollSkin, skinTier } from "./skins";
+import { faceOf, isAvatar, isFreeAvatar, rollHatchAvatar } from "./avatars";
 import { LARVA_MYCEL, fuseDeal } from "./exchange";
 import type { DuelInvite } from "./duels";
 import type { Friend, Person } from "./friends";
@@ -321,7 +320,6 @@ const STARTER_SPECIES: SpeciesId[] = ["leafcutter", "fire", "carpenter"];
  */
 export type HatchPrize =
   | { kind: "trait"; item: TraitItem }
-  | { kind: "skin"; look: Look }
   | { kind: "avatar"; id: string };
 
 export function defaultProfile(): Profile {
@@ -1730,40 +1728,15 @@ export class ProfileStore {
    * the tier is that finding one is the best thing that happens in the feature.
    */
   hatch(random: () => number = Math.random): HatchPrize | null {
-    if (!this.hatchOpen() || this.profile.larva < HATCH_COST) return null;
+    if (!this.hatchOpen() || this.profile.larva < HATCH_COST || this.profile.bag.length >= BAG_MAX) return null;
 
-    // ONE ROLL DECIDES BOTH. A skin is not a sixth rung and not a chance beside the
-    // ladder — it IS the top of it (platform/skins.ts). The tier is rolled exactly as it
-    // always was, and an Exceptional or Mythic roll pays a SKIN of that tier while one is
-    // still locked; with the collection complete it falls back to a trait of the SAME
-    // tier, so the last skin found never makes the hatch worse and never quietly demotes
-    // the prize. That is also the only way the odds printed on the screen are the odds
-    // the game uses: there is no second number to drift.
     const drop = rollDrop(random, [null, ...this.profile.unlocked]);
     if (!drop) return null;
 
-    const skin = skinTier(drop.tier)
-      ? rollSkin(random, this.profile.unlocked, this.profile.skins, drop.tier)
-      : null;
-
-    // AND AN AVATAR IS THE SAME RULE AT THE OTHER END OF THE LADDER. A skin is the top
-    // two rungs; an avatar is the BOTTOM one, so a common roll pays an avatar while one
-    // is still locked and falls back to a common TRAIT once the collection is finished.
-    // Neither carries a chance of its own, which is what keeps the odds printed on the
-    // hatch screen the odds the game really uses.
-    //
-    // It is rolled only when a skin did not land, because the two tiers never overlap —
-    // the `&&` is belt and braces against a retune that made them, where paying both
-    // would be one larva buying two prizes and a card that can only show one of them.
-    const avatar = !skin && avatarTier(drop.tier)
-      ? rollAvatar(random, this.profile.avatars)
-      : null;
+    // Rarity stays unchanged. Most low-tier rolls pay traits even with avatars unowned.
+    const avatar = rollHatchAvatar(random, this.profile.avatars, drop.tier);
 
     this.update((p) => { p.larva -= HATCH_COST; });
-    if (skin) {
-      const found = this.findSkin(skin.id);
-      return found ? { kind: "skin", look: found } : null;
-    }
     if (avatar) {
       const found = this.findAvatar(avatar);
       return found ? { kind: "avatar", id: found } : null;
@@ -1775,14 +1748,10 @@ export class ProfileStore {
   /**
    * HATCH A WHOLE HANDFUL, one roll at a time.
    *
-   * It is `hatch()` in a loop and that is deliberate rather than lazy — the rolls are not
-   * independent of each other. A skin is rolled against the collection AS IT STANDS
-   * (platform/skins.ts), so committing each one before the next is what stops a batch
-   * paying the SAME skin twice; rolling ten against one snapshot would hand out
-   * duplicates of the rarest thing in the game. An AVATAR is rolled the same way and it
-   * matters far more often here: commons are six rolls in ten, so a batch of ten against
-   * one snapshot would hand back the same face several times over.
-   *
+   * Each award is committed before the next roll, so a batch cannot pay the same
+   * avatar twice. An exhausted avatar rarity falls back to a trait of the same tier.
+   * Common rolls always pay traits. Skins are not part of the hatch reward table.
+
    * THE PURSE IS CHECKED ONCE, FOR THE WHOLE BATCH. A run that paid for six and then
    * stopped would be a button that did not do what it said, and the screen's own guard
    * only offers this when the larva are there — this is the one that actually protects
@@ -1794,11 +1763,13 @@ export class ProfileStore {
    */
   hatchMany(count: number, random: () => number = Math.random): HatchPrize[] {
     const n = Math.floor(count);
-    if (!this.hatchOpen() || n < 1 || this.profile.larva < HATCH_COST * n) return [];
+    if (!this.hatchOpen() || !Number.isFinite(n) || n < 1
+      || this.profile.larva < HATCH_COST * n || this.profile.bag.length + n > BAG_MAX) return [];
     const out: HatchPrize[] = [];
     for (let i = 0; i < n; i++) {
       const prize = this.hatch(random);
-      if (prize) out.push(prize);
+      if (!prize) break;
+      out.push(prize);
     }
     return out;
   }
