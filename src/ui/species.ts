@@ -200,7 +200,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
 
 /* ------------------------------------------------------------------------ THE HERO */
 
-/** Full-width square scene used exclusively on this species page.
+/** Bottom-aligned scene painted beneath the existing header and cover space.
  * A missing scene falls back to the colony portrait while keeping the frame.
  */
 function cover(id: SpeciesId, look: Look): HTMLElement {

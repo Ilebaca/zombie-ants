@@ -5924,8 +5924,17 @@ their shared margins; do not constrain the cover to the content-card width.
 
 The eight square scenes under ui/species-covers/ are exclusive to individual
 species screens. ui/species-covers.ts maps their URLs and exact screen background
-colours. Species screens use a square full-width cover frame and bottom alignment,
-showing the entire supplied scene. The screen background follows its species,
+colours. Species screens retain their original wide cover frame and bottom alignment.
+The supplied scene paints behind the header and cover space; its top may crop.
+Replacing artwork must not change the header, panels, traits or their gaps. The screen background follows its species,
 including after upgrades or skin selection rerenders.
 Keep the shared ui/covers/, ui/covers-cut/ and their covers.ts accessors unchanged:
 those remain available to previews, setup, rewards and other shared surfaces.
+
+### Cover artwork does not determine species-page layout
+
+The cover keeps the pre-scene 1567/900 layout ratio. Its image is an absolute
+layer extending upward behind the existing header, including the screen top inset
+and standard header/body gaps. Shared spacing tokens determine that overlap.
+The header remains on top and clickable, and both layers scroll with the page.
+Square source images crop from the top as needed; they do not add layout height.

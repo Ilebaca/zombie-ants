@@ -1,10 +1,23 @@
-/* Individual species scenes keep their complete square composition.
-   Shared preview and setup cover styles are independent of this screen. */
+/* The scene paints behind the existing header and wide cover space.
+   Its native image size must not move the controls or content below it. */
 #app #antup {
+  --species-cover-overlap: calc(var(--screen-top) + var(--tap) + 3 * var(--block));
   background-color: var(--species-cover-background, #1d140d);
 }
+#app #antup > .screentop {
+  z-index: 1;
+  background: transparent;
+}
 #app #antup .spgcover {
-  aspect-ratio: 1 / 1;
+  overflow: visible;
+  z-index: 0;
+}
+#app #antup .spgcover-img {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: calc(100% + var(--species-cover-overlap));
+  pointer-events: none;
 }
 
 /* Species upgrades use the shared card frame, gutters and spacing tokens. */
