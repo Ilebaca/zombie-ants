@@ -1,3 +1,12 @@
+/* Individual species scenes keep their complete square composition.
+   Shared preview and setup cover styles are independent of this screen. */
+#app #antup {
+  background-color: var(--species-cover-background, #1d140d);
+}
+#app #antup .spgcover {
+  aspect-ratio: 1 / 1;
+}
+
 /* Species upgrades use the shared card frame, gutters and spacing tokens. */
 #app #antup .spghero {
   position: relative;

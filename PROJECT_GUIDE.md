@@ -5919,3 +5919,13 @@ The individual species cover fills the screen from left edge to right edge at ev
 viewport width. Its image uses object-fit: cover and object-position: center bottom,
 so any crop preserves the bottom of the artwork. Header and content cards retain
 their shared margins; do not constrain the cover to the content-card width.
+
+### Individual species scene covers (16 November 2026)
+
+The eight square scenes under ui/species-covers/ are exclusive to individual
+species screens. ui/species-covers.ts maps their URLs and exact screen background
+colours. Species screens use a square full-width cover frame and bottom alignment,
+showing the entire supplied scene. The screen background follows its species,
+including after upgrades or skin selection rerenders.
+Keep the shared ui/covers/, ui/covers-cut/ and their covers.ts accessors unchanged:
+those remain available to previews, setup, rewards and other shared surfaces.

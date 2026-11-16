@@ -12,7 +12,7 @@ import type { ProfileStore, TraitKind } from "../platform";
 import { antPortrait, buyButton, el, redraw, screenEl, screenHeader, toast } from "./chrome";
 import { researchPips } from "./research";
 import { abilityArtFor } from "./abilityart";
-import { coverFor } from "./covers";
+import { SPECIES_SCREEN_BACKGROUNDS, speciesCoverFor } from "./species-covers";
 import { icon } from "./icons";
 import { combatStatIcon } from "./trait-emblem";
 import { buildTraitSlots } from "./traits";
@@ -39,6 +39,8 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
     const level = profile.research[id]?.level ?? 0;
     const tier = tierOf(id);
     redraw(root);
+    root.dataset.species = id;
+    root.style.setProperty("--species-cover-background", SPECIES_SCREEN_BACKGROUNDS[id]);
 
     screenHeader(root, {
       title: species.name, onBack: opts.onBack,
@@ -212,7 +214,7 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
 function cover(id: SpeciesId, look: Look): HTMLElement {
   const box = el("div", "spgcover");
   box.id = "aupCover";
-  const art = coverFor(id);
+  const art = speciesCoverFor(id);
   if (art) {
     const img = document.createElement("img");
     img.src = art;
