@@ -258,6 +258,7 @@ export function buildInventory(store: ProfileStore, opts: InventoryOptions): HTM
     panel.append(el("div", "trait-detail-scope", "Choose where to equip"), destinations);
     panel.addEventListener("dismiss-trait-popup", closePicker);
     unmountPicker = mountTraitPicker(root, grid, 0, panel, closePicker, source);
+    destinations.querySelector<HTMLButtonElement>("button")?.focus({ preventScroll: true });
   };
 
   const render = (): void => {

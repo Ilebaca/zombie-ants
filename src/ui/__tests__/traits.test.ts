@@ -279,6 +279,7 @@ describe("the inventory", () => {
     tiles(root)[0]!.click();
     expect(opened).toEqual([]);
     expect(root.querySelectorAll("[data-loadout]")).toHaveLength(3);
+    expect((document.activeElement as HTMLElement).dataset.loadout).toBe("hill");
     root.querySelector<HTMLButtonElement>('[data-loadout="hill"]')!.click();
     expect(opened).toEqual(["hill"]);
     expect(s.bench("hill").filter(Boolean)).toHaveLength(0);

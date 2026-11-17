@@ -164,10 +164,10 @@
   border-radius: 10px !important;
   background: #12151c !important;
   box-shadow: none !important;
-  outline: none;
+  outline: none !important;
 }
 #app #inventory .inventory-slot:focus-visible {
-  outline: 2px solid var(--tier, var(--hud-ink));
+  outline: 2px solid var(--tier, var(--hud-ink)) !important;
   outline-offset: 1px;
 }
 #app #inventory .inventory-slot .trtile-i {
