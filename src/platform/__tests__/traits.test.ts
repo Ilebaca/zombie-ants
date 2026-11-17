@@ -477,3 +477,16 @@ it("migrates mixed legacy copies without losing rarity, uid, loadouts or fusion 
   expect(reopened.bag.some(i=>i.uid==="t2")).toBe(true);
   expect(reopened.bench("hill")[0]?.uid).toBe("t1");
 });
+
+it("moves each stat and rarity through every ant and anthill with exactly one owner", () => {
+  const memory = new MemoryStore(), store = new ProfileStore(memory);
+  const scopes = ["hill", ...Object.keys(SPECIES)] as Array<"hill" | keyof typeof SPECIES>;
+  for (const def of TRAITS) for (const tier of TRAIT_TIERS) {
+    const copy=store.findTrait(def.id,tier)!;
+    for (const scope of scopes) {
+      expect(store.equipTrait(scope,copy.uid,0)).toBe(true);
+      expect(Object.values(store.get().wearing).flat().filter(uid=>uid===copy.uid)).toHaveLength(1);
+      expect(new ProfileStore(memory).bench(scope)[0]?.uid).toBe(copy.uid);
+    }
+  }
+});

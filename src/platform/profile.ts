@@ -773,10 +773,11 @@ function bagAndBenches(p: Partial<Profile>): Pick<Profile, "bag" | "wearing" | "
     if (!item || typeof item !== "object") continue;
     const uid = typeof item.uid === "string" ? item.uid : "";
     const def = typeof item.def === "string" ? item.def : "";
-    if (!uid || seen.has(uid) || !traitDef(def)) continue;
+    const definition = traitDef(def);
+    if (!uid || seen.has(uid) || !definition) continue;
     if (!TRAIT_TIERS.includes(item.tier as TraitTier)) continue;
     seen.add(uid);
-    bag.push({ uid, def: traitDef(def)!.id, tier: item.tier as TraitTier });
+    bag.push({ uid, def: definition.id, tier: item.tier as TraitTier });
     if (bag.length >= BAG_MAX) break;
   }
 
@@ -1060,10 +1061,11 @@ export class ProfileStore {
    * quietly deletes what you collected is worse than one that tells you it is full.
    */
   findTrait(def: string, tier: TraitTier): TraitItem | null {
-    if (!traitDef(def) || !TRAIT_TIERS.includes(tier)) return null;
+    const definition = traitDef(def);
+    if (!definition || !TRAIT_TIERS.includes(tier)) return null;
     if (this.profile.bag.length >= BAG_MAX) return null;
     const uid = `t${this.profile.traitSeq}`;
-    const item: TraitItem = { uid, def: traitDef(def)!.id, tier };
+    const item: TraitItem = { uid, def: definition.id, tier };
     this.update((p) => {
       p.traitSeq++;
       p.bag = [item, ...p.bag];
