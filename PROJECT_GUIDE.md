@@ -5954,3 +5954,20 @@ The ability-name and The colony headings above the two lower detail blocks are
 removed. Keep each block's shared frame and accessible section name. Internal
 Signature and In the field labels remain part of the colony information.
 Ghost's exclusive species-scene cover uses the replacement supplied in Ghost.zip.
+
+
+### Shared trait inventory (17 November 2026)
+
+This supersedes biological-origin grouping and the anthill compatibility restriction.
+Attack, Defence and CDR chance are three universal traits usable on any species or
+Anthill, at every rarity. Legacy definition ids resolve by stat and normalise to the
+shared id without changing uid, rarity, owned copies or equipped loadouts. One copy
+still occupies only one slot globally; moving it clears its old slot. Existing caps,
+rarity odds, cooldown arithmetic, fusion costs and equipped-fuel protection remain.
+All nonempty legacy drop-pool requests draw equally from the same three stat types.
+Inventory is one five-column grid with 6px gaps and rounded square storage spaces,
+including empty spaces. It has no biological headings, held/equipped counts or dots.
+At least 25 spaces remain visible; capacity grows in full rows with an empty space.
+Tapping an item offers owned loadouts in an anchored popup, without scrolling or
+equipping automatically. Slots on species and Anthill retain the badge silhouette.
+Fuse spares shows its title and available options, without explanatory description.

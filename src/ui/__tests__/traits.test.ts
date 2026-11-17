@@ -24,7 +24,7 @@ HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getC
 beforeEach(() => { document.body.replaceChildren(); });
 
 const UNIVERSAL = TRAITS.filter((t) => t.species === null);
-const FIRE = TRAITS.filter((t) => t.species === "fire");
+const SHARED = TRAITS;
 
 /** A store past the chapter gate, so the screens are open. */
 /**
@@ -77,17 +77,17 @@ describe("the trait picker", () => {
   it("shows the whole collection, including worn and other-colony traits", () => {
     const s = store();
     const one = s.findTrait(UNIVERSAL[0]!.id, "rare")!;
-    const two = s.findTrait(FIRE[0]!.id, "mythic")!;
+    const two = s.findTrait(SHARED[0]!.id, "mythic")!;
     s.equipTrait("hill", one.uid);
     const root = bench(s);
     choose(root);
     expect(rows(root)).toHaveLength(2);
     expect(root.querySelector(`.trait-picker-grid [data-uid="${one.uid}"]`)!.classList.contains("worn")).toBe(true);
     inspect(root, two.uid);
-    expect(root.querySelector(".trait-detail-scope")!.textContent).toContain("Fire Ant");
-    expect(root.querySelector<HTMLButtonElement>(".trait-detail-equip")!.disabled).toBe(true);
+    expect(root.querySelector(".trait-detail-scope")!.textContent).toContain("any ant or the anthill");
+    expect(root.querySelector<HTMLButtonElement>(".trait-detail-equip")!.disabled).toBe(false);
     equip(root);
-    expect(s.bench("hill")[0]!.uid).toBe(one.uid);
+    expect(s.bench("hill")[0]!.uid).toBe(two.uid);
   });
 
   it("shows the actual rarity, effect and biology before equipping", () => {
@@ -242,56 +242,61 @@ describe("the inventory", () => {
     const s = store();
     const worn = s.findTrait(UNIVERSAL[0]!.id, "rare")!;
     s.findTrait(UNIVERSAL[1]!.id, "common");
-    s.findTrait(FIRE[0]!.id, "mythic");
+    s.findTrait(SHARED[0]!.id, "mythic");
     s.equipTrait("hill", worn.uid);
 
     const root = inventory(s);
     expect(tiles(root).length, "a worn trait was left out of the collection").toBe(3);
     // ...and the worn one is marked rather than hidden.
-    expect(root.querySelectorAll(".trtile.worn").length).toBe(1);
+    expect(root.querySelectorAll(".trtile.worn").length).toBe(0);
   });
 
-  it("groups by bench, and every group is a door into it", () => {
+  it("shows one grid without bench headings or equipment counts", () => {
     const s = store();
-    s.findTrait(UNIVERSAL[0]!.id, "rare");
-    s.findTrait(FIRE[0]!.id, "mythic");
-    const opened: TraitScope[] = [];
-    const root = inventory(s, (sc) => opened.push(sc));
-
-    const heads = Array.from(root.querySelectorAll<HTMLButtonElement>(".invhead"));
-    expect(heads.map((h) => h.dataset.scope)).toEqual(["hill", "fire"]);
-    heads[1]?.click();
-    expect(opened).toEqual(["fire"]);
+    s.findTrait("fire.sting", "rare");
+    s.findTrait("carpenter.galleries", "mythic");
+    const root = inventory(s);
+    expect(root.querySelectorAll(".inventory-grid")).toHaveLength(1);
+    expect(root.querySelectorAll(".invhead")).toHaveLength(0);
+    expect(root.textContent).not.toMatch(/equipped|held/);
+    expect(root.querySelectorAll(".inventory-slot")).toHaveLength(25);
+    expect(root.querySelectorAll(".inventory-slot--empty")).toHaveLength(23);
   });
-
   // A bench with nothing in it is not a heading over an empty grid.
-  it("names only the benches it has something for", () => {
+  it("grows by complete rows while keeping spare inventory spaces", () => {
     const s = store();
-    s.findTrait(FIRE[0]!.id, "rare");
-    expect(inventory(s).querySelectorAll(".invhead").length).toBe(1);
+    for (let i=0;i<27;i++) s.findTrait("u.mandible","common");
+    const root=inventory(s);
+    expect(root.querySelectorAll(".inventory-slot")).toHaveLength(30);
+    expect(root.querySelectorAll(".inventory-slot--empty")).toHaveLength(3);
   });
-
-  it("takes a tapped tile to the bench it belongs to", () => {
-    const s = store();
-    s.findTrait(FIRE[0]!.id, "rare");
-    const opened: TraitScope[] = [];
-    tiles(inventory(s, (sc) => opened.push(sc)))[0]?.click();
-    expect(opened).toEqual(["fire"]);
+  it("lets a tile open any owned loadout without changing equipment", () => {
+    const s=store();
+    s.update(p=>{p.unlocked=["leafcutter","fire"];});
+    s.findTrait("fire.sting","rare");
+    const opened: TraitScope[]=[];
+    const root=inventory(s,scope=>opened.push(scope));
+    tiles(root)[0]!.click();
+    expect(opened).toEqual([]);
+    expect(root.querySelectorAll("[data-loadout]")).toHaveLength(3);
+    root.querySelector<HTMLButtonElement>('[data-loadout="hill"]')!.click();
+    expect(opened).toEqual(["hill"]);
+    expect(s.bench("hill").filter(Boolean)).toHaveLength(0);
+    expect(root.querySelector(".inventory-picker")).toBeNull();
   });
-
   /** A screen with nothing on it has to say why, or it reads as one that failed. */
-  it("says where traits come from when there are none", () => {
-    const root = inventory(store());
-    expect(root.querySelectorAll(".trtile").length).toBe(0);
-    expect(root.querySelector(".trempty")?.textContent).toContain("lucky hatch");
+  it("keeps empty inventory slots visible before finding an item", () => {
+    const root=inventory(new ProfileStore(new MemoryStore()));
+    expect(root.querySelectorAll(".inventory-slot--empty")).toHaveLength(25);
+    expect(root.querySelectorAll(".trtile")).toHaveLength(0);
+    expect(root.querySelectorAll(".invhead")).toHaveLength(0);
   });
-
   it("opens inventory and usable trait controls in chapter one without a pass", () => {
     const early = new ProfileStore(new MemoryStore());
     const one = early.findTrait(UNIVERSAL[0]!.id, "rare")!;
     expect(early.get().pass).toBe(false);
     const inv = inventory(early);
-    expect(inv.querySelectorAll(".invhead")).toHaveLength(1);
+    expect(inv.querySelectorAll(".invhead")).toHaveLength(0);
     expect(inv.querySelector(".trtile")?.getAttribute("data-uid")).toBe(one.uid);
     const hill = buildAnthill(early);
     expect(hill.querySelector("#hillTraits")?.classList.contains("locked")).toBe(false);
@@ -307,14 +312,12 @@ describe("the inventory", () => {
     expect(early.benchTotals("hill").atkPct).toBeGreaterThan(0);
   });
 
-  it("shows where to find traits from the first chapter", () => {
-    const early = new ProfileStore(new MemoryStore());
-    const root = inventory(early);
-    expect(root.querySelector(".trempty")?.textContent).toContain("lucky hatch");
-    expect(root.textContent).not.toContain("open at chapter");
-    expect(root.querySelectorAll(".invhead").length).toBe(0);
-  });
-});
+  it("opens empty storage immediately in chapter one", () => {
+    const root=inventory(new ProfileStore(new MemoryStore()));
+    expect(root.querySelectorAll(".inventory-slot--empty")).toHaveLength(25);
+    expect(root.querySelectorAll(".trtile")).toHaveLength(0);
+    expect(root.querySelectorAll(".invhead")).toHaveLength(0);
+  });});
 
 /**
  * THE ROW IS PART OF THE HERO, not a section of its own.
@@ -340,7 +343,7 @@ describe("inline species loadouts", () => {
     const s = new ProfileStore(new MemoryStore());
     const host = document.createElement("div"); host.id = "app"; document.body.replaceChildren(host);
     for (const tier of ["common","uncommon","rare","exceptional","mythic"] as const) {
-      const one = s.findTrait(FIRE[0]!.id,tier)!;
+      const one = s.findTrait(SHARED[0]!.id,tier)!;
       const page = buildSpeciesPage(s, { species: "bullet", onBack: () => {} });
       host.replaceChildren(page);
       page.querySelector<HTMLButtonElement>("#spgTraits [data-slot='0']")!.click();
@@ -354,7 +357,7 @@ describe("inline species loadouts", () => {
     }
   });
   it("cleans up portal layers when their owning page is removed", async () => {
-    const s = store(); s.findTrait(FIRE[0]!.id,"rare");
+    const s = store(); s.findTrait(SHARED[0]!.id,"rare");
     const host = document.createElement("div"); host.id = "app"; document.body.replaceChildren(host);
     const page = buildSpeciesPage(s,{species:"fire",onBack:()=>{}}); host.appendChild(page);
     page.querySelector<HTMLButtonElement>("#spgTraits [data-slot='0']")!.click();
@@ -544,7 +547,10 @@ describe("fusing spares", () => {
     expect(inventory(s).querySelector("#fuseBox")).toBe(null);
 
     spares(s, 1);
-    expect(inventory(s).querySelector("#fuseBox [data-fuse='common']")).toBeTruthy();
+    const root=inventory(s);
+    expect(root.querySelector("#fuseBox [data-fuse='common']")).toBeTruthy();
+    expect(root.querySelector("#fuseBox .fb-h")?.textContent).toBe("Fuse spares");
+    expect(root.querySelector("#fuseBox .fb-p")).toBeNull();
   });
 
   it("fuses three into one of the next tier and redraws the collection", () => {
@@ -582,7 +588,7 @@ describe("fusing spares", () => {
 });
 
 it("refreshes loadout power immediately after equipping and removing a species trait", () => {
-  const s=store(),def=FIRE.find(t=>t.kind==="attack")!;
+  const s=store(),def=SHARED.find(t=>t.kind==="attack")!;
   const one=s.findTrait(def.id,"mythic")!;
   const host=document.createElement("div");host.id="app";
   const page=buildSpeciesPage(s,{species:"fire",onBack:()=>{}});

@@ -85,7 +85,7 @@ export function buildTraitSlots(store: ProfileStore, opts: TraitSlotsOptions): H
     card.append(
       close, el("div", "trait-detail-tier", tier.name), emblem, name, effect,
       el("p", "trait-detail-note", def?.note ?? ""),
-      el("p", "trait-detail-scope", !compatible ? `${def ? scopeName(def.species ?? "hill") : "Species"} trait · Anthill uses universal traits` : owner && !worn ? `Moves from ${scopeName(owner)} when equipped` : "Usable at any species level"),
+      el("p", "trait-detail-scope", owner && !worn ? `Moves from ${scopeName(owner)} when equipped` : "Usable on any ant or the anthill"),
     );
 
     const equip = el("button", "action-button trait-detail-equip", worn ? "Equipped" : "Equip") as HTMLButtonElement;
@@ -226,27 +226,42 @@ export function buildTraitSlots(store: ProfileStore, opts: TraitSlotsOptions): H
 
 /* ==================================================================== INVENTORY */
 
-/**
- * EVERYTHING FOUND, IN ONE PLACE.
- *
- * The benches show only what fits THEM — a colony's five and the anthill's — so without
- * this there is nowhere in the app that shows a collection AS a collection: a player with
- * forty traits spread over ten benches could never see forty of anything.
- *
- * It is grouped by bench rather than by tier, because "where does this go" is the question
- * a collection raises and "what colour is it" is not — and every group is a DOOR into the
- * bench it names, so seeing something you are not using and going to use it is one tap.
- */
+/** One shared inventory; items open a choice of loadout. */
 export interface InventoryOptions {
   onBack: () => void;
-  /** Open the bench a tile belongs to. */
+  /** Open the chosen loadout to select an equipment slot. */
   onOpen: (scope: TraitScope) => void;
 }
 
 export function buildInventory(store: ProfileStore, opts: InventoryOptions): HTMLElement {
   const root = screenEl("inventory");
+  let unmountPicker = (): void => {};
+  const closePicker = (): void => { unmountPicker(); unmountPicker = () => {}; };
+  const openItem = (item: TraitItem, source: HTMLElement, grid: HTMLElement): void => {
+    closePicker();
+    const def = itemDef(item);
+    if (!def) return;
+    const tier = TRAIT_TIER[item.tier];
+    const panel = el("section", "trait-picker inventory-picker");
+    panel.setAttribute("aria-label", "Choose a loadout");
+    panel.style.setProperty("--tier", tier.colour);
+    panel.append(el("div", "trait-picker-head", `${tier.name} ${def.name}`),
+      el("div", "trait-detail-effect", effectText(def, item.tier)));
+    const destinations = el("div", "inventory-destinations");
+    for (const scope of ["hill", ...SPECIES_ORDER.filter(id => store.get().unlocked.includes(id))] as TraitScope[]) {
+      const button = el("button", "action-button secondary", scopeName(scope)) as HTMLButtonElement;
+      button.type = "button";
+      button.dataset.loadout = scope;
+      button.onclick = () => { closePicker(); opts.onOpen(scope); };
+      destinations.appendChild(button);
+    }
+    panel.append(el("div", "trait-detail-scope", "Choose where to equip"), destinations);
+    panel.addEventListener("dismiss-trait-popup", closePicker);
+    unmountPicker = mountTraitPicker(root, grid, 0, panel, closePicker, source);
+  };
 
   const render = (): void => {
+    closePicker();
     redraw(root);
     screenHeader(root, {
       title: "Inventory", onBack: opts.onBack,
@@ -257,47 +272,26 @@ export function buildInventory(store: ProfileStore, opts: InventoryOptions): HTM
     const wrap = el("div", "trwrap");
     wrap.id = "invBody";
 
-    const bag = store.bag;
-    if (bag.length === 0) {
-      wrap.appendChild(locked("Nothing found yet",
-        "Traits come from the Colony Road and the lucky hatch. Equip them on a colony or your anthill."));
-      body.appendChild(wrap);
-      root.appendChild(body);
-      groupSections(root);
-      return;
-    }
-
     const fuse = fuseBox();
     if (fuse) wrap.appendChild(fuse);
 
-    const benches: TraitScope[] = ["hill", ...SPECIES_ORDER];
-    for (const scope of benches) {
-      const mine = bag.filter((i) => itemDef(i)?.species === (scope === "hill" ? null : scope));
-      if (mine.length === 0) continue;
-      const equipped = new Set(Object.values(store.get().wearing).flat().filter(Boolean));
-      const worn = new Set(mine.filter(item => equipped.has(item.uid)).map(item => item.uid));
-
-      const head = el("button", "invhead") as HTMLButtonElement;
-      head.type = "button";
-      head.dataset.scope = scope;
-      head.append(
-        el("span", "invhead-t", scopeName(scope)),
-        el("span", "invhead-c", `${worn.size} equipped · ${mine.length} held`),
-        icon("next", 13),
-      );
-      head.onclick = () => opts.onOpen(scope);
-
-      const grid = el("div", "trgrid");
-      grid.dataset.scope = scope;
-      for (const item of mine) {
-        // A tile here does not equip: it belongs to a bench, and which slot it should go
-        // in is a decision that needs the bench in front of you. Tapping it takes you there.
-        const cell = readOnlyTile(item, () => opts.onOpen(scope));
-        if (worn.has(item.uid)) cell.classList.add("worn");
+    const grid = el("div", "inventory-grid");
+    grid.setAttribute("aria-label", "Inventory slots");
+    const bag = store.bag;
+    const capacity = Math.max(25, Math.ceil((bag.length + 1) / 5) * 5);
+    for (let i = 0; i < capacity; i++) {
+      const item = bag[i];
+      if (item) {
+        const cell = readOnlyTile(item, () => openItem(item, cell, grid));
+        cell.classList.add("inventory-slot");
         grid.appendChild(cell);
+      } else {
+        const empty = el("div", "inventory-slot inventory-slot--empty");
+        empty.setAttribute("aria-hidden", "true");
+        grid.appendChild(empty);
       }
-      wrap.append(head, grid);
     }
+    wrap.appendChild(grid);
 
     body.appendChild(wrap);
     root.appendChild(body);
@@ -327,11 +321,7 @@ export function buildInventory(store: ProfileStore, opts: InventoryOptions): HTM
 
     const box = el("div", "fusebox");
     box.id = "fuseBox";
-    box.append(
-      el("div", "fb-h", "Fuse spares"),
-      el("div", "fb-p",
-        "Three spares of one rarity make one of the next. Traits you are wearing are never spent."),
-    );
+    box.appendChild(el("div", "fb-h", "Fuse spares"));
     for (const deal of live) box.appendChild(fuseRow(deal));
     return box;
   };

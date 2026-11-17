@@ -22,14 +22,12 @@ import { COLONY_START } from "../colony";
 const item = (def: string, tier: TraitTier, uid = def): TraitItem => ({ uid, def, tier });
 
 describe("the table", () => {
-  it("gives every colony its own five, and the anthill its own", () => {
-    for (const id of Object.keys(SPECIES) as (keyof typeof SPECIES)[]) {
-      expect(traitsFor(id).length, `${id} has no traits of its own`).toBe(TRAIT_SLOTS);
+  it("shares the same three stat traits across every loadout", () => {
+    expect(TRAITS.map(t => t.name)).toEqual(["Attack", "Defence", "CDR chance"]);
+    for (const scope of ["hill", ...Object.keys(SPECIES)] as const) {
+      expect(traitsFor(scope as "hill")).toEqual(TRAITS);
     }
-    // Enough universal traits to fill the anthill's five with different ones.
-    expect(traitsFor("hill").length).toBeGreaterThanOrEqual(TRAIT_SLOTS);
   });
-
   it("has no two traits sharing an id", () => {
     const ids = TRAITS.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
@@ -81,7 +79,7 @@ describe("adding a bench up", () => {
    */
   it("draws cooldown chances independently rather than adding them", () => {
     const one = totalsOf([item(cd[0]!.id, "mythic", "a")]).luckPct;
-    const two = totalsOf([item(cd[0]!.id, "mythic", "a"), item(cd[1]!.id, "mythic", "b")]).luckPct;
+    const two = totalsOf([item(cd[0]!.id, "mythic", "a"), item(cd[0]!.id, "mythic", "b")]).luckPct;
     expect(one).toBe(TRAIT_TIER.mythic.luck);
     expect(two).toBeGreaterThan(one);
     expect(two, "two chances were added together").toBeLessThan(one * 2);
@@ -91,7 +89,7 @@ describe("adding a bench up", () => {
   it("never lets a stack past the ceiling", () => {
     const many = Array.from({ length: 20 }, (_, i) => item(atk, "mythic", `a${i}`));
     expect(totalsOf(many).atkPct).toBe(ATK_CAP);
-    const lucky = cd.flatMap((c) => [item(c.id, "mythic", `${c.id}1`), item(c.id, "mythic", `${c.id}2`)]);
+    const lucky = Array.from({length: 10}, (_, i) => item(cd[0]!.id, "mythic", `cdr${i}`));
     expect(totalsOf([...lucky, ...lucky, ...lucky]).luckPct).toBe(LUCK_CAP);
   });
 
@@ -112,14 +110,14 @@ describe("adding a bench up", () => {
 });
 
 describe("what fits where", () => {
-  it("keeps a colony's trait out of the anthill and everyone else's colony", () => {
-    const mine = TRAITS.find((t) => t.species === "fire")!;
+  it("allows legacy species traits on any ant and the anthill", () => {
+    const mine = traitDef("fire.sting")!;
     expect(fitsScope(item(mine.id, "rare"), "fire")).toBe(true);
     expect(fitsScope(item(mine.id, "rare"), "ghost")).toBe(true);
-    expect(fitsScope(item(mine.id, "rare"), "hill")).toBe(false);
+    expect(fitsScope(item(mine.id, "rare"), "hill")).toBe(true);
   });
 
-  it("keeps a universal trait out of a colony", () => {
+  it("allows shared traits on any colony", () => {
     const shared = TRAITS.find((t) => t.species === null)!;
     expect(fitsScope(item(shared.id, "rare"), "hill")).toBe(true);
     expect(fitsScope(item(shared.id, "rare"), "fire")).toBe(true);
@@ -192,7 +190,7 @@ describe("finding one", () => {
     const universal = rollDrop(feed([0.1, 0.9]), [null]);
     expect(traitDef(universal!.def)?.species).toBeNull();
     const mine = rollDrop(feed([0.1, 0.9]), ["carpenter"]);
-    expect(traitDef(mine!.def)?.species).toBe("carpenter");
+    expect(traitDef(mine!.def)?.species).toBeNull();
   });
 });
 
@@ -243,11 +241,11 @@ describe("the bag and the benches", () => {
     expect(s.spare("hill").length).toBe(1);
   });
 
-  it("refuses an item that does not belong in that bench", () => {
+  it("moves any trait between anthill and species", () => {
     const s = rich();
-    const mine = TRAITS.find((t) => t.species === "fire")!;
+    const mine = traitDef("fire.sting")!;
     const one = s.findTrait(mine.id, "rare")!;
-    expect(s.equipTrait("hill", one.uid)).toBe(false);
+    expect(s.equipTrait("hill", one.uid)).toBe(true);
     expect(s.equipTrait("ghost", one.uid)).toBe(true);
     expect(s.equipTrait("fire", one.uid)).toBe(true);
     expect(s.bench("ghost")[0]).toBeNull();
@@ -256,8 +254,7 @@ describe("the bag and the benches", () => {
   it("refuses a sixth trait rather than pushing one out", () => {
     const s = rich();
     const shared = TRAITS.filter((t) => t.species === null);
-    const uids = shared.slice(0, TRAIT_SLOTS + 1)
-      .map((t) => s.findTrait(t.id, "common")!.uid);
+    const uids = Array.from({length: TRAIT_SLOTS + 1}, () => s.findTrait(shared[0]!.id, "common")!.uid);
     for (let i = 0; i < TRAIT_SLOTS; i++) expect(s.equipTrait("hill", uids[i]!)).toBe(true);
     expect(s.equipTrait("hill", uids[TRAIT_SLOTS]!), "a sixth went in").toBe(false);
     expect(s.bench("hill").filter(Boolean).length).toBe(TRAIT_SLOTS);
@@ -298,14 +295,14 @@ describe("reading a save back", () => {
     expect(p.wearing.hill?.[0]).toBeNull();
   });
 
-  it("refuses an item worn in a bench it does not belong to", () => {
-    const mine = TRAITS.find((t) => t.species === "fire")!;
+  it("accepts a species trait in the anthill while deduplicating its copy", () => {
+    const mine = traitDef("fire.sting")!;
     const p = normalise({
       bag: [{ uid: "t1", def: mine.id, tier: "rare" }],
       wearing: { hill: ["t1", null, null, null, null], fire: ["t1", null, null, null, null] },
     });
-    expect(p.wearing.hill?.[0], "a colony's trait was worn in the anthill").toBeNull();
-    expect(p.wearing.fire?.[0]).toBe("t1");
+    expect(p.wearing.hill?.[0]).toBe("t1");
+    expect(p.wearing.fire?.[0]).toBeNull();
   });
 
   /**
@@ -397,7 +394,7 @@ describe("slots opening immediately, then every five chapters", () => {
   it("equips every rarity on a level-zero species", () => {
     const s=at(1);
     for(const tier of TRAIT_TIERS) {
-      const one=s.findTrait(TRAITS.find(t=>t.species==="fire")!.id,tier)!;
+      const one=s.findTrait(traitDef("fire.sting")!.id,tier)!;
       expect(s.equipTrait("bullet",one.uid,0)).toBe(true);
       expect(s.bench("bullet")[0]?.uid).toBe(one.uid);
       expect(s.get().research.bullet?.level??0).toBe(0);
@@ -417,7 +414,7 @@ describe("slots opening immediately, then every five chapters", () => {
   });
   it("keeps an equipped copy saved when a slot closes after troop losses", () => {
     const s=at(5);
-    const held=TRAITS.filter(t=>t.species===null).slice(0,2).map(t=>s.findTrait(t.id,"mythic")!);
+    const held=Array.from({length:2},()=>s.findTrait("u.mandible","mythic")!);
     held.forEach(i=>expect(s.equipTrait("hill",i.uid)).toBe(true));
     const both=s.benchTotals("hill");
     s.update(p=>{p.colony=COLONY_START;});
@@ -449,4 +446,34 @@ it("recalculates an existing CDR trait and its power on equip, remove and reload
   expect(reopened.powerFor("fire").total).toBe(before + 20);
   expect(reopened.unequipTrait("fire",0)).toBe(true);
   expect(reopened.powerFor("fire").total).toBe(before);
+});
+
+it("migrates mixed legacy copies without losing rarity, uid, loadouts or fusion eligibility", () => {
+  const saved = normalise({
+    bag: [
+      {uid:"t1",def:"fire.sting",tier:"rare"},
+      {uid:"t2",def:"carpenter.galleries",tier:"mythic"},
+      {uid:"t3",def:"ghost.relay",tier:"common"},
+      {uid:"t4",def:"u.raid",tier:"common"},
+      {uid:"t5",def:"pharaoh.budding",tier:"common"},
+    ],
+    wearing: {fire:["t1"], hill:["t2"]},
+  });
+  expect(saved.bag.map(i=>[i.uid,i.def,i.tier])).toEqual([
+    ["t1","u.mandible","rare"],["t2","u.cuticle","mythic"],
+    ["t3","u.gland","common"],["t4","u.mandible","common"],["t5","u.gland","common"],
+  ]);
+  const memory = new MemoryStore();
+  const store = new ProfileStore(memory);
+  store.update(p => Object.assign(p, saved, {pheromone:100000}));
+  expect(store.bench("fire")[0]?.uid).toBe("t1");
+  expect(store.bench("hill")[0]?.uid).toBe("t2");
+  expect(store.equipTrait("hill","t1",0)).toBe(true);
+  expect(store.bench("fire")[0]).toBeNull();
+  expect(store.spares("common")).toHaveLength(3);
+  expect(store.fuse("common",()=>0)?.tier).toBe("uncommon");
+  const reopened = new ProfileStore(memory);
+  expect(reopened.bag.some(i=>i.uid==="t1")).toBe(true);
+  expect(reopened.bag.some(i=>i.uid==="t2")).toBe(true);
+  expect(reopened.bench("hill")[0]?.uid).toBe("t1");
 });

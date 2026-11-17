@@ -17,7 +17,7 @@
  *             than a bug (engine/state.ts rolls it off the seeded stream)
  *
  * WHERE THEY GO. Every trait can be equipped by any species, at any research level.
- * The Anthill retains its universal-trait loadout. Each owned copy is equipped in
+ * The same traits can also be equipped on the Anthill. Each owned copy is equipped in
  * one place at a time, so moving it never doubles its contribution.
  *
  * WHAT THE ENGINE SEES is three finished percentages (PlayerMods.atkPct / defPct /
@@ -122,17 +122,9 @@ export interface TraitDef {
   name: string;
   /** What it is, in one line — real biology, like everything else in this game. */
   note: string;
-  /** `null` means universal: it goes in the anthill, not in a colony. */
+  /** All traits are universal; retained for saved reward metadata. */
   species: SpeciesId | null;
-  /**
-   * The mark the tile is drawn with, named rather than carried (PROJECT_GUIDE.md §10 — no emoji,
-   * and `Product.icon` / `Chamber.icon` name a mark the same way).
-   *
-   * It only has to be distinct WITHIN A BENCH, and a bench is either the eight universal
-   * traits or one colony's five — so the five colony marks repeat across all eight, which
-   * is the reason a set this small can cover fifty-three traits without any of them
-   * looking like each other where it matters.
-   */
+  /** Shared stat artwork. */
   icon: string;
 }
 
@@ -162,126 +154,73 @@ export function effectFigure(def: TraitDef, tier: TraitTier): string {
   return def.kind === "cooldown" ? `${t.luck}%` : `+${t.stat}%`;
 }
 
-/**
- * THE UNIVERSAL TRAITS — the anthill's five.
- *
- * These are about the nest rather than the caste, which is why they belong to the account
- * and not to a colony: a deeper brood chamber helps whichever colony is fielded.
- */
-const UNIVERSAL: readonly Omit<TraitDef, "species">[] = [
-  { id: "u.mandible", kind: "attack", name: "Sharpened Mandibles", icon: "attack",
-    note: "The cutting edge is sclerotised harder in a well-fed nest." },
-  { id: "u.raid", kind: "attack", name: "Raiding Instinct", icon: "flag",
-    note: "Scouts that find a weakness bring the column straight back to it." },
-  { id: "u.majors", kind: "attack", name: "Major Caste", icon: "crown",
-    note: "A nest with food to spare rears bigger soldiers." },
-  { id: "u.cuticle", kind: "defence", name: "Thickened Cuticle", icon: "defence",
-    note: "Layered chitin, laid down over a long season underground." },
-  { id: "u.rampart", kind: "defence", name: "Rampart Building", icon: "anthill",
-    note: "Excavated spoil piled at the entrance, and rebuilt nightly." },
-  { id: "u.brood", kind: "defence", name: "Brood Discipline", icon: "brood",
-    note: "Workers that hold their ground over the brood rather than scatter." },
-  { id: "u.gland", kind: "cooldown", name: "Glandular Surplus", icon: "flask",
-    note: "A reservoir refilled faster than it is spent." },
-  { id: "u.trophallaxis", kind: "cooldown", name: "Trophallaxis", icon: "granary",
-    note: "Mouth-to-mouth feeding moves reserves through the colony in hours." },
-];
-
-/**
- * The five marks a colony's five traits are drawn with, in order.
- *
- * The same five for every colony on purpose: a bench only ever shows ONE colony's traits,
- * so within the thing a player is looking at they are all distinct — and across colonies
- * the shape becomes a pattern rather than fifty-three marks to learn. Two attack, two
- * defence, one cooldown, which is the order every colony's list is written in.
- */
-const SPECIES_MARKS = ["attack", "spark", "defence", "anthill", "clock"] as const;
-
-/**
- * FIVE PER COLONY, so a colony's five slots can be filled with five DIFFERENT traits
- * rather than duplicates. Two attack, two defence, one cooldown each — the same shape
- * everywhere, so a player learns one pattern and it holds for all eight.
- *
- * Every one is that species' own real behaviour, which is the rule the whole game is
- * written to: the abilities are real biology, and a trait that was invented would be the
- * one thing on the screen that is not.
- */
-const PER_SPECIES: Record<SpeciesId, readonly [string, TraitKind, string, string][]> = {
-  ghost: [
-    ["silent", "attack", "Silent Approach", "A trail laid so faintly that nothing else reads it."],
-    ["ambush", "attack", "Ambush Timing", "The column waits out of contact and arrives all at once."],
-    ["mask", "defence", "Pheromone Mask", "Colony scent worn thin enough to pass for nobody."],
-    ["fissure", "defence", "Fissure Nesting", "Galleries in cracks too narrow to be followed into."],
-    ["relay", "cooldown", "Tunnel Relay", "A finished gallery is the start of the next one."],
-  ],
-  pharaoh: [
-    ["swarmfound", "attack", "Swarm Founding", "Several queens push in the same direction at once."],
-    ["persist", "attack", "Persistent Foraging", "A trail that is worked all day rather than in bursts."],
-    ["satellite", "defence", "Satellite Nests", "Losing one nest costs the colony a fraction of itself."],
-    ["polygyny", "defence", "Polygyny", "More than one queen, so no single loss ends it."],
-    ["budding", "cooldown", "Budding Cycle", "A colony always part-way through splitting again."],
-  ],
-  leafcutter: [
-    ["shear", "attack", "Shearing Cut", "Mandibles that vibrate as they cut, at a thousand hertz."],
-    ["column", "attack", "Cutting Column", "A carrying line that never breaks, in either direction."],
-    ["fungus", "defence", "Fungal Antibiotics", "A garden dosed against everything that would take it."],
-    ["waste", "defence", "Waste Management", "Refuse carried far enough out to be somebody else's problem."],
-    ["garden", "cooldown", "Garden Yield", "A crop that comes in faster than it is eaten."],
-  ],
-  fire: [
-    ["sting", "attack", "Alkaloid Sting", "Venom that burns rather than paralyses, and keeps burning."],
-    ["mass", "attack", "Mass Recruitment", "Every worker within reach arrives inside a minute."],
-    ["raft", "defence", "Living Raft", "Bodies linked into a hull that floats a whole colony."],
-    ["mound", "defence", "Mound Nesting", "A dome that drains, warms and takes a beating."],
-    ["reburn", "cooldown", "Reignition", "Ground that catches again while it is still warm."],
-  ],
-  army: [
-    ["bivouac", "attack", "Bivouac Assault", "The nest itself moves onto what it is eating."],
-    ["shear2", "attack", "Shearing Jaws", "Jaws that close hard enough to be used as sutures."],
-    ["bridge", "defence", "Living Bridge", "Workers that become the ground the column crosses on."],
-    ["column2", "defence", "Column Guard", "Majors standing outward along the whole length of the raid."],
-    ["nomad", "cooldown", "Nomadic Phase", "A colony that is never settled long enough to be slow."],
-  ],
-  carpenter: [
-    ["excavate", "attack", "Excavating Jaws", "Jaws shaped for wood, used on something softer."],
-    ["formic", "attack", "Formic Spray", "Acid sprayed from a distance, into the wound it just made."],
-    ["galleries", "defence", "Smooth Galleries", "Chambers cut so clean there is nothing to grip."],
-    ["heartwood", "defence", "Heartwood Nesting", "A nest inside the hardest part of a standing tree."],
-    ["repair", "cooldown", "Rapid Repair", "Damage closed up before the colony has finished noticing it."],
-  ],
-  bullet: [
-    ["poneratoxin", "attack", "Poneratoxin", "The most painful sting there is, and it does not wear off."],
-    ["solitary", "attack", "Solitary Hunter", "A forager that needs nobody's help to bring something down."],
-    ["armour", "defence", "Heavy Armour", "A body built to be hit and carry on."],
-    ["buttress", "defence", "Buttress Nesting", "A nest at the base of a tree, with one way in."],
-    ["venom", "cooldown", "Venom Reserve", "A gland that is refilling before the last sting has landed."],
-  ],
-  demon: [
-    ["swarmdrive", "attack", "Swarm Drive", "A push that does not stop for its own losses."],
-    ["terror", "attack", "Terror Scent", "An alarm pheromone that empties the ground ahead of it."],
-    ["carapace", "defence", "Blackened Carapace", "Armour that gives nothing away, including damage."],
-    ["retreat", "defence", "Ordered Retreat", "A colony that gives ground without ever breaking."],
-    ["fervour", "cooldown", "Fervour", "A colony that is always ready, whatever it just did."],
-  ],
-};
-
-/** Every trait in the game, universal first. */
+/** Three shared traits. Copies differ by rarity and uid, never by species. */
 export const TRAITS: readonly TraitDef[] = [
-  ...UNIVERSAL.map((t) => ({ ...t, species: null })),
-  ...(Object.keys(PER_SPECIES) as SpeciesId[]).flatMap((id) =>
-    PER_SPECIES[id].map(([suffix, kind, name, note], i) => ({
-      id: `${id}.${suffix}`, kind, name, note, species: id,
-      icon: SPECIES_MARKS[i] ?? "star",
-    }))),
+  { id: "u.mandible", kind: "attack", name: "Attack", icon: "attack", species: null,
+    note: "Increases attack when equipped on any ant or the anthill." },
+  { id: "u.cuticle", kind: "defence", name: "Defence", icon: "defence", species: null,
+    note: "Increases defence when equipped on any ant or the anthill." },
+  { id: "u.gland", kind: "cooldown", name: "CDR chance", icon: "clock", species: null,
+    note: "A chance at match start to reduce ability cooldown by one turn." },
 ];
 
-const BY_ID = new Map(TRAITS.map((t) => [t.id, t]));
+/** Old saves and fixed rewards retain their ids; resolve them by their actual stat. */
+const LEGACY_KIND: Readonly<Record<string, TraitKind>> = {
+  "u.mandible": "attack",
+  "u.raid": "attack",
+  "u.majors": "attack",
+  "u.cuticle": "defence",
+  "u.rampart": "defence",
+  "u.brood": "defence",
+  "u.gland": "cooldown",
+  "u.trophallaxis": "cooldown",
+  "ghost.silent": "attack",
+  "ghost.ambush": "attack",
+  "ghost.mask": "defence",
+  "ghost.fissure": "defence",
+  "ghost.relay": "cooldown",
+  "pharaoh.swarmfound": "attack",
+  "pharaoh.persist": "attack",
+  "pharaoh.satellite": "defence",
+  "pharaoh.polygyny": "defence",
+  "pharaoh.budding": "cooldown",
+  "leafcutter.shear": "attack",
+  "leafcutter.column": "attack",
+  "leafcutter.fungus": "defence",
+  "leafcutter.waste": "defence",
+  "leafcutter.garden": "cooldown",
+  "fire.sting": "attack",
+  "fire.mass": "attack",
+  "fire.raft": "defence",
+  "fire.mound": "defence",
+  "fire.reburn": "cooldown",
+  "army.bivouac": "attack",
+  "army.shear2": "attack",
+  "army.bridge": "defence",
+  "army.column2": "defence",
+  "army.nomad": "cooldown",
+  "carpenter.excavate": "attack",
+  "carpenter.formic": "attack",
+  "carpenter.galleries": "defence",
+  "carpenter.heartwood": "defence",
+  "carpenter.repair": "cooldown",
+  "bullet.poneratoxin": "attack",
+  "bullet.solitary": "attack",
+  "bullet.armour": "defence",
+  "bullet.buttress": "defence",
+  "bullet.venom": "cooldown",
+  "demon.swarmdrive": "attack",
+  "demon.terror": "attack",
+  "demon.carapace": "defence",
+  "demon.retreat": "defence",
+  "demon.fervour": "cooldown"
+};
+const BY_KIND = new Map(TRAITS.map(t => [t.kind, t]));
+export const traitDef = (id: string): TraitDef | null =>
+  BY_KIND.get(LEGACY_KIND[id] as TraitKind) ?? null;
 
-export const traitDef = (id: string): TraitDef | null => BY_ID.get(id) ?? null;
-
-/** Traits grouped by their biological origin, for drops and collection labels. */
-export const traitsFor = (scope: TraitScope): TraitDef[] =>
-  TRAITS.filter((t) => (scope === "hill" ? t.species === null : t.species === scope));
+/** Every loadout draws from the same inventory. */
+export const traitsFor = (_scope: TraitScope): TraitDef[] => [...TRAITS];
 
 /** Which set of five slots: the anthill's, or one colony's. */
 export type TraitScope = "hill" | SpeciesId;
@@ -309,10 +248,8 @@ export interface TraitItem {
 export const itemDef = (item: TraitItem): TraitDef | null => traitDef(item.def);
 
 /** Does this item belong in that bench? */
-export function fitsScope(item: TraitItem, scope: TraitScope): boolean {
-  const def = itemDef(item);
-  if (!def) return false;
-  return scope === "hill" ? def.species === null : true;
+export function fitsScope(item: TraitItem, _scope: TraitScope): boolean {
+  return itemDef(item) !== null;
 }
 
 /* -------------------------------------------------------------- THE TOTALS */
@@ -432,10 +369,7 @@ export const WIN_LARVA = 1;
  * `random` is injected rather than reached for, so a test is not a coin flip and so the
  * hatch can later draw from whatever stream it wants to be verifiable against.
  *
- * `from` is the set of colonies whose traits can turn up, with `null` in it for the
- * universal ones. It is passed rather than assumed because the hatch draws only from what
- * the player HAS: a mythic for a colony they may never buy is a mythic they cannot use,
- * and the whole point of the top tier is that finding one is the best thing that happens.
+ * Nonempty legacy pool requests all draw from the same three shared traits.
  */
 export function rollDrop(
   random: () => number, from: readonly (SpeciesId | null)[],
@@ -444,16 +378,10 @@ export function rollDrop(
   return def ? { def: def.id, tier: rollTier(random) } : null;
 }
 
-/**
- * Roll one trait out of the pools given.
- *
- * Uniform over the TRAITS, not over the pools: a colony's five and the universal eight are
- * different sizes, and picking a pool first and a trait second would make a universal
- * trait rarer the more colonies the player owns — a collection that gets worse as it grows.
- */
+/** Roll a shared stat trait independently of the player\'s species collection. */
 export function rollTrait(
   random: () => number, from: readonly (SpeciesId | null)[],
 ): TraitDef | null {
-  const pool = TRAITS.filter((t) => from.includes(t.species));
+  const pool = from.length ? TRAITS : [];
   return pool[Math.floor(random() * pool.length)] ?? null;
 }

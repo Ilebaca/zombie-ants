@@ -273,7 +273,7 @@ describe("a save that names a colony the game no longer has", () => {
     expect(p.skins).not.toContain("we_silk");
     expect(p.skins).not.toContain("we_verdigris");
     expect(p.bag.some((i) => i.def === "weaver.silk"), "a Weaver trait survived").toBe(false);
-    expect(p.bag.some((i) => i.def === "carpenter.excavate"), "a good trait was thrown away").toBe(true);
+    expect(p.bag.some((i) => i.uid === "t2" && i.def === "u.mandible"), "a good trait was thrown away").toBe(true);
     expect(p.bag.some((i) => i.def === "u.mandible"), "a universal trait was thrown away").toBe(true);
     expect(Object.keys(p.research)).not.toContain("weaver");
   });

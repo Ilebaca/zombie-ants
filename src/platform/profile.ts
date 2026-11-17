@@ -776,7 +776,7 @@ function bagAndBenches(p: Partial<Profile>): Pick<Profile, "bag" | "wearing" | "
     if (!uid || seen.has(uid) || !traitDef(def)) continue;
     if (!TRAIT_TIERS.includes(item.tier as TraitTier)) continue;
     seen.add(uid);
-    bag.push({ uid, def, tier: item.tier as TraitTier });
+    bag.push({ uid, def: traitDef(def)!.id, tier: item.tier as TraitTier });
     if (bag.length >= BAG_MAX) break;
   }
 
@@ -1063,7 +1063,7 @@ export class ProfileStore {
     if (!traitDef(def) || !TRAIT_TIERS.includes(tier)) return null;
     if (this.profile.bag.length >= BAG_MAX) return null;
     const uid = `t${this.profile.traitSeq}`;
-    const item: TraitItem = { uid, def, tier };
+    const item: TraitItem = { uid, def: traitDef(def)!.id, tier };
     this.update((p) => {
       p.traitSeq++;
       p.bag = [item, ...p.bag];
