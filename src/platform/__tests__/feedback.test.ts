@@ -121,7 +121,7 @@ afterEach(() => vi.useRealTimers());
 
 const CUES: Cue[] = [
   "tap", "move", "travel", "fight", "destroy", "ability", "hive", "endTurn",
-  "win", "lose", "claim", "deny",
+  "win", "lose", "claim", "crystalCollect", "deny",
 ];
 
 describe("before the first gesture", () => {
@@ -940,5 +940,68 @@ describe("the music", () => {
     const before = started.length;
     runClock(ctx, 4);
     expect(started.length).toBe(before);
+  });
+});
+
+describe("the supplied crystal recording", () => {
+  it("preloads once and replaces synthesis with the decoded recording, respecting mute and suspension", async () => {
+    const {ctx, nodes, freqs} = fakeAudio("running", true);
+    const buffer = {duration:0.82};
+    ctx.decodeAudioData = vi.fn(async () => buffer);
+    const fetchSound = vi.fn(async (_url: string) => ({ok:true,arrayBuffer:async()=>new ArrayBuffer(8)}));
+    vi.stubGlobal("fetch",fetchSound);
+    const fb = new WebFeedback(()=>ctx as unknown as AudioContext,()=>{});
+    try {
+      fb.play("crystalCollect");
+      expect(fetchSound).not.toHaveBeenCalled();
+      fb.unlock(); fb.unlock();
+      for (let i=0;i<8;i++) await Promise.resolve();
+      expect(fetchSound).toHaveBeenCalledTimes(1);
+      expect(fetchSound.mock.calls[0]?.[0]).toMatch(/audio\/crystal-collect\.wav$/);
+      const before=nodes.sources;
+      fb.play("crystalCollect");
+      expect(nodes.sources).toBe(before+1);
+      expect(freqs).toEqual([]);
+      fb.setSound(false); fb.play("crystalCollect");
+      expect(nodes.sources).toBe(before+1);
+      fb.setSound(true); fb.setAwake(false); fb.play("crystalCollect");
+      expect(nodes.sources).toBe(before+1);
+      fb.setAwake(true); fb.play("crystalCollect");
+      expect(nodes.sources).toBe(before+2);
+    } finally { fb.close(); vi.unstubAllGlobals(); }
+  });
+
+  it("uses an immediate fallback while loading, without playing a delayed collection", async () => {
+    const {ctx,nodes,started}=fakeAudio("running",true);
+    ctx.decodeAudioData=vi.fn(async()=>({duration:0.82}));
+    let finish: ((value: unknown)=>void) | undefined;
+    vi.stubGlobal("fetch",vi.fn(()=>new Promise(resolve=>{finish=resolve;})));
+    const fb=new WebFeedback(()=>ctx as unknown as AudioContext,()=>{});
+    try {
+      fb.unlock(); fb.play("crystalCollect");
+      expect(started).toHaveLength(2);
+      expect(nodes.sources).toBe(0);
+      finish?.({ok:true,arrayBuffer:async()=>new ArrayBuffer(8)});
+      for(let i=0;i<8;i++) await Promise.resolve();
+      expect(started).toHaveLength(2);
+      expect(nodes.sources).toBe(0);
+      fb.play("crystalCollect");
+      expect(nodes.sources).toBe(1);
+    } finally { fb.close(); vi.unstubAllGlobals(); }
+  });
+
+  it("keeps collection audible through synthesis if the file fails", async () => {
+    const {ctx,started}=fakeAudio("running",true);
+    ctx.decodeAudioData=vi.fn(async()=>{throw new Error("bad audio");});
+    vi.stubGlobal("fetch",vi.fn(async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer(8)})));
+    const fb=new WebFeedback(()=>ctx as unknown as AudioContext,()=>{});
+    try {
+      fb.unlock();
+      for(let i=0;i<8;i++) await Promise.resolve();
+      fb.play("crystalCollect");
+      expect(started).toHaveLength(2);
+      fb.play("tap");
+      expect(started.length).toBeGreaterThan(2);
+    } finally { fb.close(); vi.unstubAllGlobals(); }
   });
 });

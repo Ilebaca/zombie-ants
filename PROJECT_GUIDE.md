@@ -5971,3 +5971,17 @@ At least 25 spaces remain visible; capacity grows in full rows with an empty spa
 Tapping an item offers owned loadouts in an anchored popup, without scrolling or
 equipping automatically. Slots on species and Anthill retain the badge silhouette.
 Fuse spares shows its title and available options, without explanatory description.
+
+
+### Crystal collection recording (17 November 2026)
+
+The supplied Crystal_Collect_Detailed.wav is preserved as public/audio/crystal-collect.wav
+(0.82 seconds, mono PCM). SOUNDS maps only crystalCollect to that recording. WebFeedback
+prefetches and decodes manifest cues on unlock; pending/failed recordings use synthesis
+without delayed playback. Sound/mute and app suspension still use the common audio device.
+The offline worker precaches the file, including before the first collection.
+ProfileStore.onCrystalCollected emits once after a persisted increase in pheromone,
+covering quest/level/road rewards, gifts, mail, purchases and daily challenge rewards.
+Reading/restoring saves, account switches, spending, failed claims and other currencies
+emit nothing. App subscribes only to the current profile and unsubscribes on sign-out,
+account change and destroy. Presentation failures never undo or interrupt a saved reward.

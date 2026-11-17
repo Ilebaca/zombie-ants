@@ -44,9 +44,9 @@ export interface SoundManifest {
   tracks?: Partial<Record<Track, string>>;
 }
 
-/** Nothing yet: the game is fully synthesised. See the note above to replace a sound. */
+/** Supplied crystal receipt; all other cues retain their synthesised sound. */
 export const SOUNDS: SoundManifest = {
-  cues: {},
+  cues: { crystalCollect: "audio/crystal-collect.wav" },
   tracks: {},
 };
 

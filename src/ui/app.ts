@@ -174,6 +174,7 @@ export class App {
    * gesture, and the first press is the earliest honest one.
    */
   private readonly feedback: Feedback;
+  private dropCrystalSound: () => void = () => {};
   /** Redraw the home top bar in place. Set when home is built; a no-op before that. */
   private rebuildHomeBar: () => void = () => {};
   /** The challenge being played, if this match is one. */
@@ -437,6 +438,7 @@ export class App {
    */
   destroy(): void {
     this.destroyed = true;
+    this.dropCrystalSound();
     dismissTraitPopups(this.host, true);
     dismissAnthillPopup(this.host);
     dismissRewardReveal(this.host);
@@ -488,6 +490,7 @@ export class App {
    * same function fixes it.
    */
   private showSignIn(): void {
+    this.dropCrystalSound();
     this.activeScreen = "home";
     this.clearAccountView();
     this.host.appendChild(buildSignIn(this.accounts, {
@@ -557,6 +560,8 @@ export class App {
     this.feedback.setSound(p.sound);
     this.feedback.setMusicEnabled(p.music);
     this.feedback.setHaptics(p.haptics);
+    this.dropCrystalSound();
+    this.dropCrystalSound = this.profile.onCrystalCollected(() => this.feedback.play("crystalCollect"));
   }
 
   /* ----------------------------------------------------------------------- TOUR */

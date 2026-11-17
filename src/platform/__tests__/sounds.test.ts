@@ -16,8 +16,8 @@ describe("the sound manifest", () => {
    * working game rather than a missing dependency, and a test says so because "add the
    * files" is exactly the kind of half-done change that would otherwise ship silent.
    */
-  it("ships empty, and that is a complete game", () => {
-    expect(Object.keys(SOUNDS.cues ?? {}), "a cue names a file that is not in the repo").toEqual([]);
+  it("ships the supplied crystal cue while leaving other sounds synthesised", () => {
+    expect(SOUNDS.cues).toEqual({crystalCollect: "audio/crystal-collect.wav"});
     expect(Object.keys(SOUNDS.tracks ?? {}), "a bed names a file that is not in the repo").toEqual([]);
   });
 

@@ -172,6 +172,8 @@ export default defineConfig({
           // seconds on EVERY launch and the second one should have the picture from the
           // first frame rather than a second of soil.
           "./splash.webp",
+          // The supplied crystal collection cue is available even before its first play.
+          "./audio/crystal-collect.wav",
           // Everything the build just emitted — EXCEPT `version.json`, which the worker
           // deliberately never answers from a cache (see below). Precaching it would be a
           // file kept for a request that can never reach it.

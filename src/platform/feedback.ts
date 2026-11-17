@@ -38,6 +38,7 @@ export type Cue =
   | "win"
   | "lose"
   | "claim"      // a reward collected: quest, road, granary, gift
+  | "crystalCollect" // pheromone crystals credited to the purse
   | "deny"       // a tap the game refused
   // THE HATCH IS THREE CUES, NOT ONE, and that is the point of it. The whole feature is a
   // moment (PROJECT_GUIDE.md — the lucky hatch): the egg gives way, and then the TIER arrives
@@ -110,6 +111,7 @@ const BUZZ: Record<Cue, number | number[]> = {
   win: [30, 80, 30, 80, 60],
   lose: 90,
   claim: 14,
+  crystalCollect: 14,
   deny: [8, 30, 8],
   hatch: [10, 40, 16],
   prize: 22,
@@ -165,6 +167,10 @@ const VOICES: Record<Cue, Voice[]> = {
   lose: [
     { type: "sine", from: 392, to: 392, dur: 0.2, gain: 0.288 },
     { type: "sine", from: 311, to: 233, dur: 0.5, gain: 0.288, at: 0.16 },
+  ],
+  crystalCollect: [
+    { type: "sine", from: 784, to: 1046, dur: 0.1, gain: 0.288 },
+    { type: "sine", from: 1046, to: 1318, dur: 0.14, gain: 0.224, at: 0.07 },
   ],
   claim: [
     { type: "sine", from: 784, to: 1046, dur: 0.1, gain: 0.288 },
@@ -1076,6 +1082,8 @@ export class WebFeedback implements Feedback {
         this.musicBus.connect(this.master);
         this.noise = makeNoise(this.ctx);
       }
+      // Decode supplied cues ahead of collection; never play them late if still loading.
+      for (const path of Object.values(SOUNDS.cues ?? {})) this.sample(path);
       // A REFUSED RESUME IS THE ORDINARY CASE, so its rejection is swallowed. This is
       // called at BOOT as well as on the first press (§ THE MUSIC STARTS AT BOOT WHERE
       // THE BROWSER ALLOWS IT), and before a gesture most browsers reject it — an

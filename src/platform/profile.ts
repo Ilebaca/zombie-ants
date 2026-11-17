@@ -893,6 +893,7 @@ function granaryElapsed(since: number, now: number): number {
 
 export class ProfileStore {
   private profile: Profile;
+  private crystalListeners = new Set<() => void>();
 
   /**
    * `key` is which SAVE this store is reading.
@@ -944,11 +945,23 @@ export class ProfileStore {
     return { store: this.store, key: this.key };
   }
 
+  /** Crystal receipts only: opening/restoring a save and spending never emit a collection. */
+  onCrystalCollected(listener: () => void): () => void {
+    this.crystalListeners.add(listener);
+    return () => { this.crystalListeners.delete(listener); };
+  }
+
   /** Apply a change and persist. The callback receives a mutable draft. */
   update(fn: (p: Profile) => void): Readonly<Profile> {
+    const beforeCrystals = this.profile.pheromone;
     fn(this.profile);
     this.profile = normalise(this.profile);
     writeJson(this.store, this.key, this.profile);
+    if (this.profile.pheromone > beforeCrystals) {
+      for (const listener of this.crystalListeners) {
+        try { listener(); } catch { /* Presentation must never interrupt a banked reward. */ }
+      }
+    }
     return this.profile;
   }
 
