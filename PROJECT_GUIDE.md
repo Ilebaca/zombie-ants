@@ -5947,3 +5947,10 @@ of the header, under the title. species-header-shade.svg supplies this decorativ
 layer, so the shared CSS background-image reset cannot erase it. It is absolute,
 noninteractive and aria-hidden; it adds no layout height or scroll behavior.
 Ghost's page background is #422B24. Cover files remain exclusive to species pages.
+
+### Species detail headings (17 November 2026)
+
+The ability-name and The colony headings above the two lower detail blocks are
+removed. Keep each block's shared frame and accessible section name. Internal
+Signature and In the field labels remain part of the colony information.
+Ghost's exclusive species-scene cover uses the replacement supplied in Ghost.zip.

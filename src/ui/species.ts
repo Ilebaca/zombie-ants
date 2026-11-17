@@ -100,11 +100,10 @@ export function buildSpeciesPage(store: ProfileStore, opts: SpeciesPageOptions):
       updatePowerTag(rating, store.powerFor(id).total, {level:store.get().research[id]?.level ?? 0, owned:store.isUnlocked(id)});
     } }));
 
-    page.appendChild(el("div", "secthead", species.ability.name));
-    page.appendChild(abilityCard(id));
-
-    page.appendChild(el("div", "secthead", "The colony"));
-    page.appendChild(loreCard(id));
+    page.append(
+      detailBlock(abilityCard(id), species.ability.name),
+      detailBlock(loreCard(id), "The colony"),
+    );
 
     body.appendChild(page);
     root.appendChild(body);
@@ -264,6 +263,15 @@ function statCard(kind: TraitKind, label: string, value: string): HTMLElement {
 }
 
 /* --------------------------------------------------------------------- THE ABILITY */
+
+/** Preserve the shared frame and accessible section name without a visible heading. */
+function detailBlock(card: HTMLElement, label: string): HTMLElement {
+  const block = el("section", "panel-group");
+  block.setAttribute("aria-label", label);
+  card.dataset.groupRow = "";
+  block.appendChild(card);
+  return block;
+}
 
 /** Base ability rules; the level-based recharge chance is shown with the stats. */
 function abilityCard(id: SpeciesId): HTMLElement {
