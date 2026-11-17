@@ -1222,11 +1222,13 @@ describe("legacy markup parity", () => {
     const root = buildSpeciesPage(store(), { species: "fire", onBack: () => {} });
     expect(root.id).toBe("antup");
     for (const cls of ["spgwrap", "spghero", "spgstat", "spgdone", "rb-seg",
-      "rb-pip", "spgupgrade", "spgcard", "spgchip", "secthead"]) {
+      "rb-pip", "spgupgrade", "spgcard", "spgchip"]) {
       expect(landmarks(root), `.${cls} missing`).toContain(cls);
     }
     expect(root.querySelector("#aupTitle")?.textContent).toBe("Fire Ant");
     expect(root.querySelector("#aupSub"), "the subtitle is back").toBeNull();
+    expect(root.querySelector(".secthead"), "detail headings should be removed").toBeNull();
+    expect(root.querySelectorAll("#aupBody > section.panel-group")).toHaveLength(2);
     expect(root.querySelector("#aupBack")).toBeTruthy();
     expect(root.querySelector("#aupPort")).toBeNull();
     expect(root.querySelector("#aupCover img")).toBeTruthy();
