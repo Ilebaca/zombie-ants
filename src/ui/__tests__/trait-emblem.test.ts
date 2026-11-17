@@ -47,5 +47,5 @@ it("uses the same stat and rarity badge in a full-screen reward reveal", () => {
   const art = reveal.querySelector(".reward-emblem .trait-emblem") as SVGSVGElement;
   expect(art.dataset.kind).toBe("cooldown");
   expect(art.dataset.tier).toBe("rare");
-  expect(reveal.querySelector(".reward-name")!.textContent).toBe("Glandular Surplus");
+  expect(reveal.querySelector(".reward-name")!.textContent).toBe("CDR chance");
 });

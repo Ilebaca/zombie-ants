@@ -1725,9 +1725,7 @@ export class ProfileStore {
    * returns the item so the screen has something to reveal, and `null` when the player
    * cannot afford it — the same contract every other spend on this store has.
    *
-   * WHICH TRAITS. The universal ones, and every colony the player actually HAS. A mythic
-   * for a colony they may never buy is a mythic they cannot use, and the whole point of
-   * the tier is that finding one is the best thing that happens in the feature.
+   * Every trait stat is shared by all species and Anthill; ownership never limits drops.
    */
   hatch(random: () => number = Math.random): HatchPrize | null {
     if (!this.hatchOpen() || this.profile.larva < HATCH_COST || this.profile.bag.length >= BAG_MAX) return null;
