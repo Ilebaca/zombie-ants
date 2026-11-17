@@ -8,7 +8,7 @@ export const SPECIES_SCREEN_BACKGROUNDS: Readonly<Record<SpeciesId, string>> = {
   leafcutter: "#844523",
   fire: "#5E372F",
   pharaoh: "#A66016",
-  ghost: "#533846",
+  ghost: "#422B24",
   bullet: "#693B28",
   army: "#683A27",
   demon: "#4E1720",

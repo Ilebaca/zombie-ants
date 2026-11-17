@@ -20,6 +20,18 @@
   pointer-events: none;
 }
 
+/* A painted SVG gradient bypasses the shared background-image reset.
+   Fade ends at the header's lower edge, below the species title. */
+#app #antup .spgcover-shade {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(-1 * var(--species-cover-overlap));
+  width: 100%;
+  height: calc(var(--species-cover-overlap) - var(--block));
+  z-index: 1;
+  pointer-events: none;
+}
+
 /* Species upgrades use the shared card frame, gutters and spacing tokens. */
 #app #antup .spghero {
   position: relative;

@@ -13,6 +13,7 @@ import { antPortrait, buyButton, el, redraw, screenEl, screenHeader, toast } fro
 import { researchPips } from "./research";
 import { abilityArtFor } from "./abilityart";
 import { SPECIES_SCREEN_BACKGROUNDS, speciesCoverFor } from "./species-covers";
+import HEADER_SHADE from "./species-header-shade.svg";
 import { icon } from "./icons";
 import { combatStatIcon } from "./trait-emblem";
 import { buildTraitSlots } from "./traits";
@@ -222,6 +223,12 @@ function cover(id: SpeciesId, look: Look): HTMLElement {
     box.classList.add("plain");
     box.appendChild(antPortrait(id, 320, "spgcover-head", look));
   }
+  const shade = document.createElement("img");
+  shade.className = "spgcover-shade";
+  shade.src = HEADER_SHADE;
+  shade.alt = "";
+  shade.setAttribute("aria-hidden", "true");
+  box.appendChild(shade);
   return box;
 }
 

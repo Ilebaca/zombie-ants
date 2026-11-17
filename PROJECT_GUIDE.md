@@ -5938,3 +5938,12 @@ layer extending upward behind the existing header, including the screen top inse
 and standard header/body gaps. Shared spacing tokens determine that overlap.
 The header remains on top and clickable, and both layers scroll with the page.
 Square source images crop from the top as needed; they do not add layout height.
+
+### Species header shading (17 November 2026)
+
+Every individual species screen paints a black gradient over its scene, below
+the header controls: 5% opacity at the screen top, fading to 0% at the lower edge
+of the header, under the title. species-header-shade.svg supplies this decorative
+layer, so the shared CSS background-image reset cannot erase it. It is absolute,
+noninteractive and aria-hidden; it adds no layout height or scroll behavior.
+Ghost's page background is #422B24. Cover files remain exclusive to species pages.
