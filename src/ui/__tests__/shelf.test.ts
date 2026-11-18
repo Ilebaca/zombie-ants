@@ -20,7 +20,7 @@ const DIR = resolve(__dirname, "..", "shelf");
 
 /** The filename a product's painting has to carry, asked of the module itself — a
  *  second copy of the rule here would pass while the lookup used another one. */
-const fileFor = (id: string): string => `${shelfKey(id)}.webp`;
+const fileFor = (id: string): string => shelfKey(id);
 
 describe("a shelf is painted by dropping a file in", () => {
   /**
@@ -29,9 +29,9 @@ describe("a shelf is painted by dropping a file in", () => {
    * pattern stops at it. So the key is hyphenated, and a file named after the id
    * verbatim would be found by the build and matched by nothing.
    */
-  it("names every product with a filename that carries no dot", () => {
+  it("names every product with a key that carries no dot", () => {
     for (const p of SHOP_PRODUCTS) {
-      expect(fileFor(p.id), `${p.id} cannot be painted`).toMatch(/^[\w-]+\.webp$/);
+      expect(fileFor(p.id), `${p.id} cannot be painted`).toMatch(/^[\w-]+$/);
     }
   });
 
@@ -47,8 +47,8 @@ describe("a shelf is painted by dropping a file in", () => {
    */
   it("has a product for every file in the folder", () => {
     if (!existsSync(DIR)) return;             // nothing painted yet is a legal state
-    const owned = new Set([...SHOP_PRODUCTS.map((p) => fileFor(p.id)), "daily-gift.webp"]);
-    const stray = readdirSync(DIR).filter((f) => f.endsWith(".webp") && !owned.has(f));
+    const owned = new Set([...SHOP_PRODUCTS.map((p) => fileFor(p.id)), "daily-gift"]);
+    const stray = readdirSync(DIR).filter((f) => /\.(?:webp|png)$/.test(f) && !owned.has(f.replace(/\.(?:webp|png)$/, "")));
     expect(stray, "these paintings are not any product's and will never be shown")
       .toEqual([]);
   });

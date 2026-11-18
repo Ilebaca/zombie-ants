@@ -5985,3 +5985,16 @@ covering quest/level/road rewards, gifts, mail, purchases and daily challenge re
 Reading/restoring saves, account switches, spending, failed claims and other currencies
 emit nothing. App subscribes only to the current profile and unsubscribes on sign-out,
 account change and destroy. Presentation failures never undo or interrupt a saved reward.
+
+
+### Resource originals (18 November 2026)
+
+The supplied six 100x100 RGBA PNGs replace the two currency marks and their small/large
+piles. ui/hud/mycel.png and pheromone.png serve every shared resource mark; the four
+matching PNGs under ui/shelf serve shop offers and reward reveals. Keep their existing
+resource/product identities and layout sizes. hud.ts and shelf.ts accept PNG and WebP;
+the superseded six WebP copies are removed so each name resolves to one image.
+Deployment's RESOURCE_ORIGINALS set preserves these six PNG files byte for byte,
+including transparency and colour metadata. Do not apply lossy WebP conversion to them.
+Other artwork keeps its existing optimization policy. The source files are the supplied
+ZIP originals, with no resize, recolouring, sharpening or upscaling.

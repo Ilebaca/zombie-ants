@@ -9,6 +9,18 @@ from pathlib import Path
 from PIL import Image
 
 
+# Supplied resource originals keep their PNG pixels, colour metadata and exact bytes.
+# Compare a project-relative suffix so absolute roots work the same as deployment roots.
+RESOURCE_ORIGINALS = {
+    "src/ui/hud/mycel.png",
+    "src/ui/hud/pheromone.png",
+    "src/ui/shelf/mycel-650.png",
+    "src/ui/shelf/mycel-1500.png",
+    "src/ui/shelf/pher-420.png",
+    "src/ui/shelf/pher-900.png",
+}
+
+
 def encode(source):
     with Image.open(io.BytesIO(source)) as image:
         if getattr(image, "is_animated", False):
@@ -51,10 +63,15 @@ def optimise(roots, report):
             if not path.is_file() or path.suffix.lower() not in {".webp", ".png", ".jpg", ".jpeg"}:
                 continue
             source = path.read_bytes()
-            digest = hashlib.sha256(source).digest()
-            if digest not in encoded:
-                encoded[digest] = encode(source)
-            output, size, status = encoded[digest]
+            if Path(*path.parts[-4:]).as_posix() in RESOURCE_ORIGINALS:
+                with Image.open(io.BytesIO(source)) as image:
+                    image.load()
+                    output, size, status = source, image.size, "resource original: retained"
+            else:
+                digest = hashlib.sha256(source).digest()
+                if digest not in encoded:
+                    encoded[digest] = encode(source)
+                output, size, status = encoded[digest]
             if output != source:
                 path.write_bytes(output)
             rows.append(dict(path=path.as_posix(), before=len(source), after=len(output),

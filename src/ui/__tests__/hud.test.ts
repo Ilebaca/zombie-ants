@@ -23,12 +23,12 @@ import { defaultProfile } from "../../platform";
 const FOLDER = resolve(__dirname, "..", "hud");
 
 describe("the painted chrome marks", () => {
-  const files = readdirSync(FOLDER).filter((f) => f.endsWith(".webp"));
+  const files = readdirSync(FOLDER).filter((f) => /\.(?:webp|png)$/.test(f));
 
   it("finds every file in the folder", () => {
     expect(hudPainted(), "the glob and the folder disagree").toBe(files.length);
     for (const f of files) {
-      const name = f.replace(/\.webp$/, "");
+      const name = f.replace(/\.(?:webp|png)$/, "");
       expect(hudIcon(name), `${name} is in the folder and not in the table`).toBeTruthy();
     }
   });

@@ -26,11 +26,11 @@
  */
 const PAINTED: Record<string, string> = (() => {
   const found: Record<string, string> = {};
-  const files = import.meta.glob<string>("./hud/*.webp", {
+  const files = import.meta.glob<string>("./hud/*.{webp,png}", {
     eager: true, query: "?url", import: "default",
   });
   for (const [path, url] of Object.entries(files)) {
-    const name = /\/([\w-]+)\.webp$/.exec(path)?.[1];
+    const name = /\/([\w-]+)\.(?:webp|png)$/.exec(path)?.[1];
     if (name) found[name] = url;
   }
   return found;

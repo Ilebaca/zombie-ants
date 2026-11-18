@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from PIL import Image
-from optimize_images import encode, optimise
+from optimize_images import RESOURCE_ORIGINALS, encode, optimise
 
 
 class OptimiseImagesTest(unittest.TestCase):
@@ -48,6 +48,24 @@ class OptimiseImagesTest(unittest.TestCase):
             append_images=[Image.new("RGB", (32, 32), "blue")], duration=100, loop=0)
         source = stream.getvalue()
         self.assertEqual(encode(source)[0], source)
+
+    def test_supplied_resource_pngs_survive_deployment_byte_for_byte(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            stream = io.BytesIO()
+            image = Image.new("RGBA", (100, 100), (26, 64, 192, 128))
+            image.save(stream, "PNG", compress_level=0, dpi=(144, 144))
+            original = stream.getvalue()
+            self.assertLess(len(encode(original)[0]), len(original))
+            for name in RESOURCE_ORIGINALS:
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(original)
+            report = optimise([root / "src"], root / "report.json")
+            self.assertEqual(report["images"], 6)
+            self.assertEqual(report["after"], report["before"])
+            for name in RESOURCE_ORIGINALS:
+                self.assertEqual((root / name).read_bytes(), original)
 
     def test_report_accounts_for_duplicates_and_untouched_files(self):
         with tempfile.TemporaryDirectory() as directory:
