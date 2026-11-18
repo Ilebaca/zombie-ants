@@ -25,6 +25,8 @@ import { MemoryStore, ProfileStore, TOUR_VERSION, normalise, defaultProfile } fr
 import { App } from "../app";
 import { buildSettings } from "../settings";
 import { buildLeaderboard } from "../leaderboard";
+import { hudIcon } from "../hud";
+import { shelfArt } from "../shelf";
 
 HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement["getContext"];
 
@@ -40,10 +42,17 @@ const NASTY = `<img src=x onerror="boom()"><script>boom()</script>'"&`;
  * in for is the one asserted now: every image on screen is a BUNDLED ASSET the app built,
  * never a src or a handler that came out of a string somebody typed.
  */
+// Only the bundled replacement originals are allowed as PNGs.
+const RESOURCE_PNGS = new Set([
+  hudIcon("mycel"), hudIcon("pheromone"),
+  ...["mycel.650", "mycel.1500", "pher.420", "pher.900"].map(shelfArt),
+].filter((url): url is string => !!url));
+
 const strays = (root: ParentNode): Element[] =>
   Array.from(root.querySelectorAll("img")).filter(
     (img: HTMLImageElement) =>
-      !/\.webp(\?|$)/.test(img.getAttribute("src") ?? "") ||
+      (!/\.webp(\?|$)/.test(img.getAttribute("src") ?? "")
+        && !RESOURCE_PNGS.has(img.getAttribute("src") ?? "")) ||
       img.getAttributeNames().some((a: string) => a.startsWith("on")),
   );
 
