@@ -20,7 +20,6 @@ const html = readFileSync(resolve(__dirname, "../../../index.html"), "utf8");
 function cover(): void {
   document.body.innerHTML = `<div id="app"></div>
     <div id="splash" aria-hidden="true">
-      <div class="sp-mark"><b>ZOMBIE</b><span>ANTS</span></div>
       <div class="sp-bar"><i></i></div>
     </div>`;
 }
@@ -55,20 +54,17 @@ describe("the markup", () => {
     }
   });
 
-  /**
-   * THE PICTURE IS A LAYER, NEVER THE COVER. It is a second request and it can land after
-   * the thing it was meant to cover, which used to be the argument against having one at
-   * all — so the wordmark is still DRAWN into the markup and the soil colour is still the
-   * background underneath it. A splash.png that never arrives leaves exactly the cover
-   * that shipped before there was one.
-   */
-  it("draws the wordmark rather than depending on the picture", () => {
+  /** Loading remains readable without tinting or covering the supplied artwork. */
+  it("shows the artwork and loading bar without a title or gradient", () => {
     const block = html.slice(html.indexOf('id="splash"'), html.indexOf("</body>"));
     expect(block).not.toContain("<img");
-    expect(block).toContain("ZOMBIE");
+    expect(block).not.toContain("sp-mark");
+    expect(block).not.toContain("ZOMBIE");
+    expect(block).toContain("sp-bar");
     const rule = html.slice(html.indexOf("#splash {"), html.indexOf("#splash.gone"));
-    expect(rule, "the artwork is not a background layer").toContain("splash.png");
-    expect(rule, "there is no colour under the picture").toContain("#1c1e25");
+    expect(rule).toContain("splash.png");
+    expect(rule).not.toContain("linear-gradient");
+    expect(rule).toContain("#1c1e25");
   });
 
   /** And the file is really there to be named, in `public/` where the document can see it. */

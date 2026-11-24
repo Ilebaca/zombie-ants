@@ -6009,3 +6009,11 @@ minimum display time, fade, reduced-motion behavior and boot-failure watchdog.
 The offline worker precaches splash.png; the superseded splash.webp is removed.
 The image optimizer preserves public/splash.png byte for byte, including color
 metadata, so deployment cannot reduce its quality. Do not resize or recompress it.
+
+
+### Clear splash presentation (24 November 2026)
+
+The supplied splash artwork has no gradient/scrim and no ZOMBIE ANTS title overlay.
+Only the existing loading bar sits over the unmodified image. The solid soil colour
+is a fallback beneath the artwork. Keep the preload, original-quality PNG preservation,
+offline precache, existing cover fit, timing, fade and failure watchdog.
