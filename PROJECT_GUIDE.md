@@ -5998,3 +5998,14 @@ Deployment's RESOURCE_ORIGINALS set preserves these six PNG files byte for byte,
 including transparency and colour metadata. Do not apply lossy WebP conversion to them.
 Other artwork keeps its existing optimization policy. The source files are the supplied
 ZIP originals, with no resize, recolouring, sharpening or upscaling.
+
+
+### Supplied splash scene (24 November 2026)
+
+public/splash.png is the original 841x1870 RGBA scene supplied in image 19.zip.
+index.html preloads it with high priority and paints it in the existing full-screen,
+centered cover layer below the wordmark, scrim and loading bar. Keep the current
+minimum display time, fade, reduced-motion behavior and boot-failure watchdog.
+The offline worker precaches splash.png; the superseded splash.webp is removed.
+The image optimizer preserves public/splash.png byte for byte, including color
+metadata, so deployment cannot reduce its quality. Do not resize or recompress it.

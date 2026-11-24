@@ -36,6 +36,7 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <title>Zombie Ants</title>
+<link rel="preload" as="image" href="./splash.png" fetchpriority="high">
 
 <!--
   THE COVER, AND IT IS IN THE DOCUMENT WITH ITS STYLES INLINE.
@@ -52,7 +53,7 @@
   do is wait.
 
   IT IS A PICTURE AND THE WORDMARK, and the picture is the one thing here the cover does
-  not DEPEND on. `splash.webp` is a second request, which used to be the argument against
+  not DEPEND on. `splash.png` is a second request, which used to be the argument against
   having one at all — it can land after the thing it was meant to cover. So it is a
   background LAYER over the soil colour, never the cover itself: the wordmark, the bar and
   the ground are drawn from the first frame exactly as they always were, and the artwork
@@ -96,7 +97,7 @@
        or both layers would be cleared the moment the stylesheet lands. */
     background:
       linear-gradient(180deg, rgba(28, 30, 37, 0) 44%, rgba(28, 30, 37, .78) 74%, rgba(28, 30, 37, .97) 100%),
-      url(./splash.webp) center / cover no-repeat,
+      url(./splash.png) center / cover no-repeat,
       #1c1e25;
     color: #eaf3ea;
     font-family: Nunito, system-ui, -apple-system, "Segoe UI", sans-serif;

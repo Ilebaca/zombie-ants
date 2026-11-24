@@ -59,7 +59,7 @@ describe("the markup", () => {
    * THE PICTURE IS A LAYER, NEVER THE COVER. It is a second request and it can land after
    * the thing it was meant to cover, which used to be the argument against having one at
    * all — so the wordmark is still DRAWN into the markup and the soil colour is still the
-   * background underneath it. A splash.webp that never arrives leaves exactly the cover
+   * background underneath it. A splash.png that never arrives leaves exactly the cover
    * that shipped before there was one.
    */
   it("draws the wordmark rather than depending on the picture", () => {
@@ -67,13 +67,13 @@ describe("the markup", () => {
     expect(block).not.toContain("<img");
     expect(block).toContain("ZOMBIE");
     const rule = html.slice(html.indexOf("#splash {"), html.indexOf("#splash.gone"));
-    expect(rule, "the artwork is not a background layer").toContain("splash.webp");
+    expect(rule, "the artwork is not a background layer").toContain("splash.png");
     expect(rule, "there is no colour under the picture").toContain("#1c1e25");
   });
 
   /** And the file is really there to be named, in `public/` where the document can see it. */
   it("ships the artwork beside the document", () => {
-    expect(() => readFileSync(resolve(__dirname, "../../../public/splash.webp"))).not.toThrow();
+    expect(() => readFileSync(resolve(__dirname, "../../../public/splash.png"))).not.toThrow();
   });
 
   /**

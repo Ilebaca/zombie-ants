@@ -67,6 +67,22 @@ class OptimiseImagesTest(unittest.TestCase):
             for name in RESOURCE_ORIGINALS:
                 self.assertEqual((root / name).read_bytes(), original)
 
+    def test_supplied_splash_survives_deployment_byte_for_byte(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            public = root / "public"
+            public.mkdir()
+            stream = io.BytesIO()
+            Image.new("RGBA", (84, 187), (125, 0, 225, 255)).save(
+                stream, "PNG", compress_level=0, dpi=(144, 144))
+            original = stream.getvalue()
+            self.assertLess(len(encode(original)[0]), len(original))
+            splash = public / "splash.png"
+            splash.write_bytes(original)
+            report = optimise([public], root / "report.json")
+            self.assertEqual(splash.read_bytes(), original)
+            self.assertEqual(report["files"][0]["status"], "splash original: retained")
+
     def test_report_accounts_for_duplicates_and_untouched_files(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

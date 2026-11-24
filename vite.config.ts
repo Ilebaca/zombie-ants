@@ -171,7 +171,7 @@ export default defineConfig({
           // is listed by hand like the icons. Precached, because the cover holds for two
           // seconds on EVERY launch and the second one should have the picture from the
           // first frame rather than a second of soil.
-          "./splash.webp",
+          "./splash.png",
           // The supplied crystal collection cue is available even before its first play.
           "./audio/crystal-collect.wav",
           // Everything the build just emitted — EXCEPT `version.json`, which the worker

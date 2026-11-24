@@ -63,10 +63,12 @@ def optimise(roots, report):
             if not path.is_file() or path.suffix.lower() not in {".webp", ".png", ".jpg", ".jpeg"}:
                 continue
             source = path.read_bytes()
-            if Path(*path.parts[-4:]).as_posix() in RESOURCE_ORIGINALS:
+            splash_original = Path(*path.parts[-2:]).as_posix() == "public/splash.png"
+            if splash_original or Path(*path.parts[-4:]).as_posix() in RESOURCE_ORIGINALS:
                 with Image.open(io.BytesIO(source)) as image:
                     image.load()
-                    output, size, status = source, image.size, "resource original: retained"
+                    output, size = source, image.size
+                    status = "splash original: retained" if splash_original else "resource original: retained"
             else:
                 digest = hashlib.sha256(source).digest()
                 if digest not in encoded:
